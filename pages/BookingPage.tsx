@@ -25,7 +25,8 @@ const BookingPage: React.FC = () => {
   
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
-  
+  const [completedBooking, setCompletedBooking] = useState<Booking | null>(null);
+
   const today = new Date().toISOString().split('T')[0];
 
   const [formData, setFormData] = useState({
@@ -114,10 +115,13 @@ const BookingPage: React.FC = () => {
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       
       const calculatedRentalCost = diffDays * pricePerDay;
-      const calculatedTaxes = calculatedRentalCost * 0.10;
-      const calculatedTotal = calculatedRentalCost + calculatedTaxes;
+      const selectedInsurance = INSURANCE_OPTIONS.find(opt => opt.id === formData.insuranceOption);
+      const calculatedInsuranceCost = (selectedInsurance?.pricePerDay[currency] || 0) * diffDays;
+      const calculatedSubtotal = calculatedRentalCost + calculatedInsuranceCost;
+      const calculatedTaxes = calculatedSubtotal * 0.10;
+      const calculatedTotal = calculatedSubtotal + calculatedTaxes;
 
-      return { duration: { days: diffDays, hours: 0 }, rentalCost: calculatedRentalCost, insuranceCost: 0, extrasCost: 0, subtotal: calculatedRentalCost, taxes: calculatedTaxes, total: calculatedTotal, nights: diffDays };
+      return { duration: { days: diffDays, hours: 0 }, rentalCost: calculatedRentalCost, insuranceCost: calculatedInsuranceCost, extrasCost: 0, subtotal: calculatedSubtotal, taxes: calculatedTaxes, total: calculatedTotal, nights: diffDays };
     }
 
   }, [formData, item, currency, isCar]);
@@ -128,6 +132,9 @@ const BookingPage: React.FC = () => {
       currency: currency.toUpperCase(),
     }).format(price);
   };
+  
+  const formatDate = (date: string) => new Date(date).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -173,11 +180,9 @@ const BookingPage: React.FC = () => {
             else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = t('Please_enter_a_valid_email_address');
             if (!formData.countryOfResidency) newErrors.countryOfResidency = t('Country_of_Residency_is_required');
             if (formData.age < 25) newErrors.age = t('Minimum_age_is_25');
-        }
-        if (step === 3) {
             if (!formData.licenseImage) newErrors.licenseImage = 'Please upload your driver\'s license.';
         }
-        if (step === 4) {
+        if (step === 3) {
           if (formData.paymentMethod === 'stripe') {
               if (!formData.cardNumber.trim()) newErrors.cardNumber = 'Card number is required.';
               if (!formData.cardExpiry.trim()) newErrors.cardExpiry = 'Expiry date is required.';
@@ -243,6 +248,8 @@ const BookingPage: React.FC = () => {
           },
           paymentMethod: formData.paymentMethod,
           bookedAt: new Date().toISOString(),
+          pickupLocation: formData.pickupLocation,
+          insuranceOption: formData.insuranceOption,
       };
 
       const newBooking: Booking = isCar ? {
@@ -253,8 +260,6 @@ const BookingPage: React.FC = () => {
           returnTime: formData.returnTime,
           duration: `${duration.days} ${duration.days === 1 ? t('day') : t('days')}, ${duration.hours} ${duration.hours === 1 ? t('hour') : t('hours')}`,
           driverLicenseImage: formData.licenseImage,
-          pickupLocation: formData.pickupLocation,
-          insuranceOption: formData.insuranceOption,
           extras: formData.extras
       } : {
         ...commonData,
@@ -264,20 +269,21 @@ const BookingPage: React.FC = () => {
         returnTime: '11:00',
         duration: `${nights} ${nights === 1 ? t('Night') : t('Nights')}`,
         driverLicenseImage: '', // Not applicable
+        extras: [],
       };
 
       const existingBookings = JSON.parse(localStorage.getItem('bookings') || '[]') as Booking[];
       localStorage.setItem('bookings', JSON.stringify([...existingBookings, newBooking]));
 
-      setStep(isCar ? 5 : 4); // Confirmation step
+      setCompletedBooking(newBooking);
+      setStep(4); // Confirmation step for both flows
   };
 
   const steps = useMemo(() => {
     const carSteps = [
         { id: 1, name: t('Configuration') },
-        { id: 2, name: t('Driver_Information') },
-        { id: 3, name: t('License_Verification') },
-        { id: 4, name: t('Payment') },
+        { id: 2, name: t('Driver_and_Verification') },
+        { id: 3, name: t('Payment') },
     ];
     const otherSteps = [
         { id: 1, name: t('Dates_and_Guests') },
@@ -292,7 +298,7 @@ const BookingPage: React.FC = () => {
   }
 
   const renderStepContent = () => {
-    if (step === (isCar ? 5 : 4)) {
+    if (step === steps.length + 1) { // Confirmation Step
       return (
         <div className="text-center">
           <motion.div initial={{scale:0}} animate={{scale:1}} transition={{type: 'spring', stiffness: 260, damping: 20}} className="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -300,6 +306,24 @@ const BookingPage: React.FC = () => {
           </motion.div>
           <h2 className="text-3xl font-bold text-amber-400 mb-2">{t('Booking_Request_Sent')}</h2>
           <p className="text-stone-300 max-w-md mx-auto">{t('We_will_confirm_your_booking_shortly')}</p>
+
+          {completedBooking && (
+            <div className="mt-8 bg-stone-800/50 p-6 rounded-lg border border-stone-700 text-left max-w-lg mx-auto">
+                <h3 className="text-xl font-bold text-white text-center mb-4">{t('Booking_Details')}</h3>
+                <div className="space-y-2 text-sm">
+                    <div className="flex justify-between"><span className="text-stone-400">{t('Item')}</span><span className="text-white font-medium text-right">{completedBooking.itemName}</span></div>
+                    <div className="flex justify-between"><span className="text-stone-400">{t('Dates')}</span><span className="text-white font-medium text-right">{formatDate(completedBooking.pickupDate)} - {formatDate(completedBooking.returnDate)}</span></div>
+                    <div className="flex justify-between"><span className="text-stone-400">{t('Duration')}</span><span className="text-white font-medium text-right">{completedBooking.duration}</span></div>
+                    <div className="flex justify-between"><span className="text-stone-400">{t('Pickup_Location')}</span><span className="text-white font-medium text-right">{getTranslated(PICKUP_LOCATIONS.find(l => l.id === completedBooking.pickupLocation)?.label || {en:'',it:''})}</span></div>
+                    <div className="flex justify-between"><span className="text-stone-400">{t('Insurance')}</span><span className="text-white font-medium text-right">{getTranslated(INSURANCE_OPTIONS.find(l => l.id === completedBooking.insuranceOption)?.label || {en:'',it:''})}</span></div>
+                    {completedBooking.extras && completedBooking.extras.length > 0 && (
+                         <div className="flex justify-between"><span className="text-stone-400">{t('Extras')}</span><span className="text-white font-medium text-right">{completedBooking.extras.map(e => getTranslated(RENTAL_EXTRAS.find(re => re.id === e)?.label || {en:'',it:''})).join(', ')}</span></div>
+                    )}
+                    <div className="flex justify-between text-lg border-t border-amber-400/20 pt-2 mt-2"><span className="text-white font-bold">{t('Total')}</span><span className="text-amber-400 font-bold">{formatPrice(completedBooking.totalPrice)}</span></div>
+                </div>
+            </div>
+          )}
+
           <button type="button" onClick={() => navigate('/account/bookings')} className="mt-8 bg-amber-400 text-black px-6 py-2 rounded-full font-semibold text-sm hover:bg-amber-300 transition-colors">
               {t('My_Bookings')}
           </button>
@@ -320,25 +344,46 @@ const BookingPage: React.FC = () => {
               </div>
               {errors.date && <p className="text-xs text-red-500">{errors.date}</p>}
               <div><label className="text-sm text-stone-400">{t('Pickup_Location')}</label><select name="pickupLocation" value={formData.pickupLocation} onChange={handleChange} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white">{PICKUP_LOCATIONS.map(loc => <option key={loc.id} value={loc.id}>{getTranslated(loc.label)}</option>)}</select></div>
-              <div><h3 className="text-lg font-semibold text-white mb-2">{t('Insurance_Options')}</h3><div className="space-y-2">{INSURANCE_OPTIONS.map(opt => <label key={opt.id} className="flex items-center p-3 bg-stone-800/50 rounded-md border border-stone-700 cursor-pointer has-[:checked]:border-amber-400"><input type="radio" name="insuranceOption" value={opt.id} checked={formData.insuranceOption === opt.id} onChange={handleChange} className="h-4 w-4 text-amber-500 bg-stone-700 border-stone-600 focus:ring-amber-500" /><span className="ml-3 text-sm text-white">{getTranslated(opt.label)}</span><span className="ml-auto text-xs text-stone-400">+{formatPrice(opt.pricePerDay[currency])}/{t('day')}</span></label>)}</div></div>
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-2">{t('Insurance_Options')}</h3>
+                <div className="space-y-2">
+                  {INSURANCE_OPTIONS.map(opt => (
+                    <label key={opt.id} className="block p-3 bg-stone-800/50 rounded-md border border-stone-700 cursor-pointer has-[:checked]:border-amber-400">
+                      <div className="flex items-center">
+                        <input type="radio" name="insuranceOption" value={opt.id} checked={formData.insuranceOption === opt.id} onChange={handleChange} className="h-4 w-4 text-amber-500 bg-stone-700 border-stone-600 focus:ring-amber-500" />
+                        <span className="ml-3 text-sm text-white">{getTranslated(opt.label)}</span>
+                        <span className="ml-auto text-xs text-stone-400">+{formatPrice(opt.pricePerDay[currency])}/{t('day')}</span>
+                      </div>
+                      <p className="ml-7 mt-1 text-xs text-stone-400">{getTranslated(opt.description)}</p>
+                    </label>
+                  ))}
+                </div>
+              </div>
               <div><h3 className="text-lg font-semibold text-white mb-2">{t('Extras_and_Addons')}</h3><div className="space-y-2">{RENTAL_EXTRAS.map(extra => <label key={extra.id} className="flex items-center p-3 bg-stone-800/50 rounded-md border border-stone-700 cursor-pointer has-[:checked]:border-amber-400"><input type="checkbox" name={extra.id} checked={formData.extras.includes(extra.id)} onChange={handleChange} className="h-4 w-4 text-amber-500 bg-stone-700 border-stone-600 rounded focus:ring-amber-500" /><span className="ml-3 text-sm text-white">{getTranslated(extra.label)}</span><span className="ml-auto text-xs text-stone-400">+{formatPrice(extra.pricePerDay[currency])}/{t('day')}</span></label>)}</div></div>
             </div>
           );
         case 2:
           return (
-            <div className="space-y-4">
-                <div><label className="text-sm text-stone-400">{t('Full_Name')}</label><input type="text" name="fullName" value={formData.fullName} onChange={handleChange} disabled={!!user} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white disabled:text-stone-400"/>{errors.fullName && <p className="text-xs text-red-500 mt-1">{errors.fullName}</p>}</div>
-                <div><label className="text-sm text-stone-400">{t('Email_Address')}</label><input type="email" name="email" value={formData.email} onChange={handleChange} disabled={!!user} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white disabled:text-stone-400"/>{errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}</div>
-                <div><label className="text-sm text-stone-400">{t('Phone_Number')}</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
-                <div><label className="text-sm text-stone-400">{t('Country_of_Residency')}</label><select name="countryOfResidency" value={formData.countryOfResidency} onChange={handleChange} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"><option value="" disabled>Select a country</option>{COUNTRIES.map(country => (<option key={country.code} value={country.code}>{country.name}</option>))}</select>{errors.countryOfResidency && <p className="text-xs text-red-500 mt-1">{errors.countryOfResidency}</p>}</div>
-                <div><label className="text-sm text-stone-400">{t('Drivers_Age')}</label><input type="number" name="age" value={formData.age} onChange={handleChange} min="25" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>{errors.age && <p className="text-xs text-red-500 mt-1">{errors.age}</p>}</div>
+            <div className="space-y-8">
+                <div>
+                    <h3 className="text-lg font-semibold text-white mb-4">{t('Driver_Information')}</h3>
+                    <div className="space-y-4">
+                        <div><label className="text-sm text-stone-400">{t('Full_Name')}</label><input type="text" name="fullName" value={formData.fullName} onChange={handleChange} disabled={!!user} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white disabled:text-stone-400"/>{errors.fullName && <p className="text-xs text-red-500 mt-1">{errors.fullName}</p>}</div>
+                        <div><label className="text-sm text-stone-400">{t('Email_Address')}</label><input type="email" name="email" value={formData.email} onChange={handleChange} disabled={!!user} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white disabled:text-stone-400"/>{errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}</div>
+                        <div><label className="text-sm text-stone-400">{t('Phone_Number')}</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
+                        <div><label className="text-sm text-stone-400">{t('Country_of_Residency')}</label><select name="countryOfResidency" value={formData.countryOfResidency} onChange={handleChange} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"><option value="" disabled>Select a country</option>{COUNTRIES.map(country => (<option key={country.code} value={country.code}>{country.name}</option>))}</select>{errors.countryOfResidency && <p className="text-xs text-red-500 mt-1">{errors.countryOfResidency}</p>}</div>
+                        <div><label className="text-sm text-stone-400">{t('Drivers_Age')}</label><input type="number" name="age" value={formData.age} onChange={handleChange} min="25" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>{errors.age && <p className="text-xs text-red-500 mt-1">{errors.age}</p>}</div>
+                    </div>
+                </div>
+                <div>
+                    <h3 className="text-lg font-semibold text-white mb-4">{t('License_Verification')}</h3>
+                    <div className="bg-stone-800/50 border border-stone-700 p-4 rounded-md mb-4"><p className="text-sm text-stone-300">{t('Please_provide_a_clear_photo_of_your_drivers_license')}</p></div>
+                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-stone-700 border-dashed rounded-md"><div className="space-y-1 text-center">{formData.licenseImage ? <img src={formData.licenseImage} alt="License Preview" className="mx-auto h-32 w-auto rounded-md"/> : <CameraIcon className="mx-auto h-12 w-12 text-stone-500"/>}<div className="flex text-sm text-stone-400 justify-center"><label htmlFor="file-upload" className="relative cursor-pointer bg-stone-800 rounded-md font-medium text-amber-400 hover:text-amber-300 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-amber-500 focus-within:ring-offset-stone-900 px-2"><span>{t('Upload_File')}</span><input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleLicenseUpload} accept="image/*" /></label></div><p className="text-xs text-stone-500">PNG, JPG, GIF up to 10MB</p></div></div>
+                    {errors.licenseImage && <p className="text-xs text-red-500 mt-1">{errors.licenseImage}</p>}
+                </div>
             </div>
           );
         case 3:
-          return (
-            <div><p className="text-stone-300 mb-4">{t('Please_provide_a_clear_photo_of_your_drivers_license')}</p><div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-stone-700 border-dashed rounded-md"><div className="space-y-1 text-center">{formData.licenseImage ? <img src={formData.licenseImage} alt="License Preview" className="mx-auto h-32 w-auto rounded-md"/> : <CameraIcon className="mx-auto h-12 w-12 text-stone-500"/>}<div className="flex text-sm text-stone-400 justify-center"><label htmlFor="file-upload" className="relative cursor-pointer bg-stone-800 rounded-md font-medium text-amber-400 hover:text-amber-300 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-amber-500 focus-within:ring-offset-stone-900 px-2"><span>{t('Upload_File')}</span><input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleLicenseUpload} accept="image/*" /></label></div><p className="text-xs text-stone-500">PNG, JPG, GIF up to 10MB</p></div></div>{errors.licenseImage && <p className="text-xs text-red-500 mt-1">{errors.licenseImage}</p>}</div>
-          );
-        case 4:
           return (
             <div><div className="flex border-b border-stone-700"><button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'stripe'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'stripe' ? 'text-amber-400 border-b-2 border-amber-400' : 'text-stone-400'}`}><CreditCardIcon className="w-5 h-5 inline mr-2"/>{t('Credit_Card')}</button><button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'crypto'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'crypto' ? 'text-amber-400 border-b-2 border-amber-400' : 'text-stone-400'}`}><CryptoIcon className="w-5 h-5 inline mr-2"/>{t('Cryptocurrency')}</button></div><div className="mt-6">{formData.paymentMethod === 'stripe' ? (<div className="space-y-4"><div><label className="text-sm text-stone-400">{t('Card_Number')}</label><input type="text" name="cardNumber" value={formData.cardNumber} onChange={handleChange} placeholder="•••• •••• •••• ••••" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>{errors.cardNumber && <p className="text-xs text-red-500 mt-1">{errors.cardNumber}</p>}</div><div className="grid grid-cols-2 gap-4"><div><label className="text-sm text-stone-400">{t('Expiry')}</label><input type="text" name="cardExpiry" value={formData.cardExpiry} onChange={handleChange} placeholder="MM / YY" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>{errors.cardExpiry && <p className="text-xs text-red-500 mt-1">{errors.cardExpiry}</p>}</div><div><label className="text-sm text-stone-400">{t('CVC')}</label><input type="text" name="cardCVC" value={formData.cardCVC} onChange={handleChange} placeholder="•••" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>{errors.cardCVC && <p className="text-xs text-red-500 mt-1">{errors.cardCVC}</p>}</div></div></div>) : (<div className="text-center"><p className="text-stone-300 mb-4">{t('Scan_or_copy_address_below')}</p><div className="w-40 h-40 bg-white p-2 rounded-md mx-auto flex items-center justify-center text-black">QR Code</div><input type="text" readOnly value="0x1234...abcd" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-4 text-white text-center text-sm"/><button type="button" className="mt-4 w-full py-2 bg-stone-700 text-white rounded-md hover:bg-stone-600">{t('I_have_sent_the_payment')}</button></div>)}</div></div>
           );
@@ -364,6 +409,8 @@ const BookingPage: React.FC = () => {
                     <label className="text-sm text-stone-400">{t('Number_of_Guests')}</label>
                     <input type="number" name="guests" value={formData.guests} onChange={handleChange} min="1" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>
                 </div>
+                 <div><label className="text-sm text-stone-400">{t('Pickup_Location')}</label><select name="pickupLocation" value={formData.pickupLocation} onChange={handleChange} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white">{PICKUP_LOCATIONS.map(loc => <option key={loc.id} value={loc.id}>{getTranslated(loc.label)}</option>)}</select></div>
+                <div><h3 className="text-lg font-semibold text-white mb-2">{t('Insurance_Options')}</h3><div className="space-y-2">{INSURANCE_OPTIONS.map(opt => <label key={opt.id} className="block p-3 bg-stone-800/50 rounded-md border border-stone-700 cursor-pointer has-[:checked]:border-amber-400"><div className="flex items-center"><input type="radio" name="insuranceOption" value={opt.id} checked={formData.insuranceOption === opt.id} onChange={handleChange} className="h-4 w-4 text-amber-500 bg-stone-700 border-stone-600 focus:ring-amber-500" /><span className="ml-3 text-sm text-white">{getTranslated(opt.label)}</span><span className="ml-auto text-xs text-stone-400">+{formatPrice(opt.pricePerDay[currency])}/{t('day')}</span></div><p className="ml-7 mt-1 text-xs text-stone-400">{getTranslated(opt.description)}</p></label>)}</div></div>
             </div>
           );
         case 2:
@@ -420,7 +467,7 @@ const BookingPage: React.FC = () => {
                 {t('Book_Your')} <span className="text-amber-400">{item.name}</span>
             </h1>
 
-            {step < (isCar ? 5 : 4) && (
+            {step <= steps.length && (
                 <div className="w-full max-w-lg mx-auto mb-12">
                     <div className="flex items-center justify-between">
                         {steps.map((s, index) => (
@@ -443,6 +490,15 @@ const BookingPage: React.FC = () => {
                     <div className="bg-stone-900/50 p-6 rounded-lg border border-stone-800">
                         <h2 className="text-2xl font-bold text-white mb-4">{t('Booking_Summary')}</h2>
                         <img src={item.image} alt={item.name} className="w-full h-40 object-cover rounded-lg mb-4"/>
+                        
+                        <div className="space-y-2 text-sm border-b border-stone-700 pb-3 mb-3">
+                             <div className="flex justify-between"><span className="text-stone-400">{t('Pickup_Location')}</span><span className="text-white font-medium text-right">{getTranslated(PICKUP_LOCATIONS.find(l => l.id === formData.pickupLocation)?.label || {en:'',it:''})}</span></div>
+                             <div className="flex justify-between"><span className="text-stone-400">{t('Insurance')}</span><span className="text-white font-medium text-right">{getTranslated(INSURANCE_OPTIONS.find(l => l.id === formData.insuranceOption)?.label || {en:'',it:''})}</span></div>
+                            {isCar && formData.extras.length > 0 && (
+                                <div className="flex justify-between"><span className="text-stone-400">{t('Extras')}</span><span className="text-white font-medium text-right">{formData.extras.map(e => getTranslated(RENTAL_EXTRAS.find(re => re.id === e)?.label || {en:'',it:''})).join(', ')}</span></div>
+                            )}
+                        </div>
+
                         {isCar ? (
                         <>
                             <div className="space-y-2 text-sm">
@@ -461,6 +517,8 @@ const BookingPage: React.FC = () => {
                         <>
                              <div className="space-y-2 text-sm">
                                 <div className="flex justify-between"><span className="text-stone-400">{formatPrice(item.pricePerDay[currency])} x {nights} {nights === 1 ? t('Night') : t('Nights')}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div>
+                                <div className="flex justify-between"><span className="text-stone-400">{t('Insurance')}</span><span className="text-white font-medium">{formatPrice(insuranceCost)}</span></div>
+                                <div className="flex justify-between border-t border-stone-700 pt-2 mt-1"><span className="text-stone-300 font-semibold">{t('Subtotal')}</span><span className="text-white font-semibold">{formatPrice(subtotal)}</span></div>
                                 <div className="flex justify-between"><span className="text-stone-400">{t('Taxes_and_Fees')}</span><span className="text-white font-medium">{formatPrice(taxes)}</span></div>
                                 <div className="flex justify-between text-lg border-t border-amber-400/20 pt-2 mt-2"><span className="text-white font-bold">{t('Total')}</span><span className="text-amber-400 font-bold">{formatPrice(total)}</span></div>
                             </div>
@@ -483,10 +541,10 @@ const BookingPage: React.FC = () => {
                                 {renderStepContent()}
                             </motion.div>
                         </AnimatePresence>
-                        {step < (isCar ? 5 : 4) && (
+                        {step <= steps.length && (
                             <div className="flex justify-between mt-8">
                                 <button type="button" onClick={handleBack} disabled={step === 1} className="px-8 py-3 bg-stone-700 text-white font-bold rounded-full hover:bg-stone-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('Back')}</button>
-                                {step < (isCar ? 4 : 3) ?
+                                {step < steps.length ?
                                     <button type="button" onClick={handleNext} className="px-8 py-3 bg-amber-400 text-black font-bold rounded-full hover:bg-amber-300 transition-colors">{t('Next')}</button> :
                                     <button type="submit" disabled={isProcessing} className="px-8 py-3 bg-amber-400 text-black font-bold rounded-full hover:bg-amber-300 transition-colors flex items-center justify-center disabled:bg-stone-600 disabled:cursor-not-allowed">
                                         {isProcessing ? (

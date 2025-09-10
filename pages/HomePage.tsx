@@ -108,7 +108,7 @@ const HomePage: React.FC = () => {
           </div>
         </div>
       </section>
-
+      
       <section className="py-24 bg-stone-900/40">
         <div className="container mx-auto px-6 text-center">
             <motion.h2 

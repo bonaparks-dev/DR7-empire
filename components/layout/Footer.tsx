@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { InstagramIcon, FacebookIcon, TwitterIcon, YoutubeIcon } from '../icons/Icons';
+import GoogleReviews from '../ui/GoogleReviews';
 
 const Footer: React.FC = () => {
   const { t } = useTranslation();
@@ -43,6 +44,11 @@ const Footer: React.FC = () => {
               {t('Subscribe')}
             </button>
           </form>
+        </div>
+
+        {/* Reviews Section */}
+        <div className="mb-12 pb-12 border-b border-stone-800">
+            <GoogleReviews />
         </div>
 
         {/* Middle Section: Links */}

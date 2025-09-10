@@ -29,6 +29,7 @@ export const translations: Translations = {
   Win_your_dream_car_and_more: { en: "Win your dream car and more.", it: "Vinci l'auto dei tuoi sogni e altro ancora." },
   Participate_in_our_exclusive_giveaways_for_a_chance_to_win_extraordinary_prizes: { en: "Participate in our exclusive giveaways for a chance to win extraordinary prizes.", it: "Partecipa ai nostri giveaway esclusivi per avere la possibilità di vincere premi straordinari." },
   Enter_Now: { en: "Enter Now", it: "Partecipa Ora" },
+  What_Our_Clients_Say: { en: "What Our Clients Say", it: "Cosa Dicono i Nostri Clienti" },
   // Rental Page
   Our_Collection_of: { en: "Our Collection of", it: "La Nostra Collezione di" },
   Book_Now: { en: "Book Now", it: "Prenota Ora" },
@@ -64,6 +65,7 @@ export const translations: Translations = {
   Configuration: { en: "Configuration", it: "Configurazione" },
   Driver_Information: { en: "Driver Information", it: "Informazioni Conducente" },
   License_Verification: { en: "License Verification", it: "Verifica Patente" },
+  Driver_and_Verification: { en: "Driver & Verification", it: "Conducente e Verifica" },
   Payment: { en: "Payment", it: "Pagamento" },
   Pickup_Time: { en: "Pickup Time", it: "Orario di Ritiro" },
   Return_Time: { en: "Return Time", it: "Orario di Riconsegna" },
@@ -156,7 +158,7 @@ export const translations: Translations = {
   You_must_agree_to_the_terms: { en: "You must agree to the terms.", it: "Devi accettare i termini." },
   // Forgot Password Page
   Reset_Your_Password: { en: "Reset Your Password", it: "Reimposta la Tua Password" },
-  Enter_your_email_to_receive_a_reset_link: { en: "Enter your email address below and we'll send you a link to reset your password.", it: "Inserisci il tuo indirizzo email qui sotto e ti invieremo un link per reimpostare la password." },
+  Enter_your_email_to_receive_a_reset_link: { en: "Enter your email address below and we'll send you a link to reset your password.", it: "Inserisci il tuo indirizzo email qui sotto e ti invieremo un link per il reset della password." },
   Send_Reset_Link: { en: "Send Reset Link", it: "Invia Link di Reset" },
   Check_Your_Email: { en: "Check Your Email", it: "Controlla la Tua Email" },
   If_an_account_exists_a_reset_link_has_been_sent: { en: "If an account with that email exists, we have sent a password reset link.", it: "Se esiste un account con quell'email, abbiamo inviato un link per il reset della password." },

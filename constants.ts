@@ -1,27 +1,274 @@
-import type { RentalCategory, MembershipTier, Lottery } from './types';
+import type { RentalCategory, MembershipTier, Lottery, RentalSpec } from './types';
 import { UsersIcon, CogIcon, ZapIcon, AnchorIcon, HomeIcon, PaperAirplaneIcon, WifiIcon } from './components/icons/Icons';
 
-const carData = [
-  { id: 'car1', name: 'Ferrari SF90', image: 'https://picsum.photos/seed/ferrari-sf90-red/800/600', pricePerDay: { usd: 3500, eur: 3200, crypto: 0.1 }, specs: [ { label: { en: 'Top Speed', it: 'Velocità Massima' }, value: '340 km/h', icon: ZapIcon }, { label: { en: 'Engine', it: 'Motore' }, value: 'V8 Hybrid', icon: CogIcon }, { label: { en: 'Passengers', it: 'Passeggeri' }, value: '2', icon: UsersIcon } ] },
-  { id: 'car2', name: 'Lamborghini Revuelto', image: 'https://picsum.photos/seed/lamborghini-revuelto-yellow/800/600', pricePerDay: { usd: 4000, eur: 3700, crypto: 0.12 }, specs: [ { label: { en: 'Top Speed', it: 'Velocità Massima' }, value: '350 km/h', icon: ZapIcon }, { label: { en: 'Engine', it: 'Motore' }, value: 'V12 Hybrid', icon: CogIcon }, { label: { en: 'Passengers', it: 'Passeggeri' }, value: '2', icon: UsersIcon } ] },
-  { id: 'car3', name: 'Rolls-Royce Spectre', image: 'https://picsum.photos/seed/rolls-royce-spectre-blue/800/600', pricePerDay: { usd: 2800, eur: 2600, crypto: 0.08 }, specs: [ { label: { en: 'Top Speed', it: 'Velocità Massima' }, value: '250 km/h', icon: ZapIcon }, { label: { en: 'Engine', it: 'Motore' }, value: 'Electric', icon: CogIcon }, { label: { en: 'Passengers', it: 'Passeggeri' }, value: '4', icon: UsersIcon } ] },
+const newCarDataRaw = [
+  {
+    "id": 1,
+    "name": "Alfa Romeo Stelvio Quadrifoglio",
+    "dailyPrice": 40,
+    "specs": {
+      "acceleration": "0–100 in 3.8s",
+      "power": "510Cv",
+      "torque": "600Nm",
+      "engine": "2.9L V6 BiTurbo"
+    },
+    "image": "/alpha.png",
+    "available": false
+  },
+  {
+    "id": 2,
+    "name": "Hummer H2",
+    "dailyPrice": 40,
+    "specs": {
+      "acceleration": "0–100 in 7.8s",
+      "maxSpeed": "Max speed: 160km/h",
+      "power": "398Cv",
+      "torque": "574Nm",
+      "engine": "6.2L V8"
+    },
+    "image": "/hummer.png"
+  },
+  {
+    "id": 3,
+    "name": "Audi RS3",
+    "dailyPrice": 60,
+    "specs": {
+      "acceleration": "0–100 in 3.8s",
+      "maxSpeed": "Max speed: 250km/h",
+      "power": "400Cv",
+      "torque": "500Nm",
+      "engine": "2.5L inline 5-cylinder"
+    },
+    "image": "/audi-rs3.png",
+    "color": "Verde"
+  },
+  {
+    "id": 4,
+    "name": "Audi RS3",
+    "dailyPrice": 60,
+    "specs": {
+      "acceleration": "0–100 in 3.8s",
+      "power": "400Cv",
+      "torque": "500Nm",
+      "engine": "2.5L inline 5-cylinder"
+    },
+    "image": "/Rs3-red.png",
+    "color": "Rossa"
+  },
+  {
+    "id": 5,
+    "name": "Mercedes A45 S AMG",
+    "dailyPrice": 60,
+    "specs": {
+      "acceleration": "0–100 in 3.9s",
+      "power": "421Cv",
+      "torque": "500Nm",
+      "engine": "2.0L 4-cylinder Turbo"
+    },
+    "image": "/mercedes-amg45.png"
+  },
+  {
+    "id": 6,
+    "name": "BMW M2",
+    "dailyPrice": 80,
+    "specs": {
+      "acceleration": "0–100 in 4.1s",
+      "power": "460Cv",
+      "torque": "550Nm",
+      "engine": "3.0L inline 6-cylinder"
+    },
+    "image": "/bmw-m2.png",
+    "available": false
+  },
+  {
+    "id": 7,
+    "name": "BMW M3 Competition",
+    "dailyPrice": 80,
+    "specs": {
+      "acceleration": "0–100 in 3.9s",
+      "maxSpeed": "Max speed: 250km/h",
+      "power": "510Cv",
+      "torque": "650Nm",
+      "engine": "3.0L inline 6-cylinder"
+    },
+    "image": "/bmw-m3.png"
+  },
+  {
+    "id": 8,
+    "name": "Mercedes GLE 53 AMG",
+    "dailyPrice": 80,
+    "specs": {
+      "acceleration": "0–100 in 4.7s",
+      "maxSpeed": "Max speed: 250km/h",
+      "power": "435Cv",
+      "torque": "520Nm",
+      "engine": "3.0L inline 6-cylinder"
+    },
+    "image": "/mercedesGLE.png"
+  },
+  {
+    "id": 9,
+    "name": "BMW M4 Competition",
+    "dailyPrice": 100,
+    "specs": {
+      "acceleration": "0–100 in 3.8s",
+      "power": "510Cv",
+      "torque": "650Nm",
+      "engine": "3.0L inline 6-cylinder"
+    },
+    "image": "/bmw-m4.png"
+  },
+  {
+    "id": 10,
+    "name": "Porsche 992 Carrera 4S",
+    "dailyPrice": 120,
+    "specs": {
+      "acceleration": "0–100 in 3.6s",
+      "maxSpeed": "Max speed: 306km/h",
+      "power": "450Cv",
+      "torque": "530Nm",
+      "engine": "3.0L Twin-Turbo Flat-6"
+    },
+    "image": "/porsche-911.png"
+  },
+  {
+    "id": 11,
+    "name": "Mercedes C63 S AMG",
+    "dailyPrice": 120,
+    "specs": {
+      "acceleration": "0–100 in 3.9s",
+      "power": "510Cv",
+      "torque": "700Nm",
+      "engine": "4.0L V8 BiTurbo"
+    },
+    "image": "/c63.png"
+  },
+  {
+    "id": 12,
+    "name": "Porsche Macan GTS",
+    "dailyPrice": 120,
+    "specs": {
+      "acceleration": "0–100 in 4.5s",
+      "power": "440Cv",
+      "torque": "550Nm",
+      "engine": "2.9L Twin-Turbo V6"
+    },
+    "image": "/macan.png"
+  },
+  {
+    "id": 13,
+    "name": "Mercedes GLE 63 AMG",
+    "dailyPrice": 120,
+    "specs": {
+      "acceleration": "0–100 in 3.8s",
+      "power": "612Cv",
+      "torque": "850Nm",
+      "engine": "4.0L V8 BiTurbo"
+    },
+    "image": "/mercedes-gle.png"
+  },
+  {
+    "id": 14,
+    "name": "Ferrari Portofino M",
+    "dailyPrice": 500,
+    "specs": {
+      "acceleration": "0–100 in 3.45s",
+      "maxSpeed": "Max speed: 320km/h",
+      "power": "620Cv",
+      "torque": "760Nm",
+      "engine": "3.9L Twin-Turbo V8"
+    },
+    "image": "/ferrari-portofino.png"
+  },
+  {
+    "id": 15,
+    "name": "Lamborghini Urus Performante",
+    "dailyPrice": 500,
+    "specs": {
+      "acceleration": "0–100 in 3.3s",
+      "maxSpeed": "Max speed: 306km/h",
+      "power": "666Cv",
+      "torque": "850Nm",
+      "engine": "4.0L Twin-Turbo V8"
+    },
+    "image": "/urus.png"
+  },
+  {
+    "id": 16,
+    "name": "Fiat Ducato",
+    "dailyPrice": 100,
+    "specs": {
+      "engine": "2.3L MultiJet Turbo Diesel",
+      "power": "140Cv",
+      "special": "Includes 100km pack",
+      "extras": "Unlimited option: +50€"
+    },
+    "image": "/Ducato.png",
+    "available": true
+  }
 ];
 
+const specMapping = {
+    acceleration: { label: { en: 'Acceleration', it: 'Accelerazione' }, icon: ZapIcon },
+    power: { label: { en: 'Power', it: 'Potenza' }, icon: ZapIcon },
+    torque: { label: { en: 'Torque', it: 'Coppia' }, icon: CogIcon },
+    engine: { label: { en: 'Engine', it: 'Motore' }, icon: CogIcon },
+    maxSpeed: { label: { en: 'Top Speed', it: 'Velocità Massima' }, icon: ZapIcon },
+    special: { label: { en: 'Special', it: 'Speciale' }, icon: UsersIcon },
+    extras: { label: { en: 'Extras', it: 'Extra' }, icon: UsersIcon },
+};
+
+const carData = newCarDataRaw.map(car => {
+    const specs: RentalSpec[] = Object.entries(car.specs).map(([key, value]) => {
+        const specInfo = specMapping[key as keyof typeof specMapping];
+        if (!specInfo) return null;
+        return { ...specInfo, value };
+    }).filter((spec): spec is RentalSpec => spec !== null);
+
+    return {
+        id: `car${car.id}`,
+        name: car.color ? `${car.name} (${car.color})` : car.name,
+        image: car.image,
+        pricePerDay: {
+            usd: car.dailyPrice * 1.1,
+            eur: car.dailyPrice,
+            crypto: car.dailyPrice / 30000,
+        },
+        specs,
+    };
+});
+
+
 const yachtData = [
-    { id: 'yacht1', name: 'Azimut Grande 27M', image: 'https://picsum.photos/seed/azimut-yacht-ocean/800/600', pricePerDay: { usd: 12000, eur: 11000, crypto: 0.35 }, specs: [ { label: { en: 'Length', it: 'Lunghezza' }, value: '27m', icon: AnchorIcon }, { label: { en: 'Cabins', it: 'Cabine' }, value: '5', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '10', icon: UsersIcon } ] },
-    { id: 'yacht2', name: 'Riva 110 Dolcevita', image: 'https://picsum.photos/seed/riva-dolcevita-yacht/800/600', pricePerDay: { usd: 18000, eur: 16500, crypto: 0.5 }, specs: [ { label: { en: 'Length', it: 'Lunghezza' }, value: '34m', icon: AnchorIcon }, { label: { en: 'Cabins', it: 'Cabine' }, value: '5', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '10', icon: UsersIcon } ] },
+    { id: 'yacht1', name: 'Azimut Grande 27M', image: 'https://picsum.photos/seed/azimut-yacht-ocean-sun/800/600', pricePerDay: { usd: 12000, eur: 11000, crypto: 0.35 }, specs: [ { label: { en: 'Length', it: 'Lunghezza' }, value: '27m', icon: AnchorIcon }, { label: { en: 'Cabins', it: 'Cabine' }, value: '5', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '10', icon: UsersIcon } ] },
+    { id: 'yacht2', name: 'Riva 110 Dolcevita', image: 'https://picsum.photos/seed/riva-dolcevita-yacht-deck/800/600', pricePerDay: { usd: 18000, eur: 16500, crypto: 0.5 }, specs: [ { label: { en: 'Length', it: 'Lunghezza' }, value: '34m', icon: AnchorIcon }, { label: { en: 'Cabins', it: 'Cabine' }, value: '5', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '10', icon: UsersIcon } ] },
+    { id: 'yacht3', name: 'Feadship Symphony', image: 'https://picsum.photos/seed/feadship-yacht-monaco-port/800/600', pricePerDay: { usd: 150000, eur: 138000, crypto: 4.5 }, specs: [ { label: { en: 'Length', it: 'Lunghezza' }, value: '101m', icon: AnchorIcon }, { label: { en: 'Cabins', it: 'Cabine' }, value: '8', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '16', icon: UsersIcon } ] },
+    { id: 'yacht4', name: 'Lürssen Azzam', image: 'https://picsum.photos/seed/lurssen-yacht-sea-aerial/800/600', pricePerDay: { usd: 400000, eur: 368000, crypto: 12 }, specs: [ { label: { en: 'Length', it: 'Lunghezza' }, value: '180m', icon: AnchorIcon }, { label: { en: 'Cabins', it: 'Cabine' }, value: '18', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '36', icon: UsersIcon } ] },
+    { id: 'yacht5', name: 'Benetti Lana', image: 'https://picsum.photos/seed/benetti-lana-yacht-pool/800/600', pricePerDay: { usd: 200000, eur: 184000, crypto: 6 }, specs: [ { label: { en: 'Length', it: 'Lunghezza' }, value: '107m', icon: AnchorIcon }, { label: { en: 'Cabins', it: 'Cabine' }, value: '8', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '12', icon: UsersIcon } ] },
+    { id: 'yacht6', name: 'Sunseeker 131', image: 'https://picsum.photos/seed/sunseeker-yacht-mediterranean/800/600', pricePerDay: { usd: 35000, eur: 32200, crypto: 1 }, specs: [ { label: { en: 'Length', it: 'Lunghezza' }, value: '40m', icon: AnchorIcon }, { label: { en: 'Cabins', it: 'Cabine' }, value: '6', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '12', icon: UsersIcon } ] },
+    { id: 'yacht7', name: 'Princess Y85', image: 'https://picsum.photos/seed/princess-yacht-interior/800/600', pricePerDay: { usd: 15000, eur: 13800, crypto: 0.45 }, specs: [ { label: { en: 'Length', it: 'Lunghezza' }, value: '26m', icon: AnchorIcon }, { label: { en: 'Cabins', it: 'Cabine' }, value: '4', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '8', icon: UsersIcon } ] },
+    { id: 'yacht8', name: 'Ferretti 1000', image: 'https://picsum.photos/seed/ferretti-yacht-sunset-wake/800/600', pricePerDay: { usd: 22000, eur: 20200, crypto: 0.65 }, specs: [ { label: { en: 'Length', it: 'Lunghezza' }, value: '30m', icon: AnchorIcon }, { label: { en: 'Cabins', it: 'Cabine' }, value: '5', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '10', icon: UsersIcon } ] },
 ];
 
 const villaData = [
-    { id: 'villa1', name: 'Villa Oleandra, Lake Como', image: 'https://picsum.photos/seed/villa-lake-como-luxury/800/600', pricePerDay: { usd: 25000, eur: 23000, crypto: 0.7 }, specs: [ { label: { en: 'Bedrooms', it: 'Camere da Letto' }, value: '15', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '30', icon: UsersIcon }, { label: { en: 'Feature', it: 'Caratteristica' }, value: 'Private Dock', icon: AnchorIcon } ] },
+    { id: 'villa1', name: 'Villa Oleandra, Lake Como', image: 'https://picsum.photos/seed/villa-lake-como-luxury-view/800/600', pricePerDay: { usd: 25000, eur: 23000, crypto: 0.7 }, specs: [ { label: { en: 'Bedrooms', it: 'Camere da Letto' }, value: '15', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '30', icon: UsersIcon }, { label: { en: 'Feature', it: 'Caratteristica' }, value: 'Private Dock', icon: AnchorIcon } ] },
+    { id: 'villa2', name: 'Amalfi Coast Haven', image: 'https://picsum.photos/seed/villa-amalfi-coast-cliffs/800/600', pricePerDay: { usd: 18000, eur: 16600, crypto: 0.55 }, specs: [ { label: { en: 'Bedrooms', it: 'Camere da Letto' }, value: '8', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '16', icon: UsersIcon }, { label: { en: 'Feature', it: 'Caratteristica' }, value: 'Infinity Pool', icon: ZapIcon } ] },
+    { id: 'villa3', name: 'Mykonos Grandeur Estate', image: 'https://picsum.photos/seed/villa-mykonos-pool-white/800/600', pricePerDay: { usd: 22000, eur: 20200, crypto: 0.65 }, specs: [ { label: { en: 'Bedrooms', it: 'Camere da Letto' }, value: '12', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '24', icon: UsersIcon }, { label: { en: 'Feature', it: 'Caratteristica' }, value: 'Sea View', icon: WifiIcon } ] },
+    { id: 'villa4', name: 'St. Barts Oceanfront Mansion', image: 'https://picsum.photos/seed/villa-st-barts-beachfront/800/600', pricePerDay: { usd: 45000, eur: 41400, crypto: 1.3 }, specs: [ { label: { en: 'Bedrooms', it: 'Camere da Letto' }, value: '10', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '20', icon: UsersIcon }, { label: { en: 'Feature', it: 'Caratteristica' }, value: 'Private Beach', icon: AnchorIcon } ] },
+    { id: 'villa5', name: 'Courchevel Alpine Chalet', image: 'https://picsum.photos/seed/chalet-courchevel-snow-luxury/800/600', pricePerDay: { usd: 30000, eur: 27600, crypto: 0.9 }, specs: [ { label: { en: 'Bedrooms', it: 'Camere da Letto' }, value: '9', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '18', icon: UsersIcon }, { label: { en: 'Feature', it: 'Caratteristica' }, value: 'Ski-in/Ski-out', icon: CogIcon } ] },
+    { id: 'villa6', name: 'Ibiza Sunset Palace', image: 'https://picsum.photos/seed/villa-ibiza-sunset-modern/800/600', pricePerDay: { usd: 28000, eur: 25700, crypto: 0.85 }, specs: [ { label: { en: 'Bedrooms', it: 'Camere da Letto' }, value: '14', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '28', icon: UsersIcon }, { label: { en: 'Feature', it: 'Caratteristica' }, value: 'DJ Booth & Club', icon: ZapIcon } ] },
 ];
 
 const jetData = [
-    { id: 'jet1', name: 'Gulfstream G700', image: 'https://picsum.photos/seed/gulfstream-g700-jet-sky/800/600', pricePerDay: { usd: 90000, eur: 82000, crypto: 2.5 }, specs: [ { label: { en: 'Range', it: 'Autonomia' }, value: '13,890 km', icon: PaperAirplaneIcon }, { label: { en: 'Passengers', it: 'Passeggeri' }, value: '19', icon: UsersIcon }, { label: { en: 'Wi-Fi', it: 'Wi-Fi' }, value: 'Ka-band', icon: WifiIcon } ] },
+    { id: 'jet1', name: 'Gulfstream G700', image: 'https://picsum.photos/seed/gulfstream-g700-jet-sky-wing/800/600', pricePerDay: { usd: 90000, eur: 82000, crypto: 2.5 }, specs: [ { label: { en: 'Range', it: 'Autonomia' }, value: '13,890 km', icon: PaperAirplaneIcon }, { label: { en: 'Passengers', it: 'Passeggeri' }, value: '19', icon: UsersIcon }, { label: { en: 'Wi-Fi', it: 'Wi-Fi' }, value: 'Ka-band', icon: WifiIcon } ] },
+    { id: 'jet2', name: 'Bombardier Global 8000', image: 'https://picsum.photos/seed/bombardier-global-runway-jet/800/600', pricePerDay: { usd: 120000, eur: 110000, crypto: 3.5 }, specs: [ { label: { en: 'Range', it: 'Autonomia' }, value: '14,816 km', icon: PaperAirplaneIcon }, { label: { en: 'Passengers', it: 'Passeggeri' }, value: '19', icon: UsersIcon }, { label: { en: 'Wi-Fi', it: 'Wi-Fi' }, value: 'High-Speed', icon: WifiIcon } ] },
+    { id: 'jet3', name: 'Cessna Citation Longitude', image: 'https://picsum.photos/seed/cessna-citation-jet-clouds/800/600', pricePerDay: { usd: 55000, eur: 50600, crypto: 1.6 }, specs: [ { label: { en: 'Range', it: 'Autonomia' }, value: '6,482 km', icon: PaperAirplaneIcon }, { label: { en: 'Passengers', it: 'Passeggeri' }, value: '12', icon: UsersIcon }, { label: { en: 'Wi-Fi', it: 'Wi-Fi' }, value: 'Standard', icon: WifiIcon } ] },
 ];
 
 const helicopterData = [
-    { id: 'heli1', name: 'Airbus ACH160', image: 'https://picsum.photos/seed/airbus-ach160-helicopter/800/600', pricePerDay: { usd: 20000, eur: 18500, crypto: 0.6 }, specs: [ { label: { en: 'Range', it: 'Autonomia' }, value: '852 km', icon: PaperAirplaneIcon }, { label: { en: 'Passengers', it: 'Passeggeri' }, value: '10', icon: UsersIcon }, { label: { en: 'Speed', it: 'Velocità' }, value: '287 km/h', icon: ZapIcon } ] },
+    { id: 'heli1', name: 'Airbus ACH160', image: 'https://picsum.photos/seed/airbus-ach160-helicopter-city/800/600', pricePerDay: { usd: 20000, eur: 18500, crypto: 0.6 }, specs: [ { label: { en: 'Range', it: 'Autonomia' }, value: '852 km', icon: PaperAirplaneIcon }, { label: { en: 'Passengers', it: 'Passeggeri' }, value: '10', icon: UsersIcon }, { label: { en: 'Speed', it: 'Velocità' }, value: '287 km/h', icon: ZapIcon } ] },
+    { id: 'heli2', name: 'Bell 525 Relentless', image: 'https://picsum.photos/seed/bell-525-helicopter-mountains/800/600', pricePerDay: { usd: 28000, eur: 25700, crypto: 0.85 }, specs: [ { label: { en: 'Range', it: 'Autonomia' }, value: '926 km', icon: PaperAirplaneIcon }, { label: { en: 'Passengers', it: 'Passeggeri' }, value: '16', icon: UsersIcon }, { label: { en: 'Speed', it: 'Velocità' }, value: '306 km/h', icon: ZapIcon } ] },
+    { id: 'heli3', name: 'Sikorsky S-92', image: 'https://picsum.photos/seed/sikorsky-s92-helicopter-offshore/800/600', pricePerDay: { usd: 35000, eur: 32200, crypto: 1 }, specs: [ { label: { en: 'Range', it: 'Autonomia' }, value: '999 km', icon: PaperAirplaneIcon }, { label: { en: 'Passengers', it: 'Passeggeri' }, value: '19', icon: UsersIcon }, { label: { en: 'Speed', it: 'Velocità' }, value: '280 km/h', icon: ZapIcon } ] },
 ];
 
 
@@ -90,4 +337,56 @@ export const COUNTRIES = [
     { name: 'Sweden', code: 'SE' },
     { name: 'Norway', code: 'NO' },
     { name: 'Denmark', code: 'DK' },
+];
+
+export const GOOGLE_REVIEWS = [
+  {
+    name: 'Alex Johnson',
+    avatar: 'https://avatar.iran.liara.run/username?username=Alex+Johnson',
+    rating: 5,
+    review: 'Unforgettable experience! The Lamborghini was pristine, and the service from DR7 was impeccable. Felt like a VIP from start to finish.',
+    date: '2 weeks ago',
+  },
+  {
+    name: 'Sophia Chen',
+    avatar: 'https://avatar.iran.liara.run/username?username=Sophia+Chen',
+    rating: 5,
+    review: 'Rented a yacht for a day trip. The crew was professional, and the vessel was magnificent. It was the highlight of our vacation in Sardinia.',
+    date: '1 month ago',
+  },
+  {
+    name: 'Liam O\'Connell',
+    avatar: 'https://avatar.iran.liara.run/username?username=Liam+OConnell',
+    rating: 5,
+    review: 'The DR7 Club membership is worth every penny. The concierge service is phenomenal and has arranged everything for me, flawlessly.',
+    date: '3 weeks ago',
+  },
+  {
+    name: 'Isabella Rossi',
+    avatar: 'https://avatar.iran.liara.run/username?username=Isabella+Rossi',
+    rating: 5,
+    review: 'Booking our villa through DR7 was seamless. The property was breathtaking, and their attention to detail made our stay perfect. Highly recommended.',
+    date: '1 week ago',
+  },
+  {
+    name: 'Marcus Holloway',
+    avatar: 'https://avatar.iran.liara.run/username?username=Marcus+Holloway',
+    rating: 4,
+    review: 'Great selection of cars. The pickup process at the airport was smooth. The car had a minor scuff, but it was noted and didn\'t affect the drive.',
+    date: '2 months ago',
+  },
+  {
+    name: 'Chloé Dubois',
+    avatar: 'https://avatar.iran.liara.run/username?username=Chloe+Dubois',
+    rating: 5,
+    review: 'Absolutely first-class service. The private jet charter was handled with utmost professionalism and discretion. Will be using their services again.',
+    date: '1 month ago',
+  },
+  {
+      name: 'Kenji Tanaka',
+      avatar: 'https://avatar.iran.liara.run/username?username=Kenji+Tanaka',
+      rating: 5,
+      review: 'Participated in the lottery and while I didn\'t win the grand prize, the experience was fun and well-organized. A very professional platform.',
+      date: '3 days ago',
+  }
 ];

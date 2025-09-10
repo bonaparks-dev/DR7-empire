@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { RENTAL_CATEGORIES } from '../constants';
 import type { RentalItem } from '../types';
 import RentalCard from '../components/ui/RentalCard';
@@ -17,6 +17,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   const { openBooking } = useBooking();
   const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const category = RENTAL_CATEGORIES.find(cat => cat.id === categoryId);
 
