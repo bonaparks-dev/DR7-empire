@@ -40,7 +40,8 @@ const Header: React.FC = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    const navLinkClasses = "px-3 py-2 text-stone-300 hover:text-amber-400 transition-colors duration-300 relative after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:w-0 after:h-[1px] after:bg-amber-400 after:transition-all after:duration-300 after:-translate-x-1/2 hover:after:w-4/5";
+    const navLinkClasses =
+        "px-3 py-2 text-stone-300 hover:text-amber-400 transition-colors duration-300 relative after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:w-0 after:h-[1px] after:bg-amber-400 after:transition-all after:duration-300 after:-translate-x-1/2 hover:after:w-4/5";
 
     return (
         <motion.header
@@ -50,33 +51,60 @@ const Header: React.FC = () => {
             className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-black/50 backdrop-blur-lg border-b border-stone-800' : 'bg-transparent'}`}
         >
             <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-                <NavLink to="/" className="text-2xl font-bold tracking-wider text-white">
-                    DR<span className="text-amber-400">7</span>
+                {/* Replaced DR7 text with logo image */}
+                <NavLink to="/" className="flex items-center">
+                    <img
+                        src="/DR7logo.png"      // place DR7logo.png in your public/ folder
+                        alt="DR7 Exotic Logo"
+                        className="h-10 w-auto" // adjust size as needed
+                    />
                 </NavLink>
+
                 <nav className="hidden md:flex items-center space-x-2 text-sm font-medium">
-                    {RENTAL_CATEGORIES.map(cat => (
-                         <NavLink key={cat.id} to={`/${cat.id}`} className={({isActive}) => `${navLinkClasses} ${isActive ? 'text-amber-400' : ''}`}>
+                    {RENTAL_CATEGORIES.map((cat) => (
+                        <NavLink
+                            key={cat.id}
+                            to={`/${cat.id}`}
+                            className={({ isActive }) =>
+                                `${navLinkClasses} ${isActive ? 'text-amber-400' : ''}`
+                            }
+                        >
                             {t(cat.label.en.replace(/ /g, '_') as any)}
                         </NavLink>
                     ))}
-                    <NavLink to="/membership" className={({isActive}) => `${navLinkClasses} ${isActive ? 'text-amber-400' : ''}`}>{t('Membership')}</NavLink>
+                    <NavLink
+                        to="/membership"
+                        className={({ isActive }) =>
+                            `${navLinkClasses} ${isActive ? 'text-amber-400' : ''}`
+                        }
+                    >
+                        {t('Membership')}
+                    </NavLink>
                 </nav>
+
                 <div className="flex items-center space-x-4">
                     <LanguageSwitcher />
-                    {!isLoading && (
-                        isLoggedIn ? (
-                             <div className="flex items-center space-x-4">
-                                <span className="text-sm text-stone-300 hidden sm:block">{user?.fullName}</span>
-                                <button onClick={logout} className="px-4 py-2 text-sm font-semibold bg-stone-700 text-white rounded-full hover:bg-stone-600 transition-colors duration-300">
+                    {!isLoading &&
+                        (isLoggedIn ? (
+                            <div className="flex items-center space-x-4">
+                                <span className="text-sm text-stone-300 hidden sm:block">
+                                    {user?.fullName}
+                                </span>
+                                <button
+                                    onClick={logout}
+                                    className="px-4 py-2 text-sm font-semibold bg-stone-700 text-white rounded-full hover:bg-stone-600 transition-colors duration-300"
+                                >
                                     {t('Sign_Out')}
                                 </button>
                             </div>
                         ) : (
-                            <Link to="/signin" className="px-4 py-2 text-sm font-semibold bg-amber-400 text-black rounded-full hover:bg-amber-300 transition-colors duration-300 transform hover:scale-105">
+                            <Link
+                                to="/signin"
+                                className="px-4 py-2 text-sm font-semibold bg-amber-400 text-black rounded-full hover:bg-amber-300 transition-colors duration-300 transform hover:scale-105"
+                            >
                                 {t('Sign_In')}
                             </Link>
-                        )
-                    )}
+                        ))}
                 </div>
             </div>
         </motion.header>
