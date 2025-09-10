@@ -18,7 +18,8 @@ const HeroSection: React.FC = () => {
           playsInline
           className="w-full h-full object-cover brightness-50"
         />
-        <div className="absolute inset-0 bg-black/60"></div>
+        {/* Lighter black overlay */}
+        <div className="absolute inset-0 bg-black/30"></div>
       </div>
 
       {/* Text Overlay */}
@@ -27,7 +28,8 @@ const HeroSection: React.FC = () => {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-5xl md:text-8xl font-black text-white uppercase tracking-wider"
+          className="text-4xl md:text-6xl font-bold text-white uppercase tracking-wider"
+          style={{ fontFamily: '"The Seasons", serif' }}
         >
           {t('Experience_Exclusivity')}
         </motion.h1>
@@ -35,7 +37,8 @@ const HeroSection: React.FC = () => {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="text-3xl md:text-6xl font-light text-white mt-2"
+          className="text-2xl md:text-4xl font-light text-white mt-2"
+          style={{ fontFamily: '"The Seasons", serif' }}
         >
           {t('Redefined_Luxury')}
         </motion.h2>
@@ -163,9 +166,7 @@ const HomePage: React.FC = () => {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="mt-4 text-lg text-gray-400 max-w-2xl mx-auto"
           >
-            {t(
-              'Unlock_a_new_level_of_luxury_with_our_exclusive_membership_tiers'
-            )}
+            {t('Unlock_a_new_level_of_luxury_with_our_exclusive_membership_tiers')}
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
