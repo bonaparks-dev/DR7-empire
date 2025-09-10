@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
-import { InstagramIcon, FacebookIcon, TwitterIcon, YoutubeIcon } from '../icons/Icons';
+import { InstagramIcon, FacebookIcon, TwitterIcon, YoutubeIcon, TiktokIcon } from '../icons/Icons';
 import GoogleReviews from '../ui/GoogleReviews';
 
 const Footer: React.FC = () => {
@@ -25,10 +25,16 @@ const Footer: React.FC = () => {
             <h3 className="text-2xl font-bold text-white mb-2">{t('Stay_Connected')}</h3>
             <p className="text-sm mb-4">{t('Receive_exclusive_offers_and_fleet_updates')}</p>
             <div className="flex space-x-4">
-              <a href="#" aria-label="Instagram" className="text-gray-400 hover:text-white transition-colors"><InstagramIcon className="w-7 h-7" /></a>
-              <a href="#" aria-label="Facebook" className="text-gray-400 hover:text-white transition-colors"><FacebookIcon className="w-7 h-7" /></a>
-              <a href="#" aria-label="Twitter" className="text-gray-400 hover:text-white transition-colors"><TwitterIcon className="w-7 h-7" /></a>
-              <a href="#" aria-label="YouTube" className="text-gray-400 hover:text-white transition-colors"><YoutubeIcon className="w-7 h-7" /></a>
+              <a href="https://www.instagram.com/dubai_rent_7.0_luxury_empire/" aria-label="Instagram" className="text-gray-400 hover:text-white transition-colors">
+                <InstagramIcon className="w-7 h-7" />
+              </a>
+              <a href="#" aria-label="Tiktok" className="text-gray-400 hover:text-white transition-colors">
+                <TiktokIcon className="w-7 h-7" />
+              </a>
+              {/* Optional: keep others if you need them */}
+              {/* <a href="#" aria-label="Facebook" className="text-gray-400 hover:text-white transition-colors"><FacebookIcon className="w-7 h-7" /></a> */}
+              {/* <a href="#" aria-label="Twitter" className="text-gray-400 hover:text-white transition-colors"><TwitterIcon className="w-7 h-7" /></a> */}
+              {/* <a href="#" aria-label="YouTube" className="text-gray-400 hover:text-white transition-colors"><YoutubeIcon className="w-7 h-7" /></a> */}
             </div>
           </div>
           <form onSubmit={handleSubscribe} className="flex items-center w-full">
@@ -48,7 +54,7 @@ const Footer: React.FC = () => {
 
         {/* Reviews Section */}
         <div className="mb-12 pb-12 border-b border-gray-800">
-            <GoogleReviews />
+          <GoogleReviews />
         </div>
 
         {/* Middle Section: Links */}
@@ -82,10 +88,10 @@ const Footer: React.FC = () => {
 
         {/* Bottom Section: Copyright */}
         <div className="mt-12 pt-8 text-center">
-            <Link to="/" className="mb-4 inline-block">
-                <img src="/DR7logo.png" alt="DR7 Empire Logo" className="h-12 w-auto mx-auto" />
-            </Link>
-            <p className="text-sm">&copy; {new Date().getFullYear()} DR7 Empire. {t('All_Rights_Reserved')}</p>
+          <Link to="/" className="mb-4 inline-block">
+            <img src="/DR7logo.png" alt="DR7 Empire Logo" className="h-12 w-auto mx-auto" />
+          </Link>
+          <p className="text-sm">&copy; {new Date().getFullYear()} DR7 Empire. {t('All_Rights_Reserved')}</p>
         </div>
       </div>
     </footer>
