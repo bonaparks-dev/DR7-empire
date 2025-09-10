@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useMemo } from 'react';
 import type { User } from '../types';
 
@@ -8,6 +9,9 @@ interface AuthContextType {
   login: (email: string, fullName?: string) => void;
   logout: () => void;
   signup: (email: string, fullName: string) => void;
+  updateUser: (updatedData: Partial<User>) => void;
+  loginWithGoogle: () => void;
+  updateMembership: (tierId: string, billingCycle: 'monthly' | 'annually') => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -50,6 +54,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
+  const updateUser = (updatedData: Partial<User>) => {
+    if (user) {
+        const newUser = { ...user, ...updatedData };
+        setUser(newUser);
+        localStorage.setItem('dr7-user', JSON.stringify(newUser));
+    }
+  };
+
+  const updateMembership = (tierId: string, billingCycle: 'monthly' | 'annually') => {
+    if (user) {
+        const renewalDate = new Date();
+        if (billingCycle === 'monthly') {
+            renewalDate.setMonth(renewalDate.getMonth() + 1);
+        } else {
+            renewalDate.setFullYear(renewalDate.getFullYear() + 1);
+        }
+
+        const newUser: User = {
+            ...user,
+            membership: {
+                tierId,
+                billingCycle,
+                renewalDate: renewalDate.toISOString(),
+            }
+        };
+        setUser(newUser);
+        localStorage.setItem('dr7-user', JSON.stringify(newUser));
+    }
+  };
+
+  const loginWithGoogle = () => {
+    // In a real app, this would open a Google Sign-In popup and handle the response.
+    // For this mock, we'll create a predefined Google user.
+    const googleUser: User = {
+      id: crypto.randomUUID(),
+      fullName: 'Google User',
+      email: 'google.user@example.com',
+      profilePicture: `https://avatar.iran.liara.run/username?username=Google+User`
+    };
+    localStorage.setItem('dr7-user', JSON.stringify(googleUser));
+    setUser(googleUser);
+  };
+
   const value = useMemo(() => ({
     user,
     isLoggedIn: !!user,
@@ -57,6 +104,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     logout,
     signup,
+    updateUser,
+    loginWithGoogle,
+    updateMembership,
   }), [user, isLoading]);
 
   return (

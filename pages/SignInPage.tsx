@@ -1,19 +1,21 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { GoogleIcon, WalletIcon } from '../components/icons/Icons';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 const SignInPage: React.FC = () => {
     const { t } = useTranslation();
-    const { login } = useAuth();
+    const { login, loginWithGoogle } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');
+
+    const from = location.state?.from?.pathname || "/";
 
     const validateEmail = (emailToValidate: string) => {
         if (!emailToValidate) {
@@ -54,8 +56,13 @@ const SignInPage: React.FC = () => {
         if (!emailValError && !passValError) {
             // Mock login logic: any valid email and non-empty password works
             login(email, 'Example User'); // In a real app, you'd fetch the user's name
-            navigate('/');
+            navigate(from, { replace: true });
         }
+    };
+
+    const handleGoogleSignIn = () => {
+        loginWithGoogle();
+        navigate(from, { replace: true });
     };
 
     return (
@@ -81,7 +88,10 @@ const SignInPage: React.FC = () => {
                         </div>
 
                         <div className="space-y-4">
-                            <button className="w-full flex items-center justify-center py-3 px-4 border border-stone-700 rounded-md shadow-sm bg-stone-800 text-sm font-medium text-white hover:bg-stone-700 transition-colors">
+                            <button 
+                                type="button"
+                                onClick={handleGoogleSignIn}
+                                className="w-full flex items-center justify-center py-3 px-4 border border-stone-700 rounded-md shadow-sm bg-stone-800 text-sm font-medium text-white hover:bg-stone-700 transition-colors">
                                 <GoogleIcon className="w-5 h-5 mr-2" />
                                 {t('Sign_in_with_Google')}
                             </button>
@@ -113,7 +123,7 @@ const SignInPage: React.FC = () => {
                                 {emailError && <p className="mt-2 text-xs text-red-500">{emailError}</p>}
                             </div>
                             <div>
-                                <label htmlFor="password">{t('Password')}</label>
+                                <label htmlFor="password" className="sr-only">{t('Password')}</label>
                                 <input id="password" name="password" type="password" autoComplete="current-password" required
                                     className={`appearance-none rounded-md relative block w-full px-3 py-3 border bg-stone-800 text-white placeholder-stone-400 focus:outline-none focus:ring-amber-500 focus:border-amber-500 focus:z-10 sm:text-sm ${passwordError ? 'border-red-500' : 'border-stone-700'}`}
                                     placeholder={t('Password')}

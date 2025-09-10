@@ -1,6 +1,7 @@
 import React from 'react';
 import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { CurrencyProvider } from './contexts/CurrencyContext';
 import { BookingProvider } from './contexts/BookingContext';
 import { AuthProvider } from './contexts/AuthContext';
 import Header from './components/layout/Header';
@@ -14,6 +15,12 @@ import BookingModal from './components/ui/BookingModal';
 import SignInPage from './pages/SignInPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import SignUpPage from './pages/SignUpPage';
+import AccountPage from './pages/AccountPage';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import BookingPage from './pages/BookingPage';
+import ClubEnrollmentPage from './pages/ClubEnrollmentPage';
+import ClubDashboardPage from './pages/ClubDashboardPage';
+import LotteryPage from './pages/LotteryPage';
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -28,10 +35,50 @@ const AnimatedRoutes = () => {
                 element={<RentalPage categoryId={category.id} />} 
             />
         ))}
+        <Route 
+            path="/book/:category/:itemId"
+            element={
+                <ProtectedRoute>
+                    <BookingPage />
+                </ProtectedRoute>
+            }
+        />
         <Route path="/membership" element={<MembershipPage />} />
+        <Route 
+            path="/lottery"
+            element={
+                <ProtectedRoute>
+                    <LotteryPage />
+                </ProtectedRoute>
+            }
+        />
+        <Route 
+            path="/enroll/:tierId"
+            element={
+                <ProtectedRoute>
+                    <ClubEnrollmentPage />
+                </ProtectedRoute>
+            }
+        />
+         <Route 
+            path="/club-dashboard"
+            element={
+                <ProtectedRoute>
+                    <ClubDashboardPage />
+                </ProtectedRoute>
+            }
+        />
         <Route path="/signin" element={<SignInPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route 
+            path="/account/:tab?" 
+            element={
+                <ProtectedRoute>
+                    <AccountPage />
+                </ProtectedRoute>
+            } 
+        />
       </Routes>
     </AnimatePresence>
   );
@@ -56,23 +103,25 @@ const PageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const App = () => {
   return (
     <LanguageProvider>
-      <BookingProvider>
-        <AuthProvider>
-          <HashRouter>
-            <div className="bg-black min-h-screen font-sans antialiased relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-full bg-grid-white/[0.05] z-0"></div>
-              <div className="relative z-10">
-                <Header />
-                <main>
-                  <AnimatedRoutes />
-                </main>
-                <Footer />
+      <CurrencyProvider>
+        <BookingProvider>
+          <AuthProvider>
+            <HashRouter>
+              <div className="bg-black min-h-screen font-sans antialiased relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-full bg-grid-white/[0.05] z-0"></div>
+                <div className="relative z-10">
+                  <Header />
+                  <main>
+                    <AnimatedRoutes />
+                  </main>
+                  <Footer />
+                </div>
+                <BookingModal />
               </div>
-              <BookingModal />
-            </div>
-          </HashRouter>
-        </AuthProvider>
-      </BookingProvider>
+            </HashRouter>
+          </AuthProvider>
+        </BookingProvider>
+      </CurrencyProvider>
     </LanguageProvider>
   );
 };

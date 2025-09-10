@@ -1,6 +1,7 @@
 import React from 'react';
 import type { RentalItem } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useCurrency } from '../../contexts/CurrencyContext';
 import { motion } from 'framer-motion';
 
 interface RentalCardProps {
@@ -9,12 +10,13 @@ interface RentalCardProps {
 }
 
 const RentalCard: React.FC<RentalCardProps> = ({ item, onBook }) => {
-  const { t, lang, getTranslated } = useTranslation();
+  const { t, getTranslated } = useTranslation();
+  const { currency } = useCurrency();
   
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat(lang === 'it' ? 'it-IT' : 'en-US', {
+    return new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', {
       style: 'currency',
-      currency: lang === 'it' ? 'EUR' : 'USD',
+      currency: currency.toUpperCase(),
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(price);
@@ -47,7 +49,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook }) => {
         </div>
         <div className="flex justify-between items-center mt-6">
           <div>
-            <span className="text-xl font-bold text-white">{formatPrice(lang === 'it' ? item.pricePerDay.eur : item.pricePerDay.usd)}</span>
+            <span className="text-xl font-bold text-white">{formatPrice(item.pricePerDay[currency])}</span>
             <span className="text-sm text-stone-400 ml-1">/{t('per_day')}</span>
           </div>
           <button 

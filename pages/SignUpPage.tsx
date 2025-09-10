@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
@@ -28,7 +27,7 @@ const calculatePasswordStrength = (password: string) => {
 
 const SignUpPage: React.FC = () => {
     const { t } = useTranslation();
-    const { signup } = useAuth();
+    const { signup, loginWithGoogle } = useAuth();
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         fullName: '',
@@ -94,6 +93,11 @@ const SignUpPage: React.FC = () => {
         }
     };
 
+    const handleGoogleSignUp = () => {
+        loginWithGoogle();
+        navigate('/');
+    };
+
     const getInputClassName = (field: string) => `appearance-none rounded-md relative block w-full px-3 py-3 border bg-stone-800 text-white placeholder-stone-400 focus:outline-none focus:ring-amber-500 focus:border-amber-500 focus:z-10 sm:text-sm ${errors[field] ? 'border-red-500' : 'border-stone-700'}`;
 
     return (
@@ -119,7 +123,10 @@ const SignUpPage: React.FC = () => {
                         </div>
 
                         <div className="space-y-4">
-                            <button className="w-full flex items-center justify-center py-3 px-4 border border-stone-700 rounded-md shadow-sm bg-stone-800 text-sm font-medium text-white hover:bg-stone-700 transition-colors">
+                            <button
+                                type="button"
+                                onClick={handleGoogleSignUp}
+                                className="w-full flex items-center justify-center py-3 px-4 border border-stone-700 rounded-md shadow-sm bg-stone-800 text-sm font-medium text-white hover:bg-stone-700 transition-colors">
                                 <GoogleIcon className="w-5 h-5 mr-2" />
                                 {t('Sign_in_with_Google')}
                             </button>

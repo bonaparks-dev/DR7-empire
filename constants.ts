@@ -1,5 +1,4 @@
-
-import type { RentalCategory, MembershipTier } from './types';
+import type { RentalCategory, MembershipTier, Lottery } from './types';
 import { UsersIcon, CogIcon, ZapIcon, AnchorIcon, HomeIcon, PaperAirplaneIcon, WifiIcon } from './components/icons/Icons';
 
 const carData = [
@@ -30,12 +29,65 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
     { id: 'cars', label: { en: 'Supercars', it: 'Supercar' }, data: carData },
     { id: 'yachts', label: { en: 'Yachts', it: 'Yacht' }, data: yachtData },
     { id: 'villas', label: { en: 'Villas', it: 'Ville' }, data: villaData },
-    { id: 'jets', label: { en: 'Private Jets', it: 'Jet Privati' }, data: jetData },
     { id: 'helicopters', label: { en: 'Helicopters', it: 'Elicotteri' }, data: helicopterData },
+    { id: 'jets', label: { en: 'Private Jets', it: 'Jet Privati' }, data: jetData },
 ];
 
 export const MEMBERSHIP_TIERS: MembershipTier[] = [
     { id: 'basic', name: { en: 'Basic', it: 'Base' }, price: { monthly: { usd: 500, eur: 450, crypto: 0.015 }, annually: { usd: 5000, eur: 4500, crypto: 0.15 } }, features: { en: ['Access to premium rentals', 'Standard support', 'Basic event invites'], it: ['Accesso a noleggi premium', 'Supporto standard', 'Inviti a eventi base'] } },
     { id: 'premium', name: { en: 'Premium', it: 'Premium' }, price: { monthly: { usd: 1500, eur: 1350, crypto: 0.045 }, annually: { usd: 15000, eur: 13500, crypto: 0.45 } }, features: { en: ['All Basic features', 'Priority booking', '24/7 concierge service', 'Exclusive event access'], it: ['Tutti i vantaggi Base', 'Prenotazione prioritaria', 'Servizio concierge 24/7', 'Accesso a eventi esclusivi'] }, isPopular: true },
     { id: 'signature', name: { en: 'Signature', it: 'Signature' }, price: { monthly: { usd: 5000, eur: 4600, crypto: 0.15 }, annually: { usd: 50000, eur: 46000, crypto: 1.5 } }, features: { en: ['All Premium features', 'Guaranteed availability', 'Personal lifestyle manager', 'Access to off-market assets'], it: ['Tutti i vantaggi Premium', 'Disponibilità garantita', 'Manager personale lifestyle', 'Accesso a beni fuori mercato'] } },
+];
+
+export const LOTTERY_GIVEAWAY: Lottery = {
+  id: 'giveaway1',
+  name: { en: 'Win a Lamborghini Revuelto', it: 'Vinci una Lamborghini Revuelto' },
+  description: { 
+    en: 'Participate in the DR7 Lottery for a chance to win the revolutionary Lamborghini Revuelto. With its V12 hybrid engine, this masterpiece of engineering could be yours. Each ticket brings you one step closer to owning a legend.',
+    it: 'Partecipa alla Lotteria DR7 per avere la possibilità di vincere la rivoluzionaria Lamborghini Revuelto. Con il suo motore ibrido V12, questo capolavoro di ingegneria potrebbe essere tuo. Ogni biglietto ti avvicina a possedere una leggenda.'
+  },
+  image: 'https://picsum.photos/seed/revuelto/1200/800',
+  ticketPriceUSD: 22,
+  ticketPriceEUR: 20,
+  drawDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days from now
+};
+
+export const PICKUP_LOCATIONS = [
+  { id: 'cagliari_airport', label: { en: 'Cagliari Elmas Airport', it: 'Aeroporto di Cagliari Elmas' } },
+  { id: 'dr7_office', label: { en: 'DR7 Office Cagliari', it: 'Ufficio DR7 Cagliari' } },
+];
+
+export const INSURANCE_OPTIONS = [
+  { id: 'basic', label: { en: 'Basic Cover', it: 'Copertura Base' }, description: { en: 'Standard liability coverage.', it: 'Copertura di responsabilità standard.' }, pricePerDay: { usd: 0, eur: 0 } },
+  { id: 'premium', label: { en: 'Premium Cover', it: 'Copertura Premium' }, description: { en: 'Reduced excess and windscreen cover.', it: 'Franchigia ridotta e copertura parabrezza.' }, pricePerDay: { usd: 30, eur: 28 } },
+  { id: 'full', label: { en: 'Full Cover', it: 'Copertura Completa' }, description: { en: 'Zero excess. Complete peace of mind.', it: 'Zero franchigia. Massima tranquillità.' }, pricePerDay: { usd: 50, eur: 46 } },
+];
+
+export const RENTAL_EXTRAS = [
+  { id: 'gps', label: { en: 'GPS Navigation', it: 'Navigatore GPS' }, pricePerDay: { usd: 10, eur: 9 } },
+  { id: 'child_seat', label: { en: 'Child Seat', it: 'Seggiolino per Bambini' }, pricePerDay: { usd: 15, eur: 14 } },
+  { id: 'additional_driver', label: { en: 'Additional Driver', it: 'Guidatore Aggiuntivo' }, pricePerDay: { usd: 25, eur: 23 } },
+];
+
+export const COUNTRIES = [
+    { name: 'United States', code: 'US' },
+    { name: 'United Kingdom', code: 'GB' },
+    { name: 'Italy', code: 'IT' },
+    { name: 'France', code: 'FR' },
+    { name: 'Germany', code: 'DE' },
+    { name: 'Spain', code: 'ES' },
+    { name: 'United Arab Emirates', code: 'AE' },
+    { name: 'Switzerland', code: 'CH' },
+    { name: 'Monaco', code: 'MC' },
+    { name: 'Canada', code: 'CA' },
+    { name: 'Australia', code: 'AU' },
+    { name: 'Japan', code: 'JP' },
+    { name: 'China', code: 'CN' },
+    { name: 'Russia', code: 'RU' },
+    { name: 'Brazil', code: 'BR' },
+    { name: 'India', code: 'IN' },
+    { name: 'Netherlands', code: 'NL' },
+    { name: 'Sweden', code: 'SE' },
+    { name: 'Norway', code: 'NO' },
+    { name: 'Denmark', code: 'DK' },
 ];

@@ -1,5 +1,5 @@
-
 export type Language = 'en' | 'it';
+export type Currency = 'usd' | 'eur';
 
 export interface Translations {
   [key: string]: {
@@ -47,10 +47,18 @@ export interface User {
   id: string;
   fullName: string;
   email: string;
+  phone?: string;
+  profilePicture?: string; // base64 string
+  membership?: {
+    tierId: string;
+    billingCycle: 'monthly' | 'annually';
+    renewalDate: string;
+  }
 }
 
 export interface Booking {
   bookingId: string;
+  userId: string;
   itemId: string;
   itemName: string;
   image: string;
@@ -66,8 +74,22 @@ export interface Booking {
     email: string;
     phone: string;
     age: number;
+    countryOfResidency: string;
   };
   driverLicenseImage: string; // base64 encoded string
   paymentMethod: 'stripe' | 'crypto';
   bookedAt: string;
+  pickupLocation?: string;
+  insuranceOption?: string; // e.g., 'premium'
+  extras?: string[]; // e.g., ['gps', 'child_seat']
+}
+
+export interface Lottery {
+  id: string;
+  name: { en: string; it: string };
+  description: { en: string; it: string };
+  image: string;
+  ticketPriceUSD: number;
+  ticketPriceEUR: number;
+  drawDate: string; // ISO string
 }

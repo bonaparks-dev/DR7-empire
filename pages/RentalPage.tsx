@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RENTAL_CATEGORIES } from '../constants';
 import type { RentalItem } from '../types';
 import RentalCard from '../components/ui/RentalCard';
-import CarBookingWizard from '../components/ui/CarBookingWizard';
 import { useTranslation } from '../hooks/useTranslation';
 import { useBooking } from '../hooks/useBooking';
 import { useAuth } from '../hooks/useAuth';
@@ -19,20 +18,15 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
   
-  const [wizardItem, setWizardItem] = useState<RentalItem | null>(null);
-
   const category = RENTAL_CATEGORIES.find(cat => cat.id === categoryId);
 
   const handleBook = (item: RentalItem) => {
-    if (categoryId === 'cars') {
-      if (!isLoggedIn) {
-        navigate('/signin');
-      } else {
-        setWizardItem(item);
-      }
-    } else {
-      openBooking(item);
+    if (!isLoggedIn) {
+      navigate('/signin', { state: { from: location } });
+      return;
     }
+      
+    navigate(`/book/${categoryId}/${item.id}`);
   };
 
   if (!category) {
@@ -80,7 +74,6 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
                 </motion.div>
             </div>
         </div>
-        {wizardItem && <CarBookingWizard item={wizardItem} onClose={() => setWizardItem(null)} />}
     </motion.div>
   );
 };

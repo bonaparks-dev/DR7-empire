@@ -2,12 +2,16 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useBooking } from '../../hooks/useBooking';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useCurrency } from '../../contexts/CurrencyContext';
+import { useAuth } from '../../hooks/useAuth';
 import type { Booking } from '../../types';
 import { XIcon } from '../icons/Icons';
 
 const BookingModal: React.FC = () => {
     const { isBookingOpen, closeBooking, bookingItem } = useBooking();
     const { t, lang, getTranslated } = useTranslation();
+    const { currency } = useCurrency();
+    const { user } = useAuth();
     
     const [pickupDate, setPickupDate] = useState('');
     const [returnDate, setReturnDate] = useState('');
@@ -15,51 +19,65 @@ const BookingModal: React.FC = () => {
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
     const [isConfirmed, setIsConfirmed] = useState(false);
+    const [completedBooking, setCompletedBooking] = useState<Booking | null>(null);
     
+    useEffect(() => {
+        if (user) {
+            setFullName(user.fullName);
+            setEmail(user.email);
+            if(user.phone) setPhone(user.phone);
+        }
+    }, [user]);
+
     const today = new Date().toISOString().split('T')[0];
 
     const { totalDays, totalPrice } = useMemo(() => {
-        if (pickupDate && returnDate) {
+        if (pickupDate && returnDate && bookingItem) {
             const start = new Date(pickupDate);
             const end = new Date(returnDate);
             if (start < end) {
                 const diffTime = Math.abs(end.getTime() - start.getTime());
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                const pricePerDay = lang === 'it' ? bookingItem?.pricePerDay.eur : bookingItem?.pricePerDay.usd;
-                return { totalDays: diffDays, totalPrice: diffDays * (pricePerDay || 0) };
+                const pricePerDay = bookingItem.pricePerDay[currency] || 0;
+                return { totalDays: diffDays, totalPrice: diffDays * pricePerDay };
             }
         }
         return { totalDays: 0, totalPrice: 0 };
-    }, [pickupDate, returnDate, lang, bookingItem]);
+    }, [pickupDate, returnDate, currency, bookingItem]);
 
     const formatPrice = (price: number) => {
-        return new Intl.NumberFormat(lang === 'it' ? 'it-IT' : 'en-US', {
+        return new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', {
           style: 'currency',
-          currency: lang === 'it' ? 'EUR' : 'USD',
+          currency: currency.toUpperCase(),
           minimumFractionDigits: 0,
         }).format(price);
     };
+
+    const formatDate = (date: string) => new Date(date).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
     const handleClose = () => {
         closeBooking();
         setTimeout(() => {
             setIsConfirmed(false);
+            setCompletedBooking(null);
             setPickupDate('');
             setReturnDate('');
-            setFullName('');
-            setEmail('');
             setPhone('');
+            // Don't reset name and email if user is logged in
+            if (!user) {
+                setFullName('');
+                setEmail('');
+            }
         }, 300); // Reset form after animation
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!bookingItem || totalDays <= 0) return;
+        if (!bookingItem || totalDays <= 0 || !user) return;
 
-        // Fix: The `newBooking` object must conform to the `Booking` type.
-        // This involves adding missing properties with default values and using `duration` instead of `totalDays`.
         const newBooking: Booking = {
             bookingId: crypto.randomUUID(),
+            userId: user.id,
             itemId: bookingItem.id,
             itemName: bookingItem.name,
             image: bookingItem.image,
@@ -69,8 +87,9 @@ const BookingModal: React.FC = () => {
             returnTime: '11:00', // Default check-out time for non-car rentals
             duration: `${totalDays} ${totalDays === 1 ? t('Night') : t('Nights')}`,
             totalPrice,
-            currency: lang === 'it' ? 'EUR' : 'USD',
-            customer: { fullName, email, phone, age: 0 }, // Added age: 0 as it's not collected in this modal.
+            currency: currency.toUpperCase() as 'USD' | 'EUR',
+            // FIX: Added 'countryOfResidency'. This and 'age' are not collected in this modal.
+            customer: { fullName, email, phone, age: 0, countryOfResidency: '' },
             driverLicenseImage: '', // Not applicable for non-car rentals
             paymentMethod: 'stripe', // Default payment method
             bookedAt: new Date().toISOString(),
@@ -79,6 +98,7 @@ const BookingModal: React.FC = () => {
         const existingBookings = JSON.parse(localStorage.getItem('bookings') || '[]') as Booking[];
         localStorage.setItem('bookings', JSON.stringify([...existingBookings, newBooking]));
         
+        setCompletedBooking(newBooking);
         setIsConfirmed(true);
     };
 
@@ -123,11 +143,11 @@ const BookingModal: React.FC = () => {
                                             </div>
                                             <div>
                                                 <label htmlFor="fullName" className="block text-sm font-medium text-stone-300">{t('Full_Name')}</label>
-                                                <input type="text" id="fullName" value={fullName} onChange={e => setFullName(e.target.value)} required className="mt-1 block w-full bg-stone-800 border-stone-600 rounded-md shadow-sm text-white focus:ring-amber-400 focus:border-amber-400" />
+                                                <input type="text" id="fullName" value={fullName} onChange={e => setFullName(e.target.value)} required disabled={!!user} className="mt-1 block w-full bg-stone-800 border-stone-600 rounded-md shadow-sm text-white focus:ring-amber-400 focus:border-amber-400 disabled:text-stone-400 disabled:cursor-not-allowed" />
                                             </div>
                                             <div>
                                                 <label htmlFor="email" className="block text-sm font-medium text-stone-300">{t('Email_Address')}</label>
-                                                <input type="email" id="email" value={email} onChange={e => setEmail(e.target.value)} required className="mt-1 block w-full bg-stone-800 border-stone-600 rounded-md shadow-sm text-white focus:ring-amber-400 focus:border-amber-400" />
+                                                <input type="email" id="email" value={email} onChange={e => setEmail(e.target.value)} required disabled={!!user} className="mt-1 block w-full bg-stone-800 border-stone-600 rounded-md shadow-sm text-white focus:ring-amber-400 focus:border-amber-400 disabled:text-stone-400 disabled:cursor-not-allowed" />
                                             </div>
                                             <div>
                                                 <label htmlFor="phone" className="block text-sm font-medium text-stone-300">{t('Phone_Number')}</label>
@@ -150,7 +170,7 @@ const BookingModal: React.FC = () => {
 
                                         <div className="flex-grow">
                                             <div className="flex justify-between items-center text-stone-300">
-                                                <span>{formatPrice(lang === 'it' ? bookingItem.pricePerDay.eur : bookingItem.pricePerDay.usd)} x {totalDays} {totalDays === 1 ? t('Night') : t('Nights')}</span>
+                                                <span>{formatPrice(bookingItem.pricePerDay[currency])} x {totalDays} {totalDays === 1 ? t('Night') : t('Nights')}</span>
                                                 <span>{formatPrice(totalPrice)}</span>
                                             </div>
                                             <div className="border-t border-stone-700 my-4"></div>
@@ -166,16 +186,48 @@ const BookingModal: React.FC = () => {
                                 </div>
                             </form>
                         ) : (
-                            <div className="text-center p-12 flex flex-col items-center justify-center min-h-[300px]">
-                                <motion.div initial={{scale:0}} animate={{scale:1}} transition={{type: 'spring', stiffness: 260, damping: 20}} className="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mb-6">
-                                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                                </motion.div>
-                                <h2 className="text-3xl font-bold text-amber-400 mb-2">{t('Booking_Confirmed')}</h2>
-                                <p className="text-stone-300">{t('Your_booking_is_confirmed')}</p>
-                                <p className="text-stone-400 text-sm">{t('A_confirmation_email_has_been_sent')}</p>
-                                <button onClick={handleClose} className="mt-8 bg-stone-700 text-white px-6 py-2 rounded-full font-semibold text-sm hover:bg-stone-600 transition-colors">
-                                    {t('Close')}
-                                </button>
+                            <div className="p-8">
+                                <div className="text-center mb-6">
+                                    <motion.div initial={{scale:0}} animate={{scale:1}} transition={{type: 'spring', stiffness: 260, damping: 20}} className="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                    </motion.div>
+                                    <h2 className="text-3xl font-bold text-amber-400 mb-2">{t('Booking_Confirmed')}</h2>
+                                    <p className="text-stone-300">{t('Your_booking_is_confirmed')}</p>
+                                    <p className="text-stone-400 text-sm">{t('A_confirmation_email_has_been_sent')}</p>
+                                </div>
+                                
+                                {completedBooking && (
+                                    <div className="bg-stone-800/50 p-6 rounded-lg border border-stone-700 space-y-3 text-sm max-w-md mx-auto">
+                                        <h3 className="text-lg font-bold text-white text-center mb-4">{t('Booking_Details')}</h3>
+                                        <div className="flex justify-between">
+                                            <span className="text-stone-400">{t('Item')}</span>
+                                            <span className="font-semibold text-white text-right">{completedBooking.itemName}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-stone-400">{t('Dates')}</span>
+                                            <span className="font-semibold text-white text-right">{formatDate(completedBooking.pickupDate)} - {formatDate(completedBooking.returnDate)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-stone-400">{t('Duration')}</span>
+                                            <span className="font-semibold text-white text-right">{completedBooking.duration}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-stone-400">{t('Full_Name')}</span>
+                                            <span className="font-semibold text-white text-right">{completedBooking.customer.fullName}</span>
+                                        </div>
+                                        <div className="border-t border-stone-700 my-3"></div>
+                                        <div className="flex justify-between items-center text-lg">
+                                            <span className="text-stone-300 font-bold">{t('Total_Price')}</span>
+                                            <span className="font-bold text-amber-400">{formatPrice(completedBooking.totalPrice)}</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="text-center mt-8">
+                                    <button onClick={handleClose} className="bg-stone-700 text-white px-6 py-2 rounded-full font-semibold text-sm hover:bg-stone-600 transition-colors">
+                                        {t('Close')}
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </motion.div>
