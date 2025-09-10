@@ -2,7 +2,6 @@ import React from 'react';
 import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
-import { BookingProvider } from './contexts/BookingContext';
 import { AuthProvider } from './contexts/AuthContext';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
@@ -11,7 +10,6 @@ import RentalPage from './pages/RentalPage';
 import MembershipPage from './pages/MembershipPage';
 import { RENTAL_CATEGORIES } from './constants';
 import { AnimatePresence, motion } from 'framer-motion';
-import BookingModal from './components/ui/BookingModal';
 import SignInPage from './pages/SignInPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import SignUpPage from './pages/SignUpPage';
@@ -104,7 +102,6 @@ const App = () => {
   return (
     <LanguageProvider>
       <CurrencyProvider>
-        <BookingProvider>
           <AuthProvider>
             <HashRouter>
               <div className="bg-black min-h-screen font-sans antialiased relative overflow-hidden">
@@ -116,11 +113,9 @@ const App = () => {
                   </main>
                   <Footer />
                 </div>
-                <BookingModal />
               </div>
             </HashRouter>
           </AuthProvider>
-        </BookingProvider>
       </CurrencyProvider>
     </LanguageProvider>
   );

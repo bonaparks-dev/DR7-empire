@@ -1,6 +1,6 @@
 
 import React, { createContext, useState, useEffect, useMemo } from 'react';
-import type { User } from '../types';
+import type { User, PaymentMethod, IDDocument } from '../types';
 
 interface AuthContextType {
   user: User | null;
@@ -35,16 +35,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const createNewUser = (email: string, fullName: string, profilePicture?: string): User => ({
+    id: crypto.randomUUID(),
+    email,
+    fullName,
+    profilePicture,
+    paymentMethods: [
+        { id: 'pm_1', brand: 'Visa', last4: '4242', expiryMonth: 12, expiryYear: 2028, isDefault: true },
+        { id: 'pm_2', brand: 'Mastercard', last4: '8080', expiryMonth: 8, expiryYear: 2026, isDefault: false },
+    ],
+    idDocuments: [
+        { id: 'doc_1', type: 'license', status: 'verified', fileName: 'license.jpg', uploadDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString() },
+        { id: 'doc_2', type: 'passport', status: 'not_uploaded' },
+    ],
+  });
+
   const login = (email: string, fullName: string = 'John Doe') => {
-    // This is a mock login. In a real app, you'd call an API.
-    const userData: User = { id: crypto.randomUUID(), email, fullName };
+    const userData = createNewUser(email, fullName);
     localStorage.setItem('dr7-user', JSON.stringify(userData));
     setUser(userData);
   };
 
   const signup = (email: string, fullName: string) => {
-    // This is a mock signup. It immediately logs the user in.
-    const userData: User = { id: crypto.randomUUID(), email, fullName };
+    const userData = createNewUser(email, fullName);
     localStorage.setItem('dr7-user', JSON.stringify(userData));
     setUser(userData);
   };
@@ -85,14 +98,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const loginWithGoogle = () => {
-    // In a real app, this would open a Google Sign-In popup and handle the response.
-    // For this mock, we'll create a predefined Google user.
-    const googleUser: User = {
-      id: crypto.randomUUID(),
-      fullName: 'Google User',
-      email: 'google.user@example.com',
-      profilePicture: `https://avatar.iran.liara.run/username?username=Google+User`
-    };
+    const googleUser = createNewUser(
+        'google.user@example.com',
+        'Google User',
+        `https://avatar.iran.liara.run/username?username=Google+User`
+    );
     localStorage.setItem('dr7-user', JSON.stringify(googleUser));
     setUser(googleUser);
   };

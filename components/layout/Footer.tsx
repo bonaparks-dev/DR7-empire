@@ -12,7 +12,7 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <h3 className="text-xl font-bold text-white mb-4">DR<span className="text-amber-400">7</span></h3>
-            <p className="text-sm">{t('DR7_is_your_gateway_to_a_world_of_unparalleled_luxury_From_supercars_to_private_jets_we_provide_access_to_the_extraordinary').substring(0, 100)}...</p>
+            <p className="text-sm">{t('DR7_is_your_gateway_to_a_world_of_unparalleled_luxury_From_supercars_to_jets_we_provide_access_to_the_extraordinary').substring(0, 100)}...</p>
           </div>
           <div>
             <h4 className="font-semibold text-white mb-4">{t('Services')}</h4>

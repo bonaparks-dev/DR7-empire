@@ -1,5 +1,5 @@
-import type { RentalCategory, MembershipTier, Lottery } from './types';
-import { UsersIcon, CogIcon, ZapIcon, AnchorIcon, HomeIcon, PaperAirplaneIcon, WifiIcon } from './components/icons/Icons';
+import type { RentalCategory, MembershipTier, Lottery, HomePageService } from './types';
+import { UsersIcon, CogIcon, ZapIcon, AnchorIcon, HomeIcon, PaperAirplaneIcon, WifiIcon, CarIcon, HelicopterIcon, StarIcon } from './components/icons/Icons';
 
 const carData = [
   { id: 'car1', name: 'Ferrari SF90', image: 'https://picsum.photos/seed/sf90/800/600', pricePerDay: { usd: 3500, eur: 3200, crypto: 0.1 }, specs: [ { label: { en: 'Top Speed', it: 'Velocità Massima' }, value: '340 km/h', icon: ZapIcon }, { label: { en: 'Engine', it: 'Motore' }, value: 'V8 Hybrid', icon: CogIcon }, { label: { en: 'Passengers', it: 'Passeggeri' }, value: '2', icon: UsersIcon } ] },
@@ -30,7 +30,52 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
     { id: 'yachts', label: { en: 'Yachts', it: 'Yacht' }, data: yachtData },
     { id: 'villas', label: { en: 'Villas', it: 'Ville' }, data: villaData },
     { id: 'helicopters', label: { en: 'Helicopters', it: 'Elicotteri' }, data: helicopterData },
-    { id: 'jets', label: { en: 'Private Jets', it: 'Jet Privati' }, data: jetData },
+    { id: 'jets', label: { en: 'Jets', it: 'Jet' }, data: jetData },
+];
+
+export const HOME_PAGE_SERVICES: HomePageService[] = [
+    {
+        id: 'cars',
+        label: { en: 'Supercars', it: 'Supercar' },
+        image: carData[0].image,
+        link: '/cars',
+        icon: CarIcon,
+    },
+    {
+        id: 'yachts',
+        label: { en: 'Yachts', it: 'Yacht' },
+        image: yachtData[0].image,
+        link: '/yachts',
+        icon: AnchorIcon,
+    },
+    {
+        id: 'villas',
+        label: { en: 'Villas', it: 'Ville' },
+        image: villaData[0].image,
+        link: '/villas',
+        icon: HomeIcon,
+    },
+    {
+        id: 'helicopters',
+        label: { en: 'Helicopters', it: 'Elicotteri' },
+        image: helicopterData[0].image,
+        link: '/helicopters',
+        icon: HelicopterIcon,
+    },
+    {
+        id: 'jets',
+        label: { en: 'Jets', it: 'Jet' },
+        image: jetData[0].image,
+        link: '/jets',
+        icon: PaperAirplaneIcon,
+    },
+    {
+        id: 'dr7-club',
+        label: { en: 'The DR7 Club', it: 'Il Club DR7' },
+        image: 'https://picsum.photos/seed/dr7-club/800/600',
+        link: '/membership',
+        icon: StarIcon,
+    },
 ];
 
 export const MEMBERSHIP_TIERS: MembershipTier[] = [

@@ -1,12 +1,15 @@
 
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from '../hooks/useTranslation';
-import type { Booking, User, MembershipTier } from '../types';
+import type { Booking, User, MembershipTier, PaymentMethod, IDDocument } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CameraIcon, UsersIcon, CogIcon, CalendarIcon } from '../components/icons/Icons';
+import { CameraIcon, UsersIcon, CalendarIcon, IdentificationIcon, ShieldCheckIcon, BellIcon, QuestionMarkCircleIcon, CreditCardIcon, TrashIcon, PlusIcon } from '../components/icons/Icons';
 import { MEMBERSHIP_TIERS } from '../constants';
+// FIX: Import useCurrency to get currency information.
+import { useCurrency } from '../contexts/CurrencyContext';
 
 const ProfileSection: React.FC = () => {
     const { t } = useTranslation();
@@ -219,35 +222,166 @@ const MembershipSection: React.FC = () => {
     );
 };
 
-
-const SettingsSection: React.FC = () => {
+const SecuritySection: React.FC = () => {
     const { t } = useTranslation();
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-            <h2 className="text-3xl font-bold text-white mb-6">{t('Settings')}</h2>
-            <div className="bg-stone-900/50 p-8 rounded-lg border border-stone-800">
+            <h2 className="text-3xl font-bold text-white mb-6">{t('Login_and_Security')}</h2>
+            <div className="bg-stone-900/50 p-8 rounded-lg border border-stone-800 mb-8">
                 <h3 className="text-xl font-semibold text-white mb-4">{t('Change_Password')}</h3>
                 <form className="space-y-4">
-                     <div>
-                        <label className="text-sm text-stone-400">{t('Current_Password')}</label>
-                        <input type="password" name="currentPassword" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>
-                    </div>
-                     <div>
-                        <label className="text-sm text-stone-400">{t('New_Password')}</label>
-                        <input type="password" name="newPassword" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>
-                    </div>
-                    <div>
-                        <label className="text-sm text-stone-400">{t('Confirm_Password')}</label>
-                        <input type="password" name="confirmNewPassword" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>
-                    </div>
-                    <div className="flex justify-end pt-2">
-                        <button type="submit" className="px-6 py-2 bg-amber-400 text-black font-bold rounded-full hover:bg-amber-300 transition-colors">{t('Update_Password')}</button>
-                    </div>
+                     <div><label className="text-sm text-stone-400">{t('Current_Password')}</label><input type="password" name="currentPassword" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
+                     <div><label className="text-sm text-stone-400">{t('New_Password')}</label><input type="password" name="newPassword" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
+                     <div><label className="text-sm text-stone-400">{t('Confirm_Password')}</label><input type="password" name="confirmNewPassword" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
+                    <div className="flex justify-end pt-2"><button type="submit" className="px-6 py-2 bg-amber-400 text-black font-bold rounded-full hover:bg-amber-300 transition-colors">{t('Update_Password')}</button></div>
                 </form>
+            </div>
+             <div className="bg-stone-900/50 p-8 rounded-lg border border-stone-800">
+                <h3 className="text-xl font-semibold text-white mb-2">{t('Two_Factor_Authentication')}</h3>
+                <p className="text-stone-400 text-sm mb-4">{t('Enable_2FA_to_add_an_extra_layer_of_security')}</p>
+                <div className="flex justify-end"><button className="px-6 py-2 bg-stone-700 text-white font-bold rounded-full hover:bg-stone-600 transition-colors">{t('Enable')}</button></div>
             </div>
         </motion.div>
     );
 };
+
+const PaymentMethodsSection: React.FC = () => {
+    const { t } = useTranslation();
+    const { user } = useAuth();
+
+    return (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+            <div className="flex justify-between items-center mb-6">
+                <div>
+                    <h2 className="text-3xl font-bold text-white">{t('Payment_Methods')}</h2>
+                    <p className="text-stone-400 mt-1">{t('Manage_your_connected_payment_methods')}</p>
+                </div>
+                <button className="flex items-center space-x-2 px-4 py-2 bg-amber-400 text-black font-bold rounded-full hover:bg-amber-300 transition-colors text-sm">
+                    <PlusIcon className="w-5 h-5"/>
+                    <span>{t('Add_Payment_Method')}</span>
+                </button>
+            </div>
+            <div className="bg-stone-900/50 p-6 rounded-lg border border-stone-800">
+                <div className="space-y-4">
+                    {user?.paymentMethods?.map(method => (
+                        <div key={method.id} className="flex items-center justify-between p-4 bg-stone-800/50 rounded-md border border-stone-700">
+                            <div className="flex items-center space-x-4">
+                                <CreditCardIcon className="w-8 h-8 text-stone-400"/>
+                                <div>
+                                    <p className="font-semibold text-white">{method.brand} •••• {method.last4}</p>
+                                    <p className="text-xs text-stone-400">{t('Expires')} {String(method.expiryMonth).padStart(2, '0')}/{method.expiryYear}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center space-x-4">
+                                {method.isDefault && <span className="text-xs font-bold bg-stone-700 text-stone-300 px-2 py-1 rounded-full">{t('Default')}</span>}
+                                <button className="text-stone-500 hover:text-red-500 transition-colors"><TrashIcon className="w-5 h-5"/></button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </motion.div>
+    );
+}
+
+const IDDocumentsSection: React.FC = () => {
+    const { t } = useTranslation();
+    const { user } = useAuth();
+    const { lang } = useTranslation();
+
+    const getStatusChip = (status: IDDocument['status']) => {
+        switch (status) {
+            case 'verified': return <span className="bg-green-500/20 text-green-300 text-xs font-bold px-2 py-1 rounded-full">{t('Verified')}</span>;
+            case 'pending': return <span className="bg-yellow-500/20 text-yellow-300 text-xs font-bold px-2 py-1 rounded-full">{t('Pending')}</span>;
+            case 'rejected': return <span className="bg-red-500/20 text-red-300 text-xs font-bold px-2 py-1 rounded-full">{t('Rejected')}</span>;
+            default: return <span className="bg-stone-700 text-stone-300 text-xs font-bold px-2 py-1 rounded-full">{t('Not_Uploaded')}</span>;
+        }
+    }
+    
+    return (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+            <h2 className="text-3xl font-bold text-white">{t('ID_Documents')}</h2>
+            <p className="text-stone-400 mt-1 mb-6">{t('Manage_your_identity_documents_for_verification')}</p>
+            <div className="bg-stone-900/50 p-6 rounded-lg border border-stone-800 space-y-4">
+                {user?.idDocuments?.map(doc => (
+                    <div key={doc.id} className="p-4 bg-stone-800/50 rounded-md border border-stone-700">
+                        <div className="flex items-center justify-between">
+                             <div>
+                                <p className="font-semibold text-white">{doc.type === 'license' ? t('Drivers_License') : t('Passport')}</p>
+                                {doc.uploadDate && <p className="text-xs text-stone-400">{t('Uploaded_On')}: {new Date(doc.uploadDate).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US')}</p>}
+                            </div>
+                            <div className="flex items-center space-x-4">
+                                {getStatusChip(doc.status)}
+                                {doc.status === 'not_uploaded' && <button className="text-sm font-bold text-amber-400 hover:text-amber-300">{t('Upload')}</button>}
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </motion.div>
+    );
+};
+
+const PreferencesSection: React.FC = () => {
+    const { t, lang } = useTranslation();
+    // FIX: Use useCurrency hook to get currency information.
+    const { currency } = useCurrency();
+
+    const Toggle: React.FC<{ label: string, enabled: boolean, onToggle: () => void }> = ({ label, enabled, onToggle }) => (
+        <div className="flex justify-between items-center">
+            <span className="text-white">{label}</span>
+            <button onClick={onToggle} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${enabled ? 'bg-amber-400' : 'bg-stone-700'}`}>
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+        </div>
+    );
+    
+    return (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+            <h2 className="text-3xl font-bold text-white">{t('Preferences')}</h2>
+            <p className="text-stone-400 mt-1 mb-6">{t('Manage_your_notification_and_display_settings')}</p>
+            <div className="bg-stone-900/50 p-8 rounded-lg border border-stone-800 mb-8">
+                <h3 className="text-xl font-semibold text-white mb-4">{t('Notifications')}</h3>
+                <div className="space-y-4">
+                    <Toggle label={t('Promotional_Emails')} enabled={true} onToggle={() => {}}/>
+                    <Toggle label={t('Booking_Updates_via_SMS')} enabled={false} onToggle={() => {}}/>
+                </div>
+            </div>
+             <div className="bg-stone-900/50 p-8 rounded-lg border border-stone-800">
+                <h3 className="text-xl font-semibold text-white mb-4">{t('Display')}</h3>
+                <div className="space-y-4">
+                   <div className="flex justify-between items-center">
+                       <span className="text-stone-400">{t('Language')}</span>
+                       <span className="font-semibold text-white">{lang === 'en' ? 'English' : 'Italiano'}</span>
+                   </div>
+                   <div className="flex justify-between items-center">
+                       <span className="text-stone-400">{t('Currency')}</span>
+                       {/* FIX: Removed optional chaining as currency from useCurrency is not nullable. */}
+                       <span className="font-semibold text-white">{currency.toUpperCase()}</span>
+                   </div>
+                </div>
+            </div>
+        </motion.div>
+    );
+};
+
+const HelpSection: React.FC = () => {
+    const { t } = useTranslation();
+    return (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+            <h2 className="text-3xl font-bold text-white">{t('Help_Center')}</h2>
+            <p className="text-stone-400 mt-1 mb-6">{t('Get_help_with_your_account_and_bookings')}</p>
+            <div className="bg-stone-900/50 p-6 rounded-lg border border-stone-800">
+                <ul className="divide-y divide-stone-800">
+                    {['Frequently_Asked_Questions', 'Contact_Support', 'Terms_of_Service', 'Privacy_Policy'].map(item => (
+                        <li key={item} className="py-3"><Link to="#" className="text-white hover:text-amber-400 transition-colors flex justify-between items-center"><span>{t(item as any)}</span><span>&rarr;</span></Link></li>
+                    ))}
+                </ul>
+            </div>
+        </motion.div>
+    );
+};
+
 
 const AccountPage: React.FC = () => {
     const { tab = 'profile' } = useParams<{ tab: string }>();
@@ -262,7 +396,13 @@ const AccountPage: React.FC = () => {
         if (user?.membership) {
             baseTabs.push({ id: 'membership', label: t('My_Membership'), icon: () => <span className="text-amber-400 text-xl font-bold">7</span> });
         }
-        baseTabs.push({ id: 'settings', label: t('Settings'), icon: CogIcon });
+        baseTabs.push(
+            { id: 'id-documents', label: t('ID_Documents'), icon: IdentificationIcon },
+            { id: 'payment-methods', label: t('Payment_Methods'), icon: CreditCardIcon },
+            { id: 'security', label: t('Security'), icon: ShieldCheckIcon },
+            { id: 'preferences', label: t('Preferences'), icon: BellIcon },
+            { id: 'help', label: t('Help_Center'), icon: QuestionMarkCircleIcon }
+        );
         return baseTabs;
     }, [t, user]);
     
@@ -300,7 +440,11 @@ const AccountPage: React.FC = () => {
                                     {tab === 'profile' && <ProfileSection />}
                                     {tab === 'bookings' && <BookingsSection />}
                                     {tab === 'membership' && <MembershipSection />}
-                                    {tab === 'settings' && <SettingsSection />}
+                                    {tab === 'id-documents' && <IDDocumentsSection />}
+                                    {tab === 'payment-methods' && <PaymentMethodsSection />}
+                                    {tab === 'security' && <SecuritySection />}
+                                    {tab === 'preferences' && <PreferencesSection />}
+                                    {tab === 'help' && <HelpSection />}
                                 </div>
                             </AnimatePresence>
                         </main>

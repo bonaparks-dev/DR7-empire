@@ -154,12 +154,12 @@ const Header: React.FC = () => {
                             {t(cat.label.en.replace(/ /g, '_') as any)}
                         </NavLink>
                     ))}
-                    <NavLink to="/lottery" className={({isActive}) => `${navLinkClasses} ${isActive ? 'text-amber-400' : ''}`}>{t('Lottery')}</NavLink>
                     {user?.membership ? (
                          <NavLink to="/club-dashboard" className={({isActive}) => `${navLinkClasses} ${isActive ? 'text-amber-400' : ''}`}>{t('Club_Dashboard')}</NavLink>
                     ) : (
                         <NavLink to="/membership" className={({isActive}) => `${navLinkClasses} ${isActive ? 'text-amber-400' : ''}`}>{t('Membership')}</NavLink>
                     )}
+                    <NavLink to="/lottery" className={({isActive}) => `${navLinkClasses} ${isActive ? 'text-amber-400' : ''}`}>{t('Lottery')}</NavLink>
                 </nav>
                 <div className="flex items-center space-x-4">
                     <LanguageSwitcher />
@@ -168,7 +168,7 @@ const Header: React.FC = () => {
                         isLoggedIn ? (
                              <UserMenu />
                         ) : (
-                            <Link to="/signin" className="px-4 py-2 text-sm font-semibold bg-amber-400 text-black rounded-full hover:bg-amber-300 transition-colors duration-300 transform hover:scale-105">
+                            <Link to="/signin" className="px-5 py-2 text-sm font-semibold bg-transparent border border-amber-400 text-amber-400 rounded-full hover:bg-amber-400 hover:text-black transition-colors duration-300">
                                 {t('Sign_In')}
                             </Link>
                         )

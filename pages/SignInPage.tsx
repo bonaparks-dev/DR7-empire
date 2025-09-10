@@ -87,15 +87,15 @@ const SignInPage: React.FC = () => {
                             </p>
                         </div>
 
-                        <div className="space-y-4">
+                        <div className="flex space-x-4">
                             <button 
                                 type="button"
                                 onClick={handleGoogleSignIn}
-                                className="w-full flex items-center justify-center py-3 px-4 border border-stone-700 rounded-md shadow-sm bg-stone-800 text-sm font-medium text-white hover:bg-stone-700 transition-colors">
+                                className="flex-1 flex items-center justify-center py-3 px-4 border border-stone-700 rounded-md shadow-sm bg-stone-800 text-sm font-medium text-white hover:bg-stone-700 transition-colors">
                                 <GoogleIcon className="w-5 h-5 mr-2" />
                                 {t('Sign_in_with_Google')}
                             </button>
-                            <button className="w-full flex items-center justify-center py-3 px-4 border border-stone-700 rounded-md shadow-sm bg-stone-800 text-sm font-medium text-white hover:bg-stone-700 transition-colors">
+                            <button className="flex-1 flex items-center justify-center py-3 px-4 border border-stone-700 rounded-md shadow-sm bg-stone-800 text-sm font-medium text-white hover:bg-stone-700 transition-colors">
                                 <WalletIcon className="w-5 h-5 mr-2" />
                                 {t('Sign_in_with_Wallet')}
                             </button>

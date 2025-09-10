@@ -32,6 +32,14 @@ export interface RentalCategory {
     data: RentalItem[];
 }
 
+export interface HomePageService {
+  id: string;
+  label: { en: string, it: string };
+  image: string;
+  link: string;
+  icon: React.FC<{ className?: string }>;
+}
+
 export interface MembershipTier {
   id: string;
   name: { en: string; it: string };
@@ -41,6 +49,23 @@ export interface MembershipTier {
   };
   features: { en: string[]; it: string[] };
   isPopular?: boolean;
+}
+
+export interface PaymentMethod {
+  id: string;
+  brand: 'Visa' | 'Mastercard';
+  last4: string;
+  expiryMonth: number;
+  expiryYear: number;
+  isDefault: boolean;
+}
+
+export interface IDDocument {
+  id: string;
+  type: 'license' | 'passport';
+  status: 'verified' | 'pending' | 'rejected' | 'not_uploaded';
+  fileName?: string;
+  uploadDate?: string;
 }
 
 export interface User {
@@ -54,6 +79,8 @@ export interface User {
     billingCycle: 'monthly' | 'annually';
     renewalDate: string;
   }
+  paymentMethods?: PaymentMethod[];
+  idDocuments?: IDDocument[];
 }
 
 export interface Booking {
