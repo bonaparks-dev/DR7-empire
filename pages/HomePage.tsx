@@ -9,7 +9,7 @@ const HeroSection: React.FC = () => {
   return (
     <div className="relative h-screen flex items-center justify-center text-center overflow-hidden">
         <div className="absolute inset-0 z-0">
-            <img src="https://picsum.photos/seed/dr7-hero/1920/1080" alt="Luxury Lifestyle" className="w-full h-full object-cover brightness-50" />
+            <img src="/DR7logo.png" alt="Luxury Lifestyle" className="w-full h-full object-cover brightness-50" />
             <div className="absolute inset-0 bg-black/60"></div>
         </div>
 
