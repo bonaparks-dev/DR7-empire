@@ -1,27 +1,27 @@
-import type { RentalCategory, MembershipTier, Lottery, HomePageService } from './types';
-import { UsersIcon, CogIcon, ZapIcon, AnchorIcon, HomeIcon, PaperAirplaneIcon, WifiIcon, CarIcon, HelicopterIcon, StarIcon } from './components/icons/Icons';
+import type { RentalCategory, MembershipTier, Lottery } from './types';
+import { UsersIcon, CogIcon, ZapIcon, AnchorIcon, HomeIcon, PaperAirplaneIcon, WifiIcon } from './components/icons/Icons';
 
 const carData = [
-  { id: 'car1', name: 'Ferrari SF90', image: 'https://picsum.photos/seed/sf90/800/600', pricePerDay: { usd: 3500, eur: 3200, crypto: 0.1 }, specs: [ { label: { en: 'Top Speed', it: 'Velocità Massima' }, value: '340 km/h', icon: ZapIcon }, { label: { en: 'Engine', it: 'Motore' }, value: 'V8 Hybrid', icon: CogIcon }, { label: { en: 'Passengers', it: 'Passeggeri' }, value: '2', icon: UsersIcon } ] },
-  { id: 'car2', name: 'Lamborghini Revuelto', image: 'https://picsum.photos/seed/revuelto/800/600', pricePerDay: { usd: 4000, eur: 3700, crypto: 0.12 }, specs: [ { label: { en: 'Top Speed', it: 'Velocità Massima' }, value: '350 km/h', icon: ZapIcon }, { label: { en: 'Engine', it: 'Motore' }, value: 'V12 Hybrid', icon: CogIcon }, { label: { en: 'Passengers', it: 'Passeggeri' }, value: '2', icon: UsersIcon } ] },
-  { id: 'car3', name: 'Rolls-Royce Spectre', image: 'https://picsum.photos/seed/spectre/800/600', pricePerDay: { usd: 2800, eur: 2600, crypto: 0.08 }, specs: [ { label: { en: 'Top Speed', it: 'Velocità Massima' }, value: '250 km/h', icon: ZapIcon }, { label: { en: 'Engine', it: 'Motore' }, value: 'Electric', icon: CogIcon }, { label: { en: 'Passengers', it: 'Passeggeri' }, value: '4', icon: UsersIcon } ] },
+  { id: 'car1', name: 'Ferrari SF90', image: 'https://picsum.photos/seed/ferrari-sf90-red/800/600', pricePerDay: { usd: 3500, eur: 3200, crypto: 0.1 }, specs: [ { label: { en: 'Top Speed', it: 'Velocità Massima' }, value: '340 km/h', icon: ZapIcon }, { label: { en: 'Engine', it: 'Motore' }, value: 'V8 Hybrid', icon: CogIcon }, { label: { en: 'Passengers', it: 'Passeggeri' }, value: '2', icon: UsersIcon } ] },
+  { id: 'car2', name: 'Lamborghini Revuelto', image: 'https://picsum.photos/seed/lamborghini-revuelto-yellow/800/600', pricePerDay: { usd: 4000, eur: 3700, crypto: 0.12 }, specs: [ { label: { en: 'Top Speed', it: 'Velocità Massima' }, value: '350 km/h', icon: ZapIcon }, { label: { en: 'Engine', it: 'Motore' }, value: 'V12 Hybrid', icon: CogIcon }, { label: { en: 'Passengers', it: 'Passeggeri' }, value: '2', icon: UsersIcon } ] },
+  { id: 'car3', name: 'Rolls-Royce Spectre', image: 'https://picsum.photos/seed/rolls-royce-spectre-blue/800/600', pricePerDay: { usd: 2800, eur: 2600, crypto: 0.08 }, specs: [ { label: { en: 'Top Speed', it: 'Velocità Massima' }, value: '250 km/h', icon: ZapIcon }, { label: { en: 'Engine', it: 'Motore' }, value: 'Electric', icon: CogIcon }, { label: { en: 'Passengers', it: 'Passeggeri' }, value: '4', icon: UsersIcon } ] },
 ];
 
 const yachtData = [
-    { id: 'yacht1', name: 'Azimut Grande 27M', image: 'https://picsum.photos/seed/azimut/800/600', pricePerDay: { usd: 12000, eur: 11000, crypto: 0.35 }, specs: [ { label: { en: 'Length', it: 'Lunghezza' }, value: '27m', icon: AnchorIcon }, { label: { en: 'Cabins', it: 'Cabine' }, value: '5', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '10', icon: UsersIcon } ] },
-    { id: 'yacht2', name: 'Riva 110 Dolcevita', image: 'https://picsum.photos/seed/riva/800/600', pricePerDay: { usd: 18000, eur: 16500, crypto: 0.5 }, specs: [ { label: { en: 'Length', it: 'Lunghezza' }, value: '34m', icon: AnchorIcon }, { label: { en: 'Cabins', it: 'Cabine' }, value: '5', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '10', icon: UsersIcon } ] },
+    { id: 'yacht1', name: 'Azimut Grande 27M', image: 'https://picsum.photos/seed/azimut-yacht-ocean/800/600', pricePerDay: { usd: 12000, eur: 11000, crypto: 0.35 }, specs: [ { label: { en: 'Length', it: 'Lunghezza' }, value: '27m', icon: AnchorIcon }, { label: { en: 'Cabins', it: 'Cabine' }, value: '5', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '10', icon: UsersIcon } ] },
+    { id: 'yacht2', name: 'Riva 110 Dolcevita', image: 'https://picsum.photos/seed/riva-dolcevita-yacht/800/600', pricePerDay: { usd: 18000, eur: 16500, crypto: 0.5 }, specs: [ { label: { en: 'Length', it: 'Lunghezza' }, value: '34m', icon: AnchorIcon }, { label: { en: 'Cabins', it: 'Cabine' }, value: '5', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '10', icon: UsersIcon } ] },
 ];
 
 const villaData = [
-    { id: 'villa1', name: 'Villa Oleandra, Lake Como', image: 'https://picsum.photos/seed/como/800/600', pricePerDay: { usd: 25000, eur: 23000, crypto: 0.7 }, specs: [ { label: { en: 'Bedrooms', it: 'Camere da Letto' }, value: '15', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '30', icon: UsersIcon }, { label: { en: 'Feature', it: 'Caratteristica' }, value: 'Private Dock', icon: AnchorIcon } ] },
+    { id: 'villa1', name: 'Villa Oleandra, Lake Como', image: 'https://picsum.photos/seed/villa-lake-como-luxury/800/600', pricePerDay: { usd: 25000, eur: 23000, crypto: 0.7 }, specs: [ { label: { en: 'Bedrooms', it: 'Camere da Letto' }, value: '15', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '30', icon: UsersIcon }, { label: { en: 'Feature', it: 'Caratteristica' }, value: 'Private Dock', icon: AnchorIcon } ] },
 ];
 
 const jetData = [
-    { id: 'jet1', name: 'Gulfstream G700', image: 'https://picsum.photos/seed/g700/800/600', pricePerDay: { usd: 90000, eur: 82000, crypto: 2.5 }, specs: [ { label: { en: 'Range', it: 'Autonomia' }, value: '13,890 km', icon: PaperAirplaneIcon }, { label: { en: 'Passengers', it: 'Passeggeri' }, value: '19', icon: UsersIcon }, { label: { en: 'Wi-Fi', it: 'Wi-Fi' }, value: 'Ka-band', icon: WifiIcon } ] },
+    { id: 'jet1', name: 'Gulfstream G700', image: 'https://picsum.photos/seed/gulfstream-g700-jet-sky/800/600', pricePerDay: { usd: 90000, eur: 82000, crypto: 2.5 }, specs: [ { label: { en: 'Range', it: 'Autonomia' }, value: '13,890 km', icon: PaperAirplaneIcon }, { label: { en: 'Passengers', it: 'Passeggeri' }, value: '19', icon: UsersIcon }, { label: { en: 'Wi-Fi', it: 'Wi-Fi' }, value: 'Ka-band', icon: WifiIcon } ] },
 ];
 
 const helicopterData = [
-    { id: 'heli1', name: 'Airbus ACH160', image: 'https://picsum.photos/seed/ach160/800/600', pricePerDay: { usd: 20000, eur: 18500, crypto: 0.6 }, specs: [ { label: { en: 'Range', it: 'Autonomia' }, value: '852 km', icon: PaperAirplaneIcon }, { label: { en: 'Passengers', it: 'Passeggeri' }, value: '10', icon: UsersIcon }, { label: { en: 'Speed', it: 'Velocità' }, value: '287 km/h', icon: ZapIcon } ] },
+    { id: 'heli1', name: 'Airbus ACH160', image: 'https://picsum.photos/seed/airbus-ach160-helicopter/800/600', pricePerDay: { usd: 20000, eur: 18500, crypto: 0.6 }, specs: [ { label: { en: 'Range', it: 'Autonomia' }, value: '852 km', icon: PaperAirplaneIcon }, { label: { en: 'Passengers', it: 'Passeggeri' }, value: '10', icon: UsersIcon }, { label: { en: 'Speed', it: 'Velocità' }, value: '287 km/h', icon: ZapIcon } ] },
 ];
 
 
@@ -30,52 +30,7 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
     { id: 'yachts', label: { en: 'Yachts', it: 'Yacht' }, data: yachtData },
     { id: 'villas', label: { en: 'Villas', it: 'Ville' }, data: villaData },
     { id: 'helicopters', label: { en: 'Helicopters', it: 'Elicotteri' }, data: helicopterData },
-    { id: 'jets', label: { en: 'Jets', it: 'Jet' }, data: jetData },
-];
-
-export const HOME_PAGE_SERVICES: HomePageService[] = [
-    {
-        id: 'cars',
-        label: { en: 'Supercars', it: 'Supercar' },
-        image: carData[0].image,
-        link: '/cars',
-        icon: CarIcon,
-    },
-    {
-        id: 'yachts',
-        label: { en: 'Yachts', it: 'Yacht' },
-        image: yachtData[0].image,
-        link: '/yachts',
-        icon: AnchorIcon,
-    },
-    {
-        id: 'villas',
-        label: { en: 'Villas', it: 'Ville' },
-        image: villaData[0].image,
-        link: '/villas',
-        icon: HomeIcon,
-    },
-    {
-        id: 'helicopters',
-        label: { en: 'Helicopters', it: 'Elicotteri' },
-        image: helicopterData[0].image,
-        link: '/helicopters',
-        icon: HelicopterIcon,
-    },
-    {
-        id: 'jets',
-        label: { en: 'Jets', it: 'Jet' },
-        image: jetData[0].image,
-        link: '/jets',
-        icon: PaperAirplaneIcon,
-    },
-    {
-        id: 'dr7-club',
-        label: { en: 'The DR7 Club', it: 'Il Club DR7' },
-        image: 'https://picsum.photos/seed/dr7-club/800/600',
-        link: '/membership',
-        icon: StarIcon,
-    },
+    { id: 'jets', label: { en: 'Private Jets', it: 'Jet Privati' }, data: jetData },
 ];
 
 export const MEMBERSHIP_TIERS: MembershipTier[] = [
@@ -91,7 +46,7 @@ export const LOTTERY_GIVEAWAY: Lottery = {
     en: 'Participate in the DR7 Lottery for a chance to win the revolutionary Lamborghini Revuelto. With its V12 hybrid engine, this masterpiece of engineering could be yours. Each ticket brings you one step closer to owning a legend.',
     it: 'Partecipa alla Lotteria DR7 per avere la possibilità di vincere la rivoluzionaria Lamborghini Revuelto. Con il suo motore ibrido V12, questo capolavoro di ingegneria potrebbe essere tuo. Ogni biglietto ti avvicina a possedere una leggenda.'
   },
-  image: 'https://picsum.photos/seed/revuelto/1200/800',
+  image: 'https://picsum.photos/seed/lamborghini-revuelto-win/1200/800',
   ticketPriceUSD: 22,
   ticketPriceEUR: 20,
   drawDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days from now

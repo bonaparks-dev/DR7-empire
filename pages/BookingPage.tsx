@@ -15,39 +15,41 @@ const BookingPage: React.FC = () => {
   const { currency } = useCurrency();
   const { user } = useAuth();
 
-  const isCar = categoryId === 'cars';
-  const isVilla = categoryId === 'villas';
-
   const { category, item } = useMemo(() => {
     const cat = RENTAL_CATEGORIES.find(c => c.id === categoryId);
     const itm = cat?.data.find(i => i.id === itemId);
     return { category: cat, item: itm };
   }, [categoryId, itemId]);
+
+  const isCar = category?.id === 'cars';
   
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null);
   
   const today = new Date().toISOString().split('T')[0];
 
   const [formData, setFormData] = useState({
-      // Car specific
+      // Step 1 - Car
+      pickupDate: today,
       pickupTime: '10:00',
+      returnDate: '',
       returnTime: '10:00',
       pickupLocation: PICKUP_LOCATIONS[0].id,
       insuranceOption: INSURANCE_OPTIONS[0].id,
       extras: [] as string[],
-      licenseImage: '',
-      // Villa specific
+      // Step 1 - Other
+      checkinDate: today,
+      checkoutDate: '',
       guests: 1,
-      // Common
-      pickupDate: today, // Used as checkinDate for non-cars
-      returnDate: '', // Used as checkoutDate for non-cars
+      // Step 2
       fullName: user?.fullName || '',
       email: user?.email || '',
       phone: user?.phone || '',
       countryOfResidency: '',
       age: 25,
+      // Step 3
+      licenseImage: '',
+      // Step 4
       paymentMethod: 'stripe' as 'stripe' | 'crypto',
       cardNumber: '',
       cardExpiry: '',
@@ -74,22 +76,20 @@ const BookingPage: React.FC = () => {
     
     const pricePerDay = item.pricePerDay[currency];
     
-    if (!formData.pickupDate || !formData.returnDate) return { duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, subtotal: 0, taxes: 0, total: 0, nights: 0 };
-    
-    const pickup = new Date(`${formData.pickupDate}T${isCar ? formData.pickupTime : '15:00'}`);
-    const ret = new Date(`${formData.returnDate}T${isCar ? formData.returnTime : '11:00'}`);
-    
-    if (pickup >= ret) return { duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, subtotal: 0, taxes: 0, total: 0, nights: 0 };
-
-    const diffMs = ret.getTime() - pickup.getTime();
-    
     if (isCar) {
+      if (!formData.pickupDate || !formData.returnDate) return { duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, subtotal: 0, taxes: 0, total: 0, nights: 0 };
+      const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
+      const ret = new Date(`${formData.returnDate}T${formData.returnTime}`);
+      
+      if (pickup >= ret) return { duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, subtotal: 0, taxes: 0, total: 0, nights: 0 };
+
+      const diffMs = ret.getTime() - pickup.getTime();
       const totalHours = Math.ceil(diffMs / (1000 * 60 * 60));
       const days = Math.floor(totalHours / 24);
       const hours = totalHours % 24;
-      const billingDays = days + (hours > 2 ? 1 : 0); // Grace period of 2 hours
+      const billingDays = days + (hours > 0 ? 1 : 0);
 
-      const calculatedRentalCost = (days * pricePerDay) + (hours > 0 ? (pricePerDay / 12 * Math.min(hours, 12) ) : 0);
+      const calculatedRentalCost = (days * pricePerDay) + (hours * (pricePerDay / 12));
       const selectedInsurance = INSURANCE_OPTIONS.find(opt => opt.id === formData.insuranceOption);
       const calculatedInsuranceCost = (selectedInsurance?.pricePerDay[currency] || 0) * billingDays;
       const calculatedExtrasCost = formData.extras.reduce((acc, extraId) => {
@@ -104,13 +104,20 @@ const BookingPage: React.FC = () => {
       return { duration: { days, hours }, rentalCost: calculatedRentalCost, insuranceCost: calculatedInsuranceCost, extrasCost: calculatedExtrasCost, subtotal: calculatedSubtotal, taxes: calculatedTaxes, total: calculatedTotal, nights: 0 };
 
     } else { // Not a car
-      const billingDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      if (!formData.checkinDate || !formData.checkoutDate) return { duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, subtotal: 0, taxes: 0, total: 0, nights: 0 };
+      const start = new Date(formData.checkinDate);
+      const end = new Date(formData.checkoutDate);
       
-      const calculatedRentalCost = billingDays * pricePerDay;
+      if (start >= end) return { duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, subtotal: 0, taxes: 0, total: 0, nights: 0 };
+
+      const diffTime = end.getTime() - start.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      const calculatedRentalCost = diffDays * pricePerDay;
       const calculatedTaxes = calculatedRentalCost * 0.10;
       const calculatedTotal = calculatedRentalCost + calculatedTaxes;
 
-      return { duration: { days: billingDays, hours: 0 }, rentalCost: calculatedRentalCost, insuranceCost: 0, extrasCost: 0, subtotal: calculatedRentalCost, taxes: calculatedTaxes, total: calculatedTotal, nights: billingDays };
+      return { duration: { days: diffDays, hours: 0 }, rentalCost: calculatedRentalCost, insuranceCost: 0, extrasCost: 0, subtotal: calculatedRentalCost, taxes: calculatedTaxes, total: calculatedTotal, nights: diffDays };
     }
 
   }, [formData, item, currency, isCar]);
@@ -150,62 +157,55 @@ const BookingPage: React.FC = () => {
       }
   };
 
-  const steps = useMemo(() => {
-    if (isCar) return [
-        { id: 1, name: t('Configuration') },
-        { id: 2, name: t('Driver_Information') },
-        { id: 3, name: t('License_Verification') },
-        { id: 4, name: t('Payment') },
-    ];
-    if (isVilla) return [
-        { id: 1, name: t('Dates_and_Guests') },
-        { id: 2, name: t('Personal_Information') },
-        { id: 3, name: t('Payment') },
-    ];
-    // Yachts, Jets, Helicopters
-    return [
-        { id: 1, name: t('Booking_Details') },
-        { id: 2, name: t('Personal_Information') },
-        { id: 3, name: t('Payment') },
-    ];
-  }, [isCar, isVilla, t]);
-
-  const totalSteps = steps.length;
-
   const validateStep = () => {
     const newErrors: Record<string, string> = {};
-    if (step === 1) {
-        if (!formData.pickupDate || !formData.returnDate) newErrors.date = 'Please select valid dates.';
-        else if (new Date(formData.pickupDate) >= new Date(formData.returnDate)) {
-            newErrors.date = 'Return/Check-out date must be after pickup/check-in date.';
+
+    if (isCar) {
+        if (step === 1) {
+            if (!formData.pickupDate || !formData.returnDate) newErrors.date = 'Please select valid pickup and return dates.';
+            else if (new Date(`${formData.pickupDate}T${formData.pickupTime}`) >= new Date(`${formData.returnDate}T${formData.returnTime}`)) {
+                newErrors.date = 'Return date must be after pickup date.';
+            }
         }
-    }
-    if (step === 2) {
-        if (!formData.fullName) newErrors.fullName = t('Full_name_is_required');
-        if (!formData.email) newErrors.email = t('Email_is_required');
-        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = t('Please_enter_a_valid_email_address');
-        if (!formData.countryOfResidency) newErrors.countryOfResidency = t('Country_of_Residency_is_required');
-        if (isCar && formData.age < 25) newErrors.age = t('Minimum_age_is_25');
-    }
-    if (step === 3) {
-        if (isCar && !formData.licenseImage) newErrors.licenseImage = 'Please upload your driver\'s license.';
-        if (!isCar) { // Payment step for non-cars
+        if (step === 2) {
+            if (!formData.fullName) newErrors.fullName = t('Full_name_is_required');
+            if (!formData.email) newErrors.email = t('Email_is_required');
+            else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = t('Please_enter_a_valid_email_address');
+            if (!formData.countryOfResidency) newErrors.countryOfResidency = t('Country_of_Residency_is_required');
+            if (formData.age < 25) newErrors.age = t('Minimum_age_is_25');
+        }
+        if (step === 3) {
+            if (!formData.licenseImage) newErrors.licenseImage = 'Please upload your driver\'s license.';
+        }
+        if (step === 4) {
+          if (formData.paymentMethod === 'stripe') {
+              if (!formData.cardNumber.trim()) newErrors.cardNumber = 'Card number is required.';
+              if (!formData.cardExpiry.trim()) newErrors.cardExpiry = 'Expiry date is required.';
+              if (!formData.cardCVC.trim()) newErrors.cardCVC = 'CVC is required.';
+          }
+        }
+    } else { // Not a car
+        if (step === 1) {
+            if (!formData.checkinDate || !formData.checkoutDate) newErrors.date = 'Please select valid check-in and check-out dates.';
+            else if (new Date(formData.checkinDate) >= new Date(formData.checkoutDate)) {
+                newErrors.date = 'Check-out date must be after check-in date.';
+            }
+        }
+        if (step === 2) {
+            if (!formData.fullName) newErrors.fullName = t('Full_name_is_required');
+            if (!formData.email) newErrors.email = t('Email_is_required');
+            else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = t('Please_enter_a_valid_email_address');
+            if (!formData.countryOfResidency) newErrors.countryOfResidency = t('Country_of_Residency_is_required');
+        }
+        if (step === 3) {
             if (formData.paymentMethod === 'stripe') {
-                if (!formData.cardNumber.trim()) newErrors.cardNumber = 'Card number is required.';
-                if (!formData.cardExpiry.trim()) newErrors.cardExpiry = 'Expiry date is required.';
-                if (!formData.cardCVC.trim()) newErrors.cardCVC = 'CVC is required.';
+              if (!formData.cardNumber.trim()) newErrors.cardNumber = 'Card number is required.';
+              if (!formData.cardExpiry.trim()) newErrors.cardExpiry = 'Expiry date is required.';
+              if (!formData.cardCVC.trim()) newErrors.cardCVC = 'CVC is required.';
             }
         }
     }
-    if (step === 4) {
-      if (isCar) { // Payment step for cars
-            if (formData.paymentMethod === 'stripe') {
-                if (!formData.cardNumber.trim()) newErrors.cardNumber = 'Card number is required.';
-                if (!formData.cardExpiry.trim()) newErrors.cardExpiry = 'Expiry date is required.';
-                if (!formData.cardCVC.trim()) newErrors.cardCVC = 'CVC is required.';
-            }
-      }
-    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
@@ -226,19 +226,12 @@ const BookingPage: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 2000));
       setIsProcessing(false);
       
-      const newBooking: Booking = {
+      const commonData = {
           bookingId: crypto.randomUUID(),
           userId: user.id,
           itemId: item.id,
           itemName: item.name,
           image: item.image,
-          pickupDate: formData.pickupDate,
-          pickupTime: isCar ? formData.pickupTime : '15:00',
-          returnDate: formData.returnDate,
-          returnTime: isCar ? formData.returnTime : '11:00',
-          duration: isCar 
-            ? `${duration.days} ${duration.days === 1 ? t('day') : t('days')}, ${duration.hours} ${duration.hours === 1 ? t('hour') : t('hours')}` 
-            : `${nights} ${nights === 1 ? t('Night') : t('Nights')}`,
           totalPrice: total,
           currency: currency.toUpperCase() as 'USD' | 'EUR',
           customer: { 
@@ -248,52 +241,65 @@ const BookingPage: React.FC = () => {
             age: Number(formData.age),
             countryOfResidency: formData.countryOfResidency,
           },
-          driverLicenseImage: isCar ? formData.licenseImage : '',
           paymentMethod: formData.paymentMethod,
           bookedAt: new Date().toISOString(),
-          pickupLocation: isCar ? formData.pickupLocation : undefined,
-          insuranceOption: isCar ? formData.insuranceOption : undefined,
-          extras: isCar ? formData.extras : undefined,
+      };
+
+      const newBooking: Booking = isCar ? {
+          ...commonData,
+          pickupDate: formData.pickupDate,
+          pickupTime: formData.pickupTime,
+          returnDate: formData.returnDate,
+          returnTime: formData.returnTime,
+          duration: `${duration.days} ${duration.days === 1 ? t('day') : t('days')}, ${duration.hours} ${duration.hours === 1 ? t('hour') : t('hours')}`,
+          driverLicenseImage: formData.licenseImage,
+          pickupLocation: formData.pickupLocation,
+          insuranceOption: formData.insuranceOption,
+          extras: formData.extras
+      } : {
+        ...commonData,
+        pickupDate: formData.checkinDate,
+        pickupTime: '15:00',
+        returnDate: formData.checkoutDate,
+        returnTime: '11:00',
+        duration: `${nights} ${nights === 1 ? t('Night') : t('Nights')}`,
+        driverLicenseImage: '', // Not applicable
       };
 
       const existingBookings = JSON.parse(localStorage.getItem('bookings') || '[]') as Booking[];
       localStorage.setItem('bookings', JSON.stringify([...existingBookings, newBooking]));
-      
-      setConfirmedBooking(newBooking);
-      setStep(totalSteps + 1); // Confirmation step
+
+      setStep(isCar ? 5 : 4); // Confirmation step
   };
 
+  const steps = useMemo(() => {
+    const carSteps = [
+        { id: 1, name: t('Configuration') },
+        { id: 2, name: t('Driver_Information') },
+        { id: 3, name: t('License_Verification') },
+        { id: 4, name: t('Payment') },
+    ];
+    const otherSteps = [
+        { id: 1, name: t('Dates_and_Guests') },
+        { id: 2, name: t('Personal_Information') },
+        { id: 3, name: t('Payment') },
+    ];
+    return isCar ? carSteps : otherSteps;
+  }, [isCar, t]);
 
   if (!item) {
     return <div className="pt-32 text-center text-white">Item not found.</div>;
   }
 
   const renderStepContent = () => {
-    // Confirmation Screen
-    if (step === totalSteps + 1 && confirmedBooking) {
+    if (step === (isCar ? 5 : 4)) {
       return (
         <div className="text-center">
           <motion.div initial={{scale:0}} animate={{scale:1}} transition={{type: 'spring', stiffness: 260, damping: 20}} className="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
           </motion.div>
           <h2 className="text-3xl font-bold text-amber-400 mb-2">{t('Booking_Request_Sent')}</h2>
-          <p className="text-stone-300 max-w-md mx-auto mb-6">{t('We_will_confirm_your_booking_shortly')}</p>
-          
-          <div className="bg-stone-800/50 border border-stone-700 rounded-lg p-4 max-w-sm mx-auto text-left text-sm space-y-2">
-            <div className="flex justify-between">
-              <span className="text-stone-400">{t('Item')}</span>
-              <span className="text-white font-semibold">{confirmedBooking.itemName}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-stone-400">{t('Total_Duration')}</span>
-              <span className="text-white font-semibold">{confirmedBooking.duration}</span>
-            </div>
-            <div className="flex justify-between border-t border-stone-600 pt-2 mt-2">
-              <span className="text-stone-400 font-bold">{t('Total')}</span>
-              <span className="text-amber-400 font-bold">{formatPrice(confirmedBooking.totalPrice)}</span>
-            </div>
-          </div>
-
+          <p className="text-stone-300 max-w-md mx-auto">{t('We_will_confirm_your_booking_shortly')}</p>
           <button type="button" onClick={() => navigate('/account/bookings')} className="mt-8 bg-amber-400 text-black px-6 py-2 rounded-full font-semibold text-sm hover:bg-amber-300 transition-colors">
               {t('My_Bookings')}
           </button>
@@ -301,24 +307,10 @@ const BookingPage: React.FC = () => {
       );
     }
 
-    const personalInfoStep = (
-      <div className="space-y-4">
-          <div><label className="text-sm text-stone-400">{t('Full_Name')}</label><input type="text" name="fullName" value={formData.fullName} onChange={handleChange} disabled={!!user} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white disabled:text-stone-400"/>{errors.fullName && <p className="text-xs text-red-500 mt-1">{errors.fullName}</p>}</div>
-          <div><label className="text-sm text-stone-400">{t('Email_Address')}</label><input type="email" name="email" value={formData.email} onChange={handleChange} disabled={!!user} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white disabled:text-stone-400"/>{errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}</div>
-          <div><label className="text-sm text-stone-400">{t('Phone_Number')}</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
-          <div><label className="text-sm text-stone-400">{t('Country_of_Residency')}</label><select name="countryOfResidency" value={formData.countryOfResidency} onChange={handleChange} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"><option value="" disabled>Select a country</option>{COUNTRIES.map(country => (<option key={country.code} value={country.code}>{country.name}</option>))}</select>{errors.countryOfResidency && <p className="text-xs text-red-500 mt-1">{errors.countryOfResidency}</p>}</div>
-          {isCar && <div><label className="text-sm text-stone-400">{t('Drivers_Age')}</label><input type="number" name="age" value={formData.age} onChange={handleChange} min="25" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>{errors.age && <p className="text-xs text-red-500 mt-1">{errors.age}</p>}</div>}
-      </div>
-    );
-
-    const paymentStep = (
-      <div><div className="flex border-b border-stone-700"><button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'stripe'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'stripe' ? 'text-amber-400 border-b-2 border-amber-400' : 'text-stone-400'}`}><CreditCardIcon className="w-5 h-5 inline mr-2"/>{t('Credit_Card')}</button><button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'crypto'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'crypto' ? 'text-amber-400 border-b-2 border-amber-400' : 'text-stone-400'}`}><CryptoIcon className="w-5 h-5 inline mr-2"/>{t('Cryptocurrency')}</button></div><div className="mt-6">{formData.paymentMethod === 'stripe' ? (<div className="space-y-4"><div><label className="text-sm text-stone-400">{t('Card_Number')}</label><input type="text" name="cardNumber" value={formData.cardNumber} onChange={handleChange} placeholder="•••• •••• •••• ••••" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>{errors.cardNumber && <p className="text-xs text-red-500 mt-1">{errors.cardNumber}</p>}</div><div className="grid grid-cols-2 gap-4"><div><label className="text-sm text-stone-400">{t('Expiry')}</label><input type="text" name="cardExpiry" value={formData.cardExpiry} onChange={handleChange} placeholder="MM / YY" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>{errors.cardExpiry && <p className="text-xs text-red-500 mt-1">{errors.cardExpiry}</p>}</div><div><label className="text-sm text-stone-400">{t('CVC')}</label><input type="text" name="cardCVC" value={formData.cardCVC} onChange={handleChange} placeholder="•••" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>{errors.cardCVC && <p className="text-xs text-red-500 mt-1">{errors.cardCVC}</p>}</div></div></div>) : (<div className="text-center"><p className="text-stone-300 mb-4">{t('Scan_or_copy_address_below')}</p><div className="w-40 h-40 bg-white p-2 rounded-md mx-auto flex items-center justify-center text-black">QR Code</div><input type="text" readOnly value="0x1234...abcd" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-4 text-white text-center text-sm"/><button type="button" className="mt-4 w-full py-2 bg-stone-700 text-white rounded-md hover:bg-stone-600">{t('I_have_sent_the_payment')}</button></div>)}</div></div>
-    );
-    
-    switch (categoryId) {
-      case 'cars':
-        switch (step) {
-          case 1: return (
+    if(isCar) {
+      switch (step) {
+        case 1:
+          return (
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div><label className="text-sm text-stone-400">{t('Pickup_Date')}</label><input type="date" name="pickupDate" value={formData.pickupDate} onChange={handleChange} min={today} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
@@ -332,45 +324,87 @@ const BookingPage: React.FC = () => {
               <div><h3 className="text-lg font-semibold text-white mb-2">{t('Extras_and_Addons')}</h3><div className="space-y-2">{RENTAL_EXTRAS.map(extra => <label key={extra.id} className="flex items-center p-3 bg-stone-800/50 rounded-md border border-stone-700 cursor-pointer has-[:checked]:border-amber-400"><input type="checkbox" name={extra.id} checked={formData.extras.includes(extra.id)} onChange={handleChange} className="h-4 w-4 text-amber-500 bg-stone-700 border-stone-600 rounded focus:ring-amber-500" /><span className="ml-3 text-sm text-white">{getTranslated(extra.label)}</span><span className="ml-auto text-xs text-stone-400">+{formatPrice(extra.pricePerDay[currency])}/{t('day')}</span></label>)}</div></div>
             </div>
           );
-          case 2: return personalInfoStep;
-          case 3: return (
-            <div><p className="text-stone-300 mb-4">{t('Please_provide_a_clear_photo_of_your_drivers_license')}</p><div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-stone-700 border-dashed rounded-md"><div className="space-y-1 text-center">{formData.licenseImage ? <img src={formData.licenseImage} alt="License Preview" className="mx-auto h-32 w-auto rounded-md"/> : <CameraIcon className="mx-auto h-12 w-12 text-stone-500"/>}<div className="flex text-sm text-stone-400 justify-center"><label htmlFor="file-upload" className="relative cursor-pointer bg-stone-800 rounded-md font-medium text-amber-400 hover:text-amber-300 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-amber-500 focus-within:ring-offset-stone-900 px-2"><span>{t('Upload_File')}</span><input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleLicenseUpload} accept="image/*" /></label></div><p className="text-xs text-stone-500">PNG, JPG up to 10MB</p></div></div>{errors.licenseImage && <p className="text-xs text-red-500 mt-1">{errors.licenseImage}</p>}</div>
-          );
-          case 4: return paymentStep;
-        }
-        break;
-      case 'villas':
-        switch (step) {
-          case 1: return (
-            <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                    <div><label className="text-sm text-stone-400">{t('Check_in_Date')}</label><input type="date" name="pickupDate" value={formData.pickupDate} onChange={handleChange} min={today} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
-                    <div><label className="text-sm text-stone-400">{t('Check_out_Date')}</label><input type="date" name="returnDate" value={formData.returnDate} onChange={handleChange} min={formData.pickupDate || today} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
-                </div>
-                {errors.date && <p className="text-xs text-red-500">{errors.date}</p>}
-                <div><label className="text-sm text-stone-400">{t('Number_of_Guests')}</label><input type="number" name="guests" value={formData.guests} onChange={handleChange} min="1" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
+        case 2:
+          return (
+            <div className="space-y-4">
+                <div><label className="text-sm text-stone-400">{t('Full_Name')}</label><input type="text" name="fullName" value={formData.fullName} onChange={handleChange} disabled={!!user} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white disabled:text-stone-400"/>{errors.fullName && <p className="text-xs text-red-500 mt-1">{errors.fullName}</p>}</div>
+                <div><label className="text-sm text-stone-400">{t('Email_Address')}</label><input type="email" name="email" value={formData.email} onChange={handleChange} disabled={!!user} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white disabled:text-stone-400"/>{errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}</div>
+                <div><label className="text-sm text-stone-400">{t('Phone_Number')}</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
+                <div><label className="text-sm text-stone-400">{t('Country_of_Residency')}</label><select name="countryOfResidency" value={formData.countryOfResidency} onChange={handleChange} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"><option value="" disabled>Select a country</option>{COUNTRIES.map(country => (<option key={country.code} value={country.code}>{country.name}</option>))}</select>{errors.countryOfResidency && <p className="text-xs text-red-500 mt-1">{errors.countryOfResidency}</p>}</div>
+                <div><label className="text-sm text-stone-400">{t('Drivers_Age')}</label><input type="number" name="age" value={formData.age} onChange={handleChange} min="25" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>{errors.age && <p className="text-xs text-red-500 mt-1">{errors.age}</p>}</div>
             </div>
           );
-          case 2: return personalInfoStep;
-          case 3: return paymentStep;
-        }
-        break;
-      default: // Yachts, Jets, Helicopters
-        switch (step) {
-          case 1: return (
+        case 3:
+          return (
+            <div><p className="text-stone-300 mb-4">{t('Please_provide_a_clear_photo_of_your_drivers_license')}</p><div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-stone-700 border-dashed rounded-md"><div className="space-y-1 text-center">{formData.licenseImage ? <img src={formData.licenseImage} alt="License Preview" className="mx-auto h-32 w-auto rounded-md"/> : <CameraIcon className="mx-auto h-12 w-12 text-stone-500"/>}<div className="flex text-sm text-stone-400 justify-center"><label htmlFor="file-upload" className="relative cursor-pointer bg-stone-800 rounded-md font-medium text-amber-400 hover:text-amber-300 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-amber-500 focus-within:ring-offset-stone-900 px-2"><span>{t('Upload_File')}</span><input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleLicenseUpload} accept="image/*" /></label></div><p className="text-xs text-stone-500">PNG, JPG, GIF up to 10MB</p></div></div>{errors.licenseImage && <p className="text-xs text-red-500 mt-1">{errors.licenseImage}</p>}</div>
+          );
+        case 4:
+          return (
+            <div><div className="flex border-b border-stone-700"><button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'stripe'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'stripe' ? 'text-amber-400 border-b-2 border-amber-400' : 'text-stone-400'}`}><CreditCardIcon className="w-5 h-5 inline mr-2"/>{t('Credit_Card')}</button><button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'crypto'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'crypto' ? 'text-amber-400 border-b-2 border-amber-400' : 'text-stone-400'}`}><CryptoIcon className="w-5 h-5 inline mr-2"/>{t('Cryptocurrency')}</button></div><div className="mt-6">{formData.paymentMethod === 'stripe' ? (<div className="space-y-4"><div><label className="text-sm text-stone-400">{t('Card_Number')}</label><input type="text" name="cardNumber" value={formData.cardNumber} onChange={handleChange} placeholder="•••• •••• •••• ••••" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>{errors.cardNumber && <p className="text-xs text-red-500 mt-1">{errors.cardNumber}</p>}</div><div className="grid grid-cols-2 gap-4"><div><label className="text-sm text-stone-400">{t('Expiry')}</label><input type="text" name="cardExpiry" value={formData.cardExpiry} onChange={handleChange} placeholder="MM / YY" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>{errors.cardExpiry && <p className="text-xs text-red-500 mt-1">{errors.cardExpiry}</p>}</div><div><label className="text-sm text-stone-400">{t('CVC')}</label><input type="text" name="cardCVC" value={formData.cardCVC} onChange={handleChange} placeholder="•••" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>{errors.cardCVC && <p className="text-xs text-red-500 mt-1">{errors.cardCVC}</p>}</div></div></div>) : (<div className="text-center"><p className="text-stone-300 mb-4">{t('Scan_or_copy_address_below')}</p><div className="w-40 h-40 bg-white p-2 rounded-md mx-auto flex items-center justify-center text-black">QR Code</div><input type="text" readOnly value="0x1234...abcd" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-4 text-white text-center text-sm"/><button type="button" className="mt-4 w-full py-2 bg-stone-700 text-white rounded-md hover:bg-stone-600">{t('I_have_sent_the_payment')}</button></div>)}</div></div>
+          );
+        default: return null;
+      }
+    } else { // Not a car
+      switch (step) {
+        case 1:
+          return (
             <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
-                    <div><label className="text-sm text-stone-400">{t('Pickup_Date')}</label><input type="date" name="pickupDate" value={formData.pickupDate} onChange={handleChange} min={today} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
-                    <div><label className="text-sm text-stone-400">{t('Return_Date')}</label><input type="date" name="returnDate" value={formData.returnDate} onChange={handleChange} min={formData.pickupDate || today} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
+                    <div>
+                        <label className="text-sm text-stone-400">{t('Check_in_Date')}</label>
+                        <input type="date" name="checkinDate" value={formData.checkinDate} onChange={handleChange} min={today} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>
+                    </div>
+                    <div>
+                        <label className="text-sm text-stone-400">{t('Check_out_Date')}</label>
+                        <input type="date" name="checkoutDate" value={formData.checkoutDate} onChange={handleChange} min={formData.checkinDate || today} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>
+                    </div>
                 </div>
                 {errors.date && <p className="text-xs text-red-500">{errors.date}</p>}
+                <div>
+                    <label className="text-sm text-stone-400">{t('Number_of_Guests')}</label>
+                    <input type="number" name="guests" value={formData.guests} onChange={handleChange} min="1" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>
+                </div>
             </div>
           );
-          case 2: return personalInfoStep;
-          case 3: return paymentStep;
-        }
+        case 2:
+          return (
+            <div className="space-y-4">
+                <div><label className="text-sm text-stone-400">{t('Full_Name')}</label><input type="text" name="fullName" value={formData.fullName} onChange={handleChange} disabled={!!user} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white disabled:text-stone-400"/>{errors.fullName && <p className="text-xs text-red-500 mt-1">{errors.fullName}</p>}</div>
+                <div><label className="text-sm text-stone-400">{t('Email_Address')}</label><input type="email" name="email" value={formData.email} onChange={handleChange} disabled={!!user} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white disabled:text-stone-400"/>{errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}</div>
+                <div><label className="text-sm text-stone-400">{t('Phone_Number')}</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
+                <div><label className="text-sm text-stone-400">{t('Country_of_Residency')}</label><select name="countryOfResidency" value={formData.countryOfResidency} onChange={handleChange} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"><option value="" disabled>Select a country</option>{COUNTRIES.map(country => (<option key={country.code} value={country.code}>{country.name}</option>))}</select>{errors.countryOfResidency && <p className="text-xs text-red-500 mt-1">{errors.countryOfResidency}</p>}</div>
+            </div>
+          );
+        case 3:
+          return (
+            <div>
+                <div className="flex border-b border-stone-700">
+                    <button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'stripe'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'stripe' ? 'text-amber-400 border-b-2 border-amber-400' : 'text-stone-400'}`}><CreditCardIcon className="w-5 h-5 inline mr-2"/>{t('Credit_Card')}</button>
+                    <button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'crypto'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'crypto' ? 'text-amber-400 border-b-2 border-amber-400' : 'text-stone-400'}`}><CryptoIcon className="w-5 h-5 inline mr-2"/>{t('Cryptocurrency')}</button>
+                </div>
+                <div className="mt-6">
+                {formData.paymentMethod === 'stripe' ? (
+                    <div className="space-y-4">
+                        <div><label className="text-sm text-stone-400">{t('Card_Number')}</label><input type="text" name="cardNumber" value={formData.cardNumber} onChange={handleChange} placeholder="•••• •••• •••• ••••" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>{errors.cardNumber && <p className="text-xs text-red-500 mt-1">{errors.cardNumber}</p>}</div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div><label className="text-sm text-stone-400">{t('Expiry')}</label><input type="text" name="cardExpiry" value={formData.cardExpiry} onChange={handleChange} placeholder="MM / YY" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>{errors.cardExpiry && <p className="text-xs text-red-500 mt-1">{errors.cardExpiry}</p>}</div>
+                            <div><label className="text-sm text-stone-400">{t('CVC')}</label><input type="text" name="cardCVC" value={formData.cardCVC} onChange={handleChange} placeholder="•••" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>{errors.cardCVC && <p className="text-xs text-red-500 mt-1">{errors.cardCVC}</p>}</div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="text-center">
+                        <p className="text-stone-300 mb-4">{t('Scan_or_copy_address_below')}</p>
+                        <div className="w-40 h-40 bg-white p-2 rounded-md mx-auto flex items-center justify-center text-black">QR Code</div>
+                        <input type="text" readOnly value="0x1234...abcd" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-4 text-white text-center text-sm"/>
+                        <button type="button" className="mt-4 w-full py-2 bg-stone-700 text-white rounded-md hover:bg-stone-600">{t('I_have_sent_the_payment')}</button>
+                    </div>
+                )}
+                </div>
+            </div>
+          );
+        default: return null;
+      }
     }
-    return null;
   };
 
   return (
@@ -386,7 +420,7 @@ const BookingPage: React.FC = () => {
                 {t('Book_Your')} <span className="text-amber-400">{item.name}</span>
             </h1>
 
-            {step <= totalSteps && (
+            {step < (isCar ? 5 : 4) && (
                 <div className="w-full max-w-lg mx-auto mb-12">
                     <div className="flex items-center justify-between">
                         {steps.map((s, index) => (
@@ -449,10 +483,10 @@ const BookingPage: React.FC = () => {
                                 {renderStepContent()}
                             </motion.div>
                         </AnimatePresence>
-                        {step <= totalSteps && (
+                        {step < (isCar ? 5 : 4) && (
                             <div className="flex justify-between mt-8">
                                 <button type="button" onClick={handleBack} disabled={step === 1} className="px-8 py-3 bg-stone-700 text-white font-bold rounded-full hover:bg-stone-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('Back')}</button>
-                                {step < totalSteps ?
+                                {step < (isCar ? 4 : 3) ?
                                     <button type="button" onClick={handleNext} className="px-8 py-3 bg-amber-400 text-black font-bold rounded-full hover:bg-amber-300 transition-colors">{t('Next')}</button> :
                                     <button type="submit" disabled={isProcessing} className="px-8 py-3 bg-amber-400 text-black font-bold rounded-full hover:bg-amber-300 transition-colors flex items-center justify-center disabled:bg-stone-600 disabled:cursor-not-allowed">
                                         {isProcessing ? (

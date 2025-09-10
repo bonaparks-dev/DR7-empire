@@ -6,6 +6,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../hooks/useAuth';
 import { RENTAL_CATEGORIES } from '../../constants';
 import { motion, AnimatePresence } from 'framer-motion';
+import { MenuIcon, XIcon } from '../icons/Icons';
 
 const LanguageSwitcher: React.FC = () => {
     const { language, setLanguage } = useLanguage();
@@ -121,11 +122,90 @@ const UserMenu: React.FC = () => {
     );
 };
 
+const MobileMenu: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ isOpen, onClose }) => {
+    const { t } = useTranslation();
+    const { user, isLoggedIn, isLoading, logout } = useAuth();
+
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'auto';
+        }
+        return () => {
+            document.body.style.overflow = 'auto';
+        };
+    }, [isOpen]);
+    
+    const navLinkClasses = "text-3xl font-bold text-stone-300 hover:text-amber-400 transition-colors duration-300";
+
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <motion.div
+                    initial={{ opacity: 0, x: '100%' }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: '100%' }}
+                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                    className="fixed inset-0 bg-black/95 backdrop-blur-lg z-50 p-6 flex flex-col"
+                >
+                    <div className="flex justify-between items-center">
+                        <NavLink to="/" onClick={onClose} className="text-2xl font-bold tracking-wider text-white">
+                            DR<span className="text-amber-400">7</span>
+                        </NavLink>
+                        <button onClick={onClose} aria-label="Close menu" className="text-stone-300 hover:text-white">
+                            <XIcon className="w-8 h-8"/>
+                        </button>
+                    </div>
+
+                    <nav className="flex flex-col items-center justify-center flex-grow space-y-6">
+                        {RENTAL_CATEGORIES.map(cat => (
+                            <NavLink key={cat.id} to={`/${cat.id}`} onClick={onClose} className={({isActive}) => `${navLinkClasses} ${isActive ? 'text-amber-400' : ''}`}>
+                                {t(cat.label.en.replace(/ /g, '_') as any)}
+                            </NavLink>
+                        ))}
+                        <NavLink to="/lottery" onClick={onClose} className={({isActive}) => `${navLinkClasses} ${isActive ? 'text-amber-400' : ''}`}>{t('Lottery')}</NavLink>
+                        <NavLink to="/membership" onClick={onClose} className={({isActive}) => `${navLinkClasses} ${isActive ? 'text-amber-400' : ''}`}>{t('Membership')}</NavLink>
+                    </nav>
+                    
+                    <div className="mt-auto pt-8 border-t border-stone-800">
+                        <div className="text-center">
+                        {!isLoading && (
+                            isLoggedIn && user ? (
+                                <div className="space-y-4">
+                                     <Link to="/account/profile" onClick={onClose} className="block w-full py-3 text-lg font-semibold bg-amber-400 text-black rounded-full hover:bg-amber-300 transition-colors duration-300">
+                                        {t('My_Account')}
+                                    </Link>
+                                    <button onClick={() => { logout(); onClose(); }} className="block w-full py-3 text-lg font-semibold bg-stone-700 text-white rounded-full hover:bg-stone-600 transition-colors duration-300">
+                                        {t('Sign_Out')}
+                                    </button>
+                                </div>
+                            ) : (
+                                <Link to="/signin" onClick={onClose} className="block w-full py-3 text-lg font-semibold bg-amber-400 text-black rounded-full hover:bg-amber-300 transition-colors duration-300">
+                                    {t('Sign_In')}
+                                </Link>
+                            )
+                        )}
+                        </div>
+
+                        <div className="flex justify-center space-x-4 mt-6">
+                            <LanguageSwitcher />
+                            <CurrencySwitcher />
+                        </div>
+                    </div>
+
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+};
+
 
 const Header: React.FC = () => {
     const { t } = useTranslation();
     const { user, isLoggedIn, isLoading } = useAuth();
     const [scrolled, setScrolled] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -138,44 +218,53 @@ const Header: React.FC = () => {
     const navLinkClasses = "px-3 py-2 text-stone-300 hover:text-amber-400 transition-colors duration-300 relative after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:w-0 after:h-[1px] after:bg-amber-400 after:transition-all after:duration-300 after:-translate-x-1/2 hover:after:w-4/5";
 
     return (
-        <motion.header
-            initial={{ y: -100 }}
-            animate={{ y: 0 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
-            className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-black/50 backdrop-blur-lg border-b border-stone-800' : 'bg-transparent'}`}
-        >
-            <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-                <NavLink to="/" className="text-2xl font-bold tracking-wider text-white">
-                    DR<span className="text-amber-400">7</span>
-                </NavLink>
-                <nav className="hidden md:flex items-center space-x-2 text-sm font-medium">
-                    {RENTAL_CATEGORIES.map(cat => (
-                         <NavLink key={cat.id} to={`/${cat.id}`} className={({isActive}) => `${navLinkClasses} ${isActive ? 'text-amber-400' : ''}`}>
-                            {t(cat.label.en.replace(/ /g, '_') as any)}
-                        </NavLink>
-                    ))}
-                    {user?.membership ? (
-                         <NavLink to="/club-dashboard" className={({isActive}) => `${navLinkClasses} ${isActive ? 'text-amber-400' : ''}`}>{t('Club_Dashboard')}</NavLink>
-                    ) : (
-                        <NavLink to="/membership" className={({isActive}) => `${navLinkClasses} ${isActive ? 'text-amber-400' : ''}`}>{t('Membership')}</NavLink>
-                    )}
-                    <NavLink to="/lottery" className={({isActive}) => `${navLinkClasses} ${isActive ? 'text-amber-400' : ''}`}>{t('Lottery')}</NavLink>
-                </nav>
-                <div className="flex items-center space-x-4">
-                    <LanguageSwitcher />
-                    <CurrencySwitcher />
-                    {!isLoading && (
-                        isLoggedIn ? (
-                             <UserMenu />
+        <>
+            <motion.header
+                initial={{ y: -100 }}
+                animate={{ y: 0 }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+                className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${scrolled ? 'bg-black/50 backdrop-blur-lg border-b border-stone-800' : 'bg-transparent'}`}
+            >
+                <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+                    <NavLink to="/" className="text-2xl font-bold tracking-wider text-white">
+                        DR<span className="text-amber-400">7</span>
+                    </NavLink>
+                    <nav className="hidden md:flex items-center space-x-2 text-sm font-medium">
+                        {RENTAL_CATEGORIES.map(cat => (
+                             <NavLink key={cat.id} to={`/${cat.id}`} className={({isActive}) => `${navLinkClasses} ${isActive ? 'text-amber-400' : ''}`}>
+                                {t(cat.label.en.replace(/ /g, '_') as any)}
+                            </NavLink>
+                        ))}
+                        <NavLink to="/lottery" className={({isActive}) => `${navLinkClasses} ${isActive ? 'text-amber-400' : ''}`}>{t('Lottery')}</NavLink>
+                        {user?.membership ? (
+                             <NavLink to="/club-dashboard" className={({isActive}) => `${navLinkClasses} ${isActive ? 'text-amber-400' : ''}`}>{t('Club_Dashboard')}</NavLink>
                         ) : (
-                            <Link to="/signin" className="px-5 py-2 text-sm font-semibold bg-transparent border border-amber-400 text-amber-400 rounded-full hover:bg-amber-400 hover:text-black transition-colors duration-300">
-                                {t('Sign_In')}
-                            </Link>
-                        )
-                    )}
+                            <NavLink to="/membership" className={({isActive}) => `${navLinkClasses} ${isActive ? 'text-amber-400' : ''}`}>{t('Membership')}</NavLink>
+                        )}
+                    </nav>
+                    <div className="hidden md:flex items-center space-x-4">
+                        <LanguageSwitcher />
+                        <CurrencySwitcher />
+                        {!isLoading && (
+                            isLoggedIn ? (
+                                 <UserMenu />
+                            ) : (
+                                <Link to="/signin" className="px-4 py-2 text-sm font-semibold bg-amber-400 text-black rounded-full hover:bg-amber-300 transition-colors duration-300 transform hover:scale-105">
+                                    {t('Sign_In')}
+                                </Link>
+                            )
+                        )}
+                    </div>
+
+                    <div className="md:hidden">
+                        <button onClick={() => setIsMenuOpen(true)} aria-label="Open menu" className="text-stone-200 hover:text-amber-400">
+                            <MenuIcon className="w-7 h-7" />
+                        </button>
+                    </div>
                 </div>
-            </div>
-        </motion.header>
+            </motion.header>
+            <MobileMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+        </>
     );
 };
 
