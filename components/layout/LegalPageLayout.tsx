@@ -21,7 +21,7 @@ const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({ title, children }) =>
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h1 className="text-4xl md:text-5xl font-bold text-white text-center border-b-2 border-amber-400 pb-4 mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold text-white text-center border-b-2 border-white pb-4 mb-12">
             {title}
           </h1>
         </motion.div>
@@ -30,7 +30,7 @@ const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({ title, children }) =>
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="prose prose-invert prose-lg max-w-4xl mx-auto text-stone-300 prose-headings:text-amber-400 prose-a:text-amber-400 hover:prose-a:text-amber-300 prose-strong:text-white"
+          className="prose prose-invert prose-lg max-w-4xl mx-auto text-gray-300 prose-headings:text-white prose-a:text-white hover:prose-a:text-gray-300 prose-strong:text-white"
         >
           {children}
         </motion.div>

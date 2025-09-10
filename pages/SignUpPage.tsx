@@ -6,10 +6,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 const strengthLevels = [
-    { labelKey: 'Password_Strength_Weak', color: 'bg-red-500', textColor: 'text-red-500' },
-    { labelKey: 'Password_Strength_Medium', color: 'bg-yellow-500', textColor: 'text-yellow-500' },
-    { labelKey: 'Password_Strength_Good', color: 'bg-blue-500', textColor: 'text-blue-500' },
-    { labelKey: 'Password_Strength_Strong', color: 'bg-green-500', textColor: 'text-green-500' },
+    { labelKey: 'Password_Strength_Weak', color: 'bg-gray-700', textColor: 'text-gray-400' },
+    { labelKey: 'Password_Strength_Medium', color: 'bg-gray-600', textColor: 'text-gray-300' },
+    { labelKey: 'Password_Strength_Good', color: 'bg-gray-500', textColor: 'text-gray-200' },
+    { labelKey: 'Password_Strength_Strong', color: 'bg-gray-400', textColor: 'text-white' },
 ];
 
 const calculatePasswordStrength = (password: string) => {
@@ -98,7 +98,7 @@ const SignUpPage: React.FC = () => {
         navigate('/');
     };
 
-    const getInputClassName = (field: string) => `appearance-none rounded-md relative block w-full px-3 py-3 border bg-stone-800 text-white placeholder-stone-400 focus:outline-none focus:ring-amber-500 focus:border-amber-500 focus:z-10 sm:text-sm ${errors[field] ? 'border-red-500' : 'border-stone-700'}`;
+    const getInputClassName = (field: string) => `appearance-none rounded-md relative block w-full px-3 py-3 border bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-white focus:border-white focus:z-10 sm:text-sm ${errors[field] ? 'border-gray-400' : 'border-gray-700'}`;
 
     return (
         <motion.div
@@ -113,11 +113,11 @@ const SignUpPage: React.FC = () => {
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.2 }}
-                        className="bg-stone-900/50 backdrop-blur-sm border border-stone-800 rounded-lg shadow-2xl shadow-black/50 p-8 space-y-6"
+                        className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg shadow-2xl shadow-black/50 p-8 space-y-6"
                     >
                         <div className="text-center">
                             <h2 className="text-3xl font-bold text-white">{t('Create_Your_Account')}</h2>
-                            <p className="mt-2 text-sm text-stone-400">
+                            <p className="mt-2 text-sm text-gray-400">
                                 {t('Join_the_exclusive_world_of_DR7')}
                             </p>
                         </div>
@@ -126,11 +126,11 @@ const SignUpPage: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={handleGoogleSignUp}
-                                className="w-full flex items-center justify-center py-3 px-4 border border-stone-700 rounded-md shadow-sm bg-stone-800 text-sm font-medium text-white hover:bg-stone-700 transition-colors">
+                                className="w-full flex items-center justify-center py-3 px-4 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors">
                                 <GoogleIcon className="w-5 h-5 mr-2" />
                                 {t('Sign_in_with_Google')}
                             </button>
-                            <button className="w-full flex items-center justify-center py-3 px-4 border border-stone-700 rounded-md shadow-sm bg-stone-800 text-sm font-medium text-white hover:bg-stone-700 transition-colors">
+                            <button className="w-full flex items-center justify-center py-3 px-4 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors">
                                 <WalletIcon className="w-5 h-5 mr-2" />
                                 {t('Sign_in_with_Wallet')}
                             </button>
@@ -138,10 +138,10 @@ const SignUpPage: React.FC = () => {
                         
                         <div className="relative">
                             <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-stone-700" />
+                                <div className="w-full border-t border-gray-700" />
                             </div>
                             <div className="relative flex justify-center text-sm">
-                                <span className="px-2 bg-stone-900 text-stone-500">{t('OR')}</span>
+                                <span className="px-2 bg-gray-900 text-gray-500">{t('OR')}</span>
                             </div>
                         </div>
 
@@ -151,14 +151,14 @@ const SignUpPage: React.FC = () => {
                                 <input id="full-name" name="fullName" type="text" autoComplete="name" required
                                     className={getInputClassName('fullName')} placeholder={t('Full_Name')}
                                     value={formData.fullName} onChange={handleChange} />
-                                {errors.fullName && <p className="mt-2 text-xs text-red-500">{errors.fullName}</p>}
+                                {errors.fullName && <p className="mt-2 text-xs text-gray-300">{errors.fullName}</p>}
                             </div>
                             <div>
                                 <label htmlFor="email-address" className="sr-only">{t('Email_Address')}</label>
                                 <input id="email-address" name="email" type="email" autoComplete="email" required
                                     className={getInputClassName('email')} placeholder={t('Email_Address')}
                                     value={formData.email} onChange={handleChange} />
-                                {errors.email && <p className="mt-2 text-xs text-red-500">{errors.email}</p>}
+                                {errors.email && <p className="mt-2 text-xs text-gray-300">{errors.email}</p>}
                             </div>
                              <div>
                                 <label htmlFor="password" className="sr-only">{t('Password')}</label>
@@ -169,18 +169,18 @@ const SignUpPage: React.FC = () => {
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(prev => !prev)}
-                                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-stone-400 hover:text-white focus:outline-none"
+                                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-white focus:outline-none"
                                         aria-label={showPassword ? "Hide password" : "Show password"}
                                     >
                                         {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                                     </button>
                                 </div>
-                                {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password}</p>}
+                                {errors.password && <p className="mt-1 text-xs text-gray-300">{errors.password}</p>}
                                 
                                 {formData.password.length > 0 && strengthInfo && (
                                      <div className="flex items-center mt-2 space-x-1">
                                         {Array.from({ length: 4 }).map((_, index) => (
-                                            <div key={index} className="h-1.5 flex-1 rounded-full bg-stone-700">
+                                            <div key={index} className="h-1.5 flex-1 rounded-full bg-gray-800">
                                             <div className={`h-full rounded-full transition-all duration-300 ${index <= passwordStrength ? strengthInfo.color : ''}`} />
                                             </div>
                                         ))}
@@ -199,36 +199,36 @@ const SignUpPage: React.FC = () => {
                                     <button
                                         type="button"
                                         onClick={() => setShowConfirmPassword(prev => !prev)}
-                                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-stone-400 hover:text-white focus:outline-none"
+                                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-white focus:outline-none"
                                         aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                                     >
                                         {showConfirmPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                                     </button>
                                 </div>
-                                {errors.confirmPassword && <p className="mt-2 text-xs text-red-500">{errors.confirmPassword}</p>}
+                                {errors.confirmPassword && <p className="mt-2 text-xs text-gray-300">{errors.confirmPassword}</p>}
                             </div>
 
                             <div>
                                 <div className="flex items-start">
                                     <div className="flex items-center h-5">
                                         <input id="terms" name="terms" type="checkbox" required
-                                            className="h-4 w-4 text-amber-500 bg-stone-700 border-stone-600 rounded focus:ring-amber-500"
+                                            className="h-4 w-4 text-white bg-gray-700 border-gray-600 rounded focus:ring-white"
                                             checked={formData.terms} onChange={handleChange} />
                                     </div>
                                     <div className="ml-3 text-sm">
-                                        <label htmlFor="terms" className="font-medium text-stone-400">
+                                        <label htmlFor="terms" className="font-medium text-gray-400">
                                             {t('I_agree_to_the')}{' '}
-                                            <a href="#" className="text-amber-400 hover:text-amber-300">{t('Terms_and_Privacy_Policy')}</a>
+                                            <a href="#" className="text-white hover:text-gray-300">{t('Terms_and_Privacy_Policy')}</a>
                                         </label>
                                     </div>
                                 </div>
-                                {errors.terms && <p className="mt-2 text-xs text-red-500">{errors.terms}</p>}
+                                {errors.terms && <p className="mt-2 text-xs text-gray-300">{errors.terms}</p>}
                             </div>
 
                             <div>
                                 <button
                                     type="submit"
-                                    className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-black bg-amber-400 hover:bg-amber-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 focus:ring-offset-stone-900 transition-colors"
+                                    className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-black bg-white hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white focus:ring-offset-gray-900 transition-colors"
                                 >
                                     {t('Create_Account')}
                                 </button>
@@ -236,9 +236,9 @@ const SignUpPage: React.FC = () => {
                         </form>
                         
                         <div className="text-sm text-center">
-                            <p className="text-stone-400">
+                            <p className="text-gray-400">
                                 {t('Already_have_an_account')}{' '}
-                                <Link to="/signin" className="font-medium text-amber-400 hover:text-amber-300">
+                                <Link to="/signin" className="font-medium text-white hover:text-gray-300">
                                     {t('Sign_In')}
                                 </Link>
                             </p>

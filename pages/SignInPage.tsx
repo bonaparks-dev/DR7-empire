@@ -78,11 +78,11 @@ const SignInPage: React.FC = () => {
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.2 }}
-                        className="bg-stone-900/50 backdrop-blur-sm border border-stone-800 rounded-lg shadow-2xl shadow-black/50 p-8 space-y-6"
+                        className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg shadow-2xl shadow-black/50 p-8 space-y-6"
                     >
                         <div className="text-center">
                             <h2 className="text-3xl font-bold text-white">{t('Access_Your_Account')}</h2>
-                            <p className="mt-2 text-sm text-stone-400">
+                            <p className="mt-2 text-sm text-gray-400">
                                 {t('Welcome_back_to_the_world_of_luxury')}
                             </p>
                         </div>
@@ -91,11 +91,11 @@ const SignInPage: React.FC = () => {
                             <button 
                                 type="button"
                                 onClick={handleGoogleSignIn}
-                                className="w-full flex items-center justify-center py-3 px-4 border border-stone-700 rounded-md shadow-sm bg-stone-800 text-sm font-medium text-white hover:bg-stone-700 transition-colors">
+                                className="w-full flex items-center justify-center py-3 px-4 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors">
                                 <GoogleIcon className="w-5 h-5 mr-2" />
                                 {t('Sign_in_with_Google')}
                             </button>
-                            <button className="w-full flex items-center justify-center py-3 px-4 border border-stone-700 rounded-md shadow-sm bg-stone-800 text-sm font-medium text-white hover:bg-stone-700 transition-colors">
+                            <button className="w-full flex items-center justify-center py-3 px-4 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors">
                                 <WalletIcon className="w-5 h-5 mr-2" />
                                 {t('Sign_in_with_Wallet')}
                             </button>
@@ -103,10 +103,10 @@ const SignInPage: React.FC = () => {
                         
                         <div className="relative">
                             <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-stone-700" />
+                                <div className="w-full border-t border-gray-700" />
                             </div>
                             <div className="relative flex justify-center text-sm">
-                                <span className="px-2 bg-stone-900 text-stone-500">{t('OR')}</span>
+                                <span className="px-2 bg-gray-900 text-gray-500">{t('OR')}</span>
                             </div>
                         </div>
 
@@ -114,27 +114,27 @@ const SignInPage: React.FC = () => {
                             <div>
                                 <label htmlFor="email-address" className="sr-only">{t('Email_Address')}</label>
                                 <input id="email-address" name="email" type="email" autoComplete="email" required
-                                    className={`appearance-none rounded-md relative block w-full px-3 py-3 border bg-stone-800 text-white placeholder-stone-400 focus:outline-none focus:ring-amber-500 focus:border-amber-500 focus:z-10 sm:text-sm ${emailError ? 'border-red-500' : 'border-stone-700'}`}
+                                    className={`appearance-none rounded-md relative block w-full px-3 py-3 border bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-white focus:border-white focus:z-10 sm:text-sm ${emailError ? 'border-gray-400' : 'border-gray-700'}`}
                                     placeholder={t('Email_Address')}
                                     value={email}
                                     onChange={handleEmailChange}
                                     onBlur={handleEmailBlur}
                                 />
-                                {emailError && <p className="mt-2 text-xs text-red-500">{emailError}</p>}
+                                {emailError && <p className="mt-2 text-xs text-gray-300">{emailError}</p>}
                             </div>
                             <div>
                                 <label htmlFor="password" className="sr-only">{t('Password')}</label>
                                 <input id="password" name="password" type="password" autoComplete="current-password" required
-                                    className={`appearance-none rounded-md relative block w-full px-3 py-3 border bg-stone-800 text-white placeholder-stone-400 focus:outline-none focus:ring-amber-500 focus:border-amber-500 focus:z-10 sm:text-sm ${passwordError ? 'border-red-500' : 'border-stone-700'}`}
+                                    className={`appearance-none rounded-md relative block w-full px-3 py-3 border bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-white focus:border-white focus:z-10 sm:text-sm ${passwordError ? 'border-gray-400' : 'border-gray-700'}`}
                                     placeholder={t('Password')}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                 />
-                                {passwordError && <p className="mt-2 text-xs text-red-500">{passwordError}</p>}
+                                {passwordError && <p className="mt-2 text-xs text-gray-300">{passwordError}</p>}
                             </div>
 
                             <div className="flex items-center justify-end text-sm">
-                                <Link to="/forgot-password" className="font-medium text-amber-400 hover:text-amber-300">
+                                <Link to="/forgot-password" className="font-medium text-white hover:text-gray-300">
                                     {t('Forgot_Password')}
                                 </Link>
                             </div>
@@ -142,7 +142,7 @@ const SignInPage: React.FC = () => {
                             <div>
                                 <button
                                     type="submit"
-                                    className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-black bg-amber-400 hover:bg-amber-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 focus:ring-offset-stone-900 transition-colors"
+                                    className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-black bg-white hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white focus:ring-offset-gray-900 transition-colors"
                                 >
                                     {t('Sign_In')}
                                 </button>
@@ -150,9 +150,9 @@ const SignInPage: React.FC = () => {
                         </form>
                         
                         <div className="text-sm text-center">
-                            <p className="text-stone-400">
+                            <p className="text-gray-400">
                                 {t('Dont_have_an_account')}{' '}
-                                <Link to="/signup" className="font-medium text-amber-400 hover:text-amber-300">
+                                <Link to="/signup" className="font-medium text-white hover:text-gray-300">
                                     {t('Sign_Up')}
                                 </Link>
                             </p>

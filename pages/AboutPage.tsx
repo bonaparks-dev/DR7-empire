@@ -36,12 +36,12 @@ const TeamMemberCard: React.FC<typeof teamMembers[0]> = ({ name, title, image, b
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.3 }}
         transition={{ duration: 0.5 }}
-        className="bg-stone-900/50 backdrop-blur-sm border border-stone-800 rounded-lg overflow-hidden group transition-all duration-300 hover:border-amber-400/50 hover:shadow-2xl hover:shadow-amber-500/10 text-center p-6"
+        className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg overflow-hidden group transition-all duration-300 hover:border-white/50 hover:shadow-2xl hover:shadow-white/10 text-center p-6"
     >
-        <img src={image} alt={name} className="w-32 h-32 rounded-full mx-auto object-cover border-4 border-stone-700 group-hover:border-amber-400 transition-colors duration-300" />
+        <img src={image} alt={name} className="w-32 h-32 rounded-full mx-auto object-cover border-4 border-gray-700 group-hover:border-white transition-colors duration-300" />
         <h3 className="text-xl font-bold text-white mt-4">{name}</h3>
-        <p className="text-amber-400 font-semibold text-sm">{title}</p>
-        <p className="text-stone-400 text-sm mt-2">{bio}</p>
+        <p className="text-white font-semibold text-sm">{title}</p>
+        <p className="text-gray-400 text-sm mt-2">{bio}</p>
     </motion.div>
 );
 
@@ -74,7 +74,7 @@ const AboutPage: React.FC = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.8, delay: 0.2 }}
-                        className="text-lg md:text-xl font-light text-stone-300 mt-2 max-w-2xl mx-auto"
+                        className="text-lg md:text-xl font-light text-gray-300 mt-2 max-w-2xl mx-auto"
                     >
                         {t('Meet_the_team')}
                     </motion.p>
@@ -89,13 +89,13 @@ const AboutPage: React.FC = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, amount: 0.5 }}
                         transition={{ duration: 0.5 }}
-                        className="text-3xl font-bold text-amber-400 mb-4">{t('Our_Mission')}</motion.h2>
+                        className="text-3xl font-bold text-white mb-4">{t('Our_Mission')}</motion.h2>
                     <motion.p
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, amount: 0.5 }}
                         transition={{ duration: 0.5, delay: 0.2 }}
-                        className="text-lg text-stone-300 leading-relaxed"
+                        className="text-lg text-gray-300 leading-relaxed"
                     >
                         {t('Our_Mission_Statement')}
                     </motion.p>
@@ -103,7 +103,7 @@ const AboutPage: React.FC = () => {
             </section>
             
             {/* Team Section */}
-            <section className="py-20 bg-stone-900/40">
+            <section className="py-20 bg-gray-900/40">
                 <div className="container mx-auto px-6">
                     <motion.h2 
                         initial={{ opacity: 0, y: 20 }}
@@ -136,7 +136,7 @@ const AboutPage: React.FC = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, amount: 0.5 }}
                         transition={{ duration: 0.5, delay: 0.2 }}
-                        className="mt-4 text-lg text-stone-400 max-w-2xl mx-auto">{t('Join_Our_Team_Statement')}</motion.p>
+                        className="mt-4 text-lg text-gray-400 max-w-2xl mx-auto">{t('Join_Our_Team_Statement')}</motion.p>
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
@@ -144,7 +144,7 @@ const AboutPage: React.FC = () => {
                         transition={{ duration: 0.5, delay: 0.4 }}
                         className="mt-8"
                     >
-                        <Link to="/careers" className="bg-amber-400 text-black px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm hover:bg-amber-300 transition-all duration-300 transform hover:scale-105">
+                        <Link to="/careers" className="bg-white text-black px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm hover:bg-gray-200 transition-all duration-300 transform hover:scale-105">
                             {t('View_Openings')}
                         </Link>
                     </motion.div>

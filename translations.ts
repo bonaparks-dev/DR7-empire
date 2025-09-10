@@ -1,3 +1,4 @@
+
 import type { Translations } from './types';
 
 export const translations: Translations = {
@@ -82,7 +83,7 @@ export const translations: Translations = {
   Minimum_age_is_25: { en: "Minimum age for this vehicle is 25.", it: "L'età minima per questo veicolo è 25 anni." },
   Please_provide_a_clear_photo_of_your_drivers_license: { en: "Please provide a clear photo of the front of your driver's license.", it: "Fornisci una foto chiara della parte anteriore della tua patente di guida." },
   Upload_File: { en: "Upload File", it: "Carica File" },
-  Use_Camera: { en: "Use Camera", it: "Usa Fotocamera" },
+  Use_Camera: { en: "Use Camera", it: "Usa Fotocameta" },
   Retake: { en: "Retake", it: "Scatta di Nuovo" },
   Change_Photo: { en: "Change Photo", it: "Cambia Foto" },
   Credit_Card: { en: "Credit Card", it: "Carta di Credito" },

@@ -33,16 +33,6 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   if (!category) {
     return <div className="pt-32 text-center text-white">Category not found.</div>;
   }
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
   
   return (
     <motion.div
@@ -59,20 +49,17 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
                     transition={{ duration: 0.5 }}
                 >
                     <h1 className="text-4xl md:text-5xl font-bold text-white text-center">
-                        {t('Our_Collection_of')} <span className="text-amber-400">{getTranslated(category.label)}</span>
+                        {t('Our_Collection_of')} <span className="text-white">{getTranslated(category.label)}</span>
                     </h1>
                 </motion.div>
 
-                <motion.div 
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
+                <div 
                     className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12"
                 >
                     {category.data.map(item => (
                         <RentalCard key={item.id} item={item} onBook={handleBook} />
                     ))}
-                </motion.div>
+                </div>
             </div>
         </div>
     </motion.div>

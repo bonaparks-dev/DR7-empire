@@ -1,3 +1,4 @@
+
 import type { RentalCategory, MembershipTier, Lottery, RentalSpec } from './types';
 import { UsersIcon, CogIcon, ZapIcon, AnchorIcon, HomeIcon, PaperAirplaneIcon, WifiIcon } from './components/icons/Icons';
 

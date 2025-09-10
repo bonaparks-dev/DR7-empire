@@ -108,30 +108,30 @@ const ProfileSection: React.FC = () => {
 
     const getStatusChip = (status: 'none' | 'pending' | 'verified' | undefined) => {
         switch (status) {
-            case 'verified': return <span className="text-xs font-medium text-green-300 bg-green-500/20 px-2 py-1 rounded-full">{t('Verified')}</span>;
-            case 'pending': return <span className="text-xs font-medium text-yellow-300 bg-yellow-500/20 px-2 py-1 rounded-full">{t('Pending_Review')}</span>;
-            default: return <span className="text-xs font-medium text-red-300 bg-red-500/20 px-2 py-1 rounded-full">{t('Not_Verified')}</span>;
+            case 'verified': return <span className="text-xs font-medium text-gray-200 bg-gray-500/20 px-2 py-1 rounded-full">{t('Verified')}</span>;
+            case 'pending': return <span className="text-xs font-medium text-gray-300 bg-gray-600/20 px-2 py-1 rounded-full">{t('Pending_Review')}</span>;
+            default: return <span className="text-xs font-medium text-gray-400 bg-gray-700/20 px-2 py-1 rounded-full">{t('Not_Verified')}</span>;
         }
     };
 
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
             <h2 className="text-3xl font-bold text-white mb-6">{t('Profile')}</h2>
-            {successMessage && <div className="bg-green-500/20 text-green-300 p-3 rounded-md mb-4">{successMessage}</div>}
+            {successMessage && <div className="bg-gray-500/20 text-gray-200 p-3 rounded-md mb-4">{successMessage}</div>}
             
             {/* Profile Form */}
-            <form onSubmit={handleSubmit} className="bg-stone-900/50 p-8 rounded-lg border border-stone-800">
+            <form onSubmit={handleSubmit} className="bg-gray-900/50 p-8 rounded-lg border border-gray-800">
                 <div className="flex items-center space-x-6 mb-8">
                     <div className="relative">
-                        <div className="w-24 h-24 rounded-full bg-stone-700 flex items-center justify-center border-2 border-stone-600">
+                        <div className="w-24 h-24 rounded-full bg-gray-700 flex items-center justify-center border-2 border-gray-600">
                             {formData.profilePicture ? (
                                 <img src={formData.profilePicture} alt="Profile" className="w-full h-full rounded-full object-cover"/>
                             ) : (
-                                <UsersIcon className="w-12 h-12 text-stone-400"/>
+                                <UsersIcon className="w-12 h-12 text-gray-400"/>
                             )}
                         </div>
                         {isEditing && (
-                            <button type="button" onClick={() => fileInputRef.current?.click()} className="absolute bottom-0 right-0 bg-amber-400 text-black w-8 h-8 rounded-full flex items-center justify-center hover:bg-amber-300">
+                            <button type="button" onClick={() => fileInputRef.current?.click()} className="absolute bottom-0 right-0 bg-white text-black w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-200">
                                 <CameraIcon className="w-5 h-5" />
                                 <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden"/>
                             </button>
@@ -139,29 +139,29 @@ const ProfileSection: React.FC = () => {
                     </div>
                     <div>
                         <h3 className="text-2xl font-bold text-white">{user?.fullName}</h3>
-                        <p className="text-stone-400">{user?.email}</p>
+                        <p className="text-gray-400">{user?.email}</p>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="text-sm text-stone-400">{t('Full_Name')}</label>
-                        <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} disabled={!isEditing} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white disabled:text-stone-400"/>
+                        <label className="text-sm text-gray-400">{t('Full_Name')}</label>
+                        <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} disabled={!isEditing} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white disabled:text-gray-400"/>
                     </div>
                     <div>
-                        <label className="text-sm text-stone-400">{t('Phone_Number')}</label>
-                        <input type="tel" name="phone" value={formData.phone} onChange={handleChange} disabled={!isEditing} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white disabled:text-stone-400"/>
+                        <label className="text-sm text-gray-400">{t('Phone_Number')}</label>
+                        <input type="tel" name="phone" value={formData.phone} onChange={handleChange} disabled={!isEditing} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white disabled:text-gray-400"/>
                     </div>
                 </div>
 
                 <div className="mt-8 flex justify-end space-x-4">
                     {isEditing ? (
                         <>
-                            <button type="button" onClick={() => setIsEditing(false)} className="px-6 py-2 bg-stone-700 text-white font-bold rounded-full hover:bg-stone-600 transition-colors">{t('Cancel')}</button>
-                            <button type="submit" className="px-6 py-2 bg-amber-400 text-black font-bold rounded-full hover:bg-amber-300 transition-colors">{t('Save_Changes')}</button>
+                            <button type="button" onClick={() => setIsEditing(false)} className="px-6 py-2 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors">{t('Cancel')}</button>
+                            <button type="submit" className="px-6 py-2 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">{t('Save_Changes')}</button>
                         </>
                     ) : (
-                        <button type="button" onClick={() => setIsEditing(true)} className="px-6 py-2 bg-amber-400 text-black font-bold rounded-full hover:bg-amber-300 transition-colors">{t('Edit_Profile')}</button>
+                        <button type="button" onClick={() => setIsEditing(true)} className="px-6 py-2 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">{t('Edit_Profile')}</button>
                     )}
                 </div>
             </form>
@@ -170,28 +170,28 @@ const ProfileSection: React.FC = () => {
             <h2 className="text-3xl font-bold text-white mb-6 mt-12">{t('Verification')}</h2>
             <div className="space-y-8">
                  {/* ID Documents */}
-                <div className="bg-stone-900/50 p-8 rounded-lg border border-stone-800">
+                <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800">
                     <div className="flex justify-between items-start mb-4">
                         <div>
                             <h3 className="text-xl font-semibold text-white">{t('ID_Documents')}</h3>
-                            <p className="text-sm text-stone-400">{verification?.idStatus !== 'verified' ? t('Your_identity_is_not_verified') : 'Your identity has been verified.'}</p>
+                            <p className="text-sm text-gray-400">{verification?.idStatus !== 'verified' ? t('Your_identity_is_not_verified') : 'Your identity has been verified.'}</p>
                         </div>
                         {getStatusChip(verification?.idStatus)}
                     </div>
                     {verification?.idStatus !== 'verified' && (
                         <div className="mt-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="text-center p-4 border-2 border-dashed border-stone-700 rounded-lg">
-                                    {idFront ? <img src={idFront} alt="ID Front Preview" className="h-24 w-auto mx-auto rounded-md mb-2 object-contain" /> : <div className="h-24 flex items-center justify-center text-stone-500">Front</div>}
-                                    <label htmlFor="id-front" className="text-sm font-medium text-amber-400 hover:text-amber-300 cursor-pointer">{t('Upload_Front_of_ID')}<input id="id-front" type="file" className="sr-only" onChange={e => handleFileChange(e, 'front')} /></label>
+                                <div className="text-center p-4 border-2 border-dashed border-gray-700 rounded-lg">
+                                    {idFront ? <img src={idFront} alt="ID Front Preview" className="h-24 w-auto mx-auto rounded-md mb-2 object-contain" /> : <div className="h-24 flex items-center justify-center text-gray-500">Front</div>}
+                                    <label htmlFor="id-front" className="text-sm font-medium text-white hover:text-gray-300 cursor-pointer">{t('Upload_Front_of_ID')}<input id="id-front" type="file" className="sr-only" onChange={e => handleFileChange(e, 'front')} /></label>
                                 </div>
-                                <div className="text-center p-4 border-2 border-dashed border-stone-700 rounded-lg">
-                                    {idBack ? <img src={idBack} alt="ID Back Preview" className="h-24 w-auto mx-auto rounded-md mb-2 object-contain" /> : <div className="h-24 flex items-center justify-center text-stone-500">Back</div>}
-                                    <label htmlFor="id-back" className="text-sm font-medium text-amber-400 hover:text-amber-300 cursor-pointer">{t('Upload_Back_of_ID')}<input id="id-back" type="file" className="sr-only" onChange={e => handleFileChange(e, 'back')} /></label>
+                                <div className="text-center p-4 border-2 border-dashed border-gray-700 rounded-lg">
+                                    {idBack ? <img src={idBack} alt="ID Back Preview" className="h-24 w-auto mx-auto rounded-md mb-2 object-contain" /> : <div className="h-24 flex items-center justify-center text-gray-500">Back</div>}
+                                    <label htmlFor="id-back" className="text-sm font-medium text-white hover:text-gray-300 cursor-pointer">{t('Upload_Back_of_ID')}<input id="id-back" type="file" className="sr-only" onChange={e => handleFileChange(e, 'back')} /></label>
                                 </div>
                             </div>
                             <div className="flex justify-end mt-4">
-                                <button onClick={submitIdForReview} disabled={!idFront || !idBack || verification?.idStatus === 'pending'} className="px-6 py-2 bg-amber-400 text-black font-bold rounded-full hover:bg-amber-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                <button onClick={submitIdForReview} disabled={!idFront || !idBack || verification?.idStatus === 'pending'} className="px-6 py-2 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                                     {verification?.idStatus === 'pending' ? t('Pending_Review') : t('Submit_for_Review')}
                                 </button>
                             </div>
@@ -200,59 +200,59 @@ const ProfileSection: React.FC = () => {
                 </div>
 
                 {/* Credit Card */}
-                <div className="bg-stone-900/50 p-8 rounded-lg border border-stone-800">
+                <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800">
                     <div className="flex justify-between items-start mb-4">
                         <div>
                             <h3 className="text-xl font-semibold text-white">{t('Credit_Card_Details')}</h3>
-                            <p className="text-sm text-stone-400">{verification?.cardStatus !== 'verified' ? t('Add_a_credit_card_for_faster_bookings') : 'Your credit card is on file.'}</p>
+                            <p className="text-sm text-gray-400">{verification?.cardStatus !== 'verified' ? t('Add_a_credit_card_for_faster_bookings') : 'Your credit card is on file.'}</p>
                         </div>
                         {getStatusChip(verification?.cardStatus)}
                     </div>
                     {verification?.cardStatus === 'verified' ? (
-                        <div className="mt-6 flex items-center justify-between bg-stone-800/50 p-4 rounded-lg">
+                        <div className="mt-6 flex items-center justify-between bg-gray-800/50 p-4 rounded-lg">
                             <div className="flex items-center space-x-4">
-                                <CreditCardIcon className="w-8 h-8 text-stone-400" />
+                                <CreditCardIcon className="w-8 h-8 text-gray-400" />
                                 <div>
                                     <p className="font-mono text-white">•••• •••• •••• {user?.verification?.cardLast4}</p>
-                                    <p className="text-sm text-stone-400">Expires {user?.verification?.cardExpiry}</p>
+                                    <p className="text-sm text-gray-400">Expires {user?.verification?.cardExpiry}</p>
                                 </div>
                             </div>
-                            <button className="text-sm font-bold text-amber-400 hover:text-amber-300">{t('Update_Card')}</button>
+                            <button className="text-sm font-bold text-white hover:text-gray-300">{t('Update_Card')}</button>
                         </div>
                     ) : (
                         <form onSubmit={handleCardSubmit} className="mt-6 space-y-4">
-                            <div><label className="text-sm text-stone-400">{t('Cardholder_Name')}</label><input type="text" value={cardDetails.name} onChange={e => setCardDetails(p => ({...p, name: e.target.value}))} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
-                            <div><label className="text-sm text-stone-400">{t('Card_Number')}</label><input type="text" placeholder="•••• •••• •••• ••••" value={cardDetails.number} onChange={e => setCardDetails(p => ({...p, number: e.target.value}))} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
+                            <div><label className="text-sm text-gray-400">{t('Cardholder_Name')}</label><input type="text" value={cardDetails.name} onChange={e => setCardDetails(p => ({...p, name: e.target.value}))} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                            <div><label className="text-sm text-gray-400">{t('Card_Number')}</label><input type="text" placeholder="•••• •••• •••• ••••" value={cardDetails.number} onChange={e => setCardDetails(p => ({...p, number: e.target.value}))} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
                             <div className="grid grid-cols-2 gap-4">
-                                <div><label className="text-sm text-stone-400">{t('Expiry')}</label><input type="text" placeholder="MM/YY" value={cardDetails.expiry} onChange={e => setCardDetails(p => ({...p, expiry: e.target.value}))} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
-                                <div><label className="text-sm text-stone-400">{t('CVC')}</label><input type="text" placeholder="•••" value={cardDetails.cvc} onChange={e => setCardDetails(p => ({...p, cvc: e.target.value}))} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
+                                <div><label className="text-sm text-gray-400">{t('Expiry')}</label><input type="text" placeholder="MM/YY" value={cardDetails.expiry} onChange={e => setCardDetails(p => ({...p, expiry: e.target.value}))} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                                <div><label className="text-sm text-gray-400">{t('CVC')}</label><input type="text" placeholder="•••" value={cardDetails.cvc} onChange={e => setCardDetails(p => ({...p, cvc: e.target.value}))} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
                             </div>
-                            <div className="flex justify-end"><button type="submit" className="px-6 py-2 bg-amber-400 text-black font-bold rounded-full hover:bg-amber-300 transition-colors">{t('Add_Card')}</button></div>
+                            <div className="flex justify-end"><button type="submit" className="px-6 py-2 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">{t('Add_Card')}</button></div>
                         </form>
                     )}
                 </div>
 
                  {/* Phone Number */}
-                <div className="bg-stone-900/50 p-8 rounded-lg border border-stone-800">
+                <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800">
                     <div className="flex justify-between items-start mb-4">
                         <div>
                             <h3 className="text-xl font-semibold text-white">{t('Phone_Number_Verification')}</h3>
-                            <p className="text-sm text-stone-400">{t('Verify_your_phone_number_for_added_security')}</p>
+                            <p className="text-sm text-gray-400">{t('Verify_your_phone_number_for_added_security')}</p>
                         </div>
                         {getStatusChip(verification?.phoneStatus)}
                     </div>
                     {verification?.phoneStatus !== 'verified' && (
                         <div className="mt-6">
-                            <div className="flex items-center justify-between bg-stone-800/50 p-4 rounded-lg">
+                            <div className="flex items-center justify-between bg-gray-800/50 p-4 rounded-lg">
                                 <p className="text-white">{user?.phone || 'No phone number on file.'}</p>
-                                <button onClick={handlePhoneVerify} disabled={!user?.phone || isCodeSent} className="px-6 py-2 text-sm bg-amber-400 text-black font-bold rounded-full hover:bg-amber-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('Verify_Phone')}</button>
+                                <button onClick={handlePhoneVerify} disabled={!user?.phone || isCodeSent} className="px-6 py-2 text-sm bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('Verify_Phone')}</button>
                             </div>
                             {isCodeSent && (
-                                <div className="mt-4 p-4 bg-stone-800/30 rounded-lg">
-                                    <p className="text-sm text-stone-300 mb-2">{t('Verification_code_sent')}</p>
+                                <div className="mt-4 p-4 bg-gray-800/30 rounded-lg">
+                                    <p className="text-sm text-gray-300 mb-2">{t('Verification_code_sent')}</p>
                                     <div className="flex space-x-2">
-                                        <input type="text" value={phoneCode} onChange={e => setPhoneCode(e.target.value)} placeholder={t('Enter_Verification_Code')} className="flex-grow bg-stone-800 border-stone-700 rounded-md p-2 text-white"/>
-                                        <button onClick={handlePhoneCodeSubmit} className="px-6 py-2 text-sm bg-amber-400 text-black font-bold rounded-full hover:bg-amber-300 transition-colors">{t('Submit_Code')}</button>
+                                        <input type="text" value={phoneCode} onChange={e => setPhoneCode(e.target.value)} placeholder={t('Enter_Verification_Code')} className="flex-grow bg-gray-800 border-gray-700 rounded-md p-2 text-white"/>
+                                        <button onClick={handlePhoneCodeSubmit} className="px-6 py-2 text-sm bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">{t('Submit_Code')}</button>
                                     </div>
                                 </div>
                             )}
@@ -270,15 +270,15 @@ const BookingCard: React.FC<{ booking: Booking }> = ({ booking }) => {
     const formatDate = (date: string) => new Date(date).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     
     return (
-        <div className="bg-stone-900/50 p-4 rounded-lg border border-stone-800 flex space-x-4">
+        <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-800 flex space-x-4">
             <img src={booking.image} alt={booking.itemName} className="w-32 h-24 object-cover rounded-md"/>
             <div className="flex-grow">
                 <h4 className="font-bold text-white">{booking.itemName}</h4>
-                <p className="text-sm text-stone-400">{formatDate(booking.pickupDate)} - {formatDate(booking.returnDate)}</p>
-                <p className="text-sm text-stone-400">{t('Booked_On')}: {formatDate(booking.bookedAt)}</p>
+                <p className="text-sm text-gray-400">{formatDate(booking.pickupDate)} - {formatDate(booking.returnDate)}</p>
+                <p className="text-sm text-gray-400">{t('Booked_On')}: {formatDate(booking.bookedAt)}</p>
             </div>
             <div className="text-right">
-                <p className="font-bold text-lg text-amber-400">{formatPrice(booking.totalPrice)}</p>
+                <p className="font-bold text-lg text-white">{formatPrice(booking.totalPrice)}</p>
             </div>
         </div>
     );
@@ -307,21 +307,21 @@ const BookingsSection: React.FC = () => {
             <h2 className="text-3xl font-bold text-white mb-6">{t('My_Bookings')}</h2>
             
             <div>
-                <h3 className="text-xl font-semibold text-amber-400 mb-4">{t('Upcoming_Bookings')}</h3>
+                <h3 className="text-xl font-semibold text-white mb-4">{t('Upcoming_Bookings')}</h3>
                 {upcomingBookings.length > 0 ? (
                     <div className="space-y-4">
                         {upcomingBookings.map(b => <BookingCard key={b.bookingId} booking={b} />)}
                     </div>
-                ) : <p className="text-stone-400">{t('You_have_no_upcoming_bookings')}</p>}
+                ) : <p className="text-gray-400">{t('You_have_no_upcoming_bookings')}</p>}
             </div>
 
             <div className="mt-12">
-                <h3 className="text-xl font-semibold text-amber-400 mb-4">{t('Past_Bookings')}</h3>
+                <h3 className="text-xl font-semibold text-white mb-4">{t('Past_Bookings')}</h3>
                 {pastBookings.length > 0 ? (
                     <div className="space-y-4">
                         {pastBookings.map(b => <BookingCard key={b.bookingId} booking={b} />)}
                     </div>
-                ) : <p className="text-stone-400">{t('You_have_no_past_bookings')}</p>}
+                ) : <p className="text-gray-400">{t('You_have_no_past_bookings')}</p>}
             </div>
         </motion.div>
     );
@@ -339,9 +339,9 @@ const MembershipSection: React.FC = () => {
         return (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
                 <h2 className="text-3xl font-bold text-white mb-6">{t('My_Membership')}</h2>
-                <div className="bg-stone-900/50 p-8 rounded-lg border border-stone-800 text-center">
-                    <p className="text-stone-300 mb-4">You are not a DR7 Club member yet.</p>
-                    <button onClick={() => navigate('/membership')} className="px-6 py-2 bg-amber-400 text-black font-bold rounded-full hover:bg-amber-300 transition-colors">
+                <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800 text-center">
+                    <p className="text-gray-300 mb-4">You are not a DR7 Club member yet.</p>
+                    <button onClick={() => navigate('/membership')} className="px-6 py-2 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">
                         {t('Join_The_Club')}
                     </button>
                 </div>
@@ -354,25 +354,25 @@ const MembershipSection: React.FC = () => {
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
             <h2 className="text-3xl font-bold text-white mb-6">{t('My_Membership')}</h2>
-            <div className="bg-stone-900/50 p-8 rounded-lg border border-stone-800">
+            <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800">
                 <div className="flex justify-between items-start">
                     <div>
-                        <p className="text-sm text-stone-400">{t('Current_Tier')}</p>
-                        <p className="text-2xl font-bold text-amber-400">{getTranslated(tierDetails.name)}</p>
+                        <p className="text-sm text-gray-400">{t('Current_Tier')}</p>
+                        <p className="text-2xl font-bold text-white">{getTranslated(tierDetails.name)}</p>
                     </div>
                     <div className="text-right">
-                        <p className="text-sm text-stone-400">{t('Renews_On')}</p>
+                        <p className="text-sm text-gray-400">{t('Renews_On')}</p>
                         <p className="font-semibold text-white">{renewalDate}</p>
                     </div>
                 </div>
-                <div className="mt-6 border-t border-stone-800 pt-6">
+                <div className="mt-6 border-t border-gray-800 pt-6">
                     <h4 className="font-semibold text-white mb-3">Your Benefits:</h4>
-                    <ul className="space-y-2 text-stone-300 text-sm list-disc list-inside">
+                    <ul className="space-y-2 text-gray-300 text-sm list-disc list-inside">
                         {tierDetails.features[lang].map((feature, index) => <li key={index}>{feature}</li>)}
                     </ul>
                 </div>
                 <div className="mt-8 flex justify-end">
-                    <button className="px-6 py-2 bg-stone-700 text-white font-bold rounded-full hover:bg-stone-600 transition-colors">{t('Manage_Subscription')}</button>
+                    <button className="px-6 py-2 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors">{t('Manage_Subscription')}</button>
                 </div>
             </div>
         </motion.div>
@@ -384,23 +384,23 @@ const SettingsSection: React.FC = () => {
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
             <h2 className="text-3xl font-bold text-white mb-6">{t('Settings')}</h2>
-            <div className="bg-stone-900/50 p-8 rounded-lg border border-stone-800">
+            <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800">
                 <h3 className="text-xl font-semibold text-white mb-4">{t('Change_Password')}</h3>
                 <form className="space-y-4">
                      <div>
-                        <label className="text-sm text-stone-400">{t('Current_Password')}</label>
-                        <input type="password" name="currentPassword" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>
+                        <label className="text-sm text-gray-400">{t('Current_Password')}</label>
+                        <input type="password" name="currentPassword" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>
                     </div>
                      <div>
-                        <label className="text-sm text-stone-400">{t('New_Password')}</label>
-                        <input type="password" name="newPassword" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>
+                        <label className="text-sm text-gray-400">{t('New_Password')}</label>
+                        <input type="password" name="newPassword" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>
                     </div>
                     <div>
-                        <label className="text-sm text-stone-400">{t('Confirm_Password')}</label>
-                        <input type="password" name="confirmNewPassword" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>
+                        <label className="text-sm text-gray-400">{t('Confirm_Password')}</label>
+                        <input type="password" name="confirmNewPassword" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>
                     </div>
                     <div className="flex justify-end pt-2">
-                        <button type="submit" className="px-6 py-2 bg-amber-400 text-black font-bold rounded-full hover:bg-amber-300 transition-colors">{t('Update_Password')}</button>
+                        <button type="submit" className="px-6 py-2 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">{t('Update_Password')}</button>
                     </div>
                 </form>
             </div>
@@ -419,7 +419,7 @@ const AccountPage: React.FC = () => {
             { id: 'bookings', label: t('My_Bookings'), icon: CalendarIcon },
         ];
         if (user?.membership) {
-            baseTabs.push({ id: 'membership', label: t('My_Membership'), icon: () => <span className="text-amber-400 text-xl font-bold">7</span> });
+            baseTabs.push({ id: 'membership', label: t('My_Membership'), icon: () => <span className="text-white text-xl font-bold">7</span> });
         }
         baseTabs.push({ id: 'settings', label: t('Settings'), icon: CogIcon });
         return baseTabs;
@@ -436,13 +436,13 @@ const AccountPage: React.FC = () => {
                 <div className="container mx-auto px-6">
                     <div className="md:flex md:space-x-8">
                         <aside className="md:w-1/4">
-                            <nav className="bg-stone-900/50 p-4 rounded-lg border border-stone-800">
+                            <nav className="bg-gray-900/50 p-4 rounded-lg border border-gray-800">
                                 <ul className="space-y-2">
                                     {tabs.map(item => (
                                         <li key={item.id}>
                                             <Link 
                                                 to={`/account/${item.id}`}
-                                                className={`flex items-center space-x-3 px-4 py-3 rounded-md font-semibold transition-colors w-full text-left ${tab === item.id ? 'bg-amber-400/10 text-amber-400' : 'text-stone-300 hover:bg-stone-800'}`}
+                                                className={`flex items-center space-x-3 px-4 py-3 rounded-md font-semibold transition-colors w-full text-left ${tab === item.id ? 'bg-white/10 text-white' : 'text-gray-300 hover:bg-gray-800'}`}
                                             >
                                                 <item.icon className="w-5 h-5" />
                                                 <span>{item.label}</span>

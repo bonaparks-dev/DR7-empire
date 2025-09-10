@@ -6,20 +6,20 @@ import { useTranslation } from '../../hooks/useTranslation';
 
 const ReviewCard: React.FC<{ review: typeof GOOGLE_REVIEWS[0] }> = ({ review }) => {
     return (
-        <div className="h-full bg-stone-900/50 backdrop-blur-sm border border-stone-800 rounded-lg p-6 flex flex-col text-left transition-all duration-300 hover:border-amber-400/50 hover:shadow-2xl hover:shadow-amber-500/10">
+        <div className="h-full bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg p-6 flex flex-col text-left transition-all duration-300 hover:border-white/50 hover:shadow-2xl hover:shadow-white/10">
             <div className="flex items-center mb-4">
-                <img src={review.avatar} alt={review.name} className="w-12 h-12 rounded-full mr-4 border-2 border-stone-700" />
+                <img src={review.avatar} alt={review.name} className="w-12 h-12 rounded-full mr-4 border-2 border-gray-700" />
                 <div>
                     <h3 className="font-bold text-white">{review.name}</h3>
-                    <p className="text-sm text-stone-400">{review.date}</p>
+                    <p className="text-sm text-gray-400">{review.date}</p>
                 </div>
             </div>
             <div className="flex mb-4">
                 {Array.from({ length: 5 }).map((_, i) => (
-                    <StarIcon key={i} className={`w-5 h-5 ${i < review.rating ? 'text-amber-400' : 'text-stone-600'}`} />
+                    <StarIcon key={i} className={`w-5 h-5 ${i < review.rating ? 'text-white' : 'text-gray-600'}`} />
                 ))}
             </div>
-            <p className="text-stone-300 text-sm leading-relaxed flex-grow">{review.review}</p>
+            <p className="text-gray-300 text-sm leading-relaxed flex-grow">{review.review}</p>
         </div>
     );
 };

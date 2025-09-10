@@ -22,15 +22,13 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook }) => {
     }).format(price);
   };
 
-  const cardVariants = {
-    hidden: { opacity: 0, y: 50 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
-  };
-
   return (
     <motion.div 
-      variants={cardVariants}
-      className="bg-stone-900/50 backdrop-blur-sm border border-stone-800 rounded-lg overflow-hidden group transition-all duration-300 hover:border-amber-400/50 hover:shadow-2xl hover:shadow-amber-500/10"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+      className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg overflow-hidden group transition-all duration-300 hover:border-white/50 hover:shadow-2xl hover:shadow-white/10"
     >
       <div className="relative overflow-hidden">
         <img src={item.image} alt={item.name} className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110" />
@@ -38,23 +36,23 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook }) => {
       </div>
       <div className="p-6">
         <h3 className="text-2xl font-bold text-white mb-2">{item.name}</h3>
-        <div className="grid grid-cols-3 gap-4 my-4 text-stone-300 text-sm">
+        <div className="grid grid-cols-3 gap-4 my-4 text-gray-300 text-sm">
           {item.specs.map((spec, index) => (
             <div key={index} className="flex flex-col items-center text-center">
-              <spec.icon className="w-6 h-6 mb-1 text-amber-400" />
+              <spec.icon className="w-6 h-6 mb-1 text-white" />
               <span className="font-semibold">{spec.value}</span>
-              <span className="text-xs text-stone-400">{getTranslated(spec.label)}</span>
+              <span className="text-xs text-gray-400">{getTranslated(spec.label)}</span>
             </div>
           ))}
         </div>
         <div className="flex justify-between items-center mt-6">
           <div>
             <span className="text-xl font-bold text-white">{formatPrice(item.pricePerDay[currency])}</span>
-            <span className="text-sm text-stone-400 ml-1">/{t('per_day')}</span>
+            <span className="text-sm text-gray-400 ml-1">/{t('per_day')}</span>
           </div>
           <button 
             onClick={() => onBook(item)}
-            className="bg-transparent border-2 border-amber-400 text-amber-400 px-6 py-2 rounded-full font-semibold text-sm transform transition-all duration-300 group-hover:bg-amber-400 group-hover:text-black group-hover:scale-105"
+            className="bg-transparent border-2 border-white text-white px-6 py-2 rounded-full font-semibold text-sm transform transition-all duration-300 group-hover:bg-white group-hover:text-black group-hover:scale-105"
           >
             {t('Book_Now')}
           </button>

@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 export const UsersIcon: React.FC<{ className?: string }> = ({ className = "w-6 h-6" }) => (

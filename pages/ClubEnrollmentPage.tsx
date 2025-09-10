@@ -79,14 +79,14 @@ const ClubEnrollmentPage: React.FC = () => {
                     <div>
                         <h3 className="text-xl font-bold text-white mb-4">{t('Choose_your_tier_and_unlock_a_world_of_privileges')}</h3>
                         <div className="space-y-3">
-                             <label className="flex items-center p-4 bg-stone-800/50 rounded-md border border-stone-700 cursor-pointer has-[:checked]:border-amber-400">
-                                <input type="radio" name="billingCycle" value="monthly" checked={formData.billingCycle === 'monthly'} onChange={handleChange} className="h-4 w-4 text-amber-500 bg-stone-700 border-stone-600 focus:ring-amber-500"/>
+                             <label className="flex items-center p-4 bg-gray-800/50 rounded-md border border-gray-700 cursor-pointer has-[:checked]:border-white">
+                                <input type="radio" name="billingCycle" value="monthly" checked={formData.billingCycle === 'monthly'} onChange={handleChange} className="h-4 w-4 text-white bg-gray-700 border-gray-600 focus:ring-white"/>
                                 <span className="ml-3 text-white font-semibold">{t('Monthly')}</span>
                             </label>
-                             <label className="flex items-center p-4 bg-stone-800/50 rounded-md border border-stone-700 cursor-pointer has-[:checked]:border-amber-400">
-                                <input type="radio" name="billingCycle" value="annually" checked={formData.billingCycle === 'annually'} onChange={handleChange} className="h-4 w-4 text-amber-500 bg-stone-700 border-stone-600 focus:ring-amber-500"/>
+                             <label className="flex items-center p-4 bg-gray-800/50 rounded-md border border-gray-700 cursor-pointer has-[:checked]:border-white">
+                                <input type="radio" name="billingCycle" value="annually" checked={formData.billingCycle === 'annually'} onChange={handleChange} className="h-4 w-4 text-white bg-gray-700 border-gray-600 focus:ring-white"/>
                                 <span className="ml-3 text-white font-semibold">{t('Annually')}</span>
-                                <span className="ml-auto bg-amber-900/50 text-amber-300 text-xs font-bold px-2 py-1 rounded-md">{t('Save')} 16%</span>
+                                <span className="ml-auto bg-gray-700 text-gray-200 text-xs font-bold px-2 py-1 rounded-md">{t('Save')} 16%</span>
                             </label>
                         </div>
                     </div>
@@ -96,45 +96,45 @@ const ClubEnrollmentPage: React.FC = () => {
                      <div className="space-y-4">
                         <h3 className="text-xl font-bold text-white mb-4">{t('Personal_Information')}</h3>
                         <div>
-                            <label className="text-sm text-stone-400">{t('Full_Name')}</label>
-                            <input type="text" value={user.fullName} disabled className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white disabled:text-stone-400"/>
+                            <label className="text-sm text-gray-400">{t('Full_Name')}</label>
+                            <input type="text" value={user.fullName} disabled className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white disabled:text-gray-400"/>
                         </div>
                         <div>
-                            <label className="text-sm text-stone-400">{t('Email_Address')}</label>
-                            <input type="email" value={user.email} disabled className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white disabled:text-stone-400"/>
+                            <label className="text-sm text-gray-400">{t('Email_Address')}</label>
+                            <input type="email" value={user.email} disabled className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white disabled:text-gray-400"/>
                         </div>
                     </div>
                 );
             case 3:
                 return (
                     <div>
-                        <div className="flex border-b border-stone-700">
-                            <button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'stripe'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'stripe' ? 'text-amber-400 border-b-2 border-amber-400' : 'text-stone-400'}`}><CreditCardIcon className="w-5 h-5 inline mr-2"/>{t('Credit_Card')}</button>
-                            <button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'crypto'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'crypto' ? 'text-amber-400 border-b-2 border-amber-400' : 'text-stone-400'}`}><CryptoIcon className="w-5 h-5 inline mr-2"/>{t('Cryptocurrency')}</button>
+                        <div className="flex border-b border-gray-700">
+                            <button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'stripe'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'stripe' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}><CreditCardIcon className="w-5 h-5 inline mr-2"/>{t('Credit_Card')}</button>
+                            <button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'crypto'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'crypto' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}><CryptoIcon className="w-5 h-5 inline mr-2"/>{t('Cryptocurrency')}</button>
                         </div>
                         <div className="mt-6">
                         {formData.paymentMethod === 'stripe' ? (
                             <div className="space-y-4">
                                 <div>
-                                    <label className="text-sm text-stone-400">{t('Card_Number')}</label>
-                                    <input type="text" name="cardNumber" value={formData.cardNumber} onChange={handleChange} placeholder="•••• •••• •••• ••••" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>
+                                    <label className="text-sm text-gray-400">{t('Card_Number')}</label>
+                                    <input type="text" name="cardNumber" value={formData.cardNumber} onChange={handleChange} placeholder="•••• •••• •••• ••••" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                    <label className="text-sm text-stone-400">{t('Expiry')}</label>
-                                    <input type="text" name="cardExpiry" value={formData.cardExpiry} onChange={handleChange} placeholder="MM / YY" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>
+                                    <label className="text-sm text-gray-400">{t('Expiry')}</label>
+                                    <input type="text" name="cardExpiry" value={formData.cardExpiry} onChange={handleChange} placeholder="MM / YY" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>
                                     </div>
                                     <div>
-                                    <label className="text-sm text-stone-400">{t('CVC')}</label>
-                                    <input type="text" name="cardCVC" value={formData.cardCVC} onChange={handleChange} placeholder="•••" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>
+                                    <label className="text-sm text-gray-400">{t('CVC')}</label>
+                                    <input type="text" name="cardCVC" value={formData.cardCVC} onChange={handleChange} placeholder="•••" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>
                                     </div>
                                 </div>
                             </div>
                         ) : (
                             <div className="text-center">
-                            <p className="text-stone-300 mb-4">{t('Scan_or_copy_address_below')}</p>
+                            <p className="text-gray-300 mb-4">{t('Scan_or_copy_address_below')}</p>
                             <div className="w-40 h-40 bg-white p-2 rounded-md mx-auto flex items-center justify-center text-black">QR Code</div>
-                            <input type="text" readOnly value="0x1234...abcd" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-4 text-white text-center text-sm"/>
+                            <input type="text" readOnly value="0x1234...abcd" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-4 text-white text-center text-sm"/>
                             </div>
                         )}
                         </div>
@@ -143,12 +143,12 @@ const ClubEnrollmentPage: React.FC = () => {
             case 4:
                  return (
                     <div className="text-center">
-                        <motion.div initial={{scale:0}} animate={{scale:1}} transition={{type: 'spring', stiffness: 260, damping: 20}} className="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <motion.div initial={{scale:0}} animate={{scale:1}} transition={{type: 'spring', stiffness: 260, damping: 20}} className="w-16 h-16 bg-gray-500/20 text-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
                             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
                         </motion.div>
-                        <h2 className="text-3xl font-bold text-amber-400 mb-2">{t('Welcome_to_the_Club')}</h2>
-                        <p className="text-stone-300 max-w-md mx-auto">{t('Your_membership_is_now_active')}</p>
-                        <button type="button" onClick={() => navigate('/club-dashboard')} className="mt-8 bg-amber-400 text-black px-6 py-2 rounded-full font-semibold text-sm hover:bg-amber-300 transition-colors">
+                        <h2 className="text-3xl font-bold text-white mb-2">{t('Welcome_to_the_Club')}</h2>
+                        <p className="text-gray-300 max-w-md mx-auto">{t('Your_membership_is_now_active')}</p>
+                        <button type="button" onClick={() => navigate('/club-dashboard')} className="mt-8 bg-white text-black px-6 py-2 rounded-full font-semibold text-sm hover:bg-gray-200 transition-colors">
                             {t('Go_to_Dashboard')}
                         </button>
                     </div>
@@ -176,12 +176,12 @@ const ClubEnrollmentPage: React.FC = () => {
                         {steps.map((s, index) => (
                             <React.Fragment key={s.id}>
                                 <div className="flex flex-col items-center text-center">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${step >= s.id ? 'bg-amber-400 border-amber-400 text-black' : 'border-stone-600 text-stone-400'}`}>
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${step >= s.id ? 'bg-white border-white text-black' : 'border-gray-600 text-gray-400'}`}>
                                         {s.id}
                                     </div>
-                                    <p className={`mt-2 text-xs font-semibold ${step >= s.id ? 'text-white' : 'text-stone-500'}`}>{s.name}</p>
+                                    <p className={`mt-2 text-xs font-semibold ${step >= s.id ? 'text-white' : 'text-gray-500'}`}>{s.name}</p>
                                 </div>
-                                {index < steps.length - 1 && <div className={`flex-1 h-0.5 mx-4 transition-colors duration-300 ${step > s.id ? 'bg-amber-400' : 'bg-stone-700'}`}></div>}
+                                {index < steps.length - 1 && <div className={`flex-1 h-0.5 mx-4 transition-colors duration-300 ${step > s.id ? 'bg-white' : 'bg-gray-700'}`}></div>}
                             </React.Fragment>
                         ))}
                     </div>
@@ -190,12 +190,12 @@ const ClubEnrollmentPage: React.FC = () => {
             
             <div className="lg:grid lg:grid-cols-3 lg:gap-8">
                 <aside className="lg:col-span-1 lg:sticky lg:top-32 self-start mb-8 lg:mb-0">
-                    <div className="bg-stone-900/50 p-6 rounded-lg border border-stone-800">
+                    <div className="bg-gray-900/50 p-6 rounded-lg border border-gray-800">
                         <h2 className="text-2xl font-bold text-white mb-4">{t('Membership_Summary')}</h2>
                         <div className="space-y-2 text-sm">
-                            <div className="flex justify-between"><span className="text-stone-400">{t('Selected_Tier')}</span><span className="text-white font-medium">{getTranslated(tier.name)}</span></div>
-                             <div className="flex justify-between"><span className="text-stone-400">{t('Billed')}</span><span className="text-white font-medium">{t(formData.billingCycle === 'monthly' ? 'Monthly' : 'Annually')}</span></div>
-                            <div className="flex justify-between text-lg border-t border-amber-400/20 pt-2 mt-2"><span className="text-white font-bold">{t('Total')}</span><span className="text-amber-400 font-bold">{formattedPrice}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-400">{t('Selected_Tier')}</span><span className="text-white font-medium">{getTranslated(tier.name)}</span></div>
+                             <div className="flex justify-between"><span className="text-gray-400">{t('Billed')}</span><span className="text-white font-medium">{t(formData.billingCycle === 'monthly' ? 'Monthly' : 'Annually')}</span></div>
+                            <div className="flex justify-between text-lg border-t border-white/20 pt-2 mt-2"><span className="text-white font-bold">{t('Total')}</span><span className="text-white font-bold">{formattedPrice}</span></div>
                         </div>
                     </div>
                 </aside>
@@ -209,23 +209,23 @@ const ClubEnrollmentPage: React.FC = () => {
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -50 }}
                                 transition={{ duration: 0.3 }}
-                                className="bg-stone-900/50 p-8 rounded-lg border border-stone-800"
+                                className="bg-gray-900/50 p-8 rounded-lg border border-gray-800"
                             >
                                 {renderStepContent()}
                             </motion.div>
                         </AnimatePresence>
                         {step < 4 && (
                             <div className="flex justify-between mt-8">
-                                <button type="button" onClick={handleBack} disabled={step === 1} className="px-8 py-3 bg-stone-700 text-white font-bold rounded-full hover:bg-stone-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('Back')}</button>
+                                <button type="button" onClick={handleBack} disabled={step === 1} className="px-8 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('Back')}</button>
                                 {step < 3 ?
-                                    <button type="button" onClick={handleNext} className="px-8 py-3 bg-amber-400 text-black font-bold rounded-full hover:bg-amber-300 transition-colors">{t('Next')}</button> :
-                                    <button type="submit" disabled={isProcessing} className="px-8 py-3 bg-amber-400 text-black font-bold rounded-full hover:bg-amber-300 transition-colors flex items-center justify-center disabled:bg-stone-600 disabled:cursor-not-allowed">
+                                    <button type="button" onClick={handleNext} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">{t('Next')}</button> :
+                                    <button type="submit" disabled={isProcessing} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed">
                                         {isProcessing ? (
                                             <>
                                                 <motion.div
                                                     animate={{ rotate: 360 }}
                                                     transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                                    className="w-5 h-5 border-2 border-t-black border-stone-700/50 rounded-full inline-block mr-2"
+                                                    className="w-5 h-5 border-2 border-t-black border-gray-700/50 rounded-full inline-block mr-2"
                                                 />
                                                 {t('Processing')}
                                             </>

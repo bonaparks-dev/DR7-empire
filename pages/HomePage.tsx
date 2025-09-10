@@ -26,7 +26,7 @@ const HeroSection: React.FC = () => {
                 initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
-                className="text-3xl md:text-6xl font-light text-amber-400 mt-2"
+                className="text-3xl md:text-6xl font-light text-white mt-2"
             >
                 {t('Redefined_Luxury')}
             </motion.h2>
@@ -64,13 +64,13 @@ const HomePage: React.FC = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.5 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="mt-4 text-lg text-amber-300 max-w-2xl mx-auto">{t('Win_your_dream_car_and_more')}</motion.p>
+                className="mt-4 text-lg text-gray-300 max-w-2xl mx-auto">{t('Win_your_dream_car_and_more')}</motion.p>
              <motion.p
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.5 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
-                className="mt-2 text-lg text-stone-400 max-w-2xl mx-auto">{t('DR7_is_your_gateway_to_a_world_of_unparalleled_luxury_From_supercars_to_private_jets_we_provide_access_to_the_extraordinary')}</motion.p>
+                className="mt-2 text-lg text-gray-400 max-w-2xl mx-auto">{t('DR7_is_your_gateway_to_a_world_of_unparalleled_luxury_From_supercars_to_private_jets_we_provide_access_to_the_extraordinary')}</motion.p>
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -78,7 +78,7 @@ const HomePage: React.FC = () => {
                 transition={{ duration: 0.5, delay: 0.4 }}
                 className="mt-8"
             >
-                <Link to="/lottery" className="bg-amber-400 text-black px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm hover:bg-amber-300 transition-all duration-300 transform hover:scale-105">
+                <Link to="/lottery" className="bg-white text-black px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm hover:bg-gray-200 transition-all duration-300 transform hover:scale-105">
                     {t('Enter_Now')}
                 </Link>
             </motion.div>
@@ -109,7 +109,7 @@ const HomePage: React.FC = () => {
         </div>
       </section>
       
-      <section className="py-24 bg-stone-900/40">
+      <section className="py-24 bg-gray-900/40">
         <div className="container mx-auto px-6 text-center">
             <motion.h2 
                 initial={{ opacity: 0, y: 20 }}
@@ -122,7 +122,7 @@ const HomePage: React.FC = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.5 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="mt-4 text-lg text-stone-400 max-w-2xl mx-auto">{t('Unlock_a_new_level_of_luxury_with_our_exclusive_membership_tiers')}</motion.p>
+                className="mt-4 text-lg text-gray-400 max-w-2xl mx-auto">{t('Unlock_a_new_level_of_luxury_with_our_exclusive_membership_tiers')}</motion.p>
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -130,7 +130,7 @@ const HomePage: React.FC = () => {
                 transition={{ duration: 0.5, delay: 0.4 }}
                 className="mt-8"
             >
-                <Link to="/membership" className="bg-transparent border-2 border-amber-400 text-amber-400 px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm hover:bg-amber-400 hover:text-black transition-all duration-300 transform hover:scale-105">
+                <Link to="/membership" className="bg-transparent border-2 border-white text-white px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm hover:bg-white hover:text-black transition-all duration-300 transform hover:scale-105">
                     {t('View_Tiers')}
                 </Link>
             </motion.div>

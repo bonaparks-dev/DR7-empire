@@ -301,30 +301,30 @@ const BookingPage: React.FC = () => {
     if (step === steps.length + 1) { // Confirmation Step
       return (
         <div className="text-center">
-          <motion.div initial={{scale:0}} animate={{scale:1}} transition={{type: 'spring', stiffness: 260, damping: 20}} className="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-4">
+          <motion.div initial={{scale:0}} animate={{scale:1}} transition={{type: 'spring', stiffness: 260, damping: 20}} className="w-16 h-16 bg-gray-500/20 text-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
           </motion.div>
-          <h2 className="text-3xl font-bold text-amber-400 mb-2">{t('Booking_Request_Sent')}</h2>
-          <p className="text-stone-300 max-w-md mx-auto">{t('We_will_confirm_your_booking_shortly')}</p>
+          <h2 className="text-3xl font-bold text-white mb-2">{t('Booking_Request_Sent')}</h2>
+          <p className="text-gray-300 max-w-md mx-auto">{t('We_will_confirm_your_booking_shortly')}</p>
 
           {completedBooking && (
-            <div className="mt-8 bg-stone-800/50 p-6 rounded-lg border border-stone-700 text-left max-w-lg mx-auto">
+            <div className="mt-8 bg-gray-800/50 p-6 rounded-lg border border-gray-700 text-left max-w-lg mx-auto">
                 <h3 className="text-xl font-bold text-white text-center mb-4">{t('Booking_Details')}</h3>
                 <div className="space-y-2 text-sm">
-                    <div className="flex justify-between"><span className="text-stone-400">{t('Item')}</span><span className="text-white font-medium text-right">{completedBooking.itemName}</span></div>
-                    <div className="flex justify-between"><span className="text-stone-400">{t('Dates')}</span><span className="text-white font-medium text-right">{formatDate(completedBooking.pickupDate)} - {formatDate(completedBooking.returnDate)}</span></div>
-                    <div className="flex justify-between"><span className="text-stone-400">{t('Duration')}</span><span className="text-white font-medium text-right">{completedBooking.duration}</span></div>
-                    <div className="flex justify-between"><span className="text-stone-400">{t('Pickup_Location')}</span><span className="text-white font-medium text-right">{getTranslated(PICKUP_LOCATIONS.find(l => l.id === completedBooking.pickupLocation)?.label || {en:'',it:''})}</span></div>
-                    <div className="flex justify-between"><span className="text-stone-400">{t('Insurance')}</span><span className="text-white font-medium text-right">{getTranslated(INSURANCE_OPTIONS.find(l => l.id === completedBooking.insuranceOption)?.label || {en:'',it:''})}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-400">{t('Item')}</span><span className="text-white font-medium text-right">{completedBooking.itemName}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-400">{t('Dates')}</span><span className="text-white font-medium text-right">{formatDate(completedBooking.pickupDate)} - {formatDate(completedBooking.returnDate)}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-400">{t('Duration')}</span><span className="text-white font-medium text-right">{completedBooking.duration}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-400">{t('Pickup_Location')}</span><span className="text-white font-medium text-right">{getTranslated(PICKUP_LOCATIONS.find(l => l.id === completedBooking.pickupLocation)?.label || {en:'',it:''})}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-400">{t('Insurance')}</span><span className="text-white font-medium text-right">{getTranslated(INSURANCE_OPTIONS.find(l => l.id === completedBooking.insuranceOption)?.label || {en:'',it:''})}</span></div>
                     {completedBooking.extras && completedBooking.extras.length > 0 && (
-                         <div className="flex justify-between"><span className="text-stone-400">{t('Extras')}</span><span className="text-white font-medium text-right">{completedBooking.extras.map(e => getTranslated(RENTAL_EXTRAS.find(re => re.id === e)?.label || {en:'',it:''})).join(', ')}</span></div>
+                         <div className="flex justify-between"><span className="text-gray-400">{t('Extras')}</span><span className="text-white font-medium text-right">{completedBooking.extras.map(e => getTranslated(RENTAL_EXTRAS.find(re => re.id === e)?.label || {en:'',it:''})).join(', ')}</span></div>
                     )}
-                    <div className="flex justify-between text-lg border-t border-amber-400/20 pt-2 mt-2"><span className="text-white font-bold">{t('Total')}</span><span className="text-amber-400 font-bold">{formatPrice(completedBooking.totalPrice)}</span></div>
+                    <div className="flex justify-between text-lg border-t border-white/20 pt-2 mt-2"><span className="text-white font-bold">{t('Total')}</span><span className="text-white font-bold">{formatPrice(completedBooking.totalPrice)}</span></div>
                 </div>
             </div>
           )}
 
-          <button type="button" onClick={() => navigate('/account/bookings')} className="mt-8 bg-amber-400 text-black px-6 py-2 rounded-full font-semibold text-sm hover:bg-amber-300 transition-colors">
+          <button type="button" onClick={() => navigate('/account/bookings')} className="mt-8 bg-white text-black px-6 py-2 rounded-full font-semibold text-sm hover:bg-gray-200 transition-colors">
               {t('My_Bookings')}
           </button>
         </div>
@@ -337,55 +337,55 @@ const BookingPage: React.FC = () => {
           return (
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="text-sm text-stone-400">{t('Pickup_Date')}</label><input type="date" name="pickupDate" value={formData.pickupDate} onChange={handleChange} min={today} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
-                <div><label className="text-sm text-stone-400">{t('Pickup_Time')}</label><input type="time" name="pickupTime" value={formData.pickupTime} onChange={handleChange} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
-                <div><label className="text-sm text-stone-400">{t('Return_Date')}</label><input type="date" name="returnDate" value={formData.returnDate} onChange={handleChange} min={formData.pickupDate || today} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
-                <div><label className="text-sm text-stone-400">{t('Return_Time')}</label><input type="time" name="returnTime" value={formData.returnTime} onChange={handleChange} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
+                <div><label className="text-sm text-gray-400">{t('Pickup_Date')}</label><input type="date" name="pickupDate" value={formData.pickupDate} onChange={handleChange} min={today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                <div><label className="text-sm text-gray-400">{t('Pickup_Time')}</label><input type="time" name="pickupTime" value={formData.pickupTime} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                <div><label className="text-sm text-gray-400">{t('Return_Date')}</label><input type="date" name="returnDate" value={formData.returnDate} onChange={handleChange} min={formData.pickupDate || today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                <div><label className="text-sm text-gray-400">{t('Return_Time')}</label><input type="time" name="returnTime" value={formData.returnTime} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
               </div>
-              {errors.date && <p className="text-xs text-red-500">{errors.date}</p>}
-              <div><label className="text-sm text-stone-400">{t('Pickup_Location')}</label><select name="pickupLocation" value={formData.pickupLocation} onChange={handleChange} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white">{PICKUP_LOCATIONS.map(loc => <option key={loc.id} value={loc.id}>{getTranslated(loc.label)}</option>)}</select></div>
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-2">{t('Insurance_Options')}</h3>
-                <div className="space-y-2">
-                  {INSURANCE_OPTIONS.map(opt => (
-                    <label key={opt.id} className="block p-3 bg-stone-800/50 rounded-md border border-stone-700 cursor-pointer has-[:checked]:border-amber-400">
-                      <div className="flex items-center">
-                        <input type="radio" name="insuranceOption" value={opt.id} checked={formData.insuranceOption === opt.id} onChange={handleChange} className="h-4 w-4 text-amber-500 bg-stone-700 border-stone-600 focus:ring-amber-500" />
-                        <span className="ml-3 text-sm text-white">{getTranslated(opt.label)}</span>
-                        <span className="ml-auto text-xs text-stone-400">+{formatPrice(opt.pricePerDay[currency])}/{t('day')}</span>
-                      </div>
-                      <p className="ml-7 mt-1 text-xs text-stone-400">{getTranslated(opt.description)}</p>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div><h3 className="text-lg font-semibold text-white mb-2">{t('Extras_and_Addons')}</h3><div className="space-y-2">{RENTAL_EXTRAS.map(extra => <label key={extra.id} className="flex items-center p-3 bg-stone-800/50 rounded-md border border-stone-700 cursor-pointer has-[:checked]:border-amber-400"><input type="checkbox" name={extra.id} checked={formData.extras.includes(extra.id)} onChange={handleChange} className="h-4 w-4 text-amber-500 bg-stone-700 border-stone-600 rounded focus:ring-amber-500" /><span className="ml-3 text-sm text-white">{getTranslated(extra.label)}</span><span className="ml-auto text-xs text-stone-400">+{formatPrice(extra.pricePerDay[currency])}/{t('day')}</span></label>)}</div></div>
+              {errors.date && <p className="text-xs text-gray-300">{errors.date}</p>}
+              <div><label className="text-sm text-gray-400">{t('Pickup_Location')}</label><select name="pickupLocation" value={formData.pickupLocation} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"><option value="" disabled>{t('Select_an_option')}</option>{PICKUP_LOCATIONS.map(loc => (<option key={loc.id} value={loc.id}>{getTranslated(loc.label)}</option>))}</select></div>
+              <div><h3 className="text-lg font-semibold text-white mb-2">{t('Insurance_Options')}</h3><div className="space-y-2">{INSURANCE_OPTIONS.map(opt => (<label key={opt.id} className="flex items-start p-3 bg-gray-800/50 rounded-md border border-gray-700 cursor-pointer has-[:checked]:border-white"><input type="radio" name="insuranceOption" value={opt.id} checked={formData.insuranceOption === opt.id} onChange={handleChange} className="h-4 w-4 mt-1 text-white bg-gray-700 border-gray-600 focus:ring-white"/><div className="ml-3"><p className="font-semibold text-white">{getTranslated(opt.label)}</p><p className="text-sm text-gray-400">{getTranslated(opt.description)}</p></div><span className="ml-auto font-semibold text-white">{formatPrice(opt.pricePerDay[currency])}/{t('day')}</span></label>))}</div></div>
+              <div><h3 className="text-lg font-semibold text-white mb-2">{t('Extras_and_Addons')}</h3><div className="space-y-2">{RENTAL_EXTRAS.map(extra => (<label key={extra.id} className="flex items-center p-3 bg-gray-800/50 rounded-md border border-gray-700 cursor-pointer has-[:checked]:border-white"><input type="checkbox" name={extra.id} checked={formData.extras.includes(extra.id)} onChange={handleChange} className="h-4 w-4 text-white bg-gray-700 border-gray-600 rounded focus:ring-white"/><span className="ml-3 text-white">{getTranslated(extra.label)}</span><span className="ml-auto font-semibold text-white">{formatPrice(extra.pricePerDay[currency])}/{t('day')}</span></label>))}</div></div>
             </div>
           );
         case 2:
           return (
-            <div className="space-y-8">
-                <div>
-                    <h3 className="text-lg font-semibold text-white mb-4">{t('Driver_Information')}</h3>
-                    <div className="space-y-4">
-                        <div><label className="text-sm text-stone-400">{t('Full_Name')}</label><input type="text" name="fullName" value={formData.fullName} onChange={handleChange} disabled={!!user} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white disabled:text-stone-400"/>{errors.fullName && <p className="text-xs text-red-500 mt-1">{errors.fullName}</p>}</div>
-                        <div><label className="text-sm text-stone-400">{t('Email_Address')}</label><input type="email" name="email" value={formData.email} onChange={handleChange} disabled={!!user} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white disabled:text-stone-400"/>{errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}</div>
-                        <div><label className="text-sm text-stone-400">{t('Phone_Number')}</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
-                        <div><label className="text-sm text-stone-400">{t('Country_of_Residency')}</label><select name="countryOfResidency" value={formData.countryOfResidency} onChange={handleChange} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"><option value="" disabled>Select a country</option>{COUNTRIES.map(country => (<option key={country.code} value={country.code}>{country.name}</option>))}</select>{errors.countryOfResidency && <p className="text-xs text-red-500 mt-1">{errors.countryOfResidency}</p>}</div>
-                        <div><label className="text-sm text-stone-400">{t('Drivers_Age')}</label><input type="number" name="age" value={formData.age} onChange={handleChange} min="25" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>{errors.age && <p className="text-xs text-red-500 mt-1">{errors.age}</p>}</div>
-                    </div>
-                </div>
-                <div>
-                    <h3 className="text-lg font-semibold text-white mb-4">{t('License_Verification')}</h3>
-                    <div className="bg-stone-800/50 border border-stone-700 p-4 rounded-md mb-4"><p className="text-sm text-stone-300">{t('Please_provide_a_clear_photo_of_your_drivers_license')}</p></div>
-                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-stone-700 border-dashed rounded-md"><div className="space-y-1 text-center">{formData.licenseImage ? <img src={formData.licenseImage} alt="License Preview" className="mx-auto h-32 w-auto rounded-md"/> : <CameraIcon className="mx-auto h-12 w-12 text-stone-500"/>}<div className="flex text-sm text-stone-400 justify-center"><label htmlFor="file-upload" className="relative cursor-pointer bg-stone-800 rounded-md font-medium text-amber-400 hover:text-amber-300 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-amber-500 focus-within:ring-offset-stone-900 px-2"><span>{t('Upload_File')}</span><input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleLicenseUpload} accept="image/*" /></label></div><p className="text-xs text-stone-500">PNG, JPG, GIF up to 10MB</p></div></div>
-                    {errors.licenseImage && <p className="text-xs text-red-500 mt-1">{errors.licenseImage}</p>}
-                </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="text-sm text-gray-400">{t('Full_Name')}</label><input type="text" name="fullName" value={formData.fullName} onChange={handleChange} disabled={!!user?.fullName} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white disabled:text-gray-400"/></div>
+                <div><label className="text-sm text-gray-400">{t('Email_Address')}</label><input type="email" name="email" value={formData.email} onChange={handleChange} disabled={!!user?.email} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white disabled:text-gray-400"/></div>
+                <div><label className="text-sm text-gray-400">{t('Phone_Number')}</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                <div><label className="text-sm text-gray-400">{t('Country_of_Residency')}</label><select name="countryOfResidency" value={formData.countryOfResidency} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"><option value="">Select Country</option>{COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}</select>{errors.countryOfResidency && <p className="text-xs text-gray-300 mt-1">{errors.countryOfResidency}</p>}</div>
+                <div><label className="text-sm text-gray-400">{t('Drivers_Age')}</label><input type="number" name="age" value={formData.age} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors.age && <p className="text-xs text-gray-300 mt-1">{errors.age}</p>}</div>
+              </div>
+              <div><h3 className="text-lg font-semibold text-white mb-2">{t('License_Verification')}</h3><div className="p-4 border-2 border-dashed border-gray-700 rounded-lg text-center"><p className="text-sm text-gray-400 mb-4">{t('Please_provide_a_clear_photo_of_your_drivers_license')}</p>{formData.licenseImage ? (<div className="relative inline-block"><img src={formData.licenseImage} alt="License Preview" className="h-40 w-auto mx-auto rounded-md object-contain"/><label htmlFor="license-upload" className="absolute -bottom-2 -right-2 bg-white text-black text-xs font-bold px-3 py-1 rounded-full cursor-pointer hover:bg-gray-200">{t('Change_Photo')}</label></div>) : (<div className="flex justify-center space-x-4"><label htmlFor="license-upload" className="px-4 py-2 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors text-sm cursor-pointer">{t('Upload_File')}</label></div>)}<input id="license-upload" type="file" accept="image/*" onChange={handleLicenseUpload} className="sr-only"/>{errors.licenseImage && <p className="text-xs text-gray-300 mt-2">{errors.licenseImage}</p>}</div></div>
             </div>
           );
         case 3:
           return (
-            <div><div className="flex border-b border-stone-700"><button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'stripe'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'stripe' ? 'text-amber-400 border-b-2 border-amber-400' : 'text-stone-400'}`}><CreditCardIcon className="w-5 h-5 inline mr-2"/>{t('Credit_Card')}</button><button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'crypto'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'crypto' ? 'text-amber-400 border-b-2 border-amber-400' : 'text-stone-400'}`}><CryptoIcon className="w-5 h-5 inline mr-2"/>{t('Cryptocurrency')}</button></div><div className="mt-6">{formData.paymentMethod === 'stripe' ? (<div className="space-y-4"><div><label className="text-sm text-stone-400">{t('Card_Number')}</label><input type="text" name="cardNumber" value={formData.cardNumber} onChange={handleChange} placeholder="•••• •••• •••• ••••" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>{errors.cardNumber && <p className="text-xs text-red-500 mt-1">{errors.cardNumber}</p>}</div><div className="grid grid-cols-2 gap-4"><div><label className="text-sm text-stone-400">{t('Expiry')}</label><input type="text" name="cardExpiry" value={formData.cardExpiry} onChange={handleChange} placeholder="MM / YY" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>{errors.cardExpiry && <p className="text-xs text-red-500 mt-1">{errors.cardExpiry}</p>}</div><div><label className="text-sm text-stone-400">{t('CVC')}</label><input type="text" name="cardCVC" value={formData.cardCVC} onChange={handleChange} placeholder="•••" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>{errors.cardCVC && <p className="text-xs text-red-500 mt-1">{errors.cardCVC}</p>}</div></div></div>) : (<div className="text-center"><p className="text-stone-300 mb-4">{t('Scan_or_copy_address_below')}</p><div className="w-40 h-40 bg-white p-2 rounded-md mx-auto flex items-center justify-center text-black">QR Code</div><input type="text" readOnly value="0x1234...abcd" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-4 text-white text-center text-sm"/><button type="button" className="mt-4 w-full py-2 bg-stone-700 text-white rounded-md hover:bg-stone-600">{t('I_have_sent_the_payment')}</button></div>)}</div></div>
+            <div>
+              <div className="flex border-b border-gray-700">
+                <button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'stripe'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'stripe' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}><CreditCardIcon className="w-5 h-5 inline mr-2"/>{t('Credit_Card')}</button>
+                <button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'crypto'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'crypto' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}><CryptoIcon className="w-5 h-5 inline mr-2"/>{t('Cryptocurrency')}</button>
+              </div>
+              <div className="mt-6">
+                {formData.paymentMethod === 'stripe' ? (
+                  <div className="space-y-4">
+                      <div><label className="text-sm text-gray-400">{t('Card_Number')}</label><input type="text" name="cardNumber" value={formData.cardNumber} onChange={handleChange} placeholder="•••• •••• •••• ••••" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                      <div className="grid grid-cols-2 gap-4">
+                          <div><label className="text-sm text-gray-400">{t('Expiry')}</label><input type="text" name="cardExpiry" value={formData.cardExpiry} onChange={handleChange} placeholder="MM / YY" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                          <div><label className="text-sm text-gray-400">{t('CVC')}</label><input type="text" name="cardCVC" value={formData.cardCVC} onChange={handleChange} placeholder="•••" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                      </div>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <p className="text-gray-300 mb-4">{t('Scan_or_copy_address_below')}</p>
+                    <div className="w-40 h-40 bg-white p-2 rounded-md mx-auto flex items-center justify-center text-black">QR Code</div>
+                    <input type="text" readOnly value="0x1234...abcd" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-4 text-white text-center text-sm"/>
+                  </div>
+                )}
+              </div>
+            </div>
           );
         default: return null;
       }
@@ -393,60 +393,49 @@ const BookingPage: React.FC = () => {
       switch (step) {
         case 1:
           return (
-            <div className="space-y-6">
+             <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="text-sm text-stone-400">{t('Check_in_Date')}</label>
-                        <input type="date" name="checkinDate" value={formData.checkinDate} onChange={handleChange} min={today} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>
-                    </div>
-                    <div>
-                        <label className="text-sm text-stone-400">{t('Check_out_Date')}</label>
-                        <input type="date" name="checkoutDate" value={formData.checkoutDate} onChange={handleChange} min={formData.checkinDate || today} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>
-                    </div>
+                    <div><label className="text-sm text-gray-400">{t('Check_in_Date')}</label><input type="date" name="checkinDate" value={formData.checkinDate} onChange={handleChange} min={today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                    <div><label className="text-sm text-gray-400">{t('Check_out_Date')}</label><input type="date" name="checkoutDate" value={formData.checkoutDate} onChange={handleChange} min={formData.checkinDate || today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
                 </div>
-                {errors.date && <p className="text-xs text-red-500">{errors.date}</p>}
-                <div>
-                    <label className="text-sm text-stone-400">{t('Number_of_Guests')}</label>
-                    <input type="number" name="guests" value={formData.guests} onChange={handleChange} min="1" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>
-                </div>
-                 <div><label className="text-sm text-stone-400">{t('Pickup_Location')}</label><select name="pickupLocation" value={formData.pickupLocation} onChange={handleChange} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white">{PICKUP_LOCATIONS.map(loc => <option key={loc.id} value={loc.id}>{getTranslated(loc.label)}</option>)}</select></div>
-                <div><h3 className="text-lg font-semibold text-white mb-2">{t('Insurance_Options')}</h3><div className="space-y-2">{INSURANCE_OPTIONS.map(opt => <label key={opt.id} className="block p-3 bg-stone-800/50 rounded-md border border-stone-700 cursor-pointer has-[:checked]:border-amber-400"><div className="flex items-center"><input type="radio" name="insuranceOption" value={opt.id} checked={formData.insuranceOption === opt.id} onChange={handleChange} className="h-4 w-4 text-amber-500 bg-stone-700 border-stone-600 focus:ring-amber-500" /><span className="ml-3 text-sm text-white">{getTranslated(opt.label)}</span><span className="ml-auto text-xs text-stone-400">+{formatPrice(opt.pricePerDay[currency])}/{t('day')}</span></div><p className="ml-7 mt-1 text-xs text-stone-400">{getTranslated(opt.description)}</p></label>)}</div></div>
+                <div><label className="text-sm text-gray-400">{t('Number_of_Guests')}</label><input type="number" name="guests" value={formData.guests} onChange={handleChange} min="1" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
             </div>
           );
         case 2:
-          return (
-            <div className="space-y-4">
-                <div><label className="text-sm text-stone-400">{t('Full_Name')}</label><input type="text" name="fullName" value={formData.fullName} onChange={handleChange} disabled={!!user} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white disabled:text-stone-400"/>{errors.fullName && <p className="text-xs text-red-500 mt-1">{errors.fullName}</p>}</div>
-                <div><label className="text-sm text-stone-400">{t('Email_Address')}</label><input type="email" name="email" value={formData.email} onChange={handleChange} disabled={!!user} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white disabled:text-stone-400"/>{errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}</div>
-                <div><label className="text-sm text-stone-400">{t('Phone_Number')}</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/></div>
-                <div><label className="text-sm text-stone-400">{t('Country_of_Residency')}</label><select name="countryOfResidency" value={formData.countryOfResidency} onChange={handleChange} className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"><option value="" disabled>Select a country</option>{COUNTRIES.map(country => (<option key={country.code} value={country.code}>{country.name}</option>))}</select>{errors.countryOfResidency && <p className="text-xs text-red-500 mt-1">{errors.countryOfResidency}</p>}</div>
-            </div>
-          );
+            return (
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div><label className="text-sm text-gray-400">{t('Full_Name')}</label><input type="text" name="fullName" value={formData.fullName} onChange={handleChange} disabled={!!user?.fullName} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white disabled:text-gray-400"/></div>
+                        <div><label className="text-sm text-gray-400">{t('Email_Address')}</label><input type="email" name="email" value={formData.email} onChange={handleChange} disabled={!!user?.email} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white disabled:text-gray-400"/></div>
+                        <div><label className="text-sm text-gray-400">{t('Phone_Number')}</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                        <div><label className="text-sm text-gray-400">{t('Country_of_Residency')}</label><select name="countryOfResidency" value={formData.countryOfResidency} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"><option value="">Select Country</option>{COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}</select>{errors.countryOfResidency && <p className="text-xs text-gray-300 mt-1">{errors.countryOfResidency}</p>}</div>
+                    </div>
+                </div>
+            );
         case 3:
           return (
-            <div>
-                <div className="flex border-b border-stone-700">
-                    <button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'stripe'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'stripe' ? 'text-amber-400 border-b-2 border-amber-400' : 'text-stone-400'}`}><CreditCardIcon className="w-5 h-5 inline mr-2"/>{t('Credit_Card')}</button>
-                    <button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'crypto'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'crypto' ? 'text-amber-400 border-b-2 border-amber-400' : 'text-stone-400'}`}><CryptoIcon className="w-5 h-5 inline mr-2"/>{t('Cryptocurrency')}</button>
-                </div>
-                <div className="mt-6">
+             <div>
+              <div className="flex border-b border-gray-700">
+                <button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'stripe'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'stripe' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}><CreditCardIcon className="w-5 h-5 inline mr-2"/>{t('Credit_Card')}</button>
+                <button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'crypto'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'crypto' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}><CryptoIcon className="w-5 h-5 inline mr-2"/>{t('Cryptocurrency')}</button>
+              </div>
+              <div className="mt-6">
                 {formData.paymentMethod === 'stripe' ? (
-                    <div className="space-y-4">
-                        <div><label className="text-sm text-stone-400">{t('Card_Number')}</label><input type="text" name="cardNumber" value={formData.cardNumber} onChange={handleChange} placeholder="•••• •••• •••• ••••" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>{errors.cardNumber && <p className="text-xs text-red-500 mt-1">{errors.cardNumber}</p>}</div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div><label className="text-sm text-stone-400">{t('Expiry')}</label><input type="text" name="cardExpiry" value={formData.cardExpiry} onChange={handleChange} placeholder="MM / YY" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>{errors.cardExpiry && <p className="text-xs text-red-500 mt-1">{errors.cardExpiry}</p>}</div>
-                            <div><label className="text-sm text-stone-400">{t('CVC')}</label><input type="text" name="cardCVC" value={formData.cardCVC} onChange={handleChange} placeholder="•••" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-1 text-white"/>{errors.cardCVC && <p className="text-xs text-red-500 mt-1">{errors.cardCVC}</p>}</div>
-                        </div>
-                    </div>
+                  <div className="space-y-4">
+                      <div><label className="text-sm text-gray-400">{t('Card_Number')}</label><input type="text" name="cardNumber" value={formData.cardNumber} onChange={handleChange} placeholder="•••• •••• •••• ••••" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                      <div className="grid grid-cols-2 gap-4">
+                          <div><label className="text-sm text-gray-400">{t('Expiry')}</label><input type="text" name="cardExpiry" value={formData.cardExpiry} onChange={handleChange} placeholder="MM / YY" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                          <div><label className="text-sm text-gray-400">{t('CVC')}</label><input type="text" name="cardCVC" value={formData.cardCVC} onChange={handleChange} placeholder="•••" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                      </div>
+                  </div>
                 ) : (
-                    <div className="text-center">
-                        <p className="text-stone-300 mb-4">{t('Scan_or_copy_address_below')}</p>
-                        <div className="w-40 h-40 bg-white p-2 rounded-md mx-auto flex items-center justify-center text-black">QR Code</div>
-                        <input type="text" readOnly value="0x1234...abcd" className="w-full bg-stone-800 border-stone-700 rounded-md p-2 mt-4 text-white text-center text-sm"/>
-                        <button type="button" className="mt-4 w-full py-2 bg-stone-700 text-white rounded-md hover:bg-stone-600">{t('I_have_sent_the_payment')}</button>
-                    </div>
+                  <div className="text-center">
+                    <p className="text-gray-300 mb-4">{t('Scan_or_copy_address_below')}</p>
+                    <div className="w-40 h-40 bg-white p-2 rounded-md mx-auto flex items-center justify-center text-black">QR Code</div>
+                    <input type="text" readOnly value="0x1234...abcd" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-4 text-white text-center text-sm"/>
+                  </div>
                 )}
-                </div>
+              </div>
             </div>
           );
         default: return null;
@@ -456,115 +445,99 @@ const BookingPage: React.FC = () => {
 
   return (
     <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.5 }}
-        className="pt-32 pb-24 bg-black min-h-screen"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+      className="pt-32 pb-24 bg-black min-h-screen"
     >
-        <div className="container mx-auto px-6">
-            <h1 className="text-4xl md:text-5xl font-bold text-white text-center mb-4">
-                {t('Book_Your')} <span className="text-amber-400">{item.name}</span>
-            </h1>
+      <div className="container mx-auto px-6">
+        <h1 className="text-4xl md:text-5xl font-bold text-white text-center mb-4">
+          {t('Book_Your')} <span className="text-white">{item.name}</span>
+        </h1>
 
-            {step <= steps.length && (
-                <div className="w-full max-w-lg mx-auto mb-12">
-                    <div className="flex items-center justify-between">
-                        {steps.map((s, index) => (
-                            <React.Fragment key={s.id}>
-                                <div className="flex flex-col items-center text-center">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${step >= s.id ? 'bg-amber-400 border-amber-400 text-black' : 'border-stone-600 text-stone-400'}`}>
-                                        {s.id}
-                                    </div>
-                                    <p className={`mt-2 text-xs font-semibold ${step >= s.id ? 'text-white' : 'text-stone-500'}`}>{s.name}</p>
+        {step <= steps.length && (
+            <div className="w-full max-w-md mx-auto mb-12">
+                <div className="flex items-center justify-between">
+                    {steps.map((s, index) => (
+                        <React.Fragment key={s.id}>
+                            <div className="flex flex-col items-center text-center">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${step >= s.id ? 'bg-white border-white text-black' : 'border-gray-600 text-gray-400'}`}>
+                                    {s.id}
                                 </div>
-                                {index < steps.length - 1 && <div className={`flex-1 h-0.5 mx-4 transition-colors duration-300 ${step > s.id ? 'bg-amber-400' : 'bg-stone-700'}`}></div>}
-                            </React.Fragment>
-                        ))}
-                    </div>
+                                <p className={`mt-2 text-xs font-semibold ${step >= s.id ? 'text-white' : 'text-gray-500'}`}>{s.name}</p>
+                            </div>
+                            {index < steps.length - 1 && <div className={`flex-1 h-0.5 mx-4 transition-colors duration-300 ${step > s.id ? 'bg-white' : 'bg-gray-700'}`}></div>}
+                        </React.Fragment>
+                    ))}
                 </div>
-            )}
-            
-            <div className="lg:grid lg:grid-cols-3 lg:gap-8">
-                <aside className="lg:col-span-1 lg:sticky lg:top-32 self-start mb-8 lg:mb-0">
-                    <div className="bg-stone-900/50 p-6 rounded-lg border border-stone-800">
-                        <h2 className="text-2xl font-bold text-white mb-4">{t('Booking_Summary')}</h2>
-                        <img src={item.image} alt={item.name} className="w-full h-40 object-cover rounded-lg mb-4"/>
-                        
-                        <div className="space-y-2 text-sm border-b border-stone-700 pb-3 mb-3">
-                             <div className="flex justify-between"><span className="text-stone-400">{t('Pickup_Location')}</span><span className="text-white font-medium text-right">{getTranslated(PICKUP_LOCATIONS.find(l => l.id === formData.pickupLocation)?.label || {en:'',it:''})}</span></div>
-                             <div className="flex justify-between"><span className="text-stone-400">{t('Insurance')}</span><span className="text-white font-medium text-right">{getTranslated(INSURANCE_OPTIONS.find(l => l.id === formData.insuranceOption)?.label || {en:'',it:''})}</span></div>
-                            {isCar && formData.extras.length > 0 && (
-                                <div className="flex justify-between"><span className="text-stone-400">{t('Extras')}</span><span className="text-white font-medium text-right">{formData.extras.map(e => getTranslated(RENTAL_EXTRAS.find(re => re.id === e)?.label || {en:'',it:''})).join(', ')}</span></div>
-                            )}
-                        </div>
-
-                        {isCar ? (
-                        <>
-                            <div className="space-y-2 text-sm">
-                                <div className="flex justify-between"><span className="text-stone-400">{t('Rental_Cost')}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div>
-                                <div className="flex justify-between"><span className="text-stone-400">{t('Insurance')}</span><span className="text-white font-medium">{formatPrice(insuranceCost)}</span></div>
-                                <div className="flex justify-between"><span className="text-stone-400">{t('Extras')}</span><span className="text-white font-medium">{formatPrice(extrasCost)}</span></div>
-                                <div className="flex justify-between border-t border-stone-700 pt-2 mt-1"><span className="text-stone-300 font-semibold">{t('Subtotal')}</span><span className="text-white font-semibold">{formatPrice(subtotal)}</span></div>
-                                <div className="flex justify-between"><span className="text-stone-400">{t('Taxes_and_Fees')}</span><span className="text-white font-medium">{formatPrice(taxes)}</span></div>
-                                <div className="flex justify-between text-lg border-t border-amber-400/20 pt-2 mt-2"><span className="text-white font-bold">{t('Total')}</span><span className="text-amber-400 font-bold">{formatPrice(total)}</span></div>
-                            </div>
-                            <div className="mt-4 text-xs text-stone-400 text-center">
-                                {duration.days > 0 || duration.hours > 0 ? `${duration.days} ${duration.days === 1 ? t('day') : t('days')}, ${duration.hours} ${duration.hours === 1 ? t('hour') : t('hours')}` : 'Select dates to see price'}
-                            </div>
-                        </>
-                        ) : (
-                        <>
-                             <div className="space-y-2 text-sm">
-                                <div className="flex justify-between"><span className="text-stone-400">{formatPrice(item.pricePerDay[currency])} x {nights} {nights === 1 ? t('Night') : t('Nights')}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div>
-                                <div className="flex justify-between"><span className="text-stone-400">{t('Insurance')}</span><span className="text-white font-medium">{formatPrice(insuranceCost)}</span></div>
-                                <div className="flex justify-between border-t border-stone-700 pt-2 mt-1"><span className="text-stone-300 font-semibold">{t('Subtotal')}</span><span className="text-white font-semibold">{formatPrice(subtotal)}</span></div>
-                                <div className="flex justify-between"><span className="text-stone-400">{t('Taxes_and_Fees')}</span><span className="text-white font-medium">{formatPrice(taxes)}</span></div>
-                                <div className="flex justify-between text-lg border-t border-amber-400/20 pt-2 mt-2"><span className="text-white font-bold">{t('Total')}</span><span className="text-amber-400 font-bold">{formatPrice(total)}</span></div>
-                            </div>
-                        </>
-                        )}
-                    </div>
-                </aside>
-                
-                <main className="lg:col-span-2">
-                    <form onSubmit={handleSubmit}>
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={step}
-                                initial={{ opacity: 0, x: 50 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -50 }}
-                                transition={{ duration: 0.3 }}
-                                className="bg-stone-900/50 p-8 rounded-lg border border-stone-800"
-                            >
-                                {renderStepContent()}
-                            </motion.div>
-                        </AnimatePresence>
-                        {step <= steps.length && (
-                            <div className="flex justify-between mt-8">
-                                <button type="button" onClick={handleBack} disabled={step === 1} className="px-8 py-3 bg-stone-700 text-white font-bold rounded-full hover:bg-stone-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('Back')}</button>
-                                {step < steps.length ?
-                                    <button type="button" onClick={handleNext} className="px-8 py-3 bg-amber-400 text-black font-bold rounded-full hover:bg-amber-300 transition-colors">{t('Next')}</button> :
-                                    <button type="submit" disabled={isProcessing} className="px-8 py-3 bg-amber-400 text-black font-bold rounded-full hover:bg-amber-300 transition-colors flex items-center justify-center disabled:bg-stone-600 disabled:cursor-not-allowed">
-                                        {isProcessing ? (
-                                            <>
-                                                <motion.div
-                                                    animate={{ rotate: 360 }}
-                                                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                                    className="w-5 h-5 border-2 border-t-black border-stone-700/50 rounded-full inline-block mr-2"
-                                                />
-                                                {t('Processing')}
-                                            </>
-                                        ) : t('Confirm_and_Pay')}
-                                    </button>
-                                }
-                            </div>
-                        )}
-                    </form>
-                </main>
             </div>
+        )}
+
+        <div className="lg:grid lg:grid-cols-3 lg:gap-8">
+          <aside className="lg:col-span-1 lg:sticky lg:top-32 self-start mb-8 lg:mb-0">
+            <div className="bg-gray-900/50 p-6 rounded-lg border border-gray-800">
+              <h2 className="text-2xl font-bold text-white mb-4">{t('Booking_Summary')}</h2>
+              <img src={item.image} alt={item.name} className="w-full h-40 object-cover rounded-md mb-4"/>
+                {isCar ? (
+                    <>
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between"><span className="text-gray-400">{t('Total_Duration')}</span><span className="text-white font-medium">{duration.days} {duration.days === 1 ? t('day') : t('days')}, {duration.hours} {duration.hours === 1 ? t('hour') : t('hours')}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-400">{t('Rental_Cost')}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-400">{t('Insurance')}</span><span className="text-white font-medium">{formatPrice(insuranceCost)}</span></div>
+                            {extrasCost > 0 && <div className="flex justify-between"><span className="text-gray-400">{t('Extras')}</span><span className="text-white font-medium">{formatPrice(extrasCost)}</span></div>}
+                            <div className="flex justify-between"><span className="text-gray-400">{t('Subtotal')}</span><span className="text-white font-medium">{formatPrice(subtotal)}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-400">{t('Taxes_and_Fees')}</span><span className="text-white font-medium">{formatPrice(taxes)}</span></div>
+                        </div>
+                        <div className="flex justify-between text-xl border-t border-white/20 pt-2 mt-2"><span className="text-white font-bold">{t('Total')}</span><span className="text-white font-bold">{formatPrice(total)}</span></div>
+                    </>
+                ) : (
+                    <>
+                         <div className="space-y-2 text-sm">
+                            <div className="flex justify-between"><span className="text-gray-400">{t('Duration')}</span><span className="text-white font-medium">{nights} {nights === 1 ? t('Night') : t('Nights')}</span></div>
+                             <div className="flex justify-between"><span className="text-gray-400">{t('Booking_Cost')}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div>
+                             <div className="flex justify-between"><span className="text-gray-400">{t('Taxes_and_Fees')}</span><span className="text-white font-medium">{formatPrice(taxes)}</span></div>
+                        </div>
+                        <div className="flex justify-between text-xl border-t border-white/20 pt-2 mt-2"><span className="text-white font-bold">{t('Total')}</span><span className="text-white font-bold">{formatPrice(total)}</span></div>
+                    </>
+                )}
+            </div>
+          </aside>
+
+          <main className="lg:col-span-2">
+            <form onSubmit={handleSubmit}>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={step}
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -50 }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-gray-900/50 p-8 rounded-lg border border-gray-800"
+                >
+                  {renderStepContent()}
+                </motion.div>
+              </AnimatePresence>
+                {step <= steps.length && (
+                    <div className="flex justify-between mt-8">
+                        <button type="button" onClick={handleBack} disabled={step === 1} className="px-8 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('Back')}</button>
+                        {step < steps.length ?
+                            <button type="button" onClick={handleNext} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">{t('Next')}</button> :
+                            <button type="submit" disabled={isProcessing} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed">
+                                {isProcessing ? (
+                                    <>
+                                        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-5 h-5 border-2 border-t-black border-gray-700/50 rounded-full inline-block mr-2"/>
+                                        {t('Processing')}
+                                    </>
+                                ) : (formData.paymentMethod === 'crypto' ? t('I_have_sent_the_payment') : t('Confirm_Booking'))}
+                            </button>
+                        }
+                    </div>
+                )}
+            </form>
+          </main>
         </div>
+      </div>
     </motion.div>
   );
 };

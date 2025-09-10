@@ -11,10 +11,18 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     return (
       <div className="min-h-screen flex items-center justify-center">
         <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="w-12 h-12 border-4 border-t-amber-400 border-stone-700 rounded-full"
-        />
+            animate={{
+                scale: [1, 1.1, 1],
+                opacity: [0.8, 1, 0.8],
+            }}
+            transition={{
+                duration: 1.5,
+                ease: "easeInOut",
+                repeat: Infinity,
+            }}
+        >
+            <img src="/DR7logo.png" alt="Loading..." className="h-20 w-auto" />
+        </motion.div>
       </div>
     );
   }
