@@ -5,15 +5,15 @@ import { useTranslation } from '../hooks/useTranslation';
 
 const teamMembers = [
     {
-        name: 'Cristiano DR7',
-        title: 'Founder & CEO',
-        image: 'https://picsum.photos/seed/ceo-portrait-male/400/400',
+        name: 'Valerio',
+        title: 'Founder',
+        image: '/Valerio.jpeg',
         bio: 'A visionary entrepreneur with a passion for high-end engineering and exclusive experiences, Cristiano founded DR7 to redefine the boundaries of luxury lifestyle services.'
     },
     {
-        name: 'Elena Rossi',
-        title: 'Head of Operations',
-        image: 'https://picsum.photos/seed/operations-head-female/400/400',
+        name: 'Ilenia',
+        title: 'CEO',
+        image: '/Ilenia.jpeg',
         bio: 'Elena ensures that every aspect of the DR7 experience is seamless and exceeds client expectations, from booking to final delivery.'
     },
     {
