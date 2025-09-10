@@ -4,8 +4,27 @@ import { useTranslation } from '../hooks/useTranslation';
 import { RENTAL_CATEGORIES } from '../constants';
 import { motion } from 'framer-motion';
 
+// Optional: if you want to map category ids to specific display titles
+const DISPLAY_TITLE: Record<string, string> = {
+  supercars: 'Cars',
+  cars: 'Cars',
+  yachts: 'Yachts',
+  villas: 'Villas',
+  helicopters: 'Helicopters',
+  privatejets: 'Private Jets',
+};
+
+// Map category ids to video filenames in /public
+const CATEGORY_VIDEO: Record<string, string> = {
+  supercars: '/cars1.mp4',
+  cars: '/cars1.mp4',
+  yachts: '/yacht.mp4',
+  villas: '/villa1.mp4',
+  helicopters: '/helicopter1.mp4',
+  privatejets: '/privatejet.mp4',
+};
+
 const HeroSection: React.FC = () => {
-  const { t } = useTranslation();
   return (
     <div className="relative h-screen flex items-center justify-center text-center overflow-hidden">
       {/* Video Background */}
@@ -31,7 +50,7 @@ const HeroSection: React.FC = () => {
           className="text-4xl md:text-6xl font-bold text-white uppercase tracking-wider"
           style={{ fontFamily: '"The Seasons", serif' }}
         >
-          {t('Experience_Exclusivity')}
+          Welcome to DR7 Empire
         </motion.h1>
         <motion.h2
           initial={{ opacity: 0, y: 50 }}
@@ -40,7 +59,7 @@ const HeroSection: React.FC = () => {
           className="text-2xl md:text-4xl font-light text-white mt-2"
           style={{ fontFamily: '"The Seasons", serif' }}
         >
-          {t('Redefined_Luxury')}
+          Experience Exclusivity
         </motion.h2>
       </div>
     </div>
@@ -118,32 +137,52 @@ const HomePage: React.FC = () => {
       <section className="py-24 bg-black">
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {RENTAL_CATEGORIES.map((category, index) => (
-              <motion.div
-                key={category.id}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.3 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <Link
-                  to={`/${category.id}`}
-                  className="block group relative rounded-lg overflow-hidden"
+            {RENTAL_CATEGORIES.map((category, index) => {
+              const videoSrc = CATEGORY_VIDEO[category.id];
+              const displayTitle =
+                DISPLAY_TITLE[category.id] || getTranslated(category.label);
+
+              return (
+                <motion.div
+                  key={category.id}
+                  initial={{ opacity: 0, y: 50 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.3 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
                 >
-                  <img
-                    src={category.data[0].image}
-                    alt={getTranslated(category.label)}
-                    className="w-full h-96 object-cover brightness-75 group-hover:brightness-100 transition-all duration-500 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                  <div className="absolute bottom-0 left-0 p-8">
-                    <h3 className="text-3xl font-bold text-white">
-                      {getTranslated(category.label)}
-                    </h3>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
+                  <Link
+                    to={`/${category.id}`}
+                    className="block group relative rounded-lg overflow-hidden"
+                  >
+                    {videoSrc ? (
+                      <video
+                        src={videoSrc}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        // Optional: poster as fallback if you still have a cover image
+                        // poster={category.data?.[0]?.image}
+                        className="w-full h-96 object-cover brightness-75 group-hover:brightness-100 transition-all duration-500 group-hover:scale-110"
+                      />
+                    ) : (
+                      <img
+                        src={category.data[0].image}
+                        alt={displayTitle}
+                        className="w-full h-96 object-cover brightness-75 group-hover:brightness-100 transition-all duration-500 group-hover:scale-110"
+                      />
+                    )}
+
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                    <div className="absolute bottom-0 left-0 p-8">
+                      <h3 className="text-3xl font-bold text-white">
+                        {displayTitle}
+                      </h3>
+                    </div>
+                  </Link>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -166,7 +205,9 @@ const HomePage: React.FC = () => {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="mt-4 text-lg text-gray-400 max-w-2xl mx-auto"
           >
-            {t('Unlock_a_new_level_of_luxury_with_our_exclusive_membership_tiers')}
+            {t(
+              'Unlock_a_new_level_of_luxury_with_our_exclusive_membership_tiers'
+            )}
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
