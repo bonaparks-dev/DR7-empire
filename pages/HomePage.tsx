@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../hooks/useTranslation';
@@ -9,47 +8,61 @@ const HeroSection: React.FC = () => {
   const { t } = useTranslation();
   return (
     <div className="relative h-screen flex items-center justify-center text-center overflow-hidden">
-        <div className="absolute inset-0 z-0">
-            <img src="https://picsum.photos/seed/dr7-hero/1920/1080" alt="Luxury Lifestyle" className="w-full h-full object-cover brightness-50" />
-            <div className="absolute inset-0 bg-black/60"></div>
-        </div>
+      {/* Vidéo de fond */}
+      <div className="absolute inset-0 z-0">
+        <video
+          src="/main.mp4"          // Place main.mp4 dans le dossier "public"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover brightness-50"
+        />
+        <div className="absolute inset-0 bg-black/60"></div>
+      </div>
 
-        <div className="relative z-10 px-4">
-            <motion.h1 
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                className="text-5xl md:text-8xl font-black text-white uppercase tracking-wider"
-            >
-                {t('Experience_Exclusivity')}
-            </motion.h1>
-            <motion.h2 
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
-                className="text-3xl md:text-6xl font-light text-amber-400 mt-2"
-            >
-                {t('Redefined_Luxury')}
-            </motion.h2>
-            <motion.p 
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.6 }}
-                className="mt-6 max-w-2xl mx-auto text-lg text-stone-300"
-            >
-                {t('DR7_is_your_gateway_to_a_world_of_unparalleled_luxury_From_supercars_to_private_jets_we_provide_access_to_the_extraordinary')}
-            </motion.p>
-            <motion.div
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.8 }}
-                className="mt-8"
-            >
-                <Link to="/cars" className="bg-amber-400 text-black px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm hover:bg-amber-300 transition-all duration-300 transform hover:scale-105">
-                    {t('Explore_Our_Fleet')}
-                </Link>
-            </motion.div>
-        </div>
+      {/* Contenu au-dessus */}
+      <div className="relative z-10 px-4">
+        <motion.h1
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="text-5xl md:text-8xl font-black text-white uppercase tracking-wider"
+        >
+          {t('Experience_Exclusivity')}
+        </motion.h1>
+        <motion.h2
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+          className="text-3xl md:text-6xl font-light text-amber-400 mt-2"
+        >
+          {t('Redefined_Luxury')}
+        </motion.h2>
+        <motion.p
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
+          className="mt-6 max-w-2xl mx-auto text-lg text-stone-300"
+        >
+          {t(
+            'DR7_is_your_gateway_to_a_world_of_unparalleled_luxury_From_supercars_to_private_jets_we_provide_access_to_the_extraordinary'
+          )}
+        </motion.p>
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.8 }}
+          className="mt-8"
+        >
+          <Link
+            to="/cars"
+            className="bg-amber-400 text-black px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm hover:bg-amber-300 transition-all duration-300 transform hover:scale-105"
+          >
+            {t('Explore_Our_Fleet')}
+          </Link>
+        </motion.div>
+      </div>
     </div>
   );
 };
@@ -59,15 +72,17 @@ const HomePage: React.FC = () => {
 
   return (
     <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.5 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
     >
       <HeroSection />
+
+      {/* Section flotte */}
       <section className="py-24 bg-black">
         <div className="container mx-auto px-6 text-center">
-          <motion.h2 
+          <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.5 }}
@@ -76,62 +91,81 @@ const HomePage: React.FC = () => {
           >
             {t('Our_Fleet')}
           </motion.h2>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.5 }}
             transition={{ duration: 0.5, delay: 0.2 }}
             className="mt-4 text-lg text-stone-400 max-w-2xl mx-auto"
           >
-           {t('Discover_our_curated_selection_of_the_worlds_most_sought_after_vehicles')}
+            {t('Discover_our_curated_selection_of_the_worlds_most_sought_after_vehicles')}
           </motion.p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
             {RENTAL_CATEGORIES.slice(0, 3).map((category, index) => (
-                <motion.div
-                    key={category.id}
-                    initial={{ opacity: 0, y: 50 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.3 }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
+              <motion.div
+                key={category.id}
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+              >
+                <Link
+                  to={`/${category.id}`}
+                  className="block group relative rounded-lg overflow-hidden"
                 >
-                    <Link to={`/${category.id}`} className="block group relative rounded-lg overflow-hidden">
-                        <img src={category.data[0].image} alt={getTranslated(category.label)} className="w-full h-96 object-cover brightness-75 group-hover:brightness-100 transition-all duration-500 group-hover:scale-110" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                        <div className="absolute bottom-0 left-0 p-8">
-                            <h3 className="text-3xl font-bold text-white">{getTranslated(category.label)}</h3>
-                        </div>
-                    </Link>
-                </motion.div>
+                  <img
+                    src={category.data[0].image}
+                    alt={getTranslated(category.label)}
+                    className="w-full h-96 object-cover brightness-75 group-hover:brightness-100 transition-all duration-500 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                  <div className="absolute bottom-0 left-0 p-8">
+                    <h3 className="text-3xl font-bold text-white">
+                      {getTranslated(category.label)}
+                    </h3>
+                  </div>
+                </Link>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
+      {/* Section club */}
       <section className="py-24 bg-stone-900/40">
         <div className="container mx-auto px-6 text-center">
-            <motion.h2 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.5 }}
-                transition={{ duration: 0.5 }}
-                className="text-4xl font-bold text-white">{t('The_DR7_Club')}</motion.h2>
-            <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.5 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="mt-4 text-lg text-stone-400 max-w-2xl mx-auto">{t('Unlock_a_new_level_of_luxury_with_our_exclusive_membership_tiers')}</motion.p>
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.5 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                className="mt-8"
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{ duration: 0.5 }}
+            className="text-4xl font-bold text-white"
+          >
+            {t('The_DR7_Club')}
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="mt-4 text-lg text-stone-400 max-w-2xl mx-auto"
+          >
+            {t('Unlock_a_new_level_of_luxury_with_our_exclusive_membership_tiers')}
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="mt-8"
+          >
+            <Link
+              to="/membership"
+              className="bg-transparent border-2 border-amber-400 text-amber-400 px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm hover:bg-amber-400 hover:text-black transition-all duration-300 transform hover:scale-105"
             >
-                <Link to="/membership" className="bg-transparent border-2 border-amber-400 text-amber-400 px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm hover:bg-amber-400 hover:text-black transition-all duration-300 transform hover:scale-105">
-                    {t('View_Tiers')}
-                </Link>
-            </motion.div>
+              {t('View_Tiers')}
+            </Link>
+          </motion.div>
         </div>
       </section>
     </motion.div>
