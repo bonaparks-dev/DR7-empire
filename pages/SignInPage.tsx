@@ -6,162 +6,228 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 const SignInPage: React.FC = () => {
-    const { t } = useTranslation();
-    const { login, loginWithGoogle } = useAuth();
-    const navigate = useNavigate();
-    const location = useLocation();
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [emailError, setEmailError] = useState('');
-    const [passwordError, setPasswordError] = useState('');
+  const { t } = useTranslation();
+  const { login, loginWithGoogle } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-    const from = location.state?.from?.pathname || "/";
+  // si tu viens d'une page protégée, on y retournera après login email/password
+  const from = (location.state as any)?.from?.pathname || '/';
 
-    const validateEmail = (emailToValidate: string) => {
-        if (!emailToValidate) {
-            return t('Email_is_required');
-        }
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(emailToValidate)) {
-            return t('Please_enter_a_valid_email_address');
-        }
-        return '';
-    };
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-    const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newEmail = e.target.value;
-        setEmail(newEmail);
-        if (emailError) {
-            setEmailError(validateEmail(newEmail));
-        }
-    };
-    
-    const handleEmailBlur = () => {
-        setEmailError(validateEmail(email));
-    };
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [generalError, setGeneralError] = useState('');
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        const emailValError = validateEmail(email);
-        setEmailError(emailValError);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-        let passValError = '';
-        if (!password) {
-            passValError = t('Password_is_required');
-            setPasswordError(passValError);
-        } else {
-            setPasswordError('');
-        }
+  const validateEmail = (emailToValidate: string) => {
+    if (!emailToValidate) {
+      return t('Email_is_required');
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailToValidate)) {
+      return t('Please_enter_a_valid_email_address');
+    }
+    return '';
+  };
 
-        if (!emailValError && !passValError) {
-            // Mock login logic: any valid email and non-empty password works
-            login(email, 'Example User'); // In a real app, you'd fetch the user's name
-            navigate(from, { replace: true });
-        }
-    };
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newEmail = e.target.value;
+    setEmail(newEmail);
+    if (emailError) {
+      setEmailError(validateEmail(newEmail));
+    }
+  };
 
-    const handleGoogleSignIn = () => {
-        loginWithGoogle();
-        navigate(from, { replace: true });
-    };
+  const handleEmailBlur = () => {
+    setEmailError(validateEmail(email));
+  };
 
-    return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-        >
-            <div className="min-h-screen flex items-center justify-center pt-24 pb-12 px-4 sm:px-6 lg:px-8">
-                <div className="w-full max-w-md space-y-8">
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.2 }}
-                        className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg shadow-2xl shadow-black/50 p-8 space-y-6"
-                    >
-                        <div className="text-center">
-                            <h2 className="text-3xl font-bold text-white">{t('Access_Your_Account')}</h2>
-                            <p className="mt-2 text-sm text-gray-400">
-                                {t('Welcome_back_to_the_world_of_luxury')}
-                            </p>
-                        </div>
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setGeneralError('');
 
-                        <div className="space-y-4">
-                            <button 
-                                type="button"
-                                onClick={handleGoogleSignIn}
-                                className="w-full flex items-center justify-center py-3 px-4 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors">
-                                <GoogleIcon className="w-5 h-5 mr-2" />
-                                {t('Sign_in_with_Google')}
-                            </button>
-                            <button className="w-full flex items-center justify-center py-3 px-4 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors">
-                                <WalletIcon className="w-5 h-5 mr-2" />
-                                {t('Sign_in_with_Wallet')}
-                            </button>
-                        </div>
-                        
-                        <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-gray-700" />
-                            </div>
-                            <div className="relative flex justify-center text-sm">
-                                <span className="px-2 bg-gray-900 text-gray-500">{t('OR')}</span>
-                            </div>
-                        </div>
+    const emailValError = validateEmail(email);
+    setEmailError(emailValError);
 
-                        <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-                            <div>
-                                <label htmlFor="email-address" className="sr-only">{t('Email_Address')}</label>
-                                <input id="email-address" name="email" type="email" autoComplete="email" required
-                                    className={`appearance-none rounded-md relative block w-full px-3 py-3 border bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-white focus:border-white focus:z-10 sm:text-sm ${emailError ? 'border-gray-400' : 'border-gray-700'}`}
-                                    placeholder={t('Email_Address')}
-                                    value={email}
-                                    onChange={handleEmailChange}
-                                    onBlur={handleEmailBlur}
-                                />
-                                {emailError && <p className="mt-2 text-xs text-gray-300">{emailError}</p>}
-                            </div>
-                            <div>
-                                <label htmlFor="password" className="sr-only">{t('Password')}</label>
-                                <input id="password" name="password" type="password" autoComplete="current-password" required
-                                    className={`appearance-none rounded-md relative block w-full px-3 py-3 border bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-white focus:border-white focus:z-10 sm:text-sm ${passwordError ? 'border-gray-400' : 'border-gray-700'}`}
-                                    placeholder={t('Password')}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                />
-                                {passwordError && <p className="mt-2 text-xs text-gray-300">{passwordError}</p>}
-                            </div>
+    let passValError = '';
+    if (!password) {
+      passValError = t('Password_is_required');
+      setPasswordError(passValError);
+    } else {
+      setPasswordError('');
+    }
 
-                            <div className="flex items-center justify-end text-sm">
-                                <Link to="/forgot-password" className="font-medium text-white hover:text-gray-300">
-                                    {t('Forgot_Password')}
-                                </Link>
-                            </div>
+    if (emailValError || passValError) return;
 
-                            <div>
-                                <button
-                                    type="submit"
-                                    className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-black bg-white hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white focus:ring-offset-gray-900 transition-colors"
-                                >
-                                    {t('Sign_In')}
-                                </button>
-                            </div>
-                        </form>
-                        
-                        <div className="text-sm text-center">
-                            <p className="text-gray-400">
-                                {t('Dont_have_an_account')}{' '}
-                                <Link to="/signup" className="font-medium text-white hover:text-gray-300">
-                                    {t('Sign_Up')}
-                                </Link>
-                            </p>
-                        </div>
-                    </motion.div>
-                </div>
+    try {
+      setIsSubmitting(true);
+      // Ton implémentation actuelle (mock). Remplace par ton appel Supabase email/password si tu l’as.
+      login(email, 'Example User');
+      navigate(from, { replace: true });
+    } catch (err: any) {
+      setGeneralError(err?.message || t('Something_went_wrong'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setGeneralError('');
+    setIsGoogleLoading(true);
+    try {
+      // IMPORTANT : ne PAS navigate() ici.
+      // On laisse Supabase rediriger vers Google puis revenir sur redirectTo.
+      // HashRouter : on met le path dans le hash pour revenir au bon endroit.
+      const redirectTo = `${window.location.origin}/#${from}`;
+      const res = await (loginWithGoogle as any)?.({ redirectTo });
+      if (res?.error) {
+        setGeneralError(res.error.message || t('Something_went_wrong'));
+      }
+    } catch (err: any) {
+      setGeneralError(err?.message || t('Something_went_wrong'));
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className="min-h-screen flex items-center justify-center pt-24 pb-12 px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md space-y-8">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg shadow-2xl shadow-black/50 p-8 space-y-6"
+          >
+            <div className="text-center">
+              <h2 className="text-3xl font-bold text-white">{t('Access_Your_Account')}</h2>
+              <p className="mt-2 text-sm text-gray-400">
+                {t('Welcome_back_to_the_world_of_luxury')}
+              </p>
             </div>
-        </motion.div>
-    );
+
+            {generalError && (
+              <p className="text-sm text-red-400 bg-red-900/20 border border-red-800 rounded p-2">
+                {generalError}
+              </p>
+            )}
+
+            <div className="space-y-4">
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={isGoogleLoading}
+                className="w-full flex items-center justify-center py-3 px-4 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60"
+              >
+                {isGoogleLoading ? (
+                  <span className="mr-2 h-5 w-5 inline-block animate-spin rounded-full border-2 border-white border-t-transparent" />
+                ) : (
+                  <GoogleIcon className="w-5 h-5 mr-2" />
+                )}
+                {t('Sign_in_with_Google')}
+              </button>
+
+              <button
+                type="button"
+                className="w-full flex items-center justify-center py-3 px-4 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors"
+              >
+                <WalletIcon className="w-5 h-5 mr-2" />
+                {t('Sign_in_with_Wallet')}
+              </button>
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-700" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-gray-900 text-gray-500">{t('OR')}</span>
+              </div>
+            </div>
+
+            <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+              <div>
+                <label htmlFor="email-address" className="sr-only">
+                  {t('Email_Address')}
+                </label>
+                <input
+                  id="email-address"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  className={`appearance-none rounded-md relative block w-full px-3 py-3 border bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-white focus:border-white focus:z-10 sm:text-sm ${
+                    emailError ? 'border-gray-400' : 'border-gray-700'
+                  }`}
+                  placeholder={t('Email_Address')}
+                  value={email}
+                  onChange={handleEmailChange}
+                  onBlur={handleEmailBlur}
+                />
+                {emailError && <p className="mt-2 text-xs text-gray-300">{emailError}</p>}
+              </div>
+
+              <div>
+                <label htmlFor="password" className="sr-only">
+                  {t('Password')}
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  className={`appearance-none rounded-md relative block w-full px-3 py-3 border bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-white focus:border-white focus:z-10 sm:text-sm ${
+                    passwordError ? 'border-gray-400' : 'border-gray-700'
+                  }`}
+                  placeholder={t('Password')}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                {passwordError && <p className="mt-2 text-xs text-gray-300">{passwordError}</p>}
+              </div>
+
+              <div className="flex items-center justify-end text-sm">
+                <Link to="/forgot-password" className="font-medium text-white hover:text-gray-300">
+                  {t('Forgot_Password')}
+                </Link>
+              </div>
+
+              <div>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-black bg-white hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white focus:ring-offset-gray-900 transition-colors disabled:opacity-60"
+                >
+                  {isSubmitting ? t('Please_wait') : t('Sign_In')}
+                </button>
+              </div>
+            </form>
+
+            <div className="text-sm text-center">
+              <p className="text-gray-400">
+                {t('Dont_have_an_account')}{' '}
+                <Link to="/signup" className="font-medium text-white hover:text-gray-300">
+                  {t('Sign_Up')}
+                </Link>
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </motion.div>
+  );
 };
 
 export default SignInPage;
