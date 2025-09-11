@@ -9,7 +9,7 @@ import { useAuth } from '../hooks/useAuth';
 import { motion } from 'framer-motion';
 
 interface RentalPageProps {
-  categoryId: 'cars' | 'yachts' | 'villas' | 'jets' | 'helicopters';
+  categoryId: 'cars' | 'yachts' | 'villas' | 'private jets' | 'helicopters';
 }
 
 const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
