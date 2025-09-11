@@ -1,6 +1,6 @@
-
-import React, { createContext, useState, useMemo, useEffect } from 'react';
-import type { RentalItem } from '../types';
+// contexts/BookingContext.tsx
+import React, { createContext, useState, useMemo, useEffect, useCallback, useContext } from "react";
+import type { RentalItem } from "../types";
 
 interface BookingContextType {
   bookingItem: RentalItem | null;
@@ -9,47 +9,40 @@ interface BookingContextType {
   closeBooking: () => void;
 }
 
-export const BookingContext = createContext<BookingContextType | undefined>(undefined);
+const BookingContext = createContext<BookingContextType | undefined>(undefined);
 
 export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [bookingItem, setBookingItem] = useState<RentalItem | null>(null);
 
+  // body scroll lock
   useEffect(() => {
-    if (isBookingOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = isBookingOpen ? "hidden" : "unset";
+    return () => { document.body.style.overflow = prev; };
   }, [isBookingOpen]);
 
-
-  const openBooking = (item: RentalItem) => {
+  const openBooking = useCallback((item: RentalItem) => {
     setBookingItem(item);
     setIsBookingOpen(true);
-  };
+  }, []);
 
-  const closeBooking = () => {
+  const closeBooking = useCallback(() => {
     setIsBookingOpen(false);
-    // Delay clearing the item to allow for exit animation
-    setTimeout(() => {
-        setBookingItem(null);
-    }, 300);
-  };
-  
-  const value = useMemo(() => ({
-    bookingItem,
-    isBookingOpen,
-    openBooking,
-    closeBooking,
-  }), [bookingItem, isBookingOpen]);
+    // allow exit animation before clearing
+    setTimeout(() => setBookingItem(null), 300);
+  }, []);
 
-  return (
-    <BookingContext.Provider value={value}>
-      {children}
-    </BookingContext.Provider>
+  const value = useMemo(
+    () => ({ bookingItem, isBookingOpen, openBooking, closeBooking }),
+    [bookingItem, isBookingOpen, openBooking, closeBooking]
   );
+
+  return <BookingContext.Provider value={value}>{children}</BookingContext.Provider>;
 };
+
+export function useBooking(): BookingContextType {
+  const ctx = useContext(BookingContext);
+  if (!ctx) throw new Error("useBooking must be used within <BookingProvider>");
+  return ctx;
+}
