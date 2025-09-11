@@ -1,133 +1,119 @@
+import React, { createContext, useState, useEffect, useMemo, useContext, ReactNode } from 'react';
+import { supabase } from '../supabaseClient'; // Ensure you have this client initialized
+import type { Session } from '@supabase/supabase-js';
+import type { User as AppUser } from '../types'; // Your custom application user type
 
-import React, { createContext, useState, useEffect, useMemo } from 'react';
-import type { User } from '../types';
-
+// Define the shape of the context value
 interface AuthContextType {
-  user: User | null;
+  user: AppUser | null;
   isLoggedIn: boolean;
   isLoading: boolean;
-  login: (email: string, fullName?: string) => void;
-  logout: () => void;
-  signup: (email: string, fullName: string) => void;
-  updateUser: (updatedData: Partial<User>) => void;
-  loginWithGoogle: () => void;
-  updateMembership: (tierId: string, billingCycle: 'monthly' | 'annually') => void;
+  login: (email: string, password: string) => Promise<any>;
+  logout: () => Promise<void>;
+  signup: (email: string, password: string, options: { data: { full_name: string } }) => Promise<any>;
+  updateUser: (updatedData: Partial<AppUser>) => Promise<void>;
+  loginWithGoogle: (options?: { options?: { redirectTo?: string } }) => Promise<any>;
+  updateMembership: (tierId: string, billingCycle: 'monthly' | 'annually') => Promise<void>;
 }
 
+// Create the context
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const defaultVerificationStatus = {
-    idStatus: 'none' as 'none' | 'pending' | 'verified',
-    cardStatus: 'none' as 'none' | 'verified',
-    phoneStatus: 'none' as 'none' | 'verified',
-};
-
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+// Define the provider component
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate checking for an existing session
-    try {
-      const storedUser = localStorage.getItem('dr7-user');
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        // Ensure verification object exists for older user data
-        if (!parsedUser.verification) {
-            parsedUser.verification = defaultVerificationStatus;
+    // Listen for changes in authentication state (sign-in, sign-out, etc.)
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (_event, session: Session | null) => {
+        if (session) {
+          // If a session exists, fetch the user's profile from your 'profiles' table
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          // Merge Supabase auth user with your custom profile data
+          setUser(profile ? { ...session.user, ...profile } : null);
+        } else {
+          // If no session, the user is logged out
+          setUser(null);
         }
-        setUser(parsedUser);
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Failed to parse user from localStorage", error);
-      localStorage.removeItem('dr7-user');
-    } finally {
-      setIsLoading(false);
-    }
+    );
+
+    // Cleanup the listener when the component unmounts
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
-  const login = (email: string, fullName: string = 'John Doe') => {
-    // This is a mock login. In a real app, you'd call an API.
-    const userData: User = { 
-        id: crypto.randomUUID(), 
-        email, 
-        fullName,
-        verification: defaultVerificationStatus,
-    };
-    localStorage.setItem('dr7-user', JSON.stringify(userData));
-    setUser(userData);
+  // Define the authentication functions that interact with Supabase
+  const login = async (email: string, password: string) => {
+    return supabase.auth.signInWithPassword({ email, password });
   };
 
-  const signup = (email: string, fullName: string) => {
-    // This is a mock signup. It immediately logs the user in.
-    const userData: User = { 
-        id: crypto.randomUUID(), 
-        email, 
-        fullName,
-        verification: defaultVerificationStatus,
-    };
-    localStorage.setItem('dr7-user', JSON.stringify(userData));
-    setUser(userData);
+  const signup = async (email: string, password: string, options: { data: { full_name: string } }) => {
+    // Supabase's signUp function handles user creation
+    return supabase.auth.signUp({ email, password, options });
   };
-  
-  const logout = () => {
-    localStorage.removeItem('dr7-user');
+
+  const loginWithGoogle = async (options?: { options?: { redirectTo?: string } }) => {
+    // Triggers the Google OAuth flow
+    return supabase.auth.signInWithOAuth({ 
+        provider: 'google', 
+        ...options
+    });
+  };
+
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
   };
 
-  const updateUser = (updatedData: Partial<User>) => {
-    if (user) {
-        const newUser = { 
-            ...user, 
-            ...updatedData,
-            // Deep merge verification object
-            verification: {
-                // FIX: Add non-null assertion. The app logic guarantees user.verification exists for logged-in users.
-                ...user.verification!,
-                ...updatedData.verification,
-            }
-        };
-        setUser(newUser);
-        localStorage.setItem('dr7-user', JSON.stringify(newUser));
-    }
+  const updateUser = async (updatedData: Partial<AppUser>) => {
+    if (!user) throw new Error("No user is logged in.");
+    
+    // Update the user's data in the 'profiles' table
+    const { data, error } = await supabase
+        .from('profiles')
+        .update(updatedData)
+        .eq('id', user.id)
+        .select()
+        .single();
+        
+    if (error) throw error;
+
+    // Update the local user state to reflect the changes immediately
+    setUser(prevUser => prevUser ? { ...prevUser, ...data } : null);
   };
 
-  const updateMembership = (tierId: string, billingCycle: 'monthly' | 'annually') => {
-    if (user) {
-        const renewalDate = new Date();
-        if (billingCycle === 'monthly') {
-            renewalDate.setMonth(renewalDate.getMonth() + 1);
-        } else {
-            renewalDate.setFullYear(renewalDate.getFullYear() + 1);
-        }
+  const updateMembership = async (tierId: string, billingCycle: 'monthly' | 'annually') => {
+      if (!user) throw new Error("No user is logged in.");
 
-        const newUser: User = {
-            ...user,
-            membership: {
-                tierId,
-                billingCycle,
-                renewalDate: renewalDate.toISOString(),
-            }
-        };
-        setUser(newUser);
-        localStorage.setItem('dr7-user', JSON.stringify(newUser));
-    }
+      const renewalDate = new Date();
+      if (billingCycle === 'monthly') {
+          renewalDate.setMonth(renewalDate.getMonth() + 1);
+      } else {
+          renewalDate.setFullYear(renewalDate.getFullYear() + 1);
+      }
+
+      const membershipData = {
+          membership: {
+              tierId,
+              billingCycle,
+              renewalDate: renewalDate.toISOString(),
+          }
+      };
+      
+      await updateUser(membershipData);
   };
 
-  const loginWithGoogle = () => {
-    // In a real app, this would open a Google Sign-In popup and handle the response.
-    // For this mock, we'll create a predefined Google user.
-    const googleUser: User = {
-      id: crypto.randomUUID(),
-      fullName: 'Google User',
-      email: 'google.user@example.com',
-      profilePicture: `https://avatar.iran.liara.run/username?username=Google+User`,
-      verification: defaultVerificationStatus,
-    };
-    localStorage.setItem('dr7-user', JSON.stringify(googleUser));
-    setUser(googleUser);
-  };
-
+  // Memoize the context value to prevent unnecessary re-renders
   const value = useMemo(() => ({
     user,
     isLoggedIn: !!user,
@@ -140,9 +126,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateMembership,
   }), [user, isLoading]);
 
+  // Provide the context value to all child components
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {!isLoading && children}
     </AuthContext.Provider>
   );
+};
+
+// Custom hook to easily access the auth context in your components
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };
