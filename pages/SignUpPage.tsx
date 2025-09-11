@@ -6,10 +6,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 const strengthLevels = [
-  { labelKey: 'Password_Strength_Weak', color: 'bg-gray-700', textColor: 'text-gray-400' },
-  { labelKey: 'Password_Strength_Medium', color: 'bg-gray-600', textColor: 'text-gray-300' },
-  { labelKey: 'Password_Strength_Good', color: 'bg-gray-500', textColor: 'text-gray-200' },
-  { labelKey: 'Password_Strength_Strong', color: 'bg-gray-400', textColor: 'text-white' },
+  { labelKey: 'Password_Strength_Weak', color: 'bg-red-500', textColor: 'text-red-400' },
+  { labelKey: 'Password_Strength_Medium', color: 'bg-yellow-500', textColor: 'text-yellow-400' },
+  { labelKey: 'Password_Strength_Good', color: 'bg-blue-500', textColor: 'text-blue-400' },
+  { labelKey: 'Password_Strength_Strong', color: 'bg-green-500', textColor: 'text-green-400' },
 ];
 
 const calculatePasswordStrength = (password: string) => {
@@ -82,7 +82,15 @@ const SignUpPage: React.FC = () => {
 
     try {
       setIsSubmitting(true);
-      await signup(formData.email, formData.fullName, formData.password);
+      // Ensure your signup function in useAuth handles these parameters
+      const { error } = await signup(formData.email, formData.password, { 
+        data: { full_name: formData.fullName } 
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+      // You might want to show a success message or redirect to a profile setup page
       navigate('/');
     } catch (err: any) {
       setGeneralError(err?.message || t('Something_went_wrong'));
@@ -95,10 +103,16 @@ const SignUpPage: React.FC = () => {
     setGeneralError('');
     setIsGoogleLoading(true);
     try {
-      await loginWithGoogle({
-        redirectTo: `${window.location.origin}/#/`,
-      });
-      // Pas de navigate ici : Supabase gère la redirection
+        const { error } = await loginWithGoogle({
+            options: {
+                redirectTo: `${window.location.origin}/#/`,
+            }
+       });
+
+       if (error) {
+           throw new Error(error.message);
+       }
+      // No navigate here : Supabase handles the redirection
     } catch (err: any) {
       setGeneralError(err?.message || t('Something_went_wrong'));
     } finally {
@@ -108,7 +122,7 @@ const SignUpPage: React.FC = () => {
 
   const getInputClassName = (field: string) =>
     `appearance-none rounded-md relative block w-full px-3 py-3 border bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-white focus:border-white focus:z-10 sm:text-sm ${
-      errors[field] ? 'border-gray-400' : 'border-gray-700'
+      errors[field] ? 'border-red-500' : 'border-gray-700'
     }`;
 
   return (
@@ -140,7 +154,7 @@ const SignUpPage: React.FC = () => {
                 ) : (
                   <GoogleIcon className="w-5 h-5 mr-2" />
                 )}
-                {t('Sign_in_with_Google')}
+                {t('Sign_up_with_Google')}
               </button>
 
               <button
@@ -148,7 +162,7 @@ const SignUpPage: React.FC = () => {
                 className="w-full flex items-center justify-center py-3 px-4 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors"
               >
                 <WalletIcon className="w-5 h-5 mr-2" />
-                {t('Sign_in_with_Wallet')}
+                {t('Sign_up_with_Wallet')}
               </button>
             </div>
 
@@ -174,7 +188,7 @@ const SignUpPage: React.FC = () => {
                   value={formData.fullName}
                   onChange={handleChange}
                 />
-                {errors.fullName && <p className="mt-2 text-xs text-gray-300">{errors.fullName}</p>}
+                {errors.fullName && <p className="mt-2 text-xs text-red-400">{errors.fullName}</p>}
               </div>
               <div>
                 <input
@@ -188,7 +202,7 @@ const SignUpPage: React.FC = () => {
                   value={formData.email}
                   onChange={handleChange}
                 />
-                {errors.email && <p className="mt-2 text-xs text-gray-300">{errors.email}</p>}
+                {errors.email && <p className="mt-2 text-xs text-red-400">{errors.email}</p>}
               </div>
               <div>
                 <div className="relative">
@@ -211,7 +225,7 @@ const SignUpPage: React.FC = () => {
                     {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                   </button>
                 </div>
-                {errors.password && <p className="mt-1 text-xs text-gray-300">{errors.password}</p>}
+                {errors.password && <p className="mt-1 text-xs text-red-400">{errors.password}</p>}
                 {formData.password.length > 0 && strengthInfo && (
                   <div className="flex items-center mt-2 space-x-1">
                     {Array.from({ length: 4 }).map((_, index) => (
@@ -246,7 +260,7 @@ const SignUpPage: React.FC = () => {
                     {showConfirmPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                   </button>
                 </div>
-                {errors.confirmPassword && <p className="mt-2 text-xs text-gray-300">{errors.confirmPassword}</p>}
+                {errors.confirmPassword && <p className="mt-2 text-xs text-red-400">{errors.confirmPassword}</p>}
               </div>
               <div>
                 <div className="flex items-start">
@@ -270,7 +284,7 @@ const SignUpPage: React.FC = () => {
                     </label>
                   </div>
                 </div>
-                {errors.terms && <p className="mt-2 text-xs text-gray-300">{errors.terms}</p>}
+                {errors.terms && <p className="mt-2 text-xs text-red-400">{errors.terms}</p>}
               </div>
               <div>
                 <button
@@ -298,3 +312,4 @@ const SignUpPage: React.FC = () => {
 };
 
 export default SignUpPage;
+
