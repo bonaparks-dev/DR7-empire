@@ -9,7 +9,8 @@ interface BookingContextType {
   closeBooking: () => void;
 }
 
-const BookingContext = createContext<BookingContextType | undefined>(undefined);
+// ⬇️ Export du contexte (fix du build)
+export const BookingContext = createContext<BookingContextType | undefined>(undefined);
 
 export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
