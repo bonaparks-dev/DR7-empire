@@ -66,7 +66,7 @@ const newCarDataRaw = [
       "torque": "500Nm",
       "engine": "2.0L 4-cylinder Turbo"
     },
-    "image": "/mercedes-amg45.png"
+    "image": "/mercedes-a45.png"
   },
   {
     "id": 6,
