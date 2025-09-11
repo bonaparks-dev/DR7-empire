@@ -82,13 +82,13 @@ const SignUpPage: React.FC = () => {
 
     try {
       setIsSubmitting(true);
-      // Ensure your signup function in useAuth handles these parameters
-      const { error } = await signup(formData.email, formData.password, { 
-        data: { full_name: formData.fullName } 
+      // Safely handle the response without destructuring
+      const response = await signup(formData.email, formData.password, {
+        data: { full_name: formData.fullName }
       });
 
-      if (error) {
-        throw new Error(error.message);
+      if (response && response.error) {
+        throw new Error(response.error.message);
       }
       // You might want to show a success message or redirect to a profile setup page
       navigate('/');
@@ -103,14 +103,15 @@ const SignUpPage: React.FC = () => {
     setGeneralError('');
     setIsGoogleLoading(true);
     try {
-        const { error } = await loginWithGoogle({
+      // Safely handle the response without destructuring
+      const response = await loginWithGoogle({
             options: {
                 redirectTo: `${window.location.origin}/#/`,
             }
        });
 
-       if (error) {
-           throw new Error(error.message);
+       if (response && response.error) {
+           throw new Error(response.error.message);
        }
       // No navigate here : Supabase handles the redirection
     } catch (err: any) {
@@ -312,4 +313,3 @@ const SignUpPage: React.FC = () => {
 };
 
 export default SignUpPage;
-
