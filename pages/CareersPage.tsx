@@ -24,7 +24,7 @@ const CareersPage: React.FC = () => {
             </div>
 
             <h2 className="mt-12">How to Apply</h2>
-            <p>If you believe you have what it takes to be a part of the DR7 Empire, please send your resume and a cover letter to careers@dr7.example.com.</p>
+            <p>If you believe you have what it takes to be a part of the DR7 Empire, please send your resume and a cover letter to amministrazione@dr7luxuryempire.com.</p>
         </LegalPageLayout>
     );
 };
