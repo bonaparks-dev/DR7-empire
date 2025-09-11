@@ -11,7 +11,7 @@ const SignInPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // si tu viens d'une page protégée, on y retournera après login email/password
+  // If you come from a protected page, you will be redirected there after login
   const from = (location.state as any)?.from?.pathname || '/';
 
   const [email, setEmail] = useState('');
@@ -47,9 +47,10 @@ const SignInPage: React.FC = () => {
     setEmailError(validateEmail(email));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setGeneralError('');
+    setIsSubmitting(true);
 
     const emailValError = validateEmail(email);
     setEmailError(emailValError);
@@ -62,12 +63,19 @@ const SignInPage: React.FC = () => {
       setPasswordError('');
     }
 
-    if (emailValError || passValError) return;
+    if (emailValError || passValError) {
+        setIsSubmitting(false);
+        return;
+    }
 
     try {
-      setIsSubmitting(true);
-      // Ton implémentation actuelle (mock). Remplace par ton appel Supabase email/password si tu l’as.
-      login(email, 'Example User');
+      // Use the actual login function from your auth hook
+      const { error } = await login(email, password);
+      if (error) {
+        // Throw an error to be caught by the catch block
+        throw new Error(error.message || t('Invalid_credentials'));
+      }
+      // On success, navigate to the intended page
       navigate(from, { replace: true });
     } catch (err: any) {
       setGeneralError(err?.message || t('Something_went_wrong'));
@@ -80,17 +88,17 @@ const SignInPage: React.FC = () => {
     setGeneralError('');
     setIsGoogleLoading(true);
     try {
-      // IMPORTANT : ne PAS navigate() ici.
-      // On laisse Supabase rediriger vers Google puis revenir sur redirectTo.
-      // HashRouter : on met le path dans le hash pour revenir au bon endroit.
+      // Logic for Supabase redirect. This will navigate to Google.
       const redirectTo = `${window.location.origin}/#${from}`;
-      const res = await (loginWithGoogle as any)?.({ redirectTo });
-      if (res?.error) {
-        setGeneralError(res.error.message || t('Something_went_wrong'));
+      const { error } = await loginWithGoogle({ redirectTo });
+      if (error) {
+        setGeneralError(error.message || t('Something_went_wrong'));
       }
+      // No navigation here; Supabase handles the redirect back to your app.
     } catch (err: any) {
       setGeneralError(err?.message || t('Something_went_wrong'));
     } finally {
+      // This will only be reached if the Supabase call fails immediately
       setIsGoogleLoading(false);
     }
   };
@@ -168,14 +176,14 @@ const SignInPage: React.FC = () => {
                   autoComplete="email"
                   required
                   className={`appearance-none rounded-md relative block w-full px-3 py-3 border bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-white focus:border-white focus:z-10 sm:text-sm ${
-                    emailError ? 'border-gray-400' : 'border-gray-700'
+                    emailError ? 'border-red-500' : 'border-gray-700'
                   }`}
                   placeholder={t('Email_Address')}
                   value={email}
                   onChange={handleEmailChange}
                   onBlur={handleEmailBlur}
                 />
-                {emailError && <p className="mt-2 text-xs text-gray-300">{emailError}</p>}
+                {emailError && <p className="mt-2 text-xs text-red-400">{emailError}</p>}
               </div>
 
               <div>
@@ -189,13 +197,13 @@ const SignInPage: React.FC = () => {
                   autoComplete="current-password"
                   required
                   className={`appearance-none rounded-md relative block w-full px-3 py-3 border bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-white focus:border-white focus:z-10 sm:text-sm ${
-                    passwordError ? 'border-gray-400' : 'border-gray-700'
+                    passwordError ? 'border-red-500' : 'border-gray-700'
                   }`}
                   placeholder={t('Password')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
-                {passwordError && <p className="mt-2 text-xs text-gray-300">{passwordError}</p>}
+                {passwordError && <p className="mt-2 text-xs text-red-400">{passwordError}</p>}
               </div>
 
               <div className="flex items-center justify-end text-sm">
