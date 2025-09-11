@@ -1,16 +1,35 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { BrowserRouter } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import { TranslationProvider } from './hooks/useTranslation';
+import { CurrencyProvider } from './contexts/CurrencyContext';
+import { BookingProvider } from './hooks/useBooking';
+// Si vous n'avez pas de fichier index.css, vous pouvez commenter ou supprimer cette ligne.
+// import './index.css'; 
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
-  throw new Error("Could not find root element to mount to");
+  throw new Error("Could not find root element to mount to");
 }
 
 const root = ReactDOM.createRoot(rootElement);
 root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
+  <React.StrictMode>
+    {/* Ces lignes sont la solution à l'écran noir. */}
+    {/* Elles donnent à toute votre application les outils nécessaires pour fonctionner. */}
+    <BrowserRouter>
+      <AuthProvider>
+        <TranslationProvider>
+          <CurrencyProvider>
+            <BookingProvider>
+              <App />
+            </BookingProvider>
+          </CurrencyProvider>
+        </TranslationProvider>
+      </AuthProvider>
+    </BrowserRouter>
+  </React.StrictMode>
 );
+
