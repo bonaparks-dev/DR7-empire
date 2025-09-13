@@ -21,7 +21,7 @@ const RentalAgreementPage: React.FC = () => {
             <h2>3. General Renter Obligations</h2>
             <p>The final Rental Agreement with the Owner will typically require the Renter to:</p>
             <ul>
-                <li>Meet minimum age and licensing requirements (e.g., 25+ with a valid driver's license for supercars).</li>
+                <li>Meet minimum age and licensing requirements (e.g., 25+ with a valid driver's license for cars).</li>
                 <li>Provide a security deposit against potential damages, fines, or other incidental charges.</li>
                 <li>Operate the asset safely and in accordance with all applicable laws and the Owner's specific rules.</li>
                 <li>Return the asset at the agreed time and location, in the same condition it was received, allowing for normal wear and tear.</li>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
@@ -8,6 +8,8 @@ import { RENTAL_CATEGORIES, PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, 
 import type { Booking } from '../types';
 import { CameraIcon, CreditCardIcon, CryptoIcon } from '../components/icons/Icons';
 
+const STRIPE_PUBLISHABLE_KEY = 'pk_test_51S3dDtH81iSNg16w1EavHzO0iWRRkqLyf7k9n6cKY4PPpKjVCmUUXXyzWAyFQiuzpkdqZ1YAceOO5jKwKaVPzch800PEQXHxR5';
+
 const BookingPage: React.FC = () => {
   const { category: categoryId, itemId } = useParams<{ category: string; itemId: string }>();
   const navigate = useNavigate();
@@ -15,14 +17,7 @@ const BookingPage: React.FC = () => {
   const { currency } = useCurrency();
   const { user } = useAuth();
 
-  const { category, item } = useMemo(() => {
-    const cat = RENTAL_CATEGORIES.find(c => c.id === categoryId);
-    const itm = cat?.data.find(i => i.id === itemId);
-    return { category: cat, item: itm };
-  }, [categoryId, itemId]);
-
-  const isCar = category?.id === 'cars';
-  
+  // FIX: Moved state declarations before they are used in useEffect hooks to prevent "used before declaration" errors.
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [completedBooking, setCompletedBooking] = useState<Booking | null>(null);
@@ -53,13 +48,71 @@ const BookingPage: React.FC = () => {
       licenseImage: '',
       // Step 4
       paymentMethod: 'stripe' as 'stripe' | 'crypto',
-      cardNumber: '',
-      cardExpiry: '',
-      cardCVC: '',
   });
   
   const [insuranceError, setInsuranceError] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const cardElementRef = useRef<HTMLDivElement>(null);
+  const [stripe, setStripe] = useState<any>(null);
+  const [cardElement, setCardElement] = useState<any>(null);
+  const [stripeError, setStripeError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if ((window as any).Stripe) {
+        setStripe((window as any).Stripe(STRIPE_PUBLISHABLE_KEY));
+    }
+  }, []);
+
+  const { category, item } = useMemo(() => {
+    const cat = RENTAL_CATEGORIES.find(c => c.id === categoryId);
+    const itm = cat?.data.find(i => i.id === itemId);
+    return { category: cat, item: itm };
+  }, [categoryId, itemId]);
+
+  const isCar = category?.id === 'cars';
+
+  useEffect(() => {
+    let card: any = null;
+    if (stripe && step === 3 && formData.paymentMethod === 'stripe' && cardElementRef.current) {
+        const elements = stripe.elements();
+        const style = {
+            base: {
+                color: '#ffffff',
+                fontFamily: '"Exo 2", sans-serif',
+                fontSmoothing: 'antialiased',
+                fontSize: '16px',
+                '::placeholder': {
+                    color: '#a0aec0',
+                },
+            },
+            invalid: {
+                color: '#ef4444',
+                iconColor: '#ef4444',
+            },
+        };
+
+        card = elements.create('card', { style, hidePostalCode: true });
+        setCardElement(card);
+        card.mount(cardElementRef.current);
+        
+        card.on('change', (event: any) => {
+            if (event.error) {
+                setStripeError(event.error.message);
+            } else {
+                setStripeError(null);
+            }
+        });
+    }
+
+    return () => {
+        if (card) {
+            card.destroy();
+            setCardElement(null);
+        }
+    };
+}, [stripe, step, formData.paymentMethod]);
+
 
   useEffect(() => {
       if (user) {
@@ -235,11 +288,7 @@ const BookingPage: React.FC = () => {
             if (!formData.licenseImage) newErrors.licenseImage = 'Please upload your driver\'s license.';
         }
         if (step === 3) {
-          if (formData.paymentMethod === 'stripe') {
-              if (!formData.cardNumber.trim()) newErrors.cardNumber = 'Card number is required.';
-              if (!formData.cardExpiry.trim()) newErrors.cardExpiry = 'Expiry date is required.';
-              if (!formData.cardCVC.trim()) newErrors.cardCVC = 'CVC is required.';
-          }
+            // Stripe validation is handled in handleSubmit
         }
     } else { // Not a car
         if (step === 1) {
@@ -255,11 +304,7 @@ const BookingPage: React.FC = () => {
             if (!formData.countryOfResidency) newErrors.countryOfResidency = t('Country_of_Residency_is_required');
         }
         if (step === 3) {
-            if (formData.paymentMethod === 'stripe') {
-              if (!formData.cardNumber.trim()) newErrors.cardNumber = 'Card number is required.';
-              if (!formData.cardExpiry.trim()) newErrors.cardExpiry = 'Expiry date is required.';
-              if (!formData.cardCVC.trim()) newErrors.cardCVC = 'CVC is required.';
-            }
+            // Stripe validation is handled in handleSubmit
         }
     }
 
@@ -280,7 +325,24 @@ const BookingPage: React.FC = () => {
       if (!validateStep() || !item) return;
       
       setIsProcessing(true);
-      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      if (step === 3 && formData.paymentMethod === 'stripe') {
+        if (!stripe || !cardElement) {
+            console.error("Stripe.js has not loaded yet.");
+            setIsProcessing(false);
+            return;
+        }
+
+        const { error, token } = await stripe.createToken(cardElement);
+
+        if (error) {
+            setStripeError(error.message || "An error occurred with your card details.");
+            setIsProcessing(false);
+            return; // Stop the process
+        }
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
       setIsProcessing(false);
       
       const commonData = {
@@ -466,11 +528,11 @@ const BookingPage: React.FC = () => {
               <div className="mt-6">
                 {formData.paymentMethod === 'stripe' ? (
                   <div className="space-y-4">
-                      <div><label className="text-sm text-gray-400">{t('Card_Number')}</label><input type="text" name="cardNumber" value={formData.cardNumber} onChange={handleChange} placeholder="•••• •••• •••• ••••" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
-                      <div className="grid grid-cols-2 gap-4">
-                          <div><label className="text-sm text-gray-400">{t('Expiry')}</label><input type="text" name="cardExpiry" value={formData.cardExpiry} onChange={handleChange} placeholder="MM / YY" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
-                          <div><label className="text-sm text-gray-400">{t('CVC')}</label><input type="text" name="cardCVC" value={formData.cardCVC} onChange={handleChange} placeholder="•••" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                      <label className="text-sm text-gray-400">{t('Credit_Card')}</label>
+                      <div className="bg-gray-800 border border-gray-700 rounded-md p-3">
+                          <div ref={cardElementRef} />
                       </div>
+                      {stripeError && <p className="text-xs text-red-400 mt-1">{stripeError}</p>}
                   </div>
                 ) : (
                   <div className="text-center">
@@ -517,11 +579,11 @@ const BookingPage: React.FC = () => {
               <div className="mt-6">
                 {formData.paymentMethod === 'stripe' ? (
                   <div className="space-y-4">
-                      <div><label className="text-sm text-gray-400">{t('Card_Number')}</label><input type="text" name="cardNumber" value={formData.cardNumber} onChange={handleChange} placeholder="•••• •••• •••• ••••" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
-                      <div className="grid grid-cols-2 gap-4">
-                          <div><label className="text-sm text-gray-400">{t('Expiry')}</label><input type="text" name="cardExpiry" value={formData.cardExpiry} onChange={handleChange} placeholder="MM / YY" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
-                          <div><label className="text-sm text-gray-400">{t('CVC')}</label><input type="text" name="cardCVC" value={formData.cardCVC} onChange={handleChange} placeholder="•••" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                      <label className="text-sm text-gray-400">{t('Credit_Card')}</label>
+                      <div className="bg-gray-800 border border-gray-700 rounded-md p-3">
+                          <div ref={cardElementRef} />
                       </div>
+                      {stripeError && <p className="text-xs text-red-400 mt-1">{stripeError}</p>}
                   </div>
                 ) : (
                   <div className="text-center">
@@ -606,6 +668,7 @@ const BookingPage: React.FC = () => {
                   key={step}
                   initial={{ opacity: 0, x: 50 }}
                   animate={{ opacity: 1, x: 0 }}
+                
                   exit={{ opacity: 0, x: -50 }}
                   transition={{ duration: 0.3 }}
                   className="bg-gray-900/50 p-8 rounded-lg border border-gray-800"

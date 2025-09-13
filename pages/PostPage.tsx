@@ -12,8 +12,8 @@ interface Post {
 const mockPosts: Post[] = [
     { 
       id: 1, 
-      title: 'The Art of Driving a Supercar', 
-      content: 'Driving a supercar is not just about speed; it\'s about the connection between driver, machine, and road. It requires finesse, respect for the power at your disposal, and an understanding of the vehicle\'s dynamics. This post explores the techniques and mindset needed to truly master these incredible automobiles. From understanding weight transfer in corners to mastering the paddle shifters for seamless acceleration, every detail counts. Join us as we delve into the exhilarating world of high-performance driving.' 
+      title: 'The Art of Driving a Car', 
+      content: 'Driving a car is not just about speed; it\'s about the connection between driver, machine, and road. It requires finesse, respect for the power at your disposal, and an understanding of the vehicle\'s dynamics. This post explores the techniques and mindset needed to truly master these incredible automobiles. From understanding weight transfer in corners to mastering the paddle shifters for seamless acceleration, every detail counts. Join us as we delve into the exhilarating world of high-performance driving.' 
     },
     { 
       id: 2, 

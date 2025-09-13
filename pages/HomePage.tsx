@@ -6,7 +6,6 @@ import { motion } from 'framer-motion';
 
 // Optional: if you want to map category ids to specific display titles
 const DISPLAY_TITLE: Record<string, string> = {
-  supercars: 'Cars',
   cars: 'Cars',
   yachts: 'Yachts',
   villas: 'Villas',
@@ -16,7 +15,6 @@ const DISPLAY_TITLE: Record<string, string> = {
 
 // Map category ids to video filenames in /public
 const CATEGORY_VIDEO: Record<string, string> = {
-  supercars: '/cars1.mp4',
   cars: '/cars1.mp4',
   yachts: '/yacht.mp4',
   villas: '/villa1.mp4',
@@ -48,7 +46,7 @@ const HeroSection: React.FC = () => {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-4xl md:text-6xl font-bold text-white uppercase tracking-wider"
+          className="text-4xl md:text-6xl font-bold text-white uppercase tracking-wider font-playfair"
         >
           {t('Welcome_to_DR7_Empire')}
         </motion.h1>
@@ -56,7 +54,7 @@ const HeroSection: React.FC = () => {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="text-2xl md:text-4xl font-light text-white mt-2"
+          className="text-2xl md:text-4xl font-light text-white mt-2 font-playfair"
         >
           {t('Experience_Exclusivity')}
         </motion.h2>
@@ -92,7 +90,7 @@ const HomePage: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.5 }}
             transition={{ duration: 0.5 }}
-            className="text-4xl font-bold text-white"
+            className="text-4xl font-bold text-white font-playfair"
           >
             {t('Lottery_DR7')}
           </motion.h2>
@@ -176,7 +174,7 @@ const HomePage: React.FC = () => {
 
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
                     <div className="absolute bottom-0 left-0 p-8">
-                      <h3 className="text-3xl font-bold text-white">
+                      <h3 className="text-3xl font-bold text-white font-playfair">
                         {displayTitle}
                       </h3>
                     </div>
@@ -195,7 +193,7 @@ const HomePage: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.5 }}
             transition={{ duration: 0.5 }}
-            className="text-4xl font-bold text-white"
+            className="text-4xl font-bold text-white font-playfair"
           >
             {t('The_DR7_Club')}
           </motion.h2>

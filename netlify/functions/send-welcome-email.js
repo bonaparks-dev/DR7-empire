@@ -61,7 +61,7 @@ exports.handler = async (event) => {
         <div style="font-family: sans-serif; line-height: 1.6;">
           <h2>Welcome, ${name}!</h2>
           <p>Your account has been successfully created. You are now part of an exclusive community.</p>
-          <p>Explore our world-class fleet of supercars, yachts, villas, and private jets and book your next unforgettable experience.</p>
+          <p>Explore our world-class fleet of cars, yachts, villas, and private jets and book your next unforgettable experience.</p>
           <p>Best regards,<br/><strong>The DR7 Empire Team</strong></p>
         </div>
       `,

@@ -8,8 +8,8 @@ const FAQPage: React.FC = () => {
         <LegalPageLayout title={t('FAQ')}>
             <div className="space-y-8">
                 <div>
-                    <h3>What are the requirements to rent a supercar?</h3>
-                    <p>Renters must be at least 25 years of age, possess a valid driver's license, and provide proof of full coverage insurance. A security deposit is also required for all supercar rentals.</p>
+                    <h3>What are the requirements to rent a car?</h3>
+                    <p>Renters must be at least 25 years of age, possess a valid driver's license, and provide proof of full coverage insurance. A security deposit is also required for all car rentals.</p>
                 </div>
                 <div>
                     <h3>How does the DR7 Club membership work?</h3>

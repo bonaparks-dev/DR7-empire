@@ -306,7 +306,7 @@ const helicopterData = [
 
 
 export const RENTAL_CATEGORIES: RentalCategory[] = [
-    { id: 'cars', label: { en: 'Supercars', it: 'Supercar' }, data: carData },
+    { id: 'cars', label: { en: 'Cars', it: 'Auto' }, data: carData },
     { id: 'yachts', label: { en: 'Yachts', it: 'Yacht' }, data: yachtData },
     { id: 'villas', label: { en: 'Villas', it: 'Ville' }, data: villaData },
     { id: 'helicopters', label: { en: 'Helicopters', it: 'Elicotteri' }, data: helicopterData },

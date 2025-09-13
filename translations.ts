@@ -15,7 +15,7 @@ export const translations: Translations = {
   Welcome_to_DR7_Empire: { en: "Welcome to DR7 Empire", it: "Benvenuti nell'Impero DR7" },
   Experience_Exclusivity: { en: "Experience Exclusivity", it: "Vivi l'Esclusività" },
   Redefined_Luxury: { en: "Redefined Luxury.", it: "Lusso Ridedefinito." },
-  DR7_is_your_gateway_to_a_world_of_unparalleled_luxury_From_supercars_to_private_jets_we_provide_access_to_the_extraordinary: { en: "DR7 is your gateway to a world of unparalleled luxury. From supercars to private jets, we provide access to the extraordinary.", it: "DR7 è la tua porta d'accesso a un mondo di lusso senza pari. Dalle supercar ai jet privati, forniamo l'accesso allo straordinario." },
+  DR7_is_your_gateway_to_a_world_of_unparalleled_luxury_From_supercars_to_private_jets_we_provide_access_to_the_extraordinary: { en: "DR7 is your gateway to a world of unparalleled luxury. From cars to private jets, we provide access to the extraordinary.", it: "DR7 è la tua porta d'accesso a un mondo di lusso senza pari. Dalle auto ai jet privati, forniamo l'accesso allo straordinario." },
   Explore_Our_Fleet: { en: "Explore Our Fleet", it: "Esplora la Nostra Flotta" },
   Our_Fleet: { en: "Our Fleet", it: "La Nostra Flotta" },
   Discover_our_curated_selection_of_the_worlds_most_sought_after_vehicles: { en: "Discover our curated selection of the world's most sought-after vehicles.", it: "Scopri la nostra selezione curata dei veicoli più desiderati al mondo." },
