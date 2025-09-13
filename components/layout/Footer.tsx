@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
-import { InstagramIcon, FacebookIcon, TwitterIcon, YoutubeIcon, TiktokIcon } from '../icons/Icons';
+import { InstagramIcon, FacebookIcon, TwitterIcon, YoutubeIcon, TiktokIcon, WhatsAppIcon } from '../icons/Icons';
 import GoogleReviews from '../ui/GoogleReviews';
 
 const Footer: React.FC = () => {
@@ -60,6 +60,21 @@ const Footer: React.FC = () => {
           <GoogleReviews />
         </div>
 
+        {/* Contact Section */}
+        <div className="text-center mb-12 pb-12 border-b border-gray-900">
+          <h3 className="text-2xl font-bold text-white mb-4">{t('Contact')}</h3>
+          <a
+            href="https://wa.me/393457905205"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center space-x-3 text-lg text-gray-300 hover:text-white transition-colors group"
+            aria-label="Contact us on WhatsApp"
+          >
+            <WhatsAppIcon className="w-8 h-8 text-green-500 group-hover:text-green-400 transition-colors" />
+            <span className="font-semibold tracking-wider">+39 345 790 5205</span>
+          </a>
+        </div>
+
         {/* Middle Section: Links */}
         <div className="flex flex-col items-center justify-center gap-4 text-sm my-8">
           <ul className="flex flex-wrap justify-center gap-x-8 gap-y-2">
@@ -70,7 +85,6 @@ const Footer: React.FC = () => {
           <ul className="flex flex-wrap justify-center gap-x-8 gap-y-2">
             <li><Link to="/cookie-policy" className="hover:text-white transition-colors">{t('Cookie_Policy')}</Link></li>
             <li><Link to="/privacy" className="hover:text-white transition-colors">{t('Privacy_Policy')}</Link></li>
-            <li><Link to="/contact" className="hover:text-white transition-colors">{t('Contact')}</Link></li>
           </ul>
         </div>
 

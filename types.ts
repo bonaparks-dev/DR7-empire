@@ -15,16 +15,31 @@ export interface RentalSpec {
   icon: React.FC<{ className?: string }>;
 }
 
+export interface Amenity {
+  icon: React.FC<{ className?: string }>;
+  title: { en: string; it: string };
+  description: { en: string; it: string };
+}
+
 export interface RentalItem {
   id: string;
   name: string;
   image: string;
-  pricePerDay: {
+  pricePerDay?: {
     usd: number;
     eur: number;
     crypto: number;
   };
   specs: RentalSpec[];
+
+  // New optional fields for villas
+  location?: string;
+  distanceToBeach?: string;
+  size?: string;
+  images?: string[];
+  description?: { en: string; it: string };
+  amenities?: Amenity[];
+  features?: { en: string[]; it: string[] };
 }
 
 export interface RentalCategory {
@@ -103,4 +118,18 @@ export interface Lottery {
   ticketPriceUSD: number;
   ticketPriceEUR: number;
   drawDate: string; // ISO string
+}
+
+export interface Villa {
+  id: number;
+  title: string;
+  location: string;
+  distanceToBeach: string;
+  maxGuests: number;
+  bedrooms: number;
+  bathrooms: number;
+  images: string[];
+  description: string;
+  rating?: number;
+  reviewCount?: number;
 }

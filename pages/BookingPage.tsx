@@ -17,22 +17,18 @@ const BookingPage: React.FC = () => {
   const { currency } = useCurrency();
   const { user } = useAuth();
 
-  // FIX: Moved state declarations before they are used in useEffect hooks to prevent "used before declaration" errors.
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [completedBooking, setCompletedBooking] = useState<Booking | null>(null);
-
   const today = new Date().toISOString().split('T')[0];
 
   const [formData, setFormData] = useState({
-      // Step 1 - Driver Info (Car)
       fullName: '',
       email: '',
       phone: '',
       countryOfResidency: '',
       age: 25,
       licenseIssueDate: '',
-      // Step 2 - Configuration (Car)
       pickupDate: today,
       pickupTime: '10:00',
       returnDate: '',
@@ -40,13 +36,10 @@ const BookingPage: React.FC = () => {
       pickupLocation: PICKUP_LOCATIONS[0].id,
       insuranceOption: INSURANCE_OPTIONS[0].id,
       extras: [] as string[],
-      // Step 1 - Other
       checkinDate: today,
       checkoutDate: '',
       guests: 1,
-      // Step 3
       licenseImage: '',
-      // Step 4
       paymentMethod: 'stripe' as 'stripe' | 'crypto',
   });
   
@@ -57,6 +50,8 @@ const BookingPage: React.FC = () => {
   const [stripe, setStripe] = useState<any>(null);
   const [cardElement, setCardElement] = useState<any>(null);
   const [stripeError, setStripeError] = useState<string | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [isClientSecretLoading, setIsClientSecretLoading] = useState(false);
 
   useEffect(() => {
     if ((window as any).Stripe) {
@@ -71,108 +66,7 @@ const BookingPage: React.FC = () => {
   }, [categoryId, itemId]);
 
   const isCar = category?.id === 'cars';
-
-  useEffect(() => {
-    let card: any = null;
-    if (stripe && step === 3 && formData.paymentMethod === 'stripe' && cardElementRef.current) {
-        const elements = stripe.elements();
-        const style = {
-            base: {
-                color: '#ffffff',
-                fontFamily: '"Exo 2", sans-serif',
-                fontSmoothing: 'antialiased',
-                fontSize: '16px',
-                '::placeholder': {
-                    color: '#a0aec0',
-                },
-            },
-            invalid: {
-                color: '#ef4444',
-                iconColor: '#ef4444',
-            },
-        };
-
-        card = elements.create('card', { style, hidePostalCode: true });
-        setCardElement(card);
-        card.mount(cardElementRef.current);
-        
-        card.on('change', (event: any) => {
-            if (event.error) {
-                setStripeError(event.error.message);
-            } else {
-                setStripeError(null);
-            }
-        });
-    }
-
-    return () => {
-        if (card) {
-            card.destroy();
-            setCardElement(null);
-        }
-    };
-}, [stripe, step, formData.paymentMethod]);
-
-
-  useEffect(() => {
-      if (user) {
-          setFormData(prev => ({
-              ...prev,
-              fullName: user.fullName || '',
-              email: user.email || '',
-          }));
-      }
-  }, [user]);
-
-  useEffect(() => {
-    if (!isCar) return;
-
-    if (!formData.age || !formData.licenseIssueDate) {
-        setFormData(prev => ({ ...prev, insuranceOption: INSURANCE_OPTIONS[0].id }));
-        setInsuranceError('');
-        return;
-    }
-
-    const age = Number(formData.age);
-    const issueDate = new Date(formData.licenseIssueDate);
-    const today = new Date();
-    
-    if (issueDate > today) {
-        setInsuranceError("License issue date cannot be in the future.");
-        return;
-    }
-
-    let licenseYears = today.getFullYear() - issueDate.getFullYear();
-    const m = today.getMonth() - issueDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < issueDate.getDate())) {
-        licenseYears--;
-    }
-    
-    const { KASKO_SIGNATURE, KASKO_BLACK, KASKO_BASE } = INSURANCE_ELIGIBILITY;
-    
-    let newInsuranceOption = '';
-    let errorKey: keyof typeof VALIDATION_MESSAGES.en | null = null;
-
-    if (age >= KASKO_SIGNATURE.minAge && licenseYears >= KASKO_SIGNATURE.minLicenseYears) {
-        newInsuranceOption = 'KASKO_SIGNATURE';
-    } else if (age >= KASKO_BLACK.minAge && licenseYears >= KASKO_BLACK.minLicenseYears) {
-        newInsuranceOption = 'KASKO_BLACK';
-    } else if (age >= KASKO_BASE.minAge && licenseYears >= KASKO_BASE.minLicenseYears) {
-        newInsuranceOption = 'KASKO_BASE';
-    } else {
-        newInsuranceOption = INSURANCE_OPTIONS[0].id; // Default to base, show error
-        errorKey = 'base';
-    }
-
-    setFormData(prev => ({
-        ...prev,
-        insuranceOption: newInsuranceOption
-    }));
-    
-    setInsuranceError(errorKey ? VALIDATION_MESSAGES[lang][errorKey] : '');
-
-}, [isCar, formData.age, formData.licenseIssueDate, lang]);
-
+  
   const { 
     duration, rentalCost, insuranceCost, extrasCost, subtotal, taxes, total, nights
   } = useMemo(() => {
@@ -228,191 +122,238 @@ const BookingPage: React.FC = () => {
     }
 
   }, [formData, item, currency, isCar]);
-  
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', {
-      style: 'currency',
-      currency: currency.toUpperCase(),
-    }).format(price);
-  };
-  
-  const formatDate = (date: string) => new Date(date).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
+  useEffect(() => {
+    if (step === 3 && formData.paymentMethod === 'stripe' && total > 0) {
+        setIsClientSecretLoading(true);
+        setClientSecret(null);
+        setStripeError(null);
+
+        fetch('/.netlify/functions/create-payment-intent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount: total, currency }),
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                setStripeError(data.error);
+            } else {
+                setClientSecret(data.clientSecret);
+            }
+        })
+        .catch(error => {
+            console.error('Failed to fetch client secret:', error);
+            setStripeError('Could not connect to payment server.');
+        })
+        .finally(() => {
+            setIsClientSecretLoading(false);
+        });
+    }
+  }, [step, formData.paymentMethod, total, currency]);
+
+  useEffect(() => {
+    let card: any = null;
+    if (stripe && step === 3 && formData.paymentMethod === 'stripe' && cardElementRef.current && clientSecret) {
+        const elements = stripe.elements();
+        const style = {
+            base: {
+                color: '#ffffff',
+                fontFamily: '"Exo 2", sans-serif',
+                fontSmoothing: 'antialiased',
+                fontSize: '16px',
+                '::placeholder': { color: '#a0aec0' },
+            },
+            invalid: { color: '#ef4444', iconColor: '#ef4444' },
+        };
+
+        card = elements.create('card', { style, hidePostalCode: true });
+        setCardElement(card);
+        card.mount(cardElementRef.current);
+        
+        card.on('change', (event: any) => {
+            setStripeError(event.error ? event.error.message : null);
+        });
+    }
+
+    return () => {
+        if (card) {
+            card.destroy();
+            setCardElement(null);
+        }
+    };
+  }, [stripe, step, formData.paymentMethod, clientSecret]);
+
+  useEffect(() => {
+      if (user) {
+          setFormData(prev => ({ ...prev, fullName: user.fullName || '', email: user.email || '' }));
+      }
+  }, [user]);
+
+  useEffect(() => {
+    if (!isCar) return;
+
+    if (!formData.age || !formData.licenseIssueDate) {
+        setFormData(prev => ({ ...prev, insuranceOption: INSURANCE_OPTIONS[0].id }));
+        setInsuranceError('');
+        return;
+    }
+
+    const age = Number(formData.age);
+    const issueDate = new Date(formData.licenseIssueDate);
+    const today = new Date();
+    
+    if (issueDate > today) {
+        setInsuranceError("License issue date cannot be in the future.");
+        return;
+    }
+
+    let licenseYears = today.getFullYear() - issueDate.getFullYear();
+    const m = today.getMonth() - issueDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < issueDate.getDate())) {
+        licenseYears--;
+    }
+    
+    const { KASKO_SIGNATURE, KASKO_BLACK, KASKO_BASE } = INSURANCE_ELIGIBILITY;
+    let newInsuranceOption = '';
+    let errorKey: keyof typeof VALIDATION_MESSAGES.en | null = null;
+
+    if (age >= KASKO_SIGNATURE.minAge && licenseYears >= KASKO_SIGNATURE.minLicenseYears) {
+        newInsuranceOption = 'KASKO_SIGNATURE';
+    } else if (age >= KASKO_BLACK.minAge && licenseYears >= KASKO_BLACK.minLicenseYears) {
+        newInsuranceOption = 'KASKO_BLACK';
+    } else if (age >= KASKO_BASE.minAge && licenseYears >= KASKO_BASE.minLicenseYears) {
+        newInsuranceOption = 'KASKO_BASE';
+    } else {
+        newInsuranceOption = INSURANCE_OPTIONS[0].id;
+        errorKey = 'base';
+    }
+
+    setFormData(prev => ({ ...prev, insuranceOption: newInsuranceOption }));
+    setInsuranceError(errorKey ? VALIDATION_MESSAGES[lang][errorKey] : '');
+  }, [isCar, formData.age, formData.licenseIssueDate, lang]);
+  
+  const formatPrice = (price: number) => new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', { style: 'currency', currency: currency.toUpperCase() }).format(price);
+  const formatDate = (date: string) => new Date(date).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     if (type === 'checkbox') {
         const { checked } = e.target as HTMLInputElement;
-        setFormData(prev => ({
-            ...prev,
-            extras: checked ? [...prev.extras, name] : prev.extras.filter(id => id !== name)
-        }));
+        setFormData(prev => ({ ...prev, extras: checked ? [...prev.extras, name] : prev.extras.filter(id => id !== name) }));
     } else {
         setFormData(prev => ({ ...prev, [name]: value }));
     }
-    if (errors[name]) {
-        setErrors(prev => ({...prev, [name]: ''}));
-    }
+    if (errors[name]) setErrors(prev => ({...prev, [name]: ''}));
   };
   
   const handleLicenseUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-          const reader = new FileReader();
-          reader.onload = (event) => {
-              setFormData(prev => ({...prev, licenseImage: event.target?.result as string}));
-              setErrors(prev => ({...prev, licenseImage: ''}));
-          };
-          reader.readAsDataURL(file);
-      }
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+          setFormData(prev => ({...prev, licenseImage: event.target?.result as string}));
+          setErrors(prev => ({...prev, licenseImage: ''}));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const validateStep = () => {
     const newErrors: Record<string, string> = {};
-
     if (isCar) {
-        if (step === 1) {
-            if (!formData.fullName) newErrors.fullName = t('Full_name_is_required');
-            if (!formData.email) newErrors.email = t('Email_is_required');
-            else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = t('Please_enter_a_valid_email_address');
-            if (!formData.countryOfResidency) newErrors.countryOfResidency = t('Country_of_Residency_is_required');
-            if (formData.age < 18) newErrors.age = 'Minimum age is 18.';
-            if (!formData.licenseIssueDate) newErrors.licenseIssueDate = 'License issue date is required.';
-            if (insuranceError) newErrors.insurance = insuranceError;
-        }
-        if (step === 2) {
-            if (!formData.pickupDate || !formData.returnDate) newErrors.date = 'Please select valid pickup and return dates.';
-            else if (new Date(`${formData.pickupDate}T${formData.pickupTime}`) >= new Date(`${formData.returnDate}T${formData.returnTime}`)) {
-                newErrors.date = 'Return date must be after pickup date.';
-            }
-            if (!formData.licenseImage) newErrors.licenseImage = 'Please upload your driver\'s license.';
-        }
-        if (step === 3) {
-            // Stripe validation is handled in handleSubmit
-        }
-    } else { // Not a car
-        if (step === 1) {
-            if (!formData.checkinDate || !formData.checkoutDate) newErrors.date = 'Please select valid check-in and check-out dates.';
-            else if (new Date(formData.checkinDate) >= new Date(formData.checkoutDate)) {
-                newErrors.date = 'Check-out date must be after check-in date.';
-            }
-        }
-        if (step === 2) {
-            if (!formData.fullName) newErrors.fullName = t('Full_name_is_required');
-            if (!formData.email) newErrors.email = t('Email_is_required');
-            else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = t('Please_enter_a_valid_email_address');
-            if (!formData.countryOfResidency) newErrors.countryOfResidency = t('Country_of_Residency_is_required');
-        }
-        if (step === 3) {
-            // Stripe validation is handled in handleSubmit
-        }
+      if (step === 1) {
+          if (!formData.fullName) newErrors.fullName = t('Full_name_is_required');
+          if (!formData.email) newErrors.email = t('Email_is_required');
+          else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = t('Please_enter_a_valid_email_address');
+          if (!formData.countryOfResidency) newErrors.countryOfResidency = t('Country_of_Residency_is_required');
+          if (formData.age < 18) newErrors.age = 'Minimum age is 18.';
+          if (!formData.licenseIssueDate) newErrors.licenseIssueDate = 'License issue date is required.';
+          if (insuranceError) newErrors.insurance = insuranceError;
+      }
+      if (step === 2) {
+          if (!formData.pickupDate || !formData.returnDate || new Date(`${formData.pickupDate}T${formData.pickupTime}`) >= new Date(`${formData.returnDate}T${formData.returnTime}`)) {
+              newErrors.date = 'Please select valid pickup and return dates.';
+          }
+          if (!formData.licenseImage) newErrors.licenseImage = 'Please upload your driver\'s license.';
+      }
+    } else {
+      if (step === 1) {
+          if (!formData.checkinDate || !formData.checkoutDate || new Date(formData.checkinDate) >= new Date(formData.checkoutDate)) {
+              newErrors.date = 'Please select valid check-in and check-out dates.';
+          }
+      }
+      if (step === 2) {
+          if (!formData.fullName) newErrors.fullName = t('Full_name_is_required');
+          if (!formData.email) newErrors.email = t('Email_is_required');
+          else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = t('Please_enter_a_valid_email_address');
+          if (!formData.countryOfResidency) newErrors.countryOfResidency = t('Country_of_Residency_is_required');
+      }
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }
+  };
 
-  const handleNext = () => {
-    if (validateStep()) {
-      setStep(s => s + 1);
+  const handleNext = () => validateStep() && setStep(s => s + 1);
+  const handleBack = () => setStep(s => s - 1);
+  
+  const finalizeBooking = () => {
+    if (!item) return;
+    const commonData = {
+      bookingId: crypto.randomUUID(), userId: user ? user.email : 'guest-user', itemId: item.id, itemName: item.name, image: item.image,
+      totalPrice: total, currency: currency.toUpperCase() as 'USD' | 'EUR',
+      customer: { fullName: formData.fullName, email: formData.email, phone: formData.phone, age: Number(formData.age), countryOfResidency: formData.countryOfResidency },
+      paymentMethod: formData.paymentMethod, bookedAt: new Date().toISOString(), pickupLocation: formData.pickupLocation, insuranceOption: formData.insuranceOption,
+    };
+    const newBooking: Booking = isCar ? { ...commonData, pickupDate: formData.pickupDate, pickupTime: formData.pickupTime, returnDate: formData.returnDate, returnTime: formData.returnTime, duration: `${duration.days} ${duration.days === 1 ? t('day') : t('days')}, ${duration.hours} ${duration.hours === 1 ? t('hour') : t('hours')}`, driverLicenseImage: formData.licenseImage, extras: formData.extras } : { ...commonData, pickupDate: formData.checkinDate, pickupTime: '15:00', returnDate: formData.checkoutDate, returnTime: '11:00', duration: `${nights} ${nights === 1 ? t('Night') : t('Nights')}`, driverLicenseImage: '', extras: [] };
+    const existingBookings = JSON.parse(localStorage.getItem('bookings') || '[]') as Booking[];
+    localStorage.setItem('bookings', JSON.stringify([...existingBookings, newBooking]));
+    setCompletedBooking(newBooking);
+    setStep(steps.length + 1);
+    setIsProcessing(false);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateStep() || !item) return;
+    
+    setIsProcessing(true);
+
+    if (formData.paymentMethod === 'stripe') {
+      setStripeError(null);
+      if (!stripe || !cardElement || !clientSecret) {
+        setStripeError("Payment system is not ready. Please wait a moment and try again.");
+        setIsProcessing(false);
+        return;
+      }
+      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: { card: cardElement, billing_details: { name: formData.fullName, email: formData.email, phone: formData.phone } },
+      });
+      if (error) {
+        setStripeError(error.message || "An unexpected payment error occurred.");
+        setIsProcessing(false);
+      } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+        finalizeBooking();
+      } else {
+        setStripeError("Payment was not successful. Please try again.");
+        setIsProcessing(false);
+      }
+    } else {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      finalizeBooking();
     }
   };
 
-  const handleBack = () => setStep(s => s - 1);
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!validateStep() || !item) return;
-      
-      setIsProcessing(true);
+  const steps = useMemo(() => isCar ? [
+    { id: 1, name: t('Driver_Information') }, { id: 2, name: t('Configuration_and_Verification') }, { id: 3, name: t('Payment') },
+  ] : [
+    { id: 1, name: t('Dates_and_Guests') }, { id: 2, name: t('Personal_Information') }, { id: 3, name: t('Payment') },
+  ], [isCar, t]);
 
-      if (step === 3 && formData.paymentMethod === 'stripe') {
-        if (!stripe || !cardElement) {
-            console.error("Stripe.js has not loaded yet.");
-            setIsProcessing(false);
-            return;
-        }
-
-        const { error, token } = await stripe.createToken(cardElement);
-
-        if (error) {
-            setStripeError(error.message || "An error occurred with your card details.");
-            setIsProcessing(false);
-            return; // Stop the process
-        }
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setIsProcessing(false);
-      
-      const commonData = {
-          bookingId: crypto.randomUUID(),
-          userId: user ? user.email : 'guest-user',
-          itemId: item.id,
-          itemName: item.name,
-          image: item.image,
-          totalPrice: total,
-          currency: currency.toUpperCase() as 'USD' | 'EUR',
-          customer: { 
-            fullName: formData.fullName, 
-            email: formData.email, 
-            phone: formData.phone, 
-            age: Number(formData.age),
-            countryOfResidency: formData.countryOfResidency,
-          },
-          paymentMethod: formData.paymentMethod,
-          bookedAt: new Date().toISOString(),
-          pickupLocation: formData.pickupLocation,
-          insuranceOption: formData.insuranceOption,
-      };
-
-      const newBooking: Booking = isCar ? {
-          ...commonData,
-          pickupDate: formData.pickupDate,
-          pickupTime: formData.pickupTime,
-          returnDate: formData.returnDate,
-          returnTime: formData.returnTime,
-          duration: `${duration.days} ${duration.days === 1 ? t('day') : t('days')}, ${duration.hours} ${duration.hours === 1 ? t('hour') : t('hours')}`,
-          driverLicenseImage: formData.licenseImage,
-          extras: formData.extras
-      } : {
-        ...commonData,
-        pickupDate: formData.checkinDate,
-        pickupTime: '15:00',
-        returnDate: formData.checkoutDate,
-        returnTime: '11:00',
-        duration: `${nights} ${nights === 1 ? t('Night') : t('Nights')}`,
-        driverLicenseImage: '', // Not applicable
-        extras: [],
-      };
-
-      const existingBookings = JSON.parse(localStorage.getItem('bookings') || '[]') as Booking[];
-      localStorage.setItem('bookings', JSON.stringify([...existingBookings, newBooking]));
-
-      setCompletedBooking(newBooking);
-      setStep(4); // Confirmation step for both flows
-  };
-
-  const steps = useMemo(() => {
-    const carSteps = [
-        { id: 1, name: t('Driver_Information') },
-        { id: 2, name: t('Configuration_and_Verification') },
-        { id: 3, name: t('Payment') },
-    ];
-    const otherSteps = [
-        { id: 1, name: t('Dates_and_Guests') },
-        { id: 2, name: t('Personal_Information') },
-        { id: 3, name: t('Payment') },
-    ];
-    return isCar ? carSteps : otherSteps;
-  }, [isCar, t]);
-
-  if (!item) {
-    return <div className="pt-32 text-center text-white">Item not found.</div>;
-  }
+  if (!item) return <div className="pt-32 text-center text-white">Item not found.</div>;
 
   const renderStepContent = () => {
-    if (step === steps.length + 1) { // Confirmation Step
+    if (step === steps.length + 1) {
       return (
         <div className="text-center">
           <motion.div initial={{scale:0}} animate={{scale:1}} transition={{type: 'spring', stiffness: 260, damping: 20}} className="w-16 h-16 bg-gray-500/20 text-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -420,7 +361,6 @@ const BookingPage: React.FC = () => {
           </motion.div>
           <h2 className="text-3xl font-bold text-white mb-2">{t('Booking_Request_Sent')}</h2>
           <p className="text-gray-300 max-w-md mx-auto">{t('We_will_confirm_your_booking_shortly')}</p>
-
           {completedBooking && (
             <div className="mt-8 bg-gray-800/50 p-6 rounded-lg border border-gray-700 text-left max-w-lg mx-auto">
                 <h3 className="text-xl font-bold text-white text-center mb-4">{t('Booking_Details')}</h3>
@@ -428,8 +368,8 @@ const BookingPage: React.FC = () => {
                     <div className="flex justify-between"><span className="text-gray-400">{t('Item')}</span><span className="text-white font-medium text-right">{completedBooking.itemName}</span></div>
                     <div className="flex justify-between"><span className="text-gray-400">{t('Dates')}</span><span className="text-white font-medium text-right">{formatDate(completedBooking.pickupDate)} - {formatDate(completedBooking.returnDate)}</span></div>
                     <div className="flex justify-between"><span className="text-gray-400">{t('Duration')}</span><span className="text-white font-medium text-right">{completedBooking.duration}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-400">{t('Pickup_Location')}</span><span className="text-white font-medium text-right">{getTranslated(PICKUP_LOCATIONS.find(l => l.id === completedBooking.pickupLocation)?.label || {en:'',it:''})}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-400">{t('Insurance')}</span><span className="text-white font-medium text-right">{getTranslated(INSURANCE_OPTIONS.find(l => l.id === completedBooking.insuranceOption)?.label || {en:'',it:''})}</span></div>
+                    {completedBooking.pickupLocation && <div className="flex justify-between"><span className="text-gray-400">{t('Pickup_Location')}</span><span className="text-white font-medium text-right">{getTranslated(PICKUP_LOCATIONS.find(l => l.id === completedBooking.pickupLocation)?.label || {en:'',it:''})}</span></div>}
+                    {completedBooking.insuranceOption && <div className="flex justify-between"><span className="text-gray-400">{t('Insurance')}</span><span className="text-white font-medium text-right">{getTranslated(INSURANCE_OPTIONS.find(l => l.id === completedBooking.insuranceOption)?.label || {en:'',it:''})}</span></div>}
                     {completedBooking.extras && completedBooking.extras.length > 0 && (
                          <div className="flex justify-between"><span className="text-gray-400">{t('Extras')}</span><span className="text-white font-medium text-right">{completedBooking.extras.map(e => getTranslated(RENTAL_EXTRAS.find(re => re.id === e)?.label || {en:'',it:''})).join(', ')}</span></div>
                     )}
@@ -437,10 +377,7 @@ const BookingPage: React.FC = () => {
                 </div>
             </div>
           )}
-
-          <button type="button" onClick={() => navigate('/')} className="mt-8 bg-white text-black px-6 py-2 rounded-full font-semibold text-sm hover:bg-gray-200 transition-colors">
-              Go to Home
-          </button>
+          <button type="button" onClick={() => navigate('/')} className="mt-8 bg-white text-black px-6 py-2 rounded-full font-semibold text-sm hover:bg-gray-200 transition-colors">Go to Home</button>
         </div>
       );
     }
@@ -473,44 +410,24 @@ const BookingPage: React.FC = () => {
                 </div>
                 {errors.date && <p className="text-xs text-red-400">{errors.date}</p>}
                 <div><label className="text-sm text-gray-400">{t('Pickup_Location')}</label><select name="pickupLocation" value={formData.pickupLocation} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"><option value="" disabled>{t('Select_an_option')}</option>{PICKUP_LOCATIONS.map(loc => (<option key={loc.id} value={loc.id}>{getTranslated(loc.label)}</option>))}</select></div>
-                
                  {assignedInsurance && (
                     <div>
                         <h3 className="text-lg font-semibold text-white mb-2">{t('Assigned_Insurance_Plan_Notice')}</h3>
-                        <div className={`p-4 rounded-md border ${insuranceError ? 'border-red-500' : 'border-gray-700'} bg-gray-800/50`}>
-                            <p className="font-semibold text-white">{getTranslated(assignedInsurance.label)}</p>
-                            <p className="text-sm text-gray-400">{getTranslated(assignedInsurance.description)}</p>
-                            {insuranceError && <p className="text-xs text-red-400 mt-2">{insuranceError}</p>}
-                        </div>
+                        <div className={`p-4 rounded-md border ${insuranceError ? 'border-red-500' : 'border-gray-700'} bg-gray-800/50`}><p className="font-semibold text-white">{getTranslated(assignedInsurance.label)}</p><p className="text-sm text-gray-400">{getTranslated(assignedInsurance.description)}</p>{insuranceError && <p className="text-xs text-red-400 mt-2">{insuranceError}</p>}</div>
                     </div>
                 )}
-
                 <div>
                     <h3 className="text-lg font-semibold text-white mb-2">{t('Extras_and_Addons')}</h3>
-                    <div className="space-y-2">
-                        {RENTAL_EXTRAS.map(extra => (
-                            <label key={extra.id} className="flex items-center p-3 bg-gray-800/50 rounded-md border border-gray-700 cursor-pointer has-[:checked]:border-white">
-                                <input type="checkbox" name={extra.id} checked={formData.extras.includes(extra.id)} onChange={handleChange} className="h-4 w-4 text-white bg-gray-700 border-gray-600 rounded focus:ring-white"/>
-                                <span className="ml-3 text-white">{getTranslated(extra.label)}</span>
-                                <span className="ml-auto font-semibold text-white">{formatPrice(extra.pricePerDay[currency])}/{t('day')}</span>
-                            </label>
-                        ))}
-                    </div>
+                    <div className="space-y-2">{RENTAL_EXTRAS.map(extra => (<label key={extra.id} className="flex items-center p-3 bg-gray-800/50 rounded-md border border-gray-700 cursor-pointer has-[:checked]:border-white"><input type="checkbox" name={extra.id} checked={formData.extras.includes(extra.id)} onChange={handleChange} className="h-4 w-4 text-white bg-gray-700 border-gray-600 rounded focus:ring-white"/><span className="ml-3 text-white">{getTranslated(extra.label)}</span><span className="ml-auto font-semibold text-white">{formatPrice(extra.pricePerDay[currency])}/{t('day')}</span></label>))}</div>
                 </div>
-
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">{t('License_Verification')}</h3>
                   <div className="p-4 border-2 border-dashed border-gray-700 rounded-lg text-center">
                     <p className="text-sm text-gray-400 mb-4">{t('Please_provide_a_clear_photo_of_your_drivers_license')}</p>
                     {formData.licenseImage ? (
-                      <div className="relative inline-block">
-                        <img src={formData.licenseImage} alt="License Preview" className="h-40 w-auto mx-auto rounded-md object-contain"/>
-                        <label htmlFor="license-upload" className="absolute -bottom-2 -right-2 bg-white text-black text-xs font-bold px-3 py-1 rounded-full cursor-pointer hover:bg-gray-200">{t('Change_Photo')}</label>
-                      </div>
+                      <div className="relative inline-block"><img src={formData.licenseImage} alt="License Preview" className="h-40 w-auto mx-auto rounded-md object-contain"/><label htmlFor="license-upload" className="absolute -bottom-2 -right-2 bg-white text-black text-xs font-bold px-3 py-1 rounded-full cursor-pointer hover:bg-gray-200">{t('Change_Photo')}</label></div>
                     ) : (
-                      <div className="flex justify-center space-x-4">
-                        <label htmlFor="license-upload" className="px-4 py-2 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors text-sm cursor-pointer">{t('Upload_File')}</label>
-                      </div>
+                      <div className="flex justify-center space-x-4"><label htmlFor="license-upload" className="px-4 py-2 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors text-sm cursor-pointer">{t('Upload_File')}</label></div>
                     )}
                     <input id="license-upload" type="file" accept="image/*" onChange={handleLicenseUpload} className="sr-only"/>
                     {errors.licenseImage && <p className="text-xs text-red-400 mt-2">{errors.licenseImage}</p>}
@@ -521,158 +438,61 @@ const BookingPage: React.FC = () => {
         case 3:
           return (
             <div>
-              <div className="flex border-b border-gray-700">
-                <button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'stripe'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'stripe' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}><CreditCardIcon className="w-5 h-5 inline mr-2"/>{t('Credit_Card')}</button>
-                <button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'crypto'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'crypto' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}><CryptoIcon className="w-5 h-5 inline mr-2"/>{t('Cryptocurrency')}</button>
-              </div>
+              <div className="flex border-b border-gray-700"><button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'stripe'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'stripe' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}><CreditCardIcon className="w-5 h-5 inline mr-2"/>{t('Credit_Card')}</button><button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'crypto'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'crypto' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}><CryptoIcon className="w-5 h-5 inline mr-2"/>{t('Cryptocurrency')}</button></div>
               <div className="mt-6">
                 {formData.paymentMethod === 'stripe' ? (
                   <div className="space-y-4">
                       <label className="text-sm text-gray-400">{t('Credit_Card')}</label>
-                      <div className="bg-gray-800 border border-gray-700 rounded-md p-3">
-                          <div ref={cardElementRef} />
+                      <div className="bg-gray-800 border border-gray-700 rounded-md p-3 min-h-[50px]">
+                        {isClientSecretLoading ? (
+                          <div className="flex items-center justify-center text-gray-400"><motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-4 h-4 border-2 border-t-white border-gray-600 rounded-full inline-block mr-2"/><span>Initializing payment...</span></div>
+                        ) : ( <div ref={cardElementRef} /> )}
                       </div>
                       {stripeError && <p className="text-xs text-red-400 mt-1">{stripeError}</p>}
                   </div>
                 ) : (
-                  <div className="text-center">
-                    <p className="text-gray-300 mb-4">{t('Scan_or_copy_address_below')}</p>
-                    <div className="w-40 h-40 bg-white p-2 rounded-md mx-auto flex items-center justify-center text-black">QR Code</div>
-                    <input type="text" readOnly value="0x1234...abcd" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-4 text-white text-center text-sm"/>
-                  </div>
+                  <div className="text-center"><p className="text-gray-300 mb-4">{t('Scan_or_copy_address_below')}</p><div className="w-40 h-40 bg-white p-2 rounded-md mx-auto flex items-center justify-center text-black">QR Code</div><input type="text" readOnly value="0x1234...abcd" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-4 text-white text-center text-sm"/></div>
                 )}
               </div>
             </div>
           );
         default: return null;
       }
-    } else { // Not a car
+    } else {
       switch (step) {
-        case 1:
-          return (
-             <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                    <div><label className="text-sm text-gray-400">{t('Check_in_Date')}</label><input type="date" name="checkinDate" value={formData.checkinDate} onChange={handleChange} min={today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
-                    <div><label className="text-sm text-gray-400">{t('Check_out_Date')}</label><input type="date" name="checkoutDate" value={formData.checkoutDate} onChange={handleChange} min={formData.checkinDate || today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
-                </div>
-                <div><label className="text-sm text-gray-400">{t('Number_of_Guests')}</label><input type="number" name="guests" value={formData.guests} onChange={handleChange} min="1" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
-            </div>
-          );
-        case 2:
-            return (
-                <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div><label className="text-sm text-gray-400">{t('Full_Name')}</label><input type="text" name="fullName" value={formData.fullName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
-                        <div><label className="text-sm text-gray-400">{t('Email_Address')}</label><input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
-                        <div><label className="text-sm text-gray-400">{t('Phone_Number')}</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
-                        <div><label className="text-sm text-gray-400">{t('Country_of_Residency')}</label><select name="countryOfResidency" value={formData.countryOfResidency} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"><option value="">Select Country</option>{COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}</select>{errors.countryOfResidency && <p className="text-xs text-red-400 mt-1">{errors.countryOfResidency}</p>}</div>
-                    </div>
-                </div>
-            );
-        case 3:
-          return (
-             <div>
-              <div className="flex border-b border-gray-700">
-                <button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'stripe'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'stripe' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}><CreditCardIcon className="w-5 h-5 inline mr-2"/>{t('Credit_Card')}</button>
-                <button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'crypto'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'crypto' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}><CryptoIcon className="w-5 h-5 inline mr-2"/>{t('Cryptocurrency')}</button>
-              </div>
-              <div className="mt-6">
-                {formData.paymentMethod === 'stripe' ? (
-                  <div className="space-y-4">
-                      <label className="text-sm text-gray-400">{t('Credit_Card')}</label>
-                      <div className="bg-gray-800 border border-gray-700 rounded-md p-3">
-                          <div ref={cardElementRef} />
-                      </div>
-                      {stripeError && <p className="text-xs text-red-400 mt-1">{stripeError}</p>}
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <p className="text-gray-300 mb-4">{t('Scan_or_copy_address_below')}</p>
-                    <div className="w-40 h-40 bg-white p-2 rounded-md mx-auto flex items-center justify-center text-black">QR Code</div>
-                    <input type="text" readOnly value="0x1234...abcd" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-4 text-white text-center text-sm"/>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
+        case 1: return (<div className="space-y-6"><div className="grid grid-cols-2 gap-4"><div><label className="text-sm text-gray-400">{t('Check_in_Date')}</label><input type="date" name="checkinDate" value={formData.checkinDate} onChange={handleChange} min={today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div><div><label className="text-sm text-gray-400">{t('Check_out_Date')}</label><input type="date" name="checkoutDate" value={formData.checkoutDate} onChange={handleChange} min={formData.checkinDate || today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div></div><div><label className="text-sm text-gray-400">{t('Number_of_Guests')}</label><input type="number" name="guests" value={formData.guests} onChange={handleChange} min="1" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div></div>);
+        case 2: return (<div className="space-y-4"><div className="grid grid-cols-2 gap-4"><div><label className="text-sm text-gray-400">{t('Full_Name')}</label><input type="text" name="fullName" value={formData.fullName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div><div><label className="text-sm text-gray-400">{t('Email_Address')}</label><input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div><div><label className="text-sm text-gray-400">{t('Phone_Number')}</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div><div><label className="text-sm text-gray-400">{t('Country_of_Residency')}</label><select name="countryOfResidency" value={formData.countryOfResidency} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"><option value="">Select Country</option>{COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}</select>{errors.countryOfResidency && <p className="text-xs text-red-400 mt-1">{errors.countryOfResidency}</p>}</div></div></div>);
+        case 3: return (<div><div className="flex border-b border-gray-700"><button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'stripe'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'stripe' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}><CreditCardIcon className="w-5 h-5 inline mr-2"/>{t('Credit_Card')}</button><button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'crypto'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors ${formData.paymentMethod === 'crypto' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}><CryptoIcon className="w-5 h-5 inline mr-2"/>{t('Cryptocurrency')}</button></div><div className="mt-6">{formData.paymentMethod === 'stripe' ? (<div className="space-y-4"><label className="text-sm text-gray-400">{t('Credit_Card')}</label><div className="bg-gray-800 border border-gray-700 rounded-md p-3 min-h-[50px]">{isClientSecretLoading ? (<div className="flex items-center justify-center text-gray-400"><motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-4 h-4 border-2 border-t-white border-gray-600 rounded-full inline-block mr-2"/><span>Initializing payment...</span></div>) : ( <div ref={cardElementRef} /> )}</div>{stripeError && <p className="text-xs text-red-400 mt-1">{stripeError}</p>}</div>) : (<div className="text-center"><p className="text-gray-300 mb-4">{t('Scan_or_copy_address_below')}</p><div className="w-40 h-40 bg-white p-2 rounded-md mx-auto flex items-center justify-center text-black">QR Code</div><input type="text" readOnly value="0x1234...abcd" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-4 text-white text-center text-sm"/></div>)}</div></div>);
         default: return null;
       }
     }
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
-      className="pt-32 pb-24 bg-black min-h-screen"
-    >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} className="pt-32 pb-24 bg-black min-h-screen">
       <div className="container mx-auto px-6">
-        <h1 className="text-4xl md:text-5xl font-bold text-white text-center mb-4">
-          {t('Book_Your')} <span className="text-white">{item.name}</span>
-        </h1>
-
+        <h1 className="text-4xl md:text-5xl font-bold text-white text-center mb-4">{t('Book_Your')} <span className="text-white">{item.name}</span></h1>
         {step <= steps.length && (
             <div className="w-full max-w-md mx-auto mb-12">
-                <div className="flex items-center justify-between">
-                    {steps.map((s, index) => (
-                        <React.Fragment key={s.id}>
-                            <div className="flex flex-col items-center text-center">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${step >= s.id ? 'bg-white border-white text-black' : 'border-gray-600 text-gray-400'}`}>
-                                    {s.id}
-                                </div>
-                                <p className={`mt-2 text-xs font-semibold ${step >= s.id ? 'text-white' : 'text-gray-500'}`}>{s.name}</p>
-                            </div>
-                            {index < steps.length - 1 && <div className={`flex-1 h-0.5 mx-4 transition-colors duration-300 ${step > s.id ? 'bg-white' : 'bg-gray-700'}`}></div>}
-                        </React.Fragment>
-                    ))}
-                </div>
+                <div className="flex items-center justify-between">{steps.map((s, index) => (<React.Fragment key={s.id}><div className="flex flex-col items-center text-center"><div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${step >= s.id ? 'bg-white border-white text-black' : 'border-gray-600 text-gray-400'}`}>{s.id}</div><p className={`mt-2 text-xs font-semibold ${step >= s.id ? 'text-white' : 'text-gray-500'}`}>{s.name}</p></div>{index < steps.length - 1 && <div className={`flex-1 h-0.5 mx-4 transition-colors duration-300 ${step > s.id ? 'bg-white' : 'bg-gray-700'}`}></div>}</React.Fragment>))}</div>
             </div>
         )}
-
         <div className="lg:grid lg:grid-cols-3 lg:gap-8">
           <aside className="lg:col-span-1 lg:sticky lg:top-32 self-start mb-8 lg:mb-0">
             <div className="bg-gray-900/50 p-6 rounded-lg border border-gray-800">
               <h2 className="text-2xl font-bold text-white mb-4">{t('Booking_Summary')}</h2>
               <img src={item.image} alt={item.name} className="w-full h-40 object-cover rounded-md mb-4"/>
                 {isCar ? (
-                    <>
-                        <div className="space-y-2 text-sm">
-                            <div className="flex justify-between"><span className="text-gray-400">{t('Total_Duration')}</span><span className="text-white font-medium">{duration.days} {duration.days === 1 ? t('day') : t('days')}, {duration.hours} {duration.hours === 1 ? t('hour') : t('hours')}</span></div>
-                            <div className="flex justify-between"><span className="text-gray-400">{t('Rental_Cost')}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div>
-                            <div className="flex justify-between"><span className="text-gray-400">{t('Insurance')}</span><span className="text-white font-medium">{formatPrice(insuranceCost)}</span></div>
-                            {extrasCost > 0 && <div className="flex justify-between"><span className="text-gray-400">{t('Extras')}</span><span className="text-white font-medium">{formatPrice(extrasCost)}</span></div>}
-                            <div className="flex justify-between"><span className="text-gray-400">{t('Subtotal')}</span><span className="text-white font-medium">{formatPrice(subtotal)}</span></div>
-                            <div className="flex justify-between"><span className="text-gray-400">{t('Taxes_and_Fees')}</span><span className="text-white font-medium">{formatPrice(taxes)}</span></div>
-                        </div>
-                        <div className="flex justify-between text-xl border-t border-white/20 pt-2 mt-2"><span className="text-white font-bold">{t('Total')}</span><span className="text-white font-bold">{formatPrice(total)}</span></div>
-                    </>
+                    <><div className="space-y-2 text-sm"><div className="flex justify-between"><span className="text-gray-400">{t('Total_Duration')}</span><span className="text-white font-medium">{duration.days} {duration.days === 1 ? t('day') : t('days')}, {duration.hours} {duration.hours === 1 ? t('hour') : t('hours')}</span></div><div className="flex justify-between"><span className="text-gray-400">{t('Rental_Cost')}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div><div className="flex justify-between"><span className="text-gray-400">{t('Insurance')}</span><span className="text-white font-medium">{formatPrice(insuranceCost)}</span></div>{extrasCost > 0 && <div className="flex justify-between"><span className="text-gray-400">{t('Extras')}</span><span className="text-white font-medium">{formatPrice(extrasCost)}</span></div>}<div className="flex justify-between"><span className="text-gray-400">{t('Subtotal')}</span><span className="text-white font-medium">{formatPrice(subtotal)}</span></div><div className="flex justify-between"><span className="text-gray-400">{t('Taxes_and_Fees')}</span><span className="text-white font-medium">{formatPrice(taxes)}</span></div></div><div className="flex justify-between text-xl border-t border-white/20 pt-2 mt-2"><span className="text-white font-bold">{t('Total')}</span><span className="text-white font-bold">{formatPrice(total)}</span></div></>
                 ) : (
-                    <>
-                         <div className="space-y-2 text-sm">
-                            <div className="flex justify-between"><span className="text-gray-400">{t('Duration')}</span><span className="text-white font-medium">{nights} {nights === 1 ? t('Night') : t('Nights')}</span></div>
-                             <div className="flex justify-between"><span className="text-gray-400">{t('Booking_Cost')}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div>
-                             <div className="flex justify-between"><span className="text-gray-400">{t('Taxes_and_Fees')}</span><span className="text-white font-medium">{formatPrice(taxes)}</span></div>
-                        </div>
-                        <div className="flex justify-between text-xl border-t border-white/20 pt-2 mt-2"><span className="text-white font-bold">{t('Total')}</span><span className="text-white font-bold">{formatPrice(total)}</span></div>
-                    </>
+                    <><div className="space-y-2 text-sm"><div className="flex justify-between"><span className="text-gray-400">{t('Duration')}</span><span className="text-white font-medium">{nights} {nights === 1 ? t('Night') : t('Nights')}</span></div><div className="flex justify-between"><span className="text-gray-400">{t('Booking_Cost')}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div><div className="flex justify-between"><span className="text-gray-400">{t('Taxes_and_Fees')}</span><span className="text-white font-medium">{formatPrice(taxes)}</span></div></div><div className="flex justify-between text-xl border-t border-white/20 pt-2 mt-2"><span className="text-white font-bold">{t('Total')}</span><span className="text-white font-bold">{formatPrice(total)}</span></div></>
                 )}
             </div>
           </aside>
-
           <main className="lg:col-span-2">
             <form onSubmit={handleSubmit}>
               <AnimatePresence mode="wait">
-                <motion.div
-                  key={step}
-                  initial={{ opacity: 0, x: 50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                
-                  exit={{ opacity: 0, x: -50 }}
-                  transition={{ duration: 0.3 }}
-                  className="bg-gray-900/50 p-8 rounded-lg border border-gray-800"
-                >
+                <motion.div key={step} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} transition={{ duration: 0.3 }} className="bg-gray-900/50 p-8 rounded-lg border border-gray-800">
                   {renderStepContent()}
                 </motion.div>
               </AnimatePresence>
@@ -682,12 +502,7 @@ const BookingPage: React.FC = () => {
                         {step < steps.length ?
                             <button type="button" onClick={handleNext} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">{t('Next')}</button> :
                             <button type="submit" disabled={isProcessing} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed">
-                                {isProcessing ? (
-                                    <>
-                                        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-5 h-5 border-2 border-t-black border-gray-700/50 rounded-full inline-block mr-2"/>
-                                        {t('Processing')}
-                                    </>
-                                ) : (formData.paymentMethod === 'crypto' ? t('I_have_sent_the_payment') : t('Confirm_Booking'))}
+                                {isProcessing ? (<><motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-5 h-5 border-2 border-t-black border-gray-700/50 rounded-full inline-block mr-2"/>{t('Processing')}</>) : (formData.paymentMethod === 'crypto' ? t('I_have_sent_the_payment') : t('Confirm_Booking'))}
                             </button>
                         }
                     </div>

@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-// FIX: Import Variants type from framer-motion to explicitly type the variants object.
 import { AnimatePresence, motion, Variants } from 'framer-motion';
 import { GOOGLE_REVIEWS } from '../../constants';
 import { StarIcon } from '../icons/Icons';
@@ -60,9 +59,6 @@ const GoogleReviews: React.FC<{
   const current = reviews[index];
 
   // Slide + zoom variants
-  // FIX: Explicitly type `variants` with the `Variants` type from framer-motion.
-  // This resolves a TypeScript error where the `ease` property in the transition
-  // was being inferred as a generic `string` instead of the required `Easing` type.
   const variants: Variants = {
     enter: (dir: 1 | -1) => ({
       x: dir > 0 ? 40 : -40,

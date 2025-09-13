@@ -29,6 +29,8 @@ import ScrollToTop from './components/routing/ScrollToTop';
 import PostPage from './pages/PostPage';
 import EnvGuard from './components/system/EnvGuard';
 import CheckEmailPage from './pages/CheckEmailPage';
+import VillaDetailsPage from './pages/VillaDetailsPage';
+import VillaListingsPage from './pages/VillaListingsPage';
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -36,7 +38,9 @@ const AnimatedRoutes = () => {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<HomePage />} />
-        {RENTAL_CATEGORIES.map(category => (
+        <Route path="/villas" element={<VillaListingsPage />} />
+        <Route path="/villas/:villaId" element={<VillaDetailsPage />} />
+        {RENTAL_CATEGORIES.filter(c => c.id !== 'villas').map(category => (
             <Route 
                 key={category.id} 
                 path={`/${category.id}`} 
