@@ -1,3 +1,4 @@
+
 import type { Translations } from './types';
 
 export const translations: Translations = {
@@ -40,6 +41,13 @@ export const translations: Translations = {
   'villa.listings.notFoundDesc': { en: "Our portfolio includes exclusive off-market properties. Contact our concierge service for personalized assistance and access to our complete collection.", it: "Il nostro portfolio include proprietà esclusive fuori mercato. Contatta il nostro servizio di concierge per assistenza personalizzata e accesso alla nostra collezione completa." },
   'villa.listings.contactConcierge': { en: "Contact Concierge", it: "Contatta il Concierge" },
   'rentals.backto': { en: "Back", it: "Indietro" },
+  // Villa Details Page
+  'amenities.comfort': { en: "Amenities & Comfort", it: "Servizi e Comfort" },
+  'features.title': { en: "Features", it: "Caratteristiche" },
+  'gallery.title': { en: "Gallery", it: "Galleria" },
+  'dream.vacation.title': { en: "Ready for your dream vacation?", it: "Pronto per la tua vacanza da sogno?" },
+  'dream.vacation.desc': { en: "Contact us for more information and availability", it: "Contattaci per maggiori informazioni e disponibilità" },
+  'contact.us': { en: "Contact Us", it: "Contattaci" },
   // Membership Page
   Join_The_Club: { en: "Join The Club", it: "Unisciti al Club" },
   Choose_your_tier_and_unlock_a_world_of_privileges: { en: "Choose your tier and unlock a world of privileges.", it: "Scegli il tuo livello e sblocca un mondo di privilegi." },

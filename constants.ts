@@ -13,7 +13,11 @@ import {
   WavesIcon,
   TreePineIcon,
   Building2Icon,
+  ShieldIcon,
+  CrownIcon,
 } from './components/icons/Icons';
+
+export const GOOGLE_CLIENT_ID = "380173701007-jn8ahgmtb039g5pfjmkvgb33rr75of8f.apps.googleusercontent.com";
 
 const carSpecs = [
     { label: { en: 'Seats', it: 'Posti' }, value: '2', icon: UsersIcon },
@@ -74,10 +78,52 @@ export const VILLAS: Villa[] = [
     maxGuests: 12,
     bedrooms: 6,
     bathrooms: 5,
+    size: "400 m²",
     images: ["/ambra1.png", "/ambra2.png", "/ambra3.png", "/ambra4.png"],
-    description: "Villa esclusiva di 400m² con piscina a strapiombo sul mare e accesso privato alla spiaggia.",
     rating: 4.9,
-    reviewCount: 35
+    reviewCount: 35,
+    description: {
+      en: "Enchanting Villa overlooking the sea with a unique architectural style, with a wonderful sea view that can be observed from any corner of the house. Thanks to its outdoor spaces you can spend exclusive moments of relaxation and privacy admiring the colorful sunsets.",
+      it: "Incantevole Villa con vista sul mare dallo stile architettonico unico, con una meravigliosa vista mare che può essere osservata da ogni angolo della casa. Grazie ai suoi spazi esterni potrete trascorrere momenti esclusivi di relax e privacy ammirando i tramonti colorati."
+    },
+    amenities: [
+      { icon: WavesIcon, title: { en: "Cliffside Pool", it: "Piscina a Strapiombo" }, description: { en: "Infinity pool overlooking the sea", it: "Piscina a sfioro vista mare" } },
+      { icon: HomeIcon, title: { en: "Private Sea Access", it: "Accesso Privato al Mare" }, description: { en: "Direct access to crystal waters", it: "Accesso diretto alle acque cristalline" } },
+      { icon: TreePineIcon, title: { en: "Panoramic Views", it: "Vista Panoramica" }, description: { en: "Sea view from every corner", it: "Vista mare da ogni angolo" } },
+      { icon: WifiIcon, title: { en: "Free WiFi", it: "WiFi Gratuito" }, description: { en: "High-speed internet", it: "Connessione internet veloce" } },
+      { icon: CarIcon, title: { en: "Private Parking", it: "Parcheggio Privato" }, description: { en: "Reserved parking space", it: "Posto auto riservato" } },
+      { icon: ShieldIcon, title: { en: "24/7 Security", it: "Sicurezza 24/7" }, description: { en: "Security service", it: "Servizio di sorveglianza" } }
+    ],
+    features: {
+      en: [
+        "4 luxury double bedrooms",
+        "2 additional bunk beds",
+        "5 complete bathrooms",
+        "Panoramic living room with sea view",
+        "Professional equipped kitchen",
+        "Multiple panoramic terraces",
+        "Outdoor relaxation area",
+        "External dining area",
+        "Unique modern architecture",
+        "Smart TV in all rooms",
+        "Air conditioning",
+        "High-speed Wi-Fi"
+      ],
+      it: [
+        "4 camere matrimoniali di lusso",
+        "2 letti a castello aggiuntivi",
+        "5 bagni completi",
+        "Soggiorno panoramico vista mare",
+        "Cucina professionale attrezzata",
+        "Terrazze panoramiche multiple",
+        "Area relax all'aperto",
+        "Zona pranzo esterna",
+        "Architettura unica moderna",
+        "Smart TV in tutte le stanze",
+        "Aria condizionata",
+        "Wi-Fi ad alta velocità"
+      ]
+    }
   },
   {
     id: 4,
@@ -113,10 +159,56 @@ export const VILLAS: Villa[] = [
     maxGuests: 4,
     bedrooms: 2,
     bathrooms: 2,
+    size: "250 m²",
     images: ["/laj1.png", "/laj2.png", "/laj3.png", "/laj4.png"],
-    description: "Casa elegante di 250m² nel centro storico di Cagliari con vista sulla città e comfort moderni.",
     rating: 4.5,
-    reviewCount: 15
+    reviewCount: 15,
+    description: {
+      en: "Elegant 250m² house in the historic center of Cagliari with city view and modern comforts. This unique property combines the charm of traditional Sardinian architecture with modern comforts, offering a breathtaking view of the city and an authentic experience in the cultural center of Sardinia.",
+      it: "Casa elegante di 250m² nel centro storico di Cagliari con vista sulla città e comfort moderni. Questa proprietà unica combina il fascino dell'architettura tradizionale sarda con i comfort moderni, offrendo una vista mozzafiato sulla città e un'esperienza autentica nel centro culturale della Sardegna."
+    },
+    amenities: [
+      { icon: Building2Icon, title: { en: "Historic Center", it: "Centro Storico" }, description: { en: "In the heart of Cagliari", it: "Nel cuore di Cagliari" } },
+      { icon: CrownIcon, title: { en: "City View", it: "Vista Città" }, description: { en: "Panorama of historic center", it: "Panorama sul centro storico" } },
+      { icon: HomeIcon, title: { en: "250m² of Elegance", it: "250m² di Eleganza" }, description: { en: "Spacious and refined spaces", it: "Spazi ampi e raffinati" } },
+      { icon: WifiIcon, title: { en: "Free WiFi", it: "WiFi Gratuito" }, description: { en: "High-speed internet", it: "Connessione internet veloce" } },
+      { icon: CarIcon, title: { en: "Reserved Parking", it: "Parcheggio Riservato" }, description: { en: "Parking in city center", it: "Posto auto nel centro" } },
+      { icon: ShieldIcon, title: { en: "24/7 Security", it: "Sicurezza 24/7" }, description: { en: "Security service", it: "Servizio di sorveglianza" } }
+    ],
+    features: {
+      en: [
+        "2 elegant bedrooms",
+        "2 modern bathrooms with premium finishes",
+        "Spacious living room with city view",
+        "Fully equipped kitchen",
+        "Panoramic terrace with historic view",
+        "Air conditioning in all rooms",
+        "Smart TV with international channels",
+        "Hi-fi audio system",
+        "Digital safe",
+        "Professional hair dryer",
+        "Premium courtesy set",
+        "Strategic central location",
+        "Close to restaurants and attractions",
+        "Easy access to public transport"
+      ],
+      it: [
+        "2 camere da letto eleganti",
+        "2 bagni moderni con finiture di pregio",
+        "Ampio soggiorno con vista sulla città",
+        "Cucina completamente attrezzata",
+        "Terrazza panoramica con vista storica",
+        "Aria condizionata in tutte le stanze",
+        "Smart TV con canali internazionali",
+        "Sistema audio hi-fi",
+        "Cassaforte digitale",
+        "Asciugacapelli professionale",
+        "Set di cortesia premium",
+        "Posizione centrale strategica",
+        "Vicino a ristoranti e attrazioni",
+        "Accesso facile ai trasporti pubblici"
+      ]
+    }
   },
   {
     id: 7,
@@ -152,10 +244,56 @@ export const VILLAS: Villa[] = [
     maxGuests: 4,
     bedrooms: 2,
     bathrooms: 2,
+    size: "150 m²",
     images: ["/crystal1.png", "/crystal2.png", "/crystal3.png", "/crystal4.png"],
-    description: "Villa esclusiva di 150m² con piscina riscaldata, privacy totale sul mare e design di lusso contemporaneo.",
     rating: 4.9,
-    reviewCount: 18
+    reviewCount: 18,
+    description: {
+      en: "In the Residence on the Gulf you will find this beautiful Villa with private heated infinity pool plus a large Jacuzzi for 2, surrounded by greenery with breathtaking views of the sea and the most beautiful sunsets of southern Sardinia. An oasis of peace and tranquility for couples seeking maximum privacy in a luxury setting just steps from the crystal clear waters.",
+      it: "Nel Residence sul Golfo troverete questa splendida Villa con piscina privata riscaldata a sfioro più una grande Jacuzzi per 2, circondata dal verde con vista mozzafiato sul mare e i più bei tramonti della Sardegna meridionale. Un'oasi di pace e tranquillità per coppie che cercano il massimo della privacy in un ambiente di lusso a pochi passi dalle acque cristalline."
+    },
+    amenities: [
+      { icon: WavesIcon, title: { en: "Heated Infinity Pool", it: "Piscina Riscaldata a Sfioro" }, description: { en: "Private heated infinity pool with sea view", it: "Piscina privata riscaldata a sfioro vista mare" } },
+      { icon: CrownIcon, title: { en: "Large Jacuzzi for 2", it: "Grande Jacuzzi per 2" }, description: { en: "Luxury jacuzzi with panoramic views", it: "Jacuzzi di lusso con vista panoramica" } },
+      { icon: TreePineIcon, title: { en: "Surrounded by Greenery", it: "Circondata dal Verde" }, description: { en: "Lush Mediterranean gardens", it: "Rigogliosi giardini mediterranei" } },
+      { icon: HomeIcon, title: { en: "Maximum Privacy", it: "Massima Privacy" }, description: { en: "Exclusive and secluded location", it: "Posizione esclusiva e riservata" } },
+      { icon: WifiIcon, title: { en: "Free WiFi", it: "WiFi Gratuito" }, description: { en: "High-speed internet connection", it: "Connessione internet ad alta velocità" } },
+      { icon: ShieldIcon, title: { en: "24/7 Security", it: "Sicurezza 24/7" }, description: { en: "Round-the-clock security service", it: "Servizio di sorveglianza continuo" } }
+    ],
+    features: {
+      en: [
+        "2 elegant double bedrooms",
+        "2 modern bathrooms with luxury finishes",
+        "Spacious living room with sea view",
+        "Fully equipped modern kitchen",
+        "Private heated infinity pool",
+        "Large Jacuzzi for 2 people",
+        "Panoramic terrace with relaxation area",
+        "Mediterranean garden with privacy",
+        "Air conditioning in all rooms",
+        "Smart TV with satellite channels",
+        "Bluetooth audio system",
+        "Digital safe",
+        "Professional hair dryer",
+        "Luxury courtesy set"
+      ],
+      it: [
+        "2 eleganti camere matrimoniali",
+        "2 bagni moderni con finiture di lusso",
+        "Ampio soggiorno con vista mare",
+        "Cucina moderna completamente attrezzata",
+        "Piscina privata riscaldata a sfioro",
+        "Grande Jacuzzi per 2 persone",
+        "Terrazza panoramica con area relax",
+        "Giardino mediterraneo con privacy",
+        "Aria condizionata in tutte le stanze",
+        "Smart TV con canali satellitari",
+        "Sistema audio Bluetooth",
+        "Cassaforte digitale",
+        "Asciugacapelli professionale",
+        "Set di cortesia di lusso"
+      ]
+    }
   }
 ];
 
@@ -171,7 +309,12 @@ const mappedVillas = VILLAS.map(v => ({
   location: v.location,
   distanceToBeach: v.distanceToBeach,
   images: v.images,
-  description: { en: v.description, it: v.description },
+  description: typeof v.description === 'string' 
+    ? { en: v.description, it: v.description } 
+    : v.description,
+  size: v.size,
+  amenities: v.amenities,
+  features: v.features,
 }));
 
 export const RENTAL_CATEGORIES: RentalCategory[] = [

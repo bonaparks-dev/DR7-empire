@@ -1,38 +1,32 @@
-
-import React, { useState, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { VILLAS } from '../constants';
+import React, { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../hooks/useTranslation';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import { VILLAS } from '../constants';
 import { 
     ArrowLeftIcon, MapPinIcon, UsersIcon, BedIcon, BathIcon, MessageCircleIcon, MinusIcon, PlusIcon, Building2Icon
 } from '../components/icons/Icons';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function VillaDetailsPage() {
-  const { villaId } = useParams<{ villaId: string }>();
+export default function VillaAmbraDetailsPage() {
+  const location = useLocation();
   const navigate = useNavigate();
   const { t, lang } = useTranslation();
   
-  const villa = useMemo(() => {
-    if (!villaId) return undefined;
-    const numericId = parseInt(villaId.replace('villa-', ''), 10);
-    if (isNaN(numericId)) return undefined;
-    return VILLAS.find(v => v.id === numericId);
-  }, [villaId]);
+  const villa = location.state?.villa || VILLAS.find(v => v.id === 3);
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [guests, setGuests] = useState(2);
 
-  if (!villa) {
+  if (!villa || typeof villa.description !== 'object' || !villa.features || !villa.amenities) {
     return (
       <div className="min-h-screen bg-black text-white flex flex-col">
         <Header />
         <div className="flex-grow flex items-center justify-center">
-            <p className="pt-32">Villa not found.</p>
+            <p className="pt-32">Villa data is missing or invalid.</p>
         </div>
         <Footer />
       </div>
@@ -47,8 +41,8 @@ export default function VillaDetailsPage() {
     const checkOutDate = checkOut ? new Date(checkOut).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-GB') : 'Not specified';
     
     const templates = {
-        en: `Hello, I want to book "${villa.title}". May I have more information?\n\nCheck-in: ${checkInDate}\nCheck-out: ${checkOutDate}\nGuests: ${guests}\nLocation: ${villa.location}\n\nThank you!`,
-        it: `Ciao, vorrei prenotare "${villa.title}". Posso avere maggiori informazioni?\n\nCheck-in: ${checkInDate}\nCheck-out: ${checkOutDate}\nOspiti: ${guests}\nLocalità: ${villa.location}\n\nGrazie!`
+        en: `Hello, I want to book ${villa.title}. May I have more information?\n\nCheck-in: ${checkInDate}\nCheck-out: ${checkOutDate}\nGuests: ${guests}\nLocation: ${villa.location}\n\nThank you!`,
+        it: `Ciao, vorrei prenotare ${villa.title}. Posso avere maggiori informazioni?\n\nCheck-in: ${checkInDate}\nCheck-out: ${checkOutDate}\nOspiti: ${guests}\nLocalità: ${villa.location}\n\nGrazie!`
     };
     return templates[lang];
   };
@@ -60,10 +54,6 @@ export default function VillaDetailsPage() {
   };
 
   const mainImage = villa.images[currentImageIndex];
-  
-  const villaDescription = typeof villa.description === 'string' 
-    ? villa.description 
-    : villa.description[lang];
 
   return (
     <motion.div
@@ -117,27 +107,17 @@ export default function VillaDetailsPage() {
               <div className="flex items-center gap-2 mb-4 text-gray-400"><MapPinIcon className="w-5 h-5" /><span>{villa.location}</span></div>
               <h1 className="text-4xl md:text-5xl font-bold mb-6">{villa.title}</h1>
               <div className="flex items-center flex-wrap gap-x-6 gap-y-2 mb-6 border-y border-gray-800 py-4">
-                <div className="flex items-center gap-2 text-gray-300"><UsersIcon className="w-5 h-5 text-white" /><span>{villa.maxGuests} {lang === 'it' ? 'Ospiti' : 'Guests'}</span></div>
-                <div className="flex items-center gap-2 text-gray-300"><BedIcon className="w-5 h-5 text-white" /><span>{villa.bedrooms} {lang === 'it' ? 'Camere' : 'Bedrooms'}</span></div>
-                <div className="flex items-center gap-2 text-gray-300"><BathIcon className="w-5 h-5 text-white" /><span>{villa.bathrooms} {lang === 'it' ? 'Bagni' : 'Bathrooms'}</span></div>
-                {villa.size && <div className="flex items-center gap-2 text-gray-300"><Building2Icon className="w-5 h-5 text-white" /><span>{villa.size}</span></div>}
+                <div className="flex items-center gap-2 text-gray-300"><UsersIcon className="w-5 h-5 text-white" /><span>{villa.maxGuests} {t('Guests')}</span></div>
+                <div className="flex items-center gap-2 text-gray-300"><BedIcon className="w-5 h-5 text-white" /><span>{villa.bedrooms} {t('Bedrooms')}</span></div>
+                <div className="flex items-center gap-2 text-gray-300"><BathIcon className="w-5 h-5 text-white" /><span>{villa.bathrooms} {t('Bathrooms')}</span></div>
+                <div className="flex items-center gap-2 text-gray-300"><Building2Icon className="w-5 h-5 text-white" /><span>{villa.size}</span></div>
               </div>
-              <p className="text-lg text-gray-300 mb-8 leading-relaxed">{villaDescription}</p>
+              <p className="text-lg text-gray-300 mb-8 leading-relaxed">{villa.description[lang]}</p>
             </div>
           </div>
           
-          {villa.amenities && villa.features ? (
-            <>
-              <div className="mb-12"><h2 className="text-3xl font-bold mb-8">{t('amenities.comfort')}</h2><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{villa.amenities.map((amenity, index) => (<div key={index} className="bg-gray-900/50 border border-gray-800 rounded-lg p-6"><amenity.icon className="w-8 h-8 mb-4 text-white" /><h3 className="text-xl font-semibold mb-2">{amenity.title[lang]}</h3><p className="text-gray-400">{amenity.description[lang]}</p></div>))}</div></div>
-              <div className="mb-12"><h2 className="text-3xl font-bold mb-8">{t('features.title')}</h2><div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300">{(villa.features as any)[lang].map((feature: string, index: number) => (<div key={index} className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-white rounded-full flex-shrink-0"></div><span>{feature}</span></div>))}</div></div>
-            </>
-          ) : (
-            <div className="text-center py-16 bg-gray-900/50 border border-gray-800 rounded-lg">
-                <h2 className="text-2xl font-bold text-white">More Information Coming Soon</h2>
-                <p className="text-gray-400 mt-2">Detailed information for this villa is being prepared.</p>
-            </div>
-          )}
-          
+          <div className="mb-12"><h2 className="text-3xl font-bold mb-8">{t('amenities.comfort')}</h2><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{villa.amenities.map((amenity, index) => (<div key={index} className="bg-gray-900/50 border border-gray-800 rounded-lg p-6"><amenity.icon className="w-8 h-8 mb-4 text-white" /><h3 className="text-xl font-semibold mb-2">{amenity.title[lang]}</h3><p className="text-gray-400">{amenity.description[lang]}</p></div>))}</div></div>
+          <div className="mb-12"><h2 className="text-3xl font-bold mb-8">{t('features.title')}</h2><div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300">{villa.features[lang].map((feature, index) => (<div key={index} className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-white rounded-full flex-shrink-0"></div><span>{feature}</span></div>))}</div></div>
           <div className="mb-12"><h2 className="text-3xl font-bold mb-8">{t('gallery.title')}</h2><div className="grid grid-cols-2 md:grid-cols-4 gap-4">{villa.images.map((image, index) => (<div key={index} className={`aspect-square overflow-hidden rounded-lg cursor-pointer transition-all duration-200 border-2 ${index === currentImageIndex ? 'border-white' : 'border-transparent hover:border-white/50'}`} onClick={() => setCurrentImageIndex(index)}><img src={image} alt={`${villa.title} - ${index + 1}`} className="w-full h-full object-cover" /></div>))}</div></div>
 
           <div className="mt-16">

@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { GoogleIcon, WalletIcon, EyeIcon, EyeSlashIcon } from '../components/icons/Icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { GOOGLE_CLIENT_ID } from '../constants';
 
 const strengthLevels = [
   { labelKey: 'Password_Strength_Weak', color: 'bg-red-500', textColor: 'text-red-400' },
@@ -24,7 +25,7 @@ const calculatePasswordStrength = (password: string) => {
 
 const SignUpPage: React.FC = () => {
   const { t } = useTranslation();
-  const { signup, loginWithGoogle } = useAuth();
+  const { signup, signInWithGoogleToken } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     fullName: '',
@@ -39,6 +40,7 @@ const SignUpPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
 
   const passwordStrength = useMemo(() => calculatePasswordStrength(formData.password), [formData.password]);
   const strengthInfo = formData.password ? strengthLevels[passwordStrength] : null;
@@ -90,11 +92,7 @@ const SignUpPage: React.FC = () => {
           throw new Error(error.message);
       }
 
-      // After signup, Supabase returns user data. We check if a session was created.
-      // A session is only created if "Confirm email" is DISABLED in Supabase project settings.
       if (data.session) {
-          // User is logged in immediately. Trigger a welcome email.
-          // NOTE: This requires creating and configuring the 'send-welcome-email' Netlify function.
           fetch('/.netlify/functions/send-welcome-email', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -103,18 +101,13 @@ const SignUpPage: React.FC = () => {
                   name: formData.fullName 
               }),
           }).catch(err => {
-              // Log the error but don't block the user's flow.
               console.error("Failed to trigger welcome email:", err);
           });
 
-          navigate('/'); // Redirect to home on success
+          navigate('/');
       } else if (data.user) {
-          // Email confirmation is ENABLED. The user exists but has no session yet.
-          // Supabase has automatically sent a confirmation link to their email.
-          // Redirect to a page that tells the user to check their email.
           navigate('/check-email', { state: { email: formData.email } });
       } else {
-          // Fallback for an unexpected state from the auth provider
           throw new Error("An unexpected error occurred during signup.");
       }
 
@@ -125,27 +118,43 @@ const SignUpPage: React.FC = () => {
     }
   };
 
-  const handleGoogleSignUp = async () => {
+  const handleGoogleCallback = async (response: any) => {
     setGeneralError('');
     setIsGoogleLoading(true);
     try {
-      // Safely handle the response without destructuring
-      const response = await loginWithGoogle({
-            options: {
-                redirectTo: `${window.location.origin}/#/`,
-            }
-       });
-
-       if (response && response.error) {
-           throw new Error(response.error.message);
-       }
-      // No navigate here : Supabase handles the redirection
+      const { error } = await signInWithGoogleToken(response.credential);
+      if (error) {
+        throw new Error(error.message);
+      }
+      navigate('/');
     } catch (err: any) {
       setGeneralError(err?.message || t('Something_went_wrong'));
     } finally {
       setIsGoogleLoading(false);
     }
   };
+
+  useEffect(() => {
+    const initGsi = () => {
+      if ((window as any).google?.accounts?.id && googleButtonRef.current) {
+        (window as any).google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleGoogleCallback,
+        });
+        (window as any).google.accounts.id.renderButton(
+          googleButtonRef.current,
+          { theme: 'outline', size: 'large', type: 'standard', text: 'signup_with', shape: 'pill' }
+        );
+      }
+    };
+
+    if ((window as any).google?.accounts?.id) {
+      initGsi();
+    } else {
+      const timeoutId = setTimeout(initGsi, 500);
+      return () => clearTimeout(timeoutId);
+    }
+  }, []);
 
   const getInputClassName = (field: string) =>
     `appearance-none rounded-md relative block w-full px-3 py-3 border bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-white focus:border-white focus:z-10 sm:text-sm ${
@@ -170,19 +179,16 @@ const SignUpPage: React.FC = () => {
             {generalError && <p className="text-sm text-red-400 bg-red-900/20 border border-red-800 rounded p-2">{generalError}</p>}
 
             <div className="space-y-4">
-              <button
-                type="button"
-                onClick={handleGoogleSignUp}
-                disabled={isGoogleLoading}
-                className="w-full flex items-center justify-center py-3 px-4 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60"
-              >
-                {isGoogleLoading ? (
-                  <span className="mr-2 h-5 w-5 inline-block animate-spin rounded-full border-2 border-white border-t-transparent" />
-                ) : (
+              <div className="flex justify-center" ref={googleButtonRef}>
+                <button
+                  type="button"
+                  disabled={true}
+                  className="w-full flex items-center justify-center py-3 px-4 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-sm font-medium text-white opacity-60"
+                >
                   <GoogleIcon className="w-5 h-5 mr-2" />
-                )}
-                {t('Sign_up_with_Google')}
-              </button>
+                  {t('Sign_up_with_Google')}
+                </button>
+              </div>
 
               <button
                 type="button"

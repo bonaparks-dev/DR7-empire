@@ -1,14 +1,33 @@
-import { getPool } from '@netlify/neon';
-import bcryptjs from 'bcryptjs';
+
+const { getPool } = require('@netlify/neon');
+const bcryptjs = require('bcryptjs');
 
 // Helper to create a standard JSON response
 const createResponse = (statusCode, body) => ({
   statusCode,
-  headers: { 'Content-Type': 'application/json' },
+  headers: { 
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  },
   body: JSON.stringify(body),
 });
 
-export const handler = async (event) => {
+exports.handler = async (event) => {
+  // Handle CORS preflight requests
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+      body: '',
+    };
+  }
+
   if (event.httpMethod !== 'POST') {
     return createResponse(405, { error: 'Method Not Allowed' });
   }
@@ -18,6 +37,9 @@ export const handler = async (event) => {
   }
   
   try {
+    if (!event.body) {
+      return createResponse(400, { error: 'Request body is missing.' });
+    }
     const { fullName, email, password } = JSON.parse(event.body);
 
     if (!fullName || !email || !password) {

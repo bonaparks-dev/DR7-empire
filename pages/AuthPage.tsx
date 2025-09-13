@@ -1,17 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { GoogleIcon, WalletIcon } from '../components/icons/Icons';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { GOOGLE_CLIENT_ID } from '../constants';
 
 const AuthPage: React.FC = () => {
   const { t } = useTranslation();
-  const { login, loginWithGoogle } = useAuth();
+  const { login, signInWithGoogleToken } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // If you come from a protected page, you will be redirected there after login
   const from = (location.state as any)?.from?.pathname || '/';
 
   const [email, setEmail] = useState('');
@@ -23,6 +23,7 @@ const AuthPage: React.FC = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
 
   const validateEmail = (emailToValidate: string) => {
     if (!emailToValidate) {
@@ -69,13 +70,10 @@ const AuthPage: React.FC = () => {
     }
 
     try {
-      // Use the actual login function from your auth hook
       const { error } = await login(email, password);
       if (error) {
-        // Throw an error to be caught by the catch block
         throw new Error(error.message || 'Invalid credentials');
       }
-      // On success, navigate to the intended page
       navigate(from, { replace: true });
     } catch (err: any) {
       setGeneralError(err?.message || t('Something_went_wrong'));
@@ -84,24 +82,43 @@ const AuthPage: React.FC = () => {
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleCallback = async (response: any) => {
     setGeneralError('');
     setIsGoogleLoading(true);
     try {
-      // Logic for Supabase redirect. This will navigate to Google.
-      const redirectTo = `${window.location.origin}/#${from}`;
-      const { error } = await loginWithGoogle({ options: { redirectTo } });
+      const { error } = await signInWithGoogleToken(response.credential);
       if (error) {
-        setGeneralError(error.message || t('Something_went_wrong'));
+        throw new Error(error.message);
       }
-      // No navigation here; Supabase handles the redirect back to your app.
+      navigate(from, { replace: true });
     } catch (err: any) {
       setGeneralError(err?.message || t('Something_went_wrong'));
     } finally {
-      // This will only be reached if the Supabase call fails immediately
       setIsGoogleLoading(false);
     }
   };
+
+  useEffect(() => {
+    const initGsi = () => {
+      if ((window as any).google?.accounts?.id && googleButtonRef.current) {
+        (window as any).google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleGoogleCallback,
+        });
+        (window as any).google.accounts.id.renderButton(
+          googleButtonRef.current,
+          { theme: 'outline', size: 'large', type: 'standard', text: 'signin_with', shape: 'pill' }
+        );
+      }
+    };
+
+    if ((window as any).google?.accounts?.id) {
+        initGsi();
+    } else {
+        const timeoutId = setTimeout(initGsi, 500);
+        return () => clearTimeout(timeoutId);
+    }
+  }, [from]);
 
   return (
     <motion.div
@@ -132,19 +149,16 @@ const AuthPage: React.FC = () => {
             )}
 
             <div className="space-y-4">
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                disabled={isGoogleLoading}
-                className="w-full flex items-center justify-center py-3 px-4 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60"
-              >
-                {isGoogleLoading ? (
-                  <span className="mr-2 h-5 w-5 inline-block animate-spin rounded-full border-2 border-white border-t-transparent" />
-                ) : (
+              <div className="flex justify-center" ref={googleButtonRef}>
+                <button
+                  type="button"
+                  disabled={true}
+                  className="w-full flex items-center justify-center py-3 px-4 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-sm font-medium text-white opacity-60"
+                >
                   <GoogleIcon className="w-5 h-5 mr-2" />
-                )}
-                {t('Sign_in_with_Google')}
-              </button>
+                  {t('Sign_in_with_Google')}
+                </button>
+              </div>
 
               <button
                 type="button"

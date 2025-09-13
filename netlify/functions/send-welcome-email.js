@@ -1,87 +1,95 @@
 /*
 * Welcome Email Serverless Function
 *
-* This function is a placeholder designed to be triggered after a user successfully signs up.
-* It simulates sending a welcome email.
+* This function sends a welcome email using Resend when a user signs up.
 *
-* IMPORTANT: To make this function send actual emails, you must:
-* 1. Choose an email service provider (e.g., Resend, SendGrid, Mailgun).
-* 2. Sign up and get an API key.
-* 3. Store the API key securely as an environment variable in your Netlify project settings
-*    (e.g., `RESEND_API_KEY`).
-* 4. Install the provider's Node.js SDK (e.g., `npm install resend`).
-* 5. Replace the placeholder logic below with the actual implementation using the SDK.
+* IMPORTANT: For this to work, you must configure the following environment variables in your Netlify project:
+* 1. `RESEND_API_KEY`: Your secret API key from Resend.
+* 2. `RESEND_SENDER_EMAIL`: The "from" email address. This MUST be an email from a domain you have verified in your Resend account (e.g., 'welcome@your-verified-domain.com').
 *
-* Note on OAuth (Google/social logins):
-* For users signing up via OAuth, this client-side trigger will not work because of the redirect flow.
-* The recommended way to send welcome emails for OAuth users is to set up a Webhook in your
-* Supabase project that triggers this function whenever a new user is created in `auth.users`.
+* Also, ensure the 'resend' package is listed in your project's package.json file.
 */
 
-// --- Example Implementation using Resend ---
-//
-// const { Resend } = require('resend');
-//
-// // Initialize Resend with your API key
-// const resend = new Resend(process.env.RESEND_API_KEY);
+const { Resend } = require('resend');
+
+/**
+ * Creates a standard JSON response with CORS headers.
+ * @param {number} statusCode - The HTTP status code.
+ * @param {object} body - The response body.
+ * @returns {object} The formatted response object.
+ */
+const createResponse = (statusCode, body) => ({
+  statusCode,
+  headers: {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  },
+  body: JSON.stringify(body),
+});
 
 exports.handler = async (event) => {
-  // Only allow POST requests
-  if (event.httpMethod !== 'POST') {
+  // Handle CORS preflight requests
+  if (event.httpMethod === 'OPTIONS') {
     return {
-      statusCode: 405,
-      body: JSON.stringify({ error: 'Method Not Allowed' }),
-      headers: { 'Content-Type': 'application/json' },
+      statusCode: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+      body: '',
     };
   }
 
+  // Only allow POST requests
+  if (event.httpMethod !== 'POST') {
+    return createResponse(405, { success: false, error: 'Method Not Allowed' });
+  }
+
+  const { RESEND_API_KEY, RESEND_SENDER_EMAIL } = process.env;
+
+  if (!RESEND_API_KEY || !RESEND_SENDER_EMAIL) {
+    console.error('[Welcome Email] Email service is not configured. Missing RESEND_API_KEY or RESEND_SENDER_EMAIL.');
+    return createResponse(500, { success: false, error: 'Email service is not configured.' });
+  }
+
   try {
+    if (!event.body) {
+      return createResponse(400, { success: false, error: 'Request body is missing.' });
+    }
     const { email, name } = JSON.parse(event.body);
 
     if (!email || !name) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Email and name are required.' }),
-        headers: { 'Content-Type': 'application/json' },
-      };
+      return createResponse(400, { success: false, error: 'Email and name are required.' });
     }
+    
+    const resend = new Resend(RESEND_API_KEY);
 
-    // --- Placeholder Logic ---
-    // In a real application, you would use your email provider's SDK here.
-    // This log simulates the action of sending an email.
-    console.log(`[Welcome Email] Preparing to send email to: ${name} <${email}>`);
-
-    /*
-    // --- Example Resend Implementation ---
+    // --- Resend Implementation ---
     await resend.emails.send({
-      from: 'DR7 Empire <welcome@yourdomain.com>', // Must be a verified domain in Resend
+      from: `DR7 Empire <${RESEND_SENDER_EMAIL}>`,
       to: [email],
-      subject: 'Welcome to the DR7 Empire!',
+      subject: 'Welcome to DR7 Exotic!',
       html: `
-        <div style="font-family: sans-serif; line-height: 1.6;">
-          <h2>Welcome, ${name}!</h2>
-          <p>Your account has been successfully created. You are now part of an exclusive community.</p>
-          <p>Explore our world-class fleet of cars, yachts, villas, and private jets and book your next unforgettable experience.</p>
-          <p>Best regards,<br/><strong>The DR7 Empire Team</strong></p>
+        <div style="font-family: 'Exo 2', sans-serif; line-height: 1.6; color: #e5e7eb; background-color: #111827; padding: 20px;">
+          <div style="max-width: 600px; margin: auto; background-color: #1f2937; border-radius: 8px; padding: 30px; border: 1px solid #374151;">
+            <h2 style="color: #ffffff; font-family: 'Playfair Display', serif;">Welcome, ${name}!</h2>
+            <p>Your account has been successfully created. You are now part of an exclusive community dedicated to the pinnacle of luxury.</p>
+            <p>Explore our world-class fleet of cars, yachts, villas, and private jets and book your next unforgettable experience.</p>
+            <p style="margin-top: 30px;">Best regards,<br/><strong>The DR7 Empire Team</strong></p>
+          </div>
         </div>
       `,
     });
+    
     console.log(`[Welcome Email] Email sent successfully to ${email}`);
-    */
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ message: 'Welcome email request processed successfully.' }),
-      headers: { 'Content-Type': 'application/json' },
-    };
+    return createResponse(200, { success: true });
 
   } catch (error) {
     console.error('[Welcome Email] Error:', error);
-    // In production, you might not want to expose detailed error messages.
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'An internal server error occurred while sending the email.' }),
-      headers: { 'Content-Type': 'application/json' },
-    };
+    return createResponse(500, { success: false, error: error.message || 'An internal server error occurred while sending the email.' });
   }
 };

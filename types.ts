@@ -129,7 +129,10 @@ export interface Villa {
   bedrooms: number;
   bathrooms: number;
   images: string[];
-  description: string;
+  description: string | { en: string; it: string };
   rating?: number;
   reviewCount?: number;
+  size?: string;
+  amenities?: Amenity[];
+  features?: { en: string[]; it: string[] };
 }

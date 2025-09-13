@@ -1,15 +1,34 @@
-import { getPool } from '@netlify/neon';
+
+const { getPool } = require('@netlify/neon');
 
 // Helper to create a standard JSON response
 const createResponse = (statusCode, body) => {
   return {
     statusCode,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    },
     body: JSON.stringify(body),
   };
 };
 
-export const handler = async (event) => {
+exports.handler = async (event) => {
+  // Handle CORS preflight requests
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+      body: '',
+    };
+  }
+
   // Ensure we have the NETLIFY_DATABASE_URL set
   if (!process.env.NETLIFY_DATABASE_URL) {
     return createResponse(500, { error: 'Database URL not configured.' });

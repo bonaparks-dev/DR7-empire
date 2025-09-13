@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useMemo } from 'react';
 import { supabase } from '../src/lib/supabaseClient';
-import type { Session, User as SupabaseUser, AuthError, SignUpWithPasswordCredentials, OAuthResponse } from '@supabase/supabase-js';
+import type { Session, User as SupabaseUser, AuthError } from '@supabase/supabase-js';
 
 // Define a compatible user type for the rest of the app
 interface AppUser {
@@ -14,9 +14,9 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   login: (email, password) => Promise<{ data: { user: SupabaseUser; session: Session; } | { user: null; session: null; }; error: AuthError | null; }>;
-  signup: (email, password, options) => Promise<any>; // Matches Supabase type
+  signup: (email, password, options) => Promise<any>;
   logout: () => Promise<{ error: AuthError | null }>;
-  loginWithGoogle: (options) => Promise<OAuthResponse>;
+  signInWithGoogleToken: (token: string) => Promise<any>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -61,7 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login: (email, password) => supabase.auth.signInWithPassword({ email, password }),
     signup: (email, password, options) => supabase.auth.signUp({ email, password, options }),
     logout: () => supabase.auth.signOut(),
-    loginWithGoogle: (options) => supabase.auth.signInWithOAuth({ provider: 'google', ...options }),
+    signInWithGoogleToken: (token: string) => supabase.auth.signInWithIdToken({ provider: 'google', token }),
   }), [user, session, loading]);
   
   return (

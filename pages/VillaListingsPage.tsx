@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../hooks/useTranslation';
@@ -14,7 +15,6 @@ export default function VillaListingsPage() {
   const { t } = useTranslation();
 
   const handleVillaClick = (villaId: number) => {
-    // Navigate to the dynamic details page using the correct ID format
     navigate(`/villas/villa-${villaId}`);
   };
 
@@ -104,7 +104,7 @@ export default function VillaListingsPage() {
 
                   {/* Description */}
                   <p className="text-white/80 text-sm mb-4 line-clamp-2">
-                    {villa.description}
+                    {typeof villa.description === 'string' ? villa.description : villa.description.it}
                   </p>
 
                   {/* Action Button */}
