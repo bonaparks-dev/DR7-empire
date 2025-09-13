@@ -1,6 +1,20 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://ahpmzjfkfxrgxxyirasa.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFocG16amdrZnhycmd4eWlyYXNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4Mjc3OTgsImV4cCI6MjA2OTQwMzc5OH0.XkjoVheKCqmgL0Ce-OqNAbItnW7L3GlXIxb8_R7f_FU';
+let client: SupabaseClient | null = null;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+function looksLikeHttps(url?: string) {
+  try { return !!url && new URL(url).protocol === 'https:'; } catch { return false; }
+}
+
+export function getSupabase(): SupabaseClient | null {
+  if (client) return client;
+  const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  const anon = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+
+  if (!looksLikeHttps(url) || !anon) {
+    console.error('[Supabase] Missing/invalid VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY', { url });
+    return null; // évite écran blanc si env manquants
+  }
+  client = createClient(url, anon, { auth: { persistSession: true, autoRefreshToken: true } });
+  return client;
+}
