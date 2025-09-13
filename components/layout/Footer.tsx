@@ -16,6 +16,13 @@ const Footer: React.FC = () => {
     }
   };
 
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
+
   return (
     <footer className="bg-black border-t border-gray-900 text-gray-400">
       <div className="container mx-auto px-6 py-12">
@@ -69,10 +76,22 @@ const Footer: React.FC = () => {
 
         {/* Bottom Section: Copyright */}
         <div className="mt-12 pt-8 text-center border-t border-gray-900">
-          <Link to="/" className="mb-4 inline-block">
-            <img src="/DR7logo.png" alt="DR7 Empire Logo" className="h-12 w-auto mx-auto" />
-          </Link>
-          <p className="text-sm">&copy; {new Date().getFullYear()} DR7 Empire. {t('All_Rights_Reserved')}</p>
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <Link to="/" className="inline-block">
+              <img src="/DR7logo.png" alt="DR7 Empire Logo" className="h-12 w-auto mx-auto" />
+            </Link>
+            <p className="text-sm order-last md:order-none">&copy; {new Date().getFullYear()} DR7 Empire. {t('All_Rights_Reserved')}</p>
+            <button
+                onClick={scrollToTop}
+                className="text-sm font-semibold hover:text-white transition-colors flex items-center gap-1"
+                aria-label="Back to top"
+            >
+                Back to Top
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                </svg>
+            </button>
+          </div>
         </div>
       </div>
     </footer>

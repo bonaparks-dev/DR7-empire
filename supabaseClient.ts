@@ -1,14 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Get the Supabase URL and Anon Key from Vite's environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = 'https://ahpmzjfkfxrgxxyirasa.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFocG16amdrZnhycmd4eWlyYXNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4Mjc3OTgsImV4cCI6MjA2OTQwMzc5OH0.XkjoVheKCqmgL0Ce-OqNAbItnW7L3GlXIxb8_R7f_FU';
 
-// Check if the environment variables are loaded correctly
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("Supabase URL and Anon Key must be defined. Check your Netlify environment variables.");
-}
-
-// Create and export the Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-

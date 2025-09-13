@@ -3,10 +3,10 @@ import { NavLink, Link } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import { useTranslation } from '../../hooks/useTranslation';
-import { useAuth } from '../../hooks/useAuth';
 import { RENTAL_CATEGORIES } from '../../constants';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MenuIcon, XIcon } from '../icons/Icons';
+import { MenuIcon, XIcon, UsersIcon } from '../icons/Icons';
+import { useAuth } from '../../hooks/useAuth';
 
 const LanguageSwitcher: React.FC = () => {
     const { language, setLanguage } = useLanguage();
@@ -51,14 +51,10 @@ const CurrencySwitcher: React.FC = () => {
 };
 
 const UserMenu: React.FC = () => {
-    const { t } = useTranslation();
     const { user, logout } = useAuth();
+    const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
-
-    const getInitials = (name: string) => {
-        return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
-    }
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -66,54 +62,36 @@ const UserMenu: React.FC = () => {
                 setIsOpen(false);
             }
         };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     if (!user) return null;
 
     return (
         <div className="relative" ref={menuRef}>
-            <button onClick={() => setIsOpen(!isOpen)} className="flex items-center space-x-2">
-                <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center border-2 border-gray-600 hover:border-white transition-colors duration-300">
-                    {user.profilePicture ? (
-                        <img src={user.profilePicture} alt="User" className="w-full h-full rounded-full object-cover"/>
-                    ) : (
-                        <span className="text-sm font-bold text-white">{getInitials(user.fullName)}</span>
-                    )}
-                </div>
+            <button onClick={() => setIsOpen(!isOpen)} className="flex items-center space-x-2 text-white hover:text-gray-300 transition-colors">
+                <UsersIcon className="w-6 h-6" />
+                <span className="text-sm font-medium hidden lg:block">{user.fullName}</span>
             </button>
-
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        transition={{ duration: 0.2, ease: 'easeOut' }}
-                        className="absolute right-0 mt-2 w-56 origin-top-right bg-gray-900/80 backdrop-blur-lg border border-gray-700 rounded-md shadow-2xl z-20"
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute right-0 mt-2 w-48 bg-gray-900 border border-gray-700 rounded-md shadow-lg z-50"
                     >
-                        <div className="p-2">
-                            <div className="px-3 py-2 border-b border-gray-700">
-                                <p className="text-sm font-semibold text-white truncate">{user.fullName}</p>
-                                <p className="text-xs text-gray-400 truncate">{user.email}</p>
-                            </div>
-                            <div className="py-1">
-                                <Link to="/account/profile" onClick={() => setIsOpen(false)} className="block px-3 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white rounded-md transition-colors">
-                                    {t('My_Account')}
-                                </Link>
-                                {user.membership && (
-                                     <Link to="/club-dashboard" onClick={() => setIsOpen(false)} className="block px-3 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white rounded-md transition-colors">
-                                        {t('Club_Dashboard')}
-                                    </Link>
-                                )}
-                                <button
-                                    onClick={() => { logout(); setIsOpen(false); }}
-                                    className="w-full text-left block px-3 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white rounded-md transition-colors"
-                                >
-                                    {t('Sign_Out')}
-                                </button>
-                            </div>
+                        <div className="py-1">
+                            <button
+                                onClick={() => {
+                                    logout();
+                                    setIsOpen(false);
+                                }}
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+                            >
+                                {t('Sign_Out')}
+                            </button>
                         </div>
                     </motion.div>
                 )}
@@ -124,8 +102,8 @@ const UserMenu: React.FC = () => {
 
 const MobileMenu: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ isOpen, onClose }) => {
     const { t } = useTranslation();
-    const { user, isLoggedIn, isLoading, logout } = useAuth();
-
+    const { user, logout } = useAuth();
+    
     useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = 'hidden';
@@ -138,6 +116,11 @@ const MobileMenu: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ isOpe
     }, [isOpen]);
     
     const navLinkClasses = "text-3xl font-bold text-gray-300 hover:text-white transition-colors duration-300";
+
+    const handleLogout = () => {
+        logout();
+        onClose();
+    };
 
     return (
         <AnimatePresence>
@@ -169,25 +152,25 @@ const MobileMenu: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ isOpe
                     </nav>
                     
                     <div className="mt-auto pt-8 border-t border-gray-800">
-                        <div className="text-center">
-                        {!isLoading && (
-                            isLoggedIn && user ? (
-                                <div className="space-y-4">
-                                     <Link to="/account/profile" onClick={onClose} className="block w-full py-3 text-lg font-semibold bg-white text-black rounded-full hover:bg-gray-200 transition-colors duration-300">
-                                        {t('My_Account')}
-                                    </Link>
-                                    <button onClick={() => { logout(); onClose(); }} className="block w-full py-3 text-lg font-semibold bg-gray-700 text-white rounded-full hover:bg-gray-600 transition-colors duration-300">
-                                        {t('Sign_Out')}
-                                    </button>
-                                </div>
-                            ) : (
-                                <Link to="/signin" onClick={onClose} className="block w-full py-3 text-lg font-semibold bg-white text-black rounded-full hover:bg-gray-200 transition-colors duration-300">
-                                    {t('Sign_In')}
-                                </Link>
-                            )
+                         {user ? (
+                            <div className="text-center">
+                                <p className="text-lg text-white mb-4">{t('Welcome')}, {user.fullName}</p>
+                                <button
+                                    onClick={handleLogout}
+                                    className="w-full bg-white text-black py-3 rounded-full font-bold text-sm"
+                                >
+                                    {t('Sign_Out')}
+                                </button>
+                            </div>
+                        ) : (
+                            <Link 
+                                to="/signin" 
+                                onClick={onClose} 
+                                className="block w-full text-center bg-white text-black py-3 rounded-full font-bold text-sm"
+                            >
+                                {t('Sign_In')}
+                            </Link>
                         )}
-                        </div>
-
                         <div className="flex justify-center space-x-4 mt-6">
                             <LanguageSwitcher />
                             <CurrencySwitcher />
@@ -203,7 +186,7 @@ const MobileMenu: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ isOpe
 
 const Header: React.FC = () => {
     const { t } = useTranslation();
-    const { user, isLoggedIn, isLoading } = useAuth();
+    const { user } = useAuth();
     const [scrolled, setScrolled] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -236,23 +219,17 @@ const Header: React.FC = () => {
                             </NavLink>
                         ))}
                         <NavLink to="/lottery" className={({isActive}) => `${navLinkClasses} ${isActive ? 'text-white' : ''}`}>{t('Lottery')}</NavLink>
-                        {user?.membership ? (
-                             <NavLink to="/club-dashboard" className={({isActive}) => `${navLinkClasses} ${isActive ? 'text-white' : ''}`}>{t('Club_Dashboard')}</NavLink>
-                        ) : (
-                            <NavLink to="/membership" className={({isActive}) => `${navLinkClasses} ${isActive ? 'text-white' : ''}`}>{t('Membership')}</NavLink>
-                        )}
+                        <NavLink to="/membership" className={({isActive}) => `${navLinkClasses} ${isActive ? 'text-white' : ''}`}>{t('Membership')}</NavLink>
                     </nav>
                     <div className="hidden md:flex items-center space-x-4">
                         <LanguageSwitcher />
                         <CurrencySwitcher />
-                        {!isLoading && (
-                            isLoggedIn ? (
-                                 <UserMenu />
-                            ) : (
-                                <Link to="/signin" className="px-4 py-2 text-sm font-semibold bg-white text-black rounded-full hover:bg-gray-200 transition-colors duration-300 transform hover:scale-105">
-                                    {t('Sign_In')}
-                                </Link>
-                            )
+                        {user ? (
+                            <UserMenu />
+                        ) : (
+                            <Link to="/signin" className="px-4 py-2 text-sm font-semibold text-black bg-white rounded-full hover:bg-gray-200 transition-colors">
+                                {t('Sign_In')}
+                            </Link>
                         )}
                     </div>
 

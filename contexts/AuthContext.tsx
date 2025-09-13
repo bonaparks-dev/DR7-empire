@@ -1,144 +1,72 @@
-import React, { createContext, useState, useEffect, useMemo, useContext, ReactNode } from 'react';
-import { supabase } from '../supabaseClient'; // Ensure you have this client initialized
-import type { Session } from '@supabase/supabase-js';
-import type { User as AppUser } from '../types'; // Your custom application user type
+import React, { createContext, useState, useEffect, useMemo } from 'react';
+import { supabase } from '../src/lib/supabaseClient';
+import type { Session, User as SupabaseUser, AuthError, SignUpWithPasswordCredentials, OAuthResponse } from '@supabase/supabase-js';
 
-// Define the shape of the context value
-interface AuthContextType {
-  user: AppUser | null;
-  isLoggedIn: boolean;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<any>;
-  logout: () => Promise<void>;
-  signup: (email: string, password: string, options: { data: { full_name: string } }) => Promise<any>;
-  updateUser: (updatedData: Partial<AppUser>) => Promise<void>;
-  loginWithGoogle: (options?: { options?: { redirectTo?: string } }) => Promise<any>;
-  updateMembership: (tierId: string, billingCycle: 'monthly' | 'annually') => Promise<void>;
+// Define a compatible user type for the rest of the app
+interface AppUser {
+  id: string;
+  email: string;
+  fullName: string;
 }
 
-// Create the context
+interface AuthContextType {
+  user: AppUser | null;
+  session: Session | null;
+  loading: boolean;
+  login: (email, password) => Promise<{ data: { user: SupabaseUser; session: Session; } | { user: null; session: null; }; error: AuthError | null; }>;
+  signup: (email, password, options) => Promise<any>; // Matches Supabase type
+  logout: () => Promise<{ error: AuthError | null }>;
+  loginWithGoogle: (options) => Promise<OAuthResponse>;
+}
+
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Define the provider component
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<AppUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Listen for changes in authentication state (sign-in, sign-out, etc.)
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (_event, session: Session | null) => {
-        if (session) {
-          // If a session exists, fetch the user's profile from your 'profiles' table
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          // Merge Supabase auth user with your custom profile data
-          setUser(profile ? { ...session.user, ...profile } : null);
-        } else {
-          // If no session, the user is logged out
-          setUser(null);
-        }
-        setIsLoading(false);
-      }
-    );
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+      setLoading(false);
+    };
 
-    // Cleanup the listener when the component unmounts
+    getSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
     return () => {
-      authListener.subscription.unsubscribe();
+      subscription?.unsubscribe();
     };
   }, []);
 
-  // Define the authentication functions that interact with Supabase
-  const login = async (email: string, password: string) => {
-    return supabase.auth.signInWithPassword({ email, password });
-  };
-
-  const signup = async (email: string, password: string, options: { data: { full_name: string } }) => {
-    // Supabase's signUp function handles user creation
-    return supabase.auth.signUp({ email, password, options });
-  };
-
-  const loginWithGoogle = async (options?: { options?: { redirectTo?: string } }) => {
-    // Triggers the Google OAuth flow
-    return supabase.auth.signInWithOAuth({ 
-        provider: 'google', 
-        ...options
-    });
-  };
-
-  const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-  };
-
-  const updateUser = async (updatedData: Partial<AppUser>) => {
-    if (!user) throw new Error("No user is logged in.");
-    
-    // Update the user's data in the 'profiles' table
-    const { data, error } = await supabase
-        .from('profiles')
-        .update(updatedData)
-        .eq('id', user.id)
-        .select()
-        .single();
-        
-    if (error) throw error;
-
-    // Update the local user state to reflect the changes immediately
-    setUser(prevUser => prevUser ? { ...prevUser, ...data } : null);
-  };
-
-  const updateMembership = async (tierId: string, billingCycle: 'monthly' | 'annually') => {
-      if (!user) throw new Error("No user is logged in.");
-
-      const renewalDate = new Date();
-      if (billingCycle === 'monthly') {
-          renewalDate.setMonth(renewalDate.getMonth() + 1);
-      } else {
-          renewalDate.setFullYear(renewalDate.getFullYear() + 1);
-      }
-
-      const membershipData = {
-          membership: {
-              tierId,
-              billingCycle,
-              renewalDate: renewalDate.toISOString(),
-          }
+  const user: AppUser | null = useMemo(() => {
+    if (session?.user) {
+      return {
+        id: session.user.id,
+        email: session.user.email || '',
+        fullName: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User'
       };
-      
-      await updateUser(membershipData);
-  };
+    }
+    return null;
+  }, [session]);
 
-  // Memoize the context value to prevent unnecessary re-renders
   const value = useMemo(() => ({
     user,
-    isLoggedIn: !!user,
-    isLoading,
-    login,
-    logout,
-    signup,
-    updateUser,
-    loginWithGoogle,
-    updateMembership,
-  }), [user, isLoading]);
-
-  // Provide the context value to all child components
+    session,
+    loading,
+    login: (email, password) => supabase.auth.signInWithPassword({ email, password }),
+    signup: (email, password, options) => supabase.auth.signUp({ email, password, options }),
+    logout: () => supabase.auth.signOut(),
+    loginWithGoogle: (options) => supabase.auth.signInWithOAuth({ provider: 'google', ...options }),
+  }), [user, session, loading]);
+  
   return (
     <AuthContext.Provider value={value}>
-      {!isLoading && children}
+      {children}
     </AuthContext.Provider>
   );
-};
-
-// Custom hook to easily access the auth context in your components
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };

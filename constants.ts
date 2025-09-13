@@ -1,6 +1,5 @@
-
 import type { RentalCategory, MembershipTier, Lottery, RentalSpec } from './types';
-import { UsersIcon, CogIcon, ZapIcon, AnchorIcon, HomeIcon, PaperAirplaneIcon, WifiIcon } from './components/icons/Icons';
+import { UsersIcon, CogIcon, ZapIcon, AnchorIcon, HomeIcon, PaperAirplaneIcon, WifiIcon, BathIcon } from './components/icons/Icons';
 
 const newCarDataRaw = [
   {
@@ -40,7 +39,7 @@ const newCarDataRaw = [
       "torque": "500Nm",
       "engine": "2.5L inline 5-cylinder"
     },
-    "image": "/audi-rs3.png",
+    "image": "/audi-rs3-green.jpg",
     "color": "Verde"
   },
   {
@@ -66,7 +65,7 @@ const newCarDataRaw = [
       "torque": "500Nm",
       "engine": "2.0L 4-cylinder Turbo"
     },
-    "image": "/mercedes-a45.png"
+    "image": "/mercedes-a45s-grey.jpg"
   },
   {
     "id": 6,
@@ -78,7 +77,7 @@ const newCarDataRaw = [
       "torque": "550Nm",
       "engine": "3.0L inline 6-cylinder"
     },
-    "image": "/bmw-m2.png",
+    "image": "/bmw-m2-silver.jpg",
     "available": false
   },
   {
@@ -92,7 +91,7 @@ const newCarDataRaw = [
       "torque": "650Nm",
       "engine": "3.0L inline 6-cylinder"
     },
-    "image": "/bmw-m3.png"
+    "image": "/bmw-m3-green.jpg"
   },
   {
     "id": 8,
@@ -105,7 +104,7 @@ const newCarDataRaw = [
       "torque": "520Nm",
       "engine": "3.0L inline 6-cylinder"
     },
-    "image": "/mercedesGLE.png"
+    "image": "/mercedes-gle53-grey.jpg"
   },
   {
     "id": 9,
@@ -117,7 +116,7 @@ const newCarDataRaw = [
       "torque": "650Nm",
       "engine": "3.0L inline 6-cylinder"
     },
-    "image": "/bmw-m4.png"
+    "image": "/bmw-m4-blue.jpg"
   },
   {
     "id": 10,
@@ -179,7 +178,7 @@ const newCarDataRaw = [
       "torque": "760Nm",
       "engine": "3.9L Twin-Turbo V8"
     },
-    "image": "/ferrari-portofino.png"
+    "image": "/ferrari-portofino-red.jpg"
   },
   {
     "id": 15,
@@ -204,7 +203,21 @@ const newCarDataRaw = [
       "special": "Includes 100km pack",
       "extras": "Unlimited option: +50€"
     },
-    "image": "/Ducato.png",
+    "image": "/fiat-ducato-white.jpg",
+    "available": true
+  },
+  {
+    "id": 17,
+    "name": "Mercedes E63 S AMG",
+    "dailyPrice": 140,
+    "specs": {
+      "acceleration": "0–100 in 3.4s",
+      "maxSpeed": "Max speed: 300km/h",
+      "power": "612Cv",
+      "torque": "850Nm",
+      "engine": "4.0L V8 BiTurbo"
+    },
+    "image": "/mercedes-e63s-grey.jpg",
     "available": true
   }
 ];
@@ -251,14 +264,33 @@ const yachtData = [
     { id: 'yacht8', name: 'Ferretti 1000', image: 'https://picsum.photos/seed/ferretti-yacht-sunset-wake/800/600', pricePerDay: { usd: 22000, eur: 20200, crypto: 0.65 }, specs: [ { label: { en: 'Length', it: 'Lunghezza' }, value: '30m', icon: AnchorIcon }, { label: { en: 'Cabins', it: 'Cabine' }, value: '5', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '10', icon: UsersIcon } ] },
 ];
 
-const villaData = [
-    { id: 'villa1', name: 'Villa Oleandra, Lake Como', image: 'https://picsum.photos/seed/villa-lake-como-luxury-view/800/600', pricePerDay: { usd: 25000, eur: 23000, crypto: 0.7 }, specs: [ { label: { en: 'Bedrooms', it: 'Camere da Letto' }, value: '15', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '30', icon: UsersIcon }, { label: { en: 'Feature', it: 'Caratteristica' }, value: 'Private Dock', icon: AnchorIcon } ] },
-    { id: 'villa2', name: 'Amalfi Coast Haven', image: 'https://picsum.photos/seed/villa-amalfi-coast-cliffs/800/600', pricePerDay: { usd: 18000, eur: 16600, crypto: 0.55 }, specs: [ { label: { en: 'Bedrooms', it: 'Camere da Letto' }, value: '8', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '16', icon: UsersIcon }, { label: { en: 'Feature', it: 'Caratteristica' }, value: 'Infinity Pool', icon: ZapIcon } ] },
-    { id: 'villa3', name: 'Mykonos Grandeur Estate', image: 'https://picsum.photos/seed/villa-mykonos-pool-white/800/600', pricePerDay: { usd: 22000, eur: 20200, crypto: 0.65 }, specs: [ { label: { en: 'Bedrooms', it: 'Camere da Letto' }, value: '12', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '24', icon: UsersIcon }, { label: { en: 'Feature', it: 'Caratteristica' }, value: 'Sea View', icon: WifiIcon } ] },
-    { id: 'villa4', name: 'St. Barts Oceanfront Mansion', image: 'https://picsum.photos/seed/villa-st-barts-beachfront/800/600', pricePerDay: { usd: 45000, eur: 41400, crypto: 1.3 }, specs: [ { label: { en: 'Bedrooms', it: 'Camere da Letto' }, value: '10', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '20', icon: UsersIcon }, { label: { en: 'Feature', it: 'Caratteristica' }, value: 'Private Beach', icon: AnchorIcon } ] },
-    { id: 'villa5', name: 'Courchevel Alpine Chalet', image: 'https://picsum.photos/seed/chalet-courchevel-snow-luxury/800/600', pricePerDay: { usd: 30000, eur: 27600, crypto: 0.9 }, specs: [ { label: { en: 'Bedrooms', it: 'Camere da Letto' }, value: '9', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '18', icon: UsersIcon }, { label: { en: 'Feature', it: 'Caratteristica' }, value: 'Ski-in/Ski-out', icon: CogIcon } ] },
-    { id: 'villa6', name: 'Ibiza Sunset Palace', image: 'https://picsum.photos/seed/villa-ibiza-sunset-modern/800/600', pricePerDay: { usd: 28000, eur: 25700, crypto: 0.85 }, specs: [ { label: { en: 'Bedrooms', it: 'Camere da Letto' }, value: '14', icon: HomeIcon }, { label: { en: 'Guests', it: 'Ospiti' }, value: '28', icon: UsersIcon }, { label: { en: 'Feature', it: 'Caratteristica' }, value: 'DJ Booth & Club', icon: ZapIcon } ] },
+const newVillas = [
+  { id: 1, name: "Villa 50m from the Beach", maxGuests: 9, bedrooms: 4, bathrooms: 4, image: "/elicriso1.png", price: 800 },
+  { id: 2, name: "Villa by the Sea", maxGuests: 6, bedrooms: 3, bathrooms: 2, image: "/ginepro1.png", price: 600 },
+  { id: 3, name: "Villa with Cliffside Pool", maxGuests: 12, bedrooms: 6, bathrooms: 5, image: "/ambra1.png", price: 2500 },
+  { id: 4, name: "Villa Blue Bay", maxGuests: 6, bedrooms: 3, bathrooms: 2, image: "/loly1.png", price: 700 },
+  { id: 5, name: "Villa 100m from the Beach", maxGuests: 9, bedrooms: 4, bathrooms: 3, image: "/glicine1.png", price: 750 },
+  { id: 6, name: "Luxury House, Cagliari Center", maxGuests: 4, bedrooms: 2, bathrooms: 2, image: "/laj1.png", price: 400 },
+  { id: 7, name: "Villa with Heated Jacuzzi", maxGuests: 6, bedrooms: 3, bathrooms: 2, image: "/josy1.png", price: 900 },
+  { id: 8, name: "Villa Costa Smeralda", maxGuests: 8, bedrooms: 4, bathrooms: 3, image: "/white1.png", price: 1200 },
+  { id: 9, name: "Villa with Heated Pool", maxGuests: 4, bedrooms: 2, bathrooms: 2, image: "/crystal1.png", price: 1500 }
 ];
+
+const villaData = newVillas.map(villa => ({
+    id: `villa${villa.id}`,
+    name: villa.name,
+    image: villa.image,
+    pricePerDay: {
+        usd: Math.round(villa.price * 1.1),
+        eur: villa.price,
+        crypto: parseFloat((villa.price / 60000).toFixed(3)),
+    },
+    specs: [
+        { label: { en: 'Guests', it: 'Ospiti' }, value: String(villa.maxGuests), icon: UsersIcon },
+        { label: { en: 'Bedrooms', it: 'Camere da Letto' }, value: String(villa.bedrooms), icon: HomeIcon },
+        { label: { en: 'Bathrooms', it: 'Bagni' }, value: String(villa.bathrooms), icon: BathIcon }
+    ]
+}));
 
 const jetData = [
     { id: 'jet1', name: 'Gulfstream G700', image: 'https://picsum.photos/seed/gulfstream-g700-jet-sky-wing/800/600', pricePerDay: { usd: 90000, eur: 82000, crypto: 2.5 }, specs: [ { label: { en: 'Range', it: 'Autonomia' }, value: '13,890 km', icon: PaperAirplaneIcon }, { label: { en: 'Passengers', it: 'Passeggeri' }, value: '19', icon: UsersIcon }, { label: { en: 'Wi-Fi', it: 'Wi-Fi' }, value: 'Ka-band', icon: WifiIcon } ] },
@@ -305,10 +337,41 @@ export const PICKUP_LOCATIONS = [
   { id: 'dr7_office', label: { en: 'DR7 Office Cagliari', it: 'Ufficio DR7 Cagliari' } },
 ];
 
+export const INSURANCE_ELIGIBILITY = {
+  KASKO_BASE: {
+    minAge: 18,
+    minLicenseYears: 2,
+    description: "Base KASKO insurance requires at least 2 years of driving license."
+  },
+  KASKO_BLACK: {
+    minAge: 25,
+    minLicenseYears: 5,
+    description: "Black KASKO insurance requires at least 25 years old and 5 years of driving license."
+  },
+  KASKO_SIGNATURE: {
+    minAge: 30,
+    minLicenseYears: 10,
+    description: "Signature KASKO insurance requires at least 30 years old and 10 years of driving license."
+  }
+};
+
+export const VALIDATION_MESSAGES = {
+  en: {
+    base: "You must have at least 2 years of driving experience for KASKO BASE.",
+    black: "You must be at least 25 years old and have 5 years of driving experience for KASKO BLACK.",
+    signature: "You must be at least 30 years old and have 10 years of driving experience for KASKO SIGNATURE."
+  },
+  it: {
+    base: "Devi avere almeno 2 anni di esperienza di guida per il KASKO BASE.",
+    black: "Devi avere almeno 25 anni e 5 anni di esperienza di guida per il KASKO BLACK.",
+    signature: "Devi avere almeno 30 anni e 10 anni di esperienza di guida per il KASKO SIGNATURE."
+  }
+};
+
 export const INSURANCE_OPTIONS = [
-  { id: 'basic', label: { en: 'Basic Cover', it: 'Copertura Base' }, description: { en: 'Standard liability coverage.', it: 'Copertura di responsabilità standard.' }, pricePerDay: { usd: 0, eur: 0 } },
-  { id: 'premium', label: { en: 'Premium Cover', it: 'Copertura Premium' }, description: { en: 'Reduced excess and windscreen cover.', it: 'Franchigia ridotta e copertura parabrezza.' }, pricePerDay: { usd: 30, eur: 28 } },
-  { id: 'full', label: { en: 'Full Cover', it: 'Copertura Completa' }, description: { en: 'Zero excess. Complete peace of mind.', it: 'Zero franchigia. Massima tranquillità.' }, pricePerDay: { usd: 50, eur: 46 } },
+  { id: 'KASKO_BASE', label: { en: 'Basic Cover (KASKO BASE)', it: 'Copertura Base (KASKO BASE)' }, description: { en: 'Standard liability coverage.', it: 'Copertura di responsabilità standard.' }, pricePerDay: { usd: 0, eur: 0 } },
+  { id: 'KASKO_BLACK', label: { en: 'Premium Cover (KASKO BLACK)', it: 'Copertura Premium (KASKO BLACK)' }, description: { en: 'Reduced excess and windscreen cover.', it: 'Franchigia ridotta e copertura parabrezza.' }, pricePerDay: { usd: 30, eur: 28 } },
+  { id: 'KASKO_SIGNATURE', label: { en: 'Full Cover (KASKO SIGNATURE)', it: 'Copertura Completa (KASKO SIGNATURE)' }, description: { en: 'Zero excess. Complete peace of mind.', it: 'Zero franchigia. Massima tranquillità.' }, pricePerDay: { usd: 50, eur: 46 } },
 ];
 
 export const RENTAL_EXTRAS = [
@@ -342,6 +405,7 @@ export const COUNTRIES = [
 
 export const GOOGLE_REVIEWS = [
   {
+    id: 'review-1',
     name: 'Alex Johnson',
     avatar: 'https://avatar.iran.liara.run/username?username=Alex+Johnson',
     rating: 5,
@@ -349,6 +413,7 @@ export const GOOGLE_REVIEWS = [
     date: '2 weeks ago',
   },
   {
+    id: 'review-2',
     name: 'Sophia Chen',
     avatar: 'https://avatar.iran.liara.run/username?username=Sophia+Chen',
     rating: 5,
@@ -356,6 +421,7 @@ export const GOOGLE_REVIEWS = [
     date: '1 month ago',
   },
   {
+    id: 'review-3',
     name: 'Liam O\'Connell',
     avatar: 'https://avatar.iran.liara.run/username?username=Liam+OConnell',
     rating: 5,
@@ -363,6 +429,7 @@ export const GOOGLE_REVIEWS = [
     date: '3 weeks ago',
   },
   {
+    id: 'review-4',
     name: 'Isabella Rossi',
     avatar: 'https://avatar.iran.liara.run/username?username=Isabella+Rossi',
     rating: 5,
@@ -370,6 +437,7 @@ export const GOOGLE_REVIEWS = [
     date: '1 week ago',
   },
   {
+    id: 'review-5',
     name: 'Marcus Holloway',
     avatar: 'https://avatar.iran.liara.run/username?username=Marcus+Holloway',
     rating: 4,
@@ -377,6 +445,7 @@ export const GOOGLE_REVIEWS = [
     date: '2 months ago',
   },
   {
+    id: 'review-6',
     name: 'Chloé Dubois',
     avatar: 'https://avatar.iran.liara.run/username?username=Chloe+Dubois',
     rating: 5,
@@ -384,6 +453,7 @@ export const GOOGLE_REVIEWS = [
     date: '1 month ago',
   },
   {
+      id: 'review-7',
       name: 'Kenji Tanaka',
       avatar: 'https://avatar.iran.liara.run/username?username=Kenji+Tanaka',
       rating: 5,

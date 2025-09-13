@@ -82,16 +82,42 @@ const SignUpPage: React.FC = () => {
 
     try {
       setIsSubmitting(true);
-      // Safely handle the response without destructuring
-      const response = await signup(formData.email, formData.password, {
+      const { data, error } = await signup(formData.email, formData.password, {
         data: { full_name: formData.fullName }
       });
 
-      if (response && response.error) {
-        throw new Error(response.error.message);
+      if (error) {
+          throw new Error(error.message);
       }
-      // You might want to show a success message or redirect to a profile setup page
-      navigate('/');
+
+      // After signup, Supabase returns user data. We check if a session was created.
+      // A session is only created if "Confirm email" is DISABLED in Supabase project settings.
+      if (data.session) {
+          // User is logged in immediately. Trigger a welcome email.
+          // NOTE: This requires creating and configuring the 'send-welcome-email' Netlify function.
+          fetch('/.netlify/functions/send-welcome-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                  email: data.user.email,
+                  name: formData.fullName 
+              }),
+          }).catch(err => {
+              // Log the error but don't block the user's flow.
+              console.error("Failed to trigger welcome email:", err);
+          });
+
+          navigate('/'); // Redirect to home on success
+      } else if (data.user) {
+          // Email confirmation is ENABLED. The user exists but has no session yet.
+          // Supabase has automatically sent a confirmation link to their email.
+          // Redirect to a page that tells the user to check their email.
+          navigate('/check-email', { state: { email: formData.email } });
+      } else {
+          // Fallback for an unexpected state from the auth provider
+          throw new Error("An unexpected error occurred during signup.");
+      }
+
     } catch (err: any) {
       setGeneralError(err?.message || t('Something_went_wrong'));
     } finally {

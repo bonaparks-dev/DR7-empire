@@ -1,32 +1,24 @@
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { RENTAL_CATEGORIES } from '../constants';
 import type { RentalItem } from '../types';
 import RentalCard from '../components/ui/RentalCard';
 import { useTranslation } from '../hooks/useTranslation';
 import { useBooking } from '../hooks/useBooking';
-import { useAuth } from '../hooks/useAuth';
 import { motion } from 'framer-motion';
 
 interface RentalPageProps {
-  categoryId: 'cars' | 'yachts' | 'villas' | 'private jets' | 'helicopters';
+  categoryId: 'cars' | 'yachts' | 'villas' | 'jets' | 'helicopters';
 }
 
 const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   const { t, getTranslated } = useTranslation();
   const { openBooking } = useBooking();
-  const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   
   const category = RENTAL_CATEGORIES.find(cat => cat.id === categoryId);
 
   const handleBook = (item: RentalItem) => {
-    if (!isLoggedIn) {
-      navigate('/signin', { state: { from: location } });
-      return;
-    }
-      
     navigate(`/book/${categoryId}/${item.id}`);
   };
 

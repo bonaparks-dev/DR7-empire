@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { useAuth } from '../hooks/useAuth';
-import { RENTAL_CATEGORIES, PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, COUNTRIES } from '../constants';
+import { RENTAL_CATEGORIES, PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, COUNTRIES, INSURANCE_ELIGIBILITY, VALIDATION_MESSAGES } from '../constants';
 import type { Booking } from '../types';
 import { CameraIcon, CreditCardIcon, CryptoIcon } from '../components/icons/Icons';
 
@@ -30,7 +30,14 @@ const BookingPage: React.FC = () => {
   const today = new Date().toISOString().split('T')[0];
 
   const [formData, setFormData] = useState({
-      // Step 1 - Car
+      // Step 1 - Driver Info (Car)
+      fullName: '',
+      email: '',
+      phone: '',
+      countryOfResidency: '',
+      age: 25,
+      licenseIssueDate: '',
+      // Step 2 - Configuration (Car)
       pickupDate: today,
       pickupTime: '10:00',
       returnDate: '',
@@ -42,12 +49,6 @@ const BookingPage: React.FC = () => {
       checkinDate: today,
       checkoutDate: '',
       guests: 1,
-      // Step 2
-      fullName: user?.fullName || '',
-      email: user?.email || '',
-      phone: user?.phone || '',
-      countryOfResidency: '',
-      age: 25,
       // Step 3
       licenseImage: '',
       // Step 4
@@ -56,19 +57,68 @@ const BookingPage: React.FC = () => {
       cardExpiry: '',
       cardCVC: '',
   });
-
+  
+  const [insuranceError, setInsuranceError] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (user) {
-      setFormData(prev => ({
-        ...prev,
-        fullName: user.fullName,
-        email: user.email,
-        phone: user.phone || '',
-      }));
-    }
+      if (user) {
+          setFormData(prev => ({
+              ...prev,
+              fullName: user.fullName || '',
+              email: user.email || '',
+          }));
+      }
   }, [user]);
+
+  useEffect(() => {
+    if (!isCar) return;
+
+    if (!formData.age || !formData.licenseIssueDate) {
+        setFormData(prev => ({ ...prev, insuranceOption: INSURANCE_OPTIONS[0].id }));
+        setInsuranceError('');
+        return;
+    }
+
+    const age = Number(formData.age);
+    const issueDate = new Date(formData.licenseIssueDate);
+    const today = new Date();
+    
+    if (issueDate > today) {
+        setInsuranceError("License issue date cannot be in the future.");
+        return;
+    }
+
+    let licenseYears = today.getFullYear() - issueDate.getFullYear();
+    const m = today.getMonth() - issueDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < issueDate.getDate())) {
+        licenseYears--;
+    }
+    
+    const { KASKO_SIGNATURE, KASKO_BLACK, KASKO_BASE } = INSURANCE_ELIGIBILITY;
+    
+    let newInsuranceOption = '';
+    let errorKey: keyof typeof VALIDATION_MESSAGES.en | null = null;
+
+    if (age >= KASKO_SIGNATURE.minAge && licenseYears >= KASKO_SIGNATURE.minLicenseYears) {
+        newInsuranceOption = 'KASKO_SIGNATURE';
+    } else if (age >= KASKO_BLACK.minAge && licenseYears >= KASKO_BLACK.minLicenseYears) {
+        newInsuranceOption = 'KASKO_BLACK';
+    } else if (age >= KASKO_BASE.minAge && licenseYears >= KASKO_BASE.minLicenseYears) {
+        newInsuranceOption = 'KASKO_BASE';
+    } else {
+        newInsuranceOption = INSURANCE_OPTIONS[0].id; // Default to base, show error
+        errorKey = 'base';
+    }
+
+    setFormData(prev => ({
+        ...prev,
+        insuranceOption: newInsuranceOption
+    }));
+    
+    setInsuranceError(errorKey ? VALIDATION_MESSAGES[lang][errorKey] : '');
+
+}, [isCar, formData.age, formData.licenseIssueDate, lang]);
 
   const { 
     duration, rentalCost, insuranceCost, extrasCost, subtotal, taxes, total, nights
@@ -169,17 +219,19 @@ const BookingPage: React.FC = () => {
 
     if (isCar) {
         if (step === 1) {
-            if (!formData.pickupDate || !formData.returnDate) newErrors.date = 'Please select valid pickup and return dates.';
-            else if (new Date(`${formData.pickupDate}T${formData.pickupTime}`) >= new Date(`${formData.returnDate}T${formData.returnTime}`)) {
-                newErrors.date = 'Return date must be after pickup date.';
-            }
-        }
-        if (step === 2) {
             if (!formData.fullName) newErrors.fullName = t('Full_name_is_required');
             if (!formData.email) newErrors.email = t('Email_is_required');
             else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = t('Please_enter_a_valid_email_address');
             if (!formData.countryOfResidency) newErrors.countryOfResidency = t('Country_of_Residency_is_required');
-            if (formData.age < 25) newErrors.age = t('Minimum_age_is_25');
+            if (formData.age < 18) newErrors.age = 'Minimum age is 18.';
+            if (!formData.licenseIssueDate) newErrors.licenseIssueDate = 'License issue date is required.';
+            if (insuranceError) newErrors.insurance = insuranceError;
+        }
+        if (step === 2) {
+            if (!formData.pickupDate || !formData.returnDate) newErrors.date = 'Please select valid pickup and return dates.';
+            else if (new Date(`${formData.pickupDate}T${formData.pickupTime}`) >= new Date(`${formData.returnDate}T${formData.returnTime}`)) {
+                newErrors.date = 'Return date must be after pickup date.';
+            }
             if (!formData.licenseImage) newErrors.licenseImage = 'Please upload your driver\'s license.';
         }
         if (step === 3) {
@@ -225,7 +277,7 @@ const BookingPage: React.FC = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!validateStep() || !item || !user) return;
+      if (!validateStep() || !item) return;
       
       setIsProcessing(true);
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -233,7 +285,7 @@ const BookingPage: React.FC = () => {
       
       const commonData = {
           bookingId: crypto.randomUUID(),
-          userId: user.id,
+          userId: user ? user.email : 'guest-user',
           itemId: item.id,
           itemName: item.name,
           image: item.image,
@@ -281,8 +333,8 @@ const BookingPage: React.FC = () => {
 
   const steps = useMemo(() => {
     const carSteps = [
-        { id: 1, name: t('Configuration') },
-        { id: 2, name: t('Driver_and_Verification') },
+        { id: 1, name: t('Driver_Information') },
+        { id: 2, name: t('Configuration_and_Verification') },
         { id: 3, name: t('Payment') },
     ];
     const otherSteps = [
@@ -324,41 +376,84 @@ const BookingPage: React.FC = () => {
             </div>
           )}
 
-          <button type="button" onClick={() => navigate('/account/bookings')} className="mt-8 bg-white text-black px-6 py-2 rounded-full font-semibold text-sm hover:bg-gray-200 transition-colors">
-              {t('My_Bookings')}
+          <button type="button" onClick={() => navigate('/')} className="mt-8 bg-white text-black px-6 py-2 rounded-full font-semibold text-sm hover:bg-gray-200 transition-colors">
+              Go to Home
           </button>
         </div>
       );
     }
 
     if(isCar) {
+      const assignedInsurance = INSURANCE_OPTIONS.find(opt => opt.id === formData.insuranceOption);
       switch (step) {
         case 1:
           return (
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="text-sm text-gray-400">{t('Pickup_Date')}</label><input type="date" name="pickupDate" value={formData.pickupDate} onChange={handleChange} min={today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
-                <div><label className="text-sm text-gray-400">{t('Pickup_Time')}</label><input type="time" name="pickupTime" value={formData.pickupTime} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
-                <div><label className="text-sm text-gray-400">{t('Return_Date')}</label><input type="date" name="returnDate" value={formData.returnDate} onChange={handleChange} min={formData.pickupDate || today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
-                <div><label className="text-sm text-gray-400">{t('Return_Time')}</label><input type="time" name="returnTime" value={formData.returnTime} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                <div><label className="text-sm text-gray-400">{t('Full_Name')}</label><input type="text" name="fullName" value={formData.fullName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors.fullName && <p className="text-xs text-red-400 mt-1">{errors.fullName}</p>}</div>
+                <div><label className="text-sm text-gray-400">{t('Email_Address')}</label><input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}</div>
+                <div><label className="text-sm text-gray-400">{t('Phone_Number')}</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                <div><label className="text-sm text-gray-400">{t('Country_of_Residency')}</label><select name="countryOfResidency" value={formData.countryOfResidency} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"><option value="">Select Country</option>{COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}</select>{errors.countryOfResidency && <p className="text-xs text-red-400 mt-1">{errors.countryOfResidency}</p>}</div>
+                <div><label className="text-sm text-gray-400">{t('Drivers_Age')}</label><input type="number" name="age" value={formData.age} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors.age && <p className="text-xs text-red-400 mt-1">{errors.age}</p>}</div>
+                <div><label className="text-sm text-gray-400">{t('License_Issue_Date')}</label><input type="date" name="licenseIssueDate" value={formData.licenseIssueDate} onChange={handleChange} max={today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors.licenseIssueDate && <p className="text-xs text-red-400 mt-1">{errors.licenseIssueDate}</p>}</div>
               </div>
-              {errors.date && <p className="text-xs text-gray-300">{errors.date}</p>}
-              <div><label className="text-sm text-gray-400">{t('Pickup_Location')}</label><select name="pickupLocation" value={formData.pickupLocation} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"><option value="" disabled>{t('Select_an_option')}</option>{PICKUP_LOCATIONS.map(loc => (<option key={loc.id} value={loc.id}>{getTranslated(loc.label)}</option>))}</select></div>
-              <div><h3 className="text-lg font-semibold text-white mb-2">{t('Insurance_Options')}</h3><div className="space-y-2">{INSURANCE_OPTIONS.map(opt => (<label key={opt.id} className="flex items-start p-3 bg-gray-800/50 rounded-md border border-gray-700 cursor-pointer has-[:checked]:border-white"><input type="radio" name="insuranceOption" value={opt.id} checked={formData.insuranceOption === opt.id} onChange={handleChange} className="h-4 w-4 mt-1 text-white bg-gray-700 border-gray-600 focus:ring-white"/><div className="ml-3"><p className="font-semibold text-white">{getTranslated(opt.label)}</p><p className="text-sm text-gray-400">{getTranslated(opt.description)}</p></div><span className="ml-auto font-semibold text-white">{formatPrice(opt.pricePerDay[currency])}/{t('day')}</span></label>))}</div></div>
-              <div><h3 className="text-lg font-semibold text-white mb-2">{t('Extras_and_Addons')}</h3><div className="space-y-2">{RENTAL_EXTRAS.map(extra => (<label key={extra.id} className="flex items-center p-3 bg-gray-800/50 rounded-md border border-gray-700 cursor-pointer has-[:checked]:border-white"><input type="checkbox" name={extra.id} checked={formData.extras.includes(extra.id)} onChange={handleChange} className="h-4 w-4 text-white bg-gray-700 border-gray-600 rounded focus:ring-white"/><span className="ml-3 text-white">{getTranslated(extra.label)}</span><span className="ml-auto font-semibold text-white">{formatPrice(extra.pricePerDay[currency])}/{t('day')}</span></label>))}</div></div>
+              {errors.insurance && <p className="text-sm text-red-400 bg-red-900/20 border border-red-800 rounded p-3 mt-4">{errors.insurance}</p>}
             </div>
           );
         case 2:
           return (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div><label className="text-sm text-gray-400">{t('Full_Name')}</label><input type="text" name="fullName" value={formData.fullName} onChange={handleChange} disabled={!!user?.fullName} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white disabled:text-gray-400"/></div>
-                <div><label className="text-sm text-gray-400">{t('Email_Address')}</label><input type="email" name="email" value={formData.email} onChange={handleChange} disabled={!!user?.email} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white disabled:text-gray-400"/></div>
-                <div><label className="text-sm text-gray-400">{t('Phone_Number')}</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
-                <div><label className="text-sm text-gray-400">{t('Country_of_Residency')}</label><select name="countryOfResidency" value={formData.countryOfResidency} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"><option value="">Select Country</option>{COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}</select>{errors.countryOfResidency && <p className="text-xs text-gray-300 mt-1">{errors.countryOfResidency}</p>}</div>
-                <div><label className="text-sm text-gray-400">{t('Drivers_Age')}</label><input type="number" name="age" value={formData.age} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors.age && <p className="text-xs text-gray-300 mt-1">{errors.age}</p>}</div>
-              </div>
-              <div><h3 className="text-lg font-semibold text-white mb-2">{t('License_Verification')}</h3><div className="p-4 border-2 border-dashed border-gray-700 rounded-lg text-center"><p className="text-sm text-gray-400 mb-4">{t('Please_provide_a_clear_photo_of_your_drivers_license')}</p>{formData.licenseImage ? (<div className="relative inline-block"><img src={formData.licenseImage} alt="License Preview" className="h-40 w-auto mx-auto rounded-md object-contain"/><label htmlFor="license-upload" className="absolute -bottom-2 -right-2 bg-white text-black text-xs font-bold px-3 py-1 rounded-full cursor-pointer hover:bg-gray-200">{t('Change_Photo')}</label></div>) : (<div className="flex justify-center space-x-4"><label htmlFor="license-upload" className="px-4 py-2 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors text-sm cursor-pointer">{t('Upload_File')}</label></div>)}<input id="license-upload" type="file" accept="image/*" onChange={handleLicenseUpload} className="sr-only"/>{errors.licenseImage && <p className="text-xs text-gray-300 mt-2">{errors.licenseImage}</p>}</div></div>
+            <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div><label className="text-sm text-gray-400">{t('Pickup_Date')}</label><input type="date" name="pickupDate" value={formData.pickupDate} onChange={handleChange} min={today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                  <div><label className="text-sm text-gray-400">{t('Pickup_Time')}</label><input type="time" name="pickupTime" value={formData.pickupTime} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                  <div><label className="text-sm text-gray-400">{t('Return_Date')}</label><input type="date" name="returnDate" value={formData.returnDate} onChange={handleChange} min={formData.pickupDate || today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                  <div><label className="text-sm text-gray-400">{t('Return_Time')}</label><input type="time" name="returnTime" value={formData.returnTime} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                </div>
+                {errors.date && <p className="text-xs text-red-400">{errors.date}</p>}
+                <div><label className="text-sm text-gray-400">{t('Pickup_Location')}</label><select name="pickupLocation" value={formData.pickupLocation} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"><option value="" disabled>{t('Select_an_option')}</option>{PICKUP_LOCATIONS.map(loc => (<option key={loc.id} value={loc.id}>{getTranslated(loc.label)}</option>))}</select></div>
+                
+                 {assignedInsurance && (
+                    <div>
+                        <h3 className="text-lg font-semibold text-white mb-2">{t('Assigned_Insurance_Plan_Notice')}</h3>
+                        <div className={`p-4 rounded-md border ${insuranceError ? 'border-red-500' : 'border-gray-700'} bg-gray-800/50`}>
+                            <p className="font-semibold text-white">{getTranslated(assignedInsurance.label)}</p>
+                            <p className="text-sm text-gray-400">{getTranslated(assignedInsurance.description)}</p>
+                            {insuranceError && <p className="text-xs text-red-400 mt-2">{insuranceError}</p>}
+                        </div>
+                    </div>
+                )}
+
+                <div>
+                    <h3 className="text-lg font-semibold text-white mb-2">{t('Extras_and_Addons')}</h3>
+                    <div className="space-y-2">
+                        {RENTAL_EXTRAS.map(extra => (
+                            <label key={extra.id} className="flex items-center p-3 bg-gray-800/50 rounded-md border border-gray-700 cursor-pointer has-[:checked]:border-white">
+                                <input type="checkbox" name={extra.id} checked={formData.extras.includes(extra.id)} onChange={handleChange} className="h-4 w-4 text-white bg-gray-700 border-gray-600 rounded focus:ring-white"/>
+                                <span className="ml-3 text-white">{getTranslated(extra.label)}</span>
+                                <span className="ml-auto font-semibold text-white">{formatPrice(extra.pricePerDay[currency])}/{t('day')}</span>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">{t('License_Verification')}</h3>
+                  <div className="p-4 border-2 border-dashed border-gray-700 rounded-lg text-center">
+                    <p className="text-sm text-gray-400 mb-4">{t('Please_provide_a_clear_photo_of_your_drivers_license')}</p>
+                    {formData.licenseImage ? (
+                      <div className="relative inline-block">
+                        <img src={formData.licenseImage} alt="License Preview" className="h-40 w-auto mx-auto rounded-md object-contain"/>
+                        <label htmlFor="license-upload" className="absolute -bottom-2 -right-2 bg-white text-black text-xs font-bold px-3 py-1 rounded-full cursor-pointer hover:bg-gray-200">{t('Change_Photo')}</label>
+                      </div>
+                    ) : (
+                      <div className="flex justify-center space-x-4">
+                        <label htmlFor="license-upload" className="px-4 py-2 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors text-sm cursor-pointer">{t('Upload_File')}</label>
+                      </div>
+                    )}
+                    <input id="license-upload" type="file" accept="image/*" onChange={handleLicenseUpload} className="sr-only"/>
+                    {errors.licenseImage && <p className="text-xs text-red-400 mt-2">{errors.licenseImage}</p>}
+                  </div>
+                </div>
             </div>
           );
         case 3:
@@ -405,10 +500,10 @@ const BookingPage: React.FC = () => {
             return (
                 <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
-                        <div><label className="text-sm text-gray-400">{t('Full_Name')}</label><input type="text" name="fullName" value={formData.fullName} onChange={handleChange} disabled={!!user?.fullName} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white disabled:text-gray-400"/></div>
-                        <div><label className="text-sm text-gray-400">{t('Email_Address')}</label><input type="email" name="email" value={formData.email} onChange={handleChange} disabled={!!user?.email} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white disabled:text-gray-400"/></div>
+                        <div><label className="text-sm text-gray-400">{t('Full_Name')}</label><input type="text" name="fullName" value={formData.fullName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                        <div><label className="text-sm text-gray-400">{t('Email_Address')}</label><input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
                         <div><label className="text-sm text-gray-400">{t('Phone_Number')}</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
-                        <div><label className="text-sm text-gray-400">{t('Country_of_Residency')}</label><select name="countryOfResidency" value={formData.countryOfResidency} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"><option value="">Select Country</option>{COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}</select>{errors.countryOfResidency && <p className="text-xs text-gray-300 mt-1">{errors.countryOfResidency}</p>}</div>
+                        <div><label className="text-sm text-gray-400">{t('Country_of_Residency')}</label><select name="countryOfResidency" value={formData.countryOfResidency} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"><option value="">Select Country</option>{COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}</select>{errors.countryOfResidency && <p className="text-xs text-red-400 mt-1">{errors.countryOfResidency}</p>}</div>
                     </div>
                 </div>
             );

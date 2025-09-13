@@ -11,7 +11,7 @@ const DISPLAY_TITLE: Record<string, string> = {
   yachts: 'Yachts',
   villas: 'Villas',
   helicopters: 'Helicopters',
-  privatejets: 'Private Jets',
+  jets: 'Private Jets',
 };
 
 // Map category ids to video filenames in /public
@@ -21,10 +21,11 @@ const CATEGORY_VIDEO: Record<string, string> = {
   yachts: '/yacht.mp4',
   villas: '/villa1.mp4',
   helicopters: '/helicopter1.mp4',
-  privatejets: '/privatejet.mp4',
+  jets: '/privatejet.mp4',
 };
 
 const HeroSection: React.FC = () => {
+  const { t } = useTranslation();
   return (
     <div className="relative h-screen flex items-center justify-center text-center overflow-hidden">
       {/* Video Background */}
@@ -35,7 +36,7 @@ const HeroSection: React.FC = () => {
           loop
           muted
           playsInline
-          className="w-full h-full object-cover brightness-50"
+          className="w-full h-full object-cover brightness-[.65]"
         />
         {/* Lighter black overlay */}
         <div className="absolute inset-0 bg-black/30"></div>
@@ -48,18 +49,16 @@ const HeroSection: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
           className="text-4xl md:text-6xl font-bold text-white uppercase tracking-wider"
-          style={{ fontFamily: '"The Seasons", serif' }}
         >
-          Welcome to DR7 Empire
+          {t('Welcome_to_DR7_Empire')}
         </motion.h1>
         <motion.h2
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
           className="text-2xl md:text-4xl font-light text-white mt-2"
-          style={{ fontFamily: '"The Seasons", serif' }}
         >
-          Experience Exclusivity
+          {t('Experience_Exclusivity')}
         </motion.h2>
       </div>
     </div>
@@ -136,15 +135,18 @@ const HomePage: React.FC = () => {
 
       <section className="py-24 bg-black">
         <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {RENTAL_CATEGORIES.map((category, index) => {
-              const videoSrc = CATEGORY_VIDEO[category.id];
+              const videoSrc = CATEGORY_VIDEO[category.id as keyof typeof CATEGORY_VIDEO];
               const displayTitle =
-                DISPLAY_TITLE[category.id] || getTranslated(category.label);
+                DISPLAY_TITLE[category.id as keyof typeof DISPLAY_TITLE] || getTranslated(category.label);
+
+              const isFeatured = index === 0;
 
               return (
                 <motion.div
                   key={category.id}
+                  className={isFeatured ? 'md:col-span-2' : ''}
                   initial={{ opacity: 0, y: 50 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.3 }}
@@ -161,15 +163,14 @@ const HomePage: React.FC = () => {
                         loop
                         muted
                         playsInline
-                        // Optional: poster as fallback if you still have a cover image
-                        // poster={category.data?.[0]?.image}
-                        className="w-full h-96 object-cover brightness-75 group-hover:brightness-100 transition-all duration-500 group-hover:scale-110"
+                        poster={category.data?.[0]?.image}
+                        className={`w-full ${isFeatured ? 'h-[40rem]' : 'h-96'} object-cover brightness-75 group-hover:brightness-100 transition-all duration-500 group-hover:scale-110`}
                       />
                     ) : (
                       <img
                         src={category.data[0].image}
                         alt={displayTitle}
-                        className="w-full h-96 object-cover brightness-75 group-hover:brightness-100 transition-all duration-500 group-hover:scale-110"
+                        className={`w-full ${isFeatured ? 'h-[40rem]' : 'h-96'} object-cover brightness-75 group-hover:brightness-100 transition-all duration-500 group-hover:scale-110`}
                       />
                     )}
 

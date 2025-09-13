@@ -20,16 +20,19 @@ const BookingModal: React.FC = () => {
     const [phone, setPhone] = useState('');
     const [isConfirmed, setIsConfirmed] = useState(false);
     const [completedBooking, setCompletedBooking] = useState<Booking | null>(null);
+
+    const today = new Date().toISOString().split('T')[0];
     
     useEffect(() => {
         if (user) {
-            setFullName(user.fullName);
-            setEmail(user.email);
-            if(user.phone) setPhone(user.phone);
+            setFullName(user.fullName || '');
+            setEmail(user.email || '');
+        } else {
+            setFullName('');
+            setEmail('');
         }
-    }, [user]);
+    }, [user, isBookingOpen]);
 
-    const today = new Date().toISOString().split('T')[0];
 
     const { totalDays, totalPrice } = useMemo(() => {
         if (pickupDate && returnDate && bookingItem) {
@@ -63,7 +66,7 @@ const BookingModal: React.FC = () => {
             setPickupDate('');
             setReturnDate('');
             setPhone('');
-            // Don't reset name and email if user is logged in
+            // Don't clear name and email if user is logged in
             if (!user) {
                 setFullName('');
                 setEmail('');
@@ -73,11 +76,11 @@ const BookingModal: React.FC = () => {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!bookingItem || totalDays <= 0 || !user) return;
+        if (!bookingItem || totalDays <= 0) return;
 
         const newBooking: Booking = {
             bookingId: crypto.randomUUID(),
-            userId: user.id,
+            userId: user ? user.email : 'guest-user',
             itemId: bookingItem.id,
             itemName: bookingItem.name,
             image: bookingItem.image,
@@ -88,7 +91,6 @@ const BookingModal: React.FC = () => {
             duration: `${totalDays} ${totalDays === 1 ? t('Night') : t('Nights')}`,
             totalPrice,
             currency: currency.toUpperCase() as 'USD' | 'EUR',
-            // FIX: Added 'countryOfResidency'. This and 'age' are not collected in this modal.
             customer: { fullName, email, phone, age: 0, countryOfResidency: '' },
             driverLicenseImage: '', // Not applicable for non-car rentals
             paymentMethod: 'stripe', // Default payment method
@@ -143,11 +145,11 @@ const BookingModal: React.FC = () => {
                                             </div>
                                             <div>
                                                 <label htmlFor="fullName" className="block text-sm font-medium text-gray-300">{t('Full_Name')}</label>
-                                                <input type="text" id="fullName" value={fullName} onChange={e => setFullName(e.target.value)} required disabled={!!user} className="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm text-white focus:ring-white focus:border-white disabled:text-gray-400 disabled:cursor-not-allowed" />
+                                                <input type="text" id="fullName" value={fullName} onChange={e => setFullName(e.target.value)} required className="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm text-white focus:ring-white focus:border-white" />
                                             </div>
                                             <div>
                                                 <label htmlFor="email" className="block text-sm font-medium text-gray-300">{t('Email_Address')}</label>
-                                                <input type="email" id="email" value={email} onChange={e => setEmail(e.target.value)} required disabled={!!user} className="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm text-white focus:ring-white focus:border-white disabled:text-gray-400 disabled:cursor-not-allowed" />
+                                                <input type="email" id="email" value={email} onChange={e => setEmail(e.target.value)} required className="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm text-white focus:ring-white focus:border-white" />
                                             </div>
                                             <div>
                                                 <label htmlFor="phone" className="block text-sm font-medium text-gray-300">{t('Phone_Number')}</label>

@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { MEMBERSHIP_TIERS } from '../constants';
 import { useTranslation } from '../hooks/useTranslation';
 import { useCurrency } from '../contexts/CurrencyContext';
-import { useAuth } from '../hooks/useAuth';
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 import type { MembershipTier } from '../types';
 
 const TierCard: React.FC<{ tier: MembershipTier; billingCycle: 'monthly' | 'annually'; onSelect: () => void; }> = ({ tier, billingCycle, onSelect }) => {
@@ -17,7 +15,7 @@ const TierCard: React.FC<{ tier: MembershipTier; billingCycle: 'monthly' | 'annu
       currency: currency.toUpperCase()
     }).format(price[currency]);
 
-    const cardVariants = {
+    const cardVariants: Variants = {
         hidden: { opacity: 0, y: 50 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
     };
@@ -57,18 +55,13 @@ const TierCard: React.FC<{ tier: MembershipTier; billingCycle: 'monthly' | 'annu
 const MembershipPage: React.FC = () => {
     const { t } = useTranslation();
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('annually');
-    const { isLoggedIn } = useAuth();
-    const navigate = useNavigate();
     
     const handleSelectTier = (tierId: string) => {
-        if (!isLoggedIn) {
-            navigate('/signin', { state: { from: { pathname: `/enroll/${tierId}` } } });
-        } else {
-            navigate(`/enroll/${tierId}`);
-        }
+        // Enrollment flow removed, so this button is now a no-op.
+        console.log(`Plan selection is currently disabled. Tier ID: ${tierId}`);
     };
 
-    const containerVariants = {
+    const containerVariants: Variants = {
         hidden: { opacity: 0 },
         visible: {
             opacity: 1,

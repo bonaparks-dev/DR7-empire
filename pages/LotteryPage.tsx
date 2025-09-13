@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
-import { useAuth } from '../hooks/useAuth';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { LOTTERY_GIVEAWAY } from '../constants';
 import type { Lottery } from '../types';
@@ -32,13 +31,11 @@ const TimerBox: React.FC<{ value: number, label: string }> = ({ value, label }) 
 
 const LotteryPage: React.FC = () => {
     const { t, getTranslated } = useTranslation();
-    const { user } = useAuth();
     const { currency } = useCurrency();
     const giveaway: Lottery = LOTTERY_GIVEAWAY;
 
     const [timeLeft, setTimeLeft] = useState(calculateTimeLeft(giveaway.drawDate));
     const [quantity, setQuantity] = useState(1);
-    const [userTickets, setUserTickets] = useState(0);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
 
@@ -48,14 +45,6 @@ const LotteryPage: React.FC = () => {
         }, 1000);
         return () => clearTimeout(timer);
     });
-
-    // Load user's tickets from localStorage
-    useEffect(() => {
-        if (user) {
-            const allTickets = JSON.parse(localStorage.getItem('dr7-lottery-tickets') || '{}');
-            setUserTickets(allTickets[user.id]?.[giveaway.id] || 0);
-        }
-    }, [user, giveaway.id]);
 
     const handleQuantityChange = (amount: number) => {
         setQuantity(prev => Math.max(1, prev + amount));
@@ -67,25 +56,8 @@ const LotteryPage: React.FC = () => {
     
     const confirmPurchase = () => {
         setShowConfirmModal(false);
-        if (!user) return;
-
-        const allTickets = JSON.parse(localStorage.getItem('dr7-lottery-tickets') || '{}');
-        const userGiveawayTickets = allTickets[user.id]?.[giveaway.id] || 0;
-        
-        const updatedTickets = {
-            ...allTickets,
-            [user.id]: {
-                ...allTickets[user.id],
-                [giveaway.id]: userGiveawayTickets + quantity,
-            },
-        };
-
-        localStorage.setItem('dr7-lottery-tickets', JSON.stringify(updatedTickets));
-        setUserTickets(userGiveawayTickets + quantity);
-        
         setSuccessMessage(t('Purchase_Successful_Message').replace('{count}', String(quantity)));
         setTimeout(() => setSuccessMessage(''), 5000);
-
         setQuantity(1);
     };
     
@@ -120,86 +92,86 @@ const LotteryPage: React.FC = () => {
                     <p className="mt-4 text-lg text-white max-w-2xl mx-auto">{t('Current_Giveaway')}</p>
                 </motion.div>
 
-                <div className="mt-12 max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                <div className="mt-12 max-w-5xl mx-auto rounded-lg overflow-hidden border border-gray-800 shadow-2xl shadow-white/10">
                     <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6, delay: 0.2 }}
-                        className="rounded-lg overflow-hidden border border-gray-800 shadow-2xl shadow-white/10"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.8, delay: 0.2 }}
+                        className="relative grid grid-cols-1 lg:grid-cols-2 items-center"
                     >
-                        <img src={giveaway.image} alt={getTranslated(giveaway.name)} className="w-full h-auto object-cover" />
-                    </motion.div>
-                    
-                    <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6, delay: 0.4 }}
-                        className="bg-gray-900/50 p-8 rounded-lg border border-gray-800"
-                    >
-                        <h2 className="text-3xl font-bold text-white">{getTranslated(giveaway.name)}</h2>
-                        <p className="text-gray-300 mt-2 mb-6">{getTranslated(giveaway.description)}</p>
-
-                        <div className="mb-6">
-                            <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-2">{t('Draw_Ends_In')}</h3>
-                            <div className="grid grid-cols-4 gap-2 text-center">
-                                <TimerBox value={timeLeft.days} label={t('Days')} />
-                                <TimerBox value={timeLeft.hours} label={t('Hours')} />
-                                <TimerBox value={timeLeft.minutes} label={t('Minutes')} />
-                                <TimerBox value={timeLeft.seconds} label={t('Seconds')} />
-                            </div>
+                        <div className="absolute inset-0 z-0">
+                            <video
+                                src="/lottery.mp4"
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                                className="w-full h-full object-cover brightness-75"
+                            />
+                             <div className="absolute inset-0 bg-black/50 lg:hidden"></div>
                         </div>
 
-                        <div className="bg-gray-800/50 p-4 rounded-lg mb-6">
-                             <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-2">{t('Your_Tickets')}</h3>
-                             <p className="text-white text-lg font-semibold">
-                                {userTickets > 0 ? t('You_have_tickets_count').replace('{count}', String(userTickets)) : t('You_currently_have_no_tickets')}
-                             </p>
+                        <div className="relative z-10 p-8 order-2 lg:order-1 lg:bg-gray-900/50 lg:backdrop-blur-sm h-full flex flex-col justify-center">
+                            <h2 className="text-3xl font-bold text-white">{getTranslated(giveaway.name)}</h2>
+                            <p className="text-gray-300 mt-2 mb-6">{getTranslated(giveaway.description)}</p>
+
+                            <div className="mb-6">
+                                <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-2">{t('Draw_Ends_In')}</h3>
+                                <div className="grid grid-cols-4 gap-2 text-center">
+                                    <TimerBox value={timeLeft.days} label={t('Days')} />
+                                    <TimerBox value={timeLeft.hours} label={t('Hours')} />
+                                    <TimerBox value={timeLeft.minutes} label={t('Minutes')} />
+                                    <TimerBox value={timeLeft.seconds} label={t('Seconds')} />
+                                </div>
+                            </div>
                         </div>
                         
-                        <AnimatePresence>
-                        {successMessage && 
-                            <motion.div 
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                className="bg-gray-500/20 text-gray-200 p-3 rounded-md mb-4 text-center text-sm font-medium"
-                            >
-                                {successMessage}
-                            </motion.div>
-                        }
-                        </AnimatePresence>
+                        <div className="relative z-10 p-8 order-1 lg:order-2">
+                             <AnimatePresence>
+                            {successMessage && 
+                                <motion.div 
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    className="bg-gray-500/20 text-gray-200 p-3 rounded-md mb-4 text-center text-sm font-medium"
+                                >
+                                    {successMessage}
+                                </motion.div>
+                            }
+                            </AnimatePresence>
 
 
-                        <div className="border-t border-gray-700 pt-6">
-                             <div className="mb-4">
-                                <div className="flex justify-between items-center">
-                                    <h3 className="text-lg font-semibold text-white">{t('How_many_tickets')}</h3>
-                                    <div className="flex items-center space-x-2 bg-gray-800 border border-gray-700 rounded-full p-1">
-                                        <button type="button" onClick={() => handleQuantityChange(-1)} className="w-8 h-8 text-lg font-bold text-white rounded-full hover:bg-gray-700 transition-colors flex items-center justify-center" aria-label="Decrease ticket quantity">-</button>
-                                        <span className="w-12 text-center text-white text-xl font-bold" aria-live="polite">{quantity}</span>
-                                        <button type="button" onClick={() => handleQuantityChange(1)} className="w-8 h-8 text-lg font-bold text-white rounded-full hover:bg-gray-700 transition-colors flex items-center justify-center" aria-label="Increase ticket quantity">+</button>
+                            <div className="border-t border-gray-700 pt-6">
+                                <div className="mb-4">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-lg font-semibold text-white">{t('How_many_tickets')}</h3>
+                                        <div className="flex items-center space-x-2 bg-gray-800 border border-gray-700 rounded-full p-1">
+                                            <button type="button" onClick={() => handleQuantityChange(-1)} className="w-8 h-8 text-lg font-bold text-white rounded-full hover:bg-gray-700 transition-colors flex items-center justify-center" aria-label="Decrease ticket quantity">-</button>
+                                            <span className="w-12 text-center text-white text-xl font-bold" aria-live="polite">{quantity}</span>
+                                            <button type="button" onClick={() => handleQuantityChange(1)} className="w-8 h-8 text-lg font-bold text-white rounded-full hover:bg-gray-700 transition-colors flex items-center justify-center" aria-label="Increase ticket quantity">+</button>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end space-x-2 mt-2">
+                                        {[5, 10, 25, 50].map(val => (
+                                            <button 
+                                                key={val}
+                                                type="button"
+                                                onClick={() => setQuantity(val)} 
+                                                className={`px-3 py-1 text-xs rounded-full border transition-colors ${quantity === val ? 'bg-white text-black border-white' : 'bg-gray-700/80 border-gray-600 text-gray-300 hover:border-white'}`}
+                                            >
+                                                {val}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
-                                <div className="flex justify-end space-x-2 mt-2">
-                                    {[5, 10, 25, 50].map(val => (
-                                        <button 
-                                            key={val}
-                                            type="button"
-                                            onClick={() => setQuantity(val)} 
-                                            className={`px-3 py-1 text-xs rounded-full border transition-colors ${quantity === val ? 'bg-white text-black border-white' : 'bg-gray-700/80 border-gray-600 text-gray-300 hover:border-white'}`}
-                                        >
-                                            {val}
-                                        </button>
-                                    ))}
+                                <div className="flex justify-between items-center text-xl font-bold mb-6">
+                                    <span className="text-gray-300">{t('Total_Price_Lottery')}</span>
+                                    <span className="text-white">{formatPrice(totalPrice)}</span>
                                 </div>
+                                <button onClick={handleBuyClick} className="w-full py-4 px-6 bg-white text-black rounded-full font-bold uppercase tracking-wider text-sm hover:bg-gray-200 transition-all duration-300 transform hover:scale-105">
+                                    {t('Buy_Tickets')}
+                                </button>
                             </div>
-                            <div className="flex justify-between items-center text-xl font-bold mb-6">
-                                <span className="text-gray-300">{t('Total_Price_Lottery')}</span>
-                                <span className="text-white">{formatPrice(totalPrice)}</span>
-                            </div>
-                            <button onClick={handleBuyClick} className="w-full py-4 px-6 bg-white text-black rounded-full font-bold uppercase tracking-wider text-sm hover:bg-gray-200 transition-all duration-300 transform hover:scale-105">
-                                {t('Buy_Tickets')}
-                            </button>
                         </div>
                     </motion.div>
                 </div>
