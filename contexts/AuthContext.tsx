@@ -1,6 +1,5 @@
+
 import React, { createContext, useState, useEffect, useMemo } from 'react';
-import { supabase } from '../supabaseClient';
-import type { Session, User as SupabaseUser, AuthError } from '@supabase/supabase-js';
 
 // Define a compatible user type for the rest of the app
 interface AppUser {
@@ -11,62 +10,87 @@ interface AppUser {
 
 interface AuthContextType {
   user: AppUser | null;
-  session: Session | null;
   loading: boolean;
-  login: (email, password) => Promise<{ data: { user: SupabaseUser; session: Session; } | { user: null; session: null; }; error: AuthError | null; }>;
-  signup: (email, password, options) => Promise<any>;
-  logout: () => Promise<{ error: AuthError | null }>;
-  signInWithGoogleToken: (token: string) => Promise<any>;
+  login: (email, password) => Promise<{ error: { message: string } | null }>;
+  signup: (email, password, options) => Promise<{ error: { message: string } | null }>;
+  logout: () => void;
+  signInWithGoogleToken: (token: string) => Promise<{ error: { message: string } | null }>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setLoading(false);
-    };
-
-    getSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => {
-      subscription?.unsubscribe();
-    };
+    try {
+      const storedUser = localStorage.getItem('dr7-mock-user');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+    } catch (error) {
+      console.error("Failed to parse user from localStorage", error);
+      localStorage.removeItem('dr7-mock-user');
+    }
+    setLoading(false);
   }, []);
 
-  const user: AppUser | null = useMemo(() => {
-    if (session?.user) {
-      return {
-        id: session.user.id,
-        email: session.user.email || '',
-        fullName: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User'
+  const login = async (email, password) => {
+    // This is a mock login. In a real app, you'd validate the password.
+    // For this project, we'll accept any password for a given email.
+    if (email && password) {
+      const mockUser: AppUser = {
+        id: email, // Use email as ID for simplicity
+        email: email,
+        fullName: email.split('@')[0], // Derive a name from the email
       };
+      localStorage.setItem('dr7-mock-user', JSON.stringify(mockUser));
+      setUser(mockUser);
+      return { error: null };
     }
-    return null;
-  }, [session]);
+    return { error: { message: 'Invalid email or password.' } };
+  };
+
+  const signup = async (email, password, options) => {
+    // Mock signup creates and logs in the user immediately.
+    const fullName = options?.data?.full_name || email.split('@')[0];
+    const mockUser: AppUser = {
+      id: email,
+      email: email,
+      fullName: fullName,
+    };
+    localStorage.setItem('dr7-mock-user', JSON.stringify(mockUser));
+    setUser(mockUser);
+    // In a real app, you might return an error if the user exists, but we'll overwrite it.
+    return { error: null };
+  };
+
+  const logout = () => {
+    localStorage.removeItem('dr7-mock-user');
+    setUser(null);
+  };
+  
+  const signInWithGoogleToken = async (token: string) => {
+    // In a real app, you'd decode/verify the token. Here, we just mock a user.
+    const mockUser = { id: 'google-user@example.com', email: 'google-user@example.com', fullName: 'Google User' };
+    localStorage.setItem('dr7-mock-user', JSON.stringify(mockUser));
+    setUser(mockUser);
+    return { error: null };
+  };
 
   const value = useMemo(() => ({
     user,
-    session,
     loading,
-    login: (email, password) => supabase.auth.signInWithPassword({ email, password }),
-    signup: (email, password, options) => supabase.auth.signUp({ email, password, options }),
-    logout: () => supabase.auth.signOut(),
-    signInWithGoogleToken: (token: string) => supabase.auth.signInWithIdToken({ provider: 'google', token }),
-  }), [user, session, loading]);
+    login,
+    signup,
+    logout,
+    signInWithGoogleToken,
+  }), [user, loading]);
   
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
 };

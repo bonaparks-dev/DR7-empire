@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
@@ -84,7 +85,7 @@ const SignUpPage: React.FC = () => {
 
     try {
       setIsSubmitting(true);
-      const { data, error } = await signup(formData.email, formData.password, {
+      const { error } = await signup(formData.email, formData.password, {
         data: { full_name: formData.fullName }
       });
 
@@ -92,24 +93,18 @@ const SignUpPage: React.FC = () => {
           throw new Error(error.message);
       }
 
-      if (data.session) {
-          fetch('/.netlify/functions/send-welcome-email', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
-                  email: data.user.email,
-                  name: formData.fullName 
-              }),
-          }).catch(err => {
-              console.error("Failed to trigger welcome email:", err);
-          });
-
-          navigate('/');
-      } else if (data.user) {
-          navigate('/check-email', { state: { email: formData.email } });
-      } else {
-          throw new Error("An unexpected error occurred during signup.");
-      }
+      // Since signup now logs the user in, we can proceed with welcome email and navigation
+      fetch('/.netlify/functions/send-welcome-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+              email: formData.email,
+              name: formData.fullName 
+          }),
+      }).catch(err => {
+          console.error("Failed to trigger welcome email:", err);
+      });
+      navigate('/');
 
     } catch (err: any) {
       setGeneralError(err?.message || t('Something_went_wrong'));

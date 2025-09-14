@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
@@ -72,7 +73,7 @@ const AuthPage: React.FC = () => {
     try {
       const { error } = await login(email, password);
       if (error) {
-        throw new Error(error.message || 'Invalid credentials');
+        throw new Error(error.message);
       }
       navigate(from, { replace: true });
     } catch (err: any) {

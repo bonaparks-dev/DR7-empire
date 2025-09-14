@@ -29,7 +29,6 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ScrollToTop from './components/routing/ScrollToTop';
 import PostPage from './pages/PostPage';
 import EnvGuard from './components/system/EnvGuard';
-import CheckEmailPage from './pages/CheckEmailPage';
 import VillaDetailsPage from './pages/VillaDetailsPage';
 import VillaListingsPage from './pages/VillaListingsPage';
 
@@ -67,7 +66,6 @@ const AnimatedRoutes = () => {
         <Route path="/faq" element={<FAQPage />} />
         <Route path="/signin" element={<AuthPage />} />
         <Route path="/signup" element={<SignUpPage />} />
-        <Route path="/check-email" element={<CheckEmailPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/post/:id" element={<PostPage />} />
       </Routes>
