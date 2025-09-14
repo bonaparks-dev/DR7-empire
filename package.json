@@ -2,6 +2,9 @@
   "name": "dr7-empire",
   "version": "1.0.0",
   "description": "An exclusive platform for luxury car rentals, yacht and villa bookings, private jet services, and elite memberships, offering a futuristic and premium user experience.",
+  "scripts": {
+    "build": "echo \"Build script added to satisfy Netlify build process. No frontend build is performed.\""
+  },
   "dependencies": {
     "@netlify/neon": "^0.1.0",
     "bcryptjs": "^2.4.3",
