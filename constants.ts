@@ -15,15 +15,267 @@ import {
   Building2Icon,
   ShieldIcon,
   CrownIcon,
+  StarIcon,
+  PlusIcon,
 } from './components/icons/Icons';
 
 export const GOOGLE_CLIENT_ID = "380173701007-jn8ahgmtb039g5pfjmkvgb33rr75of8f.apps.googleusercontent.com";
 
-const carSpecs = [
-    { label: { en: 'Seats', it: 'Posti' }, value: '2', icon: UsersIcon },
-    { label: { en: 'Transmission', it: 'Cambio' }, value: 'Auto', icon: CogIcon },
-    { label: { en: 'HP', it: 'CV' }, value: '700+', icon: ZapIcon },
+const newCarsRawData = [
+  {
+    "id": 1,
+    "name": "Alfa Romeo Stelvio Quadrifoglio",
+    "dailyPrice": 40,
+    "specs": {
+      "acceleration": "0–100 in 3.8s",
+      "power": "510Cv",
+      "torque": "600Nm",
+      "engine": "2.9L V6 BiTurbo"
+    },
+    "image": "/alpha.png",
+    "available": false
+  },
+  {
+    "id": 2,
+    "name": "Hummer H2",
+    "dailyPrice": 40,
+    "specs": {
+      "acceleration": "0–100 in 7.8s",
+      "maxSpeed": "Max speed: 160km/h",
+      "power": "398Cv",
+      "torque": "574Nm",
+      "engine": "6.2L V8"
+    },
+    "image": "/hummer.png"
+  },
+  {
+    "id": 3,
+    "name": "Audi RS3",
+    "dailyPrice": 60,
+    "specs": {
+      "acceleration": "0–100 in 3.8s",
+      "maxSpeed": "Max speed: 250km/h",
+      "power": "400Cv",
+      "torque": "500Nm",
+      "engine": "2.5L inline 5-cylinder"
+    },
+    "image": "/audi-rs3.png",
+    "color": "Verde"
+  },
+  {
+    "id": 4,
+    "name": "Audi RS3",
+    "dailyPrice": 60,
+    "specs": {
+      "acceleration": "0–100 in 3.8s",
+      "power": "400Cv",
+      "torque": "500Nm",
+      "engine": "2.5L inline 5-cylinder"
+    },
+    "image": "/Rs3-red.png",
+    "color": "Rossa"
+  },
+  {
+    "id": 5,
+    "name": "Mercedes A45 S AMG",
+    "dailyPrice": 60,
+    "specs": {
+      "acceleration": "0–100 in 3.9s",
+      "power": "421Cv",
+      "torque": "500Nm",
+      "engine": "2.0L 4-cylinder Turbo"
+    },
+    "image": "/mercedes-amg45.png"
+  },
+  {
+    "id": 6,
+    "name": "BMW M2",
+    "dailyPrice": 80,
+    "specs": {
+      "acceleration": "0–100 in 4.1s",
+      "power": "460Cv",
+      "torque": "550Nm",
+      "engine": "3.0L inline 6-cylinder"
+    },
+    "image": "/bmw-m2.png",
+    "available": false
+  },
+  {
+    "id": 7,
+    "name": "BMW M3 Competition",
+    "dailyPrice": 80,
+    "specs": {
+      "acceleration": "0–100 in 3.9s",
+      "maxSpeed": "Max speed: 250km/h",
+      "power": "510Cv",
+      "torque": "650Nm",
+      "engine": "3.0L inline 6-cylinder"
+    },
+    "image": "/bmw-m3.png"
+  },
+  {
+    "id": 8,
+    "name": "Mercedes GLE 53 AMG",
+    "dailyPrice": 80,
+    "specs": {
+      "acceleration": "0–100 in 4.7s",
+      "maxSpeed": "Max speed: 250km/h",
+      "power": "435Cv",
+      "torque": "520Nm",
+      "engine": "3.0L inline 6-cylinder"
+    },
+    "image": "/mercedesGLE.png"
+  },
+  {
+    "id": 9,
+    "name": "BMW M4 Competition",
+    "dailyPrice": 100,
+    "specs": {
+      "acceleration": "0–100 in 3.8s",
+      "power": "510Cv",
+      "torque": "650Nm",
+      "engine": "3.0L inline 6-cylinder"
+    },
+    "image": "/bmw-m4.png"
+  },
+  {
+    "id": 10,
+    "name": "Porsche 992 Carrera 4S",
+    "dailyPrice": 120,
+    "specs": {
+      "acceleration": "0–100 in 3.6s",
+      "maxSpeed": "Max speed: 306km/h",
+      "power": "450Cv",
+      "torque": "530Nm",
+      "engine": "3.0L Twin-Turbo Flat-6"
+    },
+    "image": "/porsche-911.png"
+  },
+  {
+    "id": 11,
+    "name": "Mercedes C63 S AMG",
+    "dailyPrice": 120,
+    "specs": {
+      "acceleration": "0–100 in 3.9s",
+      "power": "510Cv",
+      "torque": "700Nm",
+      "engine": "4.0L V8 BiTurbo"
+    },
+    "image": "/c63.png"
+  },
+  {
+    "id": 12,
+    "name": "Porsche Macan GTS",
+    "dailyPrice": 120,
+    "specs": {
+      "acceleration": "0–100 in 4.5s",
+      "power": "440Cv",
+      "torque": "550Nm",
+      "engine": "2.9L Twin-Turbo V6"
+    },
+    "image": "/macan.png"
+  },
+  {
+    "id": 13,
+    "name": "Mercedes GLE 63 AMG",
+    "dailyPrice": 120,
+    "specs": {
+      "acceleration": "0–100 in 3.8s",
+      "power": "612Cv",
+      "torque": "850Nm",
+      "engine": "4.0L V8 BiTurbo"
+    },
+    "image": "/mercedes-gle.png"
+  },
+  {
+    "id": 14,
+    "name": "Ferrari Portofino M",
+    "dailyPrice": 500,
+    "specs": {
+      "acceleration": "0–100 in 3.45s",
+      "maxSpeed": "Max speed: 320km/h",
+      "power": "620Cv",
+      "torque": "760Nm",
+      "engine": "3.9L Twin-Turbo V8"
+    },
+    "image": "/ferrari-portofino.png"
+  },
+  {
+    "id": 15,
+    "name": "Lamborghini Urus Performante",
+    "dailyPrice": 500,
+    "specs": {
+      "acceleration": "0–100 in 3.3s",
+      "maxSpeed": "Max speed: 306km/h",
+      "power": "666Cv",
+      "torque": "850Nm",
+      "engine": "4.0L Twin-Turbo V8"
+    },
+    "image": "/urus.png"
+  },
+  {
+    "id": 16,
+    "name": "Fiat Ducato",
+    "dailyPrice": 100,
+    "specs": {
+      "engine": "2.3L MultiJet Turbo Diesel",
+      "power": "140Cv",
+      "special": "Includes 100km pack",
+      "extras": "Unlimited option: +50€"
+    },
+    "image": "/Ducato.png",
+    "available": true
+  }
 ];
+
+const specMappings: Record<string, { label: { en: string; it: string }; icon: React.FC<{ className?: string }>; transform?: (val: string) => string }> = {
+    acceleration: { label: { en: '0-100km/h', it: '0-100km/h' }, icon: ZapIcon, transform: (val: string) => val.split(' in ')[1] || val },
+    power: { label: { en: 'Power', it: 'Potenza' }, icon: ZapIcon },
+    torque: { label: { en: 'Torque', it: 'Coppia' }, icon: CogIcon },
+    engine: { label: { en: 'Engine', it: 'Motore' }, icon: CogIcon },
+    maxSpeed: { label: { en: 'Max Speed', it: 'Velocità Max' }, icon: ZapIcon, transform: (val: string) => val.split(': ')[1] || val },
+    special: { label: { en: 'Special', it: 'Speciale' }, icon: StarIcon },
+    extras: { label: { en: 'Extras', it: 'Extra' }, icon: PlusIcon },
+    color: { label: { en: 'Color', it: 'Colore' }, icon: CarIcon }
+};
+
+const EUR_TO_USD_RATE = 1.1;
+
+const mappedCars = newCarsRawData.map(car => {
+    const specs: any[] = [];
+    if (car.specs) {
+        for (const [key, value] of Object.entries(car.specs)) {
+            const mapping = specMappings[key as keyof typeof specMappings];
+            if (mapping) {
+                specs.push({
+                    label: mapping.label,
+                    value: 'transform' in mapping && mapping.transform ? mapping.transform(value as string) : value,
+                    icon: mapping.icon
+                });
+            }
+        }
+    }
+    if ('color' in car && car.color) {
+        specs.push({
+            label: specMappings.color.label,
+            value: car.color,
+            icon: specMappings.color.icon
+        });
+    }
+
+    return {
+        id: `car-${car.id}`,
+        name: car.name,
+        image: car.image,
+        pricePerDay: {
+            usd: Math.round(car.dailyPrice * EUR_TO_USD_RATE),
+            eur: car.dailyPrice,
+            crypto: 0
+        },
+        specs: specs
+    };
+});
+
 
 const yachtSpecs = [
     { label: { en: 'Guests', it: 'Ospiti' }, value: '12', icon: UsersIcon },
@@ -321,11 +573,7 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
   {
     id: 'cars',
     label: { en: 'Cars', it: 'Auto' },
-    data: [
-      { id: 'car-1', name: 'Lamborghini Revuelto', image: '/cars/revuelto.jpeg', pricePerDay: { usd: 3500, eur: 3200, crypto: 0 }, specs: carSpecs },
-      { id: 'car-2', name: 'Ferrari 296 GTB', image: '/cars/296gtb.jpeg', pricePerDay: { usd: 3200, eur: 2900, crypto: 0 }, specs: carSpecs },
-      { id: 'car-3', name: 'Rolls Royce Cullinan', image: '/cars/cullinan.jpeg', pricePerDay: { usd: 2800, eur: 2500, crypto: 0 }, specs: [{ label: { en: 'Seats', it: 'Posti' }, value: '4', icon: UsersIcon }, carSpecs[1], carSpecs[2]] },
-    ],
+    data: mappedCars,
   },
   {
     id: 'yachts',
