@@ -1,67 +1,125 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'; import { User, Session } from '@supabase/supabase-js'; import { supabase } from '@/integrations/supabase/client';
 
-interface AuthContextType { user: User | null; session: Session | null; signUp: (email: string, password: string, firstName?: string, lastName?: string, phone?: string) => Promise<{ error: any }>; signIn: (email: string, password: string) => Promise<{ error: any }>; signInWithGoogle: () => Promise<{ error: any }>; signOut: () => Promise
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import React, { createContext, useState, useEffect, useMemo } from 'react';
+import type { User } from '../types';
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => { const [user, setUser] = useState<User | null>(null); const [session, setSession] = useState<Session | null>(null); const [loading, setLoading] = useState(true);
+// Define a compatible user type for the rest of the app
+interface AppUser extends User {}
 
-useEffect(() => { // Set up auth state listener FIRST const { data: { subscription } } = supabase.auth.onAuthStateChange( (event, session) => { setSession(session); setUser(session?.user ?? null); setLoading(false); } );
-
-// THEN check for existing session
-supabase.auth.getSession().then(({ data: { session } }) => {
-  setSession(session);
-  setUser(session?.user ?? null);
-  setLoading(false);
-});
-
-return () => subscription.unsubscribe();
-}, []);
-
-const signUp = async (email: string, password: string, firstName?: string, lastName?: string, phone?: string) => { const redirectUrl = ${window.location.origin}/;
-
-const { error } = await supabase.auth.signUp({
-  email,
-  password,
-  options: {
-    emailRedirectTo: redirectUrl,
-    data: {
-      first_name: firstName,
-      last_name: lastName,
-      phone: phone
-    }
-  }
-});
-
-// Send welcome email if signup was successful
-if (!error && firstName && lastName) {
-  try {
-    await supabase.functions.invoke('send-welcome-email', {
-      body: {
-        email,
-        firstName,
-        lastName,
-        language: 'it' // Default to Italian for DR7 Empire
-      }
-    });
-    console.log('Welcome email sent successfully');
-  } catch (emailError) {
-    console.error('Failed to send welcome email:', emailError);
-    // Don't fail the signup if email fails
-  }
+interface AuthContextType {
+  user: AppUser | null;
+  loading: boolean;
+  login: (email, password) => Promise<{ error: { message: string } | null }>;
+  signup: (email, password, options) => Promise<{ error: { message: string } | null }>;
+  logout: () => void;
+  signInWithGoogleToken: (token: string) => Promise<{ error: { message: string } | null }>;
+  updateUser: (updates: Partial<AppUser>) => Promise<{ data: AppUser | null; error: { message: string } | null }>;
 }
 
-return { error };
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const createMockUser = (email: string, fullName?: string): AppUser => {
+    const name = fullName || email.split('@')[0].replace(/[^a-zA-Z]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return {
+      id: email,
+      email: email,
+      fullName: name,
+      phone: '+39 123 456 7890',
+      verification: {
+        idStatus: 'unverified',
+        cardStatus: 'none',
+        phoneStatus: 'none',
+      },
+      notifications: {
+        bookingConfirmations: true,
+        specialOffers: true,
+        newsletter: false,
+      },
+      paymentMethods: [
+        { id: 'pm_1', type: 'card', brand: 'Visa', last4: '4242', isDefault: true },
+        { id: 'pm_2', type: 'card', brand: 'Mastercard', last4: '5555', isDefault: false },
+      ]
+    };
 };
 
-const signIn = async (email: string, password: string) => { const { error } = await supabase.auth.signInWithPassword({ email, password }); return { error }; };
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<AppUser | null>(null);
+  const [loading, setLoading] = useState(true);
 
-const signInWithGoogle = async () => { const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin, queryParams: { access_type: 'offline', prompt: 'consent', }, } }); return { error }; };
+  useEffect(() => {
+    try {
+      const storedUser = localStorage.getItem('dr7-mock-user');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+    } catch (error) {
+      console.error("Failed to parse user from localStorage", error);
+      localStorage.removeItem('dr7-mock-user');
+    }
+    setLoading(false);
+  }, []);
 
-const signOut = async () => { await supabase.auth.signOut(); };
+  const login = async (email, password) => {
+    if (email && password) {
+      const storedUser = localStorage.getItem('dr7-mock-user');
+      const mockUser = storedUser ? JSON.parse(storedUser) : createMockUser(email);
+      if (mockUser.email !== email) { // Simple check for a different stored user
+          const newUser = createMockUser(email);
+          localStorage.setItem('dr7-mock-user', JSON.stringify(newUser));
+          setUser(newUser);
+      } else {
+        localStorage.setItem('dr7-mock-user', JSON.stringify(mockUser));
+        setUser(mockUser);
+      }
+      return { error: null };
+    }
+    return { error: { message: 'Invalid email or password.' } };
+  };
 
-const value = { user, session, signUp, signIn, signInWithGoogle, signOut, loading };
+  const signup = async (email, password, options) => {
+    const fullName = options?.data?.full_name || email.split('@')[0];
+    const mockUser = createMockUser(email, fullName);
+    localStorage.setItem('dr7-mock-user', JSON.stringify(mockUser));
+    setUser(mockUser);
+    return { error: null };
+  };
 
-return ( <AuthContext.Provider value={value}> {children} </AuthContext.Provider> ); };
+  const logout = () => {
+    localStorage.removeItem('dr7-mock-user');
+    setUser(null);
+  };
+  
+  const signInWithGoogleToken = async (token: string) => {
+    const mockUser = createMockUser('google-user@example.com', 'Google User');
+    localStorage.setItem('dr7-mock-user', JSON.stringify(mockUser));
+    setUser(mockUser);
+    return { error: null };
+  };
 
-export const useAuth = () => { const context = useContext(AuthContext); if (context === undefined) { throw new Error('useAuth must be used within an AuthProvider'); } return context; };
+  const updateUser = async (updates: Partial<AppUser>) => {
+    if (user) {
+        const updatedUser = { ...user, ...updates, verification: { ...user.verification, ...updates.verification }, notifications: { ...user.notifications, ...updates.notifications } };
+        setUser(updatedUser);
+        localStorage.setItem('dr7-mock-user', JSON.stringify(updatedUser));
+        return { data: updatedUser, error: null };
+    }
+    return { data: null, error: { message: 'User not found' } };
+  };
+
+  const value = useMemo(() => ({
+    user,
+    loading,
+    login,
+    signup,
+    logout,
+    signInWithGoogleToken,
+    updateUser,
+  }), [user, loading]);
+  
+  return (
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    {/* FIX: Corrected typo in closing tag from Auth-Context to AuthContext */}
+    </AuthContext.Provider>
+  );
+};

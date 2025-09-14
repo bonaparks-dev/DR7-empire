@@ -83,6 +83,13 @@ const UserMenu: React.FC = () => {
                         className="absolute right-0 mt-2 w-48 bg-gray-900 border border-gray-700 rounded-md shadow-lg z-50"
                     >
                         <div className="py-1">
+                             <Link
+                                to="/account"
+                                onClick={() => setIsOpen(false)}
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+                            >
+                                {t('My_Account')}
+                            </Link>
                             <button
                                 onClick={() => {
                                     logout();
@@ -155,6 +162,9 @@ const MobileMenu: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ isOpe
                          {user ? (
                             <div className="text-center">
                                 <p className="text-lg text-white mb-4">{t('Welcome')}, {user.fullName}</p>
+                                <Link to="/account" onClick={onClose} className="block w-full bg-gray-700 text-white py-3 rounded-full font-bold text-sm mb-3">
+                                    {t('My_Account')}
+                                </Link>
                                 <button
                                     onClick={handleLogout}
                                     className="w-full bg-white text-black py-3 rounded-full font-bold text-sm"

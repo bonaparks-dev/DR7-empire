@@ -15,6 +15,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook }) => {
   const { currency } = useCurrency();
 
   const isVilla = item.id.startsWith('villa');
+  const isQuoteRequest = item.id.startsWith('jet') || item.id.startsWith('heli');
   
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', {
@@ -50,14 +51,16 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook }) => {
         </div>
         <div className="flex justify-between items-center mt-auto pt-4 border-t border-gray-800">
           <div>
-            {item.pricePerDay && (
+            {item.pricePerDay ? (
               <>
                 <span className="text-xl font-bold text-white">{formatPrice(item.pricePerDay[currency])}</span>
                 <span className="text-sm text-gray-400 ml-1">/{t('per_day')}</span>
               </>
+            ) : (
+                 <span className="text-lg font-semibold text-white">{t('Quote_by_request')}</span>
             )}
           </div>
-          {isVilla ? (
+           {isVilla ? (
             <Link 
               to={`/villas/${item.id}`}
               className="bg-transparent border-2 border-white text-white px-6 py-2 rounded-full font-semibold text-sm transform transition-all duration-300 group-hover:bg-white group-hover:text-black group-hover:scale-105"
@@ -69,7 +72,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook }) => {
               onClick={() => onBook(item)}
               className="bg-transparent border-2 border-white text-white px-6 py-2 rounded-full font-semibold text-sm transform transition-all duration-300 group-hover:bg-white group-hover:text-black group-hover:scale-105"
             >
-              {t('Book_Now')}
+              {isQuoteRequest ? t('Request_Quote') : t('Book_Now')}
             </button>
           )}
         </div>

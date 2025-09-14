@@ -1,3 +1,4 @@
+import type { Stripe, StripeElements } from '@stripe/stripe-js';
 
 export type Language = 'en' | 'it';
 export type Currency = 'usd' | 'eur';
@@ -40,6 +41,10 @@ export interface RentalItem {
   description?: { en: string; it: string };
   amenities?: Amenity[];
   features?: { en: string[]; it: string[] };
+
+  // New optional fields for jets
+  petsAllowed?: boolean;
+  smokingAllowed?: boolean;
 }
 
 export interface RentalCategory {
@@ -55,7 +60,10 @@ export interface MembershipTier {
     monthly: { usd: number; eur: number; crypto: number };
     annually: { usd: number; eur: number; crypto: number };
   };
-  features: { en: string[]; it: string[] };
+  features: { 
+    en: (string | { icon: React.FC<{className?: string}>; text: string })[]; 
+    it: (string | { icon: React.FC<{className?: string}>; text: string })[]; 
+  };
   isPopular?: boolean;
 }
 
@@ -70,16 +78,28 @@ export interface User {
     billingCycle: 'monthly' | 'annually';
     renewalDate: string;
   };
-  verification?: {
-    idStatus: 'none' | 'pending' | 'verified';
-    idFrontImage?: string;
-    idBackImage?: string;
+  verification: {
+    idStatus: 'unverified' | 'pending' | 'verified';
+    idFrontImage?: string; // base64 string
+    idBackImage?: string; // base64 string
     cardStatus: 'none' | 'verified';
     cardLast4?: string;
     cardExpiry?: string;
     cardholderName?: string;
     phoneStatus: 'none' | 'verified';
   };
+  notifications: {
+    bookingConfirmations: boolean;
+    specialOffers: boolean;
+    newsletter: boolean;
+  };
+  paymentMethods: {
+    id: string;
+    type: 'card';
+    brand: string;
+    last4: string;
+    isDefault: boolean;
+  }[];
 }
 
 export interface Booking {
@@ -110,14 +130,50 @@ export interface Booking {
   extras?: string[]; // e.g., ['gps', 'child_seat']
 }
 
+export interface Inquiry {
+  inquiryId: string;
+  userId: string;
+  itemId: string;
+  itemName: string;
+  image: string;
+  itemCategory: 'jets' | 'helicopters';
+  customer: {
+    fullName: string;
+    email: string;
+    phone: string;
+  };
+  details: {
+    tripType: 'one-way' | 'round-trip';
+    departurePoint: string;
+    arrivalPoint: string;
+    departureDate: string;
+    departureTime: string;
+    returnDate?: string;
+    returnTime?: string;
+    passengers: number;
+    petsAllowed: boolean;
+    smokingAllowed: boolean;
+  };
+  inquiredAt: string;
+}
+
+export interface Prize {
+  tier: { en: string; it: string };
+  name: { en: string; it: string };
+  icon: React.FC<{ className?: string }>;
+  quantity?: number;
+}
+
 export interface Lottery {
   id: string;
   name: { en: string; it: string };
-  description: { en: string; it: string };
+  subtitle: { en: string; it: string };
   image: string;
   ticketPriceUSD: number;
   ticketPriceEUR: number;
   drawDate: string; // ISO string
+  prizes: Prize[];
+  bonus: { en: string; it: string };
 }
 
 export interface Villa {
@@ -135,4 +191,9 @@ export interface Villa {
   size?: string;
   amenities?: Amenity[];
   features?: { en: string[]; it: string[] };
+}
+
+export interface StripeContextType {
+  stripe: Stripe | null;
+  elements: StripeElements | null;
 }

@@ -1,9 +1,11 @@
-import React, { useState, useMemo } from 'react';
+
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { GoogleIcon, WalletIcon, EyeIcon, EyeSlashIcon } from '../components/icons/Icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { GOOGLE_CLIENT_ID } from '../constants';
 
 const strengthLevels = [
   { labelKey: 'Password_Strength_Weak', color: 'bg-red-500', textColor: 'text-red-400' },
@@ -24,7 +26,7 @@ const calculatePasswordStrength = (password: string) => {
 
 const SignUpPage: React.FC = () => {
   const { t } = useTranslation();
-  const { signUp, signInWithGoogle } = useAuth();
+  const { signup, signInWithGoogleToken } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     fullName: '',
@@ -38,6 +40,8 @@ const SignUpPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
 
   const passwordStrength = useMemo(() => calculatePasswordStrength(formData.password), [formData.password]);
   const strengthInfo = formData.password ? strengthLevels[passwordStrength] : null;
@@ -76,24 +80,31 @@ const SignUpPage: React.FC = () => {
     e.preventDefault();
     setGeneralError('');
     const validationErrors = validate();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
 
-    setIsSubmitting(true);
     try {
-      const nameParts = formData.fullName.trim().split(' ');
-      const firstName = nameParts[0];
-      const lastName = nameParts.slice(1).join(' ');
-
-      const { error } = await signUp(formData.email, formData.password, firstName, lastName);
+      setIsSubmitting(true);
+      const { error } = await signup(formData.email, formData.password, {
+        data: { full_name: formData.fullName }
+      });
 
       if (error) {
-        throw new Error(error.message);
+          throw new Error(error.message);
       }
 
-      navigate('/signup-success');
+      // Since signup now logs the user in, we can proceed with welcome email and navigation
+      fetch('/.netlify/functions/send-welcome-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+              email: formData.email,
+              name: formData.fullName 
+          }),
+      }).catch(err => {
+          console.error("Failed to trigger welcome email:", err);
+      });
+      navigate('/');
 
     } catch (err: any) {
       setGeneralError(err?.message || t('Something_went_wrong'));
@@ -101,14 +112,44 @@ const SignUpPage: React.FC = () => {
       setIsSubmitting(false);
     }
   };
-  
-  const handleGoogleSignIn = async () => {
+
+  const handleGoogleCallback = async (response: any) => {
     setGeneralError('');
-    const { error } = await signInWithGoogle();
-    if (error) {
-      setGeneralError(error.message || t('Something_went_wrong'));
+    setIsGoogleLoading(true);
+    try {
+      const { error } = await signInWithGoogleToken(response.credential);
+      if (error) {
+        throw new Error(error.message);
+      }
+      navigate('/');
+    } catch (err: any) {
+      setGeneralError(err?.message || t('Something_went_wrong'));
+    } finally {
+      setIsGoogleLoading(false);
     }
-  }
+  };
+
+  useEffect(() => {
+    const initGsi = () => {
+      if ((window as any).google?.accounts?.id && googleButtonRef.current) {
+        (window as any).google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleGoogleCallback,
+        });
+        (window as any).google.accounts.id.renderButton(
+          googleButtonRef.current,
+          { theme: 'outline', size: 'large', type: 'standard', text: 'signup_with', shape: 'pill' }
+        );
+      }
+    };
+
+    if ((window as any).google?.accounts?.id) {
+      initGsi();
+    } else {
+      const timeoutId = setTimeout(initGsi, 500);
+      return () => clearTimeout(timeoutId);
+    }
+  }, []);
 
   const getInputClassName = (field: string) =>
     `appearance-none rounded-md relative block w-full px-3 py-3 border bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-white focus:border-white focus:z-10 sm:text-sm ${
@@ -133,14 +174,16 @@ const SignUpPage: React.FC = () => {
             {generalError && <p className="text-sm text-red-400 bg-red-900/20 border border-red-800 rounded p-2">{generalError}</p>}
 
             <div className="space-y-4">
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                className="w-full flex items-center justify-center py-3 px-4 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors"
-              >
-                <GoogleIcon className="w-5 h-5 mr-2" />
-                {t('Sign_up_with_Google')}
-              </button>
+              <div className="flex justify-center" ref={googleButtonRef}>
+                <button
+                  type="button"
+                  disabled={true}
+                  className="w-full flex items-center justify-center py-3 px-4 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-sm font-medium text-white opacity-60"
+                >
+                  <GoogleIcon className="w-5 h-5 mr-2" />
+                  {t('Sign_up_with_Google')}
+                </button>
+              </div>
 
               <button
                 type="button"

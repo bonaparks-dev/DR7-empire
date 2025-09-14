@@ -1,7 +1,5 @@
 {
   "name": "DR7 Empire",
   "description": "An exclusive platform for luxury car rentals, yacht and villa bookings, private jet services, and elite memberships, offering a futuristic and premium user experience.",
-  "requestFramePermissions": [
-    "camera"
-  ]
+  "requestFramePermissions": []
 }

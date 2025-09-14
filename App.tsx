@@ -31,6 +31,16 @@ import PostPage from './pages/PostPage';
 import EnvGuard from './components/system/EnvGuard';
 import VillaDetailsPage from './pages/VillaDetailsPage';
 import VillaListingsPage from './pages/VillaListingsPage';
+import JetSearchResultsPage from './pages/JetSearchResultsPage';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import AccountPage from './pages/AccountPage';
+import ProfileSettings from './pages/account/ProfileSettings';
+import SecuritySettings from './pages/account/SecuritySettings';
+import DocumentsVerification from './pages/account/DocumentsVerification';
+import MembershipStatus from './pages/account/MembershipStatus';
+import NotificationSettings from './pages/account/NotificationSettings';
+import PaymentMethods from './pages/account/PaymentMethods';
+import MembershipEnrollmentPage from './pages/MembershipEnrollmentPage';
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -40,6 +50,7 @@ const AnimatedRoutes = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/villas" element={<VillaListingsPage />} />
         <Route path="/villas/:villaId" element={<VillaDetailsPage />} />
+        <Route path="/jets/search" element={<JetSearchResultsPage />} />
         {RENTAL_CATEGORIES.filter(c => c.id !== 'villas').map(category => (
             <Route 
                 key={category.id} 
@@ -52,10 +63,28 @@ const AnimatedRoutes = () => {
             element={<BookingPage />}
         />
         <Route path="/membership" element={<MembershipPage />} />
+        <Route path="/membership/enroll/:tierId" element={
+          <ProtectedRoute>
+            <MembershipEnrollmentPage />
+          </ProtectedRoute>
+        } />
         <Route 
             path="/lottery"
             element={<LotteryPage />}
         />
+        <Route path="/account" element={
+          <ProtectedRoute>
+            <AccountPage />
+          </ProtectedRoute>
+        }>
+          <Route index element={<ProfileSettings />} />
+          <Route path="profile" element={<ProfileSettings />} />
+          <Route path="security" element={<SecuritySettings />} />
+          <Route path="documents" element={<DocumentsVerification />} />
+          <Route path="membership" element={<MembershipStatus />} />
+          <Route path="notifications" element={<NotificationSettings />} />
+          <Route path="payment-methods" element={<PaymentMethods />} />
+        </Route>
         <Route path="/about" element={<AboutPage />} />
         <Route path="/terms" element={<TermsOfServicePage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />

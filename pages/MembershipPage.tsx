@@ -4,9 +4,11 @@ import { useTranslation } from '../hooks/useTranslation';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { motion, Variants } from 'framer-motion';
 import type { MembershipTier } from '../types';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
 const TierCard: React.FC<{ tier: MembershipTier; billingCycle: 'monthly' | 'annually'; onSelect: () => void; }> = ({ tier, billingCycle, onSelect }) => {
-    const { t, getTranslated, lang } = useTranslation();
+    const { t, lang } = useTranslation();
     const { currency } = useCurrency();
     
     const price = tier.price[billingCycle];
@@ -28,7 +30,7 @@ const TierCard: React.FC<{ tier: MembershipTier; billingCycle: 'monthly' | 'annu
             {tier.isPopular && (
                 <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-white text-black px-4 py-1 rounded-full text-sm font-semibold">{t('Most_Popular')}</div>
             )}
-            <h3 className="text-2xl font-bold text-white text-center">{getTranslated(tier.name)}</h3>
+            <h3 className="text-2xl font-bold text-white text-center">{tier.name[lang]}</h3>
             <div className="my-6 text-center">
                 <span className="text-5xl font-extrabold text-white">{formattedPrice}</span>
                 <span className="text-gray-400">/{t(billingCycle === 'monthly' ? 'Monthly' : 'Annually')}</span>
@@ -36,8 +38,17 @@ const TierCard: React.FC<{ tier: MembershipTier; billingCycle: 'monthly' | 'annu
             <ul className="space-y-4 text-gray-300 mb-8 flex-grow">
                 {tier.features[lang].map((feature, index) => (
                     <li key={index} className="flex items-start">
-                        <svg className="w-5 h-5 text-white mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                        <span>{feature}</span>
+                        {typeof feature === 'string' ? (
+                            <>
+                                <svg className="w-5 h-5 text-white mr-2 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                                <span>{feature}</span>
+                            </>
+                        ) : (
+                            <>
+                                <feature.icon className="w-5 h-5 text-white mr-2 flex-shrink-0 mt-1" />
+                                <span>{feature.text}</span>
+                            </>
+                        )}
                     </li>
                 ))}
             </ul>
@@ -54,11 +65,16 @@ const TierCard: React.FC<{ tier: MembershipTier; billingCycle: 'monthly' | 'annu
 
 const MembershipPage: React.FC = () => {
     const { t } = useTranslation();
+    const navigate = useNavigate();
+    const { user } = useAuth();
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('annually');
     
     const handleSelectTier = (tierId: string) => {
-        // Enrollment flow removed, so this button is now a no-op.
-        console.log(`Plan selection is currently disabled. Tier ID: ${tierId}`);
+        if (user) {
+            navigate(`/membership/enroll/${tierId}?billing=${billingCycle}`);
+        } else {
+            navigate('/signin', { state: { from: { pathname: `/membership/enroll/${tierId}`, search: `?billing=${billingCycle}` } } });
+        }
     };
 
     const containerVariants: Variants = {

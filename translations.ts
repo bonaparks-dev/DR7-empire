@@ -1,4 +1,3 @@
-
 import type { Translations } from './types';
 
 export const translations: Translations = {
@@ -11,6 +10,7 @@ export const translations: Translations = {
   Helicopters: { en: "Helicopters", it: "Elicotteri" },
   Lottery: { en: "Lottery", it: "Lotteria" },
   Membership: { en: "Membership", it: "Club" },
+  My_Account: { en: "My Account", it: "Il Mio Account" },
 
   // Home Page
   Welcome_to_DR7_Empire: { en: "Welcome to DR7 Empire", it: "Benvenuti nell'Impero DR7" },
@@ -31,6 +31,7 @@ export const translations: Translations = {
   // Rental Page
   Our_Collection_of: { en: "Our Collection of", it: "La Nostra Collezione di" },
   Book_Now: { en: "Book Now", it: "Prenota Ora" },
+  Request_Quote: { en: "Request Quote", it: "Richiedi Preventivo" },
   Discover_More: { en: "Discover More", it: "Scopri di più" },
   per_day: { en: "per day", it: "al giorno" },
   // Villa Listings Page
@@ -99,6 +100,7 @@ export const translations: Translations = {
   Please_provide_a_clear_photo_of_your_drivers_license: { en: "Please provide a clear photo of the front of your driver's license.", it: "Fornisci una foto chiara della parte anteriore della tua patente di guida." },
   Upload_File: { en: "Upload File", it: "Carica File" },
   Use_Camera: { en: "Use Camera", it: "Usa Fotocamera" },
+  Take_Photo: { en: "Take Photo", it: "Scatta Foto" },
   Retake: { en: "Retake", it: "Scatta di Nuovo" },
   Change_Photo: { en: "Change Photo", it: "Cambia Foto" },
   Credit_Card: { en: "Credit Card", it: "Carta di Credito" },
@@ -108,6 +110,7 @@ export const translations: Translations = {
   CVC: { en: "CVC", it: "CVC" },
   Pay_with_Crypto: { en: "Pay with Crypto", it: "Paga con Cripto" },
   Scan_or_copy_address_below: { en: "Scan QR code or copy address below.", it: "Scansiona il codice QR o copia l'indirizzo sottostante." },
+  Select_your_crypto: { en: "Select your cryptocurrency", it: "Seleziona la tua criptovaluta" },
   I_have_sent_the_payment: { en: "I have sent the payment", it: "Ho inviato il pagamento" },
   Processing: { en: "Processing...", it: "In Elaborazione..." },
   Back: { en: "Back", it: "Indietro" },
@@ -116,6 +119,7 @@ export const translations: Translations = {
   We_will_confirm_your_booking_shortly: { en: "We will confirm your booking shortly after verifying your payment and license.", it: "Confermeremo la tua prenotazione a breve dopo aver verificato il pagamento e la patente." },
   Book_Your: { en: "Book Your", it: "Prenota il Tuo" },
   Booking_Summary: { en: "Booking Summary", it: "Riepilogo Prenotazione" },
+  Inquiry_Summary: { en: "Inquiry Summary", it: "Riepilogo Richiesta" },
   Pickup_Location: { en: "Pickup Location", it: "Luogo di Ritiro" },
   Insurance_Options: { en: "Insurance Options", it: "Opzioni Assicurative" },
   Insurance_Auto_Select_Notice: { en: "Your insurance plan is automatically selected based on the driver's age and license details provided in the next step.", it: "Il tuo piano assicurativo viene selezionato automaticamente in base all'età del conducente e ai dati della patente forniti nel passaggio successivo." },
@@ -143,7 +147,44 @@ export const translations: Translations = {
   Check_out_Date: { en: "Check-out Date", it: "Data di Check-out" },
   Number_of_Guests: { en: "Number of Guests", it: "Numero di Ospiti" },
   Booking_Cost: { en: "Booking Cost", it: "Costo Prenotazione" },
-  
+  Itinerary: { en: 'Itinerary', it: 'Itinerario' },
+  Trip_Type: { en: 'Trip Type', it: 'Tipo di Viaggio' },
+  One_Way: { en: 'One-Way', it: 'Solo Andata' },
+  Round_Trip: { en: 'Round Trip', it: 'Andata e Ritorno' },
+  Departure_Airport: { en: 'Departure Airport', it: 'Aeroporto di Partenza' },
+  Arrival_Airport: { en: 'Arrival Airport', it: 'Aeroporto di Arrivo' },
+  Departure_Point: { en: 'Departure Point', it: 'Punto di Partenza' },
+  Arrival_Point: { en: 'Arrival Point', it: 'Punto di Arrivo' },
+  Departure_Date: { en: 'Departure Date', it: 'Data di Partenza' },
+  Departure_Time: { en: 'Departure Time', it: 'Orario di Partenza' },
+  Number_of_Passengers: { en: 'Number of Passengers', it: 'Numero di Passeggeri' },
+  Review_and_Submit: { en: 'Review & Submit', it: 'Rivedi e Invia' },
+  Submit_Inquiry: { en: 'Submit Inquiry', it: 'Invia Richiesta' },
+  Inquiry_Sent: { en: 'Inquiry Sent!', it: 'Richiesta Inviata!' },
+  Your_request_has_been_sent: { en: 'Your request has been sent successfully.', it: 'La tua richiesta è stata inviata con successo.' },
+  Our_team_will_contact_you_shortly_with_a_quote: { en: 'Our team will contact you shortly with a personalized quote.', it: 'Il nostro team ti contatterà a breve con un preventivo personalizzato.' },
+  Pickup_Marina: { en: 'Pickup Marina', it: 'Marina di Ritiro' },
+  Quote_by_request: { en: 'Quote by request', it: 'Preventivo su richiesta' },
+  Reserve: { en: 'Reserve', it: 'Riserva' },
+  Service_Fee: { en: 'Service Fee', it: 'Costo del Servizio' },
+  Review_your_booking: { en: 'Review your booking', it: 'Rivedi la tua prenotazione' },
+  Personal_Information: { en: 'Personal Information', it: 'Informazioni Personali' },
+  nights: { en: 'nights', it: 'notti' },
+  // Jet Search Page
+  Find_your_private_jet: { en: "Find Your Private Jet", it: "Trova il Tuo Jet Privato" },
+  Search_Jets: { en: "Search Jets", it: "Cerca Jet" },
+  Departure: { en: "Departure", it: "Partenza" },
+  Arrival: { en: "Arrival", it: "Arrivo" },
+  Passengers: { en: "Passengers", it: "Passeggeri" },
+  Search: { en: "Search", it: "Cerca" },
+  Pets_Allowed: { en: "Pets Allowed", it: "Animali Ammessi" },
+  Smoking_Allowed: { en: "Smoking Allowed", it: "Fumatori Ammessi" },
+  Available_Jets: { en: "Available Jets", it: "Jet Disponibili" },
+  No_jets_found: { en: "No jets found matching your criteria.", it: "Nessun jet trovato che corrisponda ai tuoi criteri." },
+  Select_airport: { en: "Select airport", it: "Seleziona aeroporto" },
+  Search_Results: { en: "Search Results", it: "Risultati della Ricerca" },
+  Modify_Search: { en: "Modify Search", it: "Modifica Ricerca" },
+
   // Footer
   Stay_Connected: { en: "Stay Connected", it: "Rimani Connesso" },
   Receive_exclusive_offers_and_fleet_updates: { en: "Receive exclusive offers and fleet updates.", it: "Ricevi offerte esclusive e aggiornamenti sulla flotta." },
@@ -172,8 +213,8 @@ export const translations: Translations = {
   View_Openings: { en: "View Openings", it: "Vedi Posizioni Aperte" },
 
   // Lottery Page
-  The_DR7_Lottery: { en: "The DR7 Lottery", it: "La Lotteria DR7" },
-  Current_Giveaway: { en: "Current Giveaway", it: "Giveaway Attuale" },
+  DR7_Christmas_Giveaway: { en: "DR7 Christmas Grand Giveaway", it: "Grande Giveaway di Natale DR7" },
+  Prizes_Pool_Worth_Over: { en: "Prize Pool Worth Over €400,000", it: "Montepremi di Oltre 400.000€" },
   Draw_Ends_In: { en: "Draw Ends In", it: "L'estrazione termina tra" },
   How_many_tickets: { en: "How many tickets?", it: "Quanti biglietti?" },
   Total_Price_Lottery: { en: "Total", it: "Totale" },
@@ -182,22 +223,23 @@ export const translations: Translations = {
   Cancel: { en: "Cancel", it: "Annulla" },
   Are_you_sure_you_want_to_buy_tickets: { en: "Are you sure you want to purchase {count} ticket(s) for {price}?", it: "Sei sicuro di voler acquistare {count} biglietto/i per {price}?" },
   Purchase_Successful_Message: { en: "Congratulations! You have successfully purchased {count} ticket(s). Good luck!", it: "Congratulazioni! Hai acquistato con successo {count} biglietto/i. Buona fortuna!" },
+  Grand_Prize: { en: "Grand Prize", it: "Primo Premio" },
+  Tier_2_Prizes: { en: 'Tier 2 Prizes', it: 'Premi di Livello 2' },
+  Tier_3_Prizes: { en: 'Tier 3 Prizes', it: 'Premi di Livello 3' },
+  Tier_4_Prizes: { en: 'Tier 4 Prizes', it: 'Premi di Livello 4' },
+  How_It_Works: { en: "How It Works", it: "Come Funziona" },
+  Guaranteed_Reward: { en: "Guaranteed Reward", it: "Ricompensa Garantita" },
+  Step_1: { en: "Step 1", it: "Passo 1" },
+  Step_2: { en: "Step 2", it: "Passo 2" },
+  Step_3: { en: "Step 3", it: "Passo 3" },
+  Buy_your_tickets: { en: "Buy your tickets", it: "Acquista i tuoi biglietti" },
+  Wait_for_the_draw: { en: "Wait for the draw on Christmas Day", it: "Attendi l'estrazione il giorno di Natale" },
+  Win_amazing_prizes: { en: "Win amazing prizes!", it: "Vinci premi fantastici!" },
 
-  // Club Dashboard
-  Welcome: { en: "Welcome", it: "Benvenuto" },
-  Your_Membership: { en: "Your Membership", it: "La Tua Iscrizione" },
-  Concierge_Service: { en: "Concierge Service", it: "Servizio Concierge" },
-  Our_247_concierge_is_at_your_disposal_for_any_request: { en: "Our 24/7 concierge is at your disposal for any request.", it: "Il nostro concierge 24/7 è a tua disposizione per qualsiasi richiesta." },
-  Contact_Concierge: { en: "Contact Concierge", it: "Contatta il Concierge" },
-  Exclusive_Offers: { en: "Exclusive Offers", it: "Offerte Esclusive" },
-  Access_early_bird_reservations_and_special_rates_only_for_members: { en: "Access early-bird reservations and special rates only for members.", it: "Accedi a prenotazioni anticipate e tariffe speciali solo per i membri." },
-  Upcoming_Events: { en: "Upcoming Events", it: "Eventi Futuri" },
-  No_upcoming_events: { en: "There are currently no upcoming events.", it: "Attualmente non ci sono eventi in programma." },
-  
+
   // Club Enrollment
   Enroll_in_DR7_Club: { en: "Enroll in DR7 Club", it: "Iscriviti al Club DR7" },
   Billing_Cycle: { en: "Billing Cycle", it: "Ciclo di Fatturazione" },
-  Personal_Information: { en: "Personal Information", it: "Informazioni Personali" },
   Membership_Summary: { en: "Membership Summary", it: "Riepilogo Iscrizione" },
   Selected_Tier: { en: "Selected Tier", it: "Livello Selezionato" },
   Billed: { en: "Billed", it: "Fatturato" },
@@ -240,4 +282,69 @@ export const translations: Translations = {
   Create_Account: { en: "Create Account", it: "Crea Account" },
   Already_have_an_account: { en: "Already have an account?", it: "Hai già un account?" },
   Password: { en: "Password", it: "Password" },
+
+  // Account Pages
+  Account_Settings: { en: "Account Settings", it: "Impostazioni Account" },
+  Profile: { en: "Profile", it: "Profilo" },
+  Security: { en: "Security", it: "Sicurezza" },
+  Documents: { en: "Documents", it: "Documenti" },
+  My_Membership: { en: "My Membership", it: "La Mia Iscrizione" },
+  Notifications: { en: "Notifications", it: "Notifiche" },
+  Payment_Methods: { en: "Payment Methods", it: "Metodi di Pagamento" },
+  
+  // Account -> Profile
+  Profile_Details: { en: "Profile Details", it: "Dettagli Profilo" },
+  Update_your_information: { en: "Update your personal information.", it: "Aggiorna le tue informazioni personali." },
+  Save_Changes: { en: "Save Changes", it: "Salva Modifiche" },
+  Changes_Saved: { en: "Changes Saved", it: "Modifiche Salvate" },
+  
+  // Account -> Security
+  Change_Password: { en: "Change Password", it: "Cambia Password" },
+  Update_your_password: { en: "Update your password for enhanced security.", it: "Aggiorna la tua password per una maggiore sicurezza." },
+  Current_Password: { en: "Current Password", it: "Password Attuale" },
+  New_Password: { en: "New Password", it: "Nuova Password" },
+  Password_updated_successfully: { en: "Password updated successfully.", it: "Password aggiornata con successo." },
+
+  // Account -> Documents
+  Document_Verification: { en: "Document Verification", it: "Verifica Documenti" },
+  Securely_upload_your_ID: { en: "Securely upload your identification for account verification.", it: "Carica in modo sicuro il tuo documento d'identità per la verifica dell'account." },
+  Verification_Status: { en: "Verification Status", it: "Stato Verifica" },
+  Unverified: { en: "Unverified", it: "Non Verificato" },
+  Pending: { en: "Pending", it: "In Attesa" },
+  Verified: { en: "Verified", it: "Verificato" },
+  ID_Front: { en: "ID Front", it: "ID Fronte" },
+  ID_Back: { en: "ID Back", it: "ID Retro" },
+  Please_upload_the_front_of_your_ID: { en: "Please upload the front of your ID.", it: "Carica la parte anteriore del tuo documento." },
+  Please_upload_the_back_of_your_ID: { en: "Please upload the back of your ID.", it: "Carica la parte posteriore del tuo documento." },
+  Submit_for_Verification: { en: "Submit for Verification", it: "Invia per la Verifica" },
+  Documents_Submitted: { en: "Documents Submitted", it: "Documenti Inviati" },
+  Your_documents_are_under_review: { en: "Your documents are under review. This may take up to 24 hours.", it: "I tuoi documenti sono in fase di revisione. Potrebbero essere necessarie fino a 24 ore." },
+
+  // Account -> Membership
+  No_Active_Membership: { en: "No Active Membership", it: "Nessuna Iscrizione Attiva" },
+  You_do_not_have_an_active_membership: { en: "You do not have an active membership. Explore our tiers to unlock exclusive benefits.", it: "Non hai un'iscrizione attiva. Esplora i nostri livelli per sbloccare vantaggi esclusivi." },
+  Explore_Tiers: { en: "Explore Tiers", it: "Esplora i Livelli" },
+  Current_Tier: { en: "Current Tier", it: "Livello Attuale" },
+  Renews_on: { en: "Renews on", it: "Si rinnova il" },
+  Manage_Subscription: { en: "Manage Subscription", it: "Gestisci Iscrizione" },
+  Your_Benefits: { en: "Your Benefits", it: "I Tuoi Vantaggi" },
+  Rental_Credits: { en: "Rental Credits", it: "Crediti Noleggio" },
+  
+  // Account -> Notifications
+  Notification_Preferences: { en: "Notification Preferences", it: "Preferenze di Notifica" },
+  Manage_how_we_communicate_with_you: { en: "Manage how we communicate with you.", it: "Gestisci come comunichiamo con te." },
+  Booking_Confirmations: { en: "Booking Confirmations", it: "Conferme Prenotazione" },
+  Essential_updates_about_your_bookings: { en: "Essential updates about your bookings.", it: "Aggiornamenti essenziali sulle tue prenotazioni." },
+  Special_Offers: { en: "Special Offers", it: "Offerte Speciali" },
+  Exclusive_deals_and_promotions_for_you: { en: "Exclusive deals and promotions for you.", it: "Offerte e promozioni esclusive per te." },
+  Newsletter: { en: "Newsletter", it: "Newsletter" },
+  Latest_fleet_updates_and_news: { en: "The latest fleet updates and company news.", it: "Gli ultimi aggiornamenti sulla flotta e le notizie aziendali." },
+
+  // Account -> Payment Methods
+  Saved_Payment_Methods: { en: "Saved Payment Methods", it: "Metodi di Pagamento Salvati" },
+  Manage_your_saved_payment_methods: { en: "Manage your saved payment methods for faster checkout.", it: "Gestisci i tuoi metodi di pagamento per un checkout più veloce." },
+  Add_New_Card: { en: "Add New Card", it: "Aggiungi Nuova Carta" },
+  Default: { en: "Default", it: "Predefinito" },
+  Set_as_Default: { en: "Set as Default", it: "Imposta come Predefinito" },
+  Remove: { en: "Remove", it: "Rimuovi" },
 };
