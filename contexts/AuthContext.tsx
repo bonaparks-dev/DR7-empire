@@ -2,9 +2,15 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import { supabase } from '../src/lib/supabaseClient';
 import { Session, User } from '@supabase/supabase-js';
 
+// Define a compatible user type for the rest of the app
+interface AppUser {
+  id: string;
+  email: string;
+  fullName: string;
+}
+
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
   loading: boolean;
   login: (email, password) => Promise<{ error: { message: string } | null }>;
   signup: (email, password, options) => Promise<{ error: { message: string } | null }>;
@@ -16,13 +22,11 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     };
@@ -30,7 +34,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     getSession();
 
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
       setUser(session?.user ?? null);
     });
 
@@ -60,13 +63,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const value = useMemo(() => ({
     user,
-    session,
     loading,
     login,
     signup,
     logout,
     signInWithGoogleToken,
-  }), [user, session, loading]);
+  }), [user, loading]);
 
   return (
     <AuthContext.Provider value={value}>

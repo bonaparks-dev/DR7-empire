@@ -104,7 +104,7 @@ const SignUpPage: React.FC = () => {
       }).catch(err => {
           console.error("Failed to trigger welcome email:", err);
       });
-      navigate('/');
+      navigate('/signup-success');
 
     } catch (err: any) {
       setGeneralError(err?.message || t('Something_went_wrong'));

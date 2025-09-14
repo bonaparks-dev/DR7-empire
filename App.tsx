@@ -31,6 +31,7 @@ import PostPage from './pages/PostPage';
 import EnvGuard from './components/system/EnvGuard';
 import VillaDetailsPage from './pages/VillaDetailsPage';
 import VillaListingsPage from './pages/VillaListingsPage';
+import SignUpSuccessPage from './pages/SignUpSuccessPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AccountPage from './pages/AccountPage';
 
@@ -68,7 +69,7 @@ const AnimatedRoutes = () => {
         <Route path="/faq" element={<FAQPage />} />
         <Route path="/signin" element={<AuthPage />} />
         <Route path="/signup" element={<SignUpPage />} />
-        <Route path="/check-email" element={<CheckEmailPage />} />
+        <Route path="/signup-success" element={<SignUpSuccessPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route
           path="/account"

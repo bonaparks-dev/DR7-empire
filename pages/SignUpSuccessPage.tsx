@@ -2,9 +2,9 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { Link } from 'react-router-dom';
-import { MailIcon } from '../components/icons/Icons';
+import { CheckCircleIcon } from '../components/icons/Icons';
 
-const CheckEmailPage: React.FC = () => {
+const SignUpSuccessPage: React.FC = () => {
   const { t } = useTranslation();
 
   return (
@@ -22,10 +22,10 @@ const CheckEmailPage: React.FC = () => {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg shadow-2xl shadow-black/50 p-8 space-y-6"
           >
-            <MailIcon className="w-16 h-16 mx-auto text-white" />
-            <h2 className="text-3xl font-bold text-white">{t('Check_Your_Email')}</h2>
+            <CheckCircleIcon className="w-16 h-16 mx-auto text-green-400" />
+            <h2 className="text-3xl font-bold text-white">{t('Account_Created_Successfully')}</h2>
             <p className="mt-2 text-sm text-gray-400">
-              {t('We_sent_a_confirmation_link_to_your_email_address_Please_click_the_link_to_confirm_your_account')}
+              {t('Please_check_your_email_to_confirm_your_account_A_welcome_email_has_been_sent_to_your_email_address')}
             </p>
             <div className="mt-6">
               <Link
@@ -42,4 +42,4 @@ const CheckEmailPage: React.FC = () => {
   );
 };
 
-export default CheckEmailPage;
+export default SignUpSuccessPage;
