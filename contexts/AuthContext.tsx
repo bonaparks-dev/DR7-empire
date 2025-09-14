@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useMemo } from 'react';
-import { supabase } from '../src/lib/supabaseClient';
+import { supabase } from '../supabaseClient';
 import type { Session, User as SupabaseUser, AuthError } from '@supabase/supabase-js';
 
 // Define a compatible user type for the rest of the app
