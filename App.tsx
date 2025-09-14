@@ -31,6 +31,8 @@ import PostPage from './pages/PostPage';
 import EnvGuard from './components/system/EnvGuard';
 import VillaDetailsPage from './pages/VillaDetailsPage';
 import VillaListingsPage from './pages/VillaListingsPage';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import AccountPage from './pages/AccountPage';
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -66,7 +68,16 @@ const AnimatedRoutes = () => {
         <Route path="/faq" element={<FAQPage />} />
         <Route path="/signin" element={<AuthPage />} />
         <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/check-email" element={<CheckEmailPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route
+          path="/account"
+          element={
+            <ProtectedRoute>
+              <AccountPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/post/:id" element={<PostPage />} />
       </Routes>
     </AnimatePresence>
