@@ -93,17 +93,6 @@ const SignUpPage: React.FC = () => {
 
       if (error) throw error;
       
-      try {
-        await fetch('/.netlify/functions/send-welcome-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: formData.email, name: formData.fullName }),
-        });
-      } catch (emailError) {
-        console.error("Failed to send welcome email:", emailError);
-        // We don't block the user flow for this, just log it.
-      }
-      
       navigate('/check-email');
 
     } catch (err: any) {
