@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { GoogleIcon, MetaMaskIcon, CoinbaseIcon, PhantomIcon, EyeIcon, EyeSlashIcon } from '../components/icons/Icons';
@@ -7,7 +7,7 @@ import { useAuth } from '../hooks/useAuth';
 
 const AuthPage: React.FC = () => {
   const { t } = useTranslation();
-  const { login, signInWithGoogle, signInWithMetaMask, signInWithCoinbase, signInWithPhantom } = useAuth();
+  const { login, signInWithGoogle, signInWithMetaMask, signInWithCoinbase, signInWithPhantom, user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -22,6 +22,15 @@ const AuthPage: React.FC = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (!loading && user) {
+      const destination = from !== '/' && from !== '/signin' && from !== '/signup'
+          ? from
+          : (user.role === 'business' ? '/partner/dashboard' : '/account');
+      navigate(destination, { replace: true });
+    }
+  }, [user, loading, navigate, from]);
 
   const validateEmail = (emailToValidate: string) => {
     if (!emailToValidate) {
@@ -72,9 +81,9 @@ const AuthPage: React.FC = () => {
       if (error) throw error;
       
       if (user) {
-        const destination = from === '/' 
-            ? (user.role === 'business' ? '/partner/dashboard' : '/')
-            : from;
+        const destination = from !== '/' && from !== '/signin' && from !== '/signup'
+          ? from
+          : (user.role === 'business' ? '/partner/dashboard' : '/account');
         navigate(destination, { replace: true });
       }
 

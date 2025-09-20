@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { GoogleIcon, MetaMaskIcon, CoinbaseIcon, PhantomIcon, EyeIcon, EyeSlashIcon } from '../components/icons/Icons';
@@ -24,7 +24,7 @@ const calculatePasswordStrength = (password: string) => {
 
 const SignUpPage: React.FC = () => {
   const { t } = useTranslation();
-  const { signup, signInWithGoogle, signInWithMetaMask, signInWithCoinbase, signInWithPhantom } = useAuth();
+  const { signup, signInWithGoogle, signInWithMetaMask, signInWithCoinbase, signInWithPhantom, user, loading } = useAuth();
   const navigate = useNavigate();
 
   const [accountType, setAccountType] = useState<'personal' | 'business'>('personal');
@@ -44,6 +44,13 @@ const SignUpPage: React.FC = () => {
 
   const passwordStrength = useMemo(() => calculatePasswordStrength(formData.password), [formData.password]);
   const strengthInfo = formData.password ? strengthLevels[passwordStrength] : null;
+
+  useEffect(() => {
+    // This handles both post-email-verification and logged-in users visiting /signup
+    if (!loading && user) {
+      navigate(user.role === 'business' ? '/partner/dashboard' : '/account', { replace: true });
+    }
+  }, [user, loading, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;

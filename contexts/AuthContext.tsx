@@ -135,7 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            redirectTo: `${window.location.origin}${window.location.pathname}?verified=true`
+            redirectTo: window.location.origin
         }
     });
   }, []);
@@ -185,16 +185,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const findProvider = (rdns: string) => {
+    // 1. EIP-6963 provider discovery (preferred). This is the modern standard for multiple wallets.
     const announcedProvider = eip6963Providers.find(p => p.info.rdns === rdns);
-    if (announcedProvider) return announcedProvider.provider;
+    if (announcedProvider) {
+      return announcedProvider.provider;
+    }
 
+    // 2. Fallback for environments with `window.ethereum`
     const winEth = (window as any).ethereum;
-    if (!winEth) return undefined;
-    if (winEth.isMetaMask && rdns === 'io.metamask') return winEth;
-    if (winEth.isCoinbaseWallet && rdns === 'com.coinbase.wallet') return winEth;
-    if (winEth.isPhantom && rdns === 'app.phantom') return winEth;
+    if (!winEth) {
+      return undefined;
+    }
+
+    // 2a. If `window.ethereum.providers` array exists, search for the specific provider there.
+    // This handles cases where multiple wallets inject their providers into this array.
+    if (Array.isArray(winEth.providers)) {
+      const provider = winEth.providers.find((p: any) => {
+        // EIP-6963 providers might also be in this array, so we check for rdns first.
+        if (p.info?.rdns === rdns) return true;
+        // Legacy flags check
+        if (rdns === 'io.metamask' && p.isMetaMask) return true;
+        if (rdns === 'com.coinbase.wallet' && p.isCoinbaseWallet) return true;
+        if (rdns === 'app.phantom' && p.isPhantom) return true;
+        return false;
+      });
+      if (provider) return provider;
+    }
+
+    // 2b. Legacy fallback for a single provider injected as `window.ethereum`.
+    // This is for older wallets or when only one wallet is installed.
+    const isRequestedProvider = 
+        (rdns === 'io.metamask' && winEth.isMetaMask) ||
+        (rdns === 'com.coinbase.wallet' && winEth.isCoinbaseWallet) ||
+        (rdns === 'app.phantom' && winEth.isPhantom);
+        
+    // Check if it's a single provider environment (`!winEth.providers`) and if it matches.
+    if (!winEth.providers && isRequestedProvider) {
+      return winEth;
+    }
     
-    if (eip6963Providers.length === 0 && !winEth.providers) return winEth;
+    // If we're here, no matching provider was found.
     return undefined;
   };
 
