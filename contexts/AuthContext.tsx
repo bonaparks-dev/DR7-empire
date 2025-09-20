@@ -135,7 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            redirectTo: `${window.location.origin}${window.location.pathname}?verified=true`
+            redirectTo: `${window.location.origin}/account`
         }
     });
   }, []);
