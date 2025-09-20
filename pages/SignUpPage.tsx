@@ -101,24 +101,23 @@ const SignUpPage: React.FC = () => {
       if (error) throw error;
       
       if (data.user) {
-        // If there's no session, it means email confirmation is required.
-        // This is the normal flow.
+        // Fire-and-forget a welcome email to the user.
+        fetch('/.netlify/functions/send-welcome-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: formData.email, name: formData.fullName }),
+        }).catch(emailError => {
+            console.error("Non-critical error: Failed to send welcome email:", emailError);
+        });
+
         if (!data.session) {
-            // Fire-and-forget the welcome email. Don't let it block the user flow.
-            fetch('/.netlify/functions/send-welcome-email', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: formData.email, name: formData.fullName }),
-            }).catch(emailError => {
-                console.error("Non-critical error: Failed to send welcome email:", emailError);
-            });
+            // This case happens if email confirmation is still enabled in Supabase settings.
+            // We'll navigate them to a page informing them to check their email.
             navigate('/check-email');
-        } else {
-            // User is created and session exists, meaning auto-confirm is on.
-            // The AuthContext onAuthStateChange listener will handle the user state
-            // and the useEffect on this page will redirect them.
-            // No explicit navigation is needed here.
         }
+        // If data.session exists, the user is logged in. The useEffect hook on this page
+        // will detect the new user state and redirect them to their dashboard automatically.
+        // No navigation is needed here in that case.
       } else {
          throw new Error("Sign up may have succeeded but no user data was returned. Please check your email.");
       }

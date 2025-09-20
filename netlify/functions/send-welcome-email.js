@@ -99,22 +99,22 @@ exports.handler = async (event) => {
               </tr>
               <tr>
                 <td style="font-size: 16px; line-height: 1.6; padding-bottom: 20px;">
-                  <p style="margin: 0;">We are thrilled to confirm that your DR7 Empire account has been created.</p>
+                  <p style="margin: 0;">We are thrilled to confirm that your DR7 Empire account has been created and is now active.</p>
                 </td>
               </tr>
                <tr>
                 <td style="font-size: 16px; line-height: 1.6; padding-bottom: 20px;">
-                  <p style="margin: 0;">You are one step away from unlocking a world of unparalleled luxury. To activate your account and ensure its security, please check your inbox for a <strong>verification email</strong> and click the confirmation link.</p>
+                  <p style="margin: 0;">You now have access to our exclusive collection of supercars, yachts, villas, and private jets. Your journey into a world of unparalleled luxury starts now.</p>
                 </td>
               </tr>
               <tr>
                 <td align="center" style="padding: 20px 0;">
-                  <a href="${siteUrl}" target="_blank" style="background-color: #ffffff; color: #000000; padding: 12px 24px; text-decoration: none; border-radius: 9999px; font-weight: bold; font-size: 14px; text-transform: uppercase;">Explore Our Fleet</a>
+                  <a href="${siteUrl}/#/account" target="_blank" style="background-color: #ffffff; color: #000000; padding: 12px 24px; text-decoration: none; border-radius: 9999px; font-weight: bold; font-size: 14px; text-transform: uppercase;">Go to Your Account</a>
                 </td>
               </tr>
                <tr>
                 <td style="font-size: 16px; line-height: 1.6; padding-bottom: 30px;">
-                  <p style="margin: 0;">Once your account is verified, you will have access to our exclusive collection of supercars, yachts, villas, and private jets.</p>
+                  <p style="margin: 0;">You can manage your account settings and view your bookings at any time by visiting your dashboard.</p>
                 </td>
               </tr>
               <tr>

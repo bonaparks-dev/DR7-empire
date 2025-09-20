@@ -123,7 +123,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
         options: { 
             data,
-            emailRedirectTo: 'https://dr7empire.com/#/signin'
         }
     });
   }, []);
