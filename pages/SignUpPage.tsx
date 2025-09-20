@@ -92,7 +92,7 @@ const SignUpPage: React.FC = () => {
 
     try {
       setIsSubmitting(true);
-      const { error } = await signup(formData.email, formData.password, {
+      const { data, error } = await signup(formData.email, formData.password, {
         full_name: formData.fullName, 
         company_name: accountType === 'business' ? formData.companyName : undefined,
         role: accountType 
@@ -100,18 +100,28 @@ const SignUpPage: React.FC = () => {
 
       if (error) throw error;
       
-      try {
-        await fetch('/.netlify/functions/send-welcome-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: formData.email, name: formData.fullName }),
-        });
-      } catch (emailError) {
-        console.error("Failed to send welcome email:", emailError);
-        // We don't block the user flow for this, just log it.
+      if (data.user) {
+        // If there's no session, it means email confirmation is required.
+        // This is the normal flow.
+        if (!data.session) {
+            // Fire-and-forget the welcome email. Don't let it block the user flow.
+            fetch('/.netlify/functions/send-welcome-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: formData.email, name: formData.fullName }),
+            }).catch(emailError => {
+                console.error("Non-critical error: Failed to send welcome email:", emailError);
+            });
+            navigate('/check-email');
+        } else {
+            // User is created and session exists, meaning auto-confirm is on.
+            // The AuthContext onAuthStateChange listener will handle the user state
+            // and the useEffect on this page will redirect them.
+            // No explicit navigation is needed here.
+        }
+      } else {
+         throw new Error("Sign up may have succeeded but no user data was returned. Please check your email.");
       }
-      
-      navigate('/check-email');
 
     } catch (err: any) {
       setGeneralError(err?.message || t('Something_went_wrong'));

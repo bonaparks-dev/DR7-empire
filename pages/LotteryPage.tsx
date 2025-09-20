@@ -25,8 +25,8 @@ const calculateTimeLeft = (drawDate: string) => {
 };
 
 const TimerBox: React.FC<{ value: number, label: string }> = ({ value, label }) => (
-    <div className="bg-black/50 backdrop-blur-sm p-3 rounded-lg text-center border border-white/20">
-        <div className="text-4xl md:text-5xl font-bold text-white tracking-tighter" style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}>{String(value).padStart(2, '0')}</div>
+    <div className="bg-black/50 backdrop-blur-sm p-2 sm:p-3 rounded-lg text-center border border-white/20">
+        <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tighter" style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}>{String(value).padStart(2, '0')}</div>
         <div className="text-xs text-white/70 uppercase tracking-widest">{label}</div>
     </div>
 );
@@ -183,15 +183,15 @@ const LotteryPage: React.FC = () => {
                 <video src="/lottery.mp4" autoPlay loop muted playsInline className="absolute inset-0 z-0 w-full h-full object-cover brightness-50" />
                 <div className="absolute inset-0 bg-black/50 z-10"></div>
                 <div className="relative z-20 px-6 container mx-auto">
-                    <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="text-4xl md:text-6xl font-bold font-playfair uppercase tracking-wider" style={{ textShadow: '0 0 15px rgba(255,255,255,0.3)' }}>
+                    <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="text-4xl sm:text-5xl lg:text-6xl font-bold font-playfair uppercase tracking-wider" style={{ textShadow: '0 0 15px rgba(255,255,255,0.3)' }}>
                         {getTranslated(giveaway.name)}
                     </motion.h1>
-                    <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.4 }} className="mt-4 text-xl md:text-2xl text-white/80 font-semibold tracking-wide">
+                    <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.4 }} className="mt-4 text-lg sm:text-xl md:text-2xl text-white/80 font-semibold tracking-wide">
                         {getTranslated(giveaway.subtitle)}
                     </motion.p>
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.6 }} className="mt-12">
                         <h3 className="text-lg font-semibold uppercase tracking-widest text-white/80 mb-4">{t('Draw_Ends_In')}</h3>
-                        <div className="grid grid-cols-4 gap-4 max-w-sm mx-auto">
+                        <div className="grid grid-cols-4 gap-2 sm:gap-4 max-w-sm mx-auto">
                             <TimerBox value={timeLeft.days} label={t('days')} />
                             <TimerBox value={timeLeft.hours} label={t('hours')} />
                             <TimerBox value={timeLeft.minutes} label={t('minutes')} />
@@ -219,9 +219,21 @@ const LotteryPage: React.FC = () => {
                         </div>
 
                         <div className="lg:col-span-2 lg:sticky top-32">
-                             <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-8 backdrop-blur-sm">
+                             <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-6 md:p-8 backdrop-blur-sm">
                                 <AnimatePresence>{successMessage && <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="bg-green-500/20 text-green-300 p-3 rounded-md mb-4 text-center text-sm font-medium">{successMessage}</motion.div>}</AnimatePresence>
-                                <div className="mb-4"><h3 className="text-lg font-semibold text-white">{t('How_many_tickets')}</h3><div className="flex items-center justify-between mt-2"><div className="flex items-center space-x-2 bg-gray-800 border border-gray-700 rounded-full p-1"><button onClick={() => handleQuantityChange(-1)} className="w-8 h-8 font-bold text-white rounded-full hover:bg-gray-700">-</button><span className="w-12 text-center text-white text-xl font-bold">{quantity}</span><button onClick={() => handleQuantityChange(1)} className="w-8 h-8 font-bold text-white rounded-full hover:bg-gray-700">+</button></div><div className="flex space-x-2">{[5, 10, 25, 50].map(val => (<button key={val} onClick={() => setQuantity(val)} className={`px-3 py-1 text-xs rounded-full border transition-colors ${quantity === val ? 'bg-white text-black border-white' : 'bg-gray-700/80 border-gray-600 text-gray-300 hover:border-white'}`}>{val}</button>))}</div></div></div>
+                                <div className="mb-4">
+                                    <h3 className="text-lg font-semibold text-white">{t('How_many_tickets')}</h3>
+                                    <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-4 mt-2">
+                                        <div className="flex items-center space-x-2 bg-gray-800 border border-gray-700 rounded-full p-1">
+                                            <button onClick={() => handleQuantityChange(-1)} className="w-8 h-8 font-bold text-white rounded-full hover:bg-gray-700">-</button>
+                                            <span className="w-12 text-center text-white text-xl font-bold">{quantity}</span>
+                                            <button onClick={() => handleQuantityChange(1)} className="w-8 h-8 font-bold text-white rounded-full hover:bg-gray-700">+</button>
+                                        </div>
+                                        <div className="flex space-x-2 w-full sm:w-auto justify-center">
+                                            {[5, 10, 25, 50].map(val => (<button key={val} onClick={() => setQuantity(val)} className={`px-3 py-1 text-xs rounded-full border transition-colors ${quantity === val ? 'bg-white text-black border-white' : 'bg-gray-700/80 border-gray-600 text-gray-300 hover:border-white'}`}>{val}</button>))}
+                                        </div>
+                                    </div>
+                                </div>
                                 <div className="flex justify-between items-center text-xl font-bold mb-6"><span className="text-gray-300">{t('Total_Price_Lottery')}</span><span className="text-white">{formatPrice(totalPrice)}</span></div>
                                 <button onClick={handleBuyClick} className="w-full py-4 px-6 bg-white text-black rounded-full font-bold uppercase tracking-wider text-sm hover:bg-gray-200 transition-all duration-300 transform hover:scale-105">{t('Buy_Tickets')}</button>
                             </div>
@@ -249,7 +261,7 @@ const LotteryPage: React.FC = () => {
                 {showConfirmModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" aria-modal="true">
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowConfirmModal(false)} />
-                        <motion.div initial={{ opacity: 0, y: 50, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 50, scale: 0.9 }} className="relative bg-gray-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-md p-8">
+                        <motion.div initial={{ opacity: 0, y: 50, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 50, scale: 0.9 }} className="relative bg-gray-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-md p-6 md:p-8">
                             <h2 className="text-2xl font-bold text-white mb-4 text-center">{t('Confirm_Purchase')}</h2>
                             <p className="text-gray-300 mb-4 text-center text-sm">{t('Are_you_sure_you_want_to_buy_tickets').replace('{count}', String(quantity)).replace('{price}', formatPrice(totalPrice))}</p>
                             

@@ -23,7 +23,7 @@ interface AuthContextType {
   user: AppUser | null;
   loading: boolean;
   login: (email: string, password?: string) => Promise<{ user: AppUser | null; error: AuthError | null }>;
-  signup: (email: string, password: string, data: { full_name: string, company_name?: string, role: 'personal' | 'business' }) => Promise<{ error: AuthError | null }>;
+  signup: (email: string, password: string, data: { full_name: string, company_name?: string, role: 'personal' | 'business' }) => Promise<{ data: { user: SupabaseUser | null; session: Session | null; }; error: AuthError | null; }>;
   logout: () => Promise<{ error: AuthError | null }>;
   signInWithGoogle: () => Promise<OAuthResponse>;
   signInWithMetaMask: () => Promise<{ error: Error | null }>;
@@ -118,15 +118,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signup = useCallback(async (email: string, password: string, data: { full_name: string, company_name?: string, role: 'personal' | 'business' }) => {
-    const { error } = await supabase.auth.signUp({ 
+    return supabase.auth.signUp({ 
         email, 
         password,
         options: { 
             data,
-            emailRedirectTo: `${window.location.origin}${window.location.pathname}?verified=true`
+            emailRedirectTo: 'https://dr7empire.com/#/signin'
         }
     });
-    return { error };
   }, []);
 
   const logout = useCallback(() => supabase.auth.signOut(), []);
@@ -135,7 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            redirectTo: window.location.origin
+            redirectTo: 'https://dr7empire.com/#/signin'
         }
     });
   }, []);
@@ -260,7 +259,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const sendPasswordResetEmail = useCallback(async (email: string) => {
     return supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/#/reset-password`
+        redirectTo: 'https://dr7empire.com/#/reset-password'
     });
   }, []);
 

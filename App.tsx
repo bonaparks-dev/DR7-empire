@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { HashRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
@@ -148,20 +148,6 @@ const PageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 const App = () => {
-  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('verified') === 'true') {
-      setNotification({ message: 'Account verified successfully! You are now logged in.', type: 'success' });
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, '', newUrl);
-
-      const timer = setTimeout(() => setNotification(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, []);
-
   return (
     <EnvGuard>
       <LanguageProvider>
@@ -172,22 +158,6 @@ const App = () => {
                 <HashRouter>
                   <ScrollToTop />
                   <div className="bg-black min-h-screen font-sans antialiased relative overflow-x-hidden">
-                    <AnimatePresence>
-                      {notification && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -50, top: 0 }}
-                          animate={{ opacity: 1, y: 0, top: '6rem' }} // top-24
-                          exit={{ opacity: 0, y: -50 }}
-                          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                          className="fixed left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4"
-                        >
-                          <div className="p-4 rounded-lg shadow-lg text-center bg-green-600 text-white font-semibold">
-                            {notification.message}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
                     <div className="absolute top-0 left-0 w-full h-full bg-grid-white/[0.05] z-0"></div>
                     <div className="relative z-10 flex flex-col min-h-screen">
                       <Header />
