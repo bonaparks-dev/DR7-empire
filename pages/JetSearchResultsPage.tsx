@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { RENTAL_CATEGORIES, AIRPORTS } from '../constants';
@@ -5,11 +6,13 @@ import type { RentalItem } from '../types';
 import RentalCard from '../components/ui/RentalCard';
 import { useTranslation } from '../hooks/useTranslation';
 import { motion } from 'framer-motion';
+import { useVerification } from '../hooks/useVerification';
 
 const JetSearchResultsPage: React.FC = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { checkVerificationAndProceed } = useVerification();
 
     const searchCriteria = useMemo(() => ({
         tripType: searchParams.get('tripType') || 'one-way',
@@ -42,17 +45,19 @@ const JetSearchResultsPage: React.FC = () => {
     }, [searchCriteria]);
 
     const handleBook = (item: RentalItem) => {
-        navigate(`/book/jets/${item.id}`, {
-            state: {
-                tripType: searchCriteria.tripType,
-                departurePoint: searchCriteria.departure,
-                arrivalPoint: searchCriteria.arrival,
-                departureDate: searchCriteria.departureDate,
-                returnDate: searchCriteria.returnDate,
-                passengers: searchCriteria.passengers,
-                petsAllowed: searchCriteria.pets,
-                smokingAllowed: searchCriteria.smoking,
-            }
+        checkVerificationAndProceed(() => {
+            navigate(`/book/jets/${item.id}`, {
+                state: {
+                    tripType: searchCriteria.tripType,
+                    departurePoint: searchCriteria.departure,
+                    arrivalPoint: searchCriteria.arrival,
+                    departureDate: searchCriteria.departureDate,
+                    returnDate: searchCriteria.returnDate,
+                    passengers: searchCriteria.passengers,
+                    petsAllowed: searchCriteria.pets,
+                    smokingAllowed: searchCriteria.smoking,
+                }
+            });
         });
     };
     

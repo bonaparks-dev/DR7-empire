@@ -1,6 +1,5 @@
-
-import React from 'react';
-import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { HashRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
 import { BookingProvider } from './contexts/BookingContext';
@@ -41,6 +40,19 @@ import MembershipStatus from './pages/account/MembershipStatus';
 import NotificationSettings from './pages/account/NotificationSettings';
 import PaymentMethods from './pages/account/PaymentMethods';
 import MembershipEnrollmentPage from './pages/MembershipEnrollmentPage';
+import { VerificationProvider } from './contexts/VerificationContext';
+import VerificationModal from './components/ui/VerificationModal';
+import PartnerDashboardLayout from './layouts/PartnerDashboardLayout';
+import PartnerDashboardPage from './pages/partner/PartnerDashboardPage';
+import CreateListingPage from './pages/partner/CreateListingPage';
+import PartnerVerificationPage from './pages/partner/PartnerVerificationPage';
+import PartnerProfileSettings from './pages/partner/settings/PartnerProfileSettings';
+import PartnerSecuritySettings from './pages/partner/settings/PartnerSecuritySettings';
+import PartnerNotificationSettings from './pages/partner/settings/PartnerNotificationSettings';
+import PartnerPayoutSettings from './pages/partner/settings/PartnerPayoutSettings';
+import CheckEmailPage from './pages/CheckEmailPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import CookieBanner from './components/ui/CookieBanner';
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -73,7 +85,7 @@ const AnimatedRoutes = () => {
             element={<LotteryPage />}
         />
         <Route path="/account" element={
-          <ProtectedRoute>
+          <ProtectedRoute role="personal">
             <AccountPage />
           </ProtectedRoute>
         }>
@@ -85,6 +97,23 @@ const AnimatedRoutes = () => {
           <Route path="notifications" element={<NotificationSettings />} />
           <Route path="payment-methods" element={<PaymentMethods />} />
         </Route>
+
+        <Route path="/partner" element={
+          <ProtectedRoute role="business">
+            <PartnerDashboardLayout />
+          </ProtectedRoute>
+        }>
+          <Route index element={<Navigate to="/partner/dashboard" replace />} />
+          <Route path="dashboard" element={<PartnerDashboardPage />} />
+          <Route path="listings/new" element={<CreateListingPage />} />
+          <Route path="verification" element={<PartnerVerificationPage />} />
+          <Route path="settings" element={<Navigate to="/partner/settings/profile" replace />} />
+          <Route path="settings/profile" element={<PartnerProfileSettings />} />
+          <Route path="settings/security" element={<PartnerSecuritySettings />} />
+          <Route path="settings/notifications" element={<PartnerNotificationSettings />} />
+          <Route path="settings/payouts" element={<PartnerPayoutSettings />} />
+        </Route>
+
         <Route path="/about" element={<AboutPage />} />
         <Route path="/terms" element={<TermsOfServicePage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
@@ -96,6 +125,8 @@ const AnimatedRoutes = () => {
         <Route path="/signin" element={<AuthPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/check-email" element={<CheckEmailPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/post/:id" element={<PostPage />} />
       </Routes>
     </AnimatePresence>
@@ -117,26 +148,60 @@ const PageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 const App = () => {
+  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('verified') === 'true') {
+      setNotification({ message: 'Account verified successfully! You are now logged in.', type: 'success' });
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+
+      const timer = setTimeout(() => setNotification(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   return (
     <EnvGuard>
       <LanguageProvider>
         <CurrencyProvider>
           <BookingProvider>
             <AuthProvider>
-              <HashRouter>
-                <ScrollToTop />
-                <div className="bg-black min-h-screen font-sans antialiased relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-full bg-grid-white/[0.05] z-0"></div>
-                  <div className="relative z-10 flex flex-col min-h-screen">
-                    <Header />
-                    <main className="flex-grow">
-                      <AnimatedRoutes />
-                    </main>
-                    <Footer />
+              <VerificationProvider>
+                <HashRouter>
+                  <ScrollToTop />
+                  <div className="bg-black min-h-screen font-sans antialiased relative overflow-x-hidden">
+                    <AnimatePresence>
+                      {notification && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -50, top: 0 }}
+                          animate={{ opacity: 1, y: 0, top: '6rem' }} // top-24
+                          exit={{ opacity: 0, y: -50 }}
+                          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                          className="fixed left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4"
+                        >
+                          <div className="p-4 rounded-lg shadow-lg text-center bg-green-600 text-white font-semibold">
+                            {notification.message}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    <div className="absolute top-0 left-0 w-full h-full bg-grid-white/[0.05] z-0"></div>
+                    <div className="relative z-10 flex flex-col min-h-screen">
+                      <Header />
+                      <main className="flex-grow">
+                        <AnimatedRoutes />
+                      </main>
+                      <Footer />
+                    </div>
+                    <BookingModal />
+                    <VerificationModal />
+                    <CookieBanner />
                   </div>
-                  <BookingModal />
-                </div>
-              </HashRouter>
+                </HashRouter>
+              </VerificationProvider>
             </AuthProvider>
           </BookingProvider>
         </CurrencyProvider>

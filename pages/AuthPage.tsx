@@ -1,15 +1,13 @@
-
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
-import { GoogleIcon, WalletIcon } from '../components/icons/Icons';
+import { GoogleIcon, MetaMaskIcon, CoinbaseIcon, PhantomIcon, EyeIcon, EyeSlashIcon } from '../components/icons/Icons';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { GOOGLE_CLIENT_ID } from '../constants';
 
 const AuthPage: React.FC = () => {
   const { t } = useTranslation();
-  const { login, signInWithGoogleToken } = useAuth();
+  const { login, signInWithGoogle, signInWithMetaMask, signInWithCoinbase, signInWithPhantom } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -23,8 +21,7 @@ const AuthPage: React.FC = () => {
   const [generalError, setGeneralError] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const googleButtonRef = useRef<HTMLDivElement>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const validateEmail = (emailToValidate: string) => {
     if (!emailToValidate) {
@@ -71,11 +68,16 @@ const AuthPage: React.FC = () => {
     }
 
     try {
-      const { error } = await login(email, password);
-      if (error) {
-        throw new Error(error.message);
+      const { user, error } = await login(email, password);
+      if (error) throw error;
+      
+      if (user) {
+        const destination = from === '/' 
+            ? (user.role === 'business' ? '/partner/dashboard' : '/')
+            : from;
+        navigate(destination, { replace: true });
       }
-      navigate(from, { replace: true });
+
     } catch (err: any) {
       setGeneralError(err?.message || t('Something_went_wrong'));
     } finally {
@@ -83,43 +85,36 @@ const AuthPage: React.FC = () => {
     }
   };
 
-  const handleGoogleCallback = async (response: any) => {
+  const handleGoogleSignIn = async () => {
     setGeneralError('');
-    setIsGoogleLoading(true);
+    setIsSubmitting(true);
     try {
-      const { error } = await signInWithGoogleToken(response.credential);
-      if (error) {
-        throw new Error(error.message);
-      }
-      navigate(from, { replace: true });
-    } catch (err: any) {
-      setGeneralError(err?.message || t('Something_went_wrong'));
+        const { error } = await signInWithGoogle();
+        if (error) throw error;
+    } catch(err: any) {
+        setGeneralError(err.message || t('Something_went_wrong'));
     } finally {
-      setIsGoogleLoading(false);
+        setIsSubmitting(false);
     }
-  };
+  }
 
-  useEffect(() => {
-    const initGsi = () => {
-      if ((window as any).google?.accounts?.id && googleButtonRef.current) {
-        (window as any).google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: handleGoogleCallback,
-        });
-        (window as any).google.accounts.id.renderButton(
-          googleButtonRef.current,
-          { theme: 'outline', size: 'large', type: 'standard', text: 'signin_with', shape: 'pill' }
-        );
+  const handleWalletSignIn = async (walletType: 'metamask' | 'coinbase' | 'phantom') => {
+      setGeneralError('');
+      setIsSubmitting(true);
+      try {
+          let result;
+          if (walletType === 'metamask') result = await signInWithMetaMask();
+          else if (walletType === 'coinbase') result = await signInWithCoinbase();
+          else result = await signInWithPhantom();
+          
+          if (result.error) throw result.error;
+          navigate(from, { replace: true });
+      } catch(err: any) {
+          setGeneralError(err.message || `${walletType.charAt(0).toUpperCase() + walletType.slice(1)} sign-in failed. Please try again.`);
+      } finally {
+          setIsSubmitting(false);
       }
-    };
-
-    if ((window as any).google?.accounts?.id) {
-        initGsi();
-    } else {
-        const timeoutId = setTimeout(initGsi, 500);
-        return () => clearTimeout(timeoutId);
-    }
-  }, [from]);
+  }
 
   return (
     <motion.div
@@ -150,24 +145,27 @@ const AuthPage: React.FC = () => {
             )}
 
             <div className="space-y-4">
-              <div className="flex justify-center" ref={googleButtonRef}>
-                <button
+              <button
                   type="button"
-                  disabled={true}
-                  className="w-full flex items-center justify-center py-3 px-4 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-sm font-medium text-white opacity-60"
+                  onClick={handleGoogleSignIn}
+                  disabled={isSubmitting}
+                  className="w-full flex items-center justify-center py-3 px-4 border border-gray-700 rounded-full shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60"
                 >
                   <GoogleIcon className="w-5 h-5 mr-2" />
                   {t('Sign_in_with_Google')}
                 </button>
-              </div>
 
-              <button
-                type="button"
-                className="w-full flex items-center justify-center py-3 px-4 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors"
-              >
-                <WalletIcon className="w-5 h-5 mr-2" />
-                {t('Sign_in_with_Wallet')}
-              </button>
+                <div className="grid grid-cols-3 gap-3">
+                    <button type="button" onClick={() => handleWalletSignIn('metamask')} disabled={isSubmitting} title="MetaMask" className="flex items-center justify-center py-2 px-3 border border-gray-700 rounded-full shadow-sm bg-gray-800 text-xs font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60">
+                        <MetaMaskIcon className="w-5 h-5 mr-1.5" /> MetaMask
+                    </button>
+                    <button type="button" onClick={() => handleWalletSignIn('coinbase')} disabled={isSubmitting} title="Coinbase Wallet" className="flex items-center justify-center py-2 px-3 border border-gray-700 rounded-full shadow-sm bg-gray-800 text-xs font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60">
+                        <CoinbaseIcon className="w-5 h-5 mr-1.5" /> Coinbase
+                    </button>
+                    <button type="button" onClick={() => handleWalletSignIn('phantom')} disabled={isSubmitting} title="Phantom" className="flex items-center justify-center py-2 px-3 border border-gray-700 rounded-full shadow-sm bg-gray-800 text-xs font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60">
+                        <PhantomIcon className="w-5 h-5 mr-1.5" /> Phantom
+                    </button>
+                </div>
             </div>
 
             <div className="relative">
@@ -205,19 +203,22 @@ const AuthPage: React.FC = () => {
                 <label htmlFor="password" className="sr-only">
                   {t('Password')}
                 </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  className={`appearance-none rounded-md relative block w-full px-3 py-3 border bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-white focus:border-white focus:z-10 sm:text-sm ${
-                    passwordError ? 'border-red-500' : 'border-gray-700'
-                  }`}
-                  placeholder={t('Password')}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                <div className="relative">
+                    <input
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="current-password"
+                      required
+                      className={`appearance-none rounded-md relative block w-full px-3 py-3 border bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-white focus:border-white focus:z-10 sm:text-sm ${
+                        passwordError ? 'border-red-500' : 'border-gray-700'
+                      }`}
+                      placeholder={t('Password')}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <button type="button" onClick={() => setShowPassword(p => !p)} className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-white">{showPassword ? <EyeSlashIcon className="h-5 w-5"/> : <EyeIcon className="h-5 w-5"/>}</button>
+                </div>
                 {passwordError && <p className="mt-2 text-xs text-red-400">{passwordError}</p>}
               </div>
 

@@ -51,6 +51,7 @@ export interface RentalCategory {
     id: 'cars' | 'yachts' | 'villas' | 'jets' | 'helicopters';
     label: { en: string, it: string };
     data: RentalItem[];
+    icon: React.FC<{ className?: string }>;
 }
 
 export interface MembershipTier {
@@ -71,6 +72,8 @@ export interface User {
   id: string;
   fullName: string;
   email: string;
+  role: 'personal' | 'business';
+  companyName?: string;
   phone?: string;
   profilePicture?: string; // base64 string
   membership?: {
@@ -87,6 +90,14 @@ export interface User {
     cardExpiry?: string;
     cardholderName?: string;
     phoneStatus: 'none' | 'verified';
+  };
+  businessVerification?: {
+    status: 'unverified' | 'pending' | 'verified';
+    registrationDoc?: string; // base64 string
+    address?: string;
+    vatNumber?: string;
+    payoutMethod?: 'iban' | 'paypal';
+    payoutDetails?: string; // IBAN or PayPal email
   };
   notifications: {
     bookingConfirmations: boolean;

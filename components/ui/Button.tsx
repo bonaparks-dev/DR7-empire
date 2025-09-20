@@ -1,12 +1,16 @@
 import React from 'react';
 
-type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+// FIX: Updated ButtonProps to support polymorphism with an 'as' prop and allow additional props like 'to' for links.
+type ButtonProps = React.PropsWithChildren<{
   variant?: 'primary' | 'outline' | 'luxury';
   size?: 'sm' | 'md' | 'lg';
-};
+  as?: React.ElementType;
+  className?: string;
+  [x: string]: any;
+}>;
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'primary', size = 'md', ...props }, ref) => {
+  ({ className, variant = 'primary', size = 'md', as: Component = 'button', ...props }, ref) => {
     const baseClasses = "inline-flex items-center justify-center rounded-full font-semibold tracking-wide transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed";
 
     const variantClasses = {
@@ -23,7 +27,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const finalClasses = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`;
 
-    return <button className={finalClasses} ref={ref} {...props} />;
+    return <Component className={finalClasses} ref={ref} {...props} />;
   }
 );
 

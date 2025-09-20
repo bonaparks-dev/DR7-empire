@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { InstagramIcon, FacebookIcon, TwitterIcon, YoutubeIcon, TiktokIcon, WhatsAppIcon } from '../icons/Icons';
-import GoogleReviews from '../ui/GoogleReviews';
+import ReviewsSection from '../../sections/ReviewsSection';
 
 const Footer: React.FC = () => {
   const { t } = useTranslation();
@@ -57,7 +57,7 @@ const Footer: React.FC = () => {
 
         {/* Reviews Section */}
         <div className="mb-12 pb-12 border-b border-gray-900">
-          <GoogleReviews />
+          <ReviewsSection />
         </div>
 
         {/* Contact Section */}

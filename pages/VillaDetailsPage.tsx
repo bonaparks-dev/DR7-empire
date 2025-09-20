@@ -1,3 +1,5 @@
+
+
 import React, { useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { RENTAL_CATEGORIES, VILLA_SERVICE_FEE_PERCENTAGE } from '../constants';
@@ -10,12 +12,14 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { Button } from '../components/ui/Button';
+import { useVerification } from '../hooks/useVerification';
 
 export default function VillaDetailsPage() {
   const { villaId } = useParams<{ villaId: string }>();
   const navigate = useNavigate();
   const { t, lang } = useTranslation();
   const { currency } = useCurrency();
+  const { checkVerificationAndProceed } = useVerification();
   
   const villa = useMemo(() => {
     return RENTAL_CATEGORIES.find(c => c.id === 'villas')?.data.find(v => v.id === villaId);
@@ -57,12 +61,14 @@ export default function VillaDetailsPage() {
 
   const handleReserve = () => {
     if (nights > 0 && villa) {
-        navigate(`/book/villas/${villa.id}`, {
-            state: {
-                checkinDate: checkIn,
-                checkoutDate: checkOut,
-                guests,
-            }
+        checkVerificationAndProceed(() => {
+            navigate(`/book/villas/${villa.id}`, {
+                state: {
+                    checkinDate: checkIn,
+                    checkoutDate: checkOut,
+                    guests,
+                }
+            });
         });
     }
   };

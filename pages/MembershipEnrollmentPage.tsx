@@ -163,8 +163,9 @@ const MembershipEnrollmentPage: React.FC = () => {
                             <div className="text-center">
                                 <label className="text-sm text-gray-300 block mb-2">{t('Select_your_crypto')}</label>
                                 <div className="flex border border-gray-700 rounded-full p-1 max-w-sm mx-auto mb-4">
-                                    {(Object.keys(CRYPTO_ADDRESSES) as Array<keyof typeof CRYPTO_ADDRESSES>).map(c => (
-                                    <button type="button" key={c} onClick={() => setSelectedCrypto(c)} className={`flex-1 py-1 text-sm rounded-full transition-colors ${selectedCrypto === c ? 'bg-white text-black font-bold' : 'text-gray-300'}`}>{c.toUpperCase()}</button>
+                                    {/* FIX: Cast map variable to string to resolve typing issues with key, state, and string methods */}
+                                    {(Object.keys(CRYPTO_ADDRESSES)).map(c => (
+                                    <button type="button" key={String(c)} onClick={() => setSelectedCrypto(String(c))} className={`flex-1 py-1 text-sm rounded-full transition-colors ${selectedCrypto === String(c) ? 'bg-white text-black font-bold' : 'text-gray-300'}`}>{String(c).toUpperCase()}</button>
                                     ))}
                                 </div>
                                 <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${CRYPTO_ADDRESSES[selectedCrypto]}`} alt={`${selectedCrypto.toUpperCase()} QR Code`} className="w-32 h-32 mx-auto bg-white p-1 rounded-md" />

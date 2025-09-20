@@ -8,8 +8,6 @@ import { RENTAL_CATEGORIES, PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, 
 import type { Booking, Inquiry, RentalItem } from '../types';
 import { CameraIcon, CreditCardIcon, CryptoIcon } from '../components/icons/Icons';
 
-const STRIPE_PUBLISHABLE_KEY = 'pk_test_51S3dDtH81iSNg16w1EavHzO0iWRRkqLyf7k9n6cKY4PPpKjVCmUUXXyzWAyFQiuzpkdqZ1YAceOO5jKwKaVPzch800PEQXHxR5';
-
 const BookingPage: React.FC = () => {
   const { category: categoryId, itemId } = useParams<{ category: 'cars' | 'yachts' | 'jets' | 'helicopters' | 'villas'; itemId: string }>();
   const navigate = useNavigate();
@@ -73,8 +71,10 @@ const BookingPage: React.FC = () => {
   }, [categoryId, itemId]);
 
   useEffect(() => {
-    if ((window as any).Stripe) {
-        setStripe((window as any).Stripe(STRIPE_PUBLISHABLE_KEY));
+    if ((window as any).Stripe && process.env.STRIPE_PUBLISHABLE_KEY) {
+        setStripe((window as any).Stripe(process.env.STRIPE_PUBLISHABLE_KEY));
+    } else {
+        console.error("Stripe.js has not loaded or STRIPE_PUBLISHABLE_KEY is not set.");
     }
   }, []);
 
@@ -345,8 +345,9 @@ const BookingPage: React.FC = () => {
             <div className="text-center space-y-4">
               <label className="text-sm font-medium text-gray-300 block">{t('Select_your_crypto')}</label>
               <div className="flex border border-gray-700 rounded-full p-1 max-w-sm mx-auto">
-                {(Object.keys(CRYPTO_ADDRESSES) as Array<keyof typeof CRYPTO_ADDRESSES>).map(c => (
-                  <button type="button" key={c} onClick={() => setSelectedCrypto(c)} className={`flex-1 py-1 text-sm rounded-full transition-colors ${selectedCrypto === c ? 'bg-white text-black font-bold' : 'text-gray-300'}`}>{c.toUpperCase()}</button>
+{/* FIX: Cast map variable to string to resolve typing issues with key, state, and string methods */}
+                {(Object.keys(CRYPTO_ADDRESSES)).map(c => (
+                  <button type="button" key={String(c)} onClick={() => setSelectedCrypto(String(c))} className={`flex-1 py-1 text-sm rounded-full transition-colors ${selectedCrypto === String(c) ? 'bg-white text-black font-bold' : 'text-gray-300'}`}>{String(c).toUpperCase()}</button>
                 ))}
               </div>
               <p className="text-gray-300 mb-4 text-sm">{t('Scan_or_copy_address_below')}</p>

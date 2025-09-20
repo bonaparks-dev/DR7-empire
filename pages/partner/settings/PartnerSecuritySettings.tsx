@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { useTranslation } from '../../hooks/useTranslation';
-import { useAuth } from '../../hooks/useAuth';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { useAuth } from '../../../hooks/useAuth';
 
-const SecuritySettings = () => {
+const PartnerSecuritySettings = () => {
     const { t } = useTranslation();
     const { updateUserPassword } = useAuth();
-    // Supabase updateUser requires only the new password, not the current one, for an authenticated user.
-    // We remove the 'currentPassword' field for a streamlined UX.
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,4 +69,4 @@ const SecuritySettings = () => {
     );
 };
 
-export default SecuritySettings;
+export default PartnerSecuritySettings;

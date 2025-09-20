@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RENTAL_CATEGORIES, AIRPORTS } from '../constants';
@@ -7,6 +8,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { useBooking } from '../hooks/useBooking';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PaperAirplaneIcon } from '../components/icons/Icons';
+import { useVerification } from '../hooks/useVerification';
 
 interface RentalPageProps {
   categoryId: 'cars' | 'yachts' | 'villas' | 'jets' | 'helicopters';
@@ -219,11 +221,19 @@ const JetSearchPage: React.FC = () => {
 const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   const { t, getTranslated } = useTranslation();
   const navigate = useNavigate();
+  const { openBooking } = useBooking();
+  const { checkVerificationAndProceed } = useVerification();
   
   const category = RENTAL_CATEGORIES.find(cat => cat.id === categoryId);
 
   const handleBook = (item: RentalItem) => {
-    navigate(`/book/${categoryId}/${item.id}`);
+    checkVerificationAndProceed(() => {
+        if (['cars', 'jets', 'helicopters'].includes(categoryId)) {
+            navigate(`/book/${categoryId}/${item.id}`);
+        } else {
+            openBooking(item);
+        }
+    });
   };
 
   if (categoryId === 'jets') {

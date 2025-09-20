@@ -3,7 +3,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { Navigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const ProtectedRoute: React.FC<{ children: React.ReactNode, role?: 'personal' | 'business' }> = ({ children, role }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
 
@@ -21,6 +21,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
   if (!user) {
     return <Navigate to="/signin" state={{ from: location }} replace />;
+  }
+
+  if (role && user.role !== role) {
+    // Redirect to home if user role does not match required role
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
