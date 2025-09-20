@@ -137,7 +137,7 @@ const SignUpPage: React.FC = () => {
           else result = await signInWithPhantom();
           
           if (result.error) throw result.error;
-          navigate('/');
+          navigate('/account');
       } catch(err: any) {
           setGeneralError(err.message || `${walletType.charAt(0).toUpperCase() + walletType.slice(1)} sign-up failed. Please try again.`);
       } finally {
