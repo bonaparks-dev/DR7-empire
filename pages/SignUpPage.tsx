@@ -104,7 +104,7 @@ const SignUpPage: React.FC = () => {
         // We don't block the user flow for this, just log it.
       }
       
-      navigate('/check-email');
+      navigate('/account');
 
     } catch (err: any) {
       setGeneralError(err?.message || t('Something_went_wrong'));
