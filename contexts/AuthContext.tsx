@@ -11,6 +11,7 @@ interface AuthContextType {
   user: AppUser | null;
   loading: boolean;
   authEvent: string | null;
+  isFirstSignIn: boolean;
   login: (email: string, password?: string) => Promise<{ user: AppUser | null; error: AuthError | null }>;
   signup: (email: string, password: string, data: { full_name: string, company_name?: string, role: 'personal' | 'business' }) => Promise<{ data: { user: SupabaseUser | null; session: Session | null; }; error: AuthError | null; }>;
   logout: () => Promise<{ error: AuthError | null }>;
@@ -52,6 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [authEvent, setAuthEvent] = useState<string | null>(null);
+  const [isFirstSignIn, setIsFirstSignIn] = useState(false);
 
   useEffect(() => {
     const setSessionUser = (session: Session | null) => {
@@ -76,10 +78,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             
             // Check if this is the first sign-in by comparing creation and last sign-in times.
             // A small tolerance (e.g., 60 seconds) handles minor delays after confirmation.
-            // Also use sessionStorage to prevent re-sending during the same browser session.
-            const isFirstSignIn = !lastSignInAt || Math.abs(lastSignInAt - createdAt) < 60000;
+            const firstSignIn = !lastSignInAt || Math.abs(lastSignInAt - createdAt) < 60000;
+            setIsFirstSignIn(firstSignIn);
 
-            if (isFirstSignIn && !sessionStorage.getItem(`welcome_email_sent_${user.id}`)) {
+            if (firstSignIn && !sessionStorage.getItem(`welcome_email_sent_${user.id}`)) {
                 const { user_metadata } = user;
                 const email = user.email;
                 const name = user_metadata.full_name || user_metadata.name || 'User';
@@ -101,6 +103,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     });
                 }
             }
+        } else if (event === 'SIGNED_OUT') {
+            setIsFirstSignIn(false);
         }
         
         setSessionUser(session);
@@ -171,9 +175,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const value = useMemo(() => ({
-    user, loading, authEvent, login, signup, logout, signInWithGoogle,
+    user, loading, authEvent, isFirstSignIn, login, signup, logout, signInWithGoogle,
     sendPasswordResetEmail, updateUserPassword, updateUser, verifyEmailOtp,
-  }), [user, loading, authEvent, login, signup, logout, signInWithGoogle, 
+  }), [user, loading, authEvent, isFirstSignIn, login, signup, logout, signInWithGoogle, 
       sendPasswordResetEmail, updateUserPassword, updateUser, verifyEmailOtp]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
