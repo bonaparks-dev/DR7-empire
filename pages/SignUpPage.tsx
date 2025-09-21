@@ -104,27 +104,34 @@ const SignUpPage: React.FC = () => {
         throw signUpError;
       }
 
-      // Send welcome email immediately after successful signup
-      fetch('/.netlify/functions/send-welcome-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email, name: formData.fullName }),
-      }).catch((emailError) => {
-        // Log error but don't block user flow
-        console.error('Failed to send welcome email:', emailError);
-      });
-
       // Attempt to log in immediately after sign up
       const { error: loginError } = await login(formData.email, formData.password);
       
       if (loginError) {
         // This is expected if email confirmation is required by Supabase.
         if (loginError.message.includes('Email not confirmed')) {
+             // Also send welcome email in this case
+             fetch('/.netlify/functions/send-welcome-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: formData.email, name: formData.fullName }),
+             }).catch((emailError) => {
+                console.error('Failed to send welcome email:', emailError);
+             });
              setSuccessMessage("Account created! Please check your email for a verification link to log in.");
              setFormData({ fullName: '', companyName: '', email: '', password: '', confirmPassword: '', terms: false });
         } else {
             throw loginError;
         }
+      } else {
+        // Login successful, AuthContext will handle redirect.
+        fetch('/.netlify/functions/send-welcome-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: formData.email, name: formData.fullName }),
+        }).catch((emailError) => {
+          console.error('Failed to send welcome email:', emailError);
+        });
       }
     } catch (err: any) {
       if (err.message && err.message.includes('User already registered')) {
