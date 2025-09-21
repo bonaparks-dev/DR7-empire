@@ -8,7 +8,10 @@ import { RENTAL_CATEGORIES, PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, 
 import type { Booking, Inquiry, RentalItem } from '../types';
 import { CameraIcon, CreditCardIcon, CryptoIcon } from '../components/icons/Icons';
 
-const STRIPE_PUBLISHABLE_KEY = 'pk_test_51BTUDGJAJfZb9HEBw3f44KzK5oUe8nC69d31chp82WzmmANflb2GN5IMb5bImNCd95q2Q4a1kG6U2d1E4Jd2iI8C00s8gP2sVc';
+// Safely access the Stripe publishable key from Vite's environment variables.
+// If it's not available (e.g., in a non-Vite environment), it falls back to a placeholder.
+// The subsequent check will log an error if the key remains a placeholder.
+const STRIPE_PUBLISHABLE_KEY = (import.meta as any).env?.VITE_STRIPE_PUBLISHABLE_KEY || 'YOUR_STRIPE_PUBLISHABLE_KEY';
 
 const BookingPage: React.FC = () => {
   const { category: categoryId, itemId } = useParams<{ category: 'cars' | 'yachts' | 'jets' | 'helicopters' | 'villas'; itemId: string }>();
@@ -74,9 +77,9 @@ const BookingPage: React.FC = () => {
 
   useEffect(() => {
     if ((window as any).Stripe) {
-        if (!STRIPE_PUBLISHABLE_KEY) {
-            console.error("Stripe.js has loaded, but VITE_STRIPE_PUBLISHABLE_KEY is not set.");
-            setStripeError("Payment service is not configured. Please contact support.");
+        if (!STRIPE_PUBLISHABLE_KEY || STRIPE_PUBLISHABLE_KEY.startsWith('YOUR_')) {
+            console.error("Stripe.js has loaded, but the publishable key is not set. Please replace 'YOUR_STRIPE_PUBLISHABLE_KEY' with your actual key.");
+            setStripeError("Payment service is not configured correctly. Please contact support.");
             return;
         }
         setStripe((window as any).Stripe(STRIPE_PUBLISHABLE_KEY));

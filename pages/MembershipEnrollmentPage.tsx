@@ -8,7 +8,10 @@ import { MEMBERSHIP_TIERS, CRYPTO_ADDRESSES } from '../constants';
 import { CreditCardIcon, CryptoIcon } from '../components/icons/Icons';
 import type { Stripe, StripeCardElement } from '@stripe/stripe-js';
 
-const STRIPE_PUBLISHABLE_KEY = 'pk_test_51BTUDGJAJfZb9HEBw3f44KzK5oUe8nC69d31chp82WzmmANflb2GN5IMb5bImNCd95q2Q4a1kG6U2d1E4Jd2iI8C00s8gP2sVc';
+// Safely access the Stripe publishable key from Vite's environment variables.
+// If it's not available (e.g., in a non-Vite environment), it falls back to a placeholder.
+// The subsequent check will log an error if the key remains a placeholder.
+const STRIPE_PUBLISHABLE_KEY = (import.meta as any).env?.VITE_STRIPE_PUBLISHABLE_KEY || 'YOUR_STRIPE_PUBLISHABLE_KEY';
 
 const MembershipEnrollmentPage: React.FC = () => {
     const { tierId } = useParams<{ tierId: string }>();
@@ -37,6 +40,11 @@ const MembershipEnrollmentPage: React.FC = () => {
 
     useEffect(() => {
         if ((window as any).Stripe) {
+            if (!STRIPE_PUBLISHABLE_KEY || STRIPE_PUBLISHABLE_KEY.startsWith('YOUR_')) {
+                console.error("Stripe.js has loaded, but the publishable key is not set. Please replace 'YOUR_STRIPE_PUBLISHABLE_KEY' in MembershipEnrollmentPage.tsx.");
+                // Optionally handle UI error state here
+                return;
+            }
             setStripe((window as any).Stripe(STRIPE_PUBLISHABLE_KEY));
         }
     }, []);
