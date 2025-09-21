@@ -7,49 +7,54 @@ const OAuthCallbackHandler: React.FC = () => {
     const location = useLocation();
 
     useEffect(() => {
-        const handlePkceCallback = async () => {
-            // In a HashRouter setup, OAuth callback parameters might be in the hash.
-            // The URL looks like: /#/signin?code=...
-            // `useLocation` should correctly parse this, but we'll be robust.
-            const hash = location.hash;
-            const queryIndex = hash.indexOf('?');
-            
-            // Prefer params from hash if they exist, otherwise fallback to location.search
-            const searchParamsString = queryIndex > -1 ? hash.substring(queryIndex) : location.search;
-
-            const urlParams = new URLSearchParams(searchParamsString);
-            const code = urlParams.get('code');
-
-            if (code) {
-                try {
-                    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-                    
-                    if (error) {
-                        console.error('Error exchanging code for session:', error.message);
-                        // Navigate to sign-in page on error so user can retry
-                        navigate('/signin', { replace: true });
-                        return;
-                    }
-
-                    // If "Confirm email" is enabled for social providers, Supabase creates a user
-                    // but doesn't return a session until the email is verified.
-                    if (data.user && !data.session) {
-                        navigate('/check-email', { replace: true });
-                    } else {
-                        // On successful login/signup, navigate to a clean root path.
-                        // The AuthRedirector component will then handle redirecting to the correct dashboard.
-                        navigate('/', { replace: true });
-                    }
-
-                } catch (error) {
-                    console.error('A critical error occurred during code exchange:', error);
-                    navigate('/signin', { replace: true });
-                }
-            }
-        };
+        // The URL from the OAuth provider will be like: /#/signin?code=...
+        // We need to extract the 'code' from the URL's hash fragment.
+        const hash = location.hash;
         
-        handlePkceCallback();
-    }, [location.search, location.hash, navigate]);
+        // Check if there are parameters in the hash
+        if (!hash.includes('?')) {
+            return;
+        }
+
+        const searchParams = new URLSearchParams(hash.substring(hash.indexOf('?')));
+        const code = searchParams.get('code');
+
+        // Supabase client also looks for an 'error' parameter
+        const error = searchParams.get('error');
+        if (error) {
+            console.error('OAuth callback error:', searchParams.get('error_description') || error);
+            navigate('/signin', { replace: true, state: { error: 'Authentication failed. Please try again.' } });
+            return;
+        }
+
+        if (code) {
+            // A code was found, exchange it for a session
+            const exchangeCode = async () => {
+                const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+                if (exchangeError) {
+                    console.error('Error exchanging code for session:', exchangeError.message);
+                    // Navigate to sign-in page on error so user can retry, showing an error
+                    navigate('/signin', { replace: true, state: { error: exchangeError.message } });
+                    return;
+                }
+
+                // If Supabase requires email confirmation for social providers,
+                // a user is created but a session is not returned immediately.
+                if (data.user && !data.session) {
+                    navigate('/check-email', { replace: true });
+                } else {
+                    // On successful login, navigate to a clean root path.
+                    // This clears the code from the URL.
+                    // The main AuthRedirector component will then handle redirecting
+                    // the user to their appropriate dashboard page.
+                    navigate('/', { replace: true });
+                }
+            };
+
+            exchangeCode();
+        }
+    }, [location.hash, navigate]);
 
     return null; // This component does not render any UI.
 };
