@@ -49,7 +49,7 @@ const PartnerProfileSettings = () => {
                 phone: formData.phone,
                 businessVerification: {
                     // FIX: Ensure status and other fields are preserved when updating
-                    ...(user.businessVerification || {}),
+                    ...user.businessVerification,
                     status: user.businessVerification?.status || 'unverified',
                     address: formData.address,
                     vatNumber: formData.vatNumber,

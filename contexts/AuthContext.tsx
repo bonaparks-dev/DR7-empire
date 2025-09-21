@@ -141,10 +141,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            // The redirectTo URL is where the user will be redirected after signing in.
-            // By redirecting to the main application's origin, we let the Supabase client
-            // handle the session from the URL hash on the main page load. This simplifies
-            // the flow and removes the need for a separate callback handler page.
             redirectTo: window.location.origin,
         }
     });
