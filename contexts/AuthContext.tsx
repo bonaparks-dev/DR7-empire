@@ -123,6 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
         options: { 
             data,
+            emailRedirectTo: `${window.location.origin}/#/signin`
         }
     });
   }, []);
@@ -259,7 +260,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const sendPasswordResetEmail = useCallback(async (email: string) => {
     return supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'https://dr7empire.com/#/reset-password'
+        redirectTo: `${window.location.origin}/#/reset-password`
     });
   }, []);
 

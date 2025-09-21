@@ -24,7 +24,7 @@ const calculatePasswordStrength = (password: string) => {
 
 const SignUpPage: React.FC = () => {
   const { t } = useTranslation();
-  const { signup, login, signInWithGoogle, signInWithMetaMask, signInWithCoinbase, signInWithPhantom, user, loading } = useAuth();
+  const { signup, signInWithGoogle, signInWithMetaMask, signInWithCoinbase, signInWithPhantom, user, loading } = useAuth();
   const navigate = useNavigate();
 
   const [accountType, setAccountType] = useState<'personal' | 'business'>('personal');
@@ -94,7 +94,7 @@ const SignUpPage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      const { error: signUpError } = await signup(formData.email, formData.password, {
+      const { data, error: signUpError } = await signup(formData.email, formData.password, {
         full_name: formData.fullName,
         company_name: accountType === 'business' ? formData.companyName : undefined,
         role: accountType,
@@ -103,20 +103,10 @@ const SignUpPage: React.FC = () => {
       if (signUpError) {
         throw signUpError;
       }
-
-      // Attempt to log in immediately after sign up
-      const { error: loginError } = await login(formData.email, formData.password);
       
-      if (loginError) {
-        // This is expected if email confirmation is required by Supabase.
-        if (loginError.message.includes('Email not confirmed')) {
-             setSuccessMessage("Account created! Please check your email for a verification link to log in.");
-             setFormData({ fullName: '', companyName: '', email: '', password: '', confirmPassword: '', terms: false });
-        } else {
-            throw loginError;
-        }
-      } else {
-        // Login successful, AuthContext will handle redirect.
+      // Case 1: Signup successful, user logged in (auto-confirm enabled)
+      if (data.user && data.session) {
+        // AuthContext will handle redirect. Send the custom welcome email.
         fetch('/.netlify/functions/send-welcome-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -124,9 +114,21 @@ const SignUpPage: React.FC = () => {
         }).catch((emailError) => {
           console.error('Failed to send welcome email:', emailError);
         });
+        // The onAuthStateChange listener will navigate the user away.
+      } 
+      // Case 2: Signup successful, email confirmation required
+      else if (data.user && !data.session) {
+        navigate('/check-email');
+      } 
+      // Case 3: Fallback (e.g., user exists but is unconfirmed)
+      else {
+        // Supabase might resend the confirmation email in this case.
+        // It's safe to direct the user to check their email.
+        navigate('/check-email');
       }
+
     } catch (err: any) {
-      if (err.message && err.message.includes('User already registered')) {
+      if (err.message && (err.message.includes('User already registered') || err.message.includes('already exists'))) {
         setGeneralError('A user with this email already exists. Please sign in or use a different email.');
       } else {
         setGeneralError(err.message || t('Something_went_wrong'));

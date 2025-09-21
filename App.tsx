@@ -140,6 +140,7 @@ const AnimatedRoutes = () => {
         <Route path="/faq" element={<FAQPage />} />
         <Route path="/signin" element={<AuthPage />} />
         <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/check-email" element={<CheckEmailPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/post/:id" element={<PostPage />} />
