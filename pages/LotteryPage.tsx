@@ -8,7 +8,7 @@ import type { Lottery, Prize } from '../types';
 import { TicketIcon } from '../components/icons/Icons';
 import { useAuth } from '../hooks/useAuth';
 
-const STRIPE_PUBLISHABLE_KEY = 'pk_test_51S3dDtH81iSNg16w1EavHzO0iWRRkqLyf7k9n6cKY4PPpKjVCmUUXXyzWAyFQiuzpkdqZ1YAceOO5jKwKaVPzch800PEQXHxR5';
+const VITE_STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 
 const calculateTimeLeft = (drawDate: string) => {
     const difference = +new Date(drawDate) - +new Date();
@@ -66,8 +66,13 @@ const LotteryPage: React.FC = () => {
     const [isProcessing, setIsProcessing] = useState(false);
 
     useEffect(() => {
+        if (!VITE_STRIPE_PUBLISHABLE_KEY) {
+            console.error('Stripe publishable key is not configured. Set VITE_STRIPE_PUBLISHABLE_KEY in your environment.');
+            setStripeError('Payment service is not available.');
+            return;
+        }
         if ((window as any).Stripe) {
-            setStripe((window as any).Stripe(STRIPE_PUBLISHABLE_KEY));
+            setStripe((window as any).Stripe(VITE_STRIPE_PUBLISHABLE_KEY));
         }
     }, []);
 
