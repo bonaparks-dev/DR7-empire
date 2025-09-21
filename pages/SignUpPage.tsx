@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
-import { GoogleIcon, MetaMaskIcon, CoinbaseIcon, PhantomIcon, SolanaIcon, EyeIcon, EyeSlashIcon } from '../components/icons/Icons';
+import { GoogleIcon, EyeIcon, EyeSlashIcon } from '../components/icons/Icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
@@ -24,7 +24,7 @@ const calculatePasswordStrength = (password: string) => {
 
 const SignUpPage: React.FC = () => {
   const { t } = useTranslation();
-  const { signup, signInWithGoogle, signInWithMetaMask, signInWithCoinbase, signInWithPhantom, signInWithSolana, user, loading } = useAuth();
+  const { signup, signInWithGoogle, user, loading } = useAuth();
   const navigate = useNavigate();
 
   const [accountType, setAccountType] = useState<'personal' | 'business'>('personal');
@@ -138,32 +138,6 @@ const SignUpPage: React.FC = () => {
     }
   }
 
-  const handleWalletSignIn = async (walletType: 'metamask' | 'coinbase' | 'phantom') => {
-      setGeneralError('');
-      setIsSubmitting(true);
-      try {
-          let result;
-          if (walletType === 'metamask') result = await signInWithMetaMask();
-          else if (walletType === 'coinbase') result = await signInWithCoinbase();
-          else result = await signInWithPhantom();
-          
-          if (result.error) throw result.error;
-          navigate('/');
-      } catch(err: any) {
-          setGeneralError(err.message || `${walletType.charAt(0).toUpperCase() + walletType.slice(1)} sign-up failed. Please try again.`);
-      } finally {
-          setIsSubmitting(false);
-      }
-  }
-
-  const handleSolanaSignIn = async () => {
-    setGeneralError('');
-    const { error } = await signInWithSolana();
-    if (error) {
-        setGeneralError(error.message);
-    }
-  };
-
   const getInputClassName = (field: string) =>
     `appearance-none rounded-md relative block w-full px-3 py-3 border bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-white focus:border-white focus:z-10 sm:text-sm ${
       errors[field] ? 'border-red-500' : 'border-gray-700'
@@ -214,20 +188,6 @@ const SignUpPage: React.FC = () => {
                 
                 <div className="space-y-4">
                   <button type="button" onClick={handleGoogleSignIn} disabled={isSubmitting} className="w-full flex items-center justify-center py-3 px-4 border border-gray-700 rounded-full shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60"><GoogleIcon className="w-5 h-5 mr-2" />{t('Sign_up_with_Google')}</button>
-                  <div className="grid grid-cols-2 gap-3">
-                      <button type="button" onClick={() => handleWalletSignIn('metamask')} disabled={isSubmitting} title="MetaMask" className="flex items-center justify-center py-2 px-3 border border-gray-700 rounded-full shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60">
-                          <MetaMaskIcon className="w-5 h-5 mr-1.5" /> MetaMask
-                      </button>
-                      <button type="button" onClick={() => handleWalletSignIn('coinbase')} disabled={isSubmitting} title="Coinbase Wallet" className="flex items-center justify-center py-2 px-3 border border-gray-700 rounded-full shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60">
-                          <CoinbaseIcon className="w-5 h-5 mr-1.5" /> Coinbase
-                      </button>
-                      <button type="button" onClick={() => handleWalletSignIn('phantom')} disabled={isSubmitting} title="Phantom" className="flex items-center justify-center py-2 px-3 border border-gray-700 rounded-full shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60">
-                          <PhantomIcon className="w-5 h-5 mr-1.5" /> Phantom
-                      </button>
-                       <button type="button" onClick={handleSolanaSignIn} disabled={isSubmitting} title="Solana" className="flex items-center justify-center py-2 px-3 border border-gray-700 rounded-full shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60">
-                          <SolanaIcon className="w-5 h-5 mr-1.5" /> Solana
-                      </button>
-                  </div>
                 </div>
 
                 <div className="relative my-6"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-700" /></div><div className="relative flex justify-center text-sm"><span className="px-2 bg-gray-900 text-gray-500">{t('OR')}</span></div></div>

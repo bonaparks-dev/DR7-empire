@@ -1,20 +1,8 @@
 import React, { createContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { User } from '../types';
 import { supabase } from '../supabaseClient';
+// FIX: Removed OtpVerificationError as it is not an exported member of '@supabase/supabase-js'
 import type { AuthError, Session, User as SupabaseUser, OAuthResponse, UserResponse } from '@supabase/supabase-js';
-
-// EIP-6963 Provider Discovery Types
-interface EIP6963ProviderInfo {
-  uuid: string;
-  name: string;
-  icon: string;
-  rdns: string;
-}
-
-interface EIP6963ProviderDetail {
-  info: EIP6963ProviderInfo;
-  provider: any; // EIP-1193 provider
-}
 
 // Define a compatible user type for the rest of the app
 interface AppUser extends User {}
@@ -26,13 +14,11 @@ interface AuthContextType {
   signup: (email: string, password: string, data: { full_name: string, company_name?: string, role: 'personal' | 'business' }) => Promise<{ data: { user: SupabaseUser | null; session: Session | null; }; error: AuthError | null; }>;
   logout: () => Promise<{ error: AuthError | null }>;
   signInWithGoogle: () => Promise<OAuthResponse>;
-  signInWithMetaMask: () => Promise<{ error: Error | null }>;
-  signInWithCoinbase: () => Promise<{ error: Error | null }>;
-  signInWithPhantom: () => Promise<{ error: Error | null }>;
-  signInWithSolana: () => Promise<{ error: Error | null }>;
   sendPasswordResetEmail: (email: string) => Promise<{ data: {}; error: AuthError | null; }>;
   updateUserPassword: (password: string) => Promise<UserResponse>;
   updateUser: (updates: Partial<AppUser>) => Promise<{ data: AppUser | null; error: Error | null }>;
+  // FIX: Removed OtpVerificationError from the return type
+  verifyEmailOtp: (token: string) => Promise<{ data: { user: SupabaseUser | null; session: Session | null; }; error: AuthError | null; }>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -64,28 +50,6 @@ const mapSupabaseUserToAppUser = (supabaseUser: SupabaseUser): AppUser => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [eip6963Providers, setEip6963Providers] = useState<EIP6963ProviderDetail[]>([]);
-  
-  // EIP-6963 Provider Discovery Effect
-  useEffect(() => {
-    const providers: EIP6963ProviderDetail[] = [];
-    const onAnnounceProvider = (event: Event) => {
-      const detail = (event as CustomEvent<EIP6963ProviderDetail>).detail;
-      if (detail?.info && detail?.provider) {
-        if (!providers.some(p => p.info.uuid === detail.info.uuid)) {
-          providers.push(detail);
-          setEip6963Providers([...providers]);
-        }
-      }
-    };
-
-    window.addEventListener('eip6963:announceProvider', onAnnounceProvider);
-    window.dispatchEvent(new Event('eip6963:requestProvider'));
-
-    return () => {
-      window.removeEventListener('eip6963:announceProvider', onAnnounceProvider);
-    };
-  }, []);
 
   useEffect(() => {
     const setSessionUser = (session: Session | null) => {
@@ -175,147 +139,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, []);
 
-  const _signInWithWeb3Provider = async (provider: any, providerName: string) => {
-      if (!provider) {
-          throw new Error(`${providerName} not found. Please install the extension.`);
-      }
-
-      const accounts = await provider.request({ method: 'eth_requestAccounts' });
-      if (!accounts || accounts.length === 0) {
-          throw new Error(`No accounts found in ${providerName}. Please connect an account.`);
-      }
-      const address = accounts[0];
-
-      const { data: nonceData, error: nonceError } = await supabase.auth.signInWithOtp({
-          email: address, 
-          options: { shouldCreateUser: true, channel: 'wallet' as any },
-      });
-
-      if (nonceError) throw nonceError;
-      const messageToSign = (nonceData as any)?.message;
-      if (!messageToSign) throw new Error('Could not get a message to sign from the server.');
-
-      const signature = await provider.request({
-          method: 'personal_sign',
-          params: [messageToSign, address],
-      });
-
-      const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
-          token: signature,
-          type: 'wallet' as any,
-          email: address,
-      });
-      
-      if (verifyError) throw verifyError;
-      if (!verifyData.user || !verifyData.session) throw new Error('Verification failed.');
-
-      // Set default name for new wallet users
-      if (verifyData.user.user_metadata?.full_name === undefined) {
-         await supabase.auth.updateUser({
-             data: { full_name: `User ${address.slice(0, 6)}...${address.slice(-4)}`, role: 'personal' }
-         })
-      }
-
-      return { error: null };
-  };
-
-  const findProvider = (rdns: string) => {
-    // 1. EIP-6963 provider discovery (preferred). This is the modern standard for multiple wallets.
-    const announcedProvider = eip6963Providers.find(p => p.info.rdns === rdns);
-    if (announcedProvider) {
-      return announcedProvider.provider;
-    }
-
-    // 2. Fallback for environments with `window.ethereum`
-    const winEth = (window as any).ethereum;
-    if (!winEth) {
-      return undefined;
-    }
-
-    // 2a. If `window.ethereum.providers` array exists, search for the specific provider there.
-    // This handles cases where multiple wallets inject their providers into this array.
-    if (Array.isArray(winEth.providers)) {
-      const provider = winEth.providers.find((p: any) => {
-        // EIP-6963 providers might also be in this array, so we check for rdns first.
-        if (p.info?.rdns === rdns) return true;
-        // Legacy flags check
-        if (rdns === 'io.metamask' && p.isMetaMask) return true;
-        if (rdns === 'com.coinbase.wallet' && p.isCoinbaseWallet) return true;
-        if (rdns === 'app.phantom' && p.isPhantom) return true;
-        return false;
-      });
-      if (provider) return provider;
-    }
-
-    // 2b. Legacy fallback for a single provider injected as `window.ethereum`.
-    // This is for older wallets or when only one wallet is installed.
-    const isRequestedProvider = 
-        (rdns === 'io.metamask' && winEth.isMetaMask) ||
-        (rdns === 'com.coinbase.wallet' && winEth.isCoinbaseWallet) ||
-        (rdns === 'app.phantom' && winEth.isPhantom);
-        
-    // Check if it's a single provider environment (`!winEth.providers`) and if it matches.
-    if (!winEth.providers && isRequestedProvider) {
-      return winEth;
-    }
-    
-    // If we're here, no matching provider was found.
-    return undefined;
-  };
-
-  const signInWithMetaMask = useCallback(async () => {
-    try {
-        const provider = findProvider('io.metamask');
-        return await _signInWithWeb3Provider(provider, 'MetaMask');
-    } catch (error: any) {
-        console.error("MetaMask sign-in error:", error);
-        return { error };
-    }
-  }, [eip6963Providers]);
-
-  const signInWithCoinbase = useCallback(async () => {
-      try {
-          const provider = findProvider('com.coinbase.wallet');
-          return await _signInWithWeb3Provider(provider, 'Coinbase Wallet');
-      } catch (error: any) {
-          console.error("Coinbase sign-in error:", error);
-          return { error };
-      }
-  }, [eip6963Providers]);
-
-  const signInWithPhantom = useCallback(async () => {
-      try {
-          const provider = findProvider('app.phantom');
-          return await _signInWithWeb3Provider(provider, 'Phantom Wallet');
-      } catch (error: any) {
-          console.error("Phantom sign-in error:", error);
-          return { error };
-      }
-  }, [eip6963Providers]);
-
-  const signInWithSolana = useCallback(async () => {
-      // NOTE FOR DEVELOPERS:
-      // Supabase's built-in `signInWithOtp` with channel 'wallet' is designed for EVM-compatible chains
-      // and expects an EVM-style signature. Verifying a Solana signature requires a custom backend
-      // function (e.g., a Netlify/Supabase Edge Function).
-      //
-      // This function is a placeholder. To implement it:
-      // 1. Create a serverless function that:
-      //    a. Takes a Solana public key and a signed message (nonce) as input.
-      //    b. Uses a library like '@solana/web3.js' or 'tweetnacl' to verify the signature against the public key.
-      //    c. If valid, uses the Supabase Admin client to find or create the user and generate a custom JWT or magic link.
-      // 2. Update this function to:
-      //    a. Connect to the user's Solana wallet (e.g., Phantom).
-      //    b. Get a nonce/challenge to sign (can be from your serverless function).
-      //    c. Prompt the user to sign the message.
-      //    d. Send the public key and signature to your serverless function.
-      //    e. Sign in the user with the custom JWT or magic link returned from the function.
-      
-      const error = new Error("Sign in with Solana is not yet implemented. It requires custom backend logic to verify Solana signatures.");
-      console.error(error.message);
-      return { error };
-  }, []);
-
   const sendPasswordResetEmail = useCallback(async (email: string) => {
     return supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/#/reset-password`
@@ -340,13 +163,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { data: null, error: new Error('User data could not be updated.')};
   }, [user]);
 
+  const verifyEmailOtp = useCallback((token: string) => {
+    return supabase.auth.verifyOtp({ token_hash: token, type: 'signup' });
+  }, []);
+
   const value = useMemo(() => ({
     user, loading, login, signup, logout, signInWithGoogle,
-    signInWithMetaMask, signInWithCoinbase, signInWithPhantom, signInWithSolana,
-    sendPasswordResetEmail, updateUserPassword, updateUser,
+    sendPasswordResetEmail, updateUserPassword, updateUser, verifyEmailOtp,
   }), [user, loading, login, signup, logout, signInWithGoogle, 
-      signInWithMetaMask, signInWithCoinbase, signInWithPhantom, signInWithSolana,
-      sendPasswordResetEmail, updateUserPassword, updateUser]);
+      sendPasswordResetEmail, updateUserPassword, updateUser, verifyEmailOtp]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

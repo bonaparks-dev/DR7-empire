@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
-import { GoogleIcon, MetaMaskIcon, CoinbaseIcon, PhantomIcon, SolanaIcon, EyeIcon, EyeSlashIcon } from '../components/icons/Icons';
+import { GoogleIcon, EyeIcon, EyeSlashIcon } from '../components/icons/Icons';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
+type ConfirmationStatus = 'idle' | 'loading' | 'success' | 'error';
+
 const AuthPage: React.FC = () => {
   const { t } = useTranslation();
-  const { login, signInWithGoogle, signInWithMetaMask, signInWithCoinbase, signInWithPhantom, signInWithSolana, user, loading } = useAuth();
+  const { login, signInWithGoogle, user, loading, verifyEmailOtp } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -15,6 +17,7 @@ const AuthPage: React.FC = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const passwordInputRef = useRef<HTMLInputElement>(null);
 
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -22,6 +25,9 @@ const AuthPage: React.FC = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  
+  const [confirmationStatus, setConfirmationStatus] = useState<ConfirmationStatus>('idle');
+  const [confirmationMessage, setConfirmationMessage] = useState('');
 
   useEffect(() => {
     if (!loading && user) {
@@ -31,6 +37,51 @@ const AuthPage: React.FC = () => {
       navigate(destination, { replace: true });
     }
   }, [user, loading, navigate, from]);
+
+  useEffect(() => {
+    const handleEmailConfirmation = async (token: string) => {
+        setConfirmationStatus('loading');
+        setConfirmationMessage('Confirming your email, please wait...');
+
+        const { data, error } = await verifyEmailOtp(token);
+
+        if (error) {
+            setConfirmationStatus('error');
+            if (error.message.includes('expired')) {
+                setConfirmationMessage('This confirmation link has expired. Please sign up again to receive a new link.');
+            } else if (error.message.includes('already confirmed')) {
+                setConfirmationMessage('Your email has already been confirmed. You can sign in now.');
+            } else {
+                setConfirmationMessage('Invalid confirmation link. It may have already been used or is incorrect.');
+            }
+            console.error('Email confirmation error:', error);
+        } else if (data.user) {
+            setConfirmationStatus('success');
+            setConfirmationMessage('Email confirmed successfully! You can now sign in.');
+            
+            if (data.user.email) {
+                setEmail(data.user.email);
+            }
+            passwordInputRef.current?.focus();
+
+            window.history.replaceState(null, '', '/#/signin');
+            
+            const timer = setTimeout(() => {
+                setConfirmationStatus('idle');
+                setConfirmationMessage('');
+            }, 8000);
+            return () => clearTimeout(timer);
+        }
+    };
+    
+    const hash = window.location.hash;
+    const parts = hash.split('#');
+    
+    if (parts.length === 3 && parts[1] === 'signin' && parts[2]) {
+        const token = parts[2];
+        handleEmailConfirmation(token);
+    }
+  }, [verifyEmailOtp]);
 
   const validateEmail = (emailToValidate: string) => {
     if (!emailToValidate) {
@@ -86,8 +137,6 @@ const AuthPage: React.FC = () => {
           : (user.role === 'business' ? '/partner/dashboard' : '/account');
         navigate(destination, { replace: true });
       } else {
-        // This handles the case where login might succeed without an error but also without a user object.
-        // It provides clearer feedback to the user.
         throw new Error(t('Something_went_wrong'));
       }
 
@@ -111,32 +160,6 @@ const AuthPage: React.FC = () => {
     }
   }
 
-  const handleWalletSignIn = async (walletType: 'metamask' | 'coinbase' | 'phantom') => {
-      setGeneralError('');
-      setIsSubmitting(true);
-      try {
-          let result;
-          if (walletType === 'metamask') result = await signInWithMetaMask();
-          else if (walletType === 'coinbase') result = await signInWithCoinbase();
-          else result = await signInWithPhantom();
-          
-          if (result.error) throw result.error;
-          navigate(from, { replace: true });
-      } catch(err: any) {
-          setGeneralError(err.message || `${walletType.charAt(0).toUpperCase() + walletType.slice(1)} sign-in failed. Please try again.`);
-      } finally {
-          setIsSubmitting(false);
-      }
-  }
-
-  const handleSolanaSignIn = async () => {
-    setGeneralError('');
-    const { error } = await signInWithSolana();
-    if (error) {
-        setGeneralError(error.message);
-    }
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -159,6 +182,23 @@ const AuthPage: React.FC = () => {
               </p>
             </div>
 
+            <AnimatePresence>
+                {confirmationStatus !== 'idle' && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className={`text-sm p-3 rounded-md border ${
+                            confirmationStatus === 'success' ? 'bg-green-900/20 border-green-800 text-green-400' :
+                            confirmationStatus === 'error' ? 'bg-red-900/20 border-red-800 text-red-400' :
+                            'bg-blue-900/20 border-blue-800 text-blue-400'
+                        }`}
+                    >
+                        {confirmationMessage}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {generalError && (
               <p className="text-sm text-red-400 bg-red-900/20 border border-red-800 rounded p-2">
                 {generalError}
@@ -175,21 +215,6 @@ const AuthPage: React.FC = () => {
                   <GoogleIcon className="w-5 h-5 mr-2" />
                   {t('Sign_in_with_Google')}
                 </button>
-
-                <div className="grid grid-cols-2 gap-3">
-                    <button type="button" onClick={() => handleWalletSignIn('metamask')} disabled={isSubmitting} title="MetaMask" className="flex items-center justify-center py-2 px-3 border border-gray-700 rounded-full shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60">
-                        <MetaMaskIcon className="w-5 h-5 mr-1.5" /> MetaMask
-                    </button>
-                    <button type="button" onClick={() => handleWalletSignIn('coinbase')} disabled={isSubmitting} title="Coinbase Wallet" className="flex items-center justify-center py-2 px-3 border border-gray-700 rounded-full shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60">
-                        <CoinbaseIcon className="w-5 h-5 mr-1.5" /> Coinbase
-                    </button>
-                    <button type="button" onClick={() => handleWalletSignIn('phantom')} disabled={isSubmitting} title="Phantom" className="flex items-center justify-center py-2 px-3 border border-gray-700 rounded-full shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60">
-                        <PhantomIcon className="w-5 h-5 mr-1.5" /> Phantom
-                    </button>
-                    <button type="button" onClick={handleSolanaSignIn} disabled={isSubmitting} title="Solana" className="flex items-center justify-center py-2 px-3 border border-gray-700 rounded-full shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60">
-                        <SolanaIcon className="w-5 h-5 mr-1.5" /> Solana
-                    </button>
-                </div>
             </div>
 
             <div className="relative">
@@ -229,6 +254,7 @@ const AuthPage: React.FC = () => {
                 </label>
                 <div className="relative">
                     <input
+                      ref={passwordInputRef}
                       id="password"
                       name="password"
                       type={showPassword ? "text" : "password"}
