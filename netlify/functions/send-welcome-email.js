@@ -109,7 +109,7 @@ exports.handler = async (event) => {
               </tr>
               <tr>
                 <td align="center" style="padding: 20px 0;">
-                  <a href="${siteUrl}/#/account" target="_blank" style="background-color: #ffffff; color: #000000; padding: 12px 24px; text-decoration: none; border-radius: 9999px; font-weight: bold; font-size: 14px; text-transform: uppercase;">Go to Your Account</a>
+                  <a href="${siteUrl}/#/signin" target="_blank" style="background-color: #ffffff; color: #000000; padding: 12px 24px; text-decoration: none; border-radius: 9999px; font-weight: bold; font-size: 14px; text-transform: uppercase;">Go to Your Account</a>
                 </td>
               </tr>
                <tr>

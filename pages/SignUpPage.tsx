@@ -104,6 +104,16 @@ const SignUpPage: React.FC = () => {
         throw signUpError;
       }
 
+      // Send welcome email immediately after successful signup
+      fetch('/.netlify/functions/send-welcome-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, name: formData.fullName }),
+      }).catch((emailError) => {
+        // Log error but don't block user flow
+        console.error('Failed to send welcome email:', emailError);
+      });
+
       // Attempt to log in immediately after sign up
       const { error: loginError } = await login(formData.email, formData.password);
       
@@ -115,15 +125,6 @@ const SignUpPage: React.FC = () => {
         } else {
             throw loginError;
         }
-      } else {
-        // Login successful, AuthContext will handle redirect.
-        fetch('/.netlify/functions/send-welcome-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: formData.email, name: formData.fullName }),
-        }).catch((emailError) => {
-          console.error('Failed to send welcome email:', emailError);
-        });
       }
     } catch (err: any) {
       if (err.message && err.message.includes('User already registered')) {
