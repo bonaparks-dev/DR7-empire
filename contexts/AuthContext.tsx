@@ -125,7 +125,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
         options: { 
             data,
-            emailRedirectTo: window.location.origin
         }
     });
   }, []);
@@ -136,16 +135,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     sessionStorage.setItem('oauth_in_progress', 'true');
     return supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: {
-            redirectTo: window.location.origin,
-        }
     });
   }, []);
 
   const sendPasswordResetEmail = useCallback(async (email: string) => {
-    return supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin
-    });
+    return supabase.auth.resetPasswordForEmail(email);
   }, []);
 
   const updateUserPassword = useCallback(async (password: string) => {
