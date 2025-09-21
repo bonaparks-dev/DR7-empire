@@ -8,7 +8,7 @@ import { RENTAL_CATEGORIES, PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, 
 import type { Booking, Inquiry, RentalItem } from '../types';
 import { CameraIcon, CreditCardIcon, CryptoIcon } from '../components/icons/Icons';
 
-const STRIPE_PUBLISHABLE_KEY = 'pk_test_51S3dDtH81iSNg16w1EavHzO0iWRRkqLyf7k9n6cKY4PPpKjVCmUUXXyzWAyFQiuzpkdqZ1YAceOO5jKwKaVPzch800PEQXHxR5';
+const STRIPE_PUBLISHABLE_KEY = 'pk_test_51BTUDGJAJfZb9HEBw3f44KzK5oUe8nC69d31chp82WzmmANflb2GN5IMb5bImNCd95q2Q4a1kG6U2d1E4Jd2iI8C00s8gP2sVc';
 
 const BookingPage: React.FC = () => {
   const { category: categoryId, itemId } = useParams<{ category: 'cars' | 'yachts' | 'jets' | 'helicopters' | 'villas'; itemId: string }>();
@@ -73,10 +73,15 @@ const BookingPage: React.FC = () => {
   }, [categoryId, itemId]);
 
   useEffect(() => {
-    if ((window as any).Stripe && STRIPE_PUBLISHABLE_KEY) {
+    if ((window as any).Stripe) {
+        if (!STRIPE_PUBLISHABLE_KEY) {
+            console.error("Stripe.js has loaded, but VITE_STRIPE_PUBLISHABLE_KEY is not set.");
+            setStripeError("Payment service is not configured. Please contact support.");
+            return;
+        }
         setStripe((window as any).Stripe(STRIPE_PUBLISHABLE_KEY));
     } else {
-        console.error("Stripe.js has not loaded or STRIPE_PUBLISHABLE_KEY is not set.");
+        console.error("Stripe.js has not loaded.");
     }
   }, []);
 
@@ -264,7 +269,8 @@ const BookingPage: React.FC = () => {
             details: { tripType: formData.tripType, departurePoint: formData.departurePoint, arrivalPoint: formData.arrivalPoint, departureDate: formData.departureDate, departureTime: formData.departureTime, returnDate: formData.returnDateQuote, returnTime: formData.returnTimeQuote, passengers: Number(formData.passengers), petsAllowed: formData.petsAllowed, smokingAllowed: formData.smokingAllowed },
             inquiredAt: new Date().toISOString(),
         };
-        const existing = JSON.parse(localStorage.getItem('inquiries') || '[]'); localStorage.setItem('inquiries', JSON.stringify([...existing, newInquiry]));
+        const existing = JSON.parse(localStorage.getItem('inquiries') || '[]');
+        localStorage.setItem('inquiries', JSON.stringify([...existing, newInquiry]));
         setCompletedBooking(newInquiry);
     } else {
         const commonData = {
@@ -283,7 +289,8 @@ const BookingPage: React.FC = () => {
             newBooking = { ...commonData, pickupDate: formData.checkinDate, pickupTime: '15:00', returnDate: formData.checkoutDate, returnTime: '11:00', duration: `${nights} ${nights === 1 ? t('Night') : t('Nights')}`, driverLicenseImage: '', extras: [], pickupLocation: item.location || 'Villa', insuranceOption: 'none' };
         }
 
-        const existing = JSON.parse(localStorage.getItem('bookings') || '[]'); localStorage.setItem('bookings', JSON.stringify([...existing, newBooking]));
+        const existing = JSON.parse(localStorage.getItem('bookings') || '[]');
+        localStorage.setItem('bookings', JSON.stringify([...existing, newBooking]));
         setCompletedBooking(newBooking);
     }
     setStep(steps.length + 1);
@@ -347,9 +354,8 @@ const BookingPage: React.FC = () => {
             <div className="text-center space-y-4">
               <label className="text-sm font-medium text-gray-300 block">{t('Select_your_crypto')}</label>
               <div className="flex border border-gray-700 rounded-full p-1 max-w-sm mx-auto">
-{/* FIX: Cast map variable to string to resolve typing issues with key, state, and string methods */}
-                {(Object.keys(CRYPTO_ADDRESSES)).map(c => (
-                  <button type="button" key={String(c)} onClick={() => setSelectedCrypto(String(c))} className={`flex-1 py-1 text-sm rounded-full transition-colors ${selectedCrypto === String(c) ? 'bg-white text-black font-bold' : 'text-gray-300'}`}>{String(c).toUpperCase()}</button>
+                {Object.keys(CRYPTO_ADDRESSES).map(c => (
+                  <button type="button" key={c} onClick={() => setSelectedCrypto(c)} className={`flex-1 py-1 text-sm rounded-full transition-colors ${selectedCrypto === c ? 'bg-white text-black font-bold' : 'text-gray-300'}`}>{c.toUpperCase()}</button>
                 ))}
               </div>
               <p className="text-gray-300 mb-4 text-sm">{t('Scan_or_copy_address_below')}</p>

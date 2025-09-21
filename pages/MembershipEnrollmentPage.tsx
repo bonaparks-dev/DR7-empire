@@ -8,7 +8,7 @@ import { MEMBERSHIP_TIERS, CRYPTO_ADDRESSES } from '../constants';
 import { CreditCardIcon, CryptoIcon } from '../components/icons/Icons';
 import type { Stripe, StripeCardElement } from '@stripe/stripe-js';
 
-const STRIPE_PUBLISHABLE_KEY = 'pk_test_51S3dDtH81iSNg16w1EavHzO0iWRRkqLyf7k9n6cKY4PPpKjVCmUUXXyzWAyFQiuzpkdqZ1YAceOO5jKwKaVPzch800PEQXHxR5';
+const STRIPE_PUBLISHABLE_KEY = 'pk_test_51BTUDGJAJfZb9HEBw3f44KzK5oUe8nC69d31chp82WzmmANflb2GN5IMb5bImNCd95q2Q4a1kG6U2d1E4Jd2iI8C00s8gP2sVc';
 
 const MembershipEnrollmentPage: React.FC = () => {
     const { tierId } = useParams<{ tierId: string }>();
@@ -163,9 +163,8 @@ const MembershipEnrollmentPage: React.FC = () => {
                             <div className="text-center">
                                 <label className="text-sm text-gray-300 block mb-2">{t('Select_your_crypto')}</label>
                                 <div className="flex border border-gray-700 rounded-full p-1 max-w-sm mx-auto mb-4">
-                                    {/* FIX: Cast map variable to string to resolve typing issues with key, state, and string methods */}
-                                    {(Object.keys(CRYPTO_ADDRESSES)).map(c => (
-                                    <button type="button" key={String(c)} onClick={() => setSelectedCrypto(String(c))} className={`flex-1 py-1 text-sm rounded-full transition-colors ${selectedCrypto === String(c) ? 'bg-white text-black font-bold' : 'text-gray-300'}`}>{String(c).toUpperCase()}</button>
+                                    {Object.keys(CRYPTO_ADDRESSES).map(c => (
+                                    <button type="button" key={c} onClick={() => setSelectedCrypto(c)} className={`flex-1 py-1 text-sm rounded-full transition-colors ${selectedCrypto === c ? 'bg-white text-black font-bold' : 'text-gray-300'}`}>{c.toUpperCase()}</button>
                                     ))}
                                 </div>
                                 <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${CRYPTO_ADDRESSES[selectedCrypto]}`} alt={`${selectedCrypto.toUpperCase()} QR Code`} className="w-32 h-32 mx-auto bg-white p-1 rounded-md" />

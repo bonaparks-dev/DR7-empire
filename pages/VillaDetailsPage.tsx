@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { RENTAL_CATEGORIES, VILLA_SERVICE_FEE_PERCENTAGE } from '../constants';
@@ -157,7 +158,8 @@ export default function VillaDetailsPage() {
               {villa.amenities && villa.features ? (
                 <>
                   <div className="mb-12"><h2 className="text-3xl font-bold mb-8">{t('amenities.comfort')}</h2><div className="grid grid-cols-1 md:grid-cols-2 gap-6">{villa.amenities.map((amenity, index) => (<div key={index} className="bg-gray-900/50 border border-gray-800 rounded-lg p-6"><amenity.icon className="w-8 h-8 mb-4 text-white" /><h3 className="text-xl font-semibold mb-2">{amenity.title[lang]}</h3><p className="text-gray-400">{amenity.description[lang]}</p></div>))}</div></div>
-                  <div className="mb-12"><h2 className="text-3xl font-bold mb-8">{t('features.title')}</h2><div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300">{(villa.features as any)[lang].map((feature: string, index: number) => (<div key={index} className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-white rounded-full flex-shrink-0"></div><span>{feature}</span></div>))}</div></div>
+                  {/* FIX: Removed unnecessary 'as any' type assertion to improve type safety. */}
+                  <div className="mb-12"><h2 className="text-3xl font-bold mb-8">{t('features.title')}</h2><div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300">{villa.features[lang].map((feature: string, index: number) => (<div key={index} className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-white rounded-full flex-shrink-0"></div><span>{feature}</span></div>))}</div></div>
                 </>
               ) : (
                 <div className="text-center py-16 bg-gray-900/50 border border-gray-800 rounded-lg">

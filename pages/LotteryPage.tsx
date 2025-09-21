@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
@@ -9,7 +8,7 @@ import { TicketIcon } from '../components/icons/Icons';
 import { useAuth } from '../hooks/useAuth';
 import type { Stripe, StripeElements, StripeCardElement } from '@stripe/stripe-js';
 
-const STRIPE_PUBLISHABLE_KEY = 'pk_test_51S3dDtH81iSNg16w1EavHzO0iWRRkqLyf7k9n6cKY4PPpKjVCmUUXXyzWAyFQiuzpkdqZ1YAceOO5jKwKaVPzch800PEQXHxR5';
+const STRIPE_PUBLISHABLE_KEY = 'pk_test_51BTUDGJAJfZb9HEBw3f44KzK5oUe8nC69d31chp82WzmmANflb2GN5IMb5bImNCd95q2Q4a1kG6U2d1E4Jd2iI8C00s8gP2sVc';
 
 const calculateTimeLeft = (drawDate: string) => {
     const difference = +new Date(drawDate) - +new Date();
@@ -68,6 +67,11 @@ const LotteryPage: React.FC = () => {
 
     useEffect(() => {
         if ((window as any).Stripe) {
+            if (!STRIPE_PUBLISHABLE_KEY) {
+                console.error("Stripe.js has loaded, but VITE_STRIPE_PUBLISHABLE_KEY is not set.");
+                setStripeError("Payment service is not configured. Please contact support.");
+                return;
+            }
             const stripeInstance = (window as any).Stripe(STRIPE_PUBLISHABLE_KEY);
             setStripe(stripeInstance);
             setElements(stripeInstance.elements());
