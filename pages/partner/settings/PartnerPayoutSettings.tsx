@@ -45,7 +45,7 @@ const PartnerPayoutSettings = () => {
             await updateUser({
                 businessVerification: {
                     // FIX: Ensure status and other fields are preserved
-                    ...user.businessVerification,
+                    ...(user.businessVerification || {}),
                     status: user.businessVerification?.status || 'unverified',
                     payoutMethod: formData.payoutMethod,
                     payoutDetails: formData.payoutDetails,
