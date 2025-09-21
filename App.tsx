@@ -67,9 +67,7 @@ const AuthRedirector: React.FC = () => {
         navigate('/reset-password', { replace: true });
       } else if (sessionStorage.getItem('oauth_in_progress')) {
         sessionStorage.removeItem('oauth_in_progress');
-        const destination = isFirstSignIn 
-          ? '/' 
-          : (user.role === 'business' ? '/partner/dashboard' : '/account');
+        const destination = '/';
         navigate(destination, { replace: true });
       }
     }
