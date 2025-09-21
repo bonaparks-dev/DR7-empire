@@ -24,7 +24,7 @@ const calculatePasswordStrength = (password: string) => {
 
 const SignUpPage: React.FC = () => {
   const { t } = useTranslation();
-  const { signup, signInWithGoogle, signInWithMetaMask, signInWithCoinbase, signInWithPhantom, user, loading } = useAuth();
+  const { signup, login, signInWithGoogle, signInWithMetaMask, signInWithCoinbase, signInWithPhantom, user, loading } = useAuth();
   const navigate = useNavigate();
 
   const [accountType, setAccountType] = useState<'personal' | 'business'>('personal');
@@ -38,6 +38,7 @@ const SignUpPage: React.FC = () => {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,7 +47,6 @@ const SignUpPage: React.FC = () => {
   const strengthInfo = formData.password ? strengthLevels[passwordStrength] : null;
 
   useEffect(() => {
-    // This handles both post-email-verification and logged-in users visiting /signup
     if (!loading && user) {
       navigate(user.role === 'business' ? '/partner/dashboard' : '/account', { replace: true });
     }
@@ -57,6 +57,7 @@ const SignUpPage: React.FC = () => {
     setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     setErrors(prev => ({ ...prev, [name]: '' }));
     setGeneralError('');
+    setSuccessMessage('');
   };
 
   const validate = () => {
@@ -86,44 +87,50 @@ const SignUpPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setGeneralError('');
+    setSuccessMessage('');
     const validationErrors = validate();
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) return;
 
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
-      const { data, error } = await signup(formData.email, formData.password, {
-        full_name: formData.fullName, 
+      const { error: signUpError } = await signup(formData.email, formData.password, {
+        full_name: formData.fullName,
         company_name: accountType === 'business' ? formData.companyName : undefined,
-        role: accountType 
+        role: accountType,
       });
 
-      if (error) throw error;
-      
-      if (data.user) {
-        // Fire-and-forget a welcome email to the user.
-        fetch('/.netlify/functions/send-welcome-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: formData.email, name: formData.fullName }),
-        }).catch(emailError => {
-            console.error("Non-critical error: Failed to send welcome email:", emailError);
-        });
-
-        if (!data.session) {
-            // This case happens if email confirmation is still enabled in Supabase settings.
-            // We'll navigate them to a page informing them to check their email.
-            navigate('/check-email');
-        }
-        // If data.session exists, the user is logged in. The useEffect hook on this page
-        // will detect the new user state and redirect them to their dashboard automatically.
-        // No navigation is needed here in that case.
-      } else {
-         throw new Error("Sign up may have succeeded but no user data was returned. Please check your email.");
+      if (signUpError) {
+        throw signUpError;
       }
 
+      // Attempt to log in immediately after sign up
+      const { error: loginError } = await login(formData.email, formData.password);
+      
+      if (loginError) {
+        // This is expected if email confirmation is required by Supabase.
+        if (loginError.message.includes('Email not confirmed')) {
+             setSuccessMessage("Account created! Please check your email for a verification link to log in.");
+             setFormData({ fullName: '', companyName: '', email: '', password: '', confirmPassword: '', terms: false });
+        } else {
+            throw loginError;
+        }
+      } else {
+        // Login successful, AuthContext will handle redirect.
+        fetch('/.netlify/functions/send-welcome-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: formData.email, name: formData.fullName }),
+        }).catch((emailError) => {
+          console.error('Failed to send welcome email:', emailError);
+        });
+      }
     } catch (err: any) {
-      setGeneralError(err?.message || t('Something_went_wrong'));
+      if (err.message && err.message.includes('User already registered')) {
+        setGeneralError('A user with this email already exists. Please sign in or use a different email.');
+      } else {
+        setGeneralError(err.message || t('Something_went_wrong'));
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -180,7 +187,8 @@ const SignUpPage: React.FC = () => {
               <h2 className="text-3xl font-bold text-white">{t('Create_Your_Account')}</h2>
               <p className="mt-2 text-sm text-gray-400">{t('Join_the_exclusive_world_of_DR7')}</p>
             </div>
-            {generalError && <p className="text-sm text-red-400 bg-red-900/20 border border-red-800 rounded p-2">{generalError}</p>}
+            {generalError && <p className="text-sm text-red-400 bg-red-900/20 border border-red-800 rounded p-3">{generalError}</p>}
+            {successMessage && <p className="text-sm text-green-400 bg-green-900/20 border border-green-800 rounded p-3">{successMessage}</p>}
             
             <div className="flex bg-gray-800 border border-gray-700 rounded-full p-1">
               {['personal', 'business'].map((type) => (

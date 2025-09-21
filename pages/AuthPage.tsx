@@ -85,6 +85,10 @@ const AuthPage: React.FC = () => {
           ? from
           : (user.role === 'business' ? '/partner/dashboard' : '/account');
         navigate(destination, { replace: true });
+      } else {
+        // This handles the case where login might succeed without an error but also without a user object.
+        // It provides clearer feedback to the user.
+        throw new Error(t('Something_went_wrong'));
       }
 
     } catch (err: any) {

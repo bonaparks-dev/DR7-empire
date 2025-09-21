@@ -1,5 +1,5 @@
-import React from 'react';
-import { HashRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { HashRouter, Routes, Route, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
 import { BookingProvider } from './contexts/BookingContext';
@@ -53,6 +53,22 @@ import PartnerPayoutSettings from './pages/partner/settings/PartnerPayoutSetting
 import CheckEmailPage from './pages/CheckEmailPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import CookieBanner from './components/ui/CookieBanner';
+import { useAuth } from './hooks/useAuth';
+
+const AuthRedirector: React.FC = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user && sessionStorage.getItem('oauth_in_progress')) {
+      sessionStorage.removeItem('oauth_in_progress');
+      const destination = user.role === 'business' ? '/partner/dashboard' : '/account';
+      navigate(destination, { replace: true });
+    }
+  }, [user, navigate]);
+
+  return null;
+};
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -125,7 +141,6 @@ const AnimatedRoutes = () => {
         <Route path="/signin" element={<AuthPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/check-email" element={<CheckEmailPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/post/:id" element={<PostPage />} />
       </Routes>
@@ -157,6 +172,7 @@ const App = () => {
               <VerificationProvider>
                 <HashRouter>
                   <ScrollToTop />
+                  <AuthRedirector />
                   <div className="bg-black min-h-screen font-sans antialiased relative overflow-x-hidden">
                     <div className="absolute top-0 left-0 w-full h-full bg-grid-white/[0.05] z-0"></div>
                     <div className="relative z-10 flex flex-col min-h-screen">
