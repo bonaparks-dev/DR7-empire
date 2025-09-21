@@ -128,6 +128,7 @@ const SignUpPage: React.FC = () => {
     setGeneralError('');
     setIsSubmitting(true);
     try {
+        sessionStorage.setItem('oauth_in_progress', 'true');
         const { error } = await signInWithGoogle();
         if (error) throw error;
         // User will be redirected by Supabase or handled by AuthContext listener

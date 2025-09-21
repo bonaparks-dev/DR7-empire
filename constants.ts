@@ -721,8 +721,8 @@ export const LOTTERY_GIVEAWAY: Lottery = {
   name: { en: 'DR7 Christmas Grand Giveaway', it: 'Grande Giveaway di Natale DR7' },
   subtitle: { en: 'Prize Pool Worth Over €400,000', it: 'Montepremi di Oltre 400.000€' },
   image: '/lottery-hero.jpeg',
-  ticketPriceUSD: 1.1,
-  ticketPriceEUR: 1,
+  ticketPriceUSD: 22,
+  ticketPriceEUR: 20,
   drawDate: '2025-12-25T18:00:00Z',
   prizes: [
     {
