@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
-import { GoogleIcon, MetaMaskIcon, CoinbaseIcon, PhantomIcon, EyeIcon, EyeSlashIcon } from '../components/icons/Icons';
+import { GoogleIcon, MetaMaskIcon, CoinbaseIcon, PhantomIcon, SolanaIcon, EyeIcon, EyeSlashIcon } from '../components/icons/Icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
@@ -24,7 +24,7 @@ const calculatePasswordStrength = (password: string) => {
 
 const SignUpPage: React.FC = () => {
   const { t } = useTranslation();
-  const { signup, signInWithGoogle, signInWithMetaMask, signInWithCoinbase, signInWithPhantom, user, loading } = useAuth();
+  const { signup, signInWithGoogle, signInWithMetaMask, signInWithCoinbase, signInWithPhantom, signInWithSolana, user, loading } = useAuth();
   const navigate = useNavigate();
 
   const [accountType, setAccountType] = useState<'personal' | 'business'>('personal');
@@ -104,28 +104,14 @@ const SignUpPage: React.FC = () => {
         throw signUpError;
       }
       
-      // Case 1: Signup successful, user logged in (auto-confirm enabled)
-      if (data.user && data.session) {
-        // AuthContext will handle redirect. Send the custom welcome email.
-        fetch('/.netlify/functions/send-welcome-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: formData.email, name: formData.fullName }),
-        }).catch((emailError) => {
-          console.error('Failed to send welcome email:', emailError);
-        });
-        // The onAuthStateChange listener will navigate the user away.
+      // If signUp is successful, data.user will be populated.
+      // If email confirmation is required, data.session will be null.
+      if (data.user && !data.session) {
+          navigate('/check-email');
       } 
-      // Case 2: Signup successful, email confirmation required
-      else if (data.user && !data.session) {
-        navigate('/check-email');
-      } 
-      // Case 3: Fallback (e.g., user exists but is unconfirmed)
-      else {
-        // Supabase might resend the confirmation email in this case.
-        // It's safe to direct the user to check their email.
-        navigate('/check-email');
-      }
+      // If auto-confirm is on, data.session will be populated, and the
+      // onAuthStateChange listener in AuthContext will handle both the redirect 
+      // and the welcome email sending.
 
     } catch (err: any) {
       if (err.message && (err.message.includes('User already registered') || err.message.includes('already exists'))) {
@@ -169,6 +155,14 @@ const SignUpPage: React.FC = () => {
           setIsSubmitting(false);
       }
   }
+
+  const handleSolanaSignIn = async () => {
+    setGeneralError('');
+    const { error } = await signInWithSolana();
+    if (error) {
+        setGeneralError(error.message);
+    }
+  };
 
   const getInputClassName = (field: string) =>
     `appearance-none rounded-md relative block w-full px-3 py-3 border bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-white focus:border-white focus:z-10 sm:text-sm ${
@@ -220,15 +214,18 @@ const SignUpPage: React.FC = () => {
                 
                 <div className="space-y-4">
                   <button type="button" onClick={handleGoogleSignIn} disabled={isSubmitting} className="w-full flex items-center justify-center py-3 px-4 border border-gray-700 rounded-full shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60"><GoogleIcon className="w-5 h-5 mr-2" />{t('Sign_up_with_Google')}</button>
-                  <div className="grid grid-cols-3 gap-3">
-                      <button type="button" onClick={() => handleWalletSignIn('metamask')} disabled={isSubmitting} title="MetaMask" className="flex items-center justify-center py-2 px-3 border border-gray-700 rounded-full shadow-sm bg-gray-800 text-xs font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60">
+                  <div className="grid grid-cols-2 gap-3">
+                      <button type="button" onClick={() => handleWalletSignIn('metamask')} disabled={isSubmitting} title="MetaMask" className="flex items-center justify-center py-2 px-3 border border-gray-700 rounded-full shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60">
                           <MetaMaskIcon className="w-5 h-5 mr-1.5" /> MetaMask
                       </button>
-                      <button type="button" onClick={() => handleWalletSignIn('coinbase')} disabled={isSubmitting} title="Coinbase Wallet" className="flex items-center justify-center py-2 px-3 border border-gray-700 rounded-full shadow-sm bg-gray-800 text-xs font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60">
+                      <button type="button" onClick={() => handleWalletSignIn('coinbase')} disabled={isSubmitting} title="Coinbase Wallet" className="flex items-center justify-center py-2 px-3 border border-gray-700 rounded-full shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60">
                           <CoinbaseIcon className="w-5 h-5 mr-1.5" /> Coinbase
                       </button>
-                      <button type="button" onClick={() => handleWalletSignIn('phantom')} disabled={isSubmitting} title="Phantom" className="flex items-center justify-center py-2 px-3 border border-gray-700 rounded-full shadow-sm bg-gray-800 text-xs font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60">
+                      <button type="button" onClick={() => handleWalletSignIn('phantom')} disabled={isSubmitting} title="Phantom" className="flex items-center justify-center py-2 px-3 border border-gray-700 rounded-full shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60">
                           <PhantomIcon className="w-5 h-5 mr-1.5" /> Phantom
+                      </button>
+                       <button type="button" onClick={handleSolanaSignIn} disabled={isSubmitting} title="Solana" className="flex items-center justify-center py-2 px-3 border border-gray-700 rounded-full shadow-sm bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60">
+                          <SolanaIcon className="w-5 h-5 mr-1.5" /> Solana
                       </button>
                   </div>
                 </div>

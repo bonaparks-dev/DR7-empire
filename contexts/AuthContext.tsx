@@ -29,6 +29,7 @@ interface AuthContextType {
   signInWithMetaMask: () => Promise<{ error: Error | null }>;
   signInWithCoinbase: () => Promise<{ error: Error | null }>;
   signInWithPhantom: () => Promise<{ error: Error | null }>;
+  signInWithSolana: () => Promise<{ error: Error | null }>;
   sendPasswordResetEmail: (email: string) => Promise<{ data: {}; error: AuthError | null; }>;
   updateUserPassword: (password: string) => Promise<UserResponse>;
   updateUser: (updates: Partial<AppUser>) => Promise<{ data: AppUser | null; error: Error | null }>;
@@ -100,7 +101,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSessionUser(session);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+            const user = session.user;
+            const createdAt = new Date(user.created_at || 0).getTime();
+            const lastSignInAt = user.last_sign_in_at ? new Date(user.last_sign_in_at).getTime() : 0;
+            
+            // Check if this is the first sign-in by comparing creation and last sign-in times.
+            // A small tolerance (e.g., 60 seconds) handles minor delays after confirmation.
+            // Also use sessionStorage to prevent re-sending during the same browser session.
+            const isFirstSignIn = !lastSignInAt || Math.abs(lastSignInAt - createdAt) < 60000;
+
+            if (isFirstSignIn && !sessionStorage.getItem(`welcome_email_sent_${user.id}`)) {
+                const { user_metadata } = user;
+                const email = user.email;
+                const name = user_metadata.full_name || user_metadata.name || 'User';
+
+                if (email && name) {
+                    fetch('/.netlify/functions/send-welcome-email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, name }),
+                    }).then(response => {
+                        if (response.ok) {
+                            console.log("Welcome email sent successfully.");
+                            sessionStorage.setItem(`welcome_email_sent_${user.id}`, 'true');
+                        } else {
+                            console.error("Failed to send welcome email.");
+                        }
+                    }).catch((emailError) => {
+                        console.error('Error sending welcome email:', emailError);
+                    });
+                }
+            }
+        }
+        
         setSessionUser(session);
     });
 
@@ -258,6 +293,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
   }, [eip6963Providers]);
 
+  const signInWithSolana = useCallback(async () => {
+      // NOTE FOR DEVELOPERS:
+      // Supabase's built-in `signInWithOtp` with channel 'wallet' is designed for EVM-compatible chains
+      // and expects an EVM-style signature. Verifying a Solana signature requires a custom backend
+      // function (e.g., a Netlify/Supabase Edge Function).
+      //
+      // This function is a placeholder. To implement it:
+      // 1. Create a serverless function that:
+      //    a. Takes a Solana public key and a signed message (nonce) as input.
+      //    b. Uses a library like '@solana/web3.js' or 'tweetnacl' to verify the signature against the public key.
+      //    c. If valid, uses the Supabase Admin client to find or create the user and generate a custom JWT or magic link.
+      // 2. Update this function to:
+      //    a. Connect to the user's Solana wallet (e.g., Phantom).
+      //    b. Get a nonce/challenge to sign (can be from your serverless function).
+      //    c. Prompt the user to sign the message.
+      //    d. Send the public key and signature to your serverless function.
+      //    e. Sign in the user with the custom JWT or magic link returned from the function.
+      
+      const error = new Error("Sign in with Solana is not yet implemented. It requires custom backend logic to verify Solana signatures.");
+      console.error(error.message);
+      return { error };
+  }, []);
+
   const sendPasswordResetEmail = useCallback(async (email: string) => {
     return supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/#/reset-password`
@@ -284,10 +342,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const value = useMemo(() => ({
     user, loading, login, signup, logout, signInWithGoogle,
-    signInWithMetaMask, signInWithCoinbase, signInWithPhantom,
+    signInWithMetaMask, signInWithCoinbase, signInWithPhantom, signInWithSolana,
     sendPasswordResetEmail, updateUserPassword, updateUser,
   }), [user, loading, login, signup, logout, signInWithGoogle, 
-      signInWithMetaMask, signInWithCoinbase, signInWithPhantom, 
+      signInWithMetaMask, signInWithCoinbase, signInWithPhantom, signInWithSolana,
       sendPasswordResetEmail, updateUserPassword, updateUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

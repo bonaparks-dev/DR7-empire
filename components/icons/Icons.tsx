@@ -100,6 +100,14 @@ export const PhantomIcon: React.FC<{ className?: string }> = ({ className = "w-6
     </svg>
 );
 
+export const SolanaIcon: React.FC<{ className?: string }> = ({ className = "w-6 h-6" }) => (
+    <svg fill="currentColor" viewBox="0 0 166 132" xmlns="http://www.w3.org/2000/svg" className={className}>
+        <path d="M123.518 0H42.4822L0 37.8943L42.4822 75.7886H123.518L166 37.8943L123.518 0Z" transform="translate(0 55.6223)" fill="#14F195"/>
+        <path d="M42.4822 131.411H123.518L166 93.5168L123.518 55.6225H42.4822L0 93.5168L42.4822 131.411Z" transform="translate(0 -55.6223)" fill="#9945FF"/>
+        <path d="M123.518 55.6221H42.4822L0 93.5164L42.4822 131.411H123.518L166 93.5164L123.518 55.6221Z" transform="translate(0 -55.6221)" fill="#000000" fillOpacity="0.25"/>
+    </svg>
+);
+
 export const EyeIcon: React.FC<{ className?: string }> = ({ className = "w-6 h-6" }) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639l4.433-7.447A1 1 0 017.22 4h9.56a1 1 0 01.75.375l4.433 7.447a1.012 1.012 0 010 .639l-4.433 7.447A1 1 0 0116.78 20h-9.56a1 1 0 01-.75-.375L2.036 12.322z" />
