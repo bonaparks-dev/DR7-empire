@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head><title>Signing In...</title></head>
+<body>
+<h1>Signing you in...</h1>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const supabase = window.supabase.createClient('https://ahpmzjgkfxrrgxyirasa.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFocG16amdreHJyZ3h5aXJhc2EiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTcyNzc4ODM4MywiZXhwIjoyMDQzMzY0MzgzfQ.hQhVhgSA6ZxR1rKMQGWo2EQxON1wHBl9r7q7YyZvTr8')
+
+async function handleCallback() {
+    const code = new URLSearchParams(window.location.search).get('code')
+    if (code) {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+        if (!error && data.user) {
+            window.location.href = '/'
+        }
+    }
+}
+handleCallback()
+</script>
+</body>
+</html>

@@ -137,11 +137,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = useCallback(() => supabase.auth.signOut(), []);
   
   const signInWithGoogle = useCallback(() => {
-    sessionStorage.setItem('oauth_in_progress', 'true');
     return supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            redirectTo: window.location.origin,
+            redirectTo: `${window.location.origin}/auth-callback.html`,
         }
     });
   }, []);
