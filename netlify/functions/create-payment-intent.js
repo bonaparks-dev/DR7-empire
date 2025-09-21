@@ -65,6 +65,9 @@ exports.handler = async (event) => {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
       currency: currency.toLowerCase(),
+      // The `automatic_payment_methods` parameter is removed.
+      // This creates a standard Payment Intent that is compatible with
+      // the `confirmCardPayment` method used on the frontend.
     });
 
     return createResponse(200, { clientSecret: paymentIntent.client_secret });
