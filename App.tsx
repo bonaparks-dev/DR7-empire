@@ -57,16 +57,21 @@ import { useAuth } from './hooks/useAuth';
 import OAuthCallbackHandler from './components/system/OAuthCallbackHandler';
 
 const AuthRedirector: React.FC = () => {
-  const { user } = useAuth();
+  const { user, authEvent } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    if (user && sessionStorage.getItem('oauth_in_progress')) {
-      sessionStorage.removeItem('oauth_in_progress');
-      const destination = user.role === 'business' ? '/partner/dashboard' : '/account';
-      navigate(destination, { replace: true });
+    if (user) {
+      if (authEvent === 'PASSWORD_RECOVERY' && location.pathname !== '/reset-password') {
+        navigate('/reset-password', { replace: true });
+      } else if (sessionStorage.getItem('oauth_in_progress')) {
+        sessionStorage.removeItem('oauth_in_progress');
+        const destination = user.role === 'business' ? '/partner/dashboard' : '/account';
+        navigate(destination, { replace: true });
+      }
     }
-  }, [user, navigate]);
+  }, [user, authEvent, navigate, location.pathname]);
 
   return null;
 };

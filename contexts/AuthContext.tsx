@@ -10,6 +10,7 @@ interface AppUser extends User {}
 interface AuthContextType {
   user: AppUser | null;
   loading: boolean;
+  authEvent: string | null;
   login: (email: string, password?: string) => Promise<{ user: AppUser | null; error: AuthError | null }>;
   signup: (email: string, password: string, data: { full_name: string, company_name?: string, role: 'personal' | 'business' }) => Promise<{ data: { user: SupabaseUser | null; session: Session | null; }; error: AuthError | null; }>;
   logout: () => Promise<{ error: AuthError | null }>;
@@ -50,6 +51,7 @@ const mapSupabaseUserToAppUser = (supabaseUser: SupabaseUser): AppUser => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authEvent, setAuthEvent] = useState<string | null>(null);
 
   useEffect(() => {
     const setSessionUser = (session: Session | null) => {
@@ -66,6 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        setAuthEvent(event);
         if (event === 'SIGNED_IN' && session?.user) {
             const user = session.user;
             const createdAt = new Date(user.created_at || 0).getTime();
@@ -122,7 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
         options: { 
             data,
-            emailRedirectTo: `${window.location.origin}/#/signin`
+            emailRedirectTo: window.location.origin
         }
     });
   }, []);
@@ -134,14 +137,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            redirectTo: `${window.location.origin}/#`,
+            redirectTo: window.location.origin,
         }
     });
   }, []);
 
   const sendPasswordResetEmail = useCallback(async (email: string) => {
     return supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/#/reset-password`
+        redirectTo: window.location.origin
     });
   }, []);
 
@@ -168,9 +171,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const value = useMemo(() => ({
-    user, loading, login, signup, logout, signInWithGoogle,
+    user, loading, authEvent, login, signup, logout, signInWithGoogle,
     sendPasswordResetEmail, updateUserPassword, updateUser, verifyEmailOtp,
-  }), [user, loading, login, signup, logout, signInWithGoogle, 
+  }), [user, loading, authEvent, login, signup, logout, signInWithGoogle, 
       sendPasswordResetEmail, updateUserPassword, updateUser, verifyEmailOtp]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

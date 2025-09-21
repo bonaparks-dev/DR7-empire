@@ -9,7 +9,7 @@ type ConfirmationStatus = 'idle' | 'loading' | 'success' | 'error';
 
 const AuthPage: React.FC = () => {
   const { t } = useTranslation();
-  const { login, signInWithGoogle, user, loading, verifyEmailOtp } = useAuth();
+  const { login, signInWithGoogle, user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -17,7 +17,6 @@ const AuthPage: React.FC = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const passwordInputRef = useRef<HTMLInputElement>(null);
 
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -37,51 +36,6 @@ const AuthPage: React.FC = () => {
       navigate(destination, { replace: true });
     }
   }, [user, loading, navigate, from]);
-
-  useEffect(() => {
-    const handleEmailConfirmation = async (token: string) => {
-        setConfirmationStatus('loading');
-        setConfirmationMessage('Confirming your email, please wait...');
-
-        const { data, error } = await verifyEmailOtp(token);
-
-        if (error) {
-            setConfirmationStatus('error');
-            if (error.message.includes('expired')) {
-                setConfirmationMessage('This confirmation link has expired. Please sign up again to receive a new link.');
-            } else if (error.message.includes('already confirmed')) {
-                setConfirmationMessage('Your email has already been confirmed. You can sign in now.');
-            } else {
-                setConfirmationMessage('Invalid confirmation link. It may have already been used or is incorrect.');
-            }
-            console.error('Email confirmation error:', error);
-        } else if (data.user) {
-            setConfirmationStatus('success');
-            setConfirmationMessage('Email confirmed successfully! You can now sign in.');
-            
-            if (data.user.email) {
-                setEmail(data.user.email);
-            }
-            passwordInputRef.current?.focus();
-
-            window.history.replaceState(null, '', '/#/signin');
-            
-            const timer = setTimeout(() => {
-                setConfirmationStatus('idle');
-                setConfirmationMessage('');
-            }, 8000);
-            return () => clearTimeout(timer);
-        }
-    };
-    
-    const hash = window.location.hash;
-    const parts = hash.split('#');
-    
-    if (parts.length === 3 && parts[1] === 'signin' && parts[2]) {
-        const token = parts[2];
-        handleEmailConfirmation(token);
-    }
-  }, [verifyEmailOtp]);
 
   const validateEmail = (emailToValidate: string) => {
     if (!emailToValidate) {
@@ -255,7 +209,6 @@ const AuthPage: React.FC = () => {
                 </label>
                 <div className="relative">
                     <input
-                      ref={passwordInputRef}
                       id="password"
                       name="password"
                       type={showPassword ? "text" : "password"}
