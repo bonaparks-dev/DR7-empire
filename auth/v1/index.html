@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Google OAuth Callback</title>
+  <script>
+    // This script is crucial for Supabase's PKCE flow.
+    // It receives the authorization code from Google in the URL query parameters.
+    // The Supabase client library running on the main page (`window.opener`)
+    // will detect this code and exchange it for a session token securely.
+    // This popup window will automatically close after the exchange is initiated.
+    // See Supabase docs for more info on PKCE with OAuth:
+    // https://supabase.com/docs/guides/auth/social-login/auth-google#pkce-flow-for-ssr
+    window.close();
+  </script>
+</head>
+<body>
+  <p>Authenticating with Google... You can close this window if it doesn't close automatically.</p>
+</body>
+</html>
