@@ -7,6 +7,7 @@ import { LOTTERY_GIVEAWAY } from '../constants';
 import type { Lottery, Prize } from '../types';
 import { TicketIcon } from '../components/icons/Icons';
 import { useAuth } from '../hooks/useAuth';
+import type { Stripe, StripeElements, StripeCardElement } from '@stripe/stripe-js';
 
 const STRIPE_PUBLISHABLE_KEY = 'pk_test_51S3dDtH81iSNg16w1EavHzO0iWRRkqLyf7k9n6cKY4PPpKjVCmUUXXyzWAyFQiuzpkdqZ1YAceOO5jKwKaVPzch800PEQXHxR5';
 
@@ -57,8 +58,8 @@ const LotteryPage: React.FC = () => {
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
 
-    const [stripe, setStripe] = useState<any>(null);
-    const [cardElement, setCardElement] = useState<any>(null);
+    const [stripe, setStripe] = useState<Stripe | null>(null);
+    const [elements, setElements] = useState<StripeElements | null>(null);
     const cardElementRef = useRef<HTMLDivElement>(null);
     const [clientSecret, setClientSecret] = useState<string | null>(null);
     const [isClientSecretLoading, setIsClientSecretLoading] = useState(false);
@@ -67,7 +68,9 @@ const LotteryPage: React.FC = () => {
 
     useEffect(() => {
         if ((window as any).Stripe) {
-            setStripe((window as any).Stripe(STRIPE_PUBLISHABLE_KEY));
+            const stripeInstance = (window as any).Stripe(STRIPE_PUBLISHABLE_KEY);
+            setStripe(stripeInstance);
+            setElements(stripeInstance.elements());
         }
     }, []);
 
@@ -82,15 +85,23 @@ const LotteryPage: React.FC = () => {
     const totalPrice = useMemo(() => quantity * ticketPrice, [quantity, ticketPrice]);
 
     const handleQuantityChange = (amount: number) => setQuantity(prev => Math.max(1, prev + amount));
+    
     const handleBuyClick = () => {
-        setStripeError(null);
-        setClientSecret(null);
         setShowConfirmModal(true);
+    };
+    
+    const handleCloseModal = () => {
+        setShowConfirmModal(false);
+        setClientSecret(null);
+        setStripeError(null);
     };
 
     useEffect(() => {
         if (showConfirmModal && totalPrice > 0) {
             setIsClientSecretLoading(true);
+            setStripeError(null);
+            setClientSecret(null);
+
             fetch('/.netlify/functions/create-payment-intent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -115,31 +126,32 @@ const LotteryPage: React.FC = () => {
     }, [showConfirmModal, totalPrice, currency]);
 
     useEffect(() => {
-        let card: any = null;
-        if (stripe && clientSecret && cardElementRef.current) {
-            const elements = stripe.elements();
-            card = elements.create('card', {
+        if (elements && clientSecret && cardElementRef.current) {
+            const card = elements.create('card', {
                 style: {
                     base: { color: '#ffffff', fontFamily: '"Exo 2", sans-serif', fontSize: '16px', '::placeholder': { color: '#a0aec0' } },
                     invalid: { color: '#ef4444', iconColor: '#ef4444' }
                 }
             });
-            setCardElement(card);
             card.mount(cardElementRef.current);
-            card.on('change', (event: any) => {
+            card.on('change', (event) => {
                 setStripeError(event.error ? event.error.message : null);
             });
-        }
-        return () => {
-            if (card) {
+
+            return () => {
                 card.destroy();
-                setCardElement(null);
-            }
-        };
-    }, [stripe, clientSecret]);
+            };
+        }
+    }, [elements, clientSecret]);
     
     const confirmPurchase = async () => {
-        if (!stripe || !cardElement || !clientSecret || isProcessing) return;
+        if (!stripe || !elements || !clientSecret || isProcessing) return;
+        
+        const cardElement = elements.getElement('card');
+        if (!cardElement) {
+            setStripeError("Card element not found. Please try again.");
+            return;
+        }
         
         setIsProcessing(true);
         setStripeError(null);
@@ -260,7 +272,7 @@ const LotteryPage: React.FC = () => {
             <AnimatePresence>
                 {showConfirmModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" aria-modal="true">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowConfirmModal(false)} />
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={handleCloseModal} />
                         <motion.div initial={{ opacity: 0, y: 50, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 50, scale: 0.9 }} className="relative bg-gray-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-md p-6 md:p-8">
                             <h2 className="text-2xl font-bold text-white mb-4 text-center">{t('Confirm_Purchase')}</h2>
                             <p className="text-gray-300 mb-4 text-center text-sm">{t('Are_you_sure_you_want_to_buy_tickets').replace('{count}', String(quantity)).replace('{price}', formatPrice(totalPrice))}</p>
@@ -280,7 +292,7 @@ const LotteryPage: React.FC = () => {
                             </div>
 
                             <div className="flex justify-center space-x-4">
-                                <button onClick={() => setShowConfirmModal(false)} className="px-6 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 text-sm">{t('Cancel')}</button>
+                                <button onClick={handleCloseModal} className="px-6 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 text-sm">{t('Cancel')}</button>
                                 <button onClick={confirmPurchase} disabled={isProcessing || !clientSecret || isClientSecretLoading} className="px-6 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-opacity disabled:opacity-60 text-sm">
                                     {isProcessing ? t('Processing') : `${t('Confirm_Purchase')} (${formatPrice(totalPrice)})`}
                                 </button>
