@@ -11,7 +11,7 @@ interface AuthContextType {
   user: AppUser | null;
   loading: boolean;
   authEvent: string | null;
-  isFirstSignIn: boolean;
+  isFirstSignIn: boolean | null;
   login: (email: string, password?: string) => Promise<{ user: AppUser | null; error: AuthError | null }>;
   signup: (email: string, password: string, data: { full_name: string, company_name?: string, role: 'personal' | 'business' }) => Promise<{ data: { user: SupabaseUser | null; session: Session | null; }; error: AuthError | null; }>;
   logout: () => Promise<{ error: AuthError | null }>;
@@ -53,7 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [authEvent, setAuthEvent] = useState<string | null>(null);
-  const [isFirstSignIn, setIsFirstSignIn] = useState(false);
+  const [isFirstSignIn, setIsFirstSignIn] = useState<boolean | null>(null);
 
   useEffect(() => {
     const setSessionUser = (session: Session | null) => {
@@ -104,7 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }
             }
         } else if (event === 'SIGNED_OUT') {
-            setIsFirstSignIn(false);
+            setIsFirstSignIn(null);
         }
         
         setSessionUser(session);

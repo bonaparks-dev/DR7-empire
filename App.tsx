@@ -65,7 +65,7 @@ const AuthRedirector: React.FC = () => {
     if (user) {
       if (authEvent === 'PASSWORD_RECOVERY' && location.pathname !== '/reset-password') {
         navigate('/reset-password', { replace: true });
-      } else if (sessionStorage.getItem('oauth_in_progress')) {
+      } else if (sessionStorage.getItem('oauth_in_progress') && isFirstSignIn !== null) {
         sessionStorage.removeItem('oauth_in_progress');
         const destination = isFirstSignIn 
           ? '/' 
