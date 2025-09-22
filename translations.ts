@@ -300,6 +300,9 @@ export const translations: Translations = {
   Update_Password: { en: "Update Password", it: "Aggiorna Password" },
   Password_has_been_updated_successfully: { en: "Your password has been updated successfully. You can now sign in.", it: "La tua password è stata aggiornata con successo. Ora puoi accedere." },
   Proceed_to_Sign_In: { en: "Proceed to Sign In", it: "Vai all'Accesso" },
+  Email_Confirmed: { en: 'Email Confirmed!', it: 'Email Confermata!' },
+  Account_Successfully_Created: { en: 'Your account has been successfully created. Welcome to the Empire.', it: 'Il tuo account è stato creato con successo. Benvenuto nell\'Impero.' },
+  Proceed_to_My_Account: { en: 'Proceed to My Account', it: 'Vai al Mio Account' },
 
   // Account Pages
   Account_Settings: { en: "Account Settings", it: "Impostazioni Account" },
