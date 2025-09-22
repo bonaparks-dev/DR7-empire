@@ -103,14 +103,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { user: null, error };
   }, []);
 
+  
   const signup = useCallback(async (email: string, password: string, data: { full_name: string, company_name?: string, role: 'personal' | 'business' }) => {
     return supabase.auth.signUp({
-      email: email,
-      password: password,
-      options: {
-        data: data,
-        emailRedirectTo: 'https://dr7empire.com/#/auth/callback'
-      }
+        email,
+        password,
+        options: {
+            data,
+            // Point to the dedicated callback page within the app.
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+        }
+    });
+  }, []);
     });
   }, []);
 

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { HashRouter, Routes, Route, useLocation, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
 import { BookingProvider } from './contexts/BookingContext';
@@ -190,7 +190,7 @@ const App = () => {
           <BookingProvider>
             <AuthProvider>
               <VerificationProvider>
-                <HashRouter>
+                <BrowserRouter>
                   <ScrollToTop />
                   <AuthRedirector />
                   <OAuthCallbackHandler />
@@ -207,7 +207,7 @@ const App = () => {
                     <VerificationModal />
                     <CookieBanner />
                   </div>
-                </HashRouter>
+                </BrowserRouter>
               </VerificationProvider>
             </AuthProvider>
           </BookingProvider>
