@@ -152,7 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const sendPasswordResetEmail = useCallback(async (email: string) => {
     return supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/#/reset-password`,
+        redirectTo: `${window.location.origin}/reset-password`,
     });
   }, []);
 

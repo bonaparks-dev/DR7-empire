@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { HashRouter, Routes, Route, useLocation, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
 import { BookingProvider } from './contexts/BookingContext';
@@ -54,7 +54,6 @@ import CheckEmailPage from './pages/CheckEmailPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import CookieBanner from './components/ui/CookieBanner';
 import { useAuth } from './hooks/useAuth';
-import OAuthCallbackHandler from './components/system/OAuthCallbackHandler';
 
 const AuthRedirector: React.FC = () => {
   const { user, authEvent, isFirstSignIn } = useAuth();
@@ -179,10 +178,9 @@ const App = () => {
           <BookingProvider>
             <AuthProvider>
               <VerificationProvider>
-                <HashRouter>
+                <BrowserRouter>
                   <ScrollToTop />
                   <AuthRedirector />
-                  <OAuthCallbackHandler />
                   <div className="bg-black min-h-screen font-sans antialiased relative overflow-x-hidden">
                     <div className="absolute top-0 left-0 w-full h-full bg-grid-white/[0.05] z-0"></div>
                     <div className="relative z-10 flex flex-col min-h-screen">
@@ -196,7 +194,7 @@ const App = () => {
                     <VerificationModal />
                     <CookieBanner />
                   </div>
-                </HashRouter>
+                </BrowserRouter>
               </VerificationProvider>
             </AuthProvider>
           </BookingProvider>
