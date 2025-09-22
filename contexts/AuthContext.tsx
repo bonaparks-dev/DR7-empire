@@ -81,28 +81,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const firstSignIn = !lastSignInAt || Math.abs(lastSignInAt - createdAt) < 60000;
             setIsFirstSignIn(firstSignIn);
 
-            if (firstSignIn && !sessionStorage.getItem(`welcome_email_sent_${user.id}`)) {
-                const { user_metadata } = user;
-                const email = user.email;
-                const name = user_metadata.full_name || user_metadata.name || 'User';
-
-                if (email && name) {
-                    fetch('/.netlify/functions/send-welcome-email', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email, name }),
-                    }).then(response => {
-                        if (response.ok) {
-                            console.log("Welcome email sent successfully.");
-                            sessionStorage.setItem(`welcome_email_sent_${user.id}`, 'true');
-                        } else {
-                            console.error("Failed to send welcome email.");
-                        }
-                    }).catch((emailError) => {
-                        console.error('Error sending welcome email:', emailError);
-                    });
-                }
-            }
+            // Custom welcome email logic has been removed to rely on Supabase's built-in email templates
+            // for both confirmation and welcome emails, ensuring a consistent experience.
         } else if (event === 'SIGNED_OUT') {
             setIsFirstSignIn(null);
         }
@@ -129,7 +109,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
         options: { 
             data,
-            emailRedirectTo: window.location.origin,
+            // Ensure the confirmation link works with the hash router by pointing to the root of the SPA.
+            emailRedirectTo: `${window.location.origin}/#`,
         }
     });
   }, []);
@@ -141,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            redirectTo: `${window.location.origin}/auth/v1/callback`,
+            redirectTo: `${window.location.origin}/#/auth/callback`,
         }
     });
   }, []);

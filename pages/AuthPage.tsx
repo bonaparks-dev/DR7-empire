@@ -105,7 +105,6 @@ const AuthPage: React.FC = () => {
     setGeneralError('');
     setIsSubmitting(true);
     try {
-        sessionStorage.setItem('oauth_in_progress', 'true');
         const { error } = await signInWithGoogle();
         if (error) throw error;
     } catch(err: any) {
