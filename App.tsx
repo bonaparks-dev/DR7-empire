@@ -54,7 +54,6 @@ import CheckEmailPage from './pages/CheckEmailPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import CookieBanner from './components/ui/CookieBanner';
 import { useAuth } from './hooks/useAuth';
-import OAuthCallbackHandler from './components/system/OAuthCallbackHandler';
 import AuthCallbackPage from './pages/AuthCallbackPage';
 
 const AuthRedirector: React.FC = () => {
@@ -193,7 +192,6 @@ const App = () => {
                 <BrowserRouter>
                   <ScrollToTop />
                   <AuthRedirector />
-                  <OAuthCallbackHandler />
                   <div className="bg-black min-h-screen font-sans antialiased relative overflow-x-hidden">
                     <div className="absolute top-0 left-0 w-full h-full bg-grid-white/[0.05] z-0"></div>
                     <div className="relative z-10 flex flex-col min-h-screen">
