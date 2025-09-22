@@ -55,9 +55,10 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import CookieBanner from './components/ui/CookieBanner';
 import { useAuth } from './hooks/useAuth';
 import AuthCallbackPage from './pages/AuthCallbackPage';
+import ConfirmationSuccessPage from './pages/ConfirmationSuccessPage';
 
 const AuthRedirector: React.FC = () => {
-  const { user, authEvent, isFirstSignIn } = useAuth();
+  const { user, authEvent } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -67,22 +68,11 @@ const AuthRedirector: React.FC = () => {
       if (authEvent === 'PASSWORD_RECOVERY' && location.pathname !== '/reset-password') {
         navigate('/reset-password', { replace: true });
       } 
-      // Handle OAuth sign-in redirect from the callback page
-      else if (sessionStorage.getItem('oauth_in_progress') && isFirstSignIn !== null) {
-        sessionStorage.removeItem('oauth_in_progress');
-        // On any OAuth sign-in, redirect to the appropriate dashboard
-        const destination = user.role === 'business' ? '/partner/dashboard' : '/account';
-        navigate(destination, { replace: true });
-      }
-      // Handle first sign-in from email confirmation
-      else if (authEvent === 'SIGNED_IN' && isFirstSignIn === true && !sessionStorage.getItem('oauth_in_progress')) {
-        // This is a new user who just clicked their email confirmation link.
-        // Redirect them from the homepage to their dashboard.
-        const destination = user.role === 'business' ? '/partner/dashboard' : '/account';
-        navigate(destination, { replace: true });
-      }
+      // All other sign-in redirects (OAuth, first-time confirmation) are now handled
+      // by the /auth/callback page. This simplifies the logic here and prevents
+      // potential race conditions or conflicting redirects.
     }
-  }, [user, authEvent, isFirstSignIn, navigate, location.pathname]);
+  }, [user, authEvent, navigate, location.pathname]);
 
   return null;
 };
@@ -161,6 +151,7 @@ const AnimatedRoutes = () => {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
+        <Route path="/confirmation-success" element={<ConfirmationSuccessPage />} />
         <Route path="/post/:id" element={<PostPage />} />
       </Routes>
     </AnimatePresence>
