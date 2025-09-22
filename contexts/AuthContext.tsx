@@ -109,8 +109,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
         options: { 
             data,
-            // Point to a real path that our redirector can handle.
-            emailRedirectTo: `${window.location.origin}/auth/v1/callback`,
+            // Point to the dedicated callback page within the app.
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
         }
     });
   }, []);
