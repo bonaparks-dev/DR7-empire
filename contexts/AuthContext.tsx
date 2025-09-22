@@ -109,8 +109,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
         options: { 
             data,
-            // Ensure the confirmation link works with the hash router by pointing to the root of the SPA.
-            emailRedirectTo: `${window.location.origin}/#`,
+            // Point the confirmation link to the dedicated auth callback page to prevent 404s.
+            emailRedirectTo: `${window.location.origin}/#/auth/callback`,
         }
     });
   }, []);

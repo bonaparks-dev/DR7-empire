@@ -207,24 +207,33 @@ const Header: React.FC = () => {
                     </NavLink>
                     
                     <div className="flex items-center space-x-4">
-                        {user && (
-                            <div className="flex items-center space-x-3">
-                                <Link
-                                    to={user.role === 'business' ? '/partner/dashboard' : '/account'}
-                                    className="flex items-center justify-center w-9 h-9 bg-gray-800/70 border border-gray-700 rounded-full text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
-                                    title={user.role === 'business' ? t('Partner_Dashboard') : t('My_Account')}
+                        <AnimatePresence mode="wait">
+                            {user && (
+                                <motion.div
+                                    key="user-controls"
+                                    initial={{ opacity: 0, x: 10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 10 }}
+                                    className="flex items-center space-x-3"
                                 >
-                                    <UsersIcon className="w-5 h-5" />
-                                </Link>
-                                <button
-                                    onClick={logout}
-                                    className="flex items-center justify-center w-9 h-9 bg-gray-800/70 border border-gray-700 rounded-full text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
-                                    title={t('Sign_Out')}
-                                >
-                                    <SignOutIcon className="w-5 h-5" />
-                                </button>
-                            </div>
-                        )}
+                                    <Link
+                                        to={user.role === 'business' ? '/partner/dashboard' : '/account'}
+                                        className="flex items-center justify-center w-9 h-9 bg-gray-800/70 border border-gray-700 rounded-full text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+                                        title={user.role === 'business' ? t('Partner_Dashboard') : t('My_Account')}
+                                    >
+                                        <UsersIcon className="w-5 h-5" />
+                                    </Link>
+                                    <button
+                                        onClick={logout}
+                                        className="flex items-center justify-center w-9 h-9 bg-gray-800/70 border border-gray-700 rounded-full text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+                                        title={t('Sign_Out')}
+                                    >
+                                        <SignOutIcon className="w-5 h-5" />
+                                    </button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                        
                         <button onClick={() => setIsMenuOpen(true)} aria-label="Open menu" className="text-gray-200 hover:text-white p-2 -mr-2 rounded-full hover:bg-gray-800">
                             <MenuIcon className="w-7 h-7" />
                         </button>
