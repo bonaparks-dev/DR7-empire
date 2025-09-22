@@ -1,48 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DR7 Empire - Authenticating...</title>
-    <link rel="icon" href="/DR7logo.png" type="image/png">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
-    <style>
-      body {
-        font-family: 'Exo 2', sans-serif;
-      }
-      .font-playfair {
-        font-family: 'Playfair Display', serif;
-      }
-      @keyframes marquee {
-        from { transform: translateX(0); }
-        to { transform: translateX(calc(-100% - var(--gap, 20px))); }
-      }
-      .animate-marquee {
-        animation: marquee var(--speed, 40s) linear infinite;
-      }
-    </style>
-  <script src="https://js.stripe.com/v3/"></script>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://aistudiocdn.com/react@^19.1.1",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
-    "react/": "https://aistudiocdn.com/react@^19.1.1/",
-    "framer-motion": "https://aistudiocdn.com/framer-motion@^12.23.12",
-    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.8.2",
-    "@stripe/stripe-js": "https://aistudiocdn.com/@stripe/stripe-js@^7.9.0",
-    "@supabase/supabase-js": "https://aistudiocdn.com/@supabase/supabase-js@^2.45.0",
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.0.3",
-    "vite": "https://aistudiocdn.com/vite@^7.1.6"
-  }
-}
-</script>
+<head>
+  <meta charset="UTF-8">
+  <title>DR7 Empire - Authenticating...</title>
+  <link rel="icon" href="/DR7logo.png" type="image/png">
+  <script type="text/javascript">
+    // This page handles the Supabase auth callback for SPAs using hash routing.
+    // It reconstructs the URL to be compatible with React Router's HashRouter
+    // and preserves the authentication token from Supabase.
+    //
+    // Supabase redirects here with a URL like: /auth/v1/callback#access_token=...
+    // We need to redirect to: /#/auth/callback?access_token=...
+    //
+    // The Supabase client in the main app will correctly parse the token
+    // from the hash's query string parameters.
+    if (window.location.hash) {
+      const params = window.location.hash.substring(1);
+      window.location.replace('/#/auth/callback?' + params);
+    } else {
+      // If there's no auth token in the hash, redirect to sign-in page as a fallback.
+      window.location.replace('/#/signin');
+    }
+  </script>
+  <style>
+    body {
+      background-color: #000;
+      color: #e5e7eb;
+      font-family: 'Exo 2', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      text-align: center;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .spinner {
+      width: 3rem;
+      height: 3rem;
+      border-radius: 50%;
+      border: 4px solid #374151;
+      border-top-color: #fff;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1.5rem auto;
+    }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;700&display=swap" rel="stylesheet">
 </head>
-  <body class="bg-black text-gray-200">
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
-  </body>
+<body>
+  <div>
+    <div class="spinner" role="status" aria-label="Loading"></div>
+    <h1 style="font-size: 1.875rem; font-weight: 700;">Authenticating...</h1>
+    <p style="color: #9ca3af; margin-top: 0.5rem;">Please wait while we securely sign you in.</p>
+  </div>
+</body>
 </html>
