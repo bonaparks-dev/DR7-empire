@@ -39,11 +39,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signInWithGoogle = useCallback(() => {
-    sessionStorage.setItem('oauth_in_progress', 'true');
     return supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}`, // ✅ important
+        redirectTo: `${window.location.origin}`, // ✅ Option 1 - redirect vers la page d'accueil
       },
     });
   }, []);
