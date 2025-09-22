@@ -103,7 +103,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { user: null, error };
   }, []);
 
-  
   const signup = useCallback(async (email: string, password: string, data: { full_name: string, company_name?: string, role: 'personal' | 'business' }) => {
     return supabase.auth.signUp({
         email,
@@ -113,8 +112,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Point to the dedicated callback page within the app.
             emailRedirectTo: `${window.location.origin}/auth/callback`,
         }
-    });
-  }, []);
     });
   }, []);
 
