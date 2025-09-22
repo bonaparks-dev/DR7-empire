@@ -1,5 +1,5 @@
 [build]
-  publish = "build"
+  publish = "dist"
   command = "npm run build"
 
 [[redirects]]
@@ -11,7 +11,7 @@
   NODE_VERSION = "18"
 
 [[headers]]
-  for = "/static/*"
+  for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
