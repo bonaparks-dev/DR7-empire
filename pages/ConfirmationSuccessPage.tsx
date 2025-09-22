@@ -15,10 +15,15 @@ const ConfirmationSuccessPage: React.FC = () => {
     return null;
   }
 
-  if (!user) {
-    // If auth state is resolved and there's no user, they shouldn't be here.
-    return <Navigate to="/signin" replace />;
-  }
+if (!user) {
+  return (
+    <main className="...">
+      <h1>Email confermata ✅</h1>
+      <p>Il tuo indirizzo email è stato verificato con successo. Accedi per entrare nel tuo account.</p>
+      <Link to="/signin" className="btn">Accedi</Link>
+    </main>
+  );
+}
 
   const destination = user.role === 'business' ? '/partner/dashboard' : '/account';
 
