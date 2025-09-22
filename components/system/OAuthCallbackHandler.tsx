@@ -1,22 +1,28 @@
-import React from 'react';
+import { useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 /**
- * This component handles the callback from OAuth providers like Google.
- * With modern Supabase JS client libraries (v2 and above), the client automatically
- * detects and processes authentication tokens (like access_token or a PKCE code)
- * present in the URL hash or query parameters upon page load.
- *
- * Once the client processes the token and establishes a session, it fires the
- * onAuthStateChange event. The listener for this event in AuthContext.tsx
- * then updates the application's user state.
- *
- * Therefore, a manual implementation to exchange a code for a session is no longer
- * necessary and can conflict with the client library's built-in behavior. This
- * component is left as a placeholder but performs no actions, relying on the
- * Supabase client and the AuthContext to handle the sign-in flow correctly.
+ * This component handles the client-side routing aspect of OAuth callbacks with HashRouter.
+ * 1. A user is redirected from Supabase to the app root with tokens in the hash (e.g., /#access_token=...).
+ * 2. The Supabase client library starts processing these tokens in the background on app load.
+ * 3. HashRouter, not recognizing a path in the hash, renders the default route ('/').
+ * 4. This component's effect runs, detects the token hash, and sees the path is still '/'.
+ * 5. It navigates to '/auth/callback', showing the user the "Authenticating..." page while the
+ *    Supabase client finishes its work and the onAuthStateChange event fires.
  */
 const OAuthCallbackHandler: React.FC = () => {
-  return null; // This component does not render any UI.
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (window.location.hash.includes('access_token')) {
+      if (location.pathname === '/') {
+        navigate('/auth/callback', { replace: true });
+      }
+    }
+  }, [location.pathname, navigate]);
+
+  return null;
 };
 
 export default OAuthCallbackHandler;

@@ -109,8 +109,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
         options: { 
             data,
-            // Point the confirmation link to the dedicated auth callback page to prevent 404s.
-            emailRedirectTo: `${window.location.origin}/#/auth/callback`,
+            // Point to a real path that our redirector can handle.
+            emailRedirectTo: `${window.location.origin}/auth/v1/callback`,
         }
     });
   }, []);
@@ -119,17 +119,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const signInWithGoogle = useCallback(() => {
     sessionStorage.setItem('oauth_in_progress', 'true');
+    // Let Supabase use the redirect URI from the dashboard.
+    // Our new handler system will catch and process it correctly.
     return supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-            redirectTo: `${window.location.origin}/#/auth/callback`,
-        }
+        provider: 'google'
     });
   }, []);
 
   const sendPasswordResetEmail = useCallback(async (email: string) => {
+    // Redirect to the app root. The AuthRedirector will handle routing
+    // to the reset password page once the user is signed in.
     return supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/#/reset-password`,
+        redirectTo: `${window.location.origin}/`,
     });
   }, []);
 
