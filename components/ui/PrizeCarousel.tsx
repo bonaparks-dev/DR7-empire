@@ -43,10 +43,10 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes }) => {
     setPage(([p]) => [p + newDirection, newDirection]);
   };
 
-  // Auto-slide toutes les 2.5s
+  // Auto-slide toutes les 1.8s
   useEffect(() => {
     if (length <= 1) return;
-    const id = setInterval(() => paginate(1), 2500);
+    const id = setInterval(() => paginate(1), 1800);
     return () => clearInterval(id);
   }, [length]);
 
