@@ -216,6 +216,7 @@ export const translations: Translations = {
   // Lottery Page
   DR7_Christmas_Giveaway: { en: "7 Millions to Win", it: "7 Milioni in Palio" },
   Prizes_Pool_Worth_Over: { en: "Prize Pool Worth Over €7,000,000", it: "Montepremi di Oltre 7.000.000€" },
+  Prizes_Pool: { en: "Prizes Pool", it: "Montepremi" },
   Draw_Ends_In: { en: "Draw Ends In", it: "L'estrazione termina tra" },
   How_many_tickets: { en: "How many tickets?", it: "Quanti biglietti?" },
   Total_Price_Lottery: { en: "Total", it: "Totale" },
