@@ -721,9 +721,9 @@ export const LOTTERY_GIVEAWAY: Lottery = {
   name: { en: '7 Millions to Win', it: '7 Milioni in Palio' },
   subtitle: { en: 'Prize Pool Worth Over €7,000,000', it: 'Montepremi di Oltre 7.000.000€' },
   image: '/lottery-hero.jpeg',
-  ticketPriceUSD: 23,60,
+  ticketPriceUSD: 23.60,
   ticketPriceEUR: 20,
-  drawDate: '2025-12-25T18:00:00Z',
+  drawDate: '2025-12-24T10:00:00Z',
   prizes: [
     {
       tier: { en: 'Gift & Bonus', it: 'Gift & Bonus' },
