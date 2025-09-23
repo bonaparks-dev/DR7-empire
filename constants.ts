@@ -816,56 +816,54 @@ export const LOTTERY_GIVEAWAY: Lottery = {
   image: "/lottery-hero.jpeg",
   ticketPriceUSD: 23.60,
   ticketPriceEUR: 20,
-  // 10:00 Europe/Rome le 24/12/2025 -> 09:00Z
-  drawDate: "2025-12-24T09:00:00Z",
+  drawDate: "2025-12-24T09:00:00Z", // 10:00 Europe/Rome
   prizes: [
     // ───────── Top veicoli (singoli) — pos. 1–20 (20 premi)
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Lamborghini Urus S Performante", it: "Lamborghini Urus S Performante" }, icon: CarIcon, quantity: 1 },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Porsche Carrera 992 4S", it: "Porsche Carrera 992 4S" }, icon: CarIcon, quantity: 1 },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Mercedes GLE63", it: "Mercedes GLE63" }, icon: CarIcon, quantity: 1 },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Yacht (veicolo)", it: "Yacht (veicolo)" }, icon: AnchorIcon, quantity: 1 },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Mercedes C63 S E PERFORMANCE", it: "Mercedes C63 S E PERFORMANCE" }, icon: CarIcon, quantity: 1 },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Porsche Macan GTS", it: "Porsche Macan GTS" }, icon: CarIcon, quantity: 1 },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "BMW M4 Competition", it: "BMW M4 Competition" }, icon: CarIcon, quantity: 1 },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Porsche Cayenne S", it: "Porsche Cayenne S" }, icon: CarIcon, quantity: 1 },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Lexus 450", it: "Lexus 450" }, icon: CarIcon, quantity: 1 },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "BMW M3 Competition", it: "BMW M3 Competition" }, icon: CarIcon, quantity: 1 },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Toyota RAV GR 360 cv", it: "Toyota RAV GR 360 cv" }, icon: CarIcon, quantity: 1 },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Mercedes CLA 45S", it: "Mercedes CLA 45S" }, icon: CarIcon, quantity: 1 },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Audi RSQ3", it: "Audi RSQ3" }, icon: CarIcon, quantity: 1 },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "RS3 verde", it: "RS3 verde" }, icon: CarIcon, quantity: 1 },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "RS3 rossa", it: "RS3 rossa" }, icon: CarIcon, quantity: 1 },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Mercedes GLE53", it: "Mercedes GLE53" }, icon: CarIcon, quantity: 1 },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Classe A45S", it: "Classe A45S" }, icon: CarIcon, quantity: 1 },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Mercedes GLE 350", it: "Mercedes GLE 350" }, icon: CarIcon, quantity: 1 },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Lexus 350", it: "Lexus 350" }, icon: CarIcon, quantity: 1 },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Toyota CH-R", it: "Toyota CH-R" }, icon: CarIcon, quantity: 1 },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Lamborghini Urus S Performante", it: "Lamborghini Urus S Performante" }, icon: CarIcon, quantity: 1, image: "/lamborghini-urus-s-performante.jpg" },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Porsche Carrera 992 4S", it: "Porsche Carrera 992 4S" }, icon: CarIcon, quantity: 1, image: "/porsche-992-4s.jpg" },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Mercedes GLE63", it: "Mercedes GLE63" }, icon: CarIcon, quantity: 1, image: "/mercedes-gle63.jpg" },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Yacht (veicolo)", it: "Yacht (veicolo)" }, icon: AnchorIcon, quantity: 1, image: "/yacht.jpg" },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Mercedes C63 S E PERFORMANCE", it: "Mercedes C63 S E PERFORMANCE" }, icon: CarIcon, quantity: 1, image: "/mercedes-c63s-e-performance.jpg" },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Porsche Macan GTS", it: "Porsche Macan GTS" }, icon: CarIcon, quantity: 1, image: "/porsche-macan-gts.jpg" },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "BMW M4 Competition", it: "BMW M4 Competition" }, icon: CarIcon, quantity: 1, image: "/bmw-m4-competition.jpg" },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Porsche Cayenne S", it: "Porsche Cayenne S" }, icon: CarIcon, quantity: 1, image: "/porsche-cayenne-s.jpg" },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Lexus 450", it: "Lexus 450" }, icon: CarIcon, quantity: 1, image: "/lexus-450.jpg" },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "BMW M3 Competition", it: "BMW M3 Competition" }, icon: CarIcon, quantity: 1, image: "/bmw-m3-competition.jpg" },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Toyota RAV GR 360 cv", it: "Toyota RAV GR 360 cv" }, icon: CarIcon, quantity: 1, image: "/toyota-rav-gr-360.jpg" },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Mercedes CLA 45S", it: "Mercedes CLA 45S" }, icon: CarIcon, quantity: 1, image: "/mercedes-cla45s.jpg" },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Audi RSQ3", it: "Audi RSQ3" }, icon: CarIcon, quantity: 1, image: "/audi-rsq3.jpg" },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "RS3 verde", it: "RS3 verde" }, icon: CarIcon, quantity: 1, image: "/audi-rs3-verde.jpg" },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "RS3 rossa", it: "RS3 rossa" }, icon: CarIcon, quantity: 1, image: "/audi-rs3-rossa.jpg" },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Mercedes GLE53", it: "Mercedes GLE53" }, icon: CarIcon, quantity: 1, image: "/mercedes-gle53.jpg" },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Classe A45S", it: "Classe A45S" }, icon: CarIcon, quantity: 1, image: "/mercedes-a45s.jpg" },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Mercedes GLE 350", it: "Mercedes GLE 350" }, icon: CarIcon, quantity: 1, image: "/mercedes-gle-350.jpg" },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Lexus 350", it: "Lexus 350" }, icon: CarIcon, quantity: 1, image: "/lexus-350.jpg" },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Toyota CH-R", it: "Toyota CH-R" }, icon: CarIcon, quantity: 1, image: "/toyota-chr.jpg" },
 
     // ───────── Esperienze premium — pos. 21–30 (10 premi)
-    { tier: { en: "Premium Experiences", it: "Esperienze premium" }, name: { en: "DR7 Ultimate Experience", it: "DR7 Ultimate Experience" }, icon: CrownIcon, quantity: 10 },
+    { tier: { en: "Premium Experiences", it: "Esperienze premium" }, name: { en: "DR7 Ultimate Experience", it: "DR7 Ultimate Experience" }, icon: CrownIcon, quantity: 10, image: "/dr7-ultimate.jpg" },
 
     // ───────── Veicolo fascia alta — pos. 31 (1 premio)
-    { tier: { en: "High-Tier Vehicle", it: "Veicolo fascia alta" }, name: { en: "Hummer", it: "Hummer" }, icon: CarIcon, quantity: 1 },
+    { tier: { en: "High-Tier Vehicle", it: "Veicolo fascia alta" }, name: { en: "Hummer", it: "Hummer" }, icon: CarIcon, quantity: 1, image: "/hummer.jpg" },
 
     // ───────── Fascia intermedia
-    { tier: { en: "Mid Tier", it: "Fascia intermedia" }, name: { en: "Yamaha TMAX 2025", it: "Yamaha TMAX 2025" }, icon: CarIcon, quantity: 50 }, // pos. 32–81
+    { tier: { en: "Mid Tier", it: "Fascia intermedia" }, name: { en: "Yamaha TMAX 2025", it: "Yamaha TMAX 2025" }, icon: CarIcon, quantity: 50, image: "/yamaha-tmax-2025.jpg" }, // pos. 32–81
     { tier: { en: "Mid Tier", it: "Fascia intermedia" }, name: { en: "Rolex", it: "Rolex" }, icon: ClockIcon, quantity: 20, image: "/rolex.jpeg" }, // pos. 82–101
-    { tier: { en: "Mid Tier", it: "Fascia intermedia" }, name: { en: "Fiat Panda", it: "Fiat Panda" }, icon: CarIcon, quantity: 10 }, // pos. 102–111
-    { tier: { en: "Mid Tier", it: "Fascia intermedia" }, name: { en: "Fiat 500", it: "Fiat 500" }, icon: CarIcon, quantity: 10 }, // pos. 112–121
+    { tier: { en: "Mid Tier", it: "Fascia intermedia" }, name: { en: "Fiat Panda", it: "Fiat Panda" }, icon: CarIcon, quantity: 10, image: "/fiat-panda.jpg" }, // pos. 102–111
+    { tier: { en: "Mid Tier", it: "Fascia intermedia" }, name: { en: "Fiat 500", it: "Fiat 500" }, icon: CarIcon, quantity: 10, image: "/fiat-500.jpg" }, // pos. 112–121
 
     // ───────── Esperienze & fascia media
-    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "7-night luxury villa stay for 10 guests", it: "7 giorni in villa di lusso per 10 persone" }, icon: HomeIcon, quantity: 1 },
-    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "Honda SH 125", it: "Honda SH 125" }, icon: CarIcon, quantity: 50 },
-    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "7-day cruise for 2", it: "Crociere 7 gg per 2 persone" }, icon: WavesIcon, quantity: 10 },
-    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "Louis Vuitton women’s handbags", it: "Borse donna Louis Vuitton" }, icon: CrownIcon, quantity: 100 },
-    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "Helicopter ride for 2", it: "Giri in elicottero per 2 persone" }, icon: HelicopterIcon, quantity: 10 },
+    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "7-night luxury villa stay for 10 guests", it: "7 giorni in villa di lusso per 10 persone" }, icon: HomeIcon, quantity: 1, image: "/luxury-villa.jpg" }, // pos. 122
+    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "Honda SH 125", it: "Honda SH 125" }, icon: CarIcon, quantity: 50, image: "/honda-sh125.jpg" }, // pos. 123–172
+    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "7-day cruise for 2", it: "Crociere 7 gg per 2 persone" }, icon: WavesIcon, quantity: 10, image: "/cruise-7d.jpg" }, // pos. 173–182
+    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "Louis Vuitton women’s handbags", it: "Borse donna Louis Vuitton" }, icon: CrownIcon, quantity: 100, image: "/lv-bag.jpg" }, // pos. 183–282
+    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "Helicopter ride for 2", it: "Giri in elicottero per 2 persone" }, icon: HelicopterIcon, quantity: 10, image: "/helicopter-ride.jpg" }, // pos. 283–292
 
-    // ───────── Gift & Massa
-    { tier: { en: "Gift & Mass", it: "Gift & Massa" }, name: { en: "Amazon Gift Cards", it: "Gift Card Amazon" }, icon: CreditCardIcon, quantity: 110, image: "/amazon.jpeg" },
-    { tier: { en: "Gift & Mass", it: "Gift & Massa" }, name: { en: "iPhone 17", it: "iPhone 17" }, icon: DevicePhoneMobileIcon, quantity: 700, image: "/iphone.jpeg" },
-    { tier: { en: "Gift & Mass", it: "Gift & Massa" }, name: { en: "DR7 Tickets", it: "Ticket DR7" }, icon: TicketIcon, quantity: 1500 },
-    // ⚠️ Pour conserver 3 300 prix au total, garder 698. Si tu veux strictement 692, dis-moi où ajouter +6 ailleurs.
-    { tier: { en: "Gift & Mass", it: "Gift & Massa" }, name: { en: "Fuel vouchers", it: "Buoni benzina" }, icon: CarIcon, quantity: 692 },
+    // ───────── Gift & Massa (totale 3.300 con iPhone=706, benzina=692)
+    { tier: { en: "Gift & Mass", it: "Gift & Massa" }, name: { en: "Amazon Gift Cards", it: "Gift Card Amazon" }, icon: CreditCardIcon, quantity: 110, image: "/amazon.jpeg" }, // pos. 293–402
+    { tier: { en: "Gift & Mass", it: "Gift & Massa" }, name: { en: "iPhone 17", it: "iPhone 17" }, icon: DevicePhoneMobileIcon, quantity: 706, image: "/iphone.jpeg" }, // pos. 403–1108
+    { tier: { en: "Gift & Mass", it: "Gift & Massa" }, name: { en: "DR7 Tickets", it: "Ticket DR7" }, icon: TicketIcon, quantity: 1500, image: "/dr7-ticket.jpg" }, // pos. 1109–2608
+    { tier: { en: "Gift & Mass", it: "Gift & Massa" }, name: { en: "Fuel vouchers", it: "Buoni benzina" }, icon: CarIcon, quantity: 692, image: "/fuel-voucher.jpg" }, // pos. 2609–3300
   ],
   bonus: {
     en: "Every ticket purchased also includes 100 entries into our flash giveaway for a luxury weekend in Sardinia!",
