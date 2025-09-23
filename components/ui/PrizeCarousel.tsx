@@ -57,7 +57,7 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes }) => {
     <div
       className="w-full max-w-4xl mx-auto relative flex flex-col items-center"
     >
-      <div className="relative w-full aspect-[16/9] overflow-hidden rounded-xl bg-gray-900/50 border border-gray-800 shadow-2xl shadow-black/50">
+      <div className="relative w-full aspect-square overflow-hidden rounded-xl bg-gray-900/50 border border-gray-800 shadow-2xl shadow-black/50">
         <AnimatePresence initial={false} custom={direction}>
           <motion.img
             key={page}
@@ -83,7 +83,7 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes }) => {
                 paginate(-1);
               }
             }}
-            className="absolute w-full h-full object-cover"
+            className="absolute w-full h-full object-contain"
           />
         </AnimatePresence>
 
