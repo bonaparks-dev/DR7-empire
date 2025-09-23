@@ -8,7 +8,7 @@ export const translations: Translations = {
   Villas: { en: "Villas", it: "Ville" },
   Jets: { en: "Jets", it: "Jet" },
   Helicopters: { en: "Helicopters", it: "Elicotteri" },
-  Lottery: { en: "Lottery", it: "Lotteria" },
+  Lottery: { en: "7 Millions to Win", it: "7 Milioni in Palio" },
   Membership: { en: "Membership", it: "Club" },
   My_Account: { en: "My Account", it: "Il Mio Account" },
   Partner_Dashboard: { en: "Partner Dashboard", it: "Dashboard Partner" },
@@ -24,7 +24,7 @@ export const translations: Translations = {
   The_DR7_Club: { en: "The DR7 Club", it: "Il Club DR7" },
   Unlock_a_new_level_of_luxury_with_our_exclusive_membership_tiers: { en: "Unlock a new level of luxury with our exclusive membership tiers.", it: "Sblocca un nuovo livello di lusso con i nostri esclusivi livelli di abbonamento." },
   View_Tiers: { en: "View Tiers", it: "Vedi i Livelli" },
-  Lottery_DR7: { en: "Lottery DR7", it: "Lotteria DR7" },
+  Lottery_DR7: { en: "7 Millions to Win", it: "7 Milioni in Palio" },
   Win_your_dream_car_and_more: { en: "Win your dream car and more.", it: "Vinci l'auto dei tuoi sogni e altro ancora." },
   Participate_in_our_exclusive_giveaways_for_a_chance_to_win_extraordinary_prizes: { en: "Participate in our exclusive giveaways for a chance to win extraordinary prizes.", it: "Partecipa ai nostri giveaway esclusivi per avere la possibilità di vincere premi straordinari." },
   Enter_Now: { en: "Enter Now", it: "Partecipa Ora" },
@@ -214,8 +214,8 @@ export const translations: Translations = {
   View_Openings: { en: "View Openings", it: "Vedi Posizioni Aperte" },
 
   // Lottery Page
-  DR7_Christmas_Giveaway: { en: "DR7 Christmas Grand Giveaway", it: "Grande Giveaway di Natale DR7" },
-  Prizes_Pool_Worth_Over: { en: "Prize Pool Worth Over €400,000", it: "Montepremi di Oltre 400.000€" },
+  DR7_Christmas_Giveaway: { en: "7 Millions to Win", it: "7 Milioni in Palio" },
+  Prizes_Pool_Worth_Over: { en: "Prize Pool Worth Over €7,000,000", it: "Montepremi di Oltre 7.000.000€" },
   Draw_Ends_In: { en: "Draw Ends In", it: "L'estrazione termina tra" },
   How_many_tickets: { en: "How many tickets?", it: "Quanti biglietti?" },
   Total_Price_Lottery: { en: "Total", it: "Totale" },
