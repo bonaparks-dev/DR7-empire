@@ -717,9 +717,9 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
 ];
 
 export const LOTTERY_GIVEAWAY: Lottery = {
-  id: 'christmas-2024',
-  name: { en: 'DR7 Christmas Grand Giveaway', it: 'Grande Giveaway di Natale DR7' },
-  subtitle: { en: 'Prize Pool Worth Over €400,000', it: 'Montepremi di Oltre 400.000€' },
+  id: '7-millions-giveaway',
+  name: { en: '7 Millions to Win', it: '7 Milioni in Palio' },
+  subtitle: { en: 'Prize Pool Worth Over €7,000,000', it: 'Montepremi di Oltre 7.000.000€' },
   image: '/lottery-hero.jpeg',
   ticketPriceUSD: 22,
   ticketPriceEUR: 20,
@@ -729,24 +729,28 @@ export const LOTTERY_GIVEAWAY: Lottery = {
       tier: { en: 'Grand Prize', it: 'Primo Premio' },
       name: { en: 'Lamborghini Revuelto', it: 'Lamborghini Revuelto' },
       icon: CarIcon,
+      image: '/prizes/revuelto.jpeg',
     },
     {
       tier: { en: 'Tier 2 Prizes', it: 'Premi di Livello 2' },
       name: { en: 'Rolex Submariner', it: 'Rolex Submariner' },
       icon: ClockIcon,
-      quantity: 5
+      quantity: 5,
+      image: '/prizes/rolex.jpeg',
     },
     {
       tier: { en: 'Tier 3 Prizes', it: 'Premi di Livello 3' },
       name: { en: 'iPhone 16 Pro Max', it: 'iPhone 16 Pro Max' },
       icon: DevicePhoneMobileIcon,
       quantity: 10,
+      image: '/prizes/iphone.jpeg',
     },
     {
       tier: { en: 'Tier 4 Prizes', it: 'Premi di Livello 4' },
       name: { en: '1 Year DR7 Gold Membership', it: '1 Anno di Abbonamento DR7 Gold' },
       icon: CubeTransparentIcon,
       quantity: 20,
+      image: '/prizes/membership.jpeg',
     }
   ],
   bonus: {
