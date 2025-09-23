@@ -847,23 +847,23 @@ export const LOTTERY_GIVEAWAY: Lottery = {
     { tier: { en: "High-Tier Vehicle", it: "Veicolo fascia alta" }, name: { en: "Hummer", it: "Hummer" }, icon: CarIcon, quantity: 1, image: "/hummer.jpg" },
 
     // ───────── Fascia intermedia
-    { tier: { en: "Mid Tier", it: "Fascia intermedia" }, name: { en: "Yamaha TMAX 2025", it: "Yamaha TMAX 2025" }, icon: CarIcon, quantity: 50, image: "/yamaha-tmax-2025.jpg" }, // pos. 32–81
+    { tier: { en: "Mid Tier", it: "Fascia intermedia" }, name: { en: "Yamaha TMAX 2025", it: "Yamaha TMAX 2025" }, icon: CarIcon, quantity: 50, image: "/yamaha-tmax-2025.jpeg" }, // pos. 32–81
     { tier: { en: "Mid Tier", it: "Fascia intermedia" }, name: { en: "Rolex", it: "Rolex" }, icon: ClockIcon, quantity: 20, image: "/rolex.jpeg" }, // pos. 82–101
-    { tier: { en: "Mid Tier", it: "Fascia intermedia" }, name: { en: "Fiat Panda", it: "Fiat Panda" }, icon: CarIcon, quantity: 10, image: "/fiat-panda.jpg" }, // pos. 102–111
-    { tier: { en: "Mid Tier", it: "Fascia intermedia" }, name: { en: "Fiat 500", it: "Fiat 500" }, icon: CarIcon, quantity: 10, image: "/fiat-500.jpg" }, // pos. 112–121
+    { tier: { en: "Mid Tier", it: "Fascia intermedia" }, name: { en: "Fiat Panda", it: "Fiat Panda" }, icon: CarIcon, quantity: 10, image: "/fiat-panda.jpeg" }, // pos. 102–111
+    { tier: { en: "Mid Tier", it: "Fascia intermedia" }, name: { en: "Fiat 500", it: "Fiat 500" }, icon: CarIcon, quantity: 10, image: "/fiat-500.jpeg" }, // pos. 112–121
 
     // ───────── Esperienze & fascia media
     { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "7-night luxury villa stay for 10 guests", it: "7 giorni in villa di lusso per 10 persone" }, icon: HomeIcon, quantity: 1, image: "/luxury-villa.jpg" }, // pos. 122
-    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "Honda SH 125", it: "Honda SH 125" }, icon: CarIcon, quantity: 50, image: "/honda-sh125.jpg" }, // pos. 123–172
-    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "7-day cruise for 2", it: "Crociere 7 gg per 2 persone" }, icon: WavesIcon, quantity: 10, image: "/cruise-7d.jpg" }, // pos. 173–182
-    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "Louis Vuitton women’s handbags", it: "Borse donna Louis Vuitton" }, icon: CrownIcon, quantity: 100, image: "/lv-bag.jpg" }, // pos. 183–282
-    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "Helicopter ride for 2", it: "Giri in elicottero per 2 persone" }, icon: HelicopterIcon, quantity: 10, image: "/helicopter-ride.jpg" }, // pos. 283–292
+    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "Honda SH 125", it: "Honda SH 125" }, icon: CarIcon, quantity: 50, image: "/honda-sh125.jpeg" }, // pos. 123–172
+    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "7-day cruise for 2", it: "Crociere 7 gg per 2 persone" }, icon: WavesIcon, quantity: 10, image: "/cruise-7d.jpeg" }, // pos. 173–182
+    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "Louis Vuitton women’s handbags", it: "Borse donna Louis Vuitton" }, icon: CrownIcon, quantity: 100, image: "/lv-bag.jpeg" }, // pos. 183–282
+    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "Helicopter ride for 2", it: "Giri in elicottero per 2 persone" }, icon: HelicopterIcon, quantity: 10, image: "/helicopter-ride.jpeg" }, // pos. 283–292
 
     // ───────── Gift & Massa (totale 3.300 con iPhone=706, benzina=692)
     { tier: { en: "Gift & Mass", it: "Gift & Massa" }, name: { en: "Amazon Gift Cards", it: "Gift Card Amazon" }, icon: CreditCardIcon, quantity: 110, image: "/amazon.jpeg" }, // pos. 293–402
     { tier: { en: "Gift & Mass", it: "Gift & Massa" }, name: { en: "iPhone 17", it: "iPhone 17" }, icon: DevicePhoneMobileIcon, quantity: 706, image: "/iphone.jpeg" }, // pos. 403–1108
-    { tier: { en: "Gift & Mass", it: "Gift & Massa" }, name: { en: "DR7 Tickets", it: "Ticket DR7" }, icon: TicketIcon, quantity: 1500, image: "/dr7-ticket.jpg" }, // pos. 1109–2608
-    { tier: { en: "Gift & Mass", it: "Gift & Massa" }, name: { en: "Fuel vouchers", it: "Buoni benzina" }, icon: CarIcon, quantity: 692, image: "/fuel-voucher.jpg" }, // pos. 2609–3300
+    { tier: { en: "Gift & Mass", it: "Gift & Massa" }, name: { en: "DR7 Tickets", it: "Ticket DR7" }, icon: TicketIcon, quantity: 1500, image: "/dr7-ticket.jpeg" }, // pos. 1109–2608
+    { tier: { en: "Gift & Mass", it: "Gift & Massa" }, name: { en: "Fuel vouchers", it: "Buoni benzina" }, icon: CarIcon, quantity: 692, image: "/fuel-voucher.jpeg" }, // pos. 2609–3300
   ],
   bonus: {
     en: "Every ticket purchased also includes 100 entries into our flash giveaway for a luxury weekend in Sardinia!",
