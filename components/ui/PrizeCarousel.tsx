@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Prize } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -13,11 +13,7 @@ const variants = {
     x: direction > 0 ? 1000 : -1000,
     opacity: 0,
   }),
-  center: {
-    zIndex: 1,
-    x: 0,
-    opacity: 1,
-  },
+  center: { zIndex: 1, x: 0, opacity: 1 },
   exit: (direction: number) => ({
     zIndex: 0,
     x: direction < 0 ? 1000 : -1000,
@@ -26,25 +22,44 @@ const variants = {
 };
 
 const swipeConfidenceThreshold = 10000;
-const swipePower = (offset: number, velocity: number) => {
-  return Math.abs(offset) * velocity;
-};
+const swipePower = (offset: number, velocity: number) =>
+  Math.abs(offset) * velocity;
+
+// modulo positif
+const wrapIndex = (index: number, length: number) =>
+  ((index % length) + length) % length;
 
 export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes }) => {
-  const [[page, direction], setPage] = useState([0, 0]);
+  const [[page, direction], setPage] = useState<[number, number]>([0, 0]);
+  const [isHovered, setIsHovered] = useState(false);
   const { getTranslated } = useTranslation();
 
-  const imageIndex = page % prizes.length;
+  const length = prizes.length;
+  const imageIndex = useMemo(
+    () => (length > 0 ? wrapIndex(page, length) : 0),
+    [page, length]
+  );
 
   const paginate = (newDirection: number) => {
-    setPage([page + newDirection, newDirection]);
+    setPage(([p]) => [p + newDirection, newDirection]);
   };
+
+  // Auto-slide toutes les 4s (pause au survol)
+  useEffect(() => {
+    if (isHovered || length <= 1) return;
+    const id = setTimeout(() => paginate(1), 4000);
+    return () => clearTimeout(id);
+  }, [page, isHovered, length]);
 
   const currentPrize = prizes[imageIndex];
   if (!currentPrize) return null;
 
   return (
-    <div className="w-full max-w-4xl mx-auto relative flex flex-col items-center">
+    <div
+      className="w-full max-w-4xl mx-auto relative flex flex-col items-center"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       <div className="relative w-full aspect-[16/9] overflow-hidden rounded-xl bg-gray-900/50 border border-gray-800 shadow-2xl shadow-black/50">
         <AnimatePresence initial={false} custom={direction}>
           <motion.img
@@ -74,6 +89,7 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes }) => {
             className="absolute w-full h-full object-cover"
           />
         </AnimatePresence>
+
         <button
           onClick={() => paginate(-1)}
           className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors z-10"
@@ -91,15 +107,21 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes }) => {
       </div>
 
       <div className="text-center mt-4">
-        <h3 className="text-2xl font-bold text-white">{getTranslated(currentPrize.name)}</h3>
-        <p className="text-md text-gray-400">{getTranslated(currentPrize.tier)}</p>
+        <h3 className="text-2xl font-bold text-white">
+          {getTranslated(currentPrize.name)}
+        </h3>
+        <p className="text-md text-gray-400">
+          {getTranslated(currentPrize.tier)}
+        </p>
       </div>
 
       <div className="flex justify-center space-x-2 mt-4">
         {prizes.map((_, i) => (
           <button
             key={i}
-            onClick={() => setPage([i, i > imageIndex ? 1 : -1])}
+            onClick={() =>
+              setPage(([p]) => [i, i > wrapIndex(p, length) ? 1 : -1])
+            }
             className={`w-3 h-3 rounded-full transition-colors ${
               i === imageIndex ? 'bg-white' : 'bg-white/30 hover:bg-white/50'
             }`}
