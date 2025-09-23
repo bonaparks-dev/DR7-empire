@@ -235,7 +235,10 @@ const LotteryPage: React.FC = () => {
 
                     <div className="grid lg:grid-cols-5 gap-12 items-start">
                         <div className="lg:col-span-3">
-                            <h2 className="text-3xl font-bold font-playfair mb-8 text-center lg:text-left">{t('Prizes_Pool_Worth_Over')}</h2>
+                            <h2 className="text-3xl font-bold font-playfair mb-8 text-center lg:text-left">
+                                {t('Prizes_Pool_Text')}
+                                <span className="text-amber-400">{t('Prizes_Pool_Value')}</span>
+                            </h2>
                             <div className="space-y-8">
                                 {Object.entries(groupedPrizes).map(([tier, prizes]) => (
                                     <div key={tier}>
