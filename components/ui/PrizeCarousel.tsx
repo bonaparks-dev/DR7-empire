@@ -43,10 +43,10 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes }) => {
     setPage(([p]) => [p + newDirection, newDirection]);
   };
 
-  // Auto-slide toutes les 4s
+  // Auto-slide toutes les 2.5s
   useEffect(() => {
     if (length <= 1) return;
-    const id = setInterval(() => paginate(1), 4000);
+    const id = setInterval(() => paginate(1), 2500);
     return () => clearInterval(id);
   }, [length]);
 
@@ -57,7 +57,7 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes }) => {
     <div
       className="w-full max-w-4xl mx-auto relative flex flex-col items-center"
     >
-      <div className="relative w-full aspect-[16/9] overflow-hidden rounded-xl bg-gray-900/50 border border-gray-800 shadow-2xl shadow-black/50">
+      <div className="relative w-full aspect-square overflow-hidden rounded-xl bg-gray-900/50 border border-gray-800 shadow-2xl shadow-black/50">
         <AnimatePresence initial={false} custom={direction}>
           <motion.img
             key={page}
@@ -83,7 +83,7 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes }) => {
                 paginate(-1);
               }
             }}
-            className="absolute w-full h-full object-cover"
+            className="absolute w-full h-full object-contain"
           />
         </AnimatePresence>
 
@@ -112,20 +112,6 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes }) => {
         </p>
       </div>
 
-      <div className="flex justify-center space-x-2 mt-4">
-        {prizes.map((_, i) => (
-          <button
-            key={i}
-            onClick={() =>
-              setPage(([p]) => [i, i > wrapIndex(p, length) ? 1 : -1])
-            }
-            className={`w-3 h-3 rounded-full transition-colors ${
-              i === imageIndex ? 'bg-white' : 'bg-white/30 hover:bg-white/50'
-            }`}
-            aria-label={`Go to prize ${i + 1}`}
-          />
-        ))}
-      </div>
     </div>
   );
 };
