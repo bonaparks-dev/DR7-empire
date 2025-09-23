@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Prize } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -39,16 +39,16 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes }) => {
     [page, length]
   );
 
-  const paginate = (newDirection: number) => {
+  const paginate = useCallback((newDirection: number) => {
     setPage(([p]) => [p + newDirection, newDirection]);
-  };
+  }, []);
 
   // Auto-slide toutes les 1.8s
   useEffect(() => {
     if (length <= 1) return;
     const id = setInterval(() => paginate(1), 1800);
     return () => clearInterval(id);
-  }, [length]);
+  }, [length, paginate]);
 
   const currentPrize = prizes[imageIndex];
   if (!currentPrize) return null;
