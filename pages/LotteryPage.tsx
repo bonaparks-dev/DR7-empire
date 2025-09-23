@@ -7,6 +7,7 @@ import type { Lottery, Prize } from '../types';
 import { TicketIcon } from '../components/icons/Icons';
 import { useAuth } from '../hooks/useAuth';
 import type { Stripe, StripeElements, StripeCardElement } from '@stripe/stripe-js';
+import { PrizeCarousel } from '../components/ui/PrizeCarousel';
 
 // Safely access the Stripe publishable key from Vite's environment variables.
 // If it's not available (e.g., in a non-Vite environment), it falls back to a placeholder.
@@ -222,6 +223,16 @@ const LotteryPage: React.FC = () => {
 
             <div className="py-24 bg-black">
                 <div className="container mx-auto px-6">
+                    <motion.div
+                        initial={{ opacity: 0, y: 50 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, amount: 0.2 }}
+                        transition={{ duration: 0.8 }}
+                        className="mb-24"
+                    >
+                        <PrizeCarousel prizes={giveaway.prizes.filter(p => p.image)} />
+                    </motion.div>
+
                     <div className="grid lg:grid-cols-5 gap-12 items-start">
                         <div className="lg:col-span-3">
                             <h2 className="text-3xl font-bold font-playfair mb-8 text-center lg:text-left">{t('Prizes_Pool_Worth_Over').replace('€400,000', '')}<span className="text-amber-400">€400,000</span></h2>
