@@ -1,5 +1,7 @@
 import type { RentalCategory, MembershipTier, Lottery, Amenity, Villa } from './types';
-// FIX: Consolidate and correct icon imports
+import type { FC } from 'react';
+
+// Icônes
 import {
   UsersIcon,
   CogIcon,
@@ -29,274 +31,329 @@ import {
 
 export const VILLA_SERVICE_FEE_PERCENTAGE = 0.15;
 
+// ─────────────────────────────────────────────────────────────
+// Concorso: infos marketing & legali
+// ─────────────────────────────────────────────────────────────
+export const CONTEST_INFO = {
+  name: { it: "7 millions to win", en: "7 millions to win", fr: "7 millions to win" },
+  extraction: {
+    // 10:00 Europe/Rome le 24/12/2025 → 09:00Z
+    dateIso: "2025-12-24T09:00:00Z",
+    dateLabel: { it: "24 dicembre 2025, ore 10:00", en: "24 December 2025, 10:00", fr: "24 décembre 2025, 10h00" },
+    oversight: {
+      it: "Estrazione alla presenza di un avvocato e di un incaricato della Camera di Commercio.",
+      en: "Drawing in the presence of a lawyer and a Chamber of Commerce officer.",
+      fr: "Tirage en présence d’un avocat et d’un représentant de la Chambre de Commerce.",
+    },
+  },
+  tickets: {
+    priceEUR: 20,
+    giftCardValueEUR: 25,
+    note: {
+      it: "Ogni biglietto corrisponde a una Gift Card DR7 da 25 €, spendibile nei servizi DR7.",
+      en: "Each ticket corresponds to a €25 DR7 Gift Card, usable on DR7 services.",
+      fr: "Chaque billet correspond à une carte cadeau DR7 de 25 €, utilisable sur les services DR7.",
+    },
+  },
+  timeline: {
+    // Dernier jour pour participer : 22/12/2025 23:59:59 Europe/Rome → ~22:59:59Z
+    participationDeadlineIso: "2025-12-22T22:59:59Z",
+    participationDeadlineLabel: {
+      it: "Ultimo giorno per partecipare: 22 dicembre 2025",
+      en: "Last day to participate: 22 December 2025",
+      fr: "Dernier jour pour participer : 22 décembre 2025",
+    },
+  },
+  stats: {
+    totalTickets: 350000,
+    totalPrizes: 3300, // valeur marketing
+    winProbability: { it: "≈ 1 su 106 (~0,94%)", en: "≈ 1 in 106 (~0.94%)", fr: "≈ 1 sur 106 (~0,94%)" },
+  },
+};
+
+// ─────────────────────────────────────────────────────────────
+// Fleet: Cars (raw data)
+// ─────────────────────────────────────────────────────────────
 const newCarsRawData = [
   {
-    "id": 1,
-    "name": "Alfa Romeo Stelvio Quadrifoglio",
-    "dailyPrice": 40,
-    "specs": {
-      "acceleration": "0–100 in 3.8s",
-      "power": "510Cv",
-      "torque": "600Nm",
-      "engine": "2.9L V6 BiTurbo"
+    id: 1,
+    name: "Alfa Romeo Stelvio Quadrifoglio",
+    dailyPrice: 40,
+    specs: {
+      acceleration: "0–100 in 3.8s",
+      power: "510Cv",
+      torque: "600Nm",
+      engine: "2.9L V6 BiTurbo",
     },
-    "image": "/alpha.png",
-    "available": false
+    image: "/alpha.png",
+    available: false,
   },
   {
-    "id": 2,
-    "name": "Hummer H2",
-    "dailyPrice": 40,
-    "specs": {
-      "acceleration": "0–100 in 7.8s",
-      "maxSpeed": "Max speed: 160km/h",
-      "power": "398Cv",
-      "torque": "574Nm",
-      "engine": "6.2L V8"
+    id: 2,
+    name: "Hummer H2",
+    dailyPrice: 40,
+    specs: {
+      acceleration: "0–100 in 7.8s",
+      maxSpeed: "Max speed: 160km/h",
+      power: "398Cv",
+      torque: "574Nm",
+      engine: "6.2L V8",
     },
-    "image": "/hummer.png"
+    image: "/hummer.png",
   },
   {
-    "id": 3,
-    "name": "Audi RS3",
-    "dailyPrice": 60,
-    "specs": {
-      "acceleration": "0–100 in 3.8s",
-      "maxSpeed": "Max speed: 250km/h",
-      "power": "400Cv",
-      "torque": "500Nm",
-      "engine": "2.5L inline 5-cylinder"
+    id: 3,
+    name: "Audi RS3",
+    dailyPrice: 60,
+    specs: {
+      acceleration: "0–100 in 3.8s",
+      maxSpeed: "Max speed: 250km/h",
+      power: "400Cv",
+      torque: "500Nm",
+      engine: "2.5L inline 5-cylinder",
     },
-    "image": "/audi-rs3.png",
-    "color": "Verde"
+    image: "/audi-rs3.png",
+    color: "Verde",
   },
   {
-    "id": 4,
-    "name": "Audi RS3",
-    "dailyPrice": 60,
-    "specs": {
-      "acceleration": "0–100 in 3.8s",
-      "power": "400Cv",
-      "torque": "500Nm",
-      "engine": "2.5L inline 5-cylinder"
+    id: 4,
+    name: "Audi RS3",
+    dailyPrice: 60,
+    specs: {
+      acceleration: "0–100 in 3.8s",
+      power: "400Cv",
+      torque: "500Nm",
+      engine: "2.5L inline 5-cylinder",
     },
-    "image": "/Rs3-red.png",
-    "color": "Rossa"
+    image: "/Rs3-red.png",
+    color: "Rossa",
   },
   {
-    "id": 5,
-    "name": "Mercedes A45 S AMG",
-    "dailyPrice": 60,
-    "specs": {
-      "acceleration": "0–100 in 3.9s",
-      "power": "421Cv",
-      "torque": "500Nm",
-      "engine": "2.0L 4-cylinder Turbo"
+    id: 5,
+    name: "Mercedes A45 S AMG",
+    dailyPrice: 60,
+    specs: {
+      acceleration: "0–100 in 3.9s",
+      power: "421Cv",
+      torque: "500Nm",
+      engine: "2.0L 4-cylinder Turbo",
     },
-    "image": "/mercedes-amg45.png"
+    image: "/mercedes-amg45.png",
   },
   {
-    "id": 6,
-    "name": "BMW M2",
-    "dailyPrice": 80,
-    "specs": {
-      "acceleration": "0–100 in 4.1s",
-      "power": "460Cv",
-      "torque": "550Nm",
-      "engine": "3.0L inline 6-cylinder"
+    id: 6,
+    name: "BMW M2",
+    dailyPrice: 80,
+    specs: {
+      acceleration: "0–100 in 4.1s",
+      power: "460Cv",
+      torque: "550Nm",
+      engine: "3.0L inline 6-cylinder",
     },
-    "image": "/bmw-m2.png",
-    "available": false
+    image: "/bmw-m2.png",
+    available: false,
   },
   {
-    "id": 7,
-    "name": "BMW M3 Competition",
-    "dailyPrice": 80,
-    "specs": {
-      "acceleration": "0–100 in 3.9s",
-      "maxSpeed": "Max speed: 250km/h",
-      "power": "510Cv",
-      "torque": "650Nm",
-      "engine": "3.0L inline 6-cylinder"
+    id: 7,
+    name: "BMW M3 Competition",
+    dailyPrice: 80,
+    specs: {
+      acceleration: "0–100 in 3.9s",
+      maxSpeed: "Max speed: 250km/h",
+      power: "510Cv",
+      torque: "650Nm",
+      engine: "3.0L inline 6-cylinder",
     },
-    "image": "/bmw-m3.png"
+    image: "/bmw-m3.png",
   },
   {
-    "id": 8,
-    "name": "Mercedes GLE 53 AMG",
-    "dailyPrice": 80,
-    "specs": {
-      "acceleration": "0–100 in 4.7s",
-      "maxSpeed": "Max speed: 250km/h",
-      "power": "435Cv",
-      "torque": "520Nm",
-      "engine": "3.0L inline 6-cylinder"
+    id: 8,
+    name: "Mercedes GLE 53 AMG",
+    dailyPrice: 80,
+    specs: {
+      acceleration: "0–100 in 4.7s",
+      maxSpeed: "Max speed: 250km/h",
+      power: "435Cv",
+      torque: "520Nm",
+      engine: "3.0L inline 6-cylinder",
     },
-    "image": "/mercedesGLE.png"
+    image: "/mercedesGLE.png",
   },
   {
-    "id": 9,
-    "name": "BMW M4 Competition",
-    "dailyPrice": 100,
-    "specs": {
-      "acceleration": "0–100 in 3.8s",
-      "power": "510Cv",
-      "torque": "650Nm",
-      "engine": "3.0L inline 6-cylinder"
+    id: 9,
+    name: "BMW M4 Competition",
+    dailyPrice: 100,
+    specs: {
+      acceleration: "0–100 in 3.8s",
+      power: "510Cv",
+      torque: "650Nm",
+      engine: "3.0L inline 6-cylinder",
     },
-    "image": "/bmw-m4.png"
+    image: "/bmw-m4.png",
   },
   {
-    "id": 10,
-    "name": "Porsche 992 Carrera 4S",
-    "dailyPrice": 120,
-    "specs": {
-      "acceleration": "0–100 in 3.6s",
-      "maxSpeed": "Max speed: 306km/h",
-      "power": "450Cv",
-      "torque": "530Nm",
-      "engine": "3.0L Twin-Turbo Flat-6"
+    id: 10,
+    name: "Porsche 992 Carrera 4S",
+    dailyPrice: 120,
+    specs: {
+      acceleration: "0–100 in 3.6s",
+      maxSpeed: "Max speed: 306km/h",
+      power: "450Cv",
+      torque: "530Nm",
+      engine: "3.0L Twin-Turbo Flat-6",
     },
-    "image": "/porsche-911.png"
+    image: "/porsche-911.png",
   },
   {
-    "id": 11,
-    "name": "Mercedes C63 S AMG",
-    "dailyPrice": 120,
-    "specs": {
-      "acceleration": "0–100 in 3.9s",
-      "power": "510Cv",
-      "torque": "700Nm",
-      "engine": "4.0L V8 BiTurbo"
+    id: 11,
+    name: "Mercedes C63 S AMG",
+    dailyPrice: 120,
+    specs: {
+      acceleration: "0–100 in 3.9s",
+      power: "510Cv",
+      torque: "700Nm",
+      engine: "4.0L V8 BiTurbo",
     },
-    "image": "/c63.png"
+    image: "/c63.png",
   },
   {
-    "id": 12,
-    "name": "Porsche Macan GTS",
-    "dailyPrice": 120,
-    "specs": {
-      "acceleration": "0–100 in 4.5s",
-      "power": "440Cv",
-      "torque": "550Nm",
-      "engine": "2.9L Twin-Turbo V6"
+    id: 12,
+    name: "Porsche Macan GTS",
+    dailyPrice: 120,
+    specs: {
+      acceleration: "0–100 in 4.5s",
+      power: "440Cv",
+      torque: "550Nm",
+      engine: "2.9L Twin-Turbo V6",
     },
-    "image": "/macan.png"
+    image: "/macan.png",
   },
   {
-    "id": 13,
-    "name": "Mercedes GLE 63 AMG",
-    "dailyPrice": 120,
-    "specs": {
-      "acceleration": "0–100 in 3.8s",
-      "power": "612Cv",
-      "torque": "850Nm",
-      "engine": "4.0L V8 BiTurbo"
+    id: 13,
+    name: "Mercedes GLE 63 AMG",
+    dailyPrice: 120,
+    specs: {
+      acceleration: "0–100 in 3.8s",
+      power: "612Cv",
+      torque: "850Nm",
+      engine: "4.0L V8 BiTurbo",
     },
-    "image": "/mercedes-gle.png"
+    image: "/mercedes-gle.png",
   },
   {
-    "id": 14,
-    "name": "Ferrari Portofino M",
-    "dailyPrice": 500,
-    "specs": {
-      "acceleration": "0–100 in 3.45s",
-      "maxSpeed": "Max speed: 320km/h",
-      "power": "620Cv",
-      "torque": "760Nm",
-      "engine": "3.9L Twin-Turbo V8"
+    id: 14,
+    name: "Ferrari Portofino M",
+    dailyPrice: 500,
+    specs: {
+      acceleration: "0–100 in 3.45s",
+      maxSpeed: "Max speed: 320km/h",
+      power: "620Cv",
+      torque: "760Nm",
+      engine: "3.9L Twin-Turbo V8",
     },
-    "image": "/ferrari-portofino.png"
+    image: "/ferrari-portofino.png",
   },
   {
-    "id": 15,
-    "name": "Lamborghini Urus Performante",
-    "dailyPrice": 500,
-    "specs": {
-      "acceleration": "0–100 in 3.3s",
-      "maxSpeed": "Max speed: 306km/h",
-      "power": "666Cv",
-      "torque": "850Nm",
-      "engine": "4.0L Twin-Turbo V8"
+    id: 15,
+    name: "Lamborghini Urus Performante",
+    dailyPrice: 500,
+    specs: {
+      acceleration: "0–100 in 3.3s",
+      maxSpeed: "Max speed: 306km/h",
+      power: "666Cv",
+      torque: "850Nm",
+      engine: "4.0L Twin-Turbo V8",
     },
-    "image": "/urus.png"
+    image: "/urus.png",
   },
   {
-    "id": 16,
-    "name": "Fiat Ducato",
-    "dailyPrice": 100,
-    "specs": {
-      "engine": "2.3L MultiJet Turbo Diesel",
-      "power": "140Cv",
-      "special": "Includes 100km pack",
-      "extras": "Unlimited option: +50€"
+    id: 16,
+    name: "Fiat Ducato",
+    dailyPrice: 100,
+    specs: {
+      engine: "2.3L MultiJet Turbo Diesel",
+      power: "140Cv",
+      special: "Includes 100km pack",
+      extras: "Unlimited option: +50€",
     },
-    "image": "/Ducato.png",
-    "available": true
-  }
+    image: "/Ducato.png",
+    available: true,
+  },
 ];
 
-const specMappings: Record<string, { label: { en: string; it: string }; icon: React.FC<{ className?: string }>; transform?: (val: string) => string }> = {
-    acceleration: { label: { en: '0-100km/h', it: '0-100km/h' }, icon: ZapIcon, transform: (val: string) => val.split(' in ')[1] || val },
-    power: { label: { en: 'Power', it: 'Potenza' }, icon: ZapIcon },
-    torque: { label: { en: 'Torque', it: 'Coppia' }, icon: CogIcon },
-    engine: { label: { en: 'Engine', it: 'Motore' }, icon: CogIcon },
-    maxSpeed: { label: { en: 'Max Speed', it: 'Velocità Max' }, icon: ZapIcon, transform: (val: string) => val.split(': ')[1] || val },
-    special: { label: { en: 'Special', it: 'Speciale' }, icon: StarIcon },
-    extras: { label: { en: 'Extras', it: 'Extra' }, icon: PlusIcon },
-    color: { label: { en: 'Color', it: 'Colore' }, icon: CarIcon }
+// ─────────────────────────────────────────────────────────────
+// Spec mappings
+// ─────────────────────────────────────────────────────────────
+const specMappings: Record<
+  string,
+  { label: { en: string; it: string }; icon: FC<{ className?: string }>; transform?: (val: string) => string }
+> = {
+  acceleration: { label: { en: '0-100km/h', it: '0-100km/h' }, icon: ZapIcon, transform: (val: string) => val.split(' in ')[1] || val },
+  power: { label: { en: 'Power', it: 'Potenza' }, icon: ZapIcon },
+  torque: { label: { en: 'Torque', it: 'Coppia' }, icon: CogIcon },
+  engine: { label: { en: 'Engine', it: 'Motore' }, icon: CogIcon },
+  maxSpeed: { label: { en: 'Max Speed', it: 'Velocità Max' }, icon: ZapIcon, transform: (val: string) => val.split(': ')[1] || val },
+  special: { label: { en: 'Special', it: 'Speciale' }, icon: StarIcon },
+  extras: { label: { en: 'Extras', it: 'Extra' }, icon: PlusIcon },
+  color: { label: { en: 'Color', it: 'Colore' }, icon: CarIcon },
 };
 
 const EUR_TO_USD_RATE = 1.1;
 
+// ─────────────────────────────────────────────────────────────
+// Fleet: Cars (mapped for UI)
+// ─────────────────────────────────────────────────────────────
 const mappedCars = newCarsRawData.map(car => {
-    const specs: any[] = [];
-    if (car.specs) {
-        for (const [key, value] of Object.entries(car.specs)) {
-            const mapping = specMappings[key as keyof typeof specMappings];
-            if (mapping) {
-                specs.push({
-                    label: mapping.label,
-                    value: 'transform' in mapping && mapping.transform ? mapping.transform(value as string) : value,
-                    icon: mapping.icon
-                });
-            }
-        }
-    }
-    if ('color' in car && car.color) {
+  const specs: any[] = [];
+  if (car.specs) {
+    for (const [key, value] of Object.entries(car.specs)) {
+      const mapping = specMappings[key as keyof typeof specMappings];
+      if (mapping) {
         specs.push({
-            label: specMappings.color.label,
-            value: car.color,
-            icon: specMappings.color.icon
+          label: mapping.label,
+          value: 'transform' in mapping && mapping.transform ? mapping.transform(value as string) : value,
+          icon: mapping.icon,
         });
+      }
     }
+  }
+  if ('color' in car && (car as any).color) {
+    specs.push({
+      label: specMappings.color.label,
+      value: (car as any).color,
+      icon: specMappings.color.icon,
+    });
+  }
 
-    return {
-        id: `car-${car.id}`,
-        name: car.name,
-        image: car.image,
-        pricePerDay: {
-            usd: Math.round(car.dailyPrice * EUR_TO_USD_RATE),
-            eur: car.dailyPrice,
-            crypto: 0
-        },
-        specs: specs
-    };
+  return {
+    id: `car-${(car as any).id}`,
+    name: car.name,
+    image: car.image,
+    pricePerDay: {
+      usd: Math.round((car as any).dailyPrice * EUR_TO_USD_RATE),
+      eur: (car as any).dailyPrice,
+      crypto: 0,
+    },
+    specs,
+  };
 });
 
-
+// ─────────────────────────────────────────────────────────────
+// Yachts & Helicopters spec blocks
+// ─────────────────────────────────────────────────────────────
 const yachtSpecs = [
-    { label: { en: 'Guests', it: 'Ospiti' }, value: '12', icon: UsersIcon },
-    { label: { en: 'Length', it: 'Lunghezza' }, value: '70m', icon: AnchorIcon },
-    { label: { en: 'Cabins', it: 'Cabine' }, value: '6', icon: BedIcon },
+  { label: { en: 'Guests', it: 'Ospiti' }, value: '12', icon: UsersIcon },
+  { label: { en: 'Length', it: 'Lunghezza' }, value: '70m', icon: AnchorIcon },
+  { label: { en: 'Cabins', it: 'Cabine' }, value: '6', icon: BedIcon },
 ];
 
 const helicopterSpecs = [
-    { label: { en: 'Passengers', it: 'Passeggeri' }, value: '5', icon: UsersIcon },
-    { label: { en: 'Range', it: 'Autonomia' }, value: '300 nm', icon: PaperAirplaneIcon },
-    { label: { en: 'Speed', it: 'Velocità' }, value: '150 kt', icon: ZapIcon },
+  { label: { en: 'Passengers', it: 'Passeggeri' }, value: '5', icon: UsersIcon },
+  { label: { en: 'Range', it: 'Autonomia' }, value: '300 nm', icon: PaperAirplaneIcon },
+  { label: { en: 'Speed', it: 'Velocità' }, value: '150 kt', icon: ZapIcon },
 ];
 
+// ─────────────────────────────────────────────────────────────
 export const VILLAS: (Villa & { pricePerNightEUR?: number })[] = [
   {
     id: 1,
@@ -310,7 +367,7 @@ export const VILLAS: (Villa & { pricePerNightEUR?: number })[] = [
     images: ["/elicriso1.png", "/elicriso2.png", "/elicriso3.png", "/elicriso4.png"],
     description: "Villa di lusso con piscina riscaldata e vista mare a soli 50 metri dalla spiaggia incontaminata di Geremeas.",
     rating: 4.9,
-    reviewCount: 28
+    reviewCount: 28,
   },
   {
     id: 2,
@@ -324,7 +381,7 @@ export const VILLAS: (Villa & { pricePerNightEUR?: number })[] = [
     images: ["/ginepro1.png", "/ginepro2.png", "/ginepro3.png", "/ginepro4.png"],
     description: "Villa elegante con vista mare mozzafiato e accesso diretto alla spiaggia privata.",
     rating: 4.8,
-    reviewCount: 22
+    reviewCount: 22,
   },
   {
     id: 3,
@@ -341,7 +398,7 @@ export const VILLAS: (Villa & { pricePerNightEUR?: number })[] = [
     reviewCount: 35,
     description: {
       en: "Enchanting Villa overlooking the sea with a unique architectural style, with a wonderful sea view that can be observed from any corner of the house. Thanks to its outdoor spaces you can spend exclusive moments of relaxation and privacy admiring the colorful sunsets.",
-      it: "Incantevole Villa con vista sul mare dallo stile architettonico unico, con una meravigliosa vista mare che può essere osservata da ogni angolo della casa. Grazie ai suoi spazi esterni potrete trascorrere momenti esclusivi di relax e privacy ammirando i tramonti colorati."
+      it: "Incantevole Villa con vista sul mare dallo stile architettonico unico, con una meravigliosa vista mare che può essere osservata da ogni angolo della casa. Grazie ai suoi spazi esterni potrete trascorrere momenti esclusivi di relax e privacy ammirando i tramonti colorati.",
     },
     amenities: [
       { icon: WavesIcon, title: { en: "Cliffside Pool", it: "Piscina a Strapiombo" }, description: { en: "Infinity pool overlooking the sea", it: "Piscina a sfioro vista mare" } },
@@ -349,7 +406,7 @@ export const VILLAS: (Villa & { pricePerNightEUR?: number })[] = [
       { icon: TreePineIcon, title: { en: "Panoramic Views", it: "Vista Panoramica" }, description: { en: "Sea view from every corner", it: "Vista mare da ogni angolo" } },
       { icon: WifiIcon, title: { en: "Free WiFi", it: "WiFi Gratuito" }, description: { en: "High-speed internet", it: "Connessione internet veloce" } },
       { icon: CarIcon, title: { en: "Private Parking", it: "Parcheggio Privato" }, description: { en: "Reserved parking space", it: "Posto auto riservato" } },
-      { icon: ShieldIcon, title: { en: "24/7 Security", it: "Sicurezza 24/7" }, description: { en: "Security service", it: "Servizio di sorveglianza" } }
+      { icon: ShieldIcon, title: { en: "24/7 Security", it: "Sicurezza 24/7" }, description: { en: "Security service", it: "Servizio di sorveglianza" } },
     ],
     features: {
       en: [
@@ -364,7 +421,7 @@ export const VILLAS: (Villa & { pricePerNightEUR?: number })[] = [
         "Unique modern architecture",
         "Smart TV in all rooms",
         "Air conditioning",
-        "High-speed Wi-Fi"
+        "High-speed Wi-Fi",
       ],
       it: [
         "4 camere matrimoniali di lusso",
@@ -378,9 +435,9 @@ export const VILLAS: (Villa & { pricePerNightEUR?: number })[] = [
         "Architettura unica moderna",
         "Smart TV in tutte le stanze",
         "Aria condizionata",
-        "Wi-Fi ad alta velocità"
-      ]
-    }
+        "Wi-Fi ad alta velocità",
+      ],
+    },
   },
   {
     id: 4,
@@ -394,7 +451,7 @@ export const VILLAS: (Villa & { pricePerNightEUR?: number })[] = [
     images: ["/loly1.png", "/loly2.png", "/loly3.png", "/loly4.png"],
     description: "Villa moderna con piscina privata e vista panoramica sulla splendida Blue Bay.",
     rating: 4.7,
-    reviewCount: 18
+    reviewCount: 18,
   },
   {
     id: 5,
@@ -408,7 +465,7 @@ export const VILLAS: (Villa & { pricePerNightEUR?: number })[] = [
     images: ["/glicine1.png", "/glicine2.png", "/glicine3.png", "/glicine4.png"],
     description: "Villa tradizionale sarda a soli 100 metri dalla spiaggia con giardino mediterraneo.",
     rating: 4.6,
-    reviewCount: 25
+    reviewCount: 25,
   },
   {
     id: 6,
@@ -425,7 +482,7 @@ export const VILLAS: (Villa & { pricePerNightEUR?: number })[] = [
     reviewCount: 15,
     description: {
       en: "Elegant 250m² house in the historic center of Cagliari with city view and modern comforts. This unique property combines the charm of traditional Sardinian architecture with modern comforts, offering a breathtaking view of the city and an authentic experience in the cultural center of Sardinia.",
-      it: "Casa elegante di 250m² nel centro storico di Cagliari con vista sulla città e comfort moderni. Questa proprietà unica combina il fascino dell'architettura tradizionale sarda con i comfort moderni, offrendo una vista mozzafiato sulla città e un'esperienza autentica nel centro culturale della Sardegna."
+      it: "Casa elegante di 250m² nel centro storico di Cagliari con vista sulla città e comfort moderni. Questa proprietà unica combina il fascino dell'architettura tradizionale sarda con i comfort moderni, offrendo una vista mozzafiato sulla città e un'esperienza autentica nel centro culturale della Sardegna.",
     },
     amenities: [
       { icon: Building2Icon, title: { en: "Historic Center", it: "Centro Storico" }, description: { en: "In the heart of Cagliari", it: "Nel cuore di Cagliari" } },
@@ -433,7 +490,7 @@ export const VILLAS: (Villa & { pricePerNightEUR?: number })[] = [
       { icon: HomeIcon, title: { en: "250m² of Elegance", it: "250m² di Eleganza" }, description: { en: "Spacious and refined spaces", it: "Spazi ampi e raffinati" } },
       { icon: WifiIcon, title: { en: "Free WiFi", it: "WiFi Gratuito" }, description: { en: "High-speed internet", it: "Connessione internet veloce" } },
       { icon: CarIcon, title: { en: "Reserved Parking", it: "Parcheggio Riservato" }, description: { en: "Parking in city center", it: "Posto auto nel centro" } },
-      { icon: ShieldIcon, title: { en: "24/7 Security", it: "Sicurezza 24/7" }, description: { en: "Security service", it: "Servizio di sorveglianza" } }
+      { icon: ShieldIcon, title: { en: "24/7 Security", it: "Sicurezza 24/7" }, description: { en: "Security service", it: "Servizio di sorveglianza" } },
     ],
     features: {
       en: [
@@ -450,7 +507,7 @@ export const VILLAS: (Villa & { pricePerNightEUR?: number })[] = [
         "Premium courtesy set",
         "Strategic central location",
         "Close to restaurants and attractions",
-        "Easy access to public transport"
+        "Easy access to public transport",
       ],
       it: [
         "2 camere da letto eleganti",
@@ -466,9 +523,9 @@ export const VILLAS: (Villa & { pricePerNightEUR?: number })[] = [
         "Set di cortesia premium",
         "Posizione centrale strategica",
         "Vicino a ristoranti e attrazioni",
-        "Accesso facile ai trasporti pubblici"
-      ]
-    }
+        "Accesso facile ai trasporti pubblici",
+      ],
+    },
   },
   {
     id: 7,
@@ -482,7 +539,7 @@ export const VILLAS: (Villa & { pricePerNightEUR?: number })[] = [
     images: ["/josy1.png", "/josy2.png", "/josy3.png", "/josy4.png"],
     description: "Villa esclusiva sul mare con jacuzzi riscaldata all'aperto e accesso privato alla spiaggia.",
     rating: 4.8,
-    reviewCount: 29
+    reviewCount: 29,
   },
   {
     id: 8,
@@ -496,7 +553,7 @@ export const VILLAS: (Villa & { pricePerNightEUR?: number })[] = [
     images: ["/white1.png", "/white2.png", "/white3.png", "/white4.png"],
     description: "Villa moderna di 200m² con design minimalista, vista panoramica sul mare e spazi esterni raffinati.",
     rating: 4.7,
-    reviewCount: 33
+    reviewCount: 33,
   },
   {
     id: 9,
@@ -513,7 +570,7 @@ export const VILLAS: (Villa & { pricePerNightEUR?: number })[] = [
     reviewCount: 18,
     description: {
       en: "In the Residence on the Gulf you will find this beautiful Villa with private heated infinity pool plus a large Jacuzzi for 2, surrounded by greenery with breathtaking views of the sea and the most beautiful sunsets of southern Sardinia. An oasis of peace and tranquility for couples seeking maximum privacy in a luxury setting just steps from the crystal clear waters.",
-      it: "Nel Residence sul Golfo troverete questa splendida Villa con piscina privata riscaldata a sfioro più una grande Jacuzzi per 2, circondata dal verde con vista mozzafiato sul mare e i più bei tramonti della Sardegna meridionale. Un'oasi di pace e tranquillità per coppie che cercano il massimo della privacy in un ambiente di lusso a pochi passi dalle acque cristalline."
+      it: "Nel Residence sul Golfo troverete questa splendida Villa con piscina privata riscaldata a sfioro più una grande Jacuzzi per 2, circondata dal verde con vista mozzafiato sul mare e i più bei tramonti della Sardegna meridionale. Un'oasi di pace e tranquillità per coppie che cercano il massimo della privacy in un ambiente di lusso a pochi passi dalle acque cristalline.",
     },
     amenities: [
       { icon: WavesIcon, title: { en: "Heated Infinity Pool", it: "Piscina Riscaldata a Sfioro" }, description: { en: "Private heated infinity pool with sea view", it: "Piscina privata riscaldata a sfioro vista mare" } },
@@ -521,7 +578,7 @@ export const VILLAS: (Villa & { pricePerNightEUR?: number })[] = [
       { icon: TreePineIcon, title: { en: "Surrounded by Greenery", it: "Circondata dal Verde" }, description: { en: "Lush Mediterranean gardens", it: "Rigogliosi giardini mediterranei" } },
       { icon: HomeIcon, title: { en: "Maximum Privacy", it: "Massima Privacy" }, description: { en: "Exclusive and secluded location", it: "Posizione esclusiva e riservata" } },
       { icon: WifiIcon, title: { en: "Free WiFi", it: "WiFi Gratuito" }, description: { en: "High-speed internet connection", it: "Connessione internet ad alta velocità" } },
-      { icon: ShieldIcon, title: { en: "24/7 Security", it: "Sicurezza 24/7" }, description: { en: "Round-the-clock security service", it: "Servizio di sorveglianza continuo" } }
+      { icon: ShieldIcon, title: { en: "24/7 Security", it: "Sicurezza 24/7" }, description: { en: "Round-the-clock security service", it: "Servizio di sorveglianza continuo" } },
     ],
     features: {
       en: [
@@ -538,7 +595,7 @@ export const VILLAS: (Villa & { pricePerNightEUR?: number })[] = [
         "Bluetooth audio system",
         "Digital safe",
         "Professional hair dryer",
-        "Luxury courtesy set"
+        "Luxury courtesy set",
       ],
       it: [
         "2 eleganti camere matrimoniali",
@@ -554,21 +611,23 @@ export const VILLAS: (Villa & { pricePerNightEUR?: number })[] = [
         "Sistema audio Bluetooth",
         "Cassaforte digitale",
         "Asciugacapelli professionale",
-        "Set di cortesia di lusso"
-      ]
-    }
-  }
+        "Set di cortesia di lusso",
+      ],
+    },
+  },
 ];
 
 const mappedVillas = VILLAS.map(v => ({
   id: `villa-${v.id}`,
   name: v.title,
   image: v.images[0],
-  pricePerDay: v.pricePerNightEUR ? {
-    usd: Math.round(v.pricePerNightEUR * EUR_TO_USD_RATE),
-    eur: v.pricePerNightEUR,
-    crypto: 0
-  } : undefined,
+  pricePerDay: v.pricePerNightEUR
+    ? {
+        usd: Math.round(v.pricePerNightEUR * EUR_TO_USD_RATE),
+        eur: v.pricePerNightEUR,
+        crypto: 0,
+      }
+    : undefined,
   specs: [
     { label: { en: 'Guests', it: 'Ospiti' }, value: v.maxGuests.toString(), icon: UsersIcon },
     { label: { en: 'Bedrooms', it: 'Camere' }, value: v.bedrooms.toString(), icon: BedIcon },
@@ -577,14 +636,15 @@ const mappedVillas = VILLAS.map(v => ({
   location: v.location,
   distanceToBeach: v.distanceToBeach,
   images: v.images,
-  description: typeof v.description === 'string' 
-    ? { en: v.description, it: v.description } 
-    : v.description,
+  description: typeof v.description === 'string' ? { en: v.description, it: v.description } : v.description,
   size: v.size,
   amenities: v.amenities,
   features: v.features,
 }));
 
+// ─────────────────────────────────────────────────────────────
+// Catalog categories
+// ─────────────────────────────────────────────────────────────
 export const RENTAL_CATEGORIES: RentalCategory[] = [
   {
     id: 'cars',
@@ -611,26 +671,54 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
     id: 'jets',
     label: { en: 'Jets', it: 'Jet' },
     data: [
-      { id: 'jet-1', name: 'Gulfstream G650', image: '/jets/gulfstream.jpeg', specs: [
-        { label: { en: 'Passengers', it: 'Passeggeri' }, value: '19', icon: UsersIcon },
-        { label: { en: 'Range', it: 'Autonomia' }, value: '7,500 nm', icon: PaperAirplaneIcon },
-        { label: { en: 'Speed', it: 'Velocità' }, value: 'Mach 0.925', icon: ZapIcon },
-      ], petsAllowed: true, smokingAllowed: false },
-      { id: 'jet-2', name: 'Bombardier Global 7500', image: '/jets/bombardier.jpeg', specs: [
-        { label: { en: 'Passengers', it: 'Passeggeri' }, value: '19', icon: UsersIcon },
-        { label: { en: 'Range', it: 'Autonomia' }, value: '7,700 nm', icon: PaperAirplaneIcon },
-        { label: { en: 'Speed', it: 'Velocità' }, value: 'Mach 0.925', icon: ZapIcon },
-      ], petsAllowed: true, smokingAllowed: true },
-      { id: 'jet-3', name: 'Cessna Citation Longitude', image: '/jets/cessna.jpeg', specs: [
-        { label: { en: 'Passengers', it: 'Passeggeri' }, value: '12', icon: UsersIcon },
-        { label: { en: 'Range', it: 'Autonomia' }, value: '3,500 nm', icon: PaperAirplaneIcon },
-        { label: { en: 'Speed', it: 'Velocità' }, value: '483 ktas', icon: ZapIcon },
-      ], petsAllowed: false, smokingAllowed: false },
-      { id: 'jet-4', name: 'Embraer Phenom 300E', image: '/jets/embraer.jpeg', specs: [
-        { label: { en: 'Passengers', it: 'Passeggeri' }, value: '10', icon: UsersIcon },
-        { label: { en: 'Range', it: 'Autonomia' }, value: '2,010 nm', icon: PaperAirplaneIcon },
-        { label: { en: 'Speed', it: 'Velocità' }, value: '464 ktas', icon: ZapIcon },
-      ], petsAllowed: true, smokingAllowed: false },
+      {
+        id: 'jet-1',
+        name: 'Gulfstream G650',
+        image: '/jets/gulfstream.jpeg',
+        specs: [
+          { label: { en: 'Passengers', it: 'Passeggeri' }, value: '19', icon: UsersIcon },
+          { label: { en: 'Range', it: 'Autonomia' }, value: '7,500 nm', icon: PaperAirplaneIcon },
+          { label: { en: 'Speed', it: 'Velocità' }, value: 'Mach 0.925', icon: ZapIcon },
+        ],
+        petsAllowed: true,
+        smokingAllowed: false,
+      },
+      {
+        id: 'jet-2',
+        name: 'Bombardier Global 7500',
+        image: '/jets/bombardier.jpeg',
+        specs: [
+          { label: { en: 'Passengers', it: 'Passeggeri' }, value: '19', icon: UsersIcon },
+          { label: { en: 'Range', it: 'Autonomia' }, value: '7,700 nm', icon: PaperAirplaneIcon },
+          { label: { en: 'Speed', it: 'Velocità' }, value: 'Mach 0.925', icon: ZapIcon },
+        ],
+        petsAllowed: true,
+        smokingAllowed: true,
+      },
+      {
+        id: 'jet-3',
+        name: 'Cessna Citation Longitude',
+        image: '/jets/cessna.jpeg',
+        specs: [
+          { label: { en: 'Passengers', it: 'Passeggeri' }, value: '12', icon: UsersIcon },
+          { label: { en: 'Range', it: 'Autonomia' }, value: '3,500 nm', icon: PaperAirplaneIcon },
+          { label: { en: 'Speed', it: 'Velocità' }, value: '483 ktas', icon: ZapIcon },
+        ],
+        petsAllowed: false,
+        smokingAllowed: false,
+      },
+      {
+        id: 'jet-4',
+        name: 'Embraer Phenom 300E',
+        image: '/jets/embraer.jpeg',
+        specs: [
+          { label: { en: 'Passengers', it: 'Passeggeri' }, value: '10', icon: UsersIcon },
+          { label: { en: 'Range', it: 'Autonomia' }, value: '2,010 nm', icon: PaperAirplaneIcon },
+          { label: { en: 'Speed', it: 'Velocità' }, value: '464 ktas', icon: ZapIcon },
+        ],
+        petsAllowed: true,
+        smokingAllowed: false,
+      },
     ],
     icon: PaperAirplaneIcon,
   },
@@ -638,14 +726,16 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
     id: 'helicopters',
     label: { en: 'Helicopters', it: 'Elicotteri' },
     data: [
-        { id: 'heli-1', name: 'Airbus H125', image: '/helicopters/airbus_h125.jpeg', specs: helicopterSpecs },
-        { id: 'heli-2', name: 'Bell 505 Jet Ranger X', image: '/helicopters/bell_505.jpeg', specs: helicopterSpecs },
+      { id: 'heli-1', name: 'Airbus H125', image: '/helicopters/airbus_h125.jpeg', specs: helicopterSpecs },
+      { id: 'heli-2', name: 'Bell 505 Jet Ranger X', image: '/helicopters/bell_505.jpeg', specs: helicopterSpecs },
     ],
     icon: HelicopterIcon,
   },
 ];
 
-// FIX: Export missing constants
+// ─────────────────────────────────────────────────────────────
+// Membership tiers
+// ─────────────────────────────────────────────────────────────
 export const MEMBERSHIP_TIERS: MembershipTier[] = [
   {
     id: 'silver',
@@ -716,114 +806,145 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
   },
 ];
 
+// ─────────────────────────────────────────────────────────────
+// Lottery / Giveaway (7 millions to win)
+// ─────────────────────────────────────────────────────────────
 export const LOTTERY_GIVEAWAY: Lottery = {
-  id: '7-millions-giveaway',
-  name: { en: '7 Millions to Win', it: '7 Milioni in Palio' },
-  subtitle: { en: 'Prize Pool Worth Over €7,000,000', it: 'Montepremi di Oltre 7.000.000€' },
-  image: '/lottery-hero.jpeg',
+  id: "7-millions-to-win-2025",
+  name: { en: "7 millions to win", it: "7 millions to win", fr: "7 millions to win" },
+  subtitle: { en: "Prize Pool Worth Over €7,000,000", it: "Montepremi di Oltre 7.000.000€", fr: "Cagnotte totale de plus de 7.000.000 €" },
+  image: "/lottery-hero.jpeg",
   ticketPriceUSD: 23.60,
   ticketPriceEUR: 20,
-  drawDate: '2025-12-24T10:00:00Z',
+  // 10:00 Europe/Rome le 24/12/2025 -> 09:00Z
+  drawDate: "2025-12-24T09:00:00Z",
   prizes: [
-    {
-      tier: { en: 'Gift & Bonus', it: 'Gift & Bonus' },
-      name: { en: "100 Amazon Gift Cards",
-  it: `110 Gift Card Amazon da\n1.800 €`,
-},
-      icon: CarIcon,
-      image: '/amazon.jpeg',
-    },
-    {
-      tier: { en: 'Tier 2 Prizes', it: 'Premi di Livello 2' },
-      name: { en: 'Rolex Submariner', it: 'Rolex Submariner' },
-      icon: ClockIcon,
-      quantity: 5,
-      image: '/rolex.jpeg',
-    },
-    {
-      tier: { en: 'Tier 3 Prizes', it: 'Premi di Livello 3' },
-      name: { en: 'iPhone 16 Pro Max', it: 'iPhone 16 Pro Max' },
-      icon: DevicePhoneMobileIcon,
-      quantity: 10,
-      image: '/iphone.jpeg',
-    },
-    {
-      tier: { en: 'Exclusive Experience', it: 'Esperienze Esclusive' },
-      name: { en: '7-night stay in a luxury villa for 10 guests', it: '7 giorni in villa di lusso per 10 persone' },
-      icon: CubeTransparentIcon,
-      quantity: 20,
-      image: '/exclusive.jpeg',
-    }
+    // ───────── Top veicoli (singoli) — pos. 1–20 (20 premi)
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Lamborghini Urus S Performante", it: "Lamborghini Urus S Performante" }, icon: CarIcon, quantity: 1 },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Porsche Carrera 992 4S", it: "Porsche Carrera 992 4S" }, icon: CarIcon, quantity: 1 },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Mercedes GLE63", it: "Mercedes GLE63" }, icon: CarIcon, quantity: 1 },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Yacht (veicolo)", it: "Yacht (veicolo)" }, icon: AnchorIcon, quantity: 1 },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Mercedes C63 S E PERFORMANCE", it: "Mercedes C63 S E PERFORMANCE" }, icon: CarIcon, quantity: 1 },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Porsche Macan GTS", it: "Porsche Macan GTS" }, icon: CarIcon, quantity: 1 },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "BMW M4 Competition", it: "BMW M4 Competition" }, icon: CarIcon, quantity: 1 },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Porsche Cayenne S", it: "Porsche Cayenne S" }, icon: CarIcon, quantity: 1 },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Lexus 450", it: "Lexus 450" }, icon: CarIcon, quantity: 1 },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "BMW M3 Competition", it: "BMW M3 Competition" }, icon: CarIcon, quantity: 1 },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Toyota RAV GR 360 cv", it: "Toyota RAV GR 360 cv" }, icon: CarIcon, quantity: 1 },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Mercedes CLA 45S", it: "Mercedes CLA 45S" }, icon: CarIcon, quantity: 1 },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Audi RSQ3", it: "Audi RSQ3" }, icon: CarIcon, quantity: 1 },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "RS3 verde", it: "RS3 verde" }, icon: CarIcon, quantity: 1 },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "RS3 rossa", it: "RS3 rossa" }, icon: CarIcon, quantity: 1 },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Mercedes GLE53", it: "Mercedes GLE53" }, icon: CarIcon, quantity: 1 },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Classe A45S", it: "Classe A45S" }, icon: CarIcon, quantity: 1 },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Mercedes GLE 350", it: "Mercedes GLE 350" }, icon: CarIcon, quantity: 1 },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Lexus 350", it: "Lexus 350" }, icon: CarIcon, quantity: 1 },
+    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Toyota CH-R", it: "Toyota CH-R" }, icon: CarIcon, quantity: 1 },
+
+    // ───────── Esperienze premium — pos. 21–30 (10 premi)
+    { tier: { en: "Premium Experiences", it: "Esperienze premium" }, name: { en: "DR7 Ultimate Experience", it: "DR7 Ultimate Experience" }, icon: CrownIcon, quantity: 10 },
+
+    // ───────── Veicolo fascia alta — pos. 31 (1 premio)
+    { tier: { en: "High-Tier Vehicle", it: "Veicolo fascia alta" }, name: { en: "Hummer", it: "Hummer" }, icon: CarIcon, quantity: 1 },
+
+    // ───────── Fascia intermedia
+    { tier: { en: "Mid Tier", it: "Fascia intermedia" }, name: { en: "Yamaha TMAX 2025", it: "Yamaha TMAX 2025" }, icon: CarIcon, quantity: 50 }, // pos. 32–81
+    { tier: { en: "Mid Tier", it: "Fascia intermedia" }, name: { en: "Rolex", it: "Rolex" }, icon: ClockIcon, quantity: 20, image: "/rolex.jpeg" }, // pos. 82–101
+    { tier: { en: "Mid Tier", it: "Fascia intermedia" }, name: { en: "Fiat Panda", it: "Fiat Panda" }, icon: CarIcon, quantity: 10 }, // pos. 102–111
+    { tier: { en: "Mid Tier", it: "Fascia intermedia" }, name: { en: "Fiat 500", it: "Fiat 500" }, icon: CarIcon, quantity: 10 }, // pos. 112–121
+
+    // ───────── Esperienze & fascia media
+    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "7-night luxury villa stay for 10 guests", it: "7 giorni in villa di lusso per 10 persone" }, icon: HomeIcon, quantity: 1 },
+    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "Honda SH 125", it: "Honda SH 125" }, icon: CarIcon, quantity: 50 },
+    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "7-day cruise for 2", it: "Crociere 7 gg per 2 persone" }, icon: WavesIcon, quantity: 10 },
+    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "Louis Vuitton women’s handbags", it: "Borse donna Louis Vuitton" }, icon: CrownIcon, quantity: 100 },
+    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "Helicopter ride for 2", it: "Giri in elicottero per 2 persone" }, icon: HelicopterIcon, quantity: 10 },
+
+    // ───────── Gift & Massa
+    { tier: { en: "Gift & Mass", it: "Gift & Massa" }, name: { en: "Amazon Gift Cards", it: "Gift Card Amazon" }, icon: CreditCardIcon, quantity: 110, image: "/amazon.jpeg" },
+    { tier: { en: "Gift & Mass", it: "Gift & Massa" }, name: { en: "iPhone 17", it: "iPhone 17" }, icon: DevicePhoneMobileIcon, quantity: 700, image: "/iphone.jpeg" },
+    { tier: { en: "Gift & Mass", it: "Gift & Massa" }, name: { en: "DR7 Tickets", it: "Ticket DR7" }, icon: TicketIcon, quantity: 1500 },
+    // ⚠️ Pour conserver 3 300 prix au total, garder 698. Si tu veux strictement 692, dis-moi où ajouter +6 ailleurs.
+    { tier: { en: "Gift & Mass", it: "Gift & Massa" }, name: { en: "Fuel vouchers", it: "Buoni benzina" }, icon: CarIcon, quantity: 692 },
   ],
   bonus: {
-    en: 'Every ticket purchased also includes 100 entries into our flash giveaway for a luxury weekend in Sardinia!',
-    it: 'Ogni biglietto acquistato include anche 100 partecipazioni al nostro giveaway flash per un weekend di lusso in Sardegna!',
+    en: "Every ticket purchased also includes 100 entries into our flash giveaway for a luxury weekend in Sardinia!",
+    it: "Ogni biglietto acquistato include anche 100 partecipazioni al nostro giveaway flash per un weekend di lusso in Sardegna!",
+    fr: "Chaque billet acheté inclut aussi 100 participations supplémentaires pour un week-end de luxe en Sardaigne !",
   },
 };
 
+// ─────────────────────────────────────────────────────────────
+// Pickup, insurance, extras, countries, crypto, etc.
+// ─────────────────────────────────────────────────────────────
 export const PICKUP_LOCATIONS = [
-    { id: 'cagliari_airport', label: { en: 'Cagliari Elmas Airport', it: 'Aeroporto di Cagliari Elmas' } },
-    { id: 'dr7_office', label: { en: 'DR7 Office Cagliari', it: 'Ufficio DR7 Cagliari' } },
+  { id: 'cagliari_airport', label: { en: 'Cagliari Elmas Airport', it: 'Aeroporto di Cagliari Elmas' } },
+  { id: 'dr7_office',     label: { en: 'DR7 Office Cagliari',    it: 'Ufficio DR7 Cagliari' } },
 ];
 
 export const INSURANCE_OPTIONS = [
-    { id: 'KASKO_BASE', label: { en: 'Basic Cover', it: 'Copertura Base' }, description: { en: 'Standard liability coverage.', it: 'Copertura di responsabilità standard.' }, pricePerDay: { usd: 0, eur: 0, crypto: 0 } },
-    { id: 'KASKO_BLACK', label: { en: 'Premium Cover', it: 'Copertura Premium' }, description: { en: 'Reduced excess and windscreen cover.', it: 'Franchigia ridotta e copertura parabrezza.' }, pricePerDay: { usd: 55, eur: 50, crypto: 0 } },
-    { id: 'KASKO_SIGNATURE', label: { en: 'Full Cover', it: 'Copertura Completa' }, description: { en: 'Zero excess. Complete peace of mind.', it: 'Zero franchigia. Massima tranquillità.' }, pricePerDay: { usd: 110, eur: 100, crypto: 0 } },
+  { id: 'KASKO_BASE',      label: { en: 'Basic Cover',   it: 'Copertura Base' },      description: { en: 'Standard liability coverage.',          it: 'Copertura di responsabilità standard.' }, pricePerDay: { usd: 0,   eur: 0,  crypto: 0 } },
+  { id: 'KASKO_BLACK',     label: { en: 'Premium Cover', it: 'Copertura Premium' },   description: { en: 'Reduced excess and windscreen cover.', it: 'Franchigia ridotta e copertura parabrezza.' }, pricePerDay: { usd: 55,  eur: 50, crypto: 0 } },
+  { id: 'KASKO_SIGNATURE', label: { en: 'Full Cover',    it: 'Copertura Completa' },  description: { en: 'Zero excess. Complete peace of mind.', it: 'Zero franchigia. Massima tranquillità.' },     pricePerDay: { usd: 110, eur: 100, crypto: 0 } },
 ];
 
-export const RENTAL_EXTRAS = [
-    { id: 'gps', label: { en: 'GPS Navigation', it: 'Navigatore GPS' }, pricePerDay: { usd: 11, eur: 10, crypto: 0 } },
-    { id: 'child_seat', label: { en: 'Child Seat', it: 'Seggiolino per Bambini' }, pricePerDay: { usd: 8, eur: 7, crypto: 0 } },
-    { id: 'additional_driver', label: { en: 'Additional Driver', it: 'Guidatore Aggiuntivo' }, pricePerDay: { usd: 16, eur: 15, crypto: 0 } },
-];
-
-export const COUNTRIES = [
-    { code: 'IT', name: 'Italy' }, { code: 'US', name: 'United States' }, { code: 'GB', name: 'United Kingdom' }, { code: 'DE', name: 'Germany' }, { code: 'FR', name: 'France' },
-];
-
+// Règles d’éligibilité KASKO (strictes, “comme avant”)
 export const INSURANCE_ELIGIBILITY = {
-    KASKO_BASE: { minAge: 25, minLicenseYears: 1 },
-    KASKO_BLACK: { minAge: 25, minLicenseYears: 3 },
-    KASKO_SIGNATURE: { minAge: 30, minLicenseYears: 5 },
+  KASKO_BASE: { minAge: 18, minLicenseYears: 2 },
+  KASKO_BLACK: { minAge: 25, minLicenseYears: 5 },
+  KASKO_SIGNATURE: { minAge: 30, minLicenseYears: 10 },
 };
 
 export const VALIDATION_MESSAGES = {
-    en: { base: 'Based on your age and license history, only Basic Cover is available.' },
-    it: { base: 'In base alla tua età e anzianità di patente, è disponibile solo la Copertura Base.' }
+  en: { base: 'Based on your age and license history, only Basic Cover is available.' },
+  it: { base: 'In base alla tua età e anzianità di patente, è disponibile solo la Copertura Base.' },
 };
 
 export const YACHT_PICKUP_MARINAS = [
-    { id: 'marina_di_cagliari', label: { en: 'Marina di Cagliari', it: 'Marina di Cagliari' } },
-    { id: 'porto_cervo', label: { en: 'Marina di Porto Cervo', it: 'Marina di Porto Cervo' } },
+  { id: 'marina_di_cagliari', label: { en: 'Marina di Cagliari',   it: 'Marina di Cagliari' } },
+  { id: 'porto_cervo',        label: { en: 'Marina di Porto Cervo', it: 'Marina di Porto Cervo' } },
 ];
 
 export const AIRPORTS = [
-  { iata: 'CAG', name: 'Cagliari Elmas Airport', city: 'Cagliari' },
-  { iata: 'OLB', name: 'Olbia Costa Smeralda Airport', city: 'Olbia' },
-  { iata: 'AHO', name: 'Alghero-Fertilia Airport', city: 'Alghero' },
-  { iata: 'FCO', name: 'Leonardo da Vinci-Fiumicino Airport', city: 'Rome' },
-  { iata: 'LIN', name: 'Linate Airport', city: 'Milan' },
-  { iata: 'NCE', name: 'Nice Côte d\'Azur Airport', city: 'Nice' },
-  { iata: 'LBG', name: 'Paris-Le Bourget Airport', city: 'Paris' },
-  { iata: 'LTN', name: 'London Luton Airport', city: 'London' },
-  { iata: 'IBZ', name: 'Ibiza Airport', city: 'Ibiza' },
+  { iata: 'CAG', name: 'Cagliari Elmas Airport',        city: 'Cagliari' },
+  { iata: 'OLB', name: 'Olbia Costa Smeralda Airport',  city: 'Olbia' },
+  { iata: 'AHO', name: 'Alghero-Fertilia Airport',      city: 'Alghero' },
+  { iata: 'FCO', name: 'Leonardo da Vinci-Fiumicino',   city: 'Rome' },
+  { iata: 'LIN', name: 'Linate Airport',                city: 'Milan' },
+  { iata: 'NCE', name: "Nice Côte d'Azur Airport",      city: 'Nice' },
+  { iata: 'LBG', name: 'Paris-Le Bourget Airport',      city: 'Paris' },
+  { iata: 'LTN', name: 'London Luton Airport',          city: 'London' },
+  { iata: 'IBZ', name: 'Ibiza Airport',                 city: 'Ibiza' },
 ];
 
 export const HELI_DEPARTURE_POINTS = [
-    { id: 'cagliari', name: 'Cagliari Heliport' },
-    { id: 'porto_cervo', name: 'Porto Cervo Heliport' },
-    { id: 'forte_village', name: 'Forte Village Resort' },
+  { id: 'cagliari',      name: 'Cagliari Heliport' },
+  { id: 'porto_cervo',   name: 'Porto Cervo Heliport' },
+  { id: 'forte_village', name: 'Forte Village Resort' },
 ];
 
 export const HELI_ARRIVAL_POINTS = [
-    ...HELI_DEPARTURE_POINTS,
-    { id: 'cala_di_volpe', name: 'Hotel Cala di Volpe' },
-    { id: 'villasimius', name: 'Villasimius Private Pad' },
+  ...HELI_DEPARTURE_POINTS,
+  { id: 'cala_di_volpe', name: 'Hotel Cala di Volpe' },
+  { id: 'villasimius',   name: 'Villasimius Private Pad' },
+];
+
+export const RENTAL_EXTRAS = [
+  { id: 'gps',               label: { en: 'GPS Navigation',     it: 'Navigatore GPS' },          pricePerDay: { usd: 11, eur: 10, crypto: 0 } },
+  { id: 'child_seat',        label: { en: 'Child Seat',         it: 'Seggiolino per Bambini' },  pricePerDay: { usd: 8,  eur: 7,  crypto: 0 } },
+  { id: 'additional_driver', label: { en: 'Additional Driver',  it: 'Guidatore Aggiuntivo' },    pricePerDay: { usd: 16, eur: 15, crypto: 0 } },
+];
+
+export const COUNTRIES = [
+  { code: 'IT', name: 'Italy' },
+  { code: 'US', name: 'United States' },
+  { code: 'GB', name: 'United Kingdom' },
+  { code: 'DE', name: 'Germany' },
+  { code: 'FR', name: 'France' },
 ];
 
 export const CRYPTO_ADDRESSES: Record<string, string> = {
-    btc: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
-    eth: '0x1234567890123456789012345678901234567890',
-    usdt: '0xabcdef1234567890abcdef1234567890abcdef12',
+  btc: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+  eth: '0x1234567890123456789012345678901234567890',
+  usdt: '0xabcdef1234567890abcdef1234567890abcdef12',
 };
