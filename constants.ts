@@ -727,8 +727,9 @@ export const LOTTERY_GIVEAWAY: Lottery = {
   prizes: [
     {
       tier: { en: 'Gift & Bonus', it: 'Gift & Bonus' },
-      name: { en: '100 Amazon Gift Cards', it: '110 Gift Card Amazon da
-1.800 €' },
+      name: { en: "100 Amazon Gift Cards",
+  it: `110 Gift Card Amazon da\n1.800 €`,
+},
       icon: CarIcon,
       image: '/amazon.jpeg',
     },
