@@ -172,6 +172,7 @@ export interface Prize {
   tier: { en: string; it: string };
   name: { en: string; it: string };
   icon: React.FC<{ className?: string }>;
+  image?: string;
   quantity?: number;
 }
 
