@@ -83,7 +83,7 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes }) => {
                 paginate(-1);
               }
             }}
-            className="absolute w-full h-full object-contain"
+            className="absolute w-full h-full object-cover"
           />
         </AnimatePresence>
 
