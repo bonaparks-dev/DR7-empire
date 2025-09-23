@@ -31,7 +31,6 @@ const wrapIndex = (index: number, length: number) =>
 
 export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes }) => {
   const [[page, direction], setPage] = useState<[number, number]>([0, 0]);
-  const [isHovered, setIsHovered] = useState(false);
   const { getTranslated } = useTranslation();
 
   const length = prizes.length;
@@ -44,12 +43,12 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes }) => {
     setPage(([p]) => [p + newDirection, newDirection]);
   };
 
-  // Auto-slide toutes les 4s (pause au survol)
+  // Auto-slide toutes les 4s
   useEffect(() => {
-    if (isHovered || length <= 1) return;
-    const id = setTimeout(() => paginate(1), 4000);
-    return () => clearTimeout(id);
-  }, [page, isHovered, length]);
+    if (length <= 1) return;
+    const id = setInterval(() => paginate(1), 4000);
+    return () => clearInterval(id);
+  }, [length]);
 
   const currentPrize = prizes[imageIndex];
   if (!currentPrize) return null;
@@ -57,8 +56,6 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes }) => {
   return (
     <div
       className="w-full max-w-4xl mx-auto relative flex flex-col items-center"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       <div className="relative w-full aspect-[16/9] overflow-hidden rounded-xl bg-gray-900/50 border border-gray-800 shadow-2xl shadow-black/50">
         <AnimatePresence initial={false} custom={direction}>
