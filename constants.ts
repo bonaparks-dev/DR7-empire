@@ -849,6 +849,38 @@ export const LOTTERY_GIVEAWAY: Lottery = {
 };
 
 // ─────────────────────────────────────────────────────────────
+// Alphabet Prizes
+// ─────────────────────────────────────────────────────────────
+export const ALPHABET_PRIZES: Lottery['prizes'] = [
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize A", it: "Premio A" }, icon: CubeTransparentIcon, quantity: 1, image: "/a.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize B", it: "Premio B" }, icon: CubeTransparentIcon, quantity: 1, image: "/b.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize C", it: "Premio C" }, icon: CubeTransparentIcon, quantity: 1, image: "/c.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize D", it: "Premio D" }, icon: CubeTransparentIcon, quantity: 1, image: "/d.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize E", it: "Premio E" }, icon: CubeTransparentIcon, quantity: 1, image: "/e.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize F", it: "Premio F" }, icon: CubeTransparentIcon, quantity: 1, image: "/f.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize G", it: "Premio G" }, icon: CubeTransparentIcon, quantity: 1, image: "/g.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize H", it: "Premio H" }, icon: CubeTransparentIcon, quantity: 1, image: "/h.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize I", it: "Premio I" }, icon: CubeTransparentIcon, quantity: 1, image: "/i.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize J", it: "Premio J" }, icon: CubeTransparentIcon, quantity: 1, image: "/j.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize K", it: "Premio K" }, icon: CubeTransparentIcon, quantity: 1, image: "/k.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize L", it: "Premio L" }, icon: CubeTransparentIcon, quantity: 1, image: "/l.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize M", it: "Premio M" }, icon: CubeTransparentIcon, quantity: 1, image: "/m.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize N", it: "Premio N" }, icon: CubeTransparentIcon, quantity: 1, image: "/n.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize O", it: "Premio O" }, icon: CubeTransparentIcon, quantity: 1, image: "/o.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize P", it: "Premio P" }, icon: CubeTransparentIcon, quantity: 1, image: "/p.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize Q", it: "Premio Q" }, icon: CubeTransparentIcon, quantity: 1, image: "/q.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize R", it: "Premio R" }, icon: CubeTransparentIcon, quantity: 1, image: "/r.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize S", it: "Premio S" }, icon: CubeTransparentIcon, quantity: 1, image: "/s.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize T", it: "Premio T" }, icon: CubeTransparentIcon, quantity: 1, image: "/t.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize U", it: "Premio U" }, icon: CubeTransparentIcon, quantity: 1, image: "/u.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize V", it: "Premio V" }, icon: CubeTransparentIcon, quantity: 1, image: "/v.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize W", it: "Premio W" }, icon: CubeTransparentIcon, quantity: 1, image: "/w.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize X", it: "Premio X" }, icon: CubeTransparentIcon, quantity: 1, image: "/x.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize Y", it: "Premio Y" }, icon: CubeTransparentIcon, quantity: 1, image: "/y.jpeg" },
+  { tier: { en: "Alphabet Prize", it: "Premio Alfabeto" }, name: { en: "Prize Z", it: "Premio Z" }, icon: CubeTransparentIcon, quantity: 1, image: "/z.jpeg" },
+];
+
+// ─────────────────────────────────────────────────────────────
 // Pickup, insurance, extras, countries, crypto, etc.
 // ─────────────────────────────────────────────────────────────
 export const PICKUP_LOCATIONS = [
