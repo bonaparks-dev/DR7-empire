@@ -239,10 +239,7 @@ const LotteryPage: React.FC = () => {
 
                     <div className="grid lg:grid-cols-5 gap-8 lg:gap-12 items-start">
                         <div className="lg:col-span-3">
-                            <h2 className="text-2xl sm:text-3xl font-bold font-exo2 mb-6 sm:mb-8 text-center lg:text-left">
-                                {t('Prizes_Pool_Worth_Over').replace('€400,000', '')}
-                                <span className="text-white">€400,000</span>
-                            </h2>
+                            
                             <div className="space-y-6 sm:space-y-8">
                                 {Object.entries(groupedPrizes).map(([tier, prizes]) => (
                                     <div key={tier}>
