@@ -273,6 +273,7 @@ const LotteryPage: React.FC = () => {
                                         showDots={false}
                                         aspectRatio="square"
                                         showArrows={false}
+                                        showPrizeNames={false}
                                     />
                                 </div>
                             </div>

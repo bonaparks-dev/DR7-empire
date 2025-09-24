@@ -818,52 +818,28 @@ export const LOTTERY_GIVEAWAY: Lottery = {
   ticketPriceEUR: 20,
   drawDate: "2025-12-24T09:00:00Z", // 10:00 Europe/Rome
   prizes: [
-    // ───────── Top veicoli (singoli) — pos. 1–20 (20 premi)
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Lamborghini Urus S Performante", it: "Lamborghini Urus S Performante" }, icon: CarIcon, quantity: 1, image: "/lamborghini-urus-s-performante.jpeg" },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Porsche Carrera 992 4S", it: "Porsche Carrera 992 4S" }, icon: CarIcon, quantity: 1, image: "/porsche-992-4s.jpeg" },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Mercedes GLE63", it: "Mercedes GLE63" }, icon: CarIcon, quantity: 1, image: "/mercedes-gle63.jpeg" },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Yacht (veicolo)", it: "Yacht (veicolo)" }, icon: AnchorIcon, quantity: 1, image: "/yacht.jpeg" },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Mercedes C63 S E PERFORMANCE", it: "Mercedes C63 S E PERFORMANCE" }, icon: CarIcon, quantity: 1, image: "/mercedes-c63s-e-performance.jpeg" },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Porsche Macan GTS", it: "Porsche Macan GTS" }, icon: CarIcon, quantity: 1, image: "/porsche-macan-gts.jpeg" },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "BMW M4 Competition", it: "BMW M4 Competition" }, icon: CarIcon, quantity: 1, image: "/bmw-m4-competition.jpeg" },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Porsche Cayenne S", it: "Porsche Cayenne S" }, icon: CarIcon, quantity: 1, image: "/porsche-cayenne-s.jpeg" },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Lexus 450", it: "Lexus 450" }, icon: CarIcon, quantity: 1, image: "/lexus-450.jpg" },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "BMW M3 Competition", it: "BMW M3 Competition" }, icon: CarIcon, quantity: 1, image: "/bmw-m3-competition.jpeg" },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Toyota RAV GR 360 cv", it: "Toyota RAV GR 360 cv" }, icon: CarIcon, quantity: 1, image: "/toyota-rav-gr-360.jpeg" },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Mercedes CLA 45S", it: "Mercedes CLA 45S" }, icon: CarIcon, quantity: 1, image: "/mercedes-cla45s.jpeg" },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Audi RSQ3", it: "Audi RSQ3" }, icon: CarIcon, quantity: 1, image: "/audi-rsq3.jpeg" },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "RS3 verde", it: "RS3 verde" }, icon: CarIcon, quantity: 1, image: "/audi-rs3-verde.jpeg" },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "RS3 rossa", it: "RS3 rossa" }, icon: CarIcon, quantity: 1, image: "/audi-rs3-rossa.jpeg" },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Mercedes GLE53", it: "Mercedes GLE53" }, icon: CarIcon, quantity: 1, image: "/mercedes-gle53.jpeg" },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Classe A45S", it: "Classe A45S" }, icon: CarIcon, quantity: 1, image: "/mercedes-a45s.jpeg" },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Mercedes GLE 350", it: "Mercedes GLE 350" }, icon: CarIcon, quantity: 1, image: "/mercedes-gle-350.jpeg" },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Lexus 350", it: "Lexus 350" }, icon: CarIcon, quantity: 1, image: "/lexus-350.jpeg" },
-    { tier: { en: "Top Vehicles", it: "Top veicoli (singoli)" }, name: { en: "Toyota CH-R", it: "Toyota CH-R" }, icon: CarIcon, quantity: 1, image: "/toyota-chr.jpeg" },
-
-    // ───────── Esperienze premium — pos. 21–30 (10 premi)
-    { tier: { en: "Premium Experiences", it: "Esperienze premium" }, name: { en: "DR7 Ultimate Experience", it: "DR7 Ultimate Experience" }, icon: CrownIcon, quantity: 10, image: "/dr7-ultimate.jpeg" },
-
-    // ───────── Veicolo fascia alta — pos. 31 (1 premio)
-    { tier: { en: "High-Tier Vehicle", it: "Veicolo fascia alta" }, name: { en: "Hummer", it: "Hummer" }, icon: CarIcon, quantity: 1, image: "/hummer.jpeg" },
-
-    // ───────── Fascia intermedia
-    { tier: { en: "Mid Tier", it: "Fascia intermedia" }, name: { en: "Yamaha TMAX 2025", it: "Yamaha TMAX 2025" }, icon: CarIcon, quantity: 50, image: "/yamaha-tmax-2025.jpeg" }, // pos. 32–81
-    { tier: { en: "Mid Tier", it: "Fascia intermedia" }, name: { en: "Rolex", it: "Rolex" }, icon: ClockIcon, quantity: 20, image: "/rolex.jpeg" }, // pos. 82–101
-    { tier: { en: "Mid Tier", it: "Fascia intermedia" }, name: { en: "Fiat Panda", it: "Fiat Panda" }, icon: CarIcon, quantity: 10, image: "/fiat-panda.jpeg" }, // pos. 102–111
-    { tier: { en: "Mid Tier", it: "Fascia intermedia" }, name: { en: "Fiat 500", it: "Fiat 500" }, icon: CarIcon, quantity: 10, image: "/fiat-500.jpeg" }, // pos. 112–121
-
-    // ───────── Esperienze & fascia media
-    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "7-night luxury villa stay for 10 guests", it: "7 giorni in villa di lusso per 10 persone" }, icon: HomeIcon, quantity: 1, image: "/luxury-villa.jpeg" }, // pos. 122
-    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "Honda SH 125", it: "Honda SH 125" }, icon: CarIcon, quantity: 50, image: "/honda-sh125.jpeg" }, // pos. 123–172
-    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "7-day cruise for 2", it: "Crociere 7 gg per 2 persone" }, icon: WavesIcon, quantity: 10, image: "/cruise-7d.jpeg" }, // pos. 173–182
-    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "Louis Vuitton women’s handbags", it: "Borse donna Louis Vuitton" }, icon: CrownIcon, quantity: 100, image: "/lv-bag.jpeg" }, // pos. 183–282
-    { tier: { en: "Experiences & Mid", it: "Esperienze & fascia media" }, name: { en: "Helicopter ride for 2", it: "Giri in elicottero per 2 persone" }, icon: HelicopterIcon, quantity: 10, image: "/helicopter-ride.jpeg" }, // pos. 283–292
-
-    // ───────── Gift & Massa (totale 3.300 con iPhone=706, benzina=692)
-    { tier: { en: "Gift & Mass", it: "Gift & Massa" }, name: { en: "Amazon Gift Cards", it: "Gift Card Amazon" }, icon: CreditCardIcon, quantity: 110, image: "/amazon.jpeg" }, // pos. 293–402
-    { tier: { en: "Gift & Mass", it: "Gift & Massa" }, name: { en: "iPhone 17", it: "iPhone 17" }, icon: DevicePhoneMobileIcon, quantity: 706, image: "/iphone.jpeg" }, // pos. 403–1108
-    { tier: { en: "Gift & Mass", it: "Gift & Massa" }, name: { en: "DR7 Tickets", it: "Ticket DR7" }, icon: TicketIcon, quantity: 1500, image: "/dr7-ticket.jpeg" }, // pos. 1109–2608
-    { tier: { en: "Gift & Mass", it: "Gift & Massa" }, name: { en: "Fuel vouchers", it: "Buoni benzina" }, icon: CarIcon, quantity: 692, image: "/fuel-voucher.jpeg" }, // pos. 2609–3300
+    { tier: { en: "Prizes", it: "Premi" }, name: { en: "Prize 1", it: "Premio 1" }, icon: CubeTransparentIcon, quantity: 1, image: "/1.jpeg" },
+    { tier: { en: "Prizes", it: "Premi" }, name: { en: "Prize 2", it: "Premio 2" }, icon: CubeTransparentIcon, quantity: 1, image: "/2.jpeg" },
+    { tier: { en: "Prizes", it: "Premi" }, name: { en: "Prize 3", it: "Premio 3" }, icon: CubeTransparentIcon, quantity: 1, image: "/3.jpeg" },
+    { tier: { en: "Prizes", it: "Premi" }, name: { en: "Prize 4", it: "Premio 4" }, icon: CubeTransparentIcon, quantity: 1, image: "/4.jpeg" },
+    { tier: { en: "Prizes", it: "Premi" }, name: { en: "Prize 5", it: "Premio 5" }, icon: CubeTransparentIcon, quantity: 1, image: "/5.jpeg" },
+    { tier: { en: "Prizes", it: "Premi" }, name: { en: "Prize 6", it: "Premio 6" }, icon: CubeTransparentIcon, quantity: 1, image: "/6.jpeg" },
+    { tier: { en: "Prizes", it: "Premi" }, name: { en: "Prize 7", it: "Premio 7" }, icon: CubeTransparentIcon, quantity: 1, image: "/7.jpeg" },
+    { tier: { en: "Prizes", it: "Premi" }, name: { en: "Prize 8", it: "Premio 8" }, icon: CubeTransparentIcon, quantity: 1, image: "/8.jpeg" },
+    { tier: { en: "Prizes", it: "Premi" }, name: { en: "Prize 9", it: "Premio 9" }, icon: CubeTransparentIcon, quantity: 1, image: "/9.jpeg" },
+    { tier: { en: "Prizes", it: "Premi" }, name: { en: "Prize 10", it: "Premio 10" }, icon: CubeTransparentIcon, quantity: 1, image: "/10.jpeg" },
+    { tier: { en: "Prizes", it: "Premi" }, name: { en: "Prize 11", it: "Premio 11" }, icon: CubeTransparentIcon, quantity: 1, image: "/11.jpeg" },
+    { tier: { en: "Prizes", it: "Premi" }, name: { en: "Prize 12", it: "Premio 12" }, icon: CubeTransparentIcon, quantity: 1, image: "/12.jpeg" },
+    { tier: { en: "Prizes", it: "Premi" }, name: { en: "Prize 13", it: "Premio 13" }, icon: CubeTransparentIcon, quantity: 1, image: "/13.jpeg" },
+    { tier: { en: "Prizes", it: "Premi" }, name: { en: "Prize 14", it: "Premio 14" }, icon: CubeTransparentIcon, quantity: 1, image: "/14.jpeg" },
+    { tier: { en: "Prizes", it: "Premi" }, name: { en: "Prize 15", it: "Premio 15" }, icon: CubeTransparentIcon, quantity: 1, image: "/15.jpeg" },
+    { tier: { en: "Prizes", it: "Premi" }, name: { en: "Prize 16", it: "Premio 16" }, icon: CubeTransparentIcon, quantity: 1, image: "/16.jpeg" },
+    { tier: { en: "Prizes", it: "Premi" }, name: { en: "Prize 17", it: "Premio 17" }, icon: CubeTransparentIcon, quantity: 1, image: "/17.jpeg" },
+    { tier: { en: "Prizes", it: "Premi" }, name: { en: "Prize 18", it: "Premio 18" }, icon: CubeTransparentIcon, quantity: 1, image: "/18.jpeg" },
+    { tier: { en: "Prizes", it: "Premi" }, name: { en: "Prize 19", it: "Premio 19" }, icon: CubeTransparentIcon, quantity: 1, image: "/19.jpeg" },
+    { tier: { en: "Prizes", it: "Premi" }, name: { en: "Prize 20", it: "Premio 20" }, icon: CubeTransparentIcon, quantity: 1, image: "/20.jpeg" },
+    { tier: { en: "Prizes", it: "Premi" }, name: { en: "Prize 21", it: "Premio 21" }, icon: CubeTransparentIcon, quantity: 1, image: "/21.jpeg" },
+    { tier: { en: "Prizes", it: "Premi" }, name: { en: "Prize 22", it: "Premio 22" }, icon: CubeTransparentIcon, quantity: 1, image: "/22.jpeg" },
   ],
   bonus: {
     en: "Every ticket purchased also includes 100 entries into our flash giveaway for a luxury weekend in Sardinia!",
