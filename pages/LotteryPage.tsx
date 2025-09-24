@@ -4,14 +4,9 @@ import { useTranslation } from '../hooks/useTranslation';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { LOTTERY_GIVEAWAY } from '../constants';
 import type { Lottery, Prize } from '../types';
-import { TicketIcon } from '../components/icons/Icons';
 import { useAuth } from '../hooks/useAuth';
 import type { Stripe, StripeElements, StripeCardElement } from '@stripe/stripe-js';
-import { PrizeCarousel } from '../components/ui/PrizeCarousel';
 
-// Safely access the Stripe publishable key from Vite's environment variables.
-// If it's not available (e.g., in a non-Vite environment), it falls back to a placeholder.
-// The subsequent check will log an error if the key remains a placeholder.
 const STRIPE_PUBLISHABLE_KEY = (import.meta as any).env?.VITE_STRIPE_PUBLISHABLE_KEY || 'YOUR_STRIPE_PUBLISHABLE_KEY';
 
 const calculateTimeLeft = (drawDate: string) => {
@@ -29,23 +24,26 @@ const calculateTimeLeft = (drawDate: string) => {
 };
 
 const TimerBox: React.FC<{ value: number, label: string }> = ({ value, label }) => (
-    <div className="bg-black/50 backdrop-blur-sm p-2 sm:p-3 rounded-lg text-center border border-white/20">
-        <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tighter" style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}>{String(value).padStart(2, '0')}</div>
-        <div className="text-xs text-white/70 uppercase tracking-widest">{label}</div>
+    <div className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl text-center border border-white/20">
+        <div className="text-4xl sm:text-5xl font-bold text-white mb-1" style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}>
+            {String(value).padStart(2, '0')}
+        </div>
+        <div className="text-sm text-white/70 uppercase tracking-wider">{label}</div>
     </div>
 );
 
 const PrizeCard: React.FC<{ prize: Prize }> = ({ prize }) => {
     const { getTranslated } = useTranslation();
-    const Icon = prize.icon;
+    
     return (
-        <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-6 text-center backdrop-blur-sm transition-all duration-300 hover:border-white/50 hover:bg-gray-900">
-            <div className="flex justify-center items-center mb-4">
-                <Icon className="w-10 h-10 text-white" />
+        <div className="bg-white/5 border border-white/20 rounded-xl p-6 text-center backdrop-blur-sm transition-all duration-300 hover:border-white/40 hover:bg-white/10">
+            <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-black">
+                    {prize.quantity ? prize.quantity : '1'}
+                </span>
             </div>
-            {prize.quantity && <p className="text-2xl font-bold text-white">{prize.quantity}x</p>}
-            <h3 className="text-lg font-semibold text-white mt-1">{getTranslated(prize.name)}</h3>
-            <p className="text-sm text-gray-400">{getTranslated(prize.tier)}</p>
+            <h3 className="text-lg font-semibold text-white mb-2">{getTranslated(prize.name)}</h3>
+            <p className="text-sm text-amber-200/80 font-medium">{getTranslated(prize.tier)}</p>
         </div>
     );
 };
@@ -72,7 +70,7 @@ const LotteryPage: React.FC = () => {
     useEffect(() => {
         if ((window as any).Stripe) {
             if (!STRIPE_PUBLISHABLE_KEY || STRIPE_PUBLISHABLE_KEY.startsWith('YOUR_')) {
-                console.error("Stripe.js has loaded, but the publishable key is not set. Please replace 'YOUR_STRIPE_PUBLISHABLE_KEY' with your actual key.");
+                console.error("Stripe.js has loaded, but the publishable key is not set.");
                 setStripeError("Payment service is not configured correctly. Please contact support.");
                 return;
             }
@@ -198,20 +196,54 @@ const LotteryPage: React.FC = () => {
     }, [giveaway.prizes, getTranslated]);
 
     return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="bg-black text-white">
-            <div className="relative min-h-screen flex items-center justify-center text-center overflow-hidden pt-32 pb-24">
-                <video src="/lottery.mp4" autoPlay loop muted playsInline className="absolute inset-0 z-0 w-full h-full object-cover brightness-50" />
-                <div className="absolute inset-0 bg-black/50 z-10"></div>
-                <div className="relative z-20 px-6 container mx-auto">
-                    <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="text-4xl sm:text-5xl lg:text-6xl font-bold font-playfair uppercase tracking-wider" style={{ textShadow: '0 0 15px rgba(255,255,255,0.3)' }}>
+        <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            className="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white min-h-screen"
+        >
+            {/* Hero Section */}
+            <div className="relative min-h-screen flex items-center justify-center text-center overflow-hidden">
+                <video 
+                    src="/lottery.mp4" 
+                    autoPlay 
+                    loop 
+                    muted 
+                    playsInline 
+                    className="absolute inset-0 z-0 w-full h-full object-cover opacity-30" 
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/70 z-10"></div>
+                
+                <div className="relative z-20 px-6 container mx-auto max-w-6xl">
+                    <motion.h1 
+                        initial={{ opacity: 0, y: 30 }} 
+                        animate={{ opacity: 1, y: 0 }} 
+                        transition={{ duration: 0.8, delay: 0.2 }} 
+                        className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6"
+                        style={{ textShadow: '0 0 20px rgba(255,255,255,0.3)' }}
+                    >
                         {getTranslated(giveaway.name)}
                     </motion.h1>
-                    <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.4 }} className="mt-4 text-lg sm:text-xl md:text-2xl text-white/80 font-semibold tracking-wide">
+                    
+                    <motion.p 
+                        initial={{ opacity: 0, y: 30 }} 
+                        animate={{ opacity: 1, y: 0 }} 
+                        transition={{ duration: 0.8, delay: 0.4 }} 
+                        className="text-xl sm:text-2xl text-white/90 mb-16 max-w-3xl mx-auto leading-relaxed"
+                    >
                         {getTranslated(giveaway.subtitle)}
                     </motion.p>
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.6 }} className="mt-12">
-                        <h3 className="text-lg font-semibold uppercase tracking-widest text-white/80 mb-4">{t('Draw_Ends_In')}</h3>
-                        <div className="grid grid-cols-4 gap-2 sm:gap-4 max-w-sm mx-auto">
+                    
+                    <motion.div 
+                        initial={{ opacity: 0, y: 30 }} 
+                        animate={{ opacity: 1, y: 0 }} 
+                        transition={{ duration: 0.8, delay: 0.6 }} 
+                        className="mb-12"
+                    >
+                        <h3 className="text-xl font-semibold uppercase tracking-widest text-amber-300 mb-8">
+                            {t('Draw_Ends_In')}
+                        </h3>
+                        <div className="grid grid-cols-4 gap-4 max-w-lg mx-auto">
                             <TimerBox value={timeLeft.days} label={t('days')} />
                             <TimerBox value={timeLeft.hours} label={t('hours')} />
                             <TimerBox value={timeLeft.minutes} label={t('minutes')} />
@@ -221,8 +253,11 @@ const LotteryPage: React.FC = () => {
                 </div>
             </div>
 
-            <div className="py-24 bg-black">
-                <div className="container mx-auto px-6">
+            {/* Main Content */}
+            <div className="py-24 px-6">
+                <div className="container mx-auto max-w-7xl">
+                    
+                    {/* Prize Showcase */}
                     <motion.div
                         initial={{ opacity: 0, y: 50 }}
                         whileInView={{ opacity: 1, y: 0 }}
@@ -230,89 +265,217 @@ const LotteryPage: React.FC = () => {
                         transition={{ duration: 0.8 }}
                         className="mb-24"
                     >
-                        <PrizeCarousel prizes={giveaway.prizes.filter(p => p.image)} />
-                    </motion.div>
-
-                    <div className="grid lg:grid-cols-5 gap-12 items-start">
-                        <div className="lg:col-span-3">
-                            <h2 className="text-3xl font-bold font-exo2 mb-8 text-center lg:text-left">{t('Prizes_Pool_Worth_Over').replace('€400,000', '')}<span className="text-amber-400">€400,000</span></h2>
-                            <div className="space-y-8">
-                                {Object.entries(groupedPrizes).map(([tier, prizes]) => (
-                                    <div key={tier}>
-                                        <h3 className="text-xl font-semibold text-amber-400 mb-4">{tier}</h3>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            {prizes.map((prize, idx) => <PrizeCard key={idx} prize={prize} />)}
-                                        </div>
-                                    </div>
-                                ))}
+                        <div className="text-center mb-16">
+                            <h2 className="text-4xl sm:text-5xl font-bold mb-6">
+                                {t('Prizes_Pool_Text')}
+                            </h2>
+                            <div className="text-2xl font-semibold text-amber-400">
+                                {t('Prizes_Pool_Value')}
                             </div>
                         </div>
-
-                        <div className="lg:col-span-2 lg:sticky top-32">
-                             <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-6 md:p-8 backdrop-blur-sm">
-                                <AnimatePresence>{successMessage && <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="bg-green-500/20 text-green-300 p-3 rounded-md mb-4 text-center text-sm font-medium">{successMessage}</motion.div>}</AnimatePresence>
-                                <div className="mb-4">
-                                    <h3 className="text-lg font-semibold text-white">{t('How_many_tickets')}</h3>
-                                    <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-4 mt-2">
-                                        <div className="flex items-center space-x-2 bg-gray-800 border border-gray-700 rounded-full p-1">
-                                            <button onClick={() => handleQuantityChange(-1)} className="w-8 h-8 font-bold text-white rounded-full hover:bg-gray-700">-</button>
-                                            <span className="w-12 text-center text-white text-xl font-bold">{quantity}</span>
-                                            <button onClick={() => handleQuantityChange(1)} className="w-8 h-8 font-bold text-white rounded-full hover:bg-gray-700">+</button>
-                                        </div>
-                                        <div className="flex space-x-2 w-full sm:w-auto justify-center">
-                                            {[5, 10, 25, 50].map(val => (<button key={val} onClick={() => setQuantity(val)} className={`px-3 py-1 text-xs rounded-full border transition-colors ${quantity === val ? 'bg-white text-black border-white' : 'bg-gray-700/80 border-gray-600 text-gray-300 hover:border-white'}`}>{val}</button>))}
-                                        </div>
+                        
+                        <div className="space-y-16">
+                            {Object.entries(groupedPrizes).map(([tier, prizes]) => (
+                                <div key={tier} className="text-center">
+                                    <h3 className="text-2xl font-bold text-amber-300 mb-8 uppercase tracking-wider">
+                                        {tier}
+                                    </h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-6xl mx-auto">
+                                        {prizes.map((prize, idx) => (
+                                            <PrizeCard key={idx} prize={prize} />
+                                        ))}
                                     </div>
                                 </div>
-                                <div className="flex justify-between items-center text-xl font-bold mb-6"><span className="text-gray-300">{t('Total_Price_Lottery')}</span><span className="text-white">{formatPrice(totalPrice)}</span></div>
-                                <button onClick={handleBuyClick} className="w-full py-4 px-6 bg-white text-black rounded-full font-bold uppercase tracking-wider text-sm hover:bg-gray-200 transition-all duration-300 transform hover:scale-105">{t('Buy_Tickets')}</button>
+                            ))}
+                        </div>
+                    </motion.div>
+
+                    {/* Purchase Section */}
+                    <div className="max-w-2xl mx-auto">
+                        <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20">
+                            
+                            <AnimatePresence>
+                                {successMessage && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, scale: 0.95 }} 
+                                        animate={{ opacity: 1, scale: 1 }} 
+                                        exit={{ opacity: 0, scale: 0.95 }} 
+                                        className="bg-green-500/20 text-green-300 p-4 rounded-xl mb-6 text-center font-medium border border-green-500/30"
+                                    >
+                                        {successMessage}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                            
+                            <div className="text-center mb-8">
+                                <h3 className="text-2xl font-bold text-white mb-2">
+                                    {t('How_many_tickets')}
+                                </h3>
+                                <p className="text-white/70">Select the number of tickets you want to purchase</p>
                             </div>
+
+                            <div className="mb-8">
+                                <div className="flex items-center justify-center mb-6">
+                                    <div className="flex items-center bg-black/30 rounded-full p-2 border border-white/20">
+                                        <button 
+                                            onClick={() => handleQuantityChange(-1)} 
+                                            className="w-12 h-12 font-bold text-white rounded-full hover:bg-white/20 transition-colors"
+                                        >
+                                            −
+                                        </button>
+                                        <span className="w-16 text-center text-white text-2xl font-bold">
+                                            {quantity}
+                                        </span>
+                                        <button 
+                                            onClick={() => handleQuantityChange(1)} 
+                                            className="w-12 h-12 font-bold text-white rounded-full hover:bg-white/20 transition-colors"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex justify-center space-x-3 flex-wrap gap-2">
+                                    {[5, 10, 25, 50].map(val => (
+                                        <button 
+                                            key={val} 
+                                            onClick={() => setQuantity(val)} 
+                                            className={`px-4 py-2 rounded-full border transition-all ${
+                                                quantity === val 
+                                                    ? 'bg-white text-black border-white font-bold' 
+                                                    : 'bg-white/10 border-white/30 text-white hover:border-white/70 hover:bg-white/20'
+                                            }`}
+                                        >
+                                            {val}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            <div className="bg-black/30 rounded-xl p-6 mb-8 border border-white/20">
+                                <div className="flex justify-between items-center text-xl">
+                                    <span className="text-white/80">Total Price:</span>
+                                    <span className="text-white font-bold text-2xl">
+                                        {formatPrice(totalPrice)}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <button 
+                                onClick={handleBuyClick} 
+                                className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl font-bold text-lg uppercase tracking-wider transition-all duration-300 transform hover:scale-[1.02] shadow-xl"
+                            >
+                                {t('Buy_Tickets')}
+                            </button>
                         </div>
                     </div>
 
-                    <div className="mt-24 max-w-4xl mx-auto">
-                        <h2 className="text-3xl font-bold font-playfair mb-8 text-center">{t('How_It_Works')}</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-                            <div className="bg-gray-900/50 p-6 rounded-lg"><p className="text-amber-400 font-bold mb-2">{t('Step_1')}</p><h3 className="text-lg font-semibold text-white">{t('Buy_your_tickets')}</h3></div>
-                            <div className="bg-gray-900/50 p-6 rounded-lg"><p className="text-amber-400 font-bold mb-2">{t('Step_2')}</p><h3 className="text-lg font-semibold text-white">{t('Wait_for_the_draw')}</h3></div>
-                            <div className="bg-gray-900/50 p-6 rounded-lg"><p className="text-amber-400 font-bold mb-2">{t('Step_3')}</p><h3 className="text-lg font-semibold text-white">{t('Win_amazing_prizes')}</h3></div>
+                    {/* How It Works */}
+                    <div className="mt-24 max-w-5xl mx-auto">
+                        <h2 className="text-4xl font-bold text-center mb-16">{t('How_It_Works')}</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <div className="text-center bg-white/5 p-8 rounded-2xl border border-white/20">
+                                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <span className="text-2xl font-bold text-white">1</span>
+                                </div>
+                                <h3 className="text-xl font-semibold text-white mb-4">{t('Buy_your_tickets')}</h3>
+                                <p className="text-white/70">Choose your tickets and complete the purchase</p>
+                            </div>
+                            
+                            <div className="text-center bg-white/5 p-8 rounded-2xl border border-white/20">
+                                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <span className="text-2xl font-bold text-white">2</span>
+                                </div>
+                                <h3 className="text-xl font-semibold text-white mb-4">{t('Wait_for_the_draw')}</h3>
+                                <p className="text-white/70">Sit back and wait for the draw results</p>
+                            </div>
+                            
+                            <div className="text-center bg-white/5 p-8 rounded-2xl border border-white/20">
+                                <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <span className="text-2xl font-bold text-white">3</span>
+                                </div>
+                                <h3 className="text-xl font-semibold text-white mb-4">{t('Win_amazing_prizes')}</h3>
+                                <p className="text-white/70">Claim your incredible rewards</p>
+                            </div>
                         </div>
                     </div>
                     
-                     <div className="mt-24 max-w-4xl mx-auto text-center bg-amber-900/20 border border-amber-400/30 p-8 rounded-xl">
-                        <TicketIcon className="w-12 h-12 text-amber-400 mx-auto mb-4"/>
-                        <h2 className="text-2xl font-bold text-amber-300 mb-4">{t('Guaranteed_Reward')}</h2>
-                        <p className="text-amber-200/80 max-w-2xl mx-auto">{getTranslated(giveaway.bonus)}</p>
+                    {/* Guaranteed Reward */}
+                    <div className="mt-24 max-w-4xl mx-auto text-center">
+                        <div className="bg-gradient-to-r from-amber-900/30 to-orange-900/30 border border-amber-400/40 p-8 rounded-2xl backdrop-blur-sm">
+                            <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <span className="text-3xl">🎫</span>
+                            </div>
+                            <h2 className="text-3xl font-bold text-amber-300 mb-6">{t('Guaranteed_Reward')}</h2>
+                            <p className="text-amber-200/90 text-lg max-w-2xl mx-auto leading-relaxed">
+                                {getTranslated(giveaway.bonus)}
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
             
+            {/* Purchase Modal */}
             <AnimatePresence>
                 {showConfirmModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" aria-modal="true">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={handleCloseModal} />
-                        <motion.div initial={{ opacity: 0, y: 50, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 50, scale: 0.9 }} className="relative bg-gray-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-md p-6 md:p-8">
-                            <h2 className="text-2xl font-bold text-white mb-4 text-center">{t('Confirm_Purchase')}</h2>
-                            <p className="text-gray-300 mb-4 text-center text-sm">{t('Are_you_sure_you_want_to_buy_tickets').replace('{count}', String(quantity)).replace('{price}', formatPrice(totalPrice))}</p>
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            exit={{ opacity: 0 }} 
+                            className="absolute inset-0 bg-black/90 backdrop-blur-sm" 
+                            onClick={handleCloseModal} 
+                        />
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.95 }} 
+                            animate={{ opacity: 1, scale: 1 }} 
+                            exit={{ opacity: 0, scale: 0.95 }} 
+                            className="relative bg-slate-900 border border-white/20 rounded-2xl shadow-2xl w-full max-w-md p-8 backdrop-blur-xl"
+                        >
+                            <h2 className="text-2xl font-bold text-white mb-6 text-center">
+                                {t('Confirm_Purchase')}
+                            </h2>
+                            <p className="text-white/80 mb-6 text-center">
+                                {t('Are_you_sure_you_want_to_buy_tickets')
+                                    .replace('{count}', String(quantity))
+                                    .replace('{price}', formatPrice(totalPrice))}
+                            </p>
                             
-                            <div className="my-6">
-                                <label className="block text-sm font-medium text-gray-300 text-left mb-2">{t('Credit_Card')}</label>
-                                <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 min-h-[48px] flex items-center">
+                            <div className="mb-6">
+                                <label className="block text-white font-medium mb-3">
+                                    {t('Credit_Card')}
+                                </label>
+                                <div className="bg-black/20 border border-white/30 rounded-xl p-4 min-h-[56px] flex items-center">
                                     {isClientSecretLoading ? 
-                                        <div className="flex items-center text-gray-400 text-sm">
-                                            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-4 h-4 border-2 border-t-white border-gray-600 rounded-full mr-2"/>
+                                        <div className="flex items-center text-white/70">
+                                            <motion.div 
+                                                animate={{ rotate: 360 }} 
+                                                transition={{ duration: 1, repeat: Infinity, ease: "linear" }} 
+                                                className="w-5 h-5 border-2 border-t-white border-white/30 rounded-full mr-3"
+                                            />
                                             <span>{t('Processing')}...</span>
                                         </div> : 
                                         <div ref={cardElementRef} className="w-full" />
                                     }
                                 </div>
-                                {stripeError && <p className="text-xs text-red-400 mt-2 text-left">{stripeError}</p>}
+                                {stripeError && (
+                                    <p className="text-red-400 mt-3 text-sm">{stripeError}</p>
+                                )}
                             </div>
 
-                            <div className="flex justify-center space-x-4">
-                                <button onClick={handleCloseModal} className="px-6 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 text-sm">{t('Cancel')}</button>
-                                <button onClick={confirmPurchase} disabled={isProcessing || !clientSecret || isClientSecretLoading} className="px-6 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-opacity disabled:opacity-60 text-sm">
-                                    {isProcessing ? t('Processing') : `${t('Confirm_Purchase')} (${formatPrice(totalPrice)})`}
+                            <div className="flex space-x-4">
+                                <button 
+                                    onClick={handleCloseModal} 
+                                    className="flex-1 py-3 bg-white/10 text-white font-semibold rounded-xl hover:bg-white/20 transition-colors"
+                                >
+                                    {t('Cancel')}
+                                </button>
+                                <button 
+                                    onClick={confirmPurchase} 
+                                    disabled={isProcessing || !clientSecret || isClientSecretLoading} 
+                                    className="flex-1 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isProcessing ? t('Processing') : t('Confirm_Purchase')}
                                 </button>
                             </div>
                         </motion.div>
