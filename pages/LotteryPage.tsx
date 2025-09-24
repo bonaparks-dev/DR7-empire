@@ -33,6 +33,45 @@ const TimerBox: React.FC<{ value: number, label: string }> = ({ value, label }) 
     </div>
 );
 
+// Simple text-only carousel component for prizes
+const TextPrizeCarousel: React.FC<{ prizes: Prize[], autoplaySpeed?: number }> = ({ prizes, autoplaySpeed = 3000 }) => {
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const { getTranslated } = useTranslation();
+
+    useEffect(() => {
+        if (prizes.length === 0) return;
+        
+        const interval = setInterval(() => {
+            setCurrentIndex((prevIndex) => (prevIndex + 1) % prizes.length);
+        }, autoplaySpeed);
+
+        return () => clearInterval(interval);
+    }, [prizes.length, autoplaySpeed]);
+
+    if (prizes.length === 0) return null;
+
+    return (
+        <div className="relative w-full max-w-md mx-auto">
+            <div className="overflow-hidden rounded-2xl">
+                <div 
+                    className="flex transition-transform duration-500 ease-in-out"
+                    style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+                >
+                    {prizes.map((prize, index) => (
+                        <div key={index} className="w-full flex-shrink-0">
+                            <div className="bg-black/60 border border-white/40 rounded-2xl p-8 mx-4 text-center backdrop-blur-sm aspect-square flex flex-col justify-center">
+                                {prize.quantity && <p className="text-3xl font-bold text-white mb-4">{prize.quantity}x</p>}
+                                <h3 className="text-2xl font-semibold text-white mb-2">{getTranslated(prize.name)}</h3>
+                                <p className="text-white/70 font-medium text-lg">{getTranslated(prize.tier)}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const PrizeCard: React.FC<{ prize: Prize }> = ({ prize }) => {
     const { getTranslated } = useTranslation();
     return (
@@ -224,34 +263,35 @@ const LotteryPage: React.FC = () => {
                         transition={{ duration: 0.8 }}
                         className="mb-16 sm:mb-20 md:mb-24"
                     >
-                        <PrizeCarousel 
-                            prizes={giveaway.prizes.filter(p => p.image)} 
-                            autoplaySpeed={1800}
-                            showDots={false}
-                            dots={false}
-                            showIndicators={false}
-                        />
-                    </motion.div>
-
-                    <div className="grid lg:grid-cols-5 gap-8 lg:gap-12 items-start">
-                        <div className="lg:col-span-3">
-                            <h2 className="text-2xl sm:text-3xl font-bold font-exo2 mb-6 sm:mb-8 text-center lg:text-left">
+                        {/* First Carousel - Images */}
+                        <div className="mb-12">
+                            <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-center">Featured Prizes</h2>
+                            <div className="max-w-md mx-auto">
+                                <PrizeCarousel 
+                                    prizes={giveaway.prizes.filter(p => p.image)} 
+                                    autoplaySpeed={1500}
+                                    showDots={false}
+                                    dots={false}
+                                    showIndicators={false}
+                                />
+                            </div>
+                        </div>
+                        
+                        {/* Second Carousel - Text Prizes */}
+                        <div>
+                            <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-center">
                                 Prize Pool Worth Over{' '}
                                 <span className="text-white">$7,000,000</span>
                             </h2>
-                            <div className="space-y-6 sm:space-y-8">
-                                {Object.entries(groupedPrizes).map(([tier, prizes]) => (
-                                    <div key={tier}>
-                                        <h3 className="text-lg sm:text-xl font-semibold text-white mb-4">{tier}</h3>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            {prizes.map((prize, idx) => <PrizeCard key={idx} prize={prize} />)}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                            <TextPrizeCarousel 
+                                prizes={giveaway.prizes} 
+                                autoplaySpeed={1800}
+                            />
                         </div>
+                    </motion.div>
 
-                        <div className="lg:col-span-2 lg:sticky top-32">
+                    <div className="grid lg:grid-cols-1 gap-8 lg:gap-12 items-start">
+                        <div className="lg:mx-auto max-w-2xl w-full">
                              <div className="bg-black/80 border border-white/40 rounded-xl p-6 md:p-8 backdrop-blur-sm">
                                 <AnimatePresence>
                                     {successMessage && (
