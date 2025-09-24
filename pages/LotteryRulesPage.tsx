@@ -212,7 +212,7 @@ const LotteryRulesPage: React.FC = () => {
             <ul className="space-y-4 text-lg text-gray-300">
               {rules.general.items.map((item, index) => (
                 <li key={index} className={item.label ? '' : 'pl-4 border-l-2 border-yellow-400'}>
-                  {item.label && <strong>{t(item.label)}</strong>} {t(item.value)}
+                  {item.label && <strong>{t(item.label)}</strong>} {item.value && t(item.value)}
                 </li>
               ))}
             </ul>
@@ -225,7 +225,7 @@ const LotteryRulesPage: React.FC = () => {
             <ul className="space-y-4 text-lg text-gray-300">
               {rules.probability.items.map((item, index) => (
                 <li key={index}>
-                  <strong>{t(item.label)}</strong> {t(item.value)}
+                  <strong>{t(item.label)}</strong> {item.value && t(item.value)}
                 </li>
               ))}
             </ul>
@@ -269,7 +269,7 @@ const LotteryRulesPage: React.FC = () => {
             <ul className="space-y-4 text-lg text-gray-300">
               {rules.summary.items.map((item, index) => (
                 <li key={index}>
-                  <strong>{t(item.label)}</strong> {t(item.value)}
+                  <strong>{t(item.label)}</strong> {item.value && t(item.value)}
                 </li>
               ))}
             </ul>
