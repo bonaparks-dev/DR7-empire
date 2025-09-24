@@ -1,8 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
 
-// Since useTranslation hook implementation is not shown,
 // I'll create a simple language selector that works with your data structure
 const LotteryRulesPage = () => {
   // You can get this from your translation context/hook
