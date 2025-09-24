@@ -6,11 +6,6 @@ import { ArrowLeftIcon } from '../icons/Icons';
 
 interface PrizeCarouselProps {
   prizes: Prize[];
-  showDots?: boolean;
-  aspectRatio?: 'square' | 'video';
-  showArrows?: boolean;
-  showPrizeNames?: boolean;
-  autoplaySpeed?: number;
 }
 
 const variants = {
@@ -26,7 +21,7 @@ const variants = {
   }),
 };
 
-const swipeConfidenceThreshold = 5000;
+const swipeConfidenceThreshold = 10000;
 const swipePower = (offset: number, velocity: number) =>
   Math.abs(offset) * velocity;
 
@@ -34,7 +29,7 @@ const swipePower = (offset: number, velocity: number) =>
 const wrapIndex = (index: number, length: number) =>
   ((index % length) + length) % length;
 
-export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes, showDots = true, aspectRatio = 'video', showArrows = true, showPrizeNames = true, autoplaySpeed = 4000 }) => {
+export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes }) => {
   const [[page, direction], setPage] = useState<[number, number]>([0, 0]);
   const [isHovered, setIsHovered] = useState(false);
   const { getTranslated } = useTranslation();
@@ -49,12 +44,12 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes, showDots =
     setPage(([p]) => [p + newDirection, newDirection]);
   };
 
-  // Auto-slide (pause au survol)
+  // Auto-slide toutes les 4s (pause au survol)
   useEffect(() => {
     if (isHovered || length <= 1) return;
-    const id = setTimeout(() => paginate(1), autoplaySpeed);
+    const id = setTimeout(() => paginate(1), 4000);
     return () => clearTimeout(id);
-  }, [page, isHovered, length, autoplaySpeed]);
+  }, [page, isHovered, length]);
 
   const currentPrize = prizes[imageIndex];
   if (!currentPrize) return null;
@@ -65,7 +60,7 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes, showDots =
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className={`relative w-full overflow-hidden rounded-xl bg-gray-900/50 border border-gray-800 shadow-2xl shadow-black/50 ${aspectRatio === 'square' ? 'aspect-square' : 'aspect-[16/9]'}`}>
+      <div className="relative w-full aspect-[16/9] overflow-hidden rounded-xl bg-gray-900/50 border border-gray-800 shadow-2xl shadow-black/50">
         <AnimatePresence initial={false} custom={direction}>
           <motion.img
             key={page}
@@ -95,53 +90,45 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes, showDots =
           />
         </AnimatePresence>
 
-        {showArrows && (
-          <>
-            <button
-              onClick={() => paginate(-1)}
-              className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors z-10"
-              aria-label="Previous prize"
-            >
-              <ArrowLeftIcon className="w-6 h-6" />
-            </button>
-            <button
-              onClick={() => paginate(1)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors z-10"
-              aria-label="Next prize"
-            >
-              <ArrowLeftIcon className="w-6 h-6 rotate-180" />
-            </button>
-          </>
-        )}
+        <button
+          onClick={() => paginate(-1)}
+          className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors z-10"
+          aria-label="Previous prize"
+        >
+          <ArrowLeftIcon className="w-6 h-6" />
+        </button>
+        <button
+          onClick={() => paginate(1)}
+          className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors z-10"
+          aria-label="Next prize"
+        >
+          <ArrowLeftIcon className="w-6 h-6 rotate-180" />
+        </button>
       </div>
 
-      {showPrizeNames && (
-        <div className="text-center mt-4 font-exo2">
-          <h3 className="text-2xl font-bold text-white">
-            {getTranslated(currentPrize.name)}
-          </h3>
-          <p className="text-md text-gray-400">
-            {getTranslated(currentPrize.tier)}
-          </p>
-        </div>
-      )}
+      <div className="text-center mt-4">
+        <h3 className="text-2xl font-bold text-white">
+          {getTranslated(currentPrize.name)}
+        </h3>
+        <p className="text-md text-gray-400">
+          {getTranslated(currentPrize.tier)}
+        </p>
+      </div>
 
-      {showDots && (
-        <div className="flex justify-center space-x-2 mt-4">
-          {prizes.map((_, i) => (
-            <button
-              key={i}
-              onClick={() =>
-                setPage(([p]) => [i, i > wrapIndex(p, length) ? 1 : -1])
-              }
-              className={`w-3 h-3 rounded-full transition-colors ${
-                i === imageIndex ? 'bg-white' : 'bg-white/30 hover:bg-white/50'
-              }`}
-              aria-label={`Go to prize ${i + 1}`}
-            />
-          ))}
-        </div>
-      )}
+      <div className="flex justify-center space-x-2 mt-4">
+        {prizes.map((_, i) => (
+          <button
+            key={i}
+            onClick={() =>
+              setPage(([p]) => [i, i > wrapIndex(p, length) ? 1 : -1])
+            }
+            className={`w-3 h-3 rounded-full transition-colors ${
+              i === imageIndex ? 'bg-white' : 'bg-white/30 hover:bg-white/50'
+            }`}
+            aria-label={`Go to prize ${i + 1}`}
+          />
+        ))}
+      </div>
     </div>
   );
 };

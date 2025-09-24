@@ -56,6 +56,7 @@ import CookieBanner from './components/ui/CookieBanner';
 import { useAuth } from './hooks/useAuth';
 import AuthCallbackPage from './pages/AuthCallbackPage';
 import ConfirmationSuccessPage from './pages/ConfirmationSuccessPage';
+import LotteryRulesPage from './pages/LotteryRulesPage';
 
 const AuthRedirector: React.FC = () => {
   const { user, authEvent } = useAuth();
@@ -106,6 +107,10 @@ const AnimatedRoutes = () => {
         <Route 
             path="/lottery"
             element={<LotteryPage />}
+        />
+        <Route
+            path="/lottery-rules"
+            element={<LotteryRulesPage />}
         />
         <Route path="/account" element={
           <ProtectedRoute role="personal">

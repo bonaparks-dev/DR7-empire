@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { useCurrency } from '../contexts/CurrencyContext';
-import { LOTTERY_GIVEAWAY, ALPHABET_PRIZES } from '../constants';
+import { LOTTERY_GIVEAWAY } from '../constants';
+import { Link } from 'react-router-dom';
 import type { Lottery, Prize } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import type { Stripe, StripeElements, StripeCardElement } from '@stripe/stripe-js';
@@ -33,6 +34,44 @@ const TimerBox: React.FC<{ value: number, label: string }> = ({ value, label }) 
     </div>
 );
 
+// Simple text-only carousel component for prizes
+const TextPrizeCarousel: React.FC<{ prizes: Prize[], autoplaySpeed?: number }> = ({ prizes, autoplaySpeed = 3000 }) => {
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const { getTranslated } = useTranslation();
+
+    useEffect(() => {
+        if (prizes.length === 0) return;
+
+        const interval = setInterval(() => {
+            setCurrentIndex((prevIndex) => (prevIndex + 1) % prizes.length);
+        }, autoplaySpeed);
+
+        return () => clearInterval(interval);
+    }, [prizes.length, autoplaySpeed]);
+
+    if (prizes.length === 0) return null;
+
+    return (
+        <div className="relative w-full max-w-md mx-auto">
+            <div className="overflow-hidden rounded-2xl">
+                <div
+                    className="flex transition-transform duration-500 ease-in-out"
+                    style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+                >
+                    {prizes.map((prize, index) => (
+                        <div key={index} className="w-full flex-shrink-0">
+                            <div className="bg-black/60 border border-white/40 rounded-2xl p-8 mx-4 text-center backdrop-blur-sm aspect-square flex flex-col justify-center">
+                                {prize.quantity && <p className="text-3xl font-bold text-white mb-4">{prize.quantity}x</p>}
+                                <h3 className="text-2xl font-semibold text-white mb-2">{getTranslated(prize.name)}</h3>
+                                <p className="text-white/70 font-medium text-lg">{getTranslated(prize.tier)}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const PrizeCard: React.FC<{ prize: Prize }> = ({ prize }) => {
     const { getTranslated } = useTranslation();
@@ -198,7 +237,7 @@ const LotteryPage: React.FC = () => {
                 <video src="/lottery.mp4" autoPlay loop muted playsInline className="absolute inset-0 z-0 w-full h-full object-cover brightness-75" />
                 <div className="absolute inset-0 bg-black/20 z-10"></div>
                 <div className="relative z-20 px-4 sm:px-6 container mx-auto">
-                    <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-exo2 uppercase tracking-wider" style={{ textShadow: '0 0 15px rgba(255,255,255,0.3)' }}>
+                    <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-playfair uppercase tracking-wider" style={{ textShadow: '0 0 15px rgba(255,255,255,0.3)' }}>
                         {getTranslated(giveaway.name)}
                     </motion.h1>
                     <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.4 }} className="mt-4 text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 font-semibold tracking-wide">
@@ -227,16 +266,18 @@ const LotteryPage: React.FC = () => {
                     >
                         {/* First Carousel - Images */}
                         <div className="mb-12">
-                            <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-center font-exo2">Featured Prizes</h2>
+                            <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-center">Featured Prizes</h2>
                             <div className="max-w-md mx-auto">
-                                <div className="overflow-hidden rounded-2xl">
+                                <div className="aspect-square overflow-hidden rounded-2xl">
                                     <PrizeCarousel
                                         prizes={giveaway.prizes.filter(p => p.image)}
-                                        showDots={false}
-                                        aspectRatio="square"
-                                        showArrows={false}
-                                        showPrizeNames={false}
                                         autoplaySpeed={1500}
+                                        showDots={false}
+                                        dots={false}
+                                        showIndicators={false}
+                                        pagination={false}
+                                        navigation={false}
+                                        controls={false}
                                     />
                                 </div>
                             </div>
@@ -244,21 +285,14 @@ const LotteryPage: React.FC = () => {
                         
                         {/* Second Carousel - Text Prizes */}
                         <div>
-                            <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-center font-exo2">
+                            <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-center">
                                 Prize Pool Worth Over{' '}
                                 <span className="text-white">$7,000,000</span>
                             </h2>
-                            <div className="max-w-md mx-auto">
-                                <div className="overflow-hidden rounded-2xl">
-                                    <PrizeCarousel
-                                        prizes={ALPHABET_PRIZES}
-                                        showDots={false}
-                                        aspectRatio="square"
-                                        showArrows={false}
-                                        showPrizeNames={false}
-                                    />
-                                </div>
-                            </div>
+                            <TextPrizeCarousel
+                                prizes={giveaway.prizes}
+                                autoplaySpeed={1800}
+                            />
                         </div>
                     </motion.div>
 
@@ -340,6 +374,11 @@ const LotteryPage: React.FC = () => {
                                 <p className="text-white font-bold mb-2">{t('Step_3')}</p>
                                 <h3 className="text-base sm:text-lg font-semibold text-white">{t('Win_amazing_prizes')}</h3>
                             </div>
+                        </div>
+                        <div className="text-center mt-12">
+                            <Link to="/lottery-rules" className="inline-block py-3 sm:py-4 px-8 bg-white text-black rounded-full font-bold uppercase tracking-wider text-sm sm:text-base hover:bg-gray-200 transition-all duration-300 transform hover:scale-105">
+                                {t('View_Rules')}
+                            </Link>
                         </div>
                     </div>
                     
