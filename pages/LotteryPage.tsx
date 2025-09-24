@@ -1,4 +1,3 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -25,11 +24,11 @@ const calculateTimeLeft = (drawDate: string) => {
 };
 
 const TimerBox: React.FC<{ value: number, label: string }> = ({ value, label }) => (
-    <div className="bg-black/80 backdrop-blur-sm p-4 rounded-2xl text-center border border-white/30">
-        <div className="text-4xl sm:text-5xl font-bold text-white mb-1" style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}>
+    <div className="bg-black/80 backdrop-blur-sm p-2 sm:p-3 md:p-4 rounded-xl sm:rounded-2xl text-center border border-white/30">
+        <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-1" style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}>
             {String(value).padStart(2, '0')}
         </div>
-        <div className="text-sm text-white/80 uppercase tracking-wider">{label}</div>
+        <div className="text-xs sm:text-sm text-white/80 uppercase tracking-wider">{label}</div>
     </div>
 );
 
@@ -211,16 +210,16 @@ const LotteryPage: React.FC = () => {
                     loop 
                     muted 
                     playsInline 
-                    className="absolute inset-0 z-0 w-full h-full object-cover opacity-30" 
+                    className="absolute inset-0 z-0 w-full h-full object-cover opacity-40" 
                 />
-                <div className="absolute inset-0 bg-black/60 z-10"></div>
+                <div className="absolute inset-0 bg-black/20 z-10"></div>
                 
-                <div className="relative z-20 px-6 container mx-auto max-w-6xl">
+                <div className="relative z-20 px-4 sm:px-6 container mx-auto max-w-6xl">
                     <motion.h1 
                         initial={{ opacity: 0, y: 30 }} 
                         animate={{ opacity: 1, y: 0 }} 
                         transition={{ duration: 0.8, delay: 0.2 }} 
-                        className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6"
+                        className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-4 sm:mb-6 px-2"
                         style={{ textShadow: '0 0 20px rgba(255,255,255,0.3)' }}
                     >
                         {getTranslated(giveaway.name)}
@@ -230,7 +229,7 @@ const LotteryPage: React.FC = () => {
                         initial={{ opacity: 0, y: 30 }} 
                         animate={{ opacity: 1, y: 0 }} 
                         transition={{ duration: 0.8, delay: 0.4 }} 
-                        className="text-xl sm:text-2xl text-white/90 mb-16 max-w-3xl mx-auto leading-relaxed"
+                        className="text-lg sm:text-xl md:text-2xl text-white/90 mb-12 sm:mb-16 max-w-3xl mx-auto leading-relaxed px-4"
                     >
                         {getTranslated(giveaway.subtitle)}
                     </motion.p>
@@ -239,12 +238,12 @@ const LotteryPage: React.FC = () => {
                         initial={{ opacity: 0, y: 30 }} 
                         animate={{ opacity: 1, y: 0 }} 
                         transition={{ duration: 0.8, delay: 0.6 }} 
-                        className="mb-12"
+                        className="mb-8 sm:mb-12"
                     >
-                        <h3 className="text-xl font-semibold uppercase tracking-widest text-white mb-8">
+                        <h3 className="text-lg sm:text-xl font-semibold uppercase tracking-widest text-white mb-6 sm:mb-8">
                             {t('Draw_Ends_In')}
                         </h3>
-                        <div className="grid grid-cols-4 gap-4 max-w-lg mx-auto">
+                        <div className="grid grid-cols-4 gap-2 sm:gap-4 max-w-xs sm:max-w-lg mx-auto px-4">
                             <TimerBox value={timeLeft.days} label={t('days')} />
                             <TimerBox value={timeLeft.hours} label={t('hours')} />
                             <TimerBox value={timeLeft.minutes} label={t('minutes')} />
@@ -255,7 +254,7 @@ const LotteryPage: React.FC = () => {
             </div>
 
             {/* Main Content */}
-            <div className="py-24 px-6">
+            <div className="py-16 sm:py-20 md:py-24 px-4 sm:px-6">
                 <div className="container mx-auto max-w-7xl">
                     
                     {/* Prize Showcase */}
@@ -264,27 +263,30 @@ const LotteryPage: React.FC = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, amount: 0.2 }}
                         transition={{ duration: 0.8 }}
-                        className="mb-24"
+                        className="mb-16 sm:mb-20 md:mb-24"
                     >
-                        <div className="text-center mb-16">
-                            <h2 className="text-4xl sm:text-5xl font-bold mb-6">
+                        <div className="text-center mb-12 sm:mb-16">
+                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 px-4">
                                 {t('Prizes_Pool_Text')}
                             </h2>
-                            <div className="text-2xl font-semibold text-white">
+                            <div className="text-xl sm:text-2xl font-semibold text-white px-4">
                                 {t('Prizes_Pool_Value')}
                             </div>
                         </div>
                         
                         {/* Prize Carousel */}
-                        <PrizeCarousel 
-                            prizes={giveaway.prizes.filter(p => p.image)} 
-                            autoplaySpeed={1800}
-                        />
+                        <div className="px-2 sm:px-0">
+                            <PrizeCarousel 
+                                prizes={giveaway.prizes.filter(p => p.image)} 
+                                autoplaySpeed={1800}
+                                showDots={false}
+                            />
+                        </div>
                     </motion.div>
 
                     {/* Purchase Section */}
-                    <div className="max-w-2xl mx-auto">
-                        <div className="bg-black/80 backdrop-blur-xl rounded-3xl p-8 border border-white/30">
+                    <div className="max-w-2xl mx-auto px-4">
+                        <div className="bg-black/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-white/30">
                             
                             <AnimatePresence>
                                 {successMessage && (
@@ -299,40 +301,40 @@ const LotteryPage: React.FC = () => {
                                 )}
                             </AnimatePresence>
                             
-                            <div className="text-center mb-8">
-                                <h3 className="text-2xl font-bold text-white mb-2">
+                            <div className="text-center mb-6 sm:mb-8">
+                                <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">
                                     {t('How_many_tickets')}
                                 </h3>
-                                <p className="text-white/70">Select the number of tickets you want to purchase</p>
+                                <p className="text-white/70 text-sm sm:text-base">Select the number of tickets you want to purchase</p>
                             </div>
 
-                            <div className="mb-8">
-                                <div className="flex items-center justify-center mb-6">
+                            <div className="mb-6 sm:mb-8">
+                                <div className="flex items-center justify-center mb-4 sm:mb-6">
                                     <div className="flex items-center bg-white/10 rounded-full p-2 border border-white/30">
                                         <button 
                                             onClick={() => handleQuantityChange(-1)} 
-                                            className="w-12 h-12 font-bold text-white rounded-full hover:bg-white/20 transition-colors"
+                                            className="w-10 h-10 sm:w-12 sm:h-12 font-bold text-white rounded-full hover:bg-white/20 transition-colors text-lg sm:text-xl"
                                         >
                                             −
                                         </button>
-                                        <span className="w-16 text-center text-white text-2xl font-bold">
+                                        <span className="w-14 sm:w-16 text-center text-white text-xl sm:text-2xl font-bold">
                                             {quantity}
                                         </span>
                                         <button 
                                             onClick={() => handleQuantityChange(1)} 
-                                            className="w-12 h-12 font-bold text-white rounded-full hover:bg-white/20 transition-colors"
+                                            className="w-10 h-10 sm:w-12 sm:h-12 font-bold text-white rounded-full hover:bg-white/20 transition-colors text-lg sm:text-xl"
                                         >
                                             +
                                         </button>
                                     </div>
                                 </div>
                                 
-                                <div className="flex justify-center space-x-3 flex-wrap gap-2">
+                                <div className="flex justify-center space-x-2 sm:space-x-3 flex-wrap gap-2">
                                     {[5, 10, 25, 50].map(val => (
                                         <button 
                                             key={val} 
                                             onClick={() => setQuantity(val)} 
-                                            className={`px-4 py-2 rounded-full border transition-all ${
+                                            className={`px-3 sm:px-4 py-2 rounded-full border transition-all text-sm sm:text-base ${
                                                 quantity === val 
                                                     ? 'bg-white text-black border-white font-bold' 
                                                     : 'bg-black/50 border-white/50 text-white hover:border-white hover:bg-black/70'
@@ -344,10 +346,10 @@ const LotteryPage: React.FC = () => {
                                 </div>
                             </div>
                             
-                            <div className="bg-white/10 rounded-xl p-6 mb-8 border border-white/30">
-                                <div className="flex justify-between items-center text-xl">
+                            <div className="bg-white/10 rounded-xl p-4 sm:p-6 mb-6 sm:mb-8 border border-white/30">
+                                <div className="flex justify-between items-center text-lg sm:text-xl">
                                     <span className="text-white/80">Total Price:</span>
-                                    <span className="text-white font-bold text-2xl">
+                                    <span className="text-white font-bold text-xl sm:text-2xl">
                                         {formatPrice(totalPrice)}
                                     </span>
                                 </div>
@@ -355,7 +357,7 @@ const LotteryPage: React.FC = () => {
                             
                             <button 
                                 onClick={handleBuyClick} 
-                                className="w-full py-4 bg-white text-black hover:bg-gray-200 rounded-xl font-bold text-lg uppercase tracking-wider transition-all duration-300 transform hover:scale-[1.02] shadow-xl"
+                                className="w-full py-3 sm:py-4 bg-white text-black hover:bg-gray-200 rounded-xl font-bold text-base sm:text-lg uppercase tracking-wider transition-all duration-300 transform hover:scale-[1.02] shadow-xl"
                             >
                                 {t('Buy_Tickets')}
                             </button>
@@ -363,43 +365,43 @@ const LotteryPage: React.FC = () => {
                     </div>
 
                     {/* How It Works */}
-                    <div className="mt-24 max-w-5xl mx-auto">
-                        <h2 className="text-4xl font-bold text-center mb-16">{t('How_It_Works')}</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                            <div className="text-center bg-black/80 p-8 rounded-2xl border border-white/30">
-                                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-6">
+                    <div className="mt-16 sm:mt-20 md:mt-24 max-w-5xl mx-auto px-4">
+                        <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12 sm:mb-16">{t('How_It_Works')}</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+                            <div className="text-center bg-black/80 p-6 sm:p-8 rounded-2xl border border-white/30">
+                                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
                                     <span className="text-2xl font-bold text-black">1</span>
                                 </div>
-                                <h3 className="text-xl font-semibold text-white mb-4">{t('Buy_your_tickets')}</h3>
-                                <p className="text-white/80">Choose your tickets and complete the purchase</p>
+                                <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">{t('Buy_your_tickets')}</h3>
+                                <p className="text-white/80 text-sm sm:text-base">Choose your tickets and complete the purchase</p>
                             </div>
                             
-                            <div className="text-center bg-black/80 p-8 rounded-2xl border border-white/30">
-                                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-6">
+                            <div className="text-center bg-black/80 p-6 sm:p-8 rounded-2xl border border-white/30">
+                                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
                                     <span className="text-2xl font-bold text-black">2</span>
                                 </div>
-                                <h3 className="text-xl font-semibold text-white mb-4">{t('Wait_for_the_draw')}</h3>
-                                <p className="text-white/80">Sit back and wait for the draw results</p>
+                                <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">{t('Wait_for_the_draw')}</h3>
+                                <p className="text-white/80 text-sm sm:text-base">Sit back and wait for the draw results</p>
                             </div>
                             
-                            <div className="text-center bg-black/80 p-8 rounded-2xl border border-white/30">
-                                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-6">
+                            <div className="text-center bg-black/80 p-6 sm:p-8 rounded-2xl border border-white/30">
+                                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
                                     <span className="text-2xl font-bold text-black">3</span>
                                 </div>
-                                <h3 className="text-xl font-semibold text-white mb-4">{t('Win_amazing_prizes')}</h3>
-                                <p className="text-white/80">Claim your incredible rewards</p>
+                                <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">{t('Win_amazing_prizes')}</h3>
+                                <p className="text-white/80 text-sm sm:text-base">Claim your incredible rewards</p>
                             </div>
                         </div>
                     </div>
                     
                     {/* Guaranteed Reward */}
-                    <div className="mt-24 max-w-4xl mx-auto text-center">
-                        <div className="bg-black/80 border border-white/50 p-8 rounded-2xl backdrop-blur-sm">
-                            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6">
-                                <span className="text-3xl">🎫</span>
+                    <div className="mt-16 sm:mt-20 md:mt-24 max-w-4xl mx-auto text-center px-4">
+                        <div className="bg-black/80 border border-white/50 p-6 sm:p-8 rounded-2xl backdrop-blur-sm">
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                                <span className="text-2xl sm:text-3xl">🎫</span>
                             </div>
-                            <h2 className="text-3xl font-bold text-white mb-6">{t('Guaranteed_Reward')}</h2>
-                            <p className="text-white/90 text-lg max-w-2xl mx-auto leading-relaxed">
+                            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4 sm:mb-6">{t('Guaranteed_Reward')}</h2>
+                            <p className="text-white/90 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
                                 {getTranslated(giveaway.bonus)}
                             </p>
                         </div>
