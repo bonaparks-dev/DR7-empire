@@ -866,9 +866,9 @@ export const LOTTERY_GIVEAWAY: Lottery = {
     { tier: { en: "Gift & Mass", it: "Gift & Massa" }, name: { en: "Fuel vouchers", it: "Buoni benzina" }, icon: CarIcon, quantity: 692, image: "/fuel-voucher.jpeg" }, // pos. 2609–3300
   ],
   bonus: {
-    en: "Every ticket purchased also includes 100 entries into our flash giveaway for a luxury weekend in Sardinia!",
-    it: "Ogni biglietto acquistato include anche 100 partecipazioni al nostro giveaway flash per un weekend di lusso in Sardegna!",
-    fr: "Chaque billet acheté inclut aussi 100 participations supplémentaires pour un week-end de luxe en Sardaigne !",
+    en: "Every ticket is a 25 euros gift card.",
+    it: "Ogni biglietto è una gift card da 25 euro.",
+    fr: "Chaque billet est une carte cadeau de 25 euros.",
   },
 };
 
