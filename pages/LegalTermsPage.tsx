@@ -3,13 +3,13 @@ import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { Link } from 'react-router-dom';
 
-const LotteryOfficialRulesPage: React.FC = () => {
+const LegalTermsPage: React.FC = () => {
   const { t } = useTranslation();
 
   const rules = {
     title: {
-      it: "Regolamento ufficiale",
-      en: "Official Rules"
+      it: "Termini Legali",
+      en: "Legal Terms"
     },
     sections: [
       {
@@ -146,4 +146,4 @@ const LotteryOfficialRulesPage: React.FC = () => {
   );
 };
 
-export default LotteryOfficialRulesPage;
+export default LegalTermsPage;

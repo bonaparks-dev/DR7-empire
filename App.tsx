@@ -57,7 +57,7 @@ import { useAuth } from './hooks/useAuth';
 import AuthCallbackPage from './pages/AuthCallbackPage';
 import ConfirmationSuccessPage from './pages/ConfirmationSuccessPage';
 import LotteryRulesPage from './pages/LotteryRulesPage';
-import LotteryOfficialRulesPage from './pages/LotteryOfficialRulesPage';
+import LegalTermsPage from './pages/LegalTermsPage';
 
 const AuthRedirector: React.FC = () => {
   const { user, authEvent } = useAuth();
@@ -114,8 +114,8 @@ const AnimatedRoutes = () => {
             element={<LotteryRulesPage />}
         />
         <Route
-            path="/lottery-official-rules"
-            element={<LotteryOfficialRulesPage />}
+            path="/legal-terms"
+            element={<LegalTermsPage />}
         />
         <Route path="/account" element={
           <ProtectedRoute role="personal">
