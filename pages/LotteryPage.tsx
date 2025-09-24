@@ -267,16 +267,11 @@ const LotteryPage: React.FC = () => {
                         <div className="mb-12">
                             <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-center">Featured Prizes</h2>
                             <div className="max-w-md mx-auto">
-                                <div className="aspect-square overflow-hidden rounded-2xl">
-                                    <PrizeCarousel 
-                                        prizes={giveaway.prizes.filter(p => p.image)} 
-                                        autoplaySpeed={1500}
+                                <div className="overflow-hidden rounded-2xl">
+                                    <PrizeCarousel
+                                        prizes={giveaway.prizes.filter(p => p.image)}
                                         showDots={false}
-                                        dots={false}
-                                        showIndicators={false}
-                                        pagination={false}
-                                        navigation={false}
-                                        controls={false}
+                                        aspectRatio="square"
                                     />
                                 </div>
                             </div>

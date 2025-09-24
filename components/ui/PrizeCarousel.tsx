@@ -6,6 +6,8 @@ import { ArrowLeftIcon } from '../icons/Icons';
 
 interface PrizeCarouselProps {
   prizes: Prize[];
+  showDots?: boolean;
+  aspectRatio?: 'square' | 'video';
 }
 
 const variants = {
@@ -29,7 +31,7 @@ const swipePower = (offset: number, velocity: number) =>
 const wrapIndex = (index: number, length: number) =>
   ((index % length) + length) % length;
 
-export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes }) => {
+export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes, showDots = true, aspectRatio = 'video' }) => {
   const [[page, direction], setPage] = useState<[number, number]>([0, 0]);
   const [isHovered, setIsHovered] = useState(false);
   const { getTranslated } = useTranslation();
@@ -60,7 +62,7 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes }) => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative w-full aspect-[16/9] overflow-hidden rounded-xl bg-gray-900/50 border border-gray-800 shadow-2xl shadow-black/50">
+      <div className={`relative w-full overflow-hidden rounded-xl bg-gray-900/50 border border-gray-800 shadow-2xl shadow-black/50 ${aspectRatio === 'square' ? 'aspect-square' : 'aspect-[16/9]'}`}>
         <AnimatePresence initial={false} custom={direction}>
           <motion.img
             key={page}
@@ -115,20 +117,22 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes }) => {
         </p>
       </div>
 
-      <div className="flex justify-center space-x-2 mt-4">
-        {prizes.map((_, i) => (
-          <button
-            key={i}
-            onClick={() =>
-              setPage(([p]) => [i, i > wrapIndex(p, length) ? 1 : -1])
-            }
-            className={`w-3 h-3 rounded-full transition-colors ${
-              i === imageIndex ? 'bg-white' : 'bg-white/30 hover:bg-white/50'
-            }`}
-            aria-label={`Go to prize ${i + 1}`}
-          />
-        ))}
-      </div>
+      {showDots && (
+        <div className="flex justify-center space-x-2 mt-4">
+          {prizes.map((_, i) => (
+            <button
+              key={i}
+              onClick={() =>
+                setPage(([p]) => [i, i > wrapIndex(p, length) ? 1 : -1])
+              }
+              className={`w-3 h-3 rounded-full transition-colors ${
+                i === imageIndex ? 'bg-white' : 'bg-white/30 hover:bg-white/50'
+              }`}
+              aria-label={`Go to prize ${i + 1}`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
