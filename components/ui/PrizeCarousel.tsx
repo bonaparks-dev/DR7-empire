@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Prize } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -31,6 +31,7 @@ const wrapIndex = (index: number, length: number) =>
 
 export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes }) => {
   const [[page, direction], setPage] = useState<[number, number]>([0, 0]);
+  const [isHovered, setIsHovered] = useState(false);
   const { getTranslated } = useTranslation();
 
   const length = prizes.length;
@@ -39,16 +40,16 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes }) => {
     [page, length]
   );
 
-  const paginate = useCallback((newDirection: number) => {
+  const paginate = (newDirection: number) => {
     setPage(([p]) => [p + newDirection, newDirection]);
-  }, []);
+  };
 
-  // Auto-slide toutes les 1.8s
+  // Auto-slide toutes les 4s (pause au survol)
   useEffect(() => {
-    if (length <= 1) return;
-    const id = setInterval(() => paginate(1), 1800);
-    return () => clearInterval(id);
-  }, [length, paginate]);
+    if (isHovered || length <= 1) return;
+    const id = setTimeout(() => paginate(1), 4000);
+    return () => clearTimeout(id);
+  }, [page, isHovered, length]);
 
   const currentPrize = prizes[imageIndex];
   if (!currentPrize) return null;
@@ -56,8 +57,10 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes }) => {
   return (
     <div
       className="w-full max-w-4xl mx-auto relative flex flex-col items-center"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative w-full aspect-square overflow-hidden rounded-xl bg-gray-900/50 border border-gray-800 shadow-2xl shadow-black/50">
+      <div className="relative w-full aspect-[16/9] overflow-hidden rounded-xl bg-gray-900/50 border border-gray-800 shadow-2xl shadow-black/50">
         <AnimatePresence initial={false} custom={direction}>
           <motion.img
             key={page}
@@ -112,6 +115,20 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes }) => {
         </p>
       </div>
 
+      <div className="flex justify-center space-x-2 mt-4">
+        {prizes.map((_, i) => (
+          <button
+            key={i}
+            onClick={() =>
+              setPage(([p]) => [i, i > wrapIndex(p, length) ? 1 : -1])
+            }
+            className={`w-3 h-3 rounded-full transition-colors ${
+              i === imageIndex ? 'bg-white' : 'bg-white/30 hover:bg-white/50'
+            }`}
+            aria-label={`Go to prize ${i + 1}`}
+          />
+        ))}
+      </div>
     </div>
   );
 };

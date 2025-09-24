@@ -46,7 +46,7 @@ const HeroSection: React.FC = () => {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-4xl md:text-6xl font-bold text-white uppercase tracking-wider font-playfair"
+          className="text-4xl md:text-6xl font-bold text-white uppercase tracking-wider font-exo2"
         >
           {t('Welcome_to_DR7_Empire')}
         </motion.h1>
@@ -54,7 +54,7 @@ const HeroSection: React.FC = () => {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="text-2xl md:text-4xl font-light text-white mt-2 font-playfair"
+          className="text-2xl md:text-4xl font-light text-white mt-2 font-exo2"
         >
           {t('Experience_Exclusivity')}
         </motion.h2>
@@ -90,7 +90,7 @@ const HomePage: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.5 }}
             transition={{ duration: 0.5 }}
-            className="text-4xl font-bold text-white font-playfair"
+            className="text-4xl font-bold text-white font-exo2"
           >
             {t('Lottery_DR7')}
           </motion.h2>
@@ -174,7 +174,7 @@ const HomePage: React.FC = () => {
 
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
                     <div className="absolute bottom-0 left-0 p-8">
-                      <h3 className="text-3xl font-bold text-white font-playfair">
+                      <h3 className="text-3xl font-bold text-white font-exo2">
                         {displayTitle}
                       </h3>
                     </div>
@@ -193,7 +193,7 @@ const HomePage: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.5 }}
             transition={{ duration: 0.5 }}
-            className="text-4xl font-bold text-white font-playfair"
+            className="text-4xl font-bold text-white font-exo2"
           >
             {t('The_DR7_Club')}
           </motion.h2>
