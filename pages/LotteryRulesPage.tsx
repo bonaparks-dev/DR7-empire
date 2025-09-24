@@ -1,11 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
+// Since useTranslation hook implementation is not shown, 
 // I'll create a simple language selector that works with your data structure
 const LotteryRulesPage = () => {
   // You can get this from your translation context/hook
   const [language, setLanguage] = React.useState('en'); // or 'it'
-
+  
   // Helper function to get the correct translation
   const t = (textObj) => {
     if (typeof textObj === 'string') return textObj;
@@ -223,13 +224,18 @@ const LotteryRulesPage = () => {
         <h1 className="text-4xl sm:text-5xl font-bold text-center mb-12">
           {t(rules.title)}
         </h1>
+        
+        {/* Legal Terms Button */}
+        <div className="text-center mb-8">
+          <button 
+            onClick={() => alert('Navigate to /legal-terms - Connect this to your router')}
+            className="bg-gray-800 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition-colors border border-gray-600"
+          >
+            {t({ it: '📜 Termini Legali', en: '📜 Legal Terms' })}
+          </button>
+        </div>
 
         <div className="max-w-4xl mx-auto space-y-12">
-          <div className="text-center">
-              <Link to="/legal-terms" className="inline-block py-3 sm:py-4 px-8 bg-white text-black rounded-full font-bold uppercase tracking-wider text-sm sm:text-base hover:bg-gray-200 transition-all duration-300 transform hover:scale-105">
-                  {t({ it: "Consulta i Termini Legali", en: "View Legal Terms" })}
-              </Link>
-          </div>
           <section>
             <h2 className="text-3xl font-semibold mb-6 border-b border-gray-700 pb-3">
               {t(rules.general.title)}
