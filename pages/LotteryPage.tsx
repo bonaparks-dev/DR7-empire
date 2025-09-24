@@ -1,3 +1,70 @@
+            {/* Purchase Modal */}
+            <AnimatePresence>
+                {showConfirmModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            exit={{ opacity: 0 }} 
+                            className="absolute inset-0 bg-black/90 backdrop-blur-sm" 
+                            onClick={handleCloseModal} 
+                        />
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.95 }} 
+                            animate={{ opacity: 1, scale: 1 }} 
+                            exit={{ opacity: 0, scale: 0.95 }} 
+                            className="relative bg-black border border-white/30 rounded-2xl shadow-2xl w-full max-w-sm sm:max-w-md p-6 sm:p-8 backdrop-blur-xl mx-4"
+                        >
+                            <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6 text-center">
+                                {t('Confirm_Purchase')}
+                            </h2>
+                            <p className="text-white/80 mb-4 sm:mb-6 text-center text-sm sm:text-base">
+                                {t('Are_you_sure_you_want_to_buy_tickets')
+                                    .replace('{count}', String(quantity))
+                                    .replace('{price}', formatPrice(totalPrice))}
+                            </p>
+                            
+                            <div className="mb-4 sm:mb-6">
+                                <label className="block text-white font-medium mb-2 sm:mb-3 text-sm sm:text-base">
+                                    {t('Credit_Card')}
+                                </label>
+                                <div className="bg-white/10 border border-white/50 rounded-xl p-3 sm:p-4 min-h-[48px] sm:min-h-[56px] flex items-center">
+                                    {isClientSecretLoading ? 
+                                        <div className="flex items-center text-white/70 text-sm sm:text-base">
+                                            <motion.div 
+                                                animate={{ rotate: 360 }} 
+                                                transition={{ duration: 1, repeat: Infinity, ease: "linear" }} 
+                                                className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-t-white border-white/30 rounded-full mr-2 sm:mr-3"
+                                            />
+                                            <span>{t('Processing')}...</span>
+                                        </div> : 
+                                        <div ref={cardElementRef} className="w-full" />
+                                    }
+                                </div>
+                                {stripeError && (
+                                    <p className="text-red-400 mt-2 sm:mt-3 text-xs sm:text-sm">{stripeError}</p>
+                                )}
+                            </div>
+
+                            <div className="flex space-x-3 sm:space-x-4">
+                                <button 
+                                    onClick={handleCloseModal} 
+                                    className="flex-1 py-2.5 sm:py-3 bg-white/20 text-white font-semibold rounded-xl hover:bg-white/30 transition-colors text-sm sm:text-base"
+                                >
+                                    {t('Cancel')}
+                                </button>
+                                <button 
+                                    onClick={confirmPurchase} 
+                                    disabled={isProcessing || !clientSecret || isClientSecretLoading} 
+                                    className="flex-1 py-2.5 sm:py-3 bg-white hover:bg-gray-200 text-black font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                                >
+                                    {isProcessing ? t('Processing') : t('Confirm_Purchase')}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -5,9 +72,61 @@ import { LOTTERY_GIVEAWAY } from '../constants';
 import type { Lottery, Prize } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import type { Stripe, StripeElements, StripeCardElement } from '@stripe/stripe-js';
-import { PrizeCarousel } from '../components/ui/PrizeCarousel';
 
 const STRIPE_PUBLISHABLE_KEY = (import.meta as any).env?.VITE_STRIPE_PUBLISHABLE_KEY || 'YOUR_STRIPE_PUBLISHABLE_KEY';
+
+const PrizeCarousel: React.FC<{ prizes: Prize[], autoplaySpeed?: number }> = ({ prizes, autoplaySpeed = 3000 }) => {
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const { getTranslated } = useTranslation();
+
+    useEffect(() => {
+        if (prizes.length === 0) return;
+        
+        const interval = setInterval(() => {
+            setCurrentIndex((prevIndex) => (prevIndex + 1) % prizes.length);
+        }, autoplaySpeed);
+
+        return () => clearInterval(interval);
+    }, [prizes.length, autoplaySpeed]);
+
+    if (prizes.length === 0) return null;
+
+    return (
+        <div className="relative w-full max-w-4xl mx-auto">
+            <div className="overflow-hidden rounded-2xl">
+                <div 
+                    className="flex transition-transform duration-500 ease-in-out"
+                    style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+                >
+                    {prizes.map((prize, index) => (
+                        <div key={index} className="w-full flex-shrink-0">
+                            <div className="bg-black/80 border border-white/30 rounded-2xl p-8 mx-4 text-center">
+                                {prize.image && (
+                                    <img 
+                                        src={prize.image} 
+                                        alt={getTranslated(prize.name)}
+                                        className="w-32 h-32 mx-auto mb-6 object-contain"
+                                    />
+                                )}
+                                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <span className="text-2xl font-bold text-black">
+                                        {prize.quantity || '1'}
+                                    </span>
+                                </div>
+                                <h3 className="text-2xl font-semibold text-white mb-2">
+                                    {getTranslated(prize.name)}
+                                </h3>
+                                <p className="text-white/80 font-medium">
+                                    {getTranslated(prize.tier)}
+                                </p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const calculateTimeLeft = (drawDate: string) => {
     const difference = +new Date(drawDate) - +new Date();
@@ -279,7 +398,6 @@ const LotteryPage: React.FC = () => {
                             <PrizeCarousel 
                                 prizes={giveaway.prizes.filter(p => p.image)} 
                                 autoplaySpeed={1800}
-                                showDots={false}
                             />
                         </div>
                     </motion.div>
