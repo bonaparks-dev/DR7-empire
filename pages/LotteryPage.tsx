@@ -33,44 +33,6 @@ const TimerBox: React.FC<{ value: number, label: string }> = ({ value, label }) 
     </div>
 );
 
-// Simple text-only carousel component for prizes
-const TextPrizeCarousel: React.FC<{ prizes: Prize[], autoplaySpeed?: number }> = ({ prizes, autoplaySpeed = 3000 }) => {
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const { getTranslated } = useTranslation();
-
-    useEffect(() => {
-        if (prizes.length === 0) return;
-        
-        const interval = setInterval(() => {
-            setCurrentIndex((prevIndex) => (prevIndex + 1) % prizes.length);
-        }, autoplaySpeed);
-
-        return () => clearInterval(interval);
-    }, [prizes.length, autoplaySpeed]);
-
-    if (prizes.length === 0) return null;
-
-    return (
-        <div className="relative w-full max-w-md mx-auto">
-            <div className="overflow-hidden rounded-2xl">
-                <div 
-                    className="flex transition-transform duration-500 ease-in-out"
-                    style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-                >
-                    {prizes.map((prize, index) => (
-                        <div key={index} className="w-full flex-shrink-0">
-                            <div className="bg-black/60 border border-white/40 rounded-2xl p-8 mx-4 text-center backdrop-blur-sm aspect-square flex flex-col justify-center">
-                                {prize.quantity && <p className="text-3xl font-bold text-white mb-4">{prize.quantity}x</p>}
-                                <h3 className="text-2xl font-semibold text-white mb-2">{getTranslated(prize.name)}</h3>
-                                <p className="text-white/70 font-medium text-lg">{getTranslated(prize.tier)}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-};
 
 const PrizeCard: React.FC<{ prize: Prize }> = ({ prize }) => {
     const { getTranslated } = useTranslation();
