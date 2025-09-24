@@ -1,7 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 const LegalTermsPage = () => {
+  const navigate = useNavigate();
   // Language state
   const [language, setLanguage] = React.useState('en'); // or 'it'
   
@@ -151,7 +153,7 @@ const LegalTermsPage = () => {
           {/* Back to Rules Button */}
           <div className="mb-8">
             <button 
-              onClick={() => alert('Navigate to /lottery-rules - Connect this to your router')}
+              onClick={() => navigate('/lottery-rules')}
               className="px-6 py-2 text-sm sm:text-base rounded-full border transition-colors bg-black/60 border-white/60 text-white hover:border-white hover:bg-black/80 font-medium inline-flex items-center"
             >
               <span className="mr-2">←</span>

@@ -1,9 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 // Since useTranslation hook implementation is not shown, 
 // I'll create a simple language selector that works with your data structure
 const LotteryRulesPage = () => {
+  const navigate = useNavigate();
   // You can get this from your translation context/hook
   const [language, setLanguage] = React.useState('en'); // or 'it'
   
@@ -228,7 +230,7 @@ const LotteryRulesPage = () => {
         {/* Legal Terms Button */}
         <div className="text-center mb-8">
           <button 
-            onClick={() => alert('Navigate to /legal-terms - Connect this to your router')}
+            onClick={() => navigate('/legal-terms')}
             className="px-6 py-3 text-sm sm:text-base rounded-full border transition-colors bg-black/60 border-white/60 text-white hover:border-white hover:bg-black/80 font-semibold"
           >
             {t({ it: '📜 Termini Legali', en: '📜 Legal Terms' })}
