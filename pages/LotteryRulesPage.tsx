@@ -229,7 +229,7 @@ const LotteryRulesPage = () => {
         <div className="text-center mb-8">
           <button 
             onClick={() => alert('Navigate to /legal-terms - Connect this to your router')}
-            className="bg-gray-800 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition-colors border border-gray-600"
+            className="px-6 py-3 text-sm sm:text-base rounded-full border transition-colors bg-black/60 border-white/60 text-white hover:border-white hover:bg-black/80 font-semibold"
           >
             {t({ it: '📜 Termini Legali', en: '📜 Legal Terms' })}
           </button>
