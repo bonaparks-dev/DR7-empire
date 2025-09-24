@@ -8,6 +8,7 @@ interface PrizeCarouselProps {
   prizes: Prize[];
   showDots?: boolean;
   aspectRatio?: 'square' | 'video';
+  showArrows?: boolean;
 }
 
 const variants = {
@@ -31,7 +32,7 @@ const swipePower = (offset: number, velocity: number) =>
 const wrapIndex = (index: number, length: number) =>
   ((index % length) + length) % length;
 
-export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes, showDots = true, aspectRatio = 'video' }) => {
+export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes, showDots = true, aspectRatio = 'video', showArrows = true }) => {
   const [[page, direction], setPage] = useState<[number, number]>([0, 0]);
   const [isHovered, setIsHovered] = useState(false);
   const { getTranslated } = useTranslation();
@@ -92,23 +93,27 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes, showDots =
           />
         </AnimatePresence>
 
-        <button
-          onClick={() => paginate(-1)}
-          className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors z-10"
-          aria-label="Previous prize"
-        >
-          <ArrowLeftIcon className="w-6 h-6" />
-        </button>
-        <button
-          onClick={() => paginate(1)}
-          className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors z-10"
-          aria-label="Next prize"
-        >
-          <ArrowLeftIcon className="w-6 h-6 rotate-180" />
-        </button>
+        {showArrows && (
+          <>
+            <button
+              onClick={() => paginate(-1)}
+              className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors z-10"
+              aria-label="Previous prize"
+            >
+              <ArrowLeftIcon className="w-6 h-6" />
+            </button>
+            <button
+              onClick={() => paginate(1)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors z-10"
+              aria-label="Next prize"
+            >
+              <ArrowLeftIcon className="w-6 h-6 rotate-180" />
+            </button>
+          </>
+        )}
       </div>
 
-      <div className="text-center mt-4">
+      <div className="text-center mt-4 font-exo2">
         <h3 className="text-2xl font-bold text-white">
           {getTranslated(currentPrize.name)}
         </h3>
