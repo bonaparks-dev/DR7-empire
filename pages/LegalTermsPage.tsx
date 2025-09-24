@@ -1,15 +1,24 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useTranslation } from '../hooks/useTranslation';
 import { Link } from 'react-router-dom';
 
 const LegalTermsPage: React.FC = () => {
-  const { t } = useTranslation();
+  // You can get this from your translation context/hook
+  const [language, setLanguage] = React.useState('en'); // or 'it'
+
+  // Helper function to get the correct translation
+  const t = (textObj) => {
+    if (typeof textObj === 'string') return textObj;
+    if (textObj && typeof textObj === 'object') {
+      return textObj[language] || textObj.en || textObj.it || '';
+    }
+    return '';
+  };
 
   const rules = {
     title: {
-      it: "Termini Legali",
-      en: "Legal Terms"
+      it: "Regolamento ufficiale",
+      en: "Official Rules"
     },
     sections: [
       {
@@ -120,6 +129,15 @@ const LegalTermsPage: React.FC = () => {
       exit={{ opacity: 0 }}
       className="bg-black text-white min-h-screen"
     >
+      {/* Language Toggle */}
+      <div className="fixed top-4 right-4 z-50">
+        <button
+          onClick={() => setLanguage(language === 'en' ? 'it' : 'en')}
+          className="bg-yellow-400 text-black px-4 py-2 rounded font-semibold hover:bg-yellow-300 transition"
+        >
+          {language === 'en' ? 'IT 🇮🇹' : 'EN 🇬🇧'}
+        </button>
+      </div>
       <div className="container mx-auto px-4 sm:px-6 py-24 sm:py-32">
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
