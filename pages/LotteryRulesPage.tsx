@@ -1,12 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-// Since useTranslation hook implementation is not shown, 
 // I'll create a simple language selector that works with your data structure
 const LotteryRulesPage = () => {
   // You can get this from your translation context/hook
   const [language, setLanguage] = React.useState('en'); // or 'it'
-  
+
   // Helper function to get the correct translation
   const t = (textObj) => {
     if (typeof textObj === 'string') return textObj;
