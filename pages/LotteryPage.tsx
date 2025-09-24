@@ -236,7 +236,7 @@ const LotteryPage: React.FC = () => {
                 <video src="/lottery.mp4" autoPlay loop muted playsInline className="absolute inset-0 z-0 w-full h-full object-cover brightness-75" />
                 <div className="absolute inset-0 bg-black/20 z-10"></div>
                 <div className="relative z-20 px-4 sm:px-6 container mx-auto">
-                    <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-playfair uppercase tracking-wider" style={{ textShadow: '0 0 15px rgba(255,255,255,0.3)' }}>
+                    <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-exo2 uppercase tracking-wider" style={{ textShadow: '0 0 15px rgba(255,255,255,0.3)' }}>
                         {getTranslated(giveaway.name)}
                     </motion.h1>
                     <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.4 }} className="mt-4 text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 font-semibold tracking-wide">
