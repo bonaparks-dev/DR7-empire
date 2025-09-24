@@ -280,7 +280,7 @@ const LotteryPage: React.FC = () => {
                         
                         {/* Second Carousel - Text Prizes */}
                         <div>
-                            <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-center">
+                            <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-center font-exo2">
                                 Prize Pool Worth Over{' '}
                                 <span className="text-white">$7,000,000</span>
                             </h2>
