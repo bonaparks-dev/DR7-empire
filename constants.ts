@@ -842,9 +842,9 @@ export const LOTTERY_GIVEAWAY: Lottery = {
     { tier: { en: "Prizes", it: "Premi" }, name: { en: "Prize 22", it: "Premio 22" }, icon: CubeTransparentIcon, quantity: 1, image: "/22.jpeg" },
   ],
   bonus: {
-    en: "Every ticket purchased also includes 100 entries into our flash giveaway for a luxury weekend in Sardinia!",
-    it: "Ogni biglietto acquistato include anche 100 partecipazioni al nostro giveaway flash per un weekend di lusso in Sardegna!",
-    fr: "Chaque billet acheté inclut aussi 100 participations supplémentaires pour un week-end de luxe en Sardaigne !",
+    en: "Every ticket is also a €25 gift card.",
+    it: "Ogni biglietto è anche una gift card da 25€.",
+    fr: "Chaque billet est aussi une carte cadeau de 25€.",
   },
 };
 
