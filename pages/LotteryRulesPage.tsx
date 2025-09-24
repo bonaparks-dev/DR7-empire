@@ -205,6 +205,11 @@ const LotteryRulesPage: React.FC = () => {
         </h1>
 
         <div className="max-w-4xl mx-auto space-y-12">
+          <div className="text-center">
+              <Link to="/lottery-official-rules" className="inline-block py-3 sm:py-4 px-8 bg-white text-black rounded-full font-bold uppercase tracking-wider text-sm sm:text-base hover:bg-gray-200 transition-all duration-300 transform hover:scale-105">
+                  {t({ it: "Consulta il Regolamento Ufficiale", en: "View Official Regulations" })}
+              </Link>
+          </div>
           <section>
             <h2 className="text-3xl font-semibold font-exo2 mb-6 border-b border-gray-700 pb-3">
               {t(rules.general.title)}
