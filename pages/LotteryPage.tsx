@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { useCurrency } from '../contexts/CurrencyContext';
-import { LOTTERY_GIVEAWAY } from '../constants';
+import { LOTTERY_GIVEAWAY, ALPHABET_PRIZES } from '../constants';
 import type { Lottery, Prize } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import type { Stripe, StripeElements, StripeCardElement } from '@stripe/stripe-js';
@@ -274,6 +274,7 @@ const LotteryPage: React.FC = () => {
                                         aspectRatio="square"
                                         showArrows={false}
                                         showPrizeNames={false}
+                                        autoplaySpeed={1500}
                                     />
                                 </div>
                             </div>
@@ -285,10 +286,17 @@ const LotteryPage: React.FC = () => {
                                 Prize Pool Worth Over{' '}
                                 <span className="text-white">$7,000,000</span>
                             </h2>
-                            <TextPrizeCarousel 
-                                prizes={giveaway.prizes} 
-                                autoplaySpeed={1800}
-                            />
+                            <div className="max-w-md mx-auto">
+                                <div className="overflow-hidden rounded-2xl">
+                                    <PrizeCarousel
+                                        prizes={ALPHABET_PRIZES}
+                                        showDots={false}
+                                        aspectRatio="square"
+                                        showArrows={false}
+                                        showPrizeNames={false}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </motion.div>
 

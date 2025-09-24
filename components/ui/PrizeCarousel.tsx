@@ -10,6 +10,7 @@ interface PrizeCarouselProps {
   aspectRatio?: 'square' | 'video';
   showArrows?: boolean;
   showPrizeNames?: boolean;
+  autoplaySpeed?: number;
 }
 
 const variants = {
@@ -33,7 +34,7 @@ const swipePower = (offset: number, velocity: number) =>
 const wrapIndex = (index: number, length: number) =>
   ((index % length) + length) % length;
 
-export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes, showDots = true, aspectRatio = 'video', showArrows = true, showPrizeNames = true }) => {
+export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes, showDots = true, aspectRatio = 'video', showArrows = true, showPrizeNames = true, autoplaySpeed = 4000 }) => {
   const [[page, direction], setPage] = useState<[number, number]>([0, 0]);
   const [isHovered, setIsHovered] = useState(false);
   const { getTranslated } = useTranslation();
@@ -48,12 +49,12 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes, showDots =
     setPage(([p]) => [p + newDirection, newDirection]);
   };
 
-  // Auto-slide toutes les 4s (pause au survol)
+  // Auto-slide (pause au survol)
   useEffect(() => {
     if (isHovered || length <= 1) return;
-    const id = setTimeout(() => paginate(1), 4000);
+    const id = setTimeout(() => paginate(1), autoplaySpeed);
     return () => clearTimeout(id);
-  }, [page, isHovered, length]);
+  }, [page, isHovered, length, autoplaySpeed]);
 
   const currentPrize = prizes[imageIndex];
   if (!currentPrize) return null;
