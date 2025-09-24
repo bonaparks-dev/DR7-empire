@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 import type { Lottery, Prize } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import type { Stripe, StripeElements, StripeCardElement } from '@stripe/stripe-js';
-import { PrizeCarousel } from '../components/ui/PrizeCarousel';
+import { ImageCarousel } from '../components/ui/ImageCarousel';
 
 // Safely access the Stripe publishable key from Vite's environment variables.
 // If it's not available (e.g., in a non-Vite environment), it falls back to the live key.
@@ -33,45 +33,6 @@ const TimerBox: React.FC<{ value: number, label: string }> = ({ value, label }) 
         <div className="text-xs sm:text-sm text-white/80 uppercase tracking-widest">{label}</div>
     </div>
 );
-
-// Simple text-only carousel component for prizes
-const TextPrizeCarousel: React.FC<{ prizes: Prize[], autoplaySpeed?: number }> = ({ prizes, autoplaySpeed = 3000 }) => {
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const { getTranslated } = useTranslation();
-
-    useEffect(() => {
-        if (prizes.length === 0) return;
-
-        const interval = setInterval(() => {
-            setCurrentIndex((prevIndex) => (prevIndex + 1) % prizes.length);
-        }, autoplaySpeed);
-
-        return () => clearInterval(interval);
-    }, [prizes.length, autoplaySpeed]);
-
-    if (prizes.length === 0) return null;
-
-    return (
-        <div className="relative w-full max-w-md mx-auto">
-            <div className="overflow-hidden rounded-2xl">
-                <div
-                    className="flex transition-transform duration-500 ease-in-out"
-                    style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-                >
-                    {prizes.map((prize, index) => (
-                        <div key={index} className="w-full flex-shrink-0">
-                            <div className="bg-black/60 border border-white/40 rounded-2xl p-8 mx-4 text-center backdrop-blur-sm aspect-square flex flex-col justify-center">
-                                {prize.quantity && <p className="text-3xl font-bold text-white mb-4">{prize.quantity}x</p>}
-                                <h3 className="text-2xl font-semibold text-white mb-2">{getTranslated(prize.name)}</h3>
-                                <p className="text-white/70 font-medium text-lg">{getTranslated(prize.tier)}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-};
 
 const PrizeCard: React.FC<{ prize: Prize }> = ({ prize }) => {
     const { getTranslated } = useTranslation();
@@ -231,8 +192,20 @@ const LotteryPage: React.FC = () => {
         }, {} as Record<string, Prize[]>);
     }, [giveaway.prizes, getTranslated]);
 
+    const carousel1Images = useMemo(() => {
+        return Array.from({ length: 24 }, (_, i) => {
+            const num = i + 1;
+            return `/${num}.jpeg`;
+        });
+    }, []);
+
+    const carousel2Images = useMemo(() => {
+        const letters = 'abcdefghijklmnopqrstuvwxyz'.split('');
+        return letters.map(letter => `/${letter}.jpeg`);
+    }, []);
+
     return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="bg-black text-white">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="bg-black text-white font-exo2">
             <div className="relative min-h-screen flex items-center justify-center text-center overflow-hidden pt-32 pb-24">
                 <video src="/lottery.mp4" autoPlay loop muted playsInline className="absolute inset-0 z-0 w-full h-full object-cover brightness-75" />
                 <div className="absolute inset-0 bg-black/20 z-10"></div>
@@ -266,33 +239,20 @@ const LotteryPage: React.FC = () => {
                     >
                         {/* First Carousel - Images */}
                         <div className="mb-12">
-                            <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-center">Featured Prizes</h2>
                             <div className="max-w-md mx-auto">
                                 <div className="aspect-square overflow-hidden rounded-2xl">
-                                    <PrizeCarousel
-                                        prizes={giveaway.prizes.filter(p => p.image)}
-                                        autoplaySpeed={1500}
-                                        showDots={false}
-                                        dots={false}
-                                        showIndicators={false}
-                                        pagination={false}
-                                        navigation={false}
-                                        controls={false}
-                                    />
+                                    <ImageCarousel images={carousel1Images} autoplaySpeed={1500} />
                                 </div>
                             </div>
                         </div>
                         
-                        {/* Second Carousel - Text Prizes */}
-                        <div>
-                            <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-center">
-                                Prize Pool Worth Over{' '}
-                                <span className="text-white">$7,000,000</span>
-                            </h2>
-                            <TextPrizeCarousel
-                                prizes={giveaway.prizes}
-                                autoplaySpeed={1800}
-                            />
+                        {/* Second Carousel - Images */}
+                        <div className="mb-12">
+                            <div className="max-w-md mx-auto">
+                                <div className="aspect-square overflow-hidden rounded-2xl">
+                                    <ImageCarousel images={carousel2Images} autoplaySpeed={1800} />
+                                </div>
+                            </div>
                         </div>
                     </motion.div>
 
