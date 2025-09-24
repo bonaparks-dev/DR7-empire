@@ -152,7 +152,7 @@ const LegalTermsPage = () => {
           <div className="mb-8">
             <button 
               onClick={() => alert('Navigate to /lottery-rules - Connect this to your router')}
-              className="text-white hover:text-yellow-400 transition-colors inline-flex items-center"
+              className="px-6 py-2 text-sm sm:text-base rounded-full border transition-colors bg-black/60 border-white/60 text-white hover:border-white hover:bg-black/80 font-medium inline-flex items-center"
             >
               <span className="mr-2">←</span>
               <span>{t({ it: 'Torna al regolamento', en: 'Back to Rules' })}</span>
