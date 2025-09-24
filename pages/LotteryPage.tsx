@@ -1,4 +1,4 @@
-           import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -9,9 +9,8 @@ import type { Stripe, StripeElements, StripeCardElement } from '@stripe/stripe-j
 import { PrizeCarousel } from '../components/ui/PrizeCarousel';
 
 // Safely access the Stripe publishable key from Vite's environment variables.
-// If it's not available (e.g., in a non-Vite environment), it falls back to a placeholder.
-// The subsequent check will log an error if the key remains a placeholder.
-const STRIPE_PUBLISHABLE_KEY = (import.meta as any).env?.VITE_STRIPE_PUBLISHABLE_KEY || 'YOUR_STRIPE_PUBLISHABLE_KEY';
+// If it's not available (e.g., in a non-Vite environment), it falls back to the live key.
+const STRIPE_PUBLISHABLE_KEY = (import.meta as any).env?.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_live_51S3dDjQcprtTyo8tBfBy5mAZj8PQXkxfZ1RCnWskrWFZ2WEnm1u93ZnE2tBi316Gz2CCrvLV98IjSoiXb0vSDpOQ003fNG69Y2';
 
 const calculateTimeLeft = (drawDate: string) => {
     const difference = +new Date(drawDate) - +new Date();
@@ -38,14 +37,9 @@ const PrizeCard: React.FC<{ prize: Prize }> = ({ prize }) => {
     const { getTranslated } = useTranslation();
     return (
         <div className="bg-black/60 border border-white/40 rounded-lg p-6 text-center backdrop-blur-sm transition-all duration-300 hover:border-white hover:bg-black/80">
-            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-black">
-                    {prize.quantity ? prize.quantity : '1'}
-                </span>
-            </div>
-            {prize.quantity && <p className="text-2xl font-bold text-white">{prize.quantity}x</p>}
-            <h3 className="text-lg font-semibold text-white mt-1">{getTranslated(prize.name)}</h3>
-            <p className="text-sm text-white/70">{getTranslated(prize.tier)}</p>
+            {prize.quantity && <p className="text-2xl font-bold text-white mb-4">{prize.quantity}x</p>}
+            <h3 className="text-lg font-semibold text-white">{getTranslated(prize.name)}</h3>
+            <p className="text-sm text-white/70 mt-2">{getTranslated(prize.tier)}</p>
         </div>
     );
 };
@@ -72,7 +66,7 @@ const LotteryPage: React.FC = () => {
     useEffect(() => {
         if ((window as any).Stripe) {
             if (!STRIPE_PUBLISHABLE_KEY || STRIPE_PUBLISHABLE_KEY.startsWith('YOUR_')) {
-                console.error("Stripe.js has loaded, but the publishable key is not set. Please replace 'YOUR_STRIPE_PUBLISHABLE_KEY' with your actual key.");
+                console.error("Stripe.js has loaded, but the publishable key is not set.");
                 setStripeError("Payment service is not configured correctly. Please contact support.");
                 return;
             }
@@ -234,12 +228,17 @@ const LotteryPage: React.FC = () => {
                             prizes={giveaway.prizes.filter(p => p.image)} 
                             autoplaySpeed={1800}
                             showDots={false}
+                            dots={false}
+                            showIndicators={false}
                         />
                     </motion.div>
 
                     <div className="grid lg:grid-cols-5 gap-8 lg:gap-12 items-start">
                         <div className="lg:col-span-3">
-                            
+                            <h2 className="text-2xl sm:text-3xl font-bold font-exo2 mb-6 sm:mb-8 text-center lg:text-left">
+                                Prize Pool Worth Over{' '}
+                                <span className="text-white">$7,000,000</span>
+                            </h2>
                             <div className="space-y-6 sm:space-y-8">
                                 {Object.entries(groupedPrizes).map(([tier, prizes]) => (
                                     <div key={tier}>
