@@ -9,6 +9,7 @@ interface PrizeCarouselProps {
   showDots?: boolean;
   aspectRatio?: 'square' | 'video';
   showArrows?: boolean;
+  showPrizeNames?: boolean;
 }
 
 const variants = {
@@ -24,7 +25,7 @@ const variants = {
   }),
 };
 
-const swipeConfidenceThreshold = 10000;
+const swipeConfidenceThreshold = 5000;
 const swipePower = (offset: number, velocity: number) =>
   Math.abs(offset) * velocity;
 
@@ -32,7 +33,7 @@ const swipePower = (offset: number, velocity: number) =>
 const wrapIndex = (index: number, length: number) =>
   ((index % length) + length) % length;
 
-export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes, showDots = true, aspectRatio = 'video', showArrows = true }) => {
+export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes, showDots = true, aspectRatio = 'video', showArrows = true, showPrizeNames = true }) => {
   const [[page, direction], setPage] = useState<[number, number]>([0, 0]);
   const [isHovered, setIsHovered] = useState(false);
   const { getTranslated } = useTranslation();
@@ -113,14 +114,16 @@ export const PrizeCarousel: React.FC<PrizeCarouselProps> = ({ prizes, showDots =
         )}
       </div>
 
-      <div className="text-center mt-4 font-exo2">
-        <h3 className="text-2xl font-bold text-white">
-          {getTranslated(currentPrize.name)}
-        </h3>
-        <p className="text-md text-gray-400">
-          {getTranslated(currentPrize.tier)}
-        </p>
-      </div>
+      {showPrizeNames && (
+        <div className="text-center mt-4 font-exo2">
+          <h3 className="text-2xl font-bold text-white">
+            {getTranslated(currentPrize.name)}
+          </h3>
+          <p className="text-md text-gray-400">
+            {getTranslated(currentPrize.tier)}
+          </p>
+        </div>
+      )}
 
       {showDots && (
         <div className="flex justify-center space-x-2 mt-4">
