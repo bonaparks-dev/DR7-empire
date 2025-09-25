@@ -787,6 +787,16 @@ export const VALIDATION_MESSAGES = {
     it: { base: 'In base alla tua età e anzianità di patente, è disponibile solo la Copertura Base.' }
 };
 
+export const AGE_BUCKETS = [
+  { value: 18, label: '18+' },
+  { value: 21, label: '21+' },
+  { value: 23, label: '23+' },
+  { value: 25, label: '25+' },
+  { value: 30, label: '30+' },
+];
+
+export const LICENSE_YEARS_OPTIONS = Array.from({ length: 16 }, (_, i) => i); // 0 to 15
+
 export const YACHT_PICKUP_MARINAS = [
     { id: 'marina_di_cagliari', label: { en: 'Marina di Cagliari', it: 'Marina di Cagliari' } },
     { id: 'porto_cervo', label: { en: 'Marina di Porto Cervo', it: 'Marina di Porto Cervo' } },
