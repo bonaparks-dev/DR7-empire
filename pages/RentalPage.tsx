@@ -227,13 +227,11 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   const category = RENTAL_CATEGORIES.find(cat => cat.id === categoryId);
 
   const handleBook = (item: RentalItem) => {
-    checkVerificationAndProceed(() => {
-        if (['cars', 'jets', 'helicopters'].includes(categoryId)) {
-            navigate(`/book/${categoryId}/${item.id}`);
-        } else {
-            openBooking(item);
-        }
-    });
+    if (['cars', 'jets', 'helicopters'].includes(categoryId)) {
+        navigate(`/book/${categoryId}/${item.id}`);
+    } else {
+        openBooking(item);
+    }
   };
 
   if (categoryId === 'jets') {
