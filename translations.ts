@@ -483,4 +483,22 @@ export const translations: Translations = {
 
   // New
   'Sign_In_Register': { en: 'Sign In / Register', it: 'Accedi o Registrati' },
+
+  // Lottery Ticket PDF & Email
+  'Lottery_Ticket_PDF_Title': { en: 'Official Lottery Ticket', it: 'Biglietto Ufficiale della Lotteria' },
+  'Lottery_Ticket_PDF_Your_Number': { en: 'YOUR UNIQUE NUMBER', it: 'IL TUO NUMERO UNICO' },
+  'Lottery_Ticket_PDF_Issue_Date': { en: 'Issue Date', it: 'Data di emissione' },
+  'Lottery_Ticket_PDF_Customer': { en: 'Customer', it: 'Cliente' },
+  'Lottery_Ticket_PDF_Scan_Verify': { en: 'Scan to verify. Rules at dr7empire.com/rules', it: 'Scansiona per verificare. Regolamento su dr7empire.com/rules' },
+
+  'Lottery_Email_Subject': { en: 'Your DR7 Empire Lottery Ticket has arrived!', it: 'Il tuo biglietto della lotteria DR7 Empire è arrivato!' },
+  'Lottery_Email_Title': { en: 'Your DR7 Empire Ticket', it: 'Il Tuo Biglietto DR7 Empire' },
+  'Lottery_Email_Header': { en: 'Your ticket is ready.', it: 'Il tuo biglietto è pronto.' },
+  'Lottery_Email_Body_1': { en: 'Congratulations and thank you for participating in our exclusive prize draw. Your numbered ticket has been successfully generated.', it: 'Congratulazioni e grazie per aver partecipato alla nostra estrazione a premi esclusiva. Il tuo biglietto numerato è stato generato con successo.' },
+  'Lottery_Email_Body_2': { en: 'Click the button below to download it securely. Keep it safe until the day of the draw.', it: 'Clicca il pulsante qui sotto per scaricarlo in modo sicuro. Conservalo con cura fino al giorno dell\'estrazione.' },
+  'Lottery_Email_CTA_Button': { en: 'DOWNLOAD MY TICKET', it: 'SCARICA IL MIO BIGLIETTO' },
+  'Lottery_Email_Good_Luck': { en: 'Good luck!', it: 'In bocca al lupo!' },
+  'Lottery_Email_Signature': { en: 'The DR7 Empire Team', it: 'Il Team DR7 Empire' },
+  'Lottery_Email_Footer_Rules': { en: 'Game Rules', it: 'Regolamento del concorso' },
+  'Lottery_Email_Footer_Website': { en: 'Visit our site', it: 'Visita il nostro sito' },
 };
