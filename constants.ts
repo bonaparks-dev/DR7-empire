@@ -47,8 +47,8 @@ export const CONTEST_INFO = {
     },
   },
   tickets: {
-    priceEUR: 20,
-    giftCardValueEUR: 25,
+    priceEUR: 1,
+    giftCardValueEUR: 1,
     note: {
       it: "Ogni biglietto corrisponde a una Gift Card DR7 da 25 €, spendibile nei servizi DR7.",
       en: "Each ticket corresponds to a €25 DR7 Gift Card, usable on DR7 services.",
