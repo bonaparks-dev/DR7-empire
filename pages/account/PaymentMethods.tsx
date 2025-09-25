@@ -1,11 +1,19 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../hooks/useTranslation';
 import { CreditCardIcon } from '../../components/icons/Icons';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
+import AddCardModal from '../../components/ui/AddCardModal';
+
+const stripePromise = loadStripe(process.env.VITE_STRIPE_PUBLISHABLE_KEY!);
 
 const PaymentMethods = () => {
     const { user, updateUser } = useAuth();
     const { t } = useTranslation();
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [clientSecret, setClientSecret] = useState<string | null>(null);
+    const [stripeCustomerId, setStripeCustomerId] = useState<string | null>(user?.stripeCustomerId || null);
 
     const handleSetDefault = async (cardId: string) => {
         if (!user) return;
@@ -26,16 +34,44 @@ const PaymentMethods = () => {
         await updateUser({ paymentMethods: updatedMethods });
     };
 
+    const handleAddNewCard = async () => {
+        if (!user) return;
+        setIsModalOpen(true);
+        setClientSecret(null); // Reset previous secret
+
+        try {
+            const response = await fetch('/.netlify/functions/create-setup-intent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    customerId: user.stripeCustomerId,
+                    email: user.email,
+                    name: user.fullName
+                }),
+            });
+            const data = await response.json();
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            setClientSecret(data.clientSecret);
+            setStripeCustomerId(data.customerId); // Update customer ID if it was newly created
+        } catch (error) {
+            console.error("Failed to create setup intent:", error);
+            // Handle error in the modal UI
+        }
+    };
+
     if (!user) return null;
 
     return (
+      <Elements stripe={stripePromise}>
         <div className="bg-gray-900/50 border border-gray-800 rounded-lg">
             <div className="p-6 border-b border-gray-800 flex justify-between items-center">
                 <div>
                     <h2 className="text-xl font-bold text-white">{t('Saved_Payment_Methods')}</h2>
                     <p className="text-sm text-gray-400 mt-1">{t('Manage_your_saved_payment_methods')}</p>
                 </div>
-                <button disabled className="px-4 py-2 bg-gray-700 text-white font-bold rounded-full text-sm disabled:opacity-60 cursor-not-allowed">
+                <button onClick={handleAddNewCard} className="px-4 py-2 bg-white text-black font-bold rounded-full text-sm hover:bg-gray-200 transition-colors">
                     {t('Add_New_Card')}
                 </button>
             </div>
@@ -66,6 +102,18 @@ const PaymentMethods = () => {
                 )}
             </div>
         </div>
+        <AddCardModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            onCardAdded={() => {
+                // Optionally, refresh user data or show a success message
+            }}
+            clientSecret={clientSecret}
+            setClientSecret={setClientSecret}
+            stripeCustomerId={stripeCustomerId}
+            setStripeCustomerId={setStripeCustomerId}
+        />
+      </Elements>
     );
 };
 
