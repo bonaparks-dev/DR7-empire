@@ -38,9 +38,6 @@ const MyTickets = () => {
                     <h2 className="text-xl font-bold text-white">{t('My_Tickets')}</h2>
                     <p className="text-sm text-gray-400 mt-1">View your purchased lottery tickets here.</p>
                 </div>
-                 <Button as={Link} to="/check-ticket" variant="outline" size="sm">
-                    Scan Ticket
-                </Button>
             </div>
             <div className="p-6">
                 {loading ? (
