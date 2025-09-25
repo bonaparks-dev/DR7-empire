@@ -1,24 +1,37 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-// FIX: Unused imports removed as auth logic is handled globally by AuthContext.
-// import { supabase } from '../supabaseClient';
-// import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../supabaseClient';
+import { useAuth } from '../hooks/useAuth';
 
 const AuthCallbackPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth(); // facultatif pour la redirection finale
 
   useEffect(() => {
-    // FIX: The explicit call to exchangeCodeForSession is removed.
-    // For client-side OAuth, the Supabase client library automatically handles
-    // exchanging the authorization code from the URL for a user session.
-    // This triggers the onAuthStateChange listener in AuthContext, which then
-    // allows the AuthRedirector component to navigate the user appropriately.
-    // This page serves as a loading/interstitial view during this process.
+    const run = async () => {
+      // 1) Échange le code OAuth présent dans l’URL contre une session
+      const { error } = await supabase.auth.exchangeCodeForSession();
+      if (error) {
+        console.error('[OAuth] exchangeCodeForSession failed:', error.message);
+        navigate('/signin', { replace: true, state: { error: 'Authentication failed. Please try again.' } });
+        return;
+      }
+
+      // 2) Redirige où tu veux (selon rôle si tu veux)
+      // Tu peux récupérer le user à nouveau si besoin :
+      const { data: { user: freshUser } } = await supabase.auth.getUser();
+
+      const destination =
+        freshUser?.user_metadata?.role === 'business' ? '/partner/dashboard' : '/account';
+
+      navigate(destination, { replace: true });
+    };
+
+    run();
   }, [navigate]);
 
-  // This spinner is shown while the code is being exchanged for a session
-  // and AuthContext is updating, before AuthRedirector navigates away.
+  // petit spinner
   return (
     <div className="min-h-screen flex items-center justify-center pt-24 pb-12 px-4 sm:px-6 lg:px-8 text-white">
       <div className="flex flex-col items-center text-center">
