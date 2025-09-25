@@ -39,8 +39,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook }) => {
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
       </div>
       <div className="p-6 flex-grow flex flex-col">
-        <h3 className="text-2xl font-bold text-white mb-2">{item.name}</h3>
-        <div className="flex justify-between items-center mt-auto pt-4 border-t border-gray-800">
+        <div className="flex justify-between items-center mt-auto pt-4">
           <div>
             {item.pricePerDay ? (
               <>
