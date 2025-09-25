@@ -48,7 +48,7 @@ exports.handler = async (event) => {
     if (!event.body) {
       return createResponse(400, { error: 'Request body is missing.' });
     }
-    const { amount, currency } = JSON.parse(event.body);
+    const { amount, currency, email } = JSON.parse(event.body);
 
     if (amount === undefined || !currency) {
       return createResponse(400, { error: 'Amount and currency are required.' });
@@ -65,6 +65,10 @@ exports.handler = async (event) => {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
       currency: currency.toLowerCase(),
+      metadata: {
+          email: email,
+          purchaseType: 'lottery-ticket'
+      }
       // The `automatic_payment_methods` parameter is removed.
       // This creates a standard Payment Intent that is compatible with
       // the `confirmCardPayment` method used on the frontend.

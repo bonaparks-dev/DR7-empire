@@ -1,23 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '../hooks/useTranslation';
 import BackButton from '../components/ui/BackButton';
+import { Button } from '../components/ui/Button';
 
-// Since useTranslation hook implementation is not shown,
-// I'll create a simple language selector that works with your data structure
 const LotteryRulesPage = () => {
   const navigate = useNavigate();
-  // You can get this from your translation context/hook
-  const [language, setLanguage] = React.useState('en'); // or 'it'
-
-  // Helper function to get the correct translation
-  const t = (textObj) => {
-    if (typeof textObj === 'string') return textObj;
-    if (textObj && typeof textObj === 'object') {
-      return textObj[language] || textObj.en || textObj.it || '';
-    }
-    return '';
-  };
+  const { t, setLanguage, language } = useTranslation();
 
   const rules = {
     title: {
@@ -25,7 +15,7 @@ const LotteryRulesPage = () => {
       en: 'Prize Contest "DR7 Luxury Empire – Golden Win"',
     },
     general: {
-      title: { it: '📌 Caratteristiche generali', en: '📌 General Features' },
+      title: { it: 'Caratteristiche generali', en: 'General Features' },
       items: [
         { label: { it: 'Nome concorso:', en: 'Contest name:' }, value: { it: 'DR7 Luxury Empire – Golden Win', en: 'DR7 Luxury Empire – Golden Win' } },
         { label: { it: 'Data estrazione:', en: 'Drawing date:' }, value: { it: '24 dicembre 2025', en: 'December 24, 2025' } },
@@ -36,7 +26,7 @@ const LotteryRulesPage = () => {
       ],
     },
     probability: {
-      title: { it: '🎯 Probabilità di vincita', en: '🎯 Winning Odds' },
+      title: { it: 'Probabilità di vincita', en: 'Winning Odds' },
       items: [
         { label: { it: 'Totale biglietti emessi:', en: 'Total tickets issued:' }, value: { it: '350.000', en: '350,000' } },
         { label: { it: 'Totale premi:', en: 'Total prizes:' }, value: { it: '3.300', en: '3,300' } },
@@ -44,10 +34,10 @@ const LotteryRulesPage = () => {
       ],
     },
     prizes: {
-      title: { it: '💎 Premi in palio', en: '💎 Prizes Up for Grabs' },
+      title: { it: 'Premi in palio', en: 'Prizes Up for Grabs' },
       sections: [
         {
-          title: { it: '🚗 Auto & Veicoli di Lusso', en: '🚗 Luxury Cars & Vehicles' },
+          title: { it: 'Auto & Veicoli di Lusso', en: 'Luxury Cars & Vehicles' },
           note: { it: '(tutti i veicoli vengono consegnati con: bollo e superbollo pagati, passaggio di proprietà incluso, assicurazione full casco, rca e spese di circolazione totalmente comprese – il vincitore non deve sostenere alcun costo aggiuntivo)', en: '(all vehicles are delivered with road tax and luxury tax paid, ownership transfer included, full comprehensive insurance, liability insurance, and all circulation expenses fully covered—the winner pays nothing extra)' },
           items: [
             { it: 'RS3 verde', en: 'RS3 (green)' },
@@ -74,7 +64,7 @@ const LotteryRulesPage = () => {
           ],
         },
         {
-          title: { it: '📱🛵 Premi di Massa', en: '📱🛵 Mass Prizes' },
+          title: { it: 'Premi di Massa', en: 'Mass Prizes' },
           note: { it: '(anche scooter, moto, Panda e 500 vengono consegnati con passaggio di proprietà incluso e tutte le spese di circolazione coperte)', en: '(scooters, motorbikes, Panda and 500 are also delivered with ownership transfer included and all circulation costs covered)' },
           items: [
             { it: '700 iPhone 17', en: '700 iPhone 17' },
@@ -88,7 +78,7 @@ const LotteryRulesPage = () => {
           ],
         },
         {
-          title: { it: '🎁 Gift & Bonus', en: '🎁 Gift & Bonus' },
+          title: { it: 'Gift & Bonus', en: 'Gift & Bonus' },
           items: [
             { it: '1.500 ticket DR7 da 500 €', en: '1,500 DR7 tickets worth €500 each' },
             { it: '692 buoni benzina da 300 €', en: '692 fuel vouchers worth €300 each' },
@@ -96,7 +86,7 @@ const LotteryRulesPage = () => {
           ],
         },
         {
-          title: { it: '🛥️🛩️ Esperienze Esclusive', en: '🛥️🛩️ Exclusive Experiences' },
+          title: { it: 'Esperienze Esclusive', en: 'Exclusive Experiences' },
           items: [
             { it: '10 giri in elicottero per 2 persone', en: '10 helicopter rides for 2 people' },
             { it: '7 giorni in villa di lusso per 10 persone', en: '7 days in a luxury villa for 10 people' },
@@ -119,7 +109,7 @@ const LotteryRulesPage = () => {
       ],
     },
     summary: {
-      title: { it: '📊 Riepilogo finale', en: '📊 Final Summary' },
+      title: { it: 'Riepilogo finale', en: 'Final Summary' },
       items: [
         { label: { it: 'Totale premi:', en: 'Total prizes:' }, value: { it: '3.300', en: '3,300' } },
         { label: { it: 'Probabilità vincita:', en: 'Winning odds:' }, value: { it: '1 biglietto vincente ogni 106', en: '1 winning ticket out of 106' } },
@@ -128,7 +118,7 @@ const LotteryRulesPage = () => {
       ],
     },
     distribution: {
-      title: { it: '🏆 Distribuzione ufficiale Concorso DR7 (senza prezzi)', en: '🏆 Official Distribution — DR7 Contest (without prices)' },
+      title: { it: 'Distribuzione ufficiale Concorso DR7 (senza prezzi)', en: 'Official Distribution — DR7 Contest (without prices)' },
       sections: [
         {
           title: { it: 'Top veicoli (singoli)', en: 'Top Vehicles (individual)' },
@@ -196,7 +186,7 @@ const LotteryRulesPage = () => {
           ],
         },
         {
-          title: { it: '✅ Totale', en: '✅ Total' },
+          title: { it: 'Totale', en: 'Total' },
           items: [
             { it: 'Posizioni assegnate: 1–3300', en: 'Positions assigned: 1–3300' },
             { it: 'Totale premi: 3.300', en: 'Total prizes: 3,300' },
@@ -206,6 +196,21 @@ const LotteryRulesPage = () => {
     },
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1
+        }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -213,122 +218,119 @@ const LotteryRulesPage = () => {
       exit={{ opacity: 0 }}
       className="bg-black text-white min-h-screen"
     >
-      {/* Language Toggle */}
-      <div className="fixed top-4 right-4 z-50">
-        <button
-          onClick={() => setLanguage(language === 'en' ? 'it' : 'en')}
-          className="bg-yellow-400 text-black px-4 py-2 rounded font-semibold hover:bg-yellow-300 transition"
-        >
-          {language === 'en' ? 'IT 🇮🇹' : 'EN 🇬🇧'}
-        </button>
-      </div>
+      <div className="container mx-auto px-6 pt-32 pb-24">
+        <div className="max-w-4xl mx-auto">
+            <div className="mb-12">
+                <BackButton />
+            </div>
 
-      <div className="container mx-auto px-4 sm:px-6 py-24 sm:py-32">
-        <div className="max-w-4xl mx-auto mb-8">
-          <BackButton />
-        </div>
-        <h1 className="text-4xl sm:text-5xl font-bold text-center mb-12">
-          {t(rules.title)}
-        </h1>
-        
-        {/* Legal Terms Button */}
-        <div className="text-center mb-8">
-          <button 
-            onClick={() => navigate('/legal-terms')}
-            className="px-6 py-3 text-sm sm:text-base rounded-full border transition-colors bg-black/60 border-white/60 text-white hover:border-white hover:bg-black/80 font-semibold"
-          >
-            {t({ it: '📜 Termini Legali', en: '📜 Legal Terms' })}
-          </button>
-        </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-white text-center mb-12">
+                {t(rules.title)}
+            </h1>
+            
+            <div className="text-center mb-12">
+                <Button 
+                    onClick={() => navigate('/legal-terms')}
+                    variant="outline"
+                >
+                    {t({ it: 'Termini Legali', en: 'Legal Terms' })}
+                </Button>
+            </div>
 
-        <div className="max-w-4xl mx-auto space-y-12">
-          <section>
-            <h2 className="text-3xl font-semibold mb-6 border-b border-gray-700 pb-3">
-              {t(rules.general.title)}
-            </h2>
-            <ul className="space-y-4 text-lg text-gray-300">
-              {rules.general.items.map((item, index) => (
-                <li key={index} className={item.label ? '' : 'pl-4 border-l-2 border-yellow-400'}>
-                  {item.label && <strong>{t(item.label)}</strong>} {item.value && t(item.value)}
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-3xl font-semibold mb-6 border-b border-gray-700 pb-3">
-              {t(rules.probability.title)}
-            </h2>
-            <ul className="space-y-4 text-lg text-gray-300">
-              {rules.probability.items.map((item, index) => (
-                <li key={index}>
-                  <strong>{t(item.label)}</strong> {t(item.value)}
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-3xl font-semibold mb-6 border-b border-gray-700 pb-3">
-              {t(rules.prizes.title)}
-            </h2>
-            <div className="space-y-8">
-              {rules.prizes.sections.map((section, index) => (
-                <div key={index}>
-                  <h3 className="text-2xl font-semibold mb-4">{t(section.title)}</h3>
-                  {section.note && <p className="text-gray-400 mb-4">{t(section.note)}</p>}
-                  <ul className="list-disc list-inside space-y-2 text-lg text-gray-300">
-                    {section.items.map((item, i) => (
-                      <li key={i}>{t(item)}</li>
+            <motion.div 
+                className="space-y-12"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                <motion.section variants={itemVariants} className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
+                    <h2 className="text-3xl font-semibold mb-6 border-b border-gray-700 pb-3">
+                    {t(rules.general.title)}
+                    </h2>
+                    <ul className="space-y-4 text-lg text-gray-300">
+                    {rules.general.items.map((item, index) => (
+                        <li key={index} className={!item.label ? 'pl-4 border-l-2 border-white' : ''}>
+                        {item.label && <strong className="text-white">{t(item.label)}</strong>} {item.value && t(item.value).replace('👉', '')}
+                        </li>
                     ))}
-                  </ul>
-                  {section.experience && (
-                    <div className="mt-6 p-6 bg-gray-900 rounded-lg">
-                      <h4 className="text-xl font-bold mb-2">{t(section.experience.title)}</h4>
-                      <p className="text-gray-400 mb-4">{t(section.experience.subtitle)}</p>
-                      <ul className="list-disc list-inside space-y-2 text-lg text-gray-300">
-                        {section.experience.features.map((feature, i) => (
-                          <li key={i}>{t(feature)}</li>
-                        ))}
-                      </ul>
-                      <p className="mt-4 text-yellow-400 italic">{t(section.experience.tagline)}</p>
+                    </ul>
+                </motion.section>
+
+                <motion.section variants={itemVariants} className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
+                    <h2 className="text-3xl font-semibold mb-6 border-b border-gray-700 pb-3">
+                    {t(rules.probability.title)}
+                    </h2>
+                    <ul className="space-y-4 text-lg text-gray-300">
+                    {rules.probability.items.map((item, index) => (
+                        <li key={index}>
+                        <strong className="text-white">{t(item.label)}</strong> {t(item.value)}
+                        </li>
+                    ))}
+                    </ul>
+                </motion.section>
+
+                <motion.section variants={itemVariants} className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
+                    <h2 className="text-3xl font-semibold mb-6 border-b border-gray-700 pb-3">
+                    {t(rules.prizes.title)}
+                    </h2>
+                    <div className="space-y-8">
+                    {rules.prizes.sections.map((section, index) => (
+                        <div key={index}>
+                        <h3 className="text-2xl font-semibold text-white mb-4">{t(section.title)}</h3>
+                        {section.note && <p className="text-gray-400 italic mb-4">{t(section.note)}</p>}
+                        <ul className="list-disc list-inside space-y-2 text-lg text-gray-300">
+                            {section.items.map((item, i) => (
+                            <li key={i}>{t(item)}</li>
+                            ))}
+                        </ul>
+                        {section.experience && (
+                            <div className="mt-6 p-6 bg-gray-900 rounded-lg border border-gray-700">
+                            <h4 className="text-xl font-bold text-white mb-2">{t(section.experience.title)}</h4>
+                            <p className="text-gray-400 mb-4">{t(section.experience.subtitle)}</p>
+                            <ul className="list-disc list-inside space-y-2 text-lg text-gray-300">
+                                {section.experience.features.map((feature, i) => (
+                                <li key={i}>{t(feature)}</li>
+                                ))}
+                            </ul>
+                            <p className="mt-4 text-white font-semibold italic">{t(section.experience.tagline)}</p>
+                            </div>
+                        )}
+                        </div>
+                    ))}
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
+                </motion.section>
 
-          <section>
-            <h2 className="text-3xl font-semibold mb-6 border-b border-gray-700 pb-3">
-              {t(rules.summary.title)}
-            </h2>
-            <ul className="space-y-4 text-lg text-gray-300">
-              {rules.summary.items.map((item, index) => (
-                <li key={index}>
-                  <strong>{t(item.label)}</strong> {t(item.value)}
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-3xl font-semibold mb-6 border-b border-gray-700 pb-3">
-              {t(rules.distribution.title)}
-            </h2>
-            <div className="space-y-8 text-lg text-gray-300">
-              {rules.distribution.sections.map((section, index) => (
-                <div key={index}>
-                  <h3 className="text-2xl font-semibold mb-4">{t(section.title)}</h3>
-                  <ul className={section.items.length > 1 && section.items[0][language].includes('1.') ? 'list-decimal list-inside space-y-2' : 'list-none space-y-2'}>
-                    {section.items.map((item, i) => (
-                      <li key={i}>{t(item)}</li>
+                <motion.section variants={itemVariants} className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
+                    <h2 className="text-3xl font-semibold mb-6 border-b border-gray-700 pb-3">
+                    {t(rules.summary.title)}
+                    </h2>
+                    <ul className="space-y-4 text-lg text-gray-300">
+                    {rules.summary.items.map((item, index) => (
+                        <li key={index}>
+                        <strong className="text-white">{t(item.label)}</strong> {t(item.value)}
+                        </li>
                     ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          </section>
+                    </ul>
+                </motion.section>
+
+                <motion.section variants={itemVariants} className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
+                    <h2 className="text-3xl font-semibold mb-6 border-b border-gray-700 pb-3">
+                    {t(rules.distribution.title)}
+                    </h2>
+                    <div className="space-y-8 text-lg text-gray-300">
+                    {rules.distribution.sections.map((section, index) => (
+                        <div key={index}>
+                        <h3 className="text-2xl font-semibold text-white mb-4">{t(section.title)}</h3>
+                        <ul className={section.items.length > 1 && t(section.items[0]).includes('1.') ? 'list-decimal list-inside space-y-2' : 'list-none space-y-2'}>
+                            {section.items.map((item, i) => (
+                            <li key={i}>{t(item)}</li>
+                            ))}
+                        </ul>
+                        </div>
+                    ))}
+                    </div>
+                </motion.section>
+            </motion.div>
         </div>
       </div>
     </motion.div>

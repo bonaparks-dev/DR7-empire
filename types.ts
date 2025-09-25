@@ -172,7 +172,6 @@ export interface Prize {
   tier: { en: string; it: string };
   name: { en: string; it: string };
   icon: React.FC<{ className?: string }>;
-  image?: string;
   quantity?: number;
 }
 
@@ -186,6 +185,12 @@ export interface Lottery {
   drawDate: string; // ISO string
   prizes: Prize[];
   bonus: { en: string; it: string };
+}
+
+export interface LotteryTicket {
+  number: number;
+  uuid: string;
+  ownerName: string;
 }
 
 export interface Villa {

@@ -1,0 +1,97 @@
+import React, { useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { useTranslation } from '../hooks/useTranslation';
+import { Button } from '../components/ui/Button';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import type { LotteryTicket } from '../types';
+import TicketDisplay from '../components/ui/TicketDisplay';
+
+const LotterySuccessPage: React.FC = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const { t } = useTranslation();
+    const { user } = useAuth();
+    const { tickets, ownerName } = location.state as { tickets: Omit<LotteryTicket, 'ownerName'>[]; ownerName: string; } || { tickets: [], ownerName: '' };
+
+    const ticketsWithData: LotteryTicket[] = tickets.map(t => ({...t, ownerName: ownerName || user?.fullName || ''}));
+
+    useEffect(() => {
+        if (user && ticketsWithData && ticketsWithData.length > 0) {
+            try {
+                const userTicketsKey = `lottery_tickets_${user.id}`;
+                const existingTickets = JSON.parse(localStorage.getItem(userTicketsKey) || '[]') as LotteryTicket[];
+                const newTickets = ticketsWithData.filter(
+                    (newTicket: LotteryTicket) => !existingTickets.some((existing: LotteryTicket) => existing.uuid === newTicket.uuid)
+                );
+                if (newTickets.length > 0) {
+                    localStorage.setItem(userTicketsKey, JSON.stringify([...existingTickets, ...newTickets]));
+                }
+            } catch (error) {
+                console.error("Failed to save tickets to local storage:", error);
+            }
+        }
+    }, [user, ticketsWithData]);
+
+    if (!tickets || tickets.length === 0) {
+        // Redirect if no ticket data is present
+        React.useEffect(() => {
+            navigate('/lottery');
+        }, [navigate]);
+        return null;
+    }
+
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="pt-32 pb-24 bg-black min-h-screen"
+        >
+            <div className="container mx-auto px-6 text-center">
+                <motion.div
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.2 }}
+                    className="w-20 h-20 bg-green-500/20 text-green-300 rounded-full flex items-center justify-center mx-auto mb-6"
+                >
+                    <motion.svg 
+                        initial={{ pathLength: 0 }} 
+                        animate={{ pathLength: 1 }} 
+                        transition={{ duration: 0.5, delay: 0.4 }}
+                        className="w-10 h-10" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                    >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </motion.svg>
+                </motion.div>
+                <h1 className="text-4xl font-bold text-white mb-4">
+                    {t('Lottery_Purchase_Success').replace('{count}', String(tickets.length))}
+                </h1>
+                <p className="text-lg text-gray-300 mb-10 max-w-2xl mx-auto">
+                    Your tickets have been sent to your email. You can also view them below or in your account's "My Tickets" section. Good luck!
+                </p>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
+                    {ticketsWithData.map((ticket, i) => (
+                        <TicketDisplay key={i} ticket={ticket} />
+                    ))}
+                </div>
+
+                <div className='flex justify-center items-center gap-4'>
+                    <Button as={Link} to="/account/tickets" variant="primary" size="lg" className="mt-12">
+                        View My Tickets
+                    </Button>
+                    <Button as={Link} to="/lottery" variant="outline" size="lg" className="mt-12">
+                        Back to Lottery
+                    </Button>
+                </div>
+            </div>
+        </motion.div>
+    );
+};
+
+export default LotterySuccessPage;

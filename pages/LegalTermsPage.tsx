@@ -5,8 +5,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import BackButton from '../components/ui/BackButton';
 
 const LegalTermsPage = () => {
-  const navigate = useNavigate();
-  const { t, setLanguage, language } = useTranslation();
+  const { t } = useTranslation();
 
   const rules = {
     title: {
@@ -116,11 +115,26 @@ const LegalTermsPage = () => {
   };
 
   // Function to format content with line breaks and bullet points
-  const formatContent = (content) => {
+  const formatContent = (content: string) => {
     return content
       .replace(/•/g, '<br/>•')
       .replace(/\n/g, '<br />')
       .replace(/(\d+\.\d+\.)/g, '<br/><strong>$1</strong>');
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1
+        }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
   };
 
   return (
@@ -130,44 +144,41 @@ const LegalTermsPage = () => {
       exit={{ opacity: 0 }}
       className="bg-black text-white min-h-screen"
     >
-      {/* Language Toggle */}
-      <div className="fixed top-4 right-4 z-50">
-        <button
-          onClick={() => setLanguage(language === 'en' ? 'it' : 'en')}
-          className="bg-yellow-400 text-black px-4 py-2 rounded font-semibold hover:bg-yellow-300 transition"
-        >
-          {language === 'en' ? 'IT 🇮🇹' : 'EN 🇬🇧'}
-        </button>
-      </div>
-
-      <div className="container mx-auto px-4 sm:px-6 py-24 sm:py-32">
+      <div className="container mx-auto px-6 pt-32 pb-24">
         <div className="max-w-4xl mx-auto">
-          {/* Back Button */}
-          <div className="mb-8">
+          <div className="mb-12">
             <BackButton />
           </div>
           
-          <h1 className="text-4xl sm:text-5xl font-bold text-center mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold text-white text-center mb-12">
             {t(rules.title)}
           </h1>
           
-          <div className="space-y-8">
+          <motion.div 
+            className="space-y-8"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
             {rules.sections.map((section, index) => (
-              <section key={index} className="bg-gray-900 bg-opacity-50 rounded-lg p-6">
-                <h2 className="text-2xl font-semibold mb-4 border-b border-gray-700 pb-2">
+              <motion.section 
+                key={index} 
+                className="bg-gray-900/50 border border-gray-800 rounded-lg p-8"
+                variants={itemVariants}
+              >
+                <h2 className="text-2xl font-bold text-white mb-4 border-b border-gray-700 pb-3">
                   {t(section.title)}
                 </h2>
                 <div 
-                  className="text-gray-300 leading-relaxed"
+                  className="prose prose-invert prose-lg max-w-none text-gray-300 prose-strong:text-white"
                   dangerouslySetInnerHTML={{ 
                     __html: formatContent(t(section.content))
                   }} 
                 />
-              </section>
+              </motion.section>
             ))}
-          </div>
+          </motion.div>
 
-          {/* Footer with website link */}
           <div className="mt-12 text-center">
             <p className="text-gray-400">
               {t({ it: 'Per maggiori informazioni:', en: 'For more information:' })}
@@ -176,7 +187,7 @@ const LegalTermsPage = () => {
               href="https://www.dr7empire.com" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-yellow-400 hover:text-yellow-300 transition-colors font-semibold"
+              className="text-white hover:underline font-semibold"
             >
               www.dr7empire.com
             </a>

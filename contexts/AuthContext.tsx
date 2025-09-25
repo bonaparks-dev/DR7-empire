@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { User } from '../types';
 import { supabase } from '../supabaseClient';
@@ -67,6 +68,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     supabase.auth.getSession().then(({ data: { session } }) => {
         setSessionUser(session);
+    }).catch(error => {
+        console.error("Error getting session on startup:", error);
+        setUser(null);
+        setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -104,14 +109,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signup = useCallback(async (email: string, password: string, data: { full_name: string, company_name?: string, role: 'personal' | 'business' }) => {
-    return supabase.auth.signUp({ 
-        email, 
-        password,
-        options: { 
-            data,
-            // Point to the dedicated callback page within the app.
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
-        }
+    return supabase.auth.signUp({
+      email: email,
+      password: password,
+      options: {
+        data: data,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      }
     });
   }, []);
 
@@ -120,10 +124,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signInWithGoogle = useCallback(() => {
     sessionStorage.setItem('oauth_in_progress', 'true');
     return supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
+        provider: 'google',
+        options: {
+            redirectTo: `${window.location.origin}/auth/callback`,
+        }
     });
   }, []);
 

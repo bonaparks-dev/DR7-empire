@@ -2,16 +2,16 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { useCurrency } from '../contexts/CurrencyContext';
-import { CONTEST_INFO } from '../constants';
-import { Link } from 'react-router-dom';
+import { LOTTERY_GIVEAWAY } from '../constants';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import type { Lottery, Prize } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import type { Stripe, StripeElements, StripeCardElement } from '@stripe/stripe-js';
 import { ImageCarousel } from '../components/ui/ImageCarousel';
 
 // Safely access the Stripe publishable key from Vite's environment variables.
-// If it's not available (e.g., in a non-Vite environment), it falls back to the live key.
-const STRIPE_PUBLISHABLE_KEY = (import.meta as any).env?.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_live_51S3dDjQcprtTyo8tBfBy5mAZj8PQXkxfZ1RCnWskrWFZ2WEnm1u93ZnE2tBi316Gz2CCrvLV98IjSoiXb0vSDpOQ003fNG69Y2';
+// If it's not available (e.g., in a non-Vite environment), it falls back to a placeholder.
+const STRIPE_PUBLISHABLE_KEY = 'pk_live_51S3dDjQcprtTyo8tBfBy5mAZj8PQXkxfZ1RCnWskrWFZ2WEnm1u93ZnE2tBi316Gz2CCrvLV98IjSoiXb0vSDpOQ003fNG69Y2';
 
 const calculateTimeLeft = (drawDate: string) => {
     const difference = +new Date(drawDate) - +new Date();
@@ -49,9 +49,11 @@ const LotteryPage: React.FC = () => {
     const { t, getTranslated } = useTranslation();
     const { currency } = useCurrency();
     const { user } = useAuth();
-    const giveaway: Lottery = CONTEST_INFO; // This should be updated or mapped
+    const navigate = useNavigate();
+    const location = useLocation();
+    const giveaway: Lottery = LOTTERY_GIVEAWAY;
 
-    const [timeLeft, setTimeLeft] = useState(calculateTimeLeft(giveaway.extraction.dateIso));
+    const [timeLeft, setTimeLeft] = useState(calculateTimeLeft(giveaway.drawDate));
     const [quantity, setQuantity] = useState(1);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
@@ -79,17 +81,21 @@ const LotteryPage: React.FC = () => {
 
     useEffect(() => {
         const timer = setTimeout(() => {
-            setTimeLeft(calculateTimeLeft(giveaway.extraction.dateIso));
+            setTimeLeft(calculateTimeLeft(giveaway.drawDate));
         }, 1000);
         return () => clearTimeout(timer);
     });
 
-    const ticketPrice = currency === 'usd' ? giveaway.tickets.priceUSD : giveaway.tickets.priceEUR;
+    const ticketPrice = currency === 'usd' ? giveaway.ticketPriceUSD : giveaway.ticketPriceEUR;
     const totalPrice = useMemo(() => quantity * ticketPrice, [quantity, ticketPrice]);
 
     const handleQuantityChange = (amount: number) => setQuantity(prev => Math.max(1, prev + amount));
     
     const handleBuyClick = () => {
+        if (!user) {
+            navigate('/signin', { state: { from: location } });
+            return;
+        }
         setShowConfirmModal(true);
     };
     
@@ -108,7 +114,7 @@ const LotteryPage: React.FC = () => {
             fetch('/.netlify/functions/create-payment-intent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount: totalPrice, currency })
+                body: JSON.stringify({ amount: totalPrice, currency, email: user?.email })
             })
             .then(res => res.json())
             .then(data => {
@@ -126,7 +132,7 @@ const LotteryPage: React.FC = () => {
                 setIsClientSecretLoading(false);
             });
         }
-    }, [showConfirmModal, totalPrice, currency]);
+    }, [showConfirmModal, totalPrice, currency, user]);
 
     useEffect(() => {
         if (elements && clientSecret && cardElementRef.current) {
@@ -148,7 +154,7 @@ const LotteryPage: React.FC = () => {
     }, [elements, clientSecret]);
     
     const confirmPurchase = async () => {
-        if (!stripe || !elements || !clientSecret || isProcessing) return;
+        if (!stripe || !elements || !clientSecret || isProcessing || !user) return;
         
         const cardElement = elements.getElement('card');
         if (!cardElement) {
@@ -159,12 +165,12 @@ const LotteryPage: React.FC = () => {
         setIsProcessing(true);
         setStripeError(null);
 
-        const { error } = await stripe.confirmCardPayment(clientSecret, {
+        const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
             payment_method: {
                 card: cardElement,
                 billing_details: {
-                    name: user?.fullName || 'Guest Buyer',
-                    email: user?.email,
+                    name: user.fullName,
+                    email: user.email,
                 },
             },
         });
@@ -173,26 +179,45 @@ const LotteryPage: React.FC = () => {
             setStripeError(error.message || "An unexpected error occurred.");
             setIsProcessing(false);
         } else {
-            setShowConfirmModal(false);
-            setSuccessMessage(t('Purchase_Successful_Message').replace('{count}', String(quantity)));
-            setTimeout(() => setSuccessMessage(''), 5000);
-            setQuantity(1);
-            setIsProcessing(false);
+             fetch('/.netlify/functions/generate-lottery-tickets', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: user.email,
+                    fullName: user.fullName,
+                    quantity,
+                    paymentIntentId: paymentIntent.id
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    navigate('/lottery/success', { state: { tickets: data.tickets, ownerName: user.fullName } });
+                } else {
+                    setStripeError(data.error || 'Failed to generate tickets after payment.');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                setStripeError('An error occurred while finalizing your purchase.');
+            })
+            .finally(() => {
+                setIsProcessing(false);
+                setShowConfirmModal(false);
+            });
         }
     };
     
     const formatPrice = (price: number) => new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', { style: 'currency', currency: currency.toUpperCase() }).format(price);
     
-    // The prize grouping logic needs to be adapted to the new data structure if it exists
-    // For now, I will comment it out to prevent errors, assuming it's not used in the visible part of the component.
-    // const groupedPrizes = useMemo(() => {
-    //     return giveaway.prizes.reduce((acc, prize) => {
-    //         const tier = getTranslated(prize.tier);
-    //         if (!acc[tier]) acc[tier] = [];
-    //         acc[tier].push(prize);
-    //         return acc;
-    //     }, {} as Record<string, Prize[]>);
-    // }, [giveaway.prizes, getTranslated]);
+    const groupedPrizes = useMemo(() => {
+        return giveaway.prizes.reduce((acc, prize) => {
+            const tier = getTranslated(prize.tier);
+            if (!acc[tier]) acc[tier] = [];
+            acc[tier].push(prize);
+            return acc;
+        }, {} as Record<string, Prize[]>);
+    }, [giveaway.prizes, getTranslated]);
 
     const carousel1Images = useMemo(() => {
         return Array.from({ length: 24 }, (_, i) => {
@@ -313,7 +338,7 @@ const LotteryPage: React.FC = () => {
                     </div>
 
                     <div className="mt-16 sm:mt-20 md:mt-24 max-w-4xl mx-auto">
-                        <h2 className="text-2xl sm:text-3xl font-bold font-playfair mb-6 sm:mb-8 text-center">{t('How_It_Works')}</h2>
+                        <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center">{t('How_It_Works')}</h2>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 text-center">
                             <div className="bg-black/80 border border-white/40 p-6 rounded-lg">
                                 <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
@@ -339,7 +364,7 @@ const LotteryPage: React.FC = () => {
                         </div>
                         <div className="text-center mt-12">
                             <Link to="/lottery-rules" className="inline-block py-3 sm:py-4 px-8 bg-white text-black rounded-full font-bold uppercase tracking-wider text-sm sm:text-base hover:bg-gray-200 transition-all duration-300 transform hover:scale-105">
-                                {t('View_Rules')}
+                                View Rules
                             </Link>
                         </div>
                     </div>
@@ -350,7 +375,7 @@ const LotteryPage: React.FC = () => {
                                 <span className="text-2xl sm:text-3xl">🎫</span>
                             </div>
                             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6">{t('Guaranteed_Reward')}</h2>
-                            <p className="text-white/90 text-sm sm:text-base max-w-2xl mx-auto">{getTranslated(giveaway.tickets.note)}</p>
+                            <p className="text-white/90 text-sm sm:text-base max-w-2xl mx-auto">{getTranslated(giveaway.bonus)}</p>
                         </div>
                     </div>
                 </div>

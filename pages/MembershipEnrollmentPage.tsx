@@ -11,7 +11,7 @@ import type { Stripe, StripeCardElement } from '@stripe/stripe-js';
 // Safely access the Stripe publishable key from Vite's environment variables.
 // If it's not available (e.g., in a non-Vite environment), it falls back to a placeholder.
 // The subsequent check will log an error if the key remains a placeholder.
-const STRIPE_PUBLISHABLE_KEY = (import.meta as any).env?.VITE_STRIPE_PUBLISHABLE_KEY || 'YOUR_STRIPE_PUBLISHABLE_KEY';
+const STRIPE_PUBLISHABLE_KEY = 'pk_live_51S3dDjQcprtTyo8tBfBy5mAZj8PQXkxfZ1RCnWskrWFZ2WEnm1u93ZnE2tBi316Gz2CCrvLV98IjSoiXb0vSDpOQ003fNG69Y2';
 
 const MembershipEnrollmentPage: React.FC = () => {
     const { tierId } = useParams<{ tierId: string }>();

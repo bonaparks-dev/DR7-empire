@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { useAuth } from '../hooks/useAuth';
-import { UsersIcon, ShieldIcon, FileTextIcon, StarIcon, BellIcon, CreditCardIcon } from '../components/icons/Icons';
+import { UsersIcon, ShieldIcon, FileTextIcon, StarIcon, BellIcon, CreditCardIcon, TicketIcon } from '../components/icons/Icons';
 
 const AccountPage = () => {
     const { t } = useTranslation();
@@ -15,6 +15,7 @@ const AccountPage = () => {
         { path: '/account/security', label: t('Security'), icon: ShieldIcon },
         { path: '/account/documents', label: t('Documents'), icon: FileTextIcon },
         { path: '/account/membership', label: t('My_Membership'), icon: StarIcon },
+        { path: '/account/tickets', label: t('My_Tickets'), icon: TicketIcon },
         { path: '/account/notifications', label: t('Notifications'), icon: BellIcon },
         { path: '/account/payment-methods', label: t('Payment_Methods'), icon: CreditCardIcon },
     ];
@@ -47,7 +48,7 @@ const AccountPage = () => {
                                     to={item.path}
                                     className={({ isActive }) => 
                                         `flex items-center p-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0 ` +
-                                        (currentPath === item.path ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50 hover:text-white')
+                                        (isActive ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50 hover:text-white')
                                     }
                                 >
                                     <item.icon className="w-5 h-5 mr-3 shrink-0" />

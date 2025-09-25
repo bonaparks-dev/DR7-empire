@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeftIcon } from '../icons/Icons';
 import { useTranslation } from '../../hooks/useTranslation';
 
 const BackButton: React.FC = () => {
@@ -9,9 +10,9 @@ const BackButton: React.FC = () => {
   return (
     <button
       onClick={() => navigate(-1)}
-      className="px-6 py-2 text-sm sm:text-base rounded-full border transition-colors bg-black/60 border-white/60 text-white hover:border-white hover:bg-black/80 font-medium inline-flex items-center"
+      className="inline-flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors font-semibold"
     >
-      <span className="mr-2">←</span>
+      <ArrowLeftIcon className="w-4 h-4" />
       <span>{t('Back')}</span>
     </button>
   );
