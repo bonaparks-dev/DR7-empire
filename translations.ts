@@ -113,6 +113,7 @@ export const translations: Translations = {
   Credit_Card: { en: "Credit Card", it: "Carta di Credito" },
   Cryptocurrency: { en: "Cryptocurrency", it: "Criptovaluta" },
   Card_Number: { en: "Card Number", it: "Numero di Carta" },
+  Card_Details: { en: "Card Details", it: "Dettagli Carta" },
   Expiry: { en: "Expiry", it: "Scadenza" },
   CVC: { en: "CVC", it: "CVC" },
   Pay_with_Crypto: { en: "Pay with Crypto", it: "Paga con Cripto" },
