@@ -1,22 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '../hooks/useTranslation';
 
-// Since useTranslation hook implementation is not shown, 
-// I'll create a simple language selector that works with your data structure
 const LotteryRulesPage = () => {
   const navigate = useNavigate();
-  // You can get this from your translation context/hook
-  const [language, setLanguage] = React.useState('en'); // or 'it'
-  
-  // Helper function to get the correct translation
-  const t = (textObj) => {
-    if (typeof textObj === 'string') return textObj;
-    if (textObj && typeof textObj === 'object') {
-      return textObj[language] || textObj.en || textObj.it || '';
-    }
-    return '';
-  };
+  const { t, setLanguage, language } = useTranslation();
 
   const rules = {
     title: {
@@ -222,7 +211,14 @@ const LotteryRulesPage = () => {
         </button>
       </div>
 
+import BackButton from '../components/ui/BackButton';
+
+// ... (rest of the component)
+
       <div className="container mx-auto px-4 sm:px-6 py-24 sm:py-32">
+        <div className="max-w-4xl mx-auto mb-8">
+          <BackButton />
+        </div>
         <h1 className="text-4xl sm:text-5xl font-bold text-center mb-12">
           {t(rules.title)}
         </h1>
