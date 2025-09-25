@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../supabaseClient';
 import { RENTAL_CATEGORIES, PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, COUNTRIES, INSURANCE_ELIGIBILITY, VALIDATION_MESSAGES, YACHT_PICKUP_MARINAS, AIRPORTS, HELI_DEPARTURE_POINTS, HELI_ARRIVAL_POINTS, VILLA_SERVICE_FEE_PERCENTAGE, CRYPTO_ADDRESSES } from '../constants';
 import type { Booking, Inquiry, RentalItem } from '../types';
 import { CameraIcon, CreditCardIcon, CryptoIcon } from '../components/icons/Icons';
@@ -262,8 +263,49 @@ const BookingPage: React.FC = () => {
   const handleNext = () => validateStep() && setStep(s => s + 1);
   const handleBack = () => setStep(s => s - 1);
   
-  const finalizeBooking = () => {
+  const finalizeBooking = async () => {
     if (!item) return;
+
+    let licenseImageUrl = '';
+    if (isCar && formData.licenseImage) {
+        try {
+            // Convert data URL to Blob
+            const response = await fetch(formData.licenseImage);
+            const blob = await response.blob();
+
+            const fileExtension = blob.type.split('/')[1];
+            const fileName = `${user?.id || 'guest'}_${Date.now()}.${fileExtension}`;
+            const filePath = `public/${fileName}`;
+
+            const { data, error } = await supabase.storage
+                .from('driver-licenses')
+                .upload(filePath, blob, {
+                    contentType: blob.type
+                });
+
+            if (error) {
+                throw error;
+            }
+
+            const { data: publicUrlData } = supabase.storage
+                .from('driver-licenses')
+                .getPublicUrl(filePath);
+
+            if (!publicUrlData) {
+                throw new Error("Could not get public URL for the uploaded image.");
+            }
+            licenseImageUrl = publicUrlData.publicUrl;
+
+        } catch (error) {
+            console.error('Error uploading license image:', error);
+            // Optionally, set an error state to inform the user
+            setErrors(prev => ({...prev, licenseImage: "Failed to upload license image. Please try again."}));
+            setIsProcessing(false);
+            return; // Stop the booking process
+        }
+    }
+
+
     if (isQuoteRequest) {
         if (categoryId !== 'jets' && categoryId !== 'helicopters') return;
         const newInquiry: Inquiry = {
@@ -285,7 +327,7 @@ const BookingPage: React.FC = () => {
 
         let newBooking: Booking;
         if(isCar) {
-            newBooking = { ...commonData, pickupDate: formData.pickupDate, pickupTime: formData.pickupTime, returnDate: formData.returnDate, returnTime: formData.returnTime, duration: `${duration.days} ${duration.days === 1 ? t('day') : t('days')}, ${duration.hours} ${duration.hours === 1 ? t('hour') : t('hours')}`, driverLicenseImage: formData.licenseImage, extras: formData.extras, pickupLocation: formData.pickupLocation, insuranceOption: formData.insuranceOption };
+            newBooking = { ...commonData, pickupDate: formData.pickupDate, pickupTime: formData.pickupTime, returnDate: formData.returnDate, returnTime: formData.returnTime, duration: `${duration.days} ${duration.days === 1 ? t('day') : t('days')}, ${duration.hours} ${duration.hours === 1 ? t('hour') : t('hours')}`, driverLicenseImage: licenseImageUrl, extras: formData.extras, pickupLocation: formData.pickupLocation, insuranceOption: formData.insuranceOption };
         } else if (isYacht) {
             newBooking = { ...commonData, pickupDate: formData.checkinDate, pickupTime: '15:00', returnDate: formData.checkoutDate, returnTime: '11:00', duration: `${nights} ${nights === 1 ? t('Night') : t('Nights')}`, driverLicenseImage: '', extras: [], pickupLocation: formData.pickupMarina, insuranceOption: 'none' };
         } else { // isVilla
@@ -302,12 +344,12 @@ const BookingPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); if (!validateStep() || !item) return; setIsProcessing(true);
-    if (isQuoteRequest) { await new Promise(resolve => setTimeout(resolve, 500)); finalizeBooking(); return; }
+    if (isQuoteRequest) { await finalizeBooking(); return; }
     if (formData.paymentMethod === 'stripe') {
       setStripeError(null); if (!stripe || !cardElement || !clientSecret) { setStripeError("Payment system is not ready."); setIsProcessing(false); return; }
       const { error } = await stripe.confirmCardPayment(clientSecret, { payment_method: { card: cardElement, billing_details: { name: formData.fullName, email: formData.email, phone: formData.phone } }, });
-      if (error) { setStripeError(error.message || "An unexpected error occurred."); setIsProcessing(false); } else { finalizeBooking(); }
-    } else { await new Promise(resolve => setTimeout(resolve, 1000)); finalizeBooking(); }
+      if (error) { setStripeError(error.message || "An unexpected error occurred."); setIsProcessing(false); } else { await finalizeBooking(); }
+    } else { await finalizeBooking(); }
   };
 
   const steps = useMemo(() => {
