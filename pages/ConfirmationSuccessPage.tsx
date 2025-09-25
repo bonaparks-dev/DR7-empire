@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { CheckCircleIcon } from '../components/icons/Icons';
 import { Button } from '../components/ui/Button';
@@ -15,19 +15,15 @@ const ConfirmationSuccessPage: React.FC = () => {
     return null;
   }
 
-  if (!user) {
-    return (
-      <main className="min-h-screen flex items-center justify-center pt-24 pb-12 px-4 sm:px-6 lg:px-8 text-white">
-        <div className="max-w-md w-full text-center bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg shadow-2xl shadow-black/50 p-8">
-          <h1 className="text-3xl font-bold mb-4">{t('Email_Confirmed_Fallback_Title')}</h1>
-          <p className="mb-8 text-gray-300">{t('Email_Confirmed_Fallback_Body')}</p>
-          <Button as={Link} to="/signin" variant="primary">
-            {t('Sign_In')}
-          </Button>
-        </div>
-      </main>
-    );
-  }
+if (!user) {
+  return (
+    <main className="...">
+      <h1>Email confermata ✅</h1>
+      <p>Il tuo indirizzo email è stato verificato con successo. Accedi per entrare nel tuo account.</p>
+      <Link to="/signin" className="btn">Accedi</Link>
+    </main>
+  );
+}
 
   const destination = user.role === 'business' ? '/partner/dashboard' : '/account';
 
