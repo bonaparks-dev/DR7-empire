@@ -1,163 +1,64 @@
-import React, { createContext, useState, useEffect, useMemo, useCallback } from 'react';
-import type { User } from '../types';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
-import type { AuthError, Session, User as SupabaseUser, OAuthResponse, UserResponse } from '@supabase/supabase-js';
-
-// Define a compatible user type for the rest of the app
-interface AppUser extends User {}
+import { Session, User } from '@supabase/supabase-js';
 
 interface AuthContextType {
-  user: AppUser | null;
+  user: User | null;
   loading: boolean;
-  authEvent: string | null;
-  isFirstSignIn: boolean | null;
-  login: (email: string, password?: string) => Promise<{ user: AppUser | null; error: AuthError | null }>;
-  signup: (email: string, password: string, data: { full_name: string, company_name?: string, role: 'personal' | 'business' }) => Promise<{ data: { user: SupabaseUser | null; session: Session | null; }; error: AuthError | null; }>;
-  logout: () => Promise<{ error: AuthError | null }>;
-  signInWithGoogle: () => Promise<OAuthResponse>;
-  sendPasswordResetEmail: (email: string) => Promise<{ data: {}; error: AuthError | null; }>;
-  updateUserPassword: (password: string) => Promise<UserResponse>;
-  updateUser: (updates: Partial<AppUser>) => Promise<{ data: AppUser | null; error: Error | null }>;
-  verifyEmailOtp: (token: string) => Promise<{ data: { user: SupabaseUser | null; session: Session | null; }; error: AuthError | null; }>;
+  signOut: () => Promise<void>;
+  signInWithGoogle: () => Promise<any>;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const mapSupabaseUserToAppUser = (supabaseUser: SupabaseUser): AppUser => {
-    const { user_metadata } = supabaseUser;
-    return {
-        id: supabaseUser.id,
-        email: supabaseUser.email || '',
-        fullName: user_metadata.full_name || user_metadata.name || 'No Name',
-        role: user_metadata.role || 'personal',
-        companyName: user_metadata.company_name,
-        phone: user_metadata.phone,
-        profilePicture: user_metadata.avatar_url,
-        membership: user_metadata.membership,
-        verification: user_metadata.verification || {
-            idStatus: 'unverified', cardStatus: 'none', phoneStatus: 'none',
-        },
-        businessVerification: user_metadata.businessVerification || {
-            status: 'unverified',
-        },
-        notifications: user_metadata.notifications || {
-            bookingConfirmations: true, specialOffers: true, newsletter: false,
-        },
-        paymentMethods: user_metadata.paymentMethods || [],
-    };
-};
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<AppUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [authEvent, setAuthEvent] = useState<string | null>(null);
-  const [isFirstSignIn, setIsFirstSignIn] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const setSessionUser = (session: Session | null) => {
-        if (session?.user) {
-            setUser(mapSupabaseUserToAppUser(session.user));
-        } else {
-            setUser(null);
-        }
-        setLoading(false);
-    };
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-        setSessionUser(session);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-        setAuthEvent(event);
-        if (event === 'SIGNED_IN' && session?.user) {
-            const user = session.user;
-            const createdAt = new Date(user.created_at || 0).getTime();
-            const lastSignInAt = user.last_sign_in_at ? new Date(user.last_sign_in_at).getTime() : 0;
-
-            // Check if this is the first sign-in by comparing creation and last sign-in times.
-            // A small tolerance (e.g., 60 seconds) handles minor delays after confirmation.
-            const firstSignIn = !lastSignInAt || Math.abs(lastSignInAt - createdAt) < 60000;
-            setIsFirstSignIn(firstSignIn);
-
-            // Custom welcome email logic has been removed to rely on Supabase's built-in email templates
-            // for both confirmation and welcome emails, ensuring a consistent experience.
-        } else if (event === 'SIGNED_OUT') {
-            setIsFirstSignIn(null);
-        }
-
-        setSessionUser(session);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
     });
 
     return () => {
-      subscription?.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
-  const login = useCallback(async (email: string, password?: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password: password! });
-    if (data.user) {
-        return { user: mapSupabaseUserToAppUser(data.user), error };
-    }
-    return { user: null, error };
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
+    setUser(null);
   }, []);
-
-  const signup = useCallback(async (email: string, password: string, data: { full_name: string, company_name?: string, role: 'personal' | 'business' }) => {
-    return supabase.auth.signUp({
-      email: email,
-      password: password,
-      options: {
-        data: data,
-        emailRedirectTo: `${window.location.origin}/confirmation-success`
-      }
-    });
-  }, []);
-
-  const logout = useCallback(() => supabase.auth.signOut(), []);
 
   const signInWithGoogle = useCallback(() => {
     sessionStorage.setItem('oauth_in_progress', 'true');
-    // Let Supabase use the redirect URI from the dashboard.
-    // Our new handler system will catch and process it correctly.
     return supabase.auth.signInWithOAuth({
-        provider: 'google'
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}`, // ✅ important
+      },
     });
   }, []);
 
-  const sendPasswordResetEmail = useCallback(async (email: string) => {
-    // Redirect to the app root. The AuthRedirector will handle routing
-    // to the reset password page once the user is signed in.
-    return supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/`,
-    });
-  }, []);
+  return (
+    <AuthContext.Provider value={{ user, loading, signOut, signInWithGoogle }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
 
-  const updateUserPassword = useCallback(async (password: string) => {
-      return supabase.auth.updateUser({ password });
-  }, []);
-
-  const updateUser = useCallback(async (updates: Partial<AppUser>) => {
-    const currentMeta = user ? (await supabase.auth.getUser()).data.user?.user_metadata : {};
-    const { data, error } = await supabase.auth.updateUser({
-        data: { ...currentMeta, ...updates }
-    });
-
-    if (error) return { data: null, error: error as Error };
-    if (data.user) {
-        setUser(mapSupabaseUserToAppUser(data.user)); // Update local state immediately
-        return { data: mapSupabaseUserToAppUser(data.user), error: null };
-    }
-    return { data: null, error: new Error('User data could not be updated.')};
-  }, [user]);
-
-  const verifyEmailOtp = useCallback((token: string) => {
-    return supabase.auth.verifyOtp({ token_hash: token, type: 'signup' });
-  }, []);
-
-  const value = useMemo(() => ({
-    user, loading, authEvent, isFirstSignIn, login, signup, logout, signInWithGoogle,
-    sendPasswordResetEmail, updateUserPassword, updateUser, verifyEmailOtp,
-  }), [user, loading, authEvent, isFirstSignIn, login, signup, logout, signInWithGoogle, 
-      sendPasswordResetEmail, updateUserPassword, updateUser, verifyEmailOtp]);
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };
