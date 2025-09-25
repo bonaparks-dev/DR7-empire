@@ -721,9 +721,9 @@ export const LOTTERY_GIVEAWAY: Lottery = {
   name: { en: '7,000,000 Dollars Win', it: 'Vinci 7.000.000 di Dollari' },
   subtitle: { en: 'Prize Pool Worth Over $7,000,000', it: 'Montepremi di Oltre $7.000.000' },
   image: '/lottery-hero.jpeg',
-  ticketPriceUSD: 22,
-  ticketPriceEUR: 20,
-  drawDate: '2025-12-25T18:00:00Z',
+  ticketPriceUSD: 1,
+  ticketPriceEUR: 1,
+  drawDate: '2025-12-24T10:00:00Z',
   prizes: [
     {
       tier: { en: 'Grand Prize', it: 'Primo Premio' },
