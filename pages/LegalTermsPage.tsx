@@ -1,20 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '../hooks/useTranslation';
+import BackButton from '../components/ui/BackButton';
 
 const LegalTermsPage = () => {
   const navigate = useNavigate();
-  // Language state
-  const [language, setLanguage] = React.useState('en'); // or 'it'
-  
-  // Helper function to get the correct translation
-  const t = (textObj) => {
-    if (typeof textObj === 'string') return textObj;
-    if (textObj && typeof textObj === 'object') {
-      return textObj[language] || textObj.en || textObj.it || '';
-    }
-    return '';
-  };
+  const { t, setLanguage, language } = useTranslation();
 
   const rules = {
     title: {
@@ -150,15 +142,9 @@ const LegalTermsPage = () => {
 
       <div className="container mx-auto px-4 sm:px-6 py-24 sm:py-32">
         <div className="max-w-4xl mx-auto">
-          {/* Back to Rules Button */}
+          {/* Back Button */}
           <div className="mb-8">
-            <button 
-              onClick={() => navigate('/lottery-rules')}
-              className="px-6 py-2 text-sm sm:text-base rounded-full border transition-colors bg-black/60 border-white/60 text-white hover:border-white hover:bg-black/80 font-medium inline-flex items-center"
-            >
-              <span className="mr-2">←</span>
-              <span>{t({ it: 'Torna al regolamento', en: 'Back to Rules' })}</span>
-            </button>
+            <BackButton />
           </div>
           
           <h1 className="text-4xl sm:text-5xl font-bold text-center mb-12">
