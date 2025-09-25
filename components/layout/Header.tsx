@@ -72,6 +72,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ i
     
     const accountLink = user?.role === 'business' ? '/partner/dashboard' : '/account';
     const accountLabel = user?.role === 'business' ? t('Partner_Dashboard') : t('My_Account');
+    const userFullName = user?.fullName || 'User';
 
     const menuVariants = {
         hidden: { x: '100%' },
@@ -137,10 +138,10 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ i
                                 <div className="space-y-3">
                                     <div className="flex items-center space-x-3">
                                         <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-white font-bold">
-                                            {user.fullName.charAt(0)}
+                                            {userFullName.charAt(0)}
                                         </div>
                                         <div>
-                                            <p className="font-semibold text-white">{user.fullName}</p>
+                                            <p className="font-semibold text-white">{userFullName}</p>
                                             <p className="text-xs text-gray-400">{user.email}</p>
                                         </div>
                                     </div>
@@ -162,7 +163,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ i
                                     onClick={onClose} 
                                     className="block w-full text-center bg-white text-black py-3 rounded-full font-bold text-sm hover:bg-gray-200"
                                 >
-                                    {t('Sign_In_Register')}
+                                    {t('Sign_In')}
                                 </Link>
                             )}
                             <div className="flex justify-between items-center mt-6">

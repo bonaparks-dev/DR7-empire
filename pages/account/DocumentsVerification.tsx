@@ -69,14 +69,14 @@ const DocumentsVerification = () => {
     const handleSubmit = async () => {
         if (!idFront || !idBack || !user) return;
         setIsSubmitting(true);
-        // FIX: Spread existing user.verification to satisfy TypeScript type, ensuring all required fields are passed.
+        const newVerificationState = {
+            ...user.verification,
+            idStatus: 'pending' as 'pending',
+            idFrontImage: idFront,
+            idBackImage: idBack,
+        };
         await updateUser({
-            verification: {
-                ...user.verification,
-                idStatus: 'pending',
-                idFrontImage: idFront,
-                idBackImage: idBack,
-            }
+            verification: newVerificationState
         });
         setIsSubmitting(false);
     };

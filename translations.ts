@@ -298,6 +298,11 @@ export const translations: Translations = {
   Update_Password: { en: "Update Password", it: "Aggiorna Password" },
   Password_has_been_updated_successfully: { en: "Your password has been updated successfully. You can now sign in.", it: "La tua password è stata aggiornata con successo. Ora puoi accedere." },
   Proceed_to_Sign_In: { en: "Proceed to Sign In", it: "Vai all'Accesso" },
+  Email_Confirmed: { en: "Email Confirmed!", it: "Email Confermata!" },
+  Account_Successfully_Created: { en: "Your account has been successfully created. Welcome to the world of DR7.", it: "Il tuo account è stato creato con successo. Benvenuto nel mondo di DR7." },
+  Proceed_to_My_Account: { en: "Proceed to My Account", it: "Vai al Mio Account" },
+  Email_Confirmed_Fallback_Title: { en: "Email confirmed ✅", it: "Email confermata ✅" },
+  Email_Confirmed_Fallback_Body: { en: "Your email has been successfully verified. Please log in to access your account.", it: "Il tuo indirizzo email è stato verificato con successo. Accedi per entrare nel tuo account." },
 
   // Account Pages
   Account_Settings: { en: "Account Settings", it: "Impostazioni Account" },

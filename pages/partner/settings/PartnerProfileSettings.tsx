@@ -48,7 +48,6 @@ const PartnerProfileSettings = () => {
                 email: formData.email,
                 phone: formData.phone,
                 businessVerification: {
-                    // FIX: Ensure status and other fields are preserved when updating
                     ...user.businessVerification,
                     status: user.businessVerification?.status || 'unverified',
                     address: formData.address,

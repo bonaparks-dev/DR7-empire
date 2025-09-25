@@ -81,7 +81,7 @@ const MembershipEnrollmentPage: React.FC = () => {
         }
     }, [stripe, clientSecret, paymentMethod]);
 
-    const formatPrice = (p: number) => new Intl.NumberFormat(lang === 'it' ? 'it-IT' : 'en-US', { style: 'currency', currency }).format(p);
+    const formatPrice = (p: number) => new Intl.NumberFormat(lang === 'it' ? 'it-IT' : 'en-US', { style: 'currency', currency: currency.toUpperCase() }).format(p);
 
     const handleConfirm = async (e: React.FormEvent) => {
         e.preventDefault();
