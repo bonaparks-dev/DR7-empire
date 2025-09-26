@@ -58,7 +58,7 @@ const PrivacyPolicyPage: React.FC = () => {
             <p>If you wish to exercise any of these rights, please contact us. You also have the right to lodge a complaint at any time with the Italian data protection authority, the Garante per la protezione dei dati personali.</p>
 
             <h2>7. Contact Us</h2>
-            <p>If you have any questions about this Privacy Policy or our privacy practices, please contact our Data Privacy Manager at: <a href="mailto:amministrazione@dr7luxuryempire.com">amministrazione@dr7luxuryempire.com</a>.</p>
+            <p>If you have any questions about this Privacy Policy or our privacy practices, please contact our Data Privacy Manager at: <a href="mailto:support@dr7luxury.com">support@dr7luxury.com</a>.</p>
         </LegalPageLayout>
     );
 };
