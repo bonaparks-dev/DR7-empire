@@ -13,7 +13,14 @@ const DISPLAY_TITLE: Record<string, string> = {
   jets: 'Private Jets',
 };
 
-// CATEGORY_VIDEO constant removed as per user request to use images instead.
+// Map category ids to image filenames in /public
+const CATEGORY_IMAGE: Record<string, string> = {
+  cars: '/car.jpeg',
+  yachts: '/yacht.jpeg',
+  villas: '/villa.jpeg',
+  helicopters: '/helicopter.jpeg',
+  jets: '/privatejet.jpeg',
+};
 
 const HeroSection: React.FC = () => {
   const { t } = useTranslation();
