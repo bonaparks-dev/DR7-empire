@@ -40,7 +40,7 @@ const newCarsRawData = [
       "torque": "600Nm",
       "engine": "2.9L V6 BiTurbo"
     },
-    "image": "/alpha.jpeg",
+    "image": "/alpha.png",
     "available": false
   },
   {
@@ -54,7 +54,7 @@ const newCarsRawData = [
       "torque": "574Nm",
       "engine": "6.2L V8"
     },
-    "image": "/hummer1.jpeg"
+    "image": "/hummer.png"
   },
   {
     "id": 3,
@@ -67,7 +67,7 @@ const newCarsRawData = [
       "torque": "500Nm",
       "engine": "2.5L inline 5-cylinder"
     },
-    "image": "/audi-rs3.jpeg",
+    "image": "/audi-rs3.png",
     "color": "Verde"
   },
   {
@@ -80,7 +80,7 @@ const newCarsRawData = [
       "torque": "500Nm",
       "engine": "2.5L inline 5-cylinder"
     },
-    "image": "/Rs3-red.jpeg",
+    "image": "/Rs3-red.png",
     "color": "Rossa"
   },
   {
@@ -93,7 +93,7 @@ const newCarsRawData = [
       "torque": "500Nm",
       "engine": "2.0L 4-cylinder Turbo"
     },
-    "image": "/mercedes-amg.jpeg"
+    "image": "/mercedes-amg45.png"
   },
   {
     "id": 6,
@@ -105,7 +105,7 @@ const newCarsRawData = [
       "torque": "550Nm",
       "engine": "3.0L inline 6-cylinder"
     },
-    "image": "/bmw-m2.jpeg",
+    "image": "/bmw-m2.png",
     "available": false
   },
   {
@@ -119,7 +119,7 @@ const newCarsRawData = [
       "torque": "650Nm",
       "engine": "3.0L inline 6-cylinder"
     },
-    "image": "/bmw-m3.jpeg"
+    "image": "/bmw-m3.png"
   },
   {
     "id": 8,
@@ -132,7 +132,7 @@ const newCarsRawData = [
       "torque": "520Nm",
       "engine": "3.0L inline 6-cylinder"
     },
-    "image": "/mercedesGLE.jpeg"
+    "image": "/mercedesGLE.png"
   },
   {
     "id": 9,
@@ -144,7 +144,7 @@ const newCarsRawData = [
       "torque": "650Nm",
       "engine": "3.0L inline 6-cylinder"
     },
-    "image": "/bmw-m4.jpeg"
+    "image": "/bmw-m4.png"
   },
   {
     "id": 10,
@@ -157,7 +157,7 @@ const newCarsRawData = [
       "torque": "530Nm",
       "engine": "3.0L Twin-Turbo Flat-6"
     },
-    "image": "/porsche-911.jpeg"
+    "image": "/porsche-911.png"
   },
   {
     "id": 11,
@@ -169,7 +169,7 @@ const newCarsRawData = [
       "torque": "700Nm",
       "engine": "4.0L V8 BiTurbo"
     },
-    "image": "/c63.jpeg"
+    "image": "/c63.png"
   },
   {
     "id": 12,
@@ -181,7 +181,7 @@ const newCarsRawData = [
       "torque": "550Nm",
       "engine": "2.9L Twin-Turbo V6"
     },
-    "image": "/macan.jpeg"
+    "image": "/macan.png"
   },
   {
     "id": 13,
@@ -193,7 +193,7 @@ const newCarsRawData = [
       "torque": "850Nm",
       "engine": "4.0L V8 BiTurbo"
     },
-    "image": "/mercedes-gle.jpeg"
+    "image": "/mercedes-gle.png"
   },
   {
     "id": 14,
@@ -206,7 +206,7 @@ const newCarsRawData = [
       "torque": "760Nm",
       "engine": "3.9L Twin-Turbo V8"
     },
-    "image": "/ferrari-portofino.jpeg"
+    "image": "/ferrari-portofino.png"
   },
   {
     "id": 15,
@@ -219,7 +219,7 @@ const newCarsRawData = [
       "torque": "850Nm",
       "engine": "4.0L Twin-Turbo V8"
     },
-    "image": "/urus.jpeg"
+    "image": "/urus.png"
   },
   {
     "id": 16,
@@ -231,7 +231,7 @@ const newCarsRawData = [
       "special": "Includes 100km pack",
       "extras": "Unlimited option: +50€"
     },
-    "image": "/Ducato.jpeg",
+    "image": "/Ducato.png",
     "available": true
   }
 ];

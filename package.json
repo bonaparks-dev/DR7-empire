@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@netlify/neon": "^0.1.0",
+    "@stripe/react-stripe-js": "^4.0.2",
+    "@stripe/stripe-js": "^7.9.0",
     "@supabase/supabase-js": "^2.45.0",
     "@types/qrcode.react": "^1.0.5",
     "bcryptjs": "^2.4.3",
