@@ -119,6 +119,7 @@ export interface Booking {
   itemId: string;
   itemName: string;
   image: string;
+  itemCategory: 'cars' | 'yachts' | 'villas' | 'jets' | 'helicopters';
   pickupDate: string;
   pickupTime: string;
   returnDate: string;

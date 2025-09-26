@@ -103,6 +103,7 @@ export const translations: Translations = {
   BASE_REQ: { en: "KASKO BASE requires at least 2 years of driving license.", it: "KASKO BASE richiede almeno 2 anni di patente." },
   BLACK_REQ: { en: "KASKO BLACK requires age ≥ 25 and license ≥ 5 years.", it: "KASKO BLACK richiede età ≥ 25 anni e patente ≥ 5 anni." },
   SIGNATURE_REQ: { en: "KASKO SIGNATURE requires age ≥ 30 and license ≥ 10 years.", it: "KASKO SIGNATURE richiede età ≥ 30 anni e patente ≥ 10 anni." },
+  DRIVING_LICENSE_MANDATORY_FIRST_BOOKING: { en: "For your first car booking, uploading your driver's license is mandatory.", it: "Per la tua prima prenotazione auto, è obbligatorio caricare la patente di guida." },
   Minimum_age_is_25: { en: "Minimum age for this vehicle is 25.", it: "L'età minima per questo veicolo è 25 anni." },
   Please_provide_a_clear_photo_of_your_drivers_license: { en: "Please provide a clear photo of the front of your driver's license.", it: "Fornisci una foto chiara della parte anteriore della tua patente di guida." },
   Upload_File: { en: "Upload File", it: "Carica File" },

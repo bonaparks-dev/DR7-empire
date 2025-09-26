@@ -12,7 +12,7 @@ import { CameraIcon, CreditCardIcon, CryptoIcon } from '../components/icons/Icon
 // Safely access the Stripe publishable key from Vite's environment variables.
 // If it's not available (e.g., in a non-Vite environment), it falls back to a placeholder.
 // The subsequent check will log an error if the key remains a placeholder.
-const STRIPE_PUBLISHABLE_KEY = 'pk_live_51S3dDjQcprtTyo8tBfBy5mAZj8PQXkxfZ1RCnWskrWFZ2WEnm1u93ZnE2tBi316Gz2CCrvLV98IjSoiXb0vSDpOQ003fNG69Y2';
+const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'YOUR_STRIPE_PUBLISHABLE_KEY';
 
 type KaskoTier = 'KASKO_BASE' | 'KASKO_BLACK' | 'KASKO_SIGNATURE';
 
@@ -79,6 +79,7 @@ const BookingPage: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [selectedCrypto, setSelectedCrypto] = useState('btc');
+  const [isFirstCarBooking, setIsFirstCarBooking] = useState(true);
 
   const { category, item, isCar, isJet, isHelicopter, isYacht, isVilla, isQuoteRequest } = useMemo(() => {
     const cat = RENTAL_CATEGORIES.find(c => c.id === categoryId);
@@ -203,6 +204,34 @@ const BookingPage: React.FC = () => {
   useEffect(() => { if (user) { setFormData(prev => ({ ...prev, fullName: user.fullName || '', email: user.email || '' })); } }, [user]);
 
   useEffect(() => {
+    // Reset on category change or user logout
+    if (!isCar || !user) {
+      setIsFirstCarBooking(false);
+      return;
+    }
+
+    const checkFirstBooking = async () => {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('bookingId')
+        .eq('userId', user.id)
+        .eq('itemCategory', 'cars')
+        .limit(1);
+
+      if (error) {
+        console.error('Error checking for previous bookings:', error);
+        // Default to requiring license upload if check fails
+        setIsFirstCarBooking(true);
+        return;
+      }
+
+      setIsFirstCarBooking(data.length === 0);
+    };
+
+    checkFirstBooking();
+  }, [isCar, user]);
+
+  useEffect(() => {
     if (!isCar) return;
 
     const ageMin = formData.ageMin ? parseInt(formData.ageMin, 10) : undefined;
@@ -323,6 +352,16 @@ const BookingPage: React.FC = () => {
       setErrors(newErrors);
       return Object.keys(newErrors).length === 0;
     }
+
+    if (step === 2 && isCar) {
+      const newErrors: Record<string, string> = {};
+      if (isFirstCarBooking && !formData.licenseImage) {
+        newErrors.licenseImage = t('DRIVING_LICENSE_MANDATORY_FIRST_BOOKING');
+      }
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
+    }
+
     return true;
   };
 
@@ -385,24 +424,36 @@ const BookingPage: React.FC = () => {
         setCompletedBooking(newInquiry);
     } else {
         const commonData = {
-          bookingId: crypto.randomUUID(), userId: user ? user.id : 'guest-user', itemId: item.id, itemName: item.name, image: item.image,
+          userId: user ? user.id : 'guest-user', itemId: item.id, itemName: item.name, image: item.image,
+          itemCategory: categoryId,
           totalPrice: total, currency: currency.toUpperCase() as 'USD' | 'EUR',
           customer: { fullName: formData.fullName, email: formData.email, phone: formData.phone, age: Number(formData.ageMin), countryOfResidency: formData.countryOfResidency },
           paymentMethod: formData.paymentMethod, bookedAt: new Date().toISOString(),
         };
 
-        let newBooking: Booking;
+        let newBookingData: Omit<Booking, 'bookingId'>;
         if(isCar) {
-            newBooking = { ...commonData, pickupDate: formData.pickupDate, pickupTime: formData.pickupTime, returnDate: formData.returnDate, returnTime: formData.returnTime, duration: `${duration.days} ${duration.days === 1 ? t('day') : t('days')}, ${duration.hours} ${duration.hours === 1 ? t('hour') : t('hours')}`, driverLicenseImage: licenseImageUrl, extras: formData.extras, pickupLocation: formData.pickupLocation, insuranceOption: formData.insuranceOption };
+            newBookingData = { ...commonData, itemCategory: 'cars', pickupDate: formData.pickupDate, pickupTime: formData.pickupTime, returnDate: formData.returnDate, returnTime: formData.returnTime, duration: `${duration.days} ${duration.days === 1 ? t('day') : t('days')}, ${duration.hours} ${duration.hours === 1 ? t('hour') : t('hours')}`, driverLicenseImage: licenseImageUrl, extras: formData.extras, pickupLocation: formData.pickupLocation, insuranceOption: formData.insuranceOption };
         } else if (isYacht) {
-            newBooking = { ...commonData, pickupDate: formData.checkinDate, pickupTime: '15:00', returnDate: formData.checkoutDate, returnTime: '11:00', duration: `${nights} ${nights === 1 ? t('Night') : t('Nights')}`, driverLicenseImage: '', extras: [], pickupLocation: formData.pickupMarina, insuranceOption: 'none' };
+            newBookingData = { ...commonData, itemCategory: 'yachts', pickupDate: formData.checkinDate, pickupTime: '15:00', returnDate: formData.checkoutDate, returnTime: '11:00', duration: `${nights} ${nights === 1 ? t('Night') : t('Nights')}`, driverLicenseImage: '', extras: [], pickupLocation: formData.pickupMarina, insuranceOption: 'none' };
         } else { // isVilla
-            newBooking = { ...commonData, pickupDate: formData.checkinDate, pickupTime: '15:00', returnDate: formData.checkoutDate, returnTime: '11:00', duration: `${nights} ${nights === 1 ? t('Night') : t('Nights')}`, driverLicenseImage: '', extras: [], pickupLocation: item.location || 'Villa', insuranceOption: 'none' };
+            newBookingData = { ...commonData, itemCategory: 'villas', pickupDate: formData.checkinDate, pickupTime: '15:00', returnDate: formData.checkoutDate, returnTime: '11:00', duration: `${nights} ${nights === 1 ? t('Night') : t('Nights')}`, driverLicenseImage: '', extras: [], pickupLocation: item.location || 'Villa', insuranceOption: 'none' };
         }
 
-        const existing = JSON.parse(localStorage.getItem('bookings') || '[]');
-        localStorage.setItem('bookings', JSON.stringify([...existing, newBooking]));
-        setCompletedBooking(newBooking);
+        const { data, error } = await supabase
+            .from('bookings')
+            .insert(newBookingData)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error creating booking:', error);
+            setErrors(prev => ({...prev, form: "Could not save your booking. Please try again."}));
+            setIsProcessing(false);
+            return;
+        }
+
+        setCompletedBooking(data);
     }
     setStep(steps.length + 1);
     setIsProcessing(false);
