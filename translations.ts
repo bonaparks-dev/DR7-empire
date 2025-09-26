@@ -8,7 +8,7 @@ export const translations: Translations = {
   Villas: { en: "Villas", it: "Ville" },
   Jets: { en: "Jets", it: "Jet" },
   Helicopters: { en: "Helicopters", it: "Elicotteri" },
-  Lottery: { en: "7 Millions Win", it: "Vinci 7 Milioni" },
+  Lottery: { en: "7 Millions Win", it: "DR7 7 Milioni" },
   Membership: { en: "Members", it: "Members" },
   My_Account: { en: "My Account", it: "Il Mio Account" },
   Partner_Dashboard: { en: "Partner Dashboard", it: "Dashboard Partner" },
@@ -222,7 +222,7 @@ export const translations: Translations = {
   View_Openings: { en: "View Openings", it: "Vedi Posizioni Aperte" },
 
   // Lottery Page
-  DR7_Christmas_Giveaway: { en: "7,000,000 Dollars Win", it: "Vinci 7.000.000 di Dollari" },
+  DR7_Christmas_Giveaway: { en: "$7 Millions Win", it: "DR7 $7 Millioni" },
   Prizes_Pool_Worth_Over: { en: "Prize Pool Worth Over $7,000,000", it: "Montepremi di Oltre $7.000.000" },
   Draw_Ends_In: { en: "Draw Ends In", it: "L'estrazione termina tra" },
   How_many_tickets: { en: "How many tickets?", it: "Quanti biglietti?" },
