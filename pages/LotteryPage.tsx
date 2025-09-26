@@ -363,8 +363,8 @@ const LotteryPage: React.FC = () => {
                             </div>
                         </div>
                         <div className="text-center mt-12">
-                            <Link to="/lottery-rules" className="inline-block py-3 sm:py-4 px-8 bg-white text-black rounded-full font-bold uppercase tracking-wider text-sm sm:text-base hover:bg-gray-200 transition-all duration-300 transform hover:scale-105">
-                                View Rules
+                            <Link to="/win-rules" className="inline-block py-3 sm:py-4 px-8 bg-white text-black rounded-full font-bold uppercase tracking-wider text-sm sm:text-base hover:bg-gray-200 transition-all duration-300 transform hover:scale-105">
+                                Win Rules
                             </Link>
                         </div>
                     </div>

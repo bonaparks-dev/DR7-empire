@@ -5,7 +5,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import BackButton from '../components/ui/BackButton';
 import { Button } from '../components/ui/Button';
 
-const LotteryRulesPage = () => {
+const WinRulesPage = () => {
   const navigate = useNavigate();
   const { t, setLanguage, language } = useTranslation();
 
@@ -337,4 +337,4 @@ const LotteryRulesPage = () => {
   );
 };
 
-export default LotteryRulesPage;
+export default WinRulesPage;

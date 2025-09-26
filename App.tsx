@@ -38,7 +38,6 @@ import SecuritySettings from './pages/account/SecuritySettings';
 import DocumentsVerification from './pages/account/DocumentsVerification';
 import MembershipStatus from './pages/account/MembershipStatus';
 import NotificationSettings from './pages/account/NotificationSettings';
-import PaymentMethods from './pages/account/PaymentMethods';
 import MembershipEnrollmentPage from './pages/MembershipEnrollmentPage';
 import { VerificationProvider } from './contexts/VerificationContext';
 import VerificationModal from './components/ui/VerificationModal';
@@ -54,7 +53,7 @@ import CookieBanner from './components/ui/CookieBanner';
 import { useAuth } from './hooks/useAuth';
 import AuthCallbackPage from './pages/AuthCallbackPage';
 import LotterySuccessPage from './pages/LotterySuccessPage';
-import LotteryRulesPage from './pages/LotteryRulesPage';
+import WinRulesPage from './pages/WinRulesPage';
 import LegalTermsPage from './pages/LegalTermsPage';
 import MyTickets from './pages/account/MyTickets';
 import ConfirmationSuccessPage from './pages/ConfirmationSuccessPage';
@@ -118,8 +117,8 @@ const AnimatedRoutes = () => {
             element={<LotteryPage />}
         />
         <Route 
-            path="/lottery-rules"
-            element={<LotteryRulesPage />}
+            path="/win-rules"
+            element={<WinRulesPage />}
         />
         <Route 
             path="/legal-terms"

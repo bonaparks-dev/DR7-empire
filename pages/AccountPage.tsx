@@ -3,7 +3,6 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { useAuth } from '../hooks/useAuth';
-import { UsersIcon, ShieldIcon, FileTextIcon, StarIcon, BellIcon, CreditCardIcon, TicketIcon } from '../components/icons/Icons';
 
 const AccountPage = () => {
     const { t } = useTranslation();
@@ -11,12 +10,12 @@ const AccountPage = () => {
     const location = useLocation();
 
     const navItems = [
-        { path: '/account/profile', label: t('Profile'), icon: UsersIcon },
-        { path: '/account/security', label: t('Security'), icon: ShieldIcon },
-        { path: '/account/documents', label: t('Documents'), icon: FileTextIcon },
-        { path: '/account/membership', label: t('My_Membership'), icon: StarIcon },
-        { path: '/account/tickets', label: t('My_Tickets'), icon: TicketIcon },
-        { path: '/account/notifications', label: t('Notifications'), icon: BellIcon },
+        { path: '/account/profile', label: t('Profile') },
+        { path: '/account/security', label: t('Security') },
+        { path: '/account/documents', label: t('Documents') },
+        { path: '/account/membership', label: t('My_Membership') },
+        { path: '/account/tickets', label: t('My_Tickets') },
+        { path: '/account/notifications', label: t('Notifications') },
     ];
     
     // Normalize path for accurate matching (e.g., /account/ -> /account/profile)
@@ -50,7 +49,6 @@ const AccountPage = () => {
                                         (isActive ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50 hover:text-white')
                                     }
                                 >
-                                    <item.icon className="w-5 h-5 mr-3 shrink-0" />
                                     {item.label}
                                 </NavLink>
                             ))}
