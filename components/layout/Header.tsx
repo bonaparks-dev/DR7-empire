@@ -5,7 +5,7 @@ import { useCurrency } from '../../contexts/CurrencyContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { RENTAL_CATEGORIES } from '../../constants';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MenuIcon, XIcon, UsersIcon, SignOutIcon, TicketIcon, StarIcon } from '../icons/Icons';
+import { MenuIcon, XIcon, UsersIcon, SignOutIcon } from '../icons/Icons';
 import { useAuth } from '../../hooks/useAuth';
 
 const LanguageSwitcher: React.FC = () => {
@@ -63,7 +63,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ i
         return () => { document.body.style.overflow = 'auto'; };
     }, [isOpen]);
     
-    const navLinkClasses = "flex items-center space-x-4 py-2.5 text-xl font-semibold text-gray-300 hover:text-white transition-colors duration-300";
+    const navLinkClasses = "py-2.5 text-xl font-semibold text-gray-300 hover:text-white transition-colors duration-300";
 
     const handleLogout = () => {
         logout();
@@ -115,20 +115,15 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ i
                         </div>
 
                         <nav className="flex-grow space-y-1">
-                            {RENTAL_CATEGORIES.map(cat => {
-                                const Icon = cat.icon;
-                                return (
+                            {RENTAL_CATEGORIES.map(cat => (
                                 <NavLink key={cat.id} to={`/${cat.id}`} onClick={onClose} className={navLinkClasses}>
-                                    {Icon && <Icon className="w-6 h-6" />}
                                     <span>{t(cat.label.en.replace(/ /g, '_') as any)}</span>
                                 </NavLink>
-                            )})}
+                            ))}
                             <NavLink to="/lottery" onClick={onClose} className={navLinkClasses}>
-                                <TicketIcon className="w-6 h-6" />
                                 <span>{t('Lottery')}</span>
                             </NavLink>
                             <NavLink to="/membership" onClick={onClose} className={navLinkClasses}>
-                                <StarIcon className="w-6 h-6" />
                                 <span>{t('Membership')}</span>
                             </NavLink>
                         </nav>
@@ -146,14 +141,12 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ i
                                         </div>
                                     </div>
                                     <Link to={accountLink} onClick={onClose} className="flex items-center justify-center w-full bg-gray-800 text-white py-3 rounded-full font-bold text-sm hover:bg-gray-700">
-                                        <UsersIcon className="w-5 h-5 mr-2" />
                                         {accountLabel}
                                     </Link>
                                     <button
                                         onClick={handleLogout}
                                         className="flex items-center justify-center w-full bg-gray-200 text-black py-3 rounded-full font-bold text-sm hover:bg-white"
                                     >
-                                        <SignOutIcon className="w-5 h-5 mr-2" />
                                         {t('Sign_Out')}
                                     </button>
                                 </div>
