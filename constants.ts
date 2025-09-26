@@ -206,7 +206,8 @@ const newCarsRawData = [
       "torque": "760Nm",
       "engine": "3.9L Twin-Turbo V8"
     },
-    "image": "/ferrari-portofino.jpeg"
+    "image": "/ferrari-portofino.jpeg",
+    "available": false
   },
   {
     "id": 15,
@@ -232,7 +233,7 @@ const newCarsRawData = [
       "extras": "Unlimited option: +50€"
     },
     "image": "/Ducato.jpeg",
-    "available": true
+    "available": false
   }
 ];
 
@@ -271,15 +272,17 @@ const mappedCars = newCarsRawData.map(car => {
         });
     }
 
+    const isAvailable = car.available !== false;
     return {
         id: `car-${car.id}`,
         name: car.name,
         image: car.image,
-        pricePerDay: {
+        available: isAvailable,
+        pricePerDay: isAvailable && car.dailyPrice ? {
             usd: Math.round(car.dailyPrice * EUR_TO_USD_RATE),
             eur: car.dailyPrice,
             crypto: 0
-        },
+        } : undefined,
         specs: specs
     };
 });

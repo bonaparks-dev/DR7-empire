@@ -489,4 +489,5 @@ export const translations: Translations = {
   "cookie.description": { en: "We use cookies to enhance your browsing experience, serve personalized ads or content, and analyze our traffic. By clicking \"Accept\", you consent to our use of cookies.", it: "Utilizziamo i cookie per migliorare la tua esperienza di navigazione, offrirti annunci o contenuti personalizzati e analizzare il nostro traffico. Cliccando \"Accetta\", acconsenti al nostro utilizzo dei cookie." },
   "cookie.decline": { en: "Decline", it: "Rifiuta" },
   "cookie.accept": { en: "Accept", it: "Accetta" },
+  Back_Soon: { en: "Back Soon", it: "Torna Presto" },
 };

@@ -26,6 +26,7 @@ export interface RentalItem {
   id: string;
   name: string;
   image: string;
+  available?: boolean;
   pricePerDay?: {
     usd: number;
     eur: number;
