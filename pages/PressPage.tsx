@@ -9,7 +9,7 @@ const PressPage: React.FC = () => {
             <h2>Media Inquiries</h2>
             <p>For all media inquiries, interviews, or other press-related matters, please contact our media relations team. We are happy to provide information about our company, services, and vision for the future of luxury.</p>
             <p>
-                <strong>Email:</strong> <a href="mailto:press@dr7.example.com">press@dr7.example.com</a>
+                <strong>Email:</strong> <a href="mailto:amministrazione@dr7luxuryempire.com">amministrazione@dr7luxuryempire.com</a>
             </p>
             
             <h2 className="mt-12">Press Releases</h2>
