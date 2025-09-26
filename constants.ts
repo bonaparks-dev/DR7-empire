@@ -59,7 +59,7 @@ const newCarsRawData = [
   {
     "id": 3,
     "name": "Audi RS3",
-    "dailyPrice": 60,
+    "dailyPrice": 70,
     "specs": {
       "acceleration": "0–100 in 3.8s",
       "maxSpeed": "Max speed: 250km/h",
@@ -73,7 +73,7 @@ const newCarsRawData = [
   {
     "id": 4,
     "name": "Audi RS3",
-    "dailyPrice": 60,
+    "dailyPrice": 70,
     "specs": {
       "acceleration": "0–100 in 3.8s",
       "power": "400Cv",
@@ -86,7 +86,7 @@ const newCarsRawData = [
   {
     "id": 5,
     "name": "Mercedes A45 S AMG",
-    "dailyPrice": 60,
+    "dailyPrice": 70,
     "specs": {
       "acceleration": "0–100 in 3.9s",
       "power": "421Cv",
@@ -97,21 +97,20 @@ const newCarsRawData = [
   },
   {
     "id": 6,
-    "name": "BMW M2",
-    "dailyPrice": 80,
+    "name": "Porsche Cayenne S",
+    "dailyPrice": 100,
     "specs": {
-      "acceleration": "0–100 in 4.1s",
-      "power": "460Cv",
-      "torque": "550Nm",
-      "engine": "3.0L inline 6-cylinder"
+      "acceleration": "0–100 in 5.0s",
+      "power": "475Cv",
+      "torque": "600Nm",
+      "engine": "4.0L twin-turbo V8"
     },
-    "image": "/bmw-m2.jpeg",
-    "available": false
+    "image": "/cayenne.jpeg",
   },
   {
     "id": 7,
     "name": "BMW M3 Competition",
-    "dailyPrice": 80,
+    "dailyPrice": 100,
     "specs": {
       "acceleration": "0–100 in 3.9s",
       "maxSpeed": "Max speed: 250km/h",
@@ -174,7 +173,7 @@ const newCarsRawData = [
   {
     "id": 12,
     "name": "Porsche Macan GTS",
-    "dailyPrice": 120,
+    "dailyPrice": 100,
     "specs": {
       "acceleration": "0–100 in 4.5s",
       "power": "440Cv",
