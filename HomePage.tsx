@@ -18,7 +18,7 @@ const CATEGORY_VIDEO: Record<string, string> = {
   cars: '/cars1.mp4',
   yachts: '/yacht.mp4',
   villas: '/villa1.mp4',
-  helicopters: '/helicopter1.mp4',
+  helicopters: '/helicopter.jpeg',
   jets: '/privatejet.mp4',
 };
 
@@ -78,9 +78,9 @@ const HomePage: React.FC = () => {
       <section className="py-24 relative bg-black">
         <div className="absolute inset-0 z-0">
           <img
-            src="https://picsum.photos/seed/lamborghini-revuelto-prize/1920/1080"
+            src="/banner.jpeg"
             alt="Lottery background"
-            className="w-full h-full object-cover opacity-30"
+            className="w-full h-full object-cover opacity-90"
           />
           <div className="absolute inset-0 bg-black/70"></div>
         </div>
