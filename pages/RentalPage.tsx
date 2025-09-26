@@ -256,9 +256,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                 >
-                    <h1 className="text-4xl md:text-5xl font-bold text-white text-center">
-                        {t('Our_Collection_of')} <span className="text-white">{getTranslated(category.label)}</span>
-                    </h1>
+                   
                 </motion.div>
 
                 <div 
