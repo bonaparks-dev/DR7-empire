@@ -73,6 +73,7 @@ export interface User {
   id: string;
   fullName: string;
   email: string;
+  provider?: string;
   role: 'personal' | 'business';
   companyName?: string;
   phone?: string;

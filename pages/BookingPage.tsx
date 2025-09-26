@@ -8,6 +8,7 @@ import { supabase } from '../supabaseClient';
 import { RENTAL_CATEGORIES, PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, COUNTRIES, INSURANCE_ELIGIBILITY, VALIDATION_MESSAGES, YACHT_PICKUP_MARINAS, AIRPORTS, HELI_DEPARTURE_POINTS, HELI_ARRIVAL_POINTS, VILLA_SERVICE_FEE_PERCENTAGE, CRYPTO_ADDRESSES, AGE_BUCKETS, LICENSE_YEARS_OPTIONS } from '../constants';
 import type { Booking, Inquiry, RentalItem } from '../types';
 import { CameraIcon, CreditCardIcon, CryptoIcon } from '../components/icons/Icons';
+import { QRCode } from 'react-qr-code';
 
 // Safely access the Stripe publishable key from Vite's environment variables.
 // If it's not available (e.g., in a non-Vite environment), it falls back to a placeholder.
@@ -521,8 +522,20 @@ const BookingPage: React.FC = () => {
                 ))}
               </div>
               <p className="text-gray-300 mb-4 text-sm">{t('Scan_or_copy_address_below')}</p>
-              <div className="w-40 h-40 bg-white p-2 rounded-md mx-auto flex items-center justify-center text-black">
-                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${CRYPTO_ADDRESSES[selectedCrypto]}`} alt={`${selectedCrypto.toUpperCase()} QR Code`} />
+              <div className="w-40 h-40 bg-black p-2 rounded-md mx-auto flex items-center justify-center text-white">
+                <QRCode
+                  value={CRYPTO_ADDRESSES[selectedCrypto]}
+                  size={144}
+                  bgColor="#000000"
+                  fgColor="#FFFFFF"
+                  level="H"
+                  imageSettings={{
+                    src: '/DR7logo.png',
+                    height: 30,
+                    width: 30,
+                    excavate: true,
+                  }}
+                />
               </div>
               <input type="text" readOnly value={CRYPTO_ADDRESSES[selectedCrypto]} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-4 text-white text-center text-sm tracking-tighter"/>
             </div>

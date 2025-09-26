@@ -4,15 +4,15 @@ import { useAuth } from '../../hooks/useAuth';
 
 const SecuritySettings = () => {
     const { t } = useTranslation();
-    const { user, updateUserPassword } = useAuth();
+    const { user, updateUserPassword, login } = useAuth();
+    const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [error, setError] = useState('');
     
-    // Check if user signed up with a password (not OAuth)
-    const isPasswordUser = user?.email ? true : false;
+    const isPasswordUser = user?.provider === 'email';
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -30,9 +30,22 @@ const SecuritySettings = () => {
 
         setIsSubmitting(true);
         try {
+            // Re-authenticate user
+            const { error: loginError } = await login(user!.email, currentPassword);
+            if (loginError) {
+                // Use a more specific error message if possible
+                if (loginError.message.includes('Invalid login credentials')) {
+                    throw new Error("The current password you entered is incorrect.");
+                }
+                throw loginError;
+            }
+
+            // If re-authentication is successful, update the password
             const { error: updateError } = await updateUserPassword(newPassword);
             if (updateError) throw updateError;
+
             setSuccessMessage(t('Password_updated_successfully'));
+            setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
             setTimeout(() => setSuccessMessage(''), 4000);
@@ -53,6 +66,10 @@ const SecuritySettings = () => {
                 <form onSubmit={handleSubmit}>
                     <div className="p-6 space-y-4">
                         {error && <p className="text-sm text-red-400 bg-red-900/20 p-3 rounded-md">{error}</p>}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300">{t('Current_Password')}</label>
+                            <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm text-white"/>
+                        </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-300">{t('New_Password')}</label>
                             <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm text-white"/>
