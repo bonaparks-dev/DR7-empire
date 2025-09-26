@@ -1,14 +1,13 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createClient } = require('@supabase/supabase-js');
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
-const crypto =require('crypto');
+const crypto = require('crypto');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
-const resend = new Resend(process.env.RESEND_API_KEY);
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 const hmacSecret = process.env.HMAC_SECRET_KEY;
 
@@ -51,6 +50,15 @@ const generateVoucherPDF = async (voucherData) => {
 
 // Core logic for creating and sending a voucher
 const createAndSendVoucher = async ({ email, paid_cents, stripe_object_id, value_cents }) => {
+  // Set up Nodemailer with Gmail
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  });
+
   try {
     // 1. Prepare Voucher Data
     const voucherDetails = {
@@ -108,27 +116,26 @@ const createAndSendVoucher = async ({ email, paid_cents, stripe_object_id, value
 
     if (uploadError) throw uploadError;
 
-    // 8. Get signed URL for the PDF
-    const { data: urlData, error: urlError } = await supabase.storage
-      .from('vouchers')
-      .createSignedUrl(pdfPath, 31536000); // 1 year expiry for URL
-
-    if (urlError) throw urlError;
-
-    // 9. Update voucher with pdf_path
+    // 8. Update voucher with pdf_path
     await supabase.from('vouchers').update({ pdf_path: pdfPath }).eq('id', newVoucher.id);
 
-    // 10. Send Email with Resend
-    await resend.emails.send({
-      from: 'noreply@dr7empire.com',
+    // 9. Send Email with Nodemailer
+    await transporter.sendMail({
+      from: `"DR7 Empire" <${process.env.GMAIL_USER}>`,
       to: email,
       subject: 'Your DR7 Gift Card – €25 value',
       html: `<h1>Thank you for your purchase!</h1>
              <p>Here is your gift card code: <strong>${newVoucher.code}</strong></p>
              <p>Value: €25</p>
              <p>Valid from: 26/12/2025 to 31/12/2026</p>
-             <p>You can download your voucher PDF here:</p>
-             <a href="${urlData.signedUrl}">Download Voucher</a>`,
+             <p>Your voucher is attached to this email as a PDF.</p>`,
+      attachments: [
+        {
+          filename: `${newVoucher.code}.pdf`,
+          content: pdfBuffer,
+          contentType: 'application/pdf',
+        },
+      ],
     });
 
   } catch (error) {

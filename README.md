@@ -38,8 +38,9 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 
-# Resend
-RESEND_API_KEY=re_...
+# Gmail (Nodemailer)
+GMAIL_USER=your-email@gmail.com
+GMAIL_APP_PASSWORD=your-16-character-google-app-password
 
 # Security
 HMAC_SECRET_KEY=a-very-strong-and-random-secret-key
@@ -69,7 +70,17 @@ ADMIN_PIN=a-secure-4-to-8-digit-pin-for-redemption
         - **`checkout.session.completed`** (if you use Stripe Checkout elsewhere)
     *   After creating the endpoint, copy the **Signing secret** and set it as your `STRIPE_WEBHOOK_SECRET` environment variable.
 
-### 4. Resend Setup
+### 4. Gmail (Nodemailer) Setup
 
-1.  **API Key**: Sign up for Resend and create an API key. Set it as `RESEND_API_KEY`.
-2.  **Domain**: You will need to verify a domain with Resend to send emails from it (e.g., `noreply@yourdomain.com`).
+To send voucher emails via your Gmail account, you need to configure it securely.
+
+1.  **Enable 2-Step Verification**: Your Google Account must have 2-Step Verification enabled. You can check this at [myaccount.google.com/security](https://myaccount.google.com/security).
+2.  **Generate an App Password**:
+    *   Go to the [App Passwords page](https://myaccount.google.com/apppasswords) in your Google Account settings.
+    *   If prompted, sign in again.
+    *   At the bottom, click **Select app** and choose **Other (Custom name)**.
+    *   Name it something descriptive, like `DR7 Empire Vouchers`, and click **GENERATE**.
+    *   Google will generate a 16-character password. **Copy this password immediately**, as you won't be able to see it again.
+3.  **Set Environment Variables**:
+    *   Set `GMAIL_USER` to your full Gmail address (e.g., `your-name@gmail.com`).
+    *   Set `GMAIL_APP_PASSWORD` to the 16-character App Password you just generated (without spaces).
