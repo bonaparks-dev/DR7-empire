@@ -199,10 +199,41 @@ const Header: React.FC = () => {
                     <NavLink to="/" className="flex items-center">
                         <img src="/DR7logo.png" alt="DR7 Empire Logo" className="h-10 w-auto" />
                     </NavLink>
+
+                    {/* Desktop Navigation */}
+                    <nav className="hidden md:flex items-center space-x-6">
+                        {RENTAL_CATEGORIES.map(cat => (
+                            <NavLink
+                                key={cat.id}
+                                to={`/${cat.id}`}
+                                className={({ isActive }) =>
+                                    `text-sm font-medium transition-colors duration-300 ${isActive ? 'text-white' : 'text-gray-400 hover:text-white'}`
+                                }
+                            >
+                                {t(cat.label.en.replace(/ /g, '_') as any)}
+                            </NavLink>
+                        ))}
+                        <NavLink
+                            to="/lottery"
+                            className={({ isActive }) =>
+                                `text-sm font-medium transition-colors duration-300 ${isActive ? 'text-white' : 'text-gray-400 hover:text-white'}`
+                            }
+                        >
+                            {t('Lottery')}
+                        </NavLink>
+                        <NavLink
+                            to="/membership"
+                            className={({ isActive }) =>
+                                `text-sm font-medium transition-colors duration-300 ${isActive ? 'text-white' : 'text-gray-400 hover:text-white'}`
+                            }
+                        >
+                            {t('Membership')}
+                        </NavLink>
+                    </nav>
                     
                     <div className="flex items-center space-x-4">
                         <AnimatePresence mode="wait">
-                            {user && (
+                            {user ? (
                                 <motion.div
                                     key="user-controls"
                                     initial={{ opacity: 0, x: 10 }}
@@ -212,23 +243,35 @@ const Header: React.FC = () => {
                                 >
                                     <Link
                                         to={user.role === 'business' ? '/partner/dashboard' : '/account'}
-                                        className="flex items-center justify-center w-9 h-9 bg-gray-800/70 border border-gray-700 rounded-full text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+                                        className="hidden md:flex items-center justify-center w-9 h-9 bg-gray-800/70 border border-gray-700 rounded-full text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
                                         title={user.role === 'business' ? t('Partner_Dashboard') : t('My_Account')}
                                     >
                                         <UsersIcon className="w-5 h-5" />
                                     </Link>
                                     <button
                                         onClick={logout}
-                                        className="flex items-center justify-center w-9 h-9 bg-gray-800/70 border border-gray-700 rounded-full text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+                                        className="hidden md:flex items-center justify-center w-9 h-9 bg-gray-800/70 border border-gray-700 rounded-full text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
                                         title={t('Sign_Out')}
                                     >
                                         <SignOutIcon className="w-5 h-5" />
                                     </button>
                                 </motion.div>
+                            ) : (
+                                <Link
+                                    to="/signin"
+                                    className="hidden md:block bg-white text-black px-5 py-2 rounded-full font-bold text-sm hover:bg-gray-200 transition-colors"
+                                >
+                                    {t('Sign_In')}
+                                </Link>
                             )}
                         </AnimatePresence>
                         
-                        <button onClick={() => setIsMenuOpen(true)} aria-label="Open menu" className="text-gray-200 hover:text-white p-2 -mr-2 rounded-full hover:bg-gray-800">
+                        {/* Mobile Menu Button */}
+                        <button
+                            onClick={() => setIsMenuOpen(true)}
+                            aria-label="Open menu"
+                            className="md:hidden text-gray-200 hover:text-white p-2 -mr-2 rounded-full hover:bg-gray-800"
+                        >
                             <MenuIcon className="w-7 h-7" />
                         </button>
                     </div>
