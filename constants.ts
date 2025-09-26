@@ -40,7 +40,7 @@ const newCarsRawData = [
       "torque": "600Nm",
       "engine": "2.9L V6 BiTurbo"
     },
-    "image": "/alpha.png",
+    "image": "/alpha.jpeg",
     "available": false
   },
   {
