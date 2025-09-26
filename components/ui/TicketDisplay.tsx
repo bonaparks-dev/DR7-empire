@@ -3,32 +3,7 @@ import { motion } from 'framer-motion';
 import { TicketIcon } from '../icons/Icons';
 import type { LotteryTicket } from '../../types';
 
-declare global {
-    interface Window {
-        EasyQRCode: any;
-    }
-}
-
 const TicketDisplay: React.FC<{ ticket: LotteryTicket }> = ({ ticket }) => {
-    const qrCodeRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (qrCodeRef.current && window.EasyQRCode) {
-            qrCodeRef.current.innerHTML = ''; // Clear previous QR code
-            new window.EasyQRCode(qrCodeRef.current, {
-                text: ticket.uuid,
-                width: 100,
-                height: 100,
-                colorDark: "#FFFFFF",
-                colorLight: "#000000",
-                correctLevel: window.EasyQRCode.CorrectLevel.H,
-                logo: '/DR7logo.png',
-                logoWidth: 30,
-                logoHeight: 30,
-                logoBackgroundTransparent: true,
-            });
-        }
-    }, [ticket.uuid]);
 
     return (
         <motion.div
@@ -61,11 +36,6 @@ const TicketDisplay: React.FC<{ ticket: LotteryTicket }> = ({ ticket }) => {
             </div>
 
             <div className="mt-auto pt-4 text-center">
-                <div className="bg-black p-1 inline-block rounded-md shadow-lg w-[108px] h-[108px] mx-auto">
-                    <div ref={qrCodeRef} className="w-[100px] h-[100px] mx-auto">
-                        {/* QR Code will be generated here */}
-                    </div>
-                </div>
                 <p className="text-xs text-gray-500 font-mono mt-2 break-all">ID: {ticket.uuid}</p>
             </div>
         </motion.div>
