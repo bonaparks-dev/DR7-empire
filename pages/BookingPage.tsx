@@ -387,7 +387,7 @@ const BookingPage: React.FC = () => {
         const commonData = {
           bookingId: crypto.randomUUID(), userId: user ? user.id : 'guest-user', itemId: item.id, itemName: item.name, image: item.image,
           totalPrice: total, currency: currency.toUpperCase() as 'USD' | 'EUR',
-          customer: { fullName: formData.fullName, email: formData.email, phone: formData.phone, countryOfResidency: formData.countryOfResidency },
+          customer: { fullName: formData.fullName, email: formData.email, phone: formData.phone, age: Number(formData.ageMin), countryOfResidency: formData.countryOfResidency },
           paymentMethod: formData.paymentMethod, bookedAt: new Date().toISOString(),
         };
 

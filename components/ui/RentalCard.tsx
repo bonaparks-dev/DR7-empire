@@ -35,7 +35,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook }) => {
       className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg overflow-hidden group transition-all duration-300 hover:border-white/50 hover:shadow-2xl hover:shadow-white/10 flex flex-col"
     >
       <div className="relative overflow-hidden">
-        <img src={item.image} alt={item.name} className="w-full h-[700px] object-cover transition-transform duration-500" />
+        <img src={item.image} alt={item.name} className="w-full aspect-[9/16] object-cover transition-transform duration-500" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
       </div>
       <div className="p-6 flex-grow flex flex-col">
