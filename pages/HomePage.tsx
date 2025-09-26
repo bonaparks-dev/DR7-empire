@@ -67,22 +67,8 @@ const HomePage: React.FC = () => {
             transition={{ duration: 0.5 }}
             className="text-4xl font-bold text-white"
           >
-            {t('Lottery_DR7')}
+            7 Millions $ Win
           </motion.h2>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.5 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="mt-8"
-          >
-            <Link
-              to="/lottery"
-              className="bg-white text-black px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm hover:bg-gray-200 transition-all duration-300 transform hover:scale-105"
-            >
-              {t('Enter_Now')}
-            </Link>
-          </motion.div>
         </div>
       </section>
 
