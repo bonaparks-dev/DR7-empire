@@ -7,7 +7,7 @@ import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
 import { RENTAL_CATEGORIES, PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, COUNTRIES, INSURANCE_ELIGIBILITY, VALIDATION_MESSAGES, YACHT_PICKUP_MARINAS, AIRPORTS, HELI_DEPARTURE_POINTS, HELI_ARRIVAL_POINTS, VILLA_SERVICE_FEE_PERCENTAGE, CRYPTO_ADDRESSES, AGE_BUCKETS, LICENSE_YEARS_OPTIONS } from '../constants';
 import type { Booking, Inquiry, RentalItem } from '../types';
-import { CameraIcon, CreditCardIcon, CryptoIcon } from '../components/icons/Icons';
+import { CameraIcon, CreditCardIcon } from '../components/icons/Icons';
 
 // Safely access the Stripe publishable key from Vite's environment variables.
 const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
@@ -48,7 +48,7 @@ const BookingPage: React.FC = () => {
       checkinDate: location.state?.checkinDate || today, 
       checkoutDate: location.state?.checkoutDate || '', 
       guests: location.state?.guests || 1,
-      licenseImage: '', paymentMethod: 'stripe' as 'stripe' | 'crypto',
+      licenseImage: '', paymentMethod: 'stripe',
       tripType: location.state?.tripType || 'one-way' as 'one-way' | 'round-trip', 
       departurePoint: location.state?.departurePoint || '', 
       arrivalPoint: location.state?.arrivalPoint || '', 
@@ -76,7 +76,6 @@ const BookingPage: React.FC = () => {
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [selectedCrypto, setSelectedCrypto] = useState('btc');
   const [isFirstCarBooking, setIsFirstCarBooking] = useState(true);
 
   const { category, item, isCar, isJet, isHelicopter, isYacht, isVilla, isQuoteRequest } = useMemo(() => {
@@ -499,29 +498,16 @@ const BookingPage: React.FC = () => {
     const paymentStepContent = (
       <div>
         <div className="flex border-b border-gray-700">
-          <button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'stripe'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${formData.paymentMethod === 'stripe' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}><CreditCardIcon className="w-5 h-5"/>{t('Credit_Card')}</button>
-          <button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'crypto'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${formData.paymentMethod === 'crypto' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}><CryptoIcon className="w-5 h-5"/>{t('Cryptocurrency')}</button>
+          <button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'stripe'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors flex items-center justify-center gap-2 text-white border-b-2 border-white`}><CreditCardIcon className="w-5 h-5"/>{t('Credit_Card')}</button>
         </div>
         <div className="mt-6">
-          {formData.paymentMethod === 'stripe' ? 
-            <div className="space-y-4">
-              <label className="text-sm font-medium text-gray-300 block">{t('Credit_Card')}</label>
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 min-h-[56px] flex items-center">
-                {isClientSecretLoading ? <div className="flex items-center text-gray-400 text-sm"><motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-4 h-4 border-2 border-t-white border-gray-600 rounded-full mr-2"/><span>Initializing Payment...</span></div> : <div ref={cardElementRef} className="w-full"/>}
-              </div>
-              {stripeError && <p className="text-xs text-red-400 mt-1">{stripeError}</p>}
-            </div> : 
-            <div className="text-center space-y-4">
-              <label className="text-sm font-medium text-gray-300 block">{t('Select_your_crypto')}</label>
-              <div className="flex border border-gray-700 rounded-full p-1 max-w-sm mx-auto">
-                {Object.keys(CRYPTO_ADDRESSES).map(c => (
-                  <button type="button" key={c} onClick={() => setSelectedCrypto(c)} className={`flex-1 py-1 text-sm rounded-full transition-colors ${selectedCrypto === c ? 'bg-white text-black font-bold' : 'text-gray-300'}`}>{c.toUpperCase()}</button>
-                ))}
-              </div>
-              <p className="text-gray-300 mb-4 text-sm">{t('Scan_or_copy_address_below')}</p>
-              <input type="text" readOnly value={CRYPTO_ADDRESSES[selectedCrypto]} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-4 text-white text-center text-sm tracking-tighter"/>
+          <div className="space-y-4">
+            <label className="text-sm font-medium text-gray-300 block">{t('Credit_Card')}</label>
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 min-h-[56px] flex items-center">
+              {isClientSecretLoading ? <div className="flex items-center text-gray-400 text-sm"><motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-4 h-4 border-2 border-t-white border-gray-600 rounded-full mr-2"/><span>Initializing Payment...</span></div> : <div ref={cardElementRef} className="w-full"/>}
             </div>
-          }
+            {stripeError && <p className="text-xs text-red-400 mt-1">{stripeError}</p>}
+          </div>
         </div>
       </div>
     );

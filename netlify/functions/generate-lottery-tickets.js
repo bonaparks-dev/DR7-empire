@@ -43,10 +43,6 @@ const generateEmailHtml = (fullName, tickets) => {
       <div style="border-top: 1px dashed #555; margin: 15px 0;"></div>
       <p style="margin: 0 0 5px; font-size: 12px; color: #ccc; text-transform: uppercase;">Ticket Holder</p>
       <p style="margin: 0 0 15px; font-size: 18px; font-weight: bold; color: #fff;">${fullName}</p>
-      <div style="margin-top: 15px; position: relative; display: inline-block; width: 128px; height: 128px;">
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${ticket.uuid}&ecc=H" alt="Ticket QR Code" style="width: 120px; height: 120px; display: block; border: 4px solid white; border-radius: 4px;">
-        <img src="https://firebasestorage.googleapis.com/v0/b/dr7-empire.appspot.com/o/DR7logo.png?alt=media" alt="DR7 Logo" style="position: absolute; top: 50%; left: 50%; width: 36px; height: 36px; margin-top: -20px; margin-left: -20px; background: white; padding: 2px; border-radius: 4px;">
-      </div>
       <p style="margin: 10px 0 0; font-size: 10px; color: #777; font-family: monospace; line-height: 1.4;">
         ID: ${ticket.uuid}
       </p>
