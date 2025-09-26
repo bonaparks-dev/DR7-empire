@@ -62,13 +62,21 @@ exports.handler = async (event) => {
       return createResponse(400, { error: 'Amount must be greater than zero.'});
     }
 
+    const metadata = {
+        email: email,
+        purchaseType: 'lottery-ticket'
+    };
+
+    // If the purchase is for a 20 EUR ticket, flag it for a voucher.
+    if (amountInCents === 2000 && currency.toLowerCase() === 'eur') {
+        metadata.generateVoucher = 'true';
+        metadata.voucherValue = '2500'; // The 25€ voucher value in cents
+    }
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
       currency: currency.toLowerCase(),
-      metadata: {
-          email: email,
-          purchaseType: 'lottery-ticket'
-      }
+      metadata: metadata
       // The `automatic_payment_methods` parameter is removed.
       // This creates a standard Payment Intent that is compatible with
       // the `confirmCardPayment` method used on the frontend.

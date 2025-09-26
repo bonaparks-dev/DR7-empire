@@ -17,6 +17,8 @@
     "bcryptjs": "^2.4.3",
     "framer-motion": "^12.23.12",
     "jsonwebtoken": "^9.0.2",
+    "pdfkit": "^0.17.2",
+    "qrcode": "^1.5.4",
     "qrcode.react": "^4.2.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
