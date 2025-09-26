@@ -2,10 +2,8 @@
 
 // Node: CommonJS is fine on Netlify functions
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 const { createHash } = require('crypto');
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ---- Optional: Supabase persistence (uncomment if you want DB storage) ----
 // const { createClient } = require('@supabase/supabase-js');
@@ -134,8 +132,8 @@ exports.handler = async (event) => {
     return createResponse(405, { success: false, error: 'Method Not Allowed' });
   }
 
-  if (!process.env.STRIPE_SECRET_KEY || !process.env.RESEND_API_KEY) {
-    console.error('Missing STRIPE_SECRET_KEY or RESEND_API_KEY.');
+  if (!process.env.STRIPE_SECRET_KEY || !process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    console.error('Missing Stripe or Gmail environment variables.');
     return createResponse(500, { success: false, error: 'Server configuration error.' });
   }
 
@@ -198,13 +196,20 @@ exports.handler = async (event) => {
     //   }
     // }
 
-    // 4) Send Email (Resend) — ensure your domain is verified and FROM is allowed
-    const fromAddress = process.env.RESEND_FROM || 'DR7 Empire <noreply@dr7empire.com>';
+    // 4) Send Email (Nodemailer/Gmail)
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD,
+      },
+    });
+
     const emailHtml = generateEmailHtml(fullName || 'Valued Customer', tickets);
 
-    await resend.emails.send({
-      from: fromAddress,
-      to: [email],
+    await transporter.sendMail({
+      from: `"DR7 Empire" <${process.env.GMAIL_USER}>`,
+      to: email,
       subject: 'Your DR7 Lottery Tickets',
       html: emailHtml,
     });

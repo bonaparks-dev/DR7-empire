@@ -67,8 +67,11 @@ exports.handler = async (event) => {
         purchaseType: 'lottery-ticket'
     };
 
-    // If the purchase is for a 20 EUR ticket, flag it for a voucher.
-    if (amountInCents === 2000 && currency.toLowerCase() === 'eur') {
+    const isEurVoucher = amountInCents === 2000 && currency.toLowerCase() === 'eur';
+    const isUsdVoucher = amountInCents === 2360 && currency.toLowerCase() === 'usd';
+
+    // If the purchase is for a 20 EUR or $23.60 USD ticket, flag it for a voucher.
+    if (isEurVoucher || isUsdVoucher) {
         metadata.generateVoucher = 'true';
         metadata.voucherValue = '2500'; // The 25€ voucher value in cents
     }
