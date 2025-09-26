@@ -97,26 +97,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = useCallback(async (email: string, password?: string) => {
+    setLoading(true);
     const { data, error } = await supabase.auth.signInWithPassword({ email, password: password! });
     if (data.user) {
+        // onAuthStateChange will set loading to false
         return { user: mapSupabaseUserToAppUser(data.user), error };
     }
+    setLoading(false);
     return { user: null, error };
   }, []);
 
   const signup = useCallback(async (email: string, password: string, data: { full_name: string, company_name?: string, role: 'personal' | 'business' }) => {
-    return supabase.auth.signUp({ 
+    setLoading(true);
+    const result = await supabase.auth.signUp({
         email, 
         password,
         options: { 
             data,
-            // Point to the dedicated callback page within the app.
             emailRedirectTo: `${window.location.origin}/auth/callback`,
         }
     });
+    // Stop loading after the attempt. The user is not logged in until email confirmation.
+    setLoading(false);
+    return result;
   }, []);
 
-  const logout = useCallback(() => supabase.auth.signOut(), []);
+  const logout = useCallback(async () => {
+    setLoading(true);
+    const result = await supabase.auth.signOut();
+    // If sign-out fails, we must stop loading. Otherwise, onAuthStateChange will handle it.
+    if (result.error) {
+      setLoading(false);
+    }
+    return result;
+  }, []);
   
   const signInWithGoogle = useCallback(() => {
     sessionStorage.setItem('oauth_in_progress', 'true');
