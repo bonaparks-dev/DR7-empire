@@ -8,7 +8,7 @@ export const translations: Translations = {
   Villas: { en: "Villas", it: "Ville" },
   Jets: { en: "Jets", it: "Jet" },
   Helicopters: { en: "Helicopters", it: "Elicotteri" },
-  Lottery: { en: "Lottery", it: "Lotteria" },
+  Lottery: { en: "7 Millions Win", it: "Vinci 7 Milioni" },
   Membership: { en: "Membership", it: "Club" },
   My_Account: { en: "My Account", it: "Il Mio Account" },
   Partner_Dashboard: { en: "Partner Dashboard", it: "Dashboard Partner" },
