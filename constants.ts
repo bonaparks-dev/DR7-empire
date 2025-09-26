@@ -798,7 +798,7 @@ export const AGE_BUCKETS = [
   { value: 30, label: '30+' },
 ];
 
-export const LICENSE_YEARS_OPTIONS = Array.from({ length: 16 }, (_, i) => i); // 0 to 15
+export const LICENSE_OBTENTION_YEAR_OPTIONS = Array.from({ length: 70 }, (_, i) => new Date().getFullYear() - i);
 
 export const YACHT_PICKUP_MARINAS = [
     { id: 'marina_di_cagliari', label: { en: 'Marina di Cagliari', it: 'Marina di Cagliari' } },

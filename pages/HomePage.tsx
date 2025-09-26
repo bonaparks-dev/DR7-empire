@@ -78,7 +78,7 @@ const HomePage: React.FC = () => {
       <section className="py-24 relative bg-black">
         <div className="absolute inset-0 z-0">
           <img
-            src="https://picsum.photos/seed/lamborghini-revuelto-prize/1920/1080"
+            src="/banner.jpeg"
             alt="Lottery background"
             className="w-full h-full object-cover opacity-30"
           />
