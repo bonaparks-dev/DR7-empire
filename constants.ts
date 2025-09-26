@@ -641,7 +641,7 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
     id: 'helicopters',
     label: { en: 'Helicopters', it: 'Elicotteri' },
     data: [
-        { id: 'heli-1', name: 'Airbus H125', image: '/helicopters/airbus_h125.jpeg', specs: helicopterSpecs },
+        { id: 'heli-1', name: 'Airbus H125', image: '/helicopter.jpeg', specs: helicopterSpecs },
         { id: 'heli-2', name: 'Bell 505 Jet Ranger X', image: '/helicopters/bell_505.jpeg', specs: helicopterSpecs },
     ],
     icon: HelicopterIcon,
