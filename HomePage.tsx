@@ -15,7 +15,7 @@ const DISPLAY_TITLE: Record<string, string> = {
 
 // Map category ids to image filenames in /public
 const CATEGORY_IMAGE: Record<string, string> = {
-  cars: '/cars.jpeg',
+  cars: '/car.jpeg',
   yachts: '/yacht.jpeg',
   villas: '/villa.jpeg',
   helicopters: '/helicopter.jpeg',
