@@ -80,7 +80,7 @@ const HomePage: React.FC = () => {
           <img
             src="/banner.jpeg"
             alt="Lottery background"
-            className="w-full h-full object-cover opacity-90"
+            className="w-full h-full object-cover opacity-10"
           />
           <div className="absolute inset-0 bg-black/70"></div>
         </div>
