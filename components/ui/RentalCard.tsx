@@ -39,15 +39,16 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook }) => {
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
       </div>
       <div className="p-6 flex-grow flex flex-col">
+        <h3 className="text-xl font-bold text-white">{item.name}</h3>
         <div className="flex justify-between items-center mt-auto pt-4">
           <div>
-            {item.pricePerDay ? (
+            {item.available !== false && item.pricePerDay ? (
               <>
                 <span className="text-xl font-bold text-white">{formatPrice(item.pricePerDay[currency])}</span>
                 <span className="text-sm text-gray-400 ml-1">/{t('per_day')}</span>
               </>
             ) : (
-                 <span className="text-lg font-semibold text-white">{t('Quote_by_request')}</span>
+              isQuoteRequest && <span className="text-lg font-semibold text-white">{t('Quote_by_request')}</span>
             )}
           </div>
            {isVilla ? (
@@ -60,9 +61,10 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook }) => {
           ) : (
             <button 
               onClick={() => onBook(item)}
-              className="bg-transparent border-2 border-white text-white px-6 py-2 rounded-full font-semibold text-sm transform transition-all duration-300 group-hover:bg-white group-hover:text-black group-hover:scale-105"
+              disabled={item.available === false}
+              className="bg-transparent border-2 border-white text-white px-6 py-2 rounded-full font-semibold text-sm transform transition-all duration-300 group-hover:bg-white group-hover:text-black group-hover:scale-105 disabled:bg-gray-700 disabled:border-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed disabled:scale-100"
             >
-              {isQuoteRequest ? t('Request_Quote') : t('Book_Now')}
+              {item.available === false ? t('Back_Soon') : (isQuoteRequest ? t('Request_Quote') : t('Book_Now'))}
             </button>
           )}
         </div>
