@@ -4,7 +4,8 @@ import type { RentalItem } from '../types';
 interface BookingContextType {
   bookingItem: RentalItem | null;
   isBookingOpen: boolean;
-  openBooking: (item: RentalItem) => void;
+  bookingCategory: 'yachts' | 'villas' | null;
+  openBooking: (item: RentalItem, categoryId: 'yachts' | 'villas') => void;
   closeBooking: () => void;
 }
 
@@ -13,6 +14,7 @@ export const BookingContext = createContext<BookingContextType | undefined>(unde
 export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [bookingItem, setBookingItem] = useState<RentalItem | null>(null);
+  const [bookingCategory, setBookingCategory] = useState<'yachts' | 'villas' | null>(null);
 
   useEffect(() => {
     if (isBookingOpen) {
@@ -26,8 +28,9 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [isBookingOpen]);
 
 
-  const openBooking = (item: RentalItem) => {
+  const openBooking = (item: RentalItem, categoryId: 'yachts' | 'villas') => {
     setBookingItem(item);
+    setBookingCategory(categoryId);
     setIsBookingOpen(true);
   };
 
@@ -36,15 +39,17 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     // Delay clearing the item to allow for exit animation
     setTimeout(() => {
         setBookingItem(null);
+        setBookingCategory(null);
     }, 300);
   };
   
   const value = useMemo(() => ({
     bookingItem,
     isBookingOpen,
+    bookingCategory,
     openBooking,
     closeBooking,
-  }), [bookingItem, isBookingOpen]);
+  }), [bookingItem, isBookingOpen, bookingCategory]);
 
   return (
     <BookingContext.Provider value={value}>

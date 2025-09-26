@@ -4,6 +4,8 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
 import { BookingProvider } from './contexts/BookingContext';
 import { AuthProvider } from './contexts/AuthContext';
+import { Elements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import HomePage from './pages/HomePage';
@@ -193,6 +195,8 @@ const PageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     );
 };
 
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
+
 const App = () => {
   return (
     <LanguageProvider>
@@ -200,23 +204,25 @@ const App = () => {
         <BookingProvider>
           <AuthProvider>
             <VerificationProvider>
-              <BrowserRouter>
-                <ScrollToTop />
-                <AuthRedirector />
-                <div className="bg-black min-h-screen font-sans antialiased relative overflow-x-hidden">
-                  <div className="absolute top-0 left-0 w-full h-full bg-grid-white/[0.05] z-0"></div>
-                  <div className="relative z-10 flex flex-col min-h-screen">
-                    <Header />
-                    <main className="flex-grow">
-                      <AnimatedRoutes />
-                    </main>
-                    <Footer />
+              <Elements stripe={stripePromise}>
+                <BrowserRouter>
+                  <ScrollToTop />
+                  <AuthRedirector />
+                  <div className="bg-black min-h-screen font-sans antialiased relative overflow-x-hidden">
+                    <div className="absolute top-0 left-0 w-full h-full bg-grid-white/[0.05] z-0"></div>
+                    <div className="relative z-10 flex flex-col min-h-screen">
+                      <Header />
+                      <main className="flex-grow">
+                        <AnimatedRoutes />
+                      </main>
+                      <Footer />
+                    </div>
+                    <BookingModal />
+                    <VerificationModal />
+                    <CookieBanner />
                   </div>
-                  <BookingModal />
-                  <VerificationModal />
-                  <CookieBanner />
-                </div>
-              </BrowserRouter>
+                </BrowserRouter>
+              </Elements>
             </VerificationProvider>
           </AuthProvider>
         </BookingProvider>

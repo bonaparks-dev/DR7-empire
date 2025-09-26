@@ -230,7 +230,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
     if (['cars', 'jets', 'helicopters'].includes(categoryId)) {
         navigate(`/book/${categoryId}/${item.id}`);
     } else {
-        openBooking(item);
+        openBooking(item, categoryId as 'yachts' | 'villas');
     }
   };
 

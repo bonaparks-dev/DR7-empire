@@ -4,11 +4,12 @@ import { useBooking } from '../../hooks/useBooking';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import { useAuth } from '../../hooks/useAuth';
+import { supabase } from '../../supabaseClient';
 import type { Booking } from '../../types';
 import { XIcon } from '../icons/Icons';
 
 const BookingModal: React.FC = () => {
-    const { isBookingOpen, closeBooking, bookingItem } = useBooking();
+    const { isBookingOpen, closeBooking, bookingItem, bookingCategory } = useBooking();
     const { t, lang, getTranslated } = useTranslation();
     const { currency } = useCurrency();
     const { user } = useAuth();
@@ -74,16 +75,16 @@ const BookingModal: React.FC = () => {
         }, 300); // Reset form after animation
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!bookingItem || totalDays <= 0) return;
+        if (!bookingItem || totalDays <= 0 || !bookingCategory) return;
 
-        const newBooking: Booking = {
-            bookingId: crypto.randomUUID(),
-            userId: user ? user.email : 'guest-user',
+        const newBookingData: Omit<Booking, 'bookingId'> = {
+            userId: user ? user.id : 'guest-user',
             itemId: bookingItem.id,
             itemName: bookingItem.name,
             image: bookingItem.image,
+            itemCategory: bookingCategory,
             pickupDate,
             pickupTime: '15:00', // Default check-in time for non-car rentals
             returnDate,
@@ -95,12 +96,24 @@ const BookingModal: React.FC = () => {
             driverLicenseImage: '', // Not applicable for non-car rentals
             paymentMethod: 'stripe', // Default payment method
             bookedAt: new Date().toISOString(),
+            insuranceOption: 'none',
+            extras: [],
+            pickupLocation: bookingItem.location
         };
 
-        const existingBookings = JSON.parse(localStorage.getItem('bookings') || '[]') as Booking[];
-        localStorage.setItem('bookings', JSON.stringify([...existingBookings, newBooking]));
+        const { data, error } = await supabase
+            .from('bookings')
+            .insert(newBookingData)
+            .select()
+            .single();
         
-        setCompletedBooking(newBooking);
+        if (error) {
+            console.error('Error creating booking in modal:', error);
+            // Optionally, show an error to the user
+            return;
+        }
+
+        setCompletedBooking(data);
         setIsConfirmed(true);
     };
 
