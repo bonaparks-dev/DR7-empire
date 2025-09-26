@@ -97,6 +97,11 @@ const HomePage: React.FC = () => {
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {RENTAL_CATEGORIES.map((category, index) => {
+              const imageSrc =
+                CATEGORY_IMAGE[category.id as keyof typeof CATEGORY_IMAGE] ||
+                category.data?.[0]?.image ||
+                '/placeholder.jpeg';
+
               const displayTitle =
                 DISPLAY_TITLE[category.id as keyof typeof DISPLAY_TITLE] || getTranslated(category.label);
 
@@ -116,7 +121,7 @@ const HomePage: React.FC = () => {
                     className="block group relative rounded-lg overflow-hidden"
                   >
                     <img
-                      src={category.data[0].image}
+                      src={imageSrc}
                       alt={displayTitle}
                       className={`w-full ${isFeatured ? 'h-[40rem]' : 'h-96'} object-cover brightness-75 group-hover:brightness-100 transition-all duration-500 group-hover:scale-110`}
                     />

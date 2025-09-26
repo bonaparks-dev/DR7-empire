@@ -120,6 +120,7 @@ const HomePage: React.FC = () => {
             {RENTAL_CATEGORIES.map((category, index) => {
               const imageSrc =
                 CATEGORY_IMAGE[category.id as keyof typeof CATEGORY_IMAGE] ||
+                category.data?.[0]?.image ||
                 '/placeholder.jpeg';
 
               const displayTitle =
