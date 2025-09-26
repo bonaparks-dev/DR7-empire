@@ -8,12 +8,10 @@ import { supabase } from '../supabaseClient';
 import { RENTAL_CATEGORIES, PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, COUNTRIES, INSURANCE_ELIGIBILITY, VALIDATION_MESSAGES, YACHT_PICKUP_MARINAS, AIRPORTS, HELI_DEPARTURE_POINTS, HELI_ARRIVAL_POINTS, VILLA_SERVICE_FEE_PERCENTAGE, CRYPTO_ADDRESSES, AGE_BUCKETS, LICENSE_YEARS_OPTIONS } from '../constants';
 import type { Booking, Inquiry, RentalItem } from '../types';
 import { CameraIcon, CreditCardIcon, CryptoIcon } from '../components/icons/Icons';
-import { QRCode } from 'react-qr-code';
+import QRCode from 'qrcode.react';
 
 // Safely access the Stripe publishable key from Vite's environment variables.
-// If it's not available (e.g., in a non-Vite environment), it falls back to a placeholder.
-// The subsequent check will log an error if the key remains a placeholder.
-const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'YOUR_STRIPE_PUBLISHABLE_KEY';
+const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
 
 type KaskoTier = 'KASKO_BASE' | 'KASKO_BLACK' | 'KASKO_SIGNATURE';
 
