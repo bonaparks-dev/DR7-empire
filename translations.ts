@@ -9,7 +9,7 @@ export const translations: Translations = {
   Jets: { en: "Jets", it: "Jet" },
   Helicopters: { en: "Helicopters", it: "Elicotteri" },
   Lottery: { en: "7 Millions Win", it: "Vinci 7 Milioni" },
-  Membership: { en: "Membership", it: "Club" },
+  Membership: { en: "Members", it: "Members" },
   My_Account: { en: "My Account", it: "Il Mio Account" },
   Partner_Dashboard: { en: "Partner Dashboard", it: "Dashboard Partner" },
 
@@ -20,10 +20,10 @@ export const translations: Translations = {
   Explore_Our_Fleet: { en: "Explore Our Fleet", it: "Esplora la Nostra Flotta" },
   Our_Fleet: { en: "Our Fleet", it: "La Nostra Flotta" },
   Discover_our_curated_selection_of_the_worlds_most_sought_after_vehicles: { en: "Discover our curated selection of the world's most sought-after vehicles.", it: "Scopri la nostra selezione curata dei veicoli più desiderati al mondo." },
-  The_DR7_Club: { en: "The DR7 Club", it: "Il Club DR7" },
+  The_DR7_Club: { en: "MEMBERS", it: "MEMBERS" },
   Unlock_a_new_level_of_luxury_with_our_exclusive_membership_tiers: { en: "Unlock a new level of luxury with our exclusive membership tiers.", it: "Sblocca un nuovo livello di lusso con i nostri esclusivi livelli di abbonamento." },
   View_Tiers: { en: "View Tiers", it: "Vedi i Livelli" },
-  Lottery_DR7: { en: "7,000,000 Dollars Win", it: "Vinci 7.000.000 di Dollari" },
+  Lottery_DR7: { en: "$7 Million WIN", it: "$7 Million WIN" },
   Enter_Now: { en: "Enter Now", it: "Partecipa Ora" },
   What_Our_Clients_Say: { en: "What Our Clients Say", it: "Cosa Dicono i Nostri Clienti" },
   // Rental Page
@@ -48,7 +48,7 @@ export const translations: Translations = {
   'dream.vacation.desc': { en: "Contact us for more information and availability", it: "Contattaci per maggiori informazioni e disponibilità" },
   'contact.us': { en: "Contact Us", it: "Contattaci" },
   // Membership Page
-  Join_The_Club: { en: "Join The Club", it: "Unisciti al Club" },
+  Join_The_Club: { en: "Membership", it: "Membership" },
   Choose_your_tier_and_unlock_a_world_of_privileges: { en: "Choose your tier and unlock a world of privileges.", it: "Scegli il tuo livello e sblocca un mondo di privilegi." },
   Monthly: { en: "Monthly", it: "Mensile" },
   Annually: { en: "Annually", it: "Annuale" },
