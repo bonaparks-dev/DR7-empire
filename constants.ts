@@ -54,7 +54,7 @@ const newCarsRawData = [
       "torque": "574Nm",
       "engine": "6.2L V8"
     },
-    "image": "/hummer.jpeg"
+    "image": "/hummer1.jpeg"
   },
   {
     "id": 3,
@@ -80,7 +80,7 @@ const newCarsRawData = [
       "torque": "500Nm",
       "engine": "2.5L inline 5-cylinder"
     },
-    "image": "/Rs3-red.jpeg",
+    "image": "/rs3.jpeg",
     "color": "Rossa"
   },
   {
@@ -93,7 +93,7 @@ const newCarsRawData = [
       "torque": "500Nm",
       "engine": "2.0L 4-cylinder Turbo"
     },
-    "image": "/mercedes-amg45.jpeg"
+    "image": "/mercedes_amg.jpeg"
   },
   {
     "id": 6,
