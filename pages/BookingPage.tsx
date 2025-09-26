@@ -623,7 +623,7 @@ const BookingPage: React.FC = () => {
                   {step <= steps.length && (
                     <button
                       type="button"
-                      onClick={() => navigate(-1)}
+                      onClick={() => location.state?.from ? navigate(location.state.from) : navigate('/')}
                       className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
                       aria-label="Close"
                     >
