@@ -7,7 +7,11 @@ import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
 import { RENTAL_CATEGORIES, PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, COUNTRIES, INSURANCE_ELIGIBILITY, VALIDATION_MESSAGES, YACHT_PICKUP_MARINAS, AIRPORTS, HELI_DEPARTURE_POINTS, HELI_ARRIVAL_POINTS, VILLA_SERVICE_FEE_PERCENTAGE, CRYPTO_ADDRESSES, AGE_BUCKETS, LICENSE_OBTENTION_YEAR_OPTIONS } from '../constants';
 import type { Booking, Inquiry, RentalItem } from '../types';
+
+import { CameraIcon, CreditCardIcon, CryptoIcon, XIcon } from '../components/icons/Icons';
+
 import { CameraIcon, CreditCardIcon } from '../components/icons/Icons';
+
 
 // Safely access the Stripe publishable key from Vite's environment variables.
 const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
@@ -609,7 +613,28 @@ const BookingPage: React.FC = () => {
           </aside>
           <main className="lg:col-span-2">
             <form onSubmit={handleSubmit}>
-              <AnimatePresence mode="wait"><motion.div key={step} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} transition={{ duration: 0.3 }} className="bg-gray-900/50 p-8 rounded-lg border border-gray-800">{renderStepContent()}</motion.div></AnimatePresence>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={step}
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -50 }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-gray-900/50 p-8 rounded-lg border border-gray-800 relative"
+                >
+                  {step <= steps.length && (
+                    <button
+                      type="button"
+                      onClick={() => navigate(-1)}
+                      className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
+                      aria-label="Close"
+                    >
+                      <XIcon className="w-6 h-6" />
+                    </button>
+                  )}
+                  {renderStepContent()}
+                </motion.div>
+              </AnimatePresence>
               {step <= steps.length && <div className="flex justify-between mt-8"><button type="button" onClick={handleBack} disabled={step === 1} className="px-8 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('Back')}</button>{step < steps.length ? <button type="button" onClick={handleNext} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">{t('Next')}</button> : <button type="submit" disabled={isProcessing} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed">{isProcessing ? <><motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-5 h-5 border-2 border-t-black border-gray-700/50 rounded-full inline-block mr-2"/>{t('Processing')}</> : (isQuoteRequest ? t('Submit_Inquiry') : t('Confirm_Booking'))}</button>}</div>}
             </form>
           </main>
