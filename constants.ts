@@ -599,7 +599,7 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
     id: 'yachts',
     label: { en: 'Yachts', it: 'Yacht' },
     data: [
-      { id: 'yacht-1', name: 'Azimut Grande 27M', image: '/yachts/azimut.jpeg', pricePerDay: { usd: 12000, eur: 11000, crypto: 0 }, specs: yachtSpecs },
+      { id: 'yacht-1', name: 'Azimut Grande 27M', image: '/yacht.jpeg', pricePerDay: { usd: 12000, eur: 11000, crypto: 0 }, specs: yachtSpecs },
       { id: 'yacht-2', name: 'Ferretti 920', image: '/yachts/ferretti.jpeg', pricePerDay: { usd: 15000, eur: 13500, crypto: 0 }, specs: yachtSpecs },
     ],
     icon: AnchorIcon,
