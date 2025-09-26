@@ -10,8 +10,6 @@ import type { Booking, Inquiry, RentalItem } from '../types';
 
 import { CameraIcon, CreditCardIcon, CryptoIcon, XIcon } from '../components/icons/Icons';
 
-import { CameraIcon, CreditCardIcon } from '../components/icons/Icons';
-
 
 // Safely access the Stripe publishable key from Vite's environment variables.
 const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
