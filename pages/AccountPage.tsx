@@ -17,7 +17,6 @@ const AccountPage = () => {
         { path: '/account/membership', label: t('My_Membership'), icon: StarIcon },
         { path: '/account/tickets', label: t('My_Tickets'), icon: TicketIcon },
         { path: '/account/notifications', label: t('Notifications'), icon: BellIcon },
-        { path: '/account/payment-methods', label: t('Payment_Methods'), icon: CreditCardIcon },
     ];
     
     // Normalize path for accurate matching (e.g., /account/ -> /account/profile)
