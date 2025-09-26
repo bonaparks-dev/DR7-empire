@@ -19,14 +19,13 @@ const TicketDisplay: React.FC<{ ticket: LotteryTicket }> = ({ ticket }) => {
                 text: ticket.uuid,
                 width: 100,
                 height: 100,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
+                colorDark: "#FFFFFF",
+                colorLight: "#000000",
                 correctLevel: window.EasyQRCode.CorrectLevel.H,
                 logo: '/DR7logo.png',
                 logoWidth: 30,
                 logoHeight: 30,
-                logoBackgroundColor: '#ffffff',
-                logoBackgroundTransparent: false,
+                logoBackgroundTransparent: true,
             });
         }
     }, [ticket.uuid]);
@@ -62,7 +61,7 @@ const TicketDisplay: React.FC<{ ticket: LotteryTicket }> = ({ ticket }) => {
             </div>
 
             <div className="mt-auto pt-4 text-center">
-                <div className="bg-white p-1 inline-block rounded-md shadow-lg w-[108px] h-[108px] mx-auto">
+                <div className="bg-black p-1 inline-block rounded-md shadow-lg w-[108px] h-[108px] mx-auto">
                     <div ref={qrCodeRef} className="w-[100px] h-[100px] mx-auto">
                         {/* QR Code will be generated here */}
                     </div>
