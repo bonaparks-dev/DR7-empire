@@ -9,6 +9,7 @@ const BackButton: React.FC = () => {
 
   return (
     <button
+      type="button"
       onClick={() => navigate(-1)}
       className="inline-flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors font-semibold"
     >

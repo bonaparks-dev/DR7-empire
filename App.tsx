@@ -105,7 +105,7 @@ const AnimatedRoutes = () => {
         ))}
         <Route 
             path="/book/:category/:itemId"
-            element={<BookingPage />}
+            element={<ProtectedRoute><BookingPage /></ProtectedRoute>}
         />
         <Route path="/membership" element={<MembershipPage />} />
         <Route path="/membership/enroll/:tierId" element={
