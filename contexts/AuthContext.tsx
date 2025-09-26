@@ -26,11 +26,12 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const mapSupabaseUserToAppUser = (supabaseUser: SupabaseUser): AppUser => {
-    const { user_metadata } = supabaseUser;
+    const { user_metadata, app_metadata } = supabaseUser;
     return {
         id: supabaseUser.id,
         email: supabaseUser.email || '',
         fullName: user_metadata.full_name || user_metadata.name || 'No Name',
+        provider: app_metadata.provider,
         role: user_metadata.role || 'personal',
         companyName: user_metadata.company_name,
         phone: user_metadata.phone,

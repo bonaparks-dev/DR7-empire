@@ -45,7 +45,7 @@ const MyTickets = () => {
                 ) : tickets.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {tickets.map((ticket) => (
-                            <TicketDisplay key={ticket.uuid} ticket={ticket} />
+                            <TicketDisplay key={ticket.uuid} ticket={{...ticket, ownerName: user?.fullName || ''}} />
                         ))}
                     </div>
                 ) : (
