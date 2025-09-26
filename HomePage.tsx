@@ -4,7 +4,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { RENTAL_CATEGORIES } from '../constants';
 import { motion } from 'framer-motion';
 
-// Optional: if you want to map category ids to specific display titles
+// Optional: display titles per category
 const DISPLAY_TITLE: Record<string, string> = {
   cars: 'Cars',
   yachts: 'Yachts',
@@ -13,20 +13,20 @@ const DISPLAY_TITLE: Record<string, string> = {
   jets: 'Private Jets',
 };
 
-// Map category ids to video filenames in /public
-const CATEGORY_VIDEO: Record<string, string> = {
-  cars: '/cars1.mp4',
-  yachts: '/yacht.mp4',
-  villas: '/villa1.mp4',
+// Map category ids to image filenames in /public
+const CATEGORY_IMAGE: Record<string, string> = {
+  cars: '/cars.jpeg',
+  yachts: '/yacht.jpeg',
+  villas: '/villa.jpeg',
   helicopters: '/helicopter.jpeg',
-  jets: '/privatejet.mp4',
+  jets: '/privatejet.jpeg',
 };
 
 const HeroSection: React.FC = () => {
   const { t } = useTranslation();
   return (
     <div className="relative h-screen flex items-center justify-center text-center overflow-hidden">
-      {/* Video Background */}
+      {/* Background video (kept as-is) */}
       <div className="absolute inset-0 z-0">
         <video
           src="/main.mp4"
@@ -37,7 +37,7 @@ const HeroSection: React.FC = () => {
           className="w-full h-full object-cover brightness-[.65]"
         />
         {/* Lighter black overlay */}
-        <div className="absolute inset-0 bg-black/30"></div>
+        <div className="absolute inset-0 bg-black/30" />
       </div>
 
       {/* Text Overlay */}
@@ -75,6 +75,7 @@ const HomePage: React.FC = () => {
     >
       <HeroSection />
 
+      {/* Lottery banner */}
       <section className="py-24 relative bg-black">
         <div className="absolute inset-0 z-0">
           <img
@@ -82,7 +83,9 @@ const HomePage: React.FC = () => {
             alt="Lottery background"
             className="w-full h-full object-cover opacity-100"
           />
-          
+          {/* Removed the dark overlay */}
+        </div>
+
         <div className="container mx-auto px-6 text-center relative z-10">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
@@ -110,13 +113,19 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
+      {/* Categories grid */}
       <section className="py-24 bg-black">
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {RENTAL_CATEGORIES.map((category, index) => {
-              const videoSrc = CATEGORY_VIDEO[category.id as keyof typeof CATEGORY_VIDEO];
+              const imageSrc =
+                CATEGORY_IMAGE[category.id as keyof typeof CATEGORY_IMAGE] ||
+                category.data?.[0]?.image ||
+                '/placeholder.jpeg';
+
               const displayTitle =
-                DISPLAY_TITLE[category.id as keyof typeof DISPLAY_TITLE] || getTranslated(category.label);
+                DISPLAY_TITLE[category.id as keyof typeof DISPLAY_TITLE] ||
+                getTranslated(category.label);
 
               const isFeatured = index === 0;
 
@@ -133,25 +142,16 @@ const HomePage: React.FC = () => {
                     to={`/${category.id}`}
                     className="block group relative rounded-lg overflow-hidden"
                   >
-                    {videoSrc ? (
-                      <video
-                        src={videoSrc}
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                        poster={category.data?.[0]?.image}
-                        className={`w-full ${isFeatured ? 'h-[40rem]' : 'h-96'} object-cover brightness-75 group-hover:brightness-100 transition-all duration-500 group-hover:scale-110`}
-                      />
-                    ) : (
-                      <img
-                        src={category.data[0].image}
-                        alt={displayTitle}
-                        className={`w-full ${isFeatured ? 'h-[40rem]' : 'h-96'} object-cover brightness-75 group-hover:brightness-100 transition-all duration-500 group-hover:scale-110`}
-                      />
-                    )}
+                    <img
+                      src={imageSrc}
+                      alt={displayTitle}
+                      className={`w-full ${
+                        isFeatured ? 'h-[40rem]' : 'h-96'
+                      } object-cover brightness-75 group-hover:brightness-100 transition-all duration-500 group-hover:scale-110`}
+                      loading="lazy"
+                    />
 
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                     <div className="absolute bottom-0 left-0 p-8">
                       <h3 className="text-3xl font-bold text-white">
                         {displayTitle}
@@ -165,6 +165,7 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
+      {/* Club section without tagline */}
       <section className="py-24 bg-gray-900/40">
         <div className="container mx-auto px-6 text-center">
           <motion.h2
@@ -176,17 +177,7 @@ const HomePage: React.FC = () => {
           >
             {t('The_DR7_Club')}
           </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.5 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="mt-4 text-lg text-gray-400 max-w-2xl mx-auto"
-          >
-            {t(
-              'Unlock_a_new_level_of_luxury_with_our_exclusive_membership_tiers'
-            )}
-          </motion.p>
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
