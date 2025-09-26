@@ -13,14 +13,7 @@ const DISPLAY_TITLE: Record<string, string> = {
   jets: 'Private Jets',
 };
 
-// Map category ids to video filenames in /public
-const CATEGORY_VIDEO: Record<string, string> = {
-  cars: '/cars1.mp4',
-  yachts: '/yacht.mp4',
-  villas: '/villa1.mp4',
-  helicopters: '/helicopter1.mp4',
-  jets: '/privatejet.mp4',
-};
+// CATEGORY_VIDEO constant removed as per user request to use images instead.
 
 const HeroSection: React.FC = () => {
   const { t } = useTranslation();
@@ -40,25 +33,7 @@ const HeroSection: React.FC = () => {
         <div className="absolute inset-0 bg-black/30"></div>
       </div>
 
-      {/* Text Overlay */}
-      <div className="relative z-10 px-4">
-        <motion.h1
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-4xl md:text-6xl font-bold text-white uppercase tracking-wider"
-        >
-          {t('Welcome_to_DR7_Empire')}
-        </motion.h1>
-        <motion.h2
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="text-2xl md:text-4xl font-light text-white mt-2"
-        >
-          {t('Experience_Exclusivity')}
-        </motion.h2>
-      </div>
+      {/* Text Overlay has been removed as per user request. */}
     </div>
   );
 };
@@ -115,7 +90,6 @@ const HomePage: React.FC = () => {
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {RENTAL_CATEGORIES.map((category, index) => {
-              const videoSrc = CATEGORY_VIDEO[category.id as keyof typeof CATEGORY_VIDEO];
               const displayTitle =
                 DISPLAY_TITLE[category.id as keyof typeof DISPLAY_TITLE] || getTranslated(category.label);
 
@@ -134,23 +108,11 @@ const HomePage: React.FC = () => {
                     to={`/${category.id}`}
                     className="block group relative rounded-lg overflow-hidden"
                   >
-                    {videoSrc ? (
-                      <video
-                        src={videoSrc}
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                        poster={category.data?.[0]?.image}
-                        className={`w-full ${isFeatured ? 'h-[40rem]' : 'h-96'} object-cover brightness-75 group-hover:brightness-100 transition-all duration-500 group-hover:scale-110`}
-                      />
-                    ) : (
-                      <img
-                        src={category.data[0].image}
-                        alt={displayTitle}
-                        className={`w-full ${isFeatured ? 'h-[40rem]' : 'h-96'} object-cover brightness-75 group-hover:brightness-100 transition-all duration-500 group-hover:scale-110`}
-                      />
-                    )}
+                    <img
+                      src={category.data[0].image}
+                      alt={displayTitle}
+                      className={`w-full ${isFeatured ? 'h-[40rem]' : 'h-96'} object-cover brightness-75 group-hover:brightness-100 transition-all duration-500 group-hover:scale-110`}
+                    />
 
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
                     <div className="absolute bottom-0 left-0 p-8">
