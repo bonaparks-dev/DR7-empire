@@ -80,10 +80,9 @@ const HomePage: React.FC = () => {
           <img
             src="/banner.jpeg"
             alt="Lottery background"
-            className="w-full h-full object-cover opacity-10"
+            className="w-full h-full object-cover opacity-100"
           />
-          <div className="absolute inset-0 bg-black/70"></div>
-        </div>
+          
         <div className="container mx-auto px-6 text-center relative z-10">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
