@@ -50,10 +50,9 @@ const MyTickets = () => {
                     </div>
                 ) : (
                     <div className="text-center py-12">
-                        <TicketIcon className="w-16 h-16 mx-auto text-gray-600 mb-4" />
                         <h3 className="text-lg font-semibold text-white">{t('You_have_not_purchased_any_lottery_tickets_yet')}</h3>
                         <Link to="/lottery" className="mt-4 inline-block px-5 py-2.5 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors text-sm">
-                            {t('Go_to_Lottery')}
+                            DR7 Millions
                         </Link>
                     </div>
                 )}
