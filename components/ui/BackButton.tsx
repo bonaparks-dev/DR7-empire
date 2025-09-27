@@ -3,16 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon } from '../icons/Icons';
 import { useTranslation } from '../../hooks/useTranslation';
 
-const BackButton: React.FC = () => {
+interface BackButtonProps {
+  to?: string;
+}
+
+const BackButton: React.FC<BackButtonProps> = ({ to }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
   const handleBack = () => {
-    // Check if there's a previous page in the history stack
-    if (window.history.length > 1) {
+    if (to) {
+      navigate(to);
+    } else if (window.history.length > 1) {
       navigate(-1);
     } else {
-      // Otherwise, navigate to a fallback route (e.g., the homepage)
       navigate('/');
     }
   };

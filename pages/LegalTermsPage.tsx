@@ -147,7 +147,7 @@ const LegalTermsPage = () => {
       <div className="container mx-auto px-6 pt-32 pb-24">
         <div className="max-w-4xl mx-auto">
           <div className="mb-12">
-            <BackButton />
+            <BackButton to="/lottery" />
           </div>
           
           <h1 className="text-4xl md:text-5xl font-bold text-white text-center mb-12">
