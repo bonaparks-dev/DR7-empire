@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../hooks/useTranslation';
-import { RENTAL_CATEGORIES } from '../constants';
+import { RENTAL_CATEGORIES, LOTTERY_GIVEAWAY } from '../constants';
 import { motion } from 'framer-motion';
 
 // Optional: if you want to map category ids to specific display titles
@@ -74,7 +74,7 @@ const HomePage: React.FC = () => {
             transition={{ duration: 0.5 }}
             className="text-4xl font-bold text-white"
           >
-            7 Millions $ Win
+            {getTranslated(LOTTERY_GIVEAWAY.name)}
           </motion.h2>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
