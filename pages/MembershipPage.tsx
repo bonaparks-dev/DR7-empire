@@ -103,7 +103,7 @@ const MembershipPage: React.FC = () => {
                     className="text-center"
                 >
                     <h1 className="text-4xl md:text-5xl font-bold text-white">
-                        {t('Join_The_Club')}
+                        MEMBERS
                     </h1>
                     <p className="mt-4 text-lg text-gray-400 max-w-2xl mx-auto">{t('Choose_your_tier_and_unlock_a_world_of_privileges')}</p>
                 </motion.div>
