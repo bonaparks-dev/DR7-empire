@@ -369,15 +369,6 @@ const LotteryPage: React.FC = () => {
                         </div>
                     </div>
                     
-                    <div className="mt-16 sm:mt-20 md:mt-24 max-w-4xl mx-auto text-center">
-                        <div className="bg-black/80 border border-white/50 p-6 sm:p-8 rounded-xl">
-                            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
-                                <span className="text-2xl sm:text-3xl">🎫</span>
-                            </div>
-                            <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6">{t('Guaranteed_Reward')}</h2>
-                            <p className="text-white/90 text-sm sm:text-base max-w-2xl mx-auto">{getTranslated(giveaway.bonus)}</p>
-                        </div>
-                    </div>
                 </div>
             </div>
             
