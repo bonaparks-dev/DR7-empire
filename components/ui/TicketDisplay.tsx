@@ -1,6 +1,5 @@
 import React, { useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { TicketIcon } from '../icons/Icons';
 import type { LotteryTicket } from '../../types';
 
 const TicketDisplay: React.FC<{ ticket: LotteryTicket }> = ({ ticket }) => {
@@ -19,7 +18,6 @@ const TicketDisplay: React.FC<{ ticket: LotteryTicket }> = ({ ticket }) => {
                     <p className="text-sm text-gray-400">DR7 Grand Giveaway</p>
                     <p className="text-lg font-bold text-white">Official Ticket</p>
                 </div>
-                <TicketIcon className="w-8 h-8 text-white/50" />
             </div>
             <div className="text-center my-4">
                 <p className="text-lg text-gray-300 tracking-widest">YOUR NUMBER</p>
@@ -36,7 +34,6 @@ const TicketDisplay: React.FC<{ ticket: LotteryTicket }> = ({ ticket }) => {
             </div>
 
             <div className="mt-auto pt-4 text-center">
-                <p className="text-xs text-gray-500 font-mono mt-2 break-all">ID: {ticket.uuid}</p>
             </div>
         </motion.div>
     );
