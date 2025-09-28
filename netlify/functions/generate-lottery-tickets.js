@@ -1,15 +1,10 @@
 // netlify/functions/generate-lottery-tickets.js
 
-// Node: CommonJS is fine on Netlify functions
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const nodemailer = require('nodemailer');
 const { createHash } = require('crypto');
-
-// ---- Optional: Supabase persistence (uncomment if you want DB storage) ----
-// const { createClient } = require('@supabase/supabase-js');
-// const supabase = process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
-//   ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
-//   : null;
+const PDFDocument = require('pdfkit');
+const QRCode = require('qrcode');
 
 const CORS_HEADERS = {
   'Content-Type': 'application/json',
@@ -24,7 +19,6 @@ const createResponse = (statusCode, body) => ({
   body: JSON.stringify(body),
 });
 
-// ---- Deterministic PRNG (mulberry32) for idempotent ticket generation ----
 function mulberry32(seed) {
   return function () {
     let t = (seed += 0x6d2b79f5);
@@ -34,15 +28,10 @@ function mulberry32(seed) {
   };
 }
 
-/**
- * Generates a specified number of unique random integers within [min, max],
- * deterministically using a seed string.
- */
 function generateDeterministicUniqueNumbers(count, min, max, seedString) {
   if (count > (max - min + 1)) {
     throw new Error('Count exceeds the size of the range.');
   }
-  // seed from first 8 hex chars of SHA-256
   const hex = createHash('sha256').update(seedString).digest('hex').slice(0, 8);
   const seed = parseInt(hex, 16) >>> 0;
   const rand = mulberry32(seed);
@@ -55,84 +44,73 @@ function generateDeterministicUniqueNumbers(count, min, max, seedString) {
   return Array.from(numbers);
 }
 
-// Deterministic "uuid-like" id from hash (so retries reproduce same IDs)
 function hashId(...parts) {
   const h = createHash('sha1').update(parts.join(':')).digest('hex');
-  // format as 8-4-4-4-12
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
 }
 
 // =================================================================================
-// START: UPDATED EMAIL TEMPLATE (WHITE THEME)
+// START: NEW PDF GENERATION FUNCTION
 // =================================================================================
-const generateEmailHtml = (fullName, tickets) => {
-  // --- Nouveaux blocs de ticket pour le thème blanc ---
-  const ticketBlocks = tickets
-    .map(
-      (ticket) => `
-    <div style="background-color:#ffffff;border:1px solid #e0e0e0;border-radius:8px;padding:20px;margin-bottom:15px;text-align:center;">
-      <p style="margin:0 0 10px;font-size:16px;color:#555555;">Numéro de Loterie :</p>
-      <p style="margin:0 0 15px;font-size:32px;font-weight:bold;color:#111111;letter-spacing:2px;">${ticket.number
-        .toString()
-        .padStart(6, '0')}</p>
-      <div style="border-top:1px dashed #cccccc;margin:15px 0;"></div>
-      <p style="margin:0 0 5px;font-size:12px;color:#555555;text-transform:uppercase;">Détenteur du ticket</p>
-      <p style="margin:0 0 15px;font-size:18px;font-weight:bold;color:#111111;">${fullName}</p>
-      <div style="margin-top:15px;position:relative;display:inline-block;width:128px;height:128px;">
-        
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(
-          ticket.id
-        )}&ecc=H&color=000000&bgcolor=FFFFFF" alt="Ticket QR Code" style="width:120px;height:120px;display:block;border:4px solid #FFD700;border-radius:4px;">
-        
-        <img src="https://firebasestorage.googleapis.com/v0/b/dr7-empire.appspot.com/o/DR7logo.png?alt=media" alt="DR7 Logo" style="position:absolute;top:50%;left:50%;width:36px;height:36px;margin-top:-18px;margin-left:-18px;background:#ffffff;padding:2px;border-radius:4px;">
+const generateTicketPdf = (fullName, tickets) => {
+  return new Promise(async (resolve, reject) => {
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const buffers = [];
 
-      </div>
-      <p style="margin:10px 0 0;font-size:10px;color:#999999;font-family:monospace;line-height:1.4;">
-        ID: ${ticket.id}
-      </p>
-    </div>`
-    )
-    .join('');
+    doc.on('data', buffers.push.bind(buffers));
+    doc.on('end', () => {
+      const pdfData = Buffer.concat(buffers);
+      resolve(pdfData);
+    });
+    doc.on('error', (err) => {
+      reject(err);
+    });
 
-  // --- Template principal de l'e-mail avec un fond clair ---
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vos Tickets de Loterie DR7</title>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;700&display=swap');
-body { margin:0; padding:0; background-color:#f4f4f7; font-family:'Exo 2', sans-serif; }
-.container { max-width:600px; margin:20px auto; padding:20px; color:#333333; background-color:#ffffff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-.header { text-align:center; padding-bottom:20px; border-bottom:1px solid #e0e0e0; }
-.content { padding:30px 0; }
-.footer { text-align:center; font-size:12px; color:#888888; padding-top:20px; border-top:1px solid #e0e0e0; }
-</style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <img src="https://firebasestorage.googleapis.com/v0/b/dr7-empire.appspot.com/o/DR7logo.png?alt=media" alt="DR7 Empire Logo" style="height:50px;width:auto;margin-bottom:10px;">
-    </div>
-    <div class="content">
-      <h1 style="font-size:28px;color:#111111;text-align:center;">Vos Tickets de Loterie sont là !</h1>
-      <p style="font-size:16px;color:#555555;line-height:1.6;text-align:center;">Bonjour ${fullName},</p>
-      <p style="font-size:16px;color:#555555;line-height:1.6;text-align:center;">Merci de participer au Grand Concours DR7. Voici les détails de vos tickets officiels. Conservez cet e-mail en lieu sûr.</p>
-      <div style="margin-top:30px;">
-        ${ticketBlocks}
-      </div>
-      <p style="font-size:16px;color:#555555;line-height:1.6;text-align:center;margin-top:30px;">Bonne chance ! Le tirage aura lieu le jour de Noël.</p>
-    </div>
-    <div class="footer">
-      &copy; ${new Date().getFullYear()} DR7 Empire. Tous droits réservés.
-    </div>
-  </div>
-</body>
-</html>`;
+    // Register a font
+    doc.font('Helvetica-Bold');
+
+    // Title
+    doc.fontSize(24).text('DR7 Empire Lottery Ticket', { align: 'center' });
+    doc.moveDown();
+
+    for (const ticket of tickets) {
+      // Generate QR code as a data URL
+      const qrCodeDataUrl = await QRCode.toDataURL(ticket.id, {
+        errorCorrectionLevel: 'H',
+        type: 'image/png',
+        margin: 1,
+      });
+
+      // Draw ticket details
+      doc.fontSize(16).text('Ticket Holder:', { continued: true });
+      doc.font('Helvetica').fontSize(16).text(` ${fullName}`);
+
+      doc.font('Helvetica-Bold').fontSize(16).text('Ticket Number:', { continued: true });
+      doc.font('Helvetica').fontSize(20).text(` ${ticket.number.toString().padStart(6, '0')}`);
+
+      doc.moveDown();
+
+      // Embed QR code
+      doc.image(qrCodeDataUrl, {
+        fit: [150, 150],
+        align: 'center',
+      });
+
+      doc.font('Courier').fontSize(10).text(ticket.id, { align: 'center' });
+
+      doc.moveDown(2);
+
+      // Add a separator for the next ticket if it's not the last one
+      if (tickets.indexOf(ticket) < tickets.length - 1) {
+          doc.addPage();
+      }
+    }
+
+    doc.end();
+  });
 };
 // =================================================================================
-// END: UPDATED EMAIL TEMPLATE
+// END: NEW PDF GENERATION FUNCTION
 // =================================================================================
 
 
@@ -160,7 +138,6 @@ exports.handler = async (event) => {
       return createResponse(400, { success: false, error: 'Invalid quantity.' });
     }
 
-    // 1) Verify the PaymentIntent is paid
     const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
 
     if (!pi || pi.id !== paymentIntentId) {
@@ -170,19 +147,16 @@ exports.handler = async (event) => {
       return createResponse(400, { success: false, error: 'Payment not completed.' });
     }
 
-    // Optional check: ensure email matches (either metadata.email or receipt_email)
     const metaEmail = (pi.metadata && pi.metadata.email) ? String(pi.metadata.email).toLowerCase() : null;
     const receiptEmail = pi.receipt_email ? String(pi.receipt_email).toLowerCase() : null;
     const incomingEmail = String(email).toLowerCase();
 
     if (metaEmail && metaEmail !== incomingEmail && receiptEmail && receiptEmail !== incomingEmail) {
-      // If both exist and neither matches, block. If only one exists, compare to that.
       return createResponse(400, { success: false, error: 'Email does not match the payment record.' });
     }
 
-    // 2) Idempotency: deterministically generate the same tickets for the same PI + email
     const RANGE_MIN = 1;
-    const RANGE_MAX = 350000; // adjust to your campaign range
+    const RANGE_MAX = 350000;
     const seed = `${paymentIntentId}:${incomingEmail}:${qty}`;
 
     const numbers = generateDeterministicUniqueNumbers(qty, RANGE_MIN, RANGE_MAX, seed);
@@ -191,24 +165,10 @@ exports.handler = async (event) => {
       id: hashId(paymentIntentId, incomingEmail, String(number), String(idx)),
     }));
 
-    // 3) (Optional but recommended) persist once using DB with unique constraint on payment_intent_id
-    // if (supabase) {
-    //   const { data, error } = await supabase
-    //     .from('lottery_tickets')
-    //     .upsert({
-    //       payment_intent_id: pi.id,
-    //       email: incomingEmail,
-    //       full_name: fullName || null,
-    //       tickets, // JSONB column
-    //     }, { onConflict: 'payment_intent_id' })
-    //     .select();
-    //   if (error) {
-    //     console.error('Supabase upsert error:', error);
-    //     // Not fatal, continue to email
-    //   }
-    // }
+    // Generate the PDF
+    const pdfBuffer = await generateTicketPdf(fullName || 'Valued Customer', tickets);
 
-    // 4) Send Email (Nodemailer/Gmail)
+    // Send Email with PDF attachment
     try {
       const transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -218,18 +178,21 @@ exports.handler = async (event) => {
         },
       });
 
-      const emailHtml = generateEmailHtml(fullName || 'Valued Customer', tickets);
-
-      console.log(`Attempting to send ${tickets.length} ticket(s) to ${email}.`);
-
       await transporter.sendMail({
         from: `"DR7 Empire" <${process.env.GMAIL_USER}>`,
         to: email,
         subject: 'Your DR7 Lottery Tickets',
-        html: emailHtml,
+        text: `Hello ${fullName || 'Valued Customer'},\n\nThank you for your purchase. Your lottery tickets are attached to this email as a PDF.\n\nGood luck!\n\nThe DR7 Empire Team`,
+        attachments: [
+          {
+            filename: 'DR7-Lottery-Tickets.pdf',
+            content: pdfBuffer,
+            contentType: 'application/pdf',
+          },
+        ],
       });
 
-      console.log(`Email sent successfully to ${email}.`);
+      console.log(`Email with PDF attachment sent successfully to ${email}.`);
     } catch (emailError) {
       console.error(`Failed to send email to ${email}:`, emailError);
       return createResponse(500, {
@@ -238,7 +201,6 @@ exports.handler = async (event) => {
       });
     }
 
-    // 5) (Optional) Tag the PI that tickets were issued (visible in Stripe)
     const alreadyFlagged = pi.metadata && pi.metadata.tickets_issued === 'true';
     if (!alreadyFlagged) {
       try {
@@ -250,7 +212,6 @@ exports.handler = async (event) => {
           },
         });
       } catch (metaErr) {
-        // Not fatal
         console.warn('Could not update PI metadata:', metaErr.message || metaErr);
       }
     }
@@ -261,7 +222,3 @@ exports.handler = async (event) => {
     return createResponse(500, { success: false, error: err.message || 'Internal server error.' });
   }
 };
-
-
-
-
