@@ -93,8 +93,8 @@ const LegalTermsPage = () => {
       {
         title: { it: 'Art. 11 – Privacy', en: 'Art. 11 – Privacy' },
         content: {
-          it: 'Il trattamento dei dati personali dei partecipanti avverrà in conformità al Regolamento UE 2016/679 (GDPR) e, per i partecipanti internazionali, in conformità alle normative locali applicabili. Titolare del trattamento è Dubai Rent 7.0 S.p.A. – DR7. Per ogni informazione o esercizio dei diritti, i partecipanti possono scrivere a: dr7million@dr7empire.com oppure alla PEC dubai.rent7.0srl-legalmail.it. L\'informativa completa è consultabile sul sito ufficiale.',
-          en: 'Participants\' personal data will be processed in accordance with EU Regulation 2016/679 (GDPR) and, for international participants, in accordance with applicable local regulations. The data controller is Dubai Rent 7.0 S.p.A. – DR7. For any information or to exercise rights, participants may write to: dr7million@dr7empire.com or to the PEC dubai.rent7.0srl-legalmail.it. The complete privacy notice is available on the official website.'
+          it: 'Il trattamento dei dati personali dei partecipanti avverrà in conformità al Regolamento UE 2016/679 (GDPR) e, per i partecipanti internazionali, in conformità alle normative locali applicabili. Titolare del trattamento è Dubai Rent 7.0 S.p.A. – DR7. Per ogni informazione o esercizio dei diritti, i partecipanti possono scrivere a: support@dr7empire.com oppure alla PEC dubai.rent7.0srl-legalmail.it. L\'informativa completa è consultabile sul sito ufficiale.',
+          en: 'Participants\' personal data will be processed in accordance with EU Regulation 2016/679 (GDPR) and, for international participants, in accordance with applicable local regulations. The data controller is Dubai Rent 7.0 S.p.A. – DR7. For any information or to exercise rights, participants may write to: support@dr7empire.com or to the PEC dubai.rent7.0srl-legalmail.it. The complete privacy notice is available on the official website.'
         }
       },
       {
