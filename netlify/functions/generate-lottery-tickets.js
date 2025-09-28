@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer');
 const { createHash } = require('crypto');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
+const axios = require('axios');
 
 const CORS_HEADERS = {
   'Content-Type': 'application/json',
@@ -50,11 +51,11 @@ function hashId(...parts) {
 }
 
 // =================================================================================
-// START: NEW PDF GENERATION FUNCTION
+// START: REDESIGNED PDF GENERATION FUNCTION
 // =================================================================================
 const generateTicketPdf = (fullName, tickets) => {
   return new Promise(async (resolve, reject) => {
-    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const doc = new PDFDocument({ size: 'A4', margin: 40 });
     const buffers = [];
 
     doc.on('data', buffers.push.bind(buffers));
@@ -66,43 +67,63 @@ const generateTicketPdf = (fullName, tickets) => {
       reject(err);
     });
 
-    // Register a font
-    doc.font('Helvetica-Bold');
-
-    // Title
-    doc.fontSize(24).text('DR7 Empire Lottery Ticket', { align: 'center' });
-    doc.moveDown();
+    // Fetch logo image
+    let logoBuffer;
+    try {
+        const logoUrl = 'https://firebasestorage.googleapis.com/v0/b/dr7-empire.appspot.com/o/DR7logo.png?alt=media';
+        const response = await axios.get(logoUrl, { responseType: 'arraybuffer' });
+        logoBuffer = response.data;
+    } catch (error) {
+        console.error("Failed to fetch logo:", error);
+        // Continue without logo if it fails
+    }
 
     for (const ticket of tickets) {
-      // Generate QR code as a data URL
+      // Draw ticket border
+      doc.rect(40, 40, doc.page.width - 80, doc.page.height - 80).lineWidth(3).strokeColor('#FFD700').stroke();
+
+      // Header with logo
+      if (logoBuffer) {
+        doc.image(logoBuffer, {
+          fit: [80, 80],
+          align: 'center',
+        });
+        doc.moveDown();
+      }
+
+      doc.font('Helvetica-Bold').fontSize(22).text('DR7 EMPIRE OFFICIAL TICKET', { align: 'center' });
+      doc.moveDown(2);
+
+      // Ticket details
+      doc.font('Helvetica').fontSize(14).text('TICKET HOLDER', { align: 'center', characterSpacing: 2 });
+      doc.font('Helvetica-Bold').fontSize(20).text(fullName.toUpperCase(), { align: 'center' });
+      doc.moveDown();
+
+      doc.font('Helvetica').fontSize(14).text('LOTTERY NUMBER', { align: 'center', characterSpacing: 2 });
+      doc.font('Helvetica-Bold').fontSize(36).text(ticket.number.toString().padStart(6, '0'), { align: 'center' });
+      doc.moveDown();
+
+      // Generate QR code
       const qrCodeDataUrl = await QRCode.toDataURL(ticket.id, {
         errorCorrectionLevel: 'H',
         type: 'image/png',
-        margin: 1,
+        margin: 2,
+        color: { dark: '#000000', light: '#FFFFFF' }
       });
-
-      // Draw ticket details
-      doc.fontSize(16).text('Ticket Holder:', { continued: true });
-      doc.font('Helvetica').fontSize(16).text(` ${fullName}`);
-
-      doc.font('Helvetica-Bold').fontSize(16).text('Ticket Number:', { continued: true });
-      doc.font('Helvetica').fontSize(20).text(` ${ticket.number.toString().padStart(6, '0')}`);
-
-      doc.moveDown();
-
-      // Embed QR code
       doc.image(qrCodeDataUrl, {
-        fit: [150, 150],
+        fit: [200, 200],
         align: 'center',
       });
+      doc.moveDown();
 
-      doc.font('Courier').fontSize(10).text(ticket.id, { align: 'center' });
+      doc.font('Courier').fontSize(10).text(`ID: ${ticket.id}`, { align: 'center' });
 
-      doc.moveDown(2);
+      // Footer
+      doc.font('Helvetica-Oblique').fontSize(10).text('Good Luck! The draw will be held on Christmas Day.',
+        doc.page.width / 2 - 150, doc.page.height - 100, { align: 'center', width: 300 });
 
-      // Add a separator for the next ticket if it's not the last one
       if (tickets.indexOf(ticket) < tickets.length - 1) {
-          doc.addPage();
+        doc.addPage();
       }
     }
 
@@ -110,7 +131,7 @@ const generateTicketPdf = (fullName, tickets) => {
   });
 };
 // =================================================================================
-// END: NEW PDF GENERATION FUNCTION
+// END: REDESIGNED PDF GENERATION FUNCTION
 // =================================================================================
 
 
@@ -165,10 +186,8 @@ exports.handler = async (event) => {
       id: hashId(paymentIntentId, incomingEmail, String(number), String(idx)),
     }));
 
-    // Generate the PDF
     const pdfBuffer = await generateTicketPdf(fullName || 'Valued Customer', tickets);
 
-    // Send Email with PDF attachment
     try {
       const transporter = nodemailer.createTransport({
         service: 'gmail',
