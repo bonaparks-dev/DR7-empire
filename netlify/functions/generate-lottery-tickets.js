@@ -209,22 +209,34 @@ exports.handler = async (event) => {
     // }
 
     // 4) Send Email (Nodemailer/Gmail)
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
-      },
-    });
+    try {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.GMAIL_USER,
+          pass: process.env.GMAIL_APP_PASSWORD,
+        },
+      });
 
-    const emailHtml = generateEmailHtml(fullName || 'Valued Customer', tickets);
+      const emailHtml = generateEmailHtml(fullName || 'Valued Customer', tickets);
 
-    await transporter.sendMail({
-      from: `"DR7 Empire" <${process.env.GMAIL_USER}>`,
-      to: email,
-      subject: 'Your DR7 Lottery Tickets',
-      html: emailHtml,
-    });
+      console.log(`Attempting to send ${tickets.length} ticket(s) to ${email}.`);
+
+      await transporter.sendMail({
+        from: `"DR7 Empire" <${process.env.GMAIL_USER}>`,
+        to: email,
+        subject: 'Your DR7 Lottery Tickets',
+        html: emailHtml,
+      });
+
+      console.log(`Email sent successfully to ${email}.`);
+    } catch (emailError) {
+      console.error(`Failed to send email to ${email}:`, emailError);
+      return createResponse(500, {
+          success: false,
+          error: 'Payment succeeded, but failed to send ticket email. Please contact support.'
+      });
+    }
 
     // 5) (Optional) Tag the PI that tickets were issued (visible in Stripe)
     const alreadyFlagged = pi.metadata && pi.metadata.tickets_issued === 'true';
