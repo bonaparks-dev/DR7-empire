@@ -8,7 +8,7 @@ export const translations: Translations = {
   Villas: { en: "Villas", it: "Ville" },
   Jets: { en: "Jets", it: "Jet" },
   Helicopters: { en: "Helicopters", it: "Elicotteri" },
-  Lottery: { en: "$7 Millions Win", it: "Vincita 7 Milioni di €" },
+  Lottery: { en: "DR7 Million", it: "DR7 Millioni" },
   Membership: { en: "Members", it: "Members" },
   My_Account: { en: "My Account", it: "Il Mio Account" },
   Partner_Dashboard: { en: "Partner Dashboard", it: "Dashboard Partner" },
@@ -23,7 +23,7 @@ export const translations: Translations = {
   The_DR7_Club: { en: "MEMBERS", it: "MEMBERS" },
   Unlock_a_new_level_of_luxury_with_our_exclusive_membership_tiers: { en: "Unlock a new level of luxury with our exclusive membership tiers.", it: "Sblocca un nuovo livello di lusso con i nostri esclusivi livelli di abbonamento." },
   View_Tiers: { en: "View Tiers", it: "Vedi i Livelli" },
-  Lottery_DR7: { en: "$7 Million WIN", it: "Vincita di 7.000.000 di euro" },
+  Lottery_DR7: { en: "DR7 Million", it: "DR7 Millioni" },
   Enter_Now: { en: "Enter Now", it: "Partecipa Ora" },
   What_Our_Clients_Say: { en: "What Our Clients Say", it: "Cosa Dicono i Nostri Clienti" },
   // Rental Page
@@ -222,7 +222,7 @@ export const translations: Translations = {
   View_Openings: { en: "View Openings", it: "Vedi Posizioni Aperte" },
 
   // Lottery Page
-  DR7_Christmas_Giveaway: { en: "$7 Millions Win", it: "DR7 $7 Millioni" },
+  DR7_Christmas_Giveaway: { en: "DR7 Million", it: "DR7 Millioni" },
   Prizes_Pool_Worth_Over: { en: "Prize Pool Worth Over $7,000,000", it: "Montepremi di Oltre $7.000.000" },
   Draw_Ends_In: { en: "Draw Ends In", it: "L'estrazione termina tra" },
   How_many_tickets: { en: "How many tickets?", it: "Quanti biglietti?" },
