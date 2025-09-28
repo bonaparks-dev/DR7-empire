@@ -62,44 +62,52 @@ function hashId(...parts) {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
 }
 
+// =================================================================================
+// START: UPDATED EMAIL TEMPLATE (WHITE THEME)
+// =================================================================================
 const generateEmailHtml = (fullName, tickets) => {
+  // --- Nouveaux blocs de ticket pour le thème blanc ---
   const ticketBlocks = tickets
     .map(
       (ticket) => `
-    <div style="background-color:#1a1a1a;border:1px solid #333;border-radius:8px;padding:20px;margin-bottom:15px;text-align:center;">
-      <p style="margin:0 0 10px;font-size:16px;color:#ccc;">Lottery Number:</p>
-      <p style="margin:0 0 15px;font-size:32px;font-weight:bold;color:#fff;letter-spacing:2px;">${ticket.number
+    <div style="background-color:#ffffff;border:1px solid #e0e0e0;border-radius:8px;padding:20px;margin-bottom:15px;text-align:center;">
+      <p style="margin:0 0 10px;font-size:16px;color:#555555;">Numéro de Loterie :</p>
+      <p style="margin:0 0 15px;font-size:32px;font-weight:bold;color:#111111;letter-spacing:2px;">${ticket.number
         .toString()
         .padStart(6, '0')}</p>
-      <div style="border-top:1px dashed #555;margin:15px 0;"></div>
-      <p style="margin:0 0 5px;font-size:12px;color:#ccc;text-transform:uppercase;">Ticket Holder</p>
-      <p style="margin:0 0 15px;font-size:18px;font-weight:bold;color:#fff;">${fullName}</p>
+      <div style="border-top:1px dashed #cccccc;margin:15px 0;"></div>
+      <p style="margin:0 0 5px;font-size:12px;color:#555555;text-transform:uppercase;">Détenteur du ticket</p>
+      <p style="margin:0 0 15px;font-size:18px;font-weight:bold;color:#111111;">${fullName}</p>
       <div style="margin-top:15px;position:relative;display:inline-block;width:128px;height:128px;">
+        
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(
           ticket.id
-        )}&ecc=H&color=FFD700&bgcolor=000000" alt="Ticket QR Code" style="width:120px;height:120px;display:block;border:4px solid #FFD700;border-radius:4px;">
-        <img src="https://firebasestorage.googleapis.com/v0/b/dr7-empire.appspot.com/o/DR7logo.png?alt=media" alt="DR7 Logo" style="position:absolute;top:50%;left:50%;width:36px;height:36px;margin-top:-18px;margin-left:-18px;background:#000000;padding:2px;border-radius:4px;">
+        )}&ecc=H&color=000000&bgcolor=FFFFFF" alt="Ticket QR Code" style="width:120px;height:120px;display:block;border:4px solid #FFD700;border-radius:4px;">
+        
+        <img src="https://firebasestorage.googleapis.com/v0/b/dr7-empire.appspot.com/o/DR7logo.png?alt=media" alt="DR7 Logo" style="position:absolute;top:50%;left:50%;width:36px;height:36px;margin-top:-18px;margin-left:-18px;background:#ffffff;padding:2px;border-radius:4px;">
+
       </div>
-      <p style="margin:10px 0 0;font-size:10px;color:#777;font-family:monospace;line-height:1.4;">
+      <p style="margin:10px 0 0;font-size:10px;color:#999999;font-family:monospace;line-height:1.4;">
         ID: ${ticket.id}
       </p>
     </div>`
     )
     .join('');
 
+  // --- Template principal de l'e-mail avec un fond clair ---
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Your DR7 Lottery Tickets</title>
+<title>Vos Tickets de Loterie DR7</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;700&display=swap');
-body { margin:0; padding:0; background-color:#000000; font-family:'Exo 2', sans-serif; }
-.container { max-width:600px; margin:0 auto; padding:20px; color:#ffffff; }
-.header { text-align:center; padding-bottom:20px; border-bottom:1px solid #333; }
+body { margin:0; padding:0; background-color:#f4f4f7; font-family:'Exo 2', sans-serif; }
+.container { max-width:600px; margin:20px auto; padding:20px; color:#333333; background-color:#ffffff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+.header { text-align:center; padding-bottom:20px; border-bottom:1px solid #e0e0e0; }
 .content { padding:30px 0; }
-.footer { text-align:center; font-size:12px; color:#777; padding-top:20px; border-top:1px solid #333; }
+.footer { text-align:center; font-size:12px; color:#888888; padding-top:20px; border-top:1px solid #e0e0e0; }
 </style>
 </head>
 <body>
@@ -108,21 +116,25 @@ body { margin:0; padding:0; background-color:#000000; font-family:'Exo 2', sans-
       <img src="https://firebasestorage.googleapis.com/v0/b/dr7-empire.appspot.com/o/DR7logo.png?alt=media" alt="DR7 Empire Logo" style="height:50px;width:auto;margin-bottom:10px;">
     </div>
     <div class="content">
-      <h1 style="font-size:28px;color:#fff;text-align:center;">Your Lottery Tickets Are Here!</h1>
-      <p style="font-size:16px;color:#ccc;line-height:1.6;text-align:center;">Hello ${fullName},</p>
-      <p style="font-size:16px;color:#ccc;line-height:1.6;text-align:center;">Thank you for participating in the DR7 Grand Giveaway. Below are your official ticket details. Please keep this email safe.</p>
+      <h1 style="font-size:28px;color:#111111;text-align:center;">Vos Tickets de Loterie sont là !</h1>
+      <p style="font-size:16px;color:#555555;line-height:1.6;text-align:center;">Bonjour ${fullName},</p>
+      <p style="font-size:16px;color:#555555;line-height:1.6;text-align:center;">Merci de participer au Grand Concours DR7. Voici les détails de vos tickets officiels. Conservez cet e-mail en lieu sûr.</p>
       <div style="margin-top:30px;">
         ${ticketBlocks}
       </div>
-      <p style="font-size:16px;color:#ccc;line-height:1.6;text-align:center;margin-top:30px;">Good luck! The draw will be held on Christmas Day.</p>
+      <p style="font-size:16px;color:#555555;line-height:1.6;text-align:center;margin-top:30px;">Bonne chance ! Le tirage aura lieu le jour de Noël.</p>
     </div>
     <div class="footer">
-      &copy; ${new Date().getFullYear()} DR7 Empire. All Rights Reserved.
+      &copy; ${new Date().getFullYear()} DR7 Empire. Tous droits réservés.
     </div>
   </div>
 </body>
 </html>`;
 };
+// =================================================================================
+// END: UPDATED EMAIL TEMPLATE
+// =================================================================================
+
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
@@ -237,3 +249,7 @@ exports.handler = async (event) => {
     return createResponse(500, { success: false, error: err.message || 'Internal server error.' });
   }
 };
+
+
+
+
