@@ -123,7 +123,7 @@ const newCarsRawData = [
   {
     "id": 8,
     "name": "Mercedes GLE 53 AMG",
-    "dailyPrice": 80,
+    "dailyPrice": 120,
     "specs": {
       "acceleration": "0–100 in 4.7s",
       "maxSpeed": "Max speed: 250km/h",
