@@ -104,7 +104,7 @@ const generateTicketPdf = (fullName, tickets) => {
       doc.moveDown();
 
       // Generate QR code
-      const qrCodeDataUrl = await QRCode.toDataURL(ticket.id, {
+      const qrCodeDataUrl = await QRCode.toDataURL('https://dr7empire.com/', {
         errorCorrectionLevel: 'H',
         type: 'image/png',
         margin: 2,
