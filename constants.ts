@@ -613,12 +613,12 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
     id: 'jets',
     label: { en: 'Jets', it: 'Jet' },
     data: [
-      { id: 'jet-1', name: 'Gulfstream G650', image: '/privatejet.jpeg', specs: [
+      { id: 'jet-1', name: 'Gulfstream G650', image: '/privatejet1.jpeg', specs: [
         { label: { en: 'Passengers', it: 'Passeggeri' }, value: '19', icon: UsersIcon },
         { label: { en: 'Range', it: 'Autonomia' }, value: '7,500 nm', icon: PaperAirplaneIcon },
         { label: { en: 'Speed', it: 'Velocità' }, value: 'Mach 0.925', icon: ZapIcon },
       ], petsAllowed: true, smokingAllowed: false },
-      { id: 'jet-2', name: 'Bombardier Global 7500', image: '/jets/bombardier.jpeg', specs: [
+      { id: 'jet-2', name: 'Bombardier Global 7500', image: '/privatejet2.jpeg', specs: [
         { label: { en: 'Passengers', it: 'Passeggeri' }, value: '19', icon: UsersIcon },
         { label: { en: 'Range', it: 'Autonomia' }, value: '7,700 nm', icon: PaperAirplaneIcon },
         { label: { en: 'Speed', it: 'Velocità' }, value: 'Mach 0.925', icon: ZapIcon },
