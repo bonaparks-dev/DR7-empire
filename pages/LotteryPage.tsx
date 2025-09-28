@@ -226,7 +226,7 @@ const LotteryPage: React.FC = () => {
     }, []);
 
     const carousel2Images = useMemo(() => {
-        const letters = 'abcdefghijklmnopqrstuvwxyz'.split('');
+        const letters = 'abcdefghijklm'.split('');
         return letters.map(letter => `/${letter}.jpeg`);
     }, []);
 
