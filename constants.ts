@@ -720,7 +720,7 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
 
 export const LOTTERY_GIVEAWAY: Lottery = {
   id: 'christmas-2024',
-  name: { en: '7,000,000 Dollars Win', it: 'Vinci 7.000.000 di Euro' },
+  name: { en: 'DR7 Million', it: 'DR7 Milioni' },
   subtitle: { en: 'Prize Pool Worth Over $7,000,000', it: 'Montepremi di Oltre €7.000.000' },
   image: '/lottery-hero.jpeg',
   ticketPriceUSD: 23.60,
