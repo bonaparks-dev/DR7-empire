@@ -220,10 +220,9 @@ const LotteryPage: React.FC = () => {
     }, [giveaway.prizes, getTranslated]);
 
     const carousel1Images = useMemo(() => {
-        return Array.from({ length: 24 }, (_, i) => {
-            const num = i + 1;
-            return `/${num}.jpeg`;
-        });
+        return Array.from({ length: 24 }, (_, i) => i + 1)
+            .filter(num => num !== 4)
+            .map(num => `/${num}.jpeg`);
     }, []);
 
     const carousel2Images = useMemo(() => {
