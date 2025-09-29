@@ -178,7 +178,7 @@ export interface Prize {
   quantity?: number;
 }
 
-export interface Lottery {
+export interface CommercialOperation {
   id: string;
   name: { en: string; it: string };
   subtitle: { en: string; it: string };
@@ -190,7 +190,7 @@ export interface Lottery {
   bonus: { en: string; it: string };
 }
 
-export interface LotteryTicket {
+export interface CommercialOperationTicket {
   number: number;
   uuid: string;
   ownerName: string;

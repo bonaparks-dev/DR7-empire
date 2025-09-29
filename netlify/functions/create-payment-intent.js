@@ -64,7 +64,7 @@ exports.handler = async (event) => {
 
     const metadata = {
         email: email,
-        purchaseType: 'lottery-ticket'
+        purchaseType: 'commercial-operation-ticket'
     };
 
     const isEurVoucher = amountInCents === 2000 && currency.toLowerCase() === 'eur';

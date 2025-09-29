@@ -2,9 +2,9 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { useCurrency } from '../contexts/CurrencyContext';
-import { LOTTERY_GIVEAWAY } from '../constants';
+import { COMMERCIAL_OPERATION_GIVEAWAY } from '../constants';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import type { Lottery, Prize } from '../types';
+import type { CommercialOperation, Prize } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import type { Stripe, StripeElements, StripeCardElement } from '@stripe/stripe-js';
 import { ImageCarousel } from '../components/ui/ImageCarousel';
@@ -45,13 +45,13 @@ const PrizeCard: React.FC<{ prize: Prize }> = ({ prize }) => {
     );
 };
 
-const LotteryPage: React.FC = () => {
+const CommercialOperationPage: React.FC = () => {
     const { t, getTranslated } = useTranslation();
     const { currency } = useCurrency();
     const { user } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
-    const giveaway: Lottery = LOTTERY_GIVEAWAY;
+    const giveaway: CommercialOperation = COMMERCIAL_OPERATION_GIVEAWAY;
 
     const [timeLeft, setTimeLeft] = useState(calculateTimeLeft(giveaway.drawDate));
     const [quantity, setQuantity] = useState(1);
@@ -179,7 +179,7 @@ const LotteryPage: React.FC = () => {
             setStripeError(error.message || "An unexpected error occurred.");
             setIsProcessing(false);
         } else {
-             fetch('/.netlify/functions/generate-lottery-tickets', {
+             fetch('/.netlify/functions/generate-commercial-operation-tickets', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -192,7 +192,7 @@ const LotteryPage: React.FC = () => {
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    navigate('/lottery/success', { state: { tickets: data.tickets, ownerName: user.fullName } });
+                    navigate('/commercial-operation/success', { state: { tickets: data.tickets, ownerName: user.fullName } });
                 } else {
                     setStripeError(data.error || 'Failed to generate tickets after payment.');
                 }
@@ -233,7 +233,7 @@ const LotteryPage: React.FC = () => {
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="bg-black text-white font-exo2">
             <div className="relative min-h-screen flex items-center justify-center text-center overflow-hidden pt-32 pb-24">
-                <video src="/lottery.mp4" autoPlay loop muted playsInline className="absolute inset-0 z-0 w-full h-full object-cover brightness-75" />
+                <img src="/main.jpeg" alt="Background" className="absolute inset-0 z-0 w-full h-full object-cover brightness-75" />
                 <div className="absolute inset-0 bg-black/20 z-10"></div>
                 <div className="relative z-20 px-4 sm:px-6 container mx-auto">
                     <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-exo2 uppercase tracking-wider" style={{ textShadow: '0 0 15px rgba(255,255,255,0.3)' }}>
@@ -323,7 +323,7 @@ const LotteryPage: React.FC = () => {
                                     </div>
                                 </div>
                                 <div className="flex justify-between items-center text-lg sm:text-xl font-bold mb-6">
-                                    <span className="text-white/80">{t('Total_Price_Lottery')}</span>
+                                    <span className="text-white/80">{t('Total_Price')}</span>
                                     <span className="text-white">{formatPrice(totalPrice)}</span>
                                 </div>
                                 <button 
@@ -407,4 +407,4 @@ const LotteryPage: React.FC = () => {
     );
 };
 
-export default LotteryPage;
+export default CommercialOperationPage;

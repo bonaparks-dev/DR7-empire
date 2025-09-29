@@ -1,4 +1,4 @@
-// netlify/functions/generate-lottery-tickets.js
+// netlify/functions/generate-commercial-operation-tickets.js
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const nodemailer = require('nodemailer');
@@ -99,7 +99,7 @@ const generateTicketPdf = (fullName, tickets) => {
       doc.font('Helvetica-Bold').fontSize(20).text(fullName.toUpperCase(), { align: 'center' });
       doc.moveDown();
 
-      doc.font('Helvetica').fontSize(14).text('LOTTERY NUMBER', { align: 'center', characterSpacing: 2 });
+      doc.font('Helvetica').fontSize(14).text('TICKET NUMBER', { align: 'center', characterSpacing: 2 });
       doc.font('Helvetica-Bold').fontSize(36).text(ticket.number.toString().padStart(6, '0'), { align: 'center' });
       doc.moveDown();
 
@@ -200,11 +200,11 @@ exports.handler = async (event) => {
       await transporter.sendMail({
         from: `"DR7 Empire" <${process.env.GMAIL_USER}>`,
         to: email,
-        subject: 'Your DR7 Lottery Tickets',
-        text: `Hello ${fullName || 'Valued Customer'},\n\nThank you for your purchase. Your lottery tickets are attached to this email as a PDF.\n\nGood luck!\n\nThe DR7 Empire Team`,
+        subject: 'Your DR7 Commercial Operation Tickets',
+        text: `Hello ${fullName || 'Valued Customer'},\n\nThank you for your purchase. Your Commercial Operation tickets are attached to this email as a PDF.\n\nGood luck!\n\nThe DR7 Empire Team`,
         attachments: [
           {
-            filename: 'DR7-Lottery-Tickets.pdf',
+            filename: 'DR7-Commercial-Operation-Tickets.pdf',
             content: pdfBuffer,
             contentType: 'application/pdf',
           },
@@ -237,7 +237,7 @@ exports.handler = async (event) => {
 
     return createResponse(200, { success: true, tickets });
   } catch (err) {
-    console.error('Error generating lottery tickets:', err);
+    console.error('Error generating tickets:', err);
     return createResponse(500, { success: false, error: err.message || 'Internal server error.' });
   }
 };

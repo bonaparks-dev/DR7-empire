@@ -1,4 +1,4 @@
-import type { RentalCategory, MembershipTier, Lottery, Amenity, Villa } from './types';
+import type { RentalCategory, MembershipTier, CommercialOperation, Amenity, Villa } from './types';
 // FIX: Consolidate and correct icon imports
 import {
   UsersIcon,
@@ -718,11 +718,11 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
   },
 ];
 
-export const LOTTERY_GIVEAWAY: Lottery = {
+export const COMMERCIAL_OPERATION_GIVEAWAY: CommercialOperation = {
   id: 'christmas-2024',
   name: { en: 'DR7 Million', it: 'DR7 Milioni' },
   subtitle: { en: 'Prize Pool Worth Over $7,000,000', it: 'Montepremi di Oltre €7.000.000' },
-  image: '/lottery-hero.jpeg',
+  image: '/main.jpeg',
   ticketPriceUSD: 23.60,
   ticketPriceEUR: 20,
   drawDate: '2025-12-24T10:00:00Z',

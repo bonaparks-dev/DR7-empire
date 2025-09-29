@@ -8,7 +8,7 @@ export const translations: Translations = {
   Villas: { en: "Villas", it: "Ville" },
   Jets: { en: "Jets", it: "Jet" },
   Helicopters: { en: "Helicopters", it: "Elicotteri" },
-  Lottery: { en: "DR7 Million", it: "DR7 Millioni" },
+  Commercial_Operation: { en: "Commercial Operation", it: "Operazione Commerciale" },
   Membership: { en: "Members", it: "Members" },
   My_Account: { en: "My Account", it: "Il Mio Account" },
   Partner_Dashboard: { en: "Partner Dashboard", it: "Dashboard Partner" },
@@ -23,7 +23,6 @@ export const translations: Translations = {
   The_DR7_Club: { en: "MEMBERS", it: "MEMBERS" },
   Unlock_a_new_level_of_luxury_with_our_exclusive_membership_tiers: { en: "Unlock a new level of luxury with our exclusive membership tiers.", it: "Sblocca un nuovo livello di lusso con i nostri esclusivi livelli di abbonamento." },
   View_Tiers: { en: "View Tiers", it: "Vedi i Livelli" },
-  Lottery_DR7: { en: "DR7 Million", it: "DR7 Millioni" },
   Enter_Now: { en: "Enter Now", it: "Partecipa Ora" },
   What_Our_Clients_Say: { en: "What Our Clients Say", it: "Cosa Dicono i Nostri Clienti" },
   // Rental Page
@@ -221,18 +220,17 @@ export const translations: Translations = {
   Join_Our_Team_Statement: { en: "We are always looking for passionate and talented individuals to join our mission. Explore our open positions and help us redefine luxury.", it: "Siamo sempre alla ricerca di persone appassionate e talentuose che si uniscano alla nostra missione. Esplora le nostre posizioni aperte e aiutaci a ridefinire il lusso." },
   View_Openings: { en: "View Openings", it: "Vedi Posizioni Aperte" },
 
-  // Lottery Page
+  // Commercial Operation Page
   DR7_Christmas_Giveaway: { en: "DR7 Million", it: "DR7 Millioni" },
   Prizes_Pool_Worth_Over: { en: "Prize Pool Worth Over $7,000,000", it: "Montepremi di Oltre $7.000.000" },
   Draw_Ends_In: { en: "Draw Ends In", it: "L'estrazione termina tra" },
   How_many_tickets: { en: "How many tickets?", it: "Quanti biglietti?" },
-  Total_Price_Lottery: { en: "Total", it: "Totale" },
   Buy_Tickets: { en: "Buy Tickets", it: "Acquista Biglietti" },
   Confirm_Purchase: { en: "Confirm Purchase", it: "Conferma Acquisto" },
   Cancel: { en: "Cancel", it: "Annulla" },
   Are_you_sure_you_want_to_buy_tickets: { en: "Are you sure you want to purchase {count} ticket(s) for {price}?", it: "Sei sicuro di voler acquistare {count} biglietto/i per {price}?" },
   Purchase_Successful_Message: { en: "Congratulations! You have successfully purchased {count} ticket(s). Good luck!", it: "Congratulazioni! Hai acquistato con successo {count} biglietto/i. Buona fortuna!" },
-  Lottery_Purchase_Success: { en: 'Success! Your {count} ticket(s) have been sent to your email.', it: 'Successo! I tuoi {count} biglietto/i sono stati inviati alla tua email.' },
+  Purchase_Success: { en: 'Success! Your {count} ticket(s) have been sent to your email.', it: 'Successo! I tuoi {count} biglietto/i sono stati inviati alla tua email.' },
   Grand_Prize: { en: "Grand Prize", it: "Primo Premio" },
   Tier_2_Prizes: { en: 'Tier 2 Prizes', it: 'Premi di Livello 2' },
   Tier_3_Prizes: { en: 'Tier 3 Prizes', it: 'Premi di Livello 3' },
@@ -324,10 +322,10 @@ export const translations: Translations = {
   My_Tickets: { en: "My Tickets", it: "I Miei Biglietti" },
   Notifications: { en: "Notifications", it: "Notifiche" },
   Payment_Methods: { en: "Payment Methods", it: "Metodi di Pagamento" },
-  You_have_not_purchased_any_lottery_tickets_yet: { en: "You have not purchased any lottery tickets yet.", it: "Non hai ancora acquistato biglietti della lotteria." },
-  Go_to_Lottery: { en: "Go to Lottery", it: "Vai alla Lotteria" },
+  You_have_not_purchased_any_tickets_yet: { en: "You have not purchased any tickets yet.", it: "Non hai ancora acquistato biglietti." },
+  Go_to_Commercial_Operation: { en: "Go to Commercial Operation", it: "Vai all'Operazione Commerciale" },
   Login_Required_to_Buy: { en: 'Login Required', it: 'Accesso Richiesto' },
-  Please_sign_in_to_purchase_lottery_tickets: { en: 'Please sign in to purchase lottery tickets.', it: 'Effettua l\'accesso per acquistare i biglietti della lotteria.' },
+  Please_sign_in_to_purchase_tickets: { en: 'Please sign in to purchase tickets.', it: 'Effettua l\'accesso per acquistare i biglietti.' },
   
   // Account -> Profile
   Profile_Details: { en: "Profile Details", it: "Dettagli Profilo" },

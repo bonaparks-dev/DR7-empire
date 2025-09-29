@@ -3,21 +3,21 @@ import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Link } from 'react-router-dom';
 import { TicketIcon } from '../../components/icons/Icons';
-import type { LotteryTicket } from '../../types';
+import type { CommercialOperationTicket } from '../../types';
 import TicketDisplay from '../../components/ui/TicketDisplay';
 import { Button } from '../../components/ui/Button';
 
 const MyTickets = () => {
     const { user } = useAuth();
     const { t } = useTranslation();
-    const [tickets, setTickets] = useState<LotteryTicket[]>([]);
+    const [tickets, setTickets] = useState<CommercialOperationTicket[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (user) {
             setLoading(true);
             try {
-                const userTicketsKey = `lottery_tickets_${user.id}`;
+                const userTicketsKey = `commercial_operation_tickets_${user.id}`;
                 const savedTickets = JSON.parse(localStorage.getItem(userTicketsKey) || '[]');
                 setTickets(savedTickets);
             } catch (error) {
@@ -36,7 +36,7 @@ const MyTickets = () => {
             <div className="p-6 border-b border-gray-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h2 className="text-xl font-bold text-white">{t('My_Tickets')}</h2>
-                    <p className="text-sm text-gray-400 mt-1">View your purchased lottery tickets here.</p>
+                    <p className="text-sm text-gray-400 mt-1">View your purchased tickets here.</p>
                 </div>
             </div>
             <div className="p-6">
@@ -50,8 +50,8 @@ const MyTickets = () => {
                     </div>
                 ) : (
                     <div className="text-center py-12">
-                        <h3 className="text-lg font-semibold text-white">{t('You_have_not_purchased_any_lottery_tickets_yet')}</h3>
-                        <Link to="/lottery" className="mt-4 inline-block px-5 py-2.5 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors text-sm">
+                        <h3 className="text-lg font-semibold text-white">{t('You_have_not_purchased_any_tickets_yet')}</h3>
+                        <Link to="/commercial-operation" className="mt-4 inline-block px-5 py-2.5 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors text-sm">
                             DR7 Millions
                         </Link>
                     </div>
