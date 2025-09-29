@@ -72,12 +72,12 @@ const HomePage: React.FC = () => {
     >
       <HeroSection />
 
-      {/* Lottery banner */}
+      {/* Commercial Operation banner */}
       <section className="py-24 relative bg-black">
         <div className="absolute inset-0 z-0">
           <img
             src="/banner.jpeg"
-            alt="Lottery background"
+            alt="Commercial Operation background"
             className="w-full h-full object-cover opacity-100"
           />
           {/* Removed the dark overlay */}
@@ -91,7 +91,7 @@ const HomePage: React.FC = () => {
             transition={{ duration: 0.5 }}
             className="text-4xl font-bold text-white"
           >
-            {t('Lottery_DR7')}
+            {t('Commercial_Operation')}
           </motion.h2>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -101,7 +101,7 @@ const HomePage: React.FC = () => {
             className="mt-8"
           >
             <Link
-              to="/lottery"
+              to="/commercial-operation"
               className="bg-white text-black px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm hover:bg-gray-200 transition-all duration-300 transform hover:scale-105"
             >
               {t('Enter_Now')}

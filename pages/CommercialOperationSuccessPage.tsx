@@ -5,25 +5,25 @@ import { useTranslation } from '../hooks/useTranslation';
 import { Button } from '../components/ui/Button';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import type { LotteryTicket } from '../types';
+import type { CommercialOperationTicket } from '../types';
 import TicketDisplay from '../components/ui/TicketDisplay';
 
-const LotterySuccessPage: React.FC = () => {
+const CommercialOperationSuccessPage: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { t } = useTranslation();
     const { user } = useAuth();
-    const { tickets, ownerName } = location.state as { tickets: Omit<LotteryTicket, 'ownerName'>[]; ownerName: string; } || { tickets: [], ownerName: '' };
+    const { tickets, ownerName } = location.state as { tickets: Omit<CommercialOperationTicket, 'ownerName'>[]; ownerName: string; } || { tickets: [], ownerName: '' };
 
-    const ticketsWithData: LotteryTicket[] = tickets.map(t => ({...t, ownerName: ownerName || user?.fullName || ''}));
+    const ticketsWithData: CommercialOperationTicket[] = tickets.map(t => ({...t, ownerName: ownerName || user?.fullName || ''}));
 
     useEffect(() => {
         if (user && ticketsWithData && ticketsWithData.length > 0) {
             try {
-                const userTicketsKey = `lottery_tickets_${user.id}`;
-                const existingTickets = JSON.parse(localStorage.getItem(userTicketsKey) || '[]') as LotteryTicket[];
+                const userTicketsKey = `commercial_operation_tickets_${user.id}`;
+                const existingTickets = JSON.parse(localStorage.getItem(userTicketsKey) || '[]') as CommercialOperationTicket[];
                 const newTickets = ticketsWithData.filter(
-                    (newTicket: LotteryTicket) => !existingTickets.some((existing: LotteryTicket) => existing.uuid === newTicket.uuid)
+                    (newTicket: CommercialOperationTicket) => !existingTickets.some((existing: CommercialOperationTicket) => existing.uuid === newTicket.uuid)
                 );
                 if (newTickets.length > 0) {
                     localStorage.setItem(userTicketsKey, JSON.stringify([...existingTickets, ...newTickets]));
@@ -37,7 +37,7 @@ const LotterySuccessPage: React.FC = () => {
     if (!tickets || tickets.length === 0) {
         // Redirect if no ticket data is present
         React.useEffect(() => {
-            navigate('/lottery');
+            navigate('/commercial-operation');
         }, [navigate]);
         return null;
     }
@@ -69,7 +69,7 @@ const LotterySuccessPage: React.FC = () => {
                     </motion.svg>
                 </motion.div>
                 <h1 className="text-4xl font-bold text-white mb-4">
-                    {t('Lottery_Purchase_Success').replace('{count}', String(tickets.length))}
+                    {t('Purchase_Success').replace('{count}', String(tickets.length))}
                 </h1>
                 <p className="text-lg text-gray-300 mb-10 max-w-2xl mx-auto">
                     Your tickets have been sent to your email. You can also view them below or in your account's "My Tickets" section. Good luck!
@@ -85,8 +85,8 @@ const LotterySuccessPage: React.FC = () => {
                     <Button as={Link} to="/account/tickets" variant="primary" size="lg" className="mt-12">
                         View My Tickets
                     </Button>
-                    <Button as={Link} to="/lottery" variant="outline" size="lg" className="mt-12">
-                        Back to Lottery
+                    <Button as={Link} to="/commercial-operation" variant="outline" size="lg" className="mt-12">
+                        Back to Commercial Operation
                     </Button>
                 </div>
             </div>
@@ -94,4 +94,4 @@ const LotterySuccessPage: React.FC = () => {
     );
 };
 
-export default LotterySuccessPage;
+export default CommercialOperationSuccessPage;

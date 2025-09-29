@@ -1,8 +1,8 @@
 import React, { useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import type { LotteryTicket } from '../../types';
+import type { CommercialOperationTicket } from '../../types';
 
-const TicketDisplay: React.FC<{ ticket: LotteryTicket }> = ({ ticket }) => {
+const TicketDisplay: React.FC<{ ticket: CommercialOperationTicket }> = ({ ticket }) => {
 
     return (
         <motion.div

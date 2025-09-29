@@ -23,7 +23,7 @@ View your app in AI Studio: https://ai.studio/apps/drive/1Sz6BUcvxAu4pkNndwXOgBn
 
 ## Digital Voucher System Setup
 
-This section details the setup for the automated digital voucher/gift card system, which is integrated into the lottery ticket purchase flow. When a user purchases a 20€ lottery ticket, a 25€ voucher is automatically generated and emailed to them.
+This section details the setup for the automated digital voucher/gift card system, which is integrated into the commercial operation ticket purchase flow. When a user purchases a 20€ commercial operation ticket, a 25€ voucher is automatically generated and emailed to them.
 
 ### 1. Environment Variables
 
@@ -66,7 +66,7 @@ ADMIN_PIN=a-secure-4-to-8-digit-pin-for-redemption
     *   The endpoint URL should be `https://<YOUR_NETLIFY_SITE_URL>/.netlify/functions/stripe-webhook`.
     *   For local testing, you can use the Stripe CLI to forward events: `stripe listen --forward-to localhost:8888/.netlify/functions/stripe-webhook`.
     *   Select the events to listen to:
-        - **`payment_intent.succeeded`** (for the integrated lottery ticket flow)
+        - **`payment_intent.succeeded`** (for the integrated commercial operation ticket flow)
         - **`checkout.session.completed`** (if you use Stripe Checkout elsewhere)
     *   After creating the endpoint, copy the **Signing secret** and set it as your `STRIPE_WEBHOOK_SECRET` environment variable.
 

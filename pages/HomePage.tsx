@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../hooks/useTranslation';
-import { RENTAL_CATEGORIES, LOTTERY_GIVEAWAY } from '../constants';
+import { RENTAL_CATEGORIES, COMMERCIAL_OPERATION_GIVEAWAY } from '../constants';
 import { motion } from 'framer-motion';
 
 // Optional: if you want to map category ids to specific display titles
@@ -58,7 +58,7 @@ const HomePage: React.FC = () => {
         <div className="absolute inset-0 z-0">
           <img
             src="/banner.jpeg"
-            alt="Lottery background"
+            alt="Commercial Operation background"
             className="w-full h-full object-cover opacity-30"
           />
           <div className="absolute inset-0 bg-black/70"></div>
@@ -71,7 +71,7 @@ const HomePage: React.FC = () => {
             transition={{ duration: 0.5 }}
             className="text-4xl font-bold text-white"
           >
-            {getTranslated(LOTTERY_GIVEAWAY.name)}
+            {getTranslated(COMMERCIAL_OPERATION_GIVEAWAY.name)}
           </motion.h2>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -81,7 +81,7 @@ const HomePage: React.FC = () => {
             className="mt-8"
           >
             <Link
-              to="/lottery"
+              to="/commercial-operation"
               className="bg-white text-black px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm hover:bg-gray-200 transition-all duration-300 transform hover:scale-105"
             >
               {t('Enter_Now')}

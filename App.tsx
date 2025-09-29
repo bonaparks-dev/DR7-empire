@@ -15,7 +15,7 @@ import { RENTAL_CATEGORIES } from './constants';
 import { AnimatePresence, motion } from 'framer-motion';
 import BookingModal from './components/ui/BookingModal';
 import BookingPage from './pages/BookingPage';
-import LotteryPage from './pages/LotteryPage';
+import CommercialOperationPage from './pages/CommercialOperationPage';
 import AboutPage from './pages/AboutPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
@@ -53,7 +53,7 @@ import WelcomePopup from './components/ui/WelcomePopup';
 import CookieBanner from './components/ui/CookieBanner';
 import { useAuth } from './hooks/useAuth';
 import AuthCallbackPage from './pages/AuthCallbackPage';
-import LotterySuccessPage from './pages/LotterySuccessPage';
+import CommercialOperationSuccessPage from './pages/CommercialOperationSuccessPage';
 import WinRulesPage from './pages/WinRulesPage';
 import LegalTermsPage from './pages/LegalTermsPage';
 import MyTickets from './pages/account/MyTickets';
@@ -114,8 +114,8 @@ const AnimatedRoutes = () => {
           </ProtectedRoute>
         } />
         <Route 
-            path="/lottery"
-            element={<LotteryPage />}
+            path="/commercial-operation"
+            element={<CommercialOperationPage />}
         />
         <Route 
             path="/win-rules"
@@ -126,8 +126,8 @@ const AnimatedRoutes = () => {
             element={<LegalTermsPage />}
         />
         <Route 
-            path="/lottery/success"
-            element={<LotterySuccessPage />}
+            path="/commercial-operation/success"
+            element={<CommercialOperationSuccessPage />}
         />
         <Route path="/account" element={
           <ProtectedRoute role="personal">
