@@ -17,7 +17,7 @@ const WinRulesPage = () => {
     general: {
       title: { it: 'Caratteristiche generali', en: 'General Features' },
       items: [
-        { label: { it: 'Nome concorso:', en: 'Contest name:' }, value: { it: 'DR7 Million', en: 'DR7 Million' } },
+        { label: { it: 'Nome concorso:', en: 'Contest name:' }, value: { it: '7 MILIONI DI EURO', en: '7 MILIONI DI EURO' } },
         { label: { it: 'Data estrazione:', en: 'Drawing date:' }, value: { it: '24 dicembre 2025', en: 'December 24, 2025' } },
         { label: { it: 'Modalità estrazione:', en: 'Drawing method:' }, value: { it: 'alla presenza di un avvocato e di un incaricato della Camera di Commercio, per garantire trasparenza e legalità.', en: 'in the presence of a lawyer and a Chamber of Commerce representative to ensure transparency and legality.' } },
         { label: { it: 'Costo partecipazione:', en: 'Participation cost:' }, value: { it: '20 €', en: '€20' } },
