@@ -74,14 +74,7 @@ const HomePage: React.FC = () => {
 
       {/* Commercial Operation banner */}
       <section className="py-24 relative bg-black">
-        <div className="absolute inset-0 z-0">
-          <img
-            src="/banner.jpeg"
-            alt="Commercial Operation background"
-            className="w-full h-full object-cover opacity-100"
-          />
-          {/* Removed the dark overlay */}
-        </div>
+        
 
         <div className="container mx-auto px-6 text-center relative z-10">
           <motion.h2
