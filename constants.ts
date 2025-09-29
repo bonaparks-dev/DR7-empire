@@ -30,19 +30,6 @@ import {
 const newCarsRawData = [
   {
     "id": 1,
-    "name": "Alfa Romeo Stelvio Quadrifoglio",
-    "dailyPrice": 40,
-    "specs": {
-      "acceleration": "0–100 in 3.8s",
-      "power": "510Cv",
-      "torque": "600Nm",
-      "engine": "2.9L V6 BiTurbo"
-    },
-    "image": "/alpha.jpeg",
-    "available": false
-  },
-  {
-    "id": 2,
     "name": "Hummer H2",
     "dailyPrice": 40,
     "specs": {
@@ -55,7 +42,7 @@ const newCarsRawData = [
     "image": "/hummer1.jpeg"
   },
   {
-    "id": 3,
+    "id": 2,
     "name": "Audi RS3",
     "dailyPrice": 70,
     "specs": {
@@ -69,7 +56,7 @@ const newCarsRawData = [
     "color": "Verde"
   },
   {
-    "id": 4,
+    "id": 3,
     "name": "Audi RS3",
     "dailyPrice": 70,
     "specs": {
@@ -82,7 +69,7 @@ const newCarsRawData = [
     "color": "Rossa"
   },
   {
-    "id": 5,
+    "id": 4,
     "name": "Mercedes A45 S AMG",
     "dailyPrice": 70,
     "specs": {
@@ -94,7 +81,7 @@ const newCarsRawData = [
     "image": "/mercedes_amg.jpeg"
   },
   {
-    "id": 6,
+    "id": 5,
     "name": "Porsche Cayenne S",
     "dailyPrice": 100,
     "specs": {
@@ -106,7 +93,7 @@ const newCarsRawData = [
     "image": "/cayenne.jpeg",
   },
   {
-    "id": 7,
+    "id": 6,
     "name": "BMW M3 Competition",
     "dailyPrice": 100,
     "specs": {
@@ -119,7 +106,7 @@ const newCarsRawData = [
     "image": "/bmw-m3.jpeg"
   },
   {
-    "id": 8,
+    "id": 7,
     "name": "Mercedes GLE 53 AMG",
     "dailyPrice": 120,
     "specs": {
@@ -132,7 +119,7 @@ const newCarsRawData = [
     "image": "/mercedesGLE.jpeg"
   },
   {
-    "id": 9,
+    "id": 8,
     "name": "BMW M4 Competition",
     "dailyPrice": 100,
     "specs": {
@@ -144,7 +131,7 @@ const newCarsRawData = [
     "image": "/bmw-m4.jpeg"
   },
   {
-    "id": 10,
+    "id": 9,
     "name": "Porsche 992 Carrera 4S",
     "dailyPrice": 120,
     "specs": {
@@ -157,7 +144,7 @@ const newCarsRawData = [
     "image": "/porsche-911.jpeg"
   },
   {
-    "id": 11,
+    "id": 10,
     "name": "Mercedes C63 S AMG",
     "dailyPrice": 120,
     "specs": {
@@ -169,7 +156,7 @@ const newCarsRawData = [
     "image": "/c63.jpeg"
   },
   {
-    "id": 12,
+    "id": 11,
     "name": "Porsche Macan GTS",
     "dailyPrice": 100,
     "specs": {
@@ -181,7 +168,7 @@ const newCarsRawData = [
     "image": "/macan.jpeg"
   },
   {
-    "id": 13,
+    "id": 12,
     "name": "Mercedes GLE 63 AMG",
     "dailyPrice": 120,
     "specs": {
@@ -193,21 +180,7 @@ const newCarsRawData = [
     "image": "/mercedes-gle.jpeg"
   },
   {
-    "id": 14,
-    "name": "Ferrari Portofino M",
-    "dailyPrice": 500,
-    "specs": {
-      "acceleration": "0–100 in 3.45s",
-      "maxSpeed": "Max speed: 320km/h",
-      "power": "620Cv",
-      "torque": "760Nm",
-      "engine": "3.9L Twin-Turbo V8"
-    },
-    "image": "/ferrari-portofino.jpeg",
-    "available": false
-  },
-  {
-    "id": 15,
+    "id": 13,
     "name": "Lamborghini Urus Performante",
     "dailyPrice": 500,
     "specs": {
@@ -218,19 +191,6 @@ const newCarsRawData = [
       "engine": "4.0L Twin-Turbo V8"
     },
     "image": "/urus.jpeg"
-  },
-  {
-    "id": 16,
-    "name": "Fiat Ducato",
-    "dailyPrice": 100,
-    "specs": {
-      "engine": "2.3L MultiJet Turbo Diesel",
-      "power": "140Cv",
-      "special": "Includes 100km pack",
-      "extras": "Unlimited option: +50€"
-    },
-    "image": "/Ducato.jpeg",
-    "available": false
   }
 ];
 
