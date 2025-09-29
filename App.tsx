@@ -28,8 +28,6 @@ import AuthPage from './pages/AuthPage';
 import SignUpPage from './pages/SignUpPage';
 import ScrollToTop from './components/routing/ScrollToTop';
 import PostPage from './pages/PostPage';
-import VillaDetailsPage from './pages/VillaDetailsPage';
-import VillaListingsPage from './pages/VillaListingsPage';
 import JetSearchResultsPage from './pages/JetSearchResultsPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AccountPage from './pages/AccountPage';
@@ -93,10 +91,8 @@ const AnimatedRoutes = () => {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<HomePage />} />
-        <Route path="/villas" element={<VillaListingsPage />} />
-        <Route path="/villas/:villaId" element={<VillaDetailsPage />} />
         <Route path="/jets/search" element={<JetSearchResultsPage />} />
-        {RENTAL_CATEGORIES.filter(c => c.id !== 'villas').map(category => (
+        {RENTAL_CATEGORIES.map(category => (
             <Route 
                 key={category.id} 
                 path={`/${category.id}`} 
