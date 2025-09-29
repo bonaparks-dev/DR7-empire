@@ -24,9 +24,9 @@ const CATEGORY_IMAGE: Record<string, string> = {
 };
 
 const carouselImages = [
-  '/car.jpeg',
-  '/helicopter.jpeg',
   '/yacht.jpeg',
+  '/villa.jpeg',
+  '/helicopter.jpeg',
   '/privatejet.jpeg',
 ];
 
