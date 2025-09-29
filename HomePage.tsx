@@ -31,10 +31,8 @@ const HeroSection: React.FC = () => {
         <img
           src="/main.jpeg"
           alt="Background"
-          className="w-full h-full object-cover brightness-[.65]"
+          className="w-full h-full object-cover"
         />
-        {/* Lighter black overlay */}
-        <div className="absolute inset-0 bg-black/30" />
       </div>
 
       {/* Text Overlay */}
@@ -144,11 +142,9 @@ const HomePage: React.FC = () => {
                       alt={displayTitle}
                       className={`w-full ${
                         isFeatured ? 'h-[40rem]' : 'h-96'
-                      } object-cover brightness-75 group-hover:brightness-100 transition-all duration-500 group-hover:scale-110`}
+                      } object-cover group-hover:brightness-100 transition-all duration-500 group-hover:scale-110`}
                       loading="lazy"
                     />
-
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                     <div className="absolute bottom-0 left-0 p-8">
                       <h3 className="text-3xl font-bold text-white">
                         {displayTitle}
