@@ -27,7 +27,7 @@ const AboutPage: React.FC = () => {
                         <div className="flex flex-col items-center">
                             <div className="relative w-64 h-80 mx-auto">
                                 <img
-                                    src="/Valerio.jpeg"
+                                    src="/Valerio.jpg"
                                     alt="Valerio - Co-fondatore DR7 Empire"
                                     className="w-full h-full object-cover rounded-lg shadow-2xl shadow-white/10"
                                 />
@@ -41,7 +41,7 @@ const AboutPage: React.FC = () => {
                         <div className="flex flex-col items-center">
                             <div className="relative w-64 h-80 mx-auto">
                                 <img
-                                    src="/Ilenia.jpeg"
+                                    src="/Ilenia.jpg"
                                     alt="Ilenia - Co-fondatrice DR7 Empire"
                                     className="w-full h-full object-cover rounded-lg shadow-2xl shadow-white/10"
                                 />
