@@ -107,19 +107,6 @@ const newCarsRawData = [
   },
   {
     "id": 7,
-    "name": "Mercedes GLE 53 AMG",
-    "dailyPrice": 120,
-    "specs": {
-      "acceleration": "0–100 in 4.7s",
-      "maxSpeed": "Max speed: 250km/h",
-      "power": "435Cv",
-      "torque": "520Nm",
-      "engine": "3.0L inline 6-cylinder"
-    },
-    "image": "/mercedesGLE.jpeg"
-  },
-  {
-    "id": 8,
     "name": "BMW M4 Competition",
     "dailyPrice": 100,
     "specs": {
@@ -131,7 +118,7 @@ const newCarsRawData = [
     "image": "/bmw-m4.jpeg"
   },
   {
-    "id": 9,
+    "id": 8,
     "name": "Porsche 992 Carrera 4S",
     "dailyPrice": 120,
     "specs": {
@@ -144,7 +131,7 @@ const newCarsRawData = [
     "image": "/porsche-911.jpeg"
   },
   {
-    "id": 10,
+    "id": 9,
     "name": "Mercedes C63 S AMG",
     "dailyPrice": 120,
     "specs": {
@@ -156,7 +143,7 @@ const newCarsRawData = [
     "image": "/c63.jpeg"
   },
   {
-    "id": 11,
+    "id": 10,
     "name": "Porsche Macan GTS",
     "dailyPrice": 100,
     "specs": {
@@ -168,7 +155,7 @@ const newCarsRawData = [
     "image": "/macan.jpeg"
   },
   {
-    "id": 12,
+    "id": 11,
     "name": "Mercedes GLE 63 AMG",
     "dailyPrice": 120,
     "specs": {
@@ -180,7 +167,7 @@ const newCarsRawData = [
     "image": "/mercedes-gle.jpeg"
   },
   {
-    "id": 13,
+    "id": 12,
     "name": "Lamborghini Urus Performante",
     "dailyPrice": 500,
     "specs": {
