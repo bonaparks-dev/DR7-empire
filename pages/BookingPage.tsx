@@ -231,12 +231,12 @@ const BookingPage: React.FC = () => {
     return [];
   }, [isQuoteRequest, isYacht, t]);
 
-  if (!item) return <div className="pt-32 text-center text-white">Item not found.</div>;
-  
   const handleBookingComplete = (booking: Booking) => {
     setCompletedBooking(booking);
     setStep(99); // A step number that indicates completion
   };
+
+  if (!item) return <div className="pt-32 text-center text-white">Item not found.</div>;
 
   const renderContent = () => {
     if(completedBooking) {
