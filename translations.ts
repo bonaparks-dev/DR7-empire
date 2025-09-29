@@ -221,7 +221,7 @@ export const translations: Translations = {
   View_Openings: { en: "View Openings", it: "Vedi Posizioni Aperte" },
 
   // Commercial Operation Page
-  DR7_Christmas_Giveaway: { en: "DR7 Million", it: "DR7 Millioni" },
+  DR7_Christmas_Giveaway: { en: "€ 7 MILLION", it: "7 MILIONI DI EURO" },
   Prizes_Pool_Worth_Over: { en: "Prize Pool Worth Over $7,000,000", it: "Montepremi di Oltre $7.000.000" },
   Draw_Ends_In: { en: "Draw Ends In", it: "L'estrazione termina tra" },
   How_many_tickets: { en: "How many tickets?", it: "Quanti biglietti?" },
@@ -246,13 +246,13 @@ export const translations: Translations = {
 
 
   // Club Enrollment
-  Enroll_in_DR7_Club: { en: "Enroll in DR7 Club", it: "Iscriviti al Club DR7" },
+  Enroll_in_DR7_Club: { en: "Enroll", it: "Iscriviti" },
   Billing_Cycle: { en: "Billing Cycle", it: "Ciclo di Fatturazione" },
   Membership_Summary: { en: "Membership Summary", it: "Riepilogo Iscrizione" },
   Selected_Tier: { en: "Selected Tier", it: "Livello Selezionato" },
   Billed: { en: "Billed", it: "Fatturato" },
   Confirm_and_Pay: { en: "Confirm & Pay", it: "Conferma e Paga" },
-  Welcome_to_the_Club: { en: "Welcome to the Club!", it: "Benvenuto nel Club!" },
+  Welcome_to_the_Club: { en: "Welcome!", it: "Benvenuto!" },
   Your_membership_is_now_active: { en: "Your membership is now active. Explore your exclusive benefits.", it: "La tua iscrizione è ora attiva. Esplora i tuoi vantaggi esclusivi." },
   Go_to_Dashboard: { en: "Go to Dashboard", it: "Vai alla Dashboard" },
 
