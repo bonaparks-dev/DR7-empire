@@ -14,6 +14,8 @@ import MembershipPage from './pages/MembershipPage';
 import { RENTAL_CATEGORIES } from './constants';
 import { AnimatePresence, motion } from 'framer-motion';
 import BookingModal from './components/ui/BookingModal';
+import CarBookingWizard from './components/ui/CarBookingWizard';
+import { useBooking } from './hooks/useBooking';
 import BookingPage from './pages/BookingPage';
 import CommercialOperationPage from './pages/CommercialOperationPage';
 import AboutPage from './pages/AboutPage';
@@ -192,6 +194,39 @@ const PageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
 
+const MainContent = () => {
+  const { isCarWizardOpen, closeCarWizard, selectedCar } = useBooking();
+
+  return (
+    <>
+      <div className="bg-black min-h-screen font-sans antialiased relative overflow-x-hidden">
+        <div className="absolute top-0 left-0 w-full h-full bg-grid-white/[0.05] z-0"></div>
+        <div className="relative z-10 flex flex-col min-h-screen">
+          <Header />
+          <main className="flex-grow">
+            <AnimatedRoutes />
+          </main>
+          <Footer />
+        </div>
+        <WelcomePopup />
+        <BookingModal />
+        <VerificationModal />
+        <CookieBanner />
+        <AnimatePresence>
+          {isCarWizardOpen && selectedCar && (
+            <CarBookingWizard
+              isOpen={isCarWizardOpen}
+              onClose={closeCarWizard}
+              car={selectedCar}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+    </>
+  );
+};
+
+
 const App = () => {
   return (
     <LanguageProvider>
@@ -203,20 +238,7 @@ const App = () => {
                 <BrowserRouter>
                   <ScrollToTop />
                   <AuthRedirector />
-                  <div className="bg-black min-h-screen font-sans antialiased relative overflow-x-hidden">
-                    <div className="absolute top-0 left-0 w-full h-full bg-grid-white/[0.05] z-0"></div>
-                    <div className="relative z-10 flex flex-col min-h-screen">
-                      <Header />
-                      <main className="flex-grow">
-                        <AnimatedRoutes />
-                      </main>
-                      <Footer />
-                    </div>
-                    <WelcomePopup />
-                    <BookingModal />
-                    <VerificationModal />
-                    <CookieBanner />
-                  </div>
+                  <MainContent />
                 </BrowserRouter>
               </Elements>
             </VerificationProvider>
