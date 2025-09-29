@@ -420,19 +420,17 @@ export const INSURANCE_OPTIONS = [
 ];
 
 export const RENTAL_EXTRAS = [
-    { id: 'gps', label: { en: 'GPS Navigation', it: 'Navigatore GPS' }, pricePerDay: { usd: 11, eur: 10, crypto: 0 } },
-    { id: 'child_seat', label: { en: 'Child Seat', it: 'Seggiolino per Bambini' }, pricePerDay: { usd: 8, eur: 7, crypto: 0 } },
-    { id: 'additional_driver', label: { en: 'Additional Driver', it: 'Guidatore Aggiuntivo' }, pricePerDay: { usd: 16, eur: 15, crypto: 0 } },
+    { id: 'additional_driver', label: { en: 'Additional Driver', it: 'Guidatore Aggiuntivo' }, pricePerDay: { usd: 13, eur: 10, crypto: 0 } },
 ];
 
 export const COUNTRIES = [
-    { code: 'IT', name: 'Italy' }, { code: 'US', name: 'United States' }, { code: 'GB', name: 'United Kingdom' }, { code: 'DE', name: 'Germany' }, { code: 'FR', name: 'France' },
+    { code: 'IT', name: 'Italy' }, { code: 'US', name: 'United States' }, { code: 'GB', name: 'United Kingdom' }, { code: 'DE', name: 'Germany' }, { code: 'FR', name: 'France' },  { code: 'FR', name: 'Altri' },
 ];
 
 export const INSURANCE_ELIGIBILITY = {
-    KASKO_BASE: { minAge: 25, minLicenseYears: 1 },
-    KASKO_BLACK: { minAge: 25, minLicenseYears: 3 },
-    KASKO_SIGNATURE: { minAge: 30, minLicenseYears: 5 },
+    KASKO_BASE: { minAge: 20, minLicenseYears: 2 },
+    KASKO_BLACK: { minAge: 25, minLicenseYears: 5 },
+    KASKO_SIGNATURE: { minAge: 30, minLicenseYears: 10 },
 };
 
 export const VALIDATION_MESSAGES = {
