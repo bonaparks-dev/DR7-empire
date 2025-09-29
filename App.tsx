@@ -196,6 +196,12 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 
 
 const MainContent = () => {
   const { isCarWizardOpen, closeCarWizard, selectedCar } = useBooking();
+  const navigate = useNavigate();
+
+  const handleBookingComplete = () => {
+    closeCarWizard();
+    navigate('/confirmation-success');
+  };
 
   return (
     <>
@@ -214,11 +220,25 @@ const MainContent = () => {
         <CookieBanner />
         <AnimatePresence>
           {isCarWizardOpen && selectedCar && (
-            <CarBookingWizard
-              isOpen={isCarWizardOpen}
-              onClose={closeCarWizard}
-              car={selectedCar}
-            />
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
+            >
+              <motion.div
+                initial={{ scale: 0.95, y: 50 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.95, y: 50 }}
+                className="relative w-full max-w-7xl mx-auto my-12"
+              >
+                <CarBookingWizard
+                  item={selectedCar}
+                  onClose={closeCarWizard}
+                  onBookingComplete={handleBookingComplete}
+                />
+              </motion.div>
+            </motion.div>
           )}
         </AnimatePresence>
       </div>
