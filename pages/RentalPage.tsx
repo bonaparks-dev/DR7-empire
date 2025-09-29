@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RENTAL_CATEGORIES, AIRPORTS } from '../constants';
@@ -227,10 +226,10 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   const category = RENTAL_CATEGORIES.find(cat => cat.id === categoryId);
 
   const handleBook = (item: RentalItem) => {
-    if (['cars', 'jets', 'helicopters'].includes(categoryId)) {
+    if (['jets', 'helicopters'].includes(categoryId)) {
         navigate(`/book/${categoryId}/${item.id}`);
     } else {
-        openBooking(item, categoryId as 'yachts' | 'villas');
+        openBooking(item, categoryId as 'yachts' | 'villas' | 'cars');
     }
   };
 
