@@ -33,7 +33,7 @@ const carouselImages = [
 const HeroSection: React.FC = () => {
   const { t } = useTranslation();
   return (
-    <div className="relative h-screen flex items-center justify-center text-center overflow-hidden">
+    <div className="relative h-[70vh] flex items-center justify-center text-center overflow-hidden">
       {/* Background image */}
       <div className="absolute inset-0 z-0">
         <Carousel images={carouselImages} />
