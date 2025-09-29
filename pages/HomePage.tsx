@@ -26,18 +26,15 @@ const HeroSection: React.FC = () => {
   const { t } = useTranslation();
   return (
     <div className="relative h-screen flex items-center justify-center text-center overflow-hidden">
-      {/* Video Background */}
+      {/* Background image */}
       <div className="absolute inset-0 z-0">
-        <video
-          src="/main.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
+        <img
+          src="/main.jpeg"
+          alt="Background"
           className="w-full h-full object-cover brightness-[.65]"
         />
         {/* Lighter black overlay */}
-        <div className="absolute inset-0 bg-black/30"></div>
+        <div className="absolute inset-0 bg-black/30" />
       </div>
 
       {/* Text Overlay has been removed as per user request. */}
