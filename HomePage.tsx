@@ -24,10 +24,10 @@ const CATEGORY_IMAGE: Record<string, string> = {
 };
 
 const carouselImages = [
+  '/car.jpeg',
   '/yacht.jpeg',
-  '/villa.jpeg',
-  '/helicopter.jpeg',
   '/privatejet.jpeg',
+  '/helicopter.jpeg',
 ];
 
 const HeroSection: React.FC = () => {
