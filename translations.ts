@@ -221,7 +221,7 @@ export const translations: Translations = {
   View_Openings: { en: "View Openings", it: "Vedi Posizioni Aperte" },
 
   // Commercial Operation Page
-  DR7_Christmas_Giveaway: { en: "€ 7 MILLION", it: "7 MILIONI DI EURO" },
+  DR7_Christmas_Giveaway: { en: "7 MILIONI DI EURO", it: "7 MILIONI DI EURO" },
   Prizes_Pool_Worth_Over: { en: "Prize Pool Worth Over $7,000,000", it: "Montepremi di Oltre $7.000.000" },
   Draw_Ends_In: { en: "Draw Ends In", it: "L'estrazione termina tra" },
   How_many_tickets: { en: "How many tickets?", it: "Quanti biglietti?" },
