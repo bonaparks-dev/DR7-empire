@@ -13,7 +13,7 @@ import RentalPage from './pages/RentalPage';
 import MembershipPage from './pages/MembershipPage';
 import { RENTAL_CATEGORIES } from './constants';
 import { AnimatePresence, motion } from 'framer-motion';
-import CarBookingWizard from './components/ui/CarBookingWizard';
+import BookingModal from './components/ui/BookingModal';
 import BookingPage from './pages/BookingPage';
 import CommercialOperationPage from './pages/CommercialOperationPage';
 import AboutPage from './pages/AboutPage';
