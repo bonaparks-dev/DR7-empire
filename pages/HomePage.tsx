@@ -55,12 +55,7 @@ const HomePage: React.FC = () => {
       <HeroSection />
 
       <section className="py-24 relative bg-black">
-        <div className="absolute inset-0 z-0">
-          <img
-            src="/banner.jpeg"
-            alt="Commercial Operation background"
-            className="w-full h-full object-cover opacity-30"
-          />
+       
           <div className="absolute inset-0 bg-black/70"></div>
         </div>
         <div className="container mx-auto px-6 text-center relative z-10">
