@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from '../hooks/useTranslation';
 import { RENTAL_CATEGORIES } from '../constants';
 import { motion } from 'framer-motion';
+import Carousel from '../components/Carousel';
 
 // Optional: display titles per category
 const DISPLAY_TITLE: Record<string, string> = {
@@ -22,17 +23,20 @@ const CATEGORY_IMAGE: Record<string, string> = {
   jets: '/privatejet.jpeg',
 };
 
+const carouselImages = [
+  '/car.jpeg',
+  '/helicopter.jpeg',
+  '/yacht.jpeg',
+  '/privatejet.jpeg',
+];
+
 const HeroSection: React.FC = () => {
   const { t } = useTranslation();
   return (
     <div className="relative h-screen flex items-center justify-center text-center overflow-hidden">
       {/* Background image */}
       <div className="absolute inset-0 z-0">
-        <img
-          src="/main.jpeg"
-          alt="Background"
-          className="w-full h-full object-cover"
-        />
+        <Carousel images={carouselImages} />
       </div>
 
       {/* Text Overlay */}
