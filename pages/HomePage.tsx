@@ -54,10 +54,9 @@ const HomePage: React.FC = () => {
     >
       <HeroSection />
 
+      {/* ===== Giveaway Section (fixed tag structure) ===== */}
       <section className="py-24 relative bg-black">
-       
-          <div className="absolute inset-0 bg-black/70"></div>
-        </div>
+        <div className="absolute inset-0 bg-black/70" />
         <div className="container mx-auto px-6 text-center relative z-10">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
@@ -68,6 +67,7 @@ const HomePage: React.FC = () => {
           >
             {getTranslated(COMMERCIAL_OPERATION_GIVEAWAY.name)}
           </motion.h2>
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -85,6 +85,7 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
+      {/* ===== Categories Section ===== */}
       <section className="py-24 bg-black">
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -95,7 +96,8 @@ const HomePage: React.FC = () => {
                 '/placeholder.jpeg';
 
               const displayTitle =
-                DISPLAY_TITLE[category.id as keyof typeof DISPLAY_TITLE] || getTranslated(category.label);
+                DISPLAY_TITLE[category.id as keyof typeof DISPLAY_TITLE] ||
+                getTranslated(category.label);
 
               const isFeatured = index === 0;
 
@@ -118,7 +120,7 @@ const HomePage: React.FC = () => {
                       className={`w-full ${isFeatured ? 'h-[40rem]' : 'h-96'} object-cover brightness-75 group-hover:brightness-100 transition-all duration-500 group-hover:scale-110`}
                     />
 
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                     <div className="absolute bottom-0 left-0 p-8">
                       <h3 className="text-3xl font-bold text-white">
                         {displayTitle}
@@ -132,6 +134,7 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
+      {/* ===== Membership Section ===== */}
       <section className="py-24 bg-gray-900/40">
         <div className="container mx-auto px-6 text-center">
           <motion.h2
@@ -150,9 +153,7 @@ const HomePage: React.FC = () => {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="mt-4 text-lg text-gray-400 max-w-2xl mx-auto"
           >
-            {t(
-              'Unlock_a_new_level_of_luxury_with_our_exclusive_membership_tiers'
-            )}
+            {t('Unlock_a_new_level_of_luxury_with_our_exclusive_membership_tiers')}
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
