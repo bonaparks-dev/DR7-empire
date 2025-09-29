@@ -5,30 +5,15 @@ import { useTranslation } from '../hooks/useTranslation';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
-import { RENTAL_CATEGORIES, PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, COUNTRIES, INSURANCE_ELIGIBILITY, VALIDATION_MESSAGES, YACHT_PICKUP_MARINAS, AIRPORTS, HELI_DEPARTURE_POINTS, HELI_ARRIVAL_POINTS, CRYPTO_ADDRESSES, AGE_BUCKETS, LICENSE_OBTENTION_YEAR_OPTIONS } from '../constants';
+import { RENTAL_CATEGORIES, YACHT_PICKUP_MARINAS, AIRPORTS, HELI_DEPARTURE_POINTS, HELI_ARRIVAL_POINTS } from '../constants';
 import type { Booking, Inquiry, RentalItem } from '../types';
+import CarBookingWizard from '../components/ui/CarBookingWizard';
 
-import { CameraIcon, CreditCardIcon, CryptoIcon, XIcon } from '../components/icons/Icons';
+import { CreditCardIcon, XIcon } from '../components/icons/Icons';
 
 
 // Safely access the Stripe publishable key from Vite's environment variables.
 const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
-
-type KaskoTier = 'KASKO_BASE' | 'KASKO_BLACK' | 'KASKO_SIGNATURE';
-
-function isKaskoEligibleByBuckets(
-  tier: KaskoTier,
-  ageMin?: number,
-  licenseYears?: number
-): { eligible: boolean; reasonKey?: 'AGE_MISSING'|'LIC_MISSING'|'BASE_REQ'|'BLACK_REQ'|'SIGNATURE_REQ' } {
-  if (!ageMin)  return { eligible: false, reasonKey: 'AGE_MISSING' };
-  if (licenseYears === undefined || licenseYears === null) return { eligible: false, reasonKey: 'LIC_MISSING' };
-
-  if (tier === 'KASKO_BASE')       return { eligible: licenseYears >= 2,  reasonKey: licenseYears >= 2 ? undefined : 'BASE_REQ' };
-  if (tier === 'KASKO_BLACK')      return { eligible: ageMin >= 25 && licenseYears >= 5,  reasonKey: (ageMin >= 25 && licenseYears >= 5) ? undefined : 'BLACK_REQ' };
-  /* KASKO_SIGNATURE */
-  return { eligible: ageMin >= 30 && licenseYears >= 10, reasonKey: (ageMin >= 30 && licenseYears >= 10) ? undefined : 'SIGNATURE_REQ' };
-}
 
 const BookingPage: React.FC = () => {
   const { category: categoryId, itemId } = useParams<{ category: 'cars' | 'yachts' | 'jets' | 'helicopters'; itemId: string }>();
@@ -44,13 +29,11 @@ const BookingPage: React.FC = () => {
   const today = new Date().toISOString().split('T')[0];
 
   const [formData, setFormData] = useState({
-      fullName: '', email: '', phone: '', countryOfResidency: '', ageMin: '', licenseObtentionYear: '',
-      pickupDate: today, pickupTime: '10:00', returnDate: '', returnTime: '10:00',
-      pickupLocation: PICKUP_LOCATIONS[0].id, insuranceOption: INSURANCE_OPTIONS[0].id, extras: [] as string[],
+      fullName: '', email: '', phone: '',
       checkinDate: location.state?.checkinDate || today, 
       checkoutDate: location.state?.checkoutDate || '', 
       guests: location.state?.guests || 1,
-      licenseImage: '', paymentMethod: 'stripe',
+      paymentMethod: 'stripe',
       tripType: location.state?.tripType || 'one-way' as 'one-way' | 'round-trip', 
       departurePoint: location.state?.departurePoint || '', 
       arrivalPoint: location.state?.arrivalPoint || '', 
@@ -64,7 +47,6 @@ const BookingPage: React.FC = () => {
       pickupMarina: YACHT_PICKUP_MARINAS[0].id,
   });
   
-  const [insuranceError, setInsuranceError] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const cardElementRef = useRef<HTMLDivElement>(null);
@@ -74,12 +56,6 @@ const BookingPage: React.FC = () => {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [isClientSecretLoading, setIsClientSecretLoading] = useState(false);
   
-  const [isCameraOpen, setIsCameraOpen] = useState(false);
-  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isFirstCarBooking, setIsFirstCarBooking] = useState(true);
-
   const { category, item, isCar, isJet, isHelicopter, isYacht, isQuoteRequest } = useMemo(() => {
     const cat = RENTAL_CATEGORIES.find(c => c.id === categoryId);
     const itm = cat?.data.find(i => i.id === itemId);
@@ -104,46 +80,13 @@ const BookingPage: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => {
-    if (isCameraOpen && cameraStream && videoRef.current) {
-        videoRef.current.srcObject = cameraStream;
-    }
-  }, [isCameraOpen, cameraStream]);
-  
   const { 
-    duration, rentalCost, insuranceCost, extrasCost, subtotal, taxes, total, nights
+    rentalCost, subtotal, taxes, total, nights
   } = useMemo(() => {
-    const zeroState = { duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, subtotal: 0, taxes: 0, total: 0, nights: 0 };
+    const zeroState = { rentalCost: 0, subtotal: 0, taxes: 0, total: 0, nights: 0 };
     if (!item || !item.pricePerDay) return zeroState;
     
     const pricePerDay = item.pricePerDay[currency];
-    
-    if (isCar) {
-      if (!formData.pickupDate || !formData.returnDate) return zeroState;
-      const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
-      const ret = new Date(`${formData.returnDate}T${formData.returnTime}`);
-      if (pickup >= ret) return zeroState;
-
-      const diffMs = ret.getTime() - pickup.getTime();
-      const totalHours = Math.ceil(diffMs / (1000 * 60 * 60));
-      const days = Math.floor(totalHours / 24);
-      const hours = totalHours % 24;
-      const billingDays = days + (hours > 0 ? 1 : 0);
-
-      const calculatedRentalCost = (days * pricePerDay) + (hours * (pricePerDay / 12));
-      const selectedInsurance = INSURANCE_OPTIONS.find(opt => opt.id === formData.insuranceOption);
-      const calculatedInsuranceCost = (selectedInsurance?.pricePerDay[currency] || 0) * billingDays;
-      const calculatedExtrasCost = formData.extras.reduce((acc, extraId) => {
-        const extra = RENTAL_EXTRAS.find(e => e.id === extraId);
-        return acc + (extra?.pricePerDay[currency] || 0) * billingDays;
-      }, 0);
-      
-      const calculatedSubtotal = calculatedRentalCost + calculatedInsuranceCost + calculatedExtrasCost;
-      const calculatedTaxes = calculatedSubtotal * 0.10;
-      const calculatedTotal = calculatedSubtotal + calculatedTaxes;
-      
-      return { ...zeroState, duration: { days, hours }, rentalCost: calculatedRentalCost, insuranceCost: calculatedInsuranceCost, extrasCost: calculatedExtrasCost, subtotal: calculatedSubtotal, taxes: calculatedTaxes, total: calculatedTotal };
-    } 
     
     if (isYacht) {
       const checkinKey = 'checkinDate';
@@ -168,13 +111,13 @@ const BookingPage: React.FC = () => {
 
       const calculatedTotal = calculatedSubtotal + calculatedTaxes;
 
-      return { ...zeroState, duration: { days: diffDays, hours: 0 }, rentalCost: calculatedRentalCost, subtotal: calculatedSubtotal, taxes: calculatedTaxes, total: calculatedTotal, nights: diffDays };
+      return { ...zeroState, rentalCost: calculatedRentalCost, subtotal: calculatedSubtotal, taxes: calculatedTaxes, total: calculatedTotal, nights: diffDays };
     }
     return zeroState;
-  }, [formData, item, currency, isCar, isYacht]);
+  }, [formData, item, currency, isYacht]);
 
   useEffect(() => {
-    if (step === (isCar ? 3 : 2) && !isQuoteRequest && total > 0) {
+    if (step === 2 && !isCar && !isQuoteRequest && total > 0) {
         setIsClientSecretLoading(true); setClientSecret(null); setStripeError(null);
         fetch('/.netlify/functions/create-payment-intent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: total, currency }) })
         .then(res => res.json()).then(data => { if (data.error) { setStripeError(data.error); } else { setClientSecret(data.clientSecret); } })
@@ -185,8 +128,7 @@ const BookingPage: React.FC = () => {
 
   useEffect(() => {
     let card: any = null;
-    const paymentStep = isCar ? 3 : 2;
-    if (stripe && step === paymentStep && !isQuoteRequest && formData.paymentMethod === 'stripe' && cardElementRef.current && clientSecret) {
+    if (stripe && step === 2 && !isCar && !isQuoteRequest && formData.paymentMethod === 'stripe' && cardElementRef.current && clientSecret) {
         const elements = stripe.elements();
         card = elements.create('card', { style: { base: { color: '#ffffff', fontFamily: '"Exo 2", sans-serif', fontSmoothing: 'antialiased', fontSize: '16px', '::placeholder': { color: '#a0aec0' } }, invalid: { color: '#ef4444', iconColor: '#ef4444' } }, hidePostalCode: true });
         setCardElement(card); card.mount(cardElementRef.current);
@@ -197,75 +139,6 @@ const BookingPage: React.FC = () => {
 
   useEffect(() => { if (user) { setFormData(prev => ({ ...prev, fullName: user.fullName || '', email: user.email || '' })); } }, [user]);
 
-  useEffect(() => {
-    // Reset on category change or user logout
-    if (!isCar || !user) {
-      setIsFirstCarBooking(false);
-      return;
-    }
-
-    const checkFirstBooking = async () => {
-      const { data, error } = await supabase
-        .from('bookings')
-        .select('bookingId')
-        .eq('userId', user.id)
-        .eq('itemCategory', 'cars')
-        .limit(1);
-
-      if (error) {
-        console.error('Error checking for previous bookings:', error);
-        // Default to requiring license upload if check fails
-        setIsFirstCarBooking(true);
-        return;
-      }
-
-      setIsFirstCarBooking(data.length === 0);
-    };
-
-    checkFirstBooking();
-  }, [isCar, user]);
-
-  useEffect(() => {
-    if (!isCar) return;
-
-    const ageMin = formData.ageMin ? parseInt(formData.ageMin, 10) : undefined;
-    const licenseObtentionYear = formData.licenseObtentionYear ? parseInt(formData.licenseObtentionYear, 10) : undefined;
-    const licenseYears = licenseObtentionYear ? new Date().getFullYear() - licenseObtentionYear : undefined;
-
-    if (ageMin === undefined || licenseYears === undefined) {
-      setFormData(prev => ({ ...prev, insuranceOption: 'KASKO_BASE' }));
-      setInsuranceError('');
-      return;
-    }
-
-    let bestOption: KaskoTier = 'KASKO_BASE';
-    let eligibilityErrorKey: string | undefined;
-
-    const signatureCheck = isKaskoEligibleByBuckets('KASKO_SIGNATURE', ageMin, licenseYears);
-    if (signatureCheck.eligible) {
-      bestOption = 'KASKO_SIGNATURE';
-    } else {
-      const blackCheck = isKaskoEligibleByBuckets('KASKO_BLACK', ageMin, licenseYears);
-      if (blackCheck.eligible) {
-        bestOption = 'KASKO_BLACK';
-        eligibilityErrorKey = signatureCheck.reasonKey;
-      } else {
-        const baseCheck = isKaskoEligibleByBuckets('KASKO_BASE', ageMin, licenseYears);
-        if (baseCheck.eligible) {
-          bestOption = 'KASKO_BASE';
-          eligibilityErrorKey = blackCheck.reasonKey;
-        } else {
-          bestOption = 'KASKO_BASE'; // Default to base, error will be shown
-          eligibilityErrorKey = baseCheck.reasonKey;
-        }
-      }
-    }
-
-    setFormData(prev => ({ ...prev, insuranceOption: bestOption }));
-    setInsuranceError(eligibilityErrorKey ? t(eligibilityErrorKey) : '');
-
-  }, [isCar, formData.ageMin, formData.licenseObtentionYear, t]);
-  
   const formatPrice = (price: number) => new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', { style: 'currency', currency: currency.toUpperCase(), minimumFractionDigits: 2 }).format(price);
   const formatDate = (date: string) => new Date(date).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
@@ -273,91 +146,15 @@ const BookingPage: React.FC = () => {
     const { name, value, type } = e.target;
     if (type === 'checkbox') {
         const { checked } = e.target as HTMLInputElement;
-        setFormData(prev => ({ ...prev, extras: checked ? [...prev.extras, name] : prev.extras.filter(id => id !== name) }));
+        setFormData(prev => ({ ...prev, [name]: checked }));
     } else {
         setFormData(prev => ({ ...prev, [name]: value }));
     }
     if (errors[name]) setErrors(prev => ({...prev, [name]: ''}));
   };
   
-  const handleLicenseUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (file) { const reader = new FileReader(); reader.onload = (event) => { setFormData(prev => ({...prev, licenseImage: event.target?.result as string})); setErrors(prev => ({...prev, licenseImage: ''})); }; reader.readAsDataURL(file); }
-  };
-  
-  const handleUseCameraClick = async () => {
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            setCameraStream(stream);
-            setIsCameraOpen(true);
-        } catch (err) {
-            console.error("Camera access denied:", err);
-            alert("Camera access was denied. Please check your browser settings.");
-        }
-    } else {
-        alert("Your browser does not support camera access.");
-    }
-  };
-
-  const handleCloseCamera = () => {
-      if (cameraStream) {
-          cameraStream.getTracks().forEach(track => track.stop());
-      }
-      setCameraStream(null);
-      setIsCameraOpen(false);
-  };
-
-  const handleTakePhoto = () => {
-      if (videoRef.current && canvasRef.current) {
-          const video = videoRef.current;
-          const canvas = canvasRef.current;
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          const context = canvas.getContext('2d');
-          if (context) {
-              context.drawImage(video, 0, 0, canvas.width, canvas.height);
-              const imageDataUrl = canvas.toDataURL('image/jpeg');
-              setFormData(prev => ({ ...prev, licenseImage: imageDataUrl }));
-              setErrors(prev => ({...prev, licenseImage: ''}));
-          }
-          handleCloseCamera();
-      }
-  };
-
   const validateStep = () => {
-    if (step === 1 && isCar) {
-      const newErrors: Record<string, string> = {};
-
-      if (!formData.ageMin) {
-        newErrors.ageMin = t('AGE_MISSING');
-      }
-      if (!formData.licenseObtentionYear) {
-        newErrors.licenseObtentionYear = t('LIC_MISSING');
-      }
-
-      if (formData.ageMin && formData.licenseObtentionYear) {
-        const ageMin = parseInt(formData.ageMin, 10);
-        const licenseObtentionYear = parseInt(formData.licenseObtentionYear, 10);
-        const licenseYears = new Date().getFullYear() - licenseObtentionYear;
-        const baseCheck = isKaskoEligibleByBuckets('KASKO_BASE', ageMin, licenseYears);
-        if (!baseCheck.eligible && baseCheck.reasonKey) {
-          newErrors.insurance = t(baseCheck.reasonKey as any);
-        }
-      }
-
-      setErrors(newErrors);
-      return Object.keys(newErrors).length === 0;
-    }
-
-    if (step === 2 && isCar) {
-      const newErrors: Record<string, string> = {};
-      if (isFirstCarBooking && !formData.licenseImage) {
-        newErrors.licenseImage = t('DRIVING_LICENSE_MANDATORY_FIRST_BOOKING');
-      }
-      setErrors(newErrors);
-      return Object.keys(newErrors).length === 0;
-    }
-
+    // Validation for non-car categories can be added here if needed
     return true;
   };
 
@@ -366,46 +163,6 @@ const BookingPage: React.FC = () => {
   
   const finalizeBooking = async () => {
     if (!item) return;
-
-    let licenseImageUrl = '';
-    if (isCar && formData.licenseImage) {
-        try {
-            // Convert data URL to Blob
-            const response = await fetch(formData.licenseImage);
-            const blob = await response.blob();
-
-            const fileExtension = blob.type.split('/')[1];
-            const fileName = `${user?.id || 'guest'}_${Date.now()}.${fileExtension}`;
-            const filePath = `public/${fileName}`;
-
-            const { data, error } = await supabase.storage
-                .from('driver-licenses')
-                .upload(filePath, blob, {
-                    contentType: blob.type
-                });
-
-            if (error) {
-                throw error;
-            }
-
-            const { data: publicUrlData } = supabase.storage
-                .from('driver-licenses')
-                .getPublicUrl(filePath);
-
-            if (!publicUrlData) {
-                throw new Error("Could not get public URL for the uploaded image.");
-            }
-            licenseImageUrl = publicUrlData.publicUrl;
-
-        } catch (error) {
-            console.error('Error uploading license image:', error);
-            // Optionally, set an error state to inform the user
-            setErrors(prev => ({...prev, licenseImage: "Failed to upload license image. Please try again."}));
-            setIsProcessing(false);
-            return; // Stop the booking process
-        }
-    }
-
 
     if (isQuoteRequest) {
         if (categoryId !== 'jets' && categoryId !== 'helicopters') return;
@@ -423,14 +180,12 @@ const BookingPage: React.FC = () => {
           userId: user ? user.id : 'guest-user', itemId: item.id, itemName: item.name, image: item.image,
           itemCategory: categoryId,
           totalPrice: total, currency: currency.toUpperCase() as 'USD' | 'EUR',
-          customer: { fullName: formData.fullName, email: formData.email, phone: formData.phone, age: Number(formData.ageMin), countryOfResidency: formData.countryOfResidency },
+          customer: { fullName: formData.fullName, email: formData.email, phone: formData.phone },
           paymentMethod: formData.paymentMethod, bookedAt: new Date().toISOString(),
         };
 
         let newBookingData: Omit<Booking, 'bookingId'> | undefined;
-        if(isCar) {
-            newBookingData = { ...commonData, itemCategory: 'cars', pickupDate: formData.pickupDate, pickupTime: formData.pickupTime, returnDate: formData.returnDate, returnTime: formData.returnTime, duration: `${duration.days} ${duration.days === 1 ? t('day') : t('days')}, ${duration.hours} ${duration.hours === 1 ? t('hour') : t('hours')}`, driverLicenseImage: licenseImageUrl, extras: formData.extras, pickupLocation: formData.pickupLocation, insuranceOption: formData.insuranceOption };
-        } else if (isYacht) {
+        if (isYacht) {
             newBookingData = { ...commonData, itemCategory: 'yachts', pickupDate: formData.checkinDate, pickupTime: '15:00', returnDate: formData.checkoutDate, returnTime: '11:00', duration: `${nights} ${nights === 1 ? t('Night') : t('Nights')}`, driverLicenseImage: '', extras: [], pickupLocation: formData.pickupMarina, insuranceOption: 'none' };
         }
 
@@ -471,15 +226,47 @@ const BookingPage: React.FC = () => {
   };
 
   const steps = useMemo(() => {
-    if (isCar) return [ { id: 1, name: t('Driver_Information') }, { id: 2, name: t('Configuration_and_Verification') }, { id: 3, name: t('Payment') } ];
     if (isQuoteRequest) return [ { id: 1, name: t('Itinerary') }, { id: 2, name: t('Personal_Information') }, { id: 3, name: t('Review_and_Submit') } ];
     if (isYacht) return [ { id: 1, name: t('Review_your_booking') }, { id: 2, name: t('Payment') }];
     return [];
-  }, [isCar, isQuoteRequest, isYacht, t]);
+  }, [isQuoteRequest, isYacht, t]);
 
   if (!item) return <div className="pt-32 text-center text-white">Item not found.</div>;
   
-  const renderStepContent = () => {
+  const handleBookingComplete = (booking: Booking) => {
+    setCompletedBooking(booking);
+    setStep(99); // A step number that indicates completion
+  };
+
+  const renderContent = () => {
+    if(completedBooking) {
+        if(isQuoteRequest) return (
+            <div className="text-center">
+                <motion.div initial={{scale:0}} animate={{scale:1}} transition={{type: 'spring', stiffness: 260, damping: 20}} className="w-16 h-16 bg-gray-500/20 text-gray-300 rounded-full flex items-center justify-center mx-auto mb-4"><svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg></motion.div>
+                <h2 className="text-3xl font-bold text-white mb-2">{t('Inquiry_Sent')}</h2>
+                <p className="text-gray-300 max-w-md mx-auto">{t('Our_team_will_contact_you_shortly_with_a_quote')}</p>
+                <button type="button" onClick={() => navigate('/')} className="mt-8 bg-white text-black px-6 py-2 rounded-full font-semibold text-sm hover:bg-gray-200 transition-colors">Go to Home</button>
+            </div>
+        );
+        return (
+            <div className="text-center p-8 bg-gray-900/50 rounded-lg border border-gray-800">
+                <motion.div initial={{scale:0}} animate={{scale:1}} transition={{type: 'spring', stiffness: 260, damping: 20}} className="w-24 h-24 bg-green-500/20 text-green-300 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                </motion.div>
+                <h2 className="text-4xl font-bold text-white mb-3">✅ PRENOTAZIONE CONFERMATA!</h2>
+                <p className="text-gray-300 max-w-lg mx-auto">Grazie per aver prenotato con DR7. Riceverai a breve un'email di conferma con tutti i dettagli della tua prenotazione.</p>
+                <button type="button" onClick={() => navigate('/')} className="mt-10 bg-white text-black px-8 py-3 rounded-full font-bold hover:bg-gray-200 transition-colors text-lg">
+                    Torna alla Home
+                </button>
+            </div>
+        );
+    }
+
+    if (isCar) {
+      return <CarBookingWizard item={item} onBookingComplete={handleBookingComplete} onClose={() => location.state?.from ? navigate(location.state.from) : navigate('/')} />;
+    }
+
+    const renderStepContent = () => {
     if (step > steps.length) {
         if(isQuoteRequest) return (
             <div className="text-center">
@@ -516,15 +303,6 @@ const BookingPage: React.FC = () => {
       </div>
     );
 
-    if (isCar) {
-        const assignedInsurance = INSURANCE_OPTIONS.find(opt => opt.id === formData.insuranceOption);
-        switch (step) {
-            case 1: return <div className="space-y-4"><div className="grid grid-cols-2 gap-4"><div><label className="text-sm text-gray-400">{t('Full_Name')}</label><input type="text" name="fullName" value={formData.fullName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors.fullName && <p className="text-xs text-red-400 mt-1">{errors.fullName}</p>}</div><div><label className="text-sm text-gray-400">{t('Email_Address')}</label><input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}</div><div><label className="text-sm text-gray-400">{t('Phone_Number')}</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div><div><label className="text-sm text-gray-400">{t('Country_of_Residency')}</label><select name="countryOfResidency" value={formData.countryOfResidency} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"><option value="">Select Country</option>{COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}</select>{errors.countryOfResidency && <p className="text-xs text-red-400 mt-1">{errors.countryOfResidency}</p>}</div><div><label className="text-sm text-gray-400">{t('Age')}</label><select name="ageMin" value={formData.ageMin} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"><option value="" disabled>{t('Select_age')}</option>{AGE_BUCKETS.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}</select>{errors.ageMin && <p className="text-xs text-red-400 mt-1">{errors.ageMin}</p>}</div><div><label className="text-sm text-gray-400">{t('License_Obtention_Year')}</label><select name="licenseObtentionYear" value={formData.licenseObtentionYear} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"><option value="" disabled>{t('Select_year')}</option>{LICENSE_OBTENTION_YEAR_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}</select>{errors.licenseObtentionYear && <p className="text-xs text-red-400 mt-1">{errors.licenseObtentionYear}</p>}</div></div>{errors.insurance && <p className="text-sm text-red-400 bg-red-900/20 border border-red-800 rounded p-3 mt-4">{errors.insurance}</p>}</div>;
-            case 2: return <div className="space-y-6"><div className="grid grid-cols-2 gap-4"><div><label className="text-sm text-gray-400">{t('Pickup_Date')}</label><input type="date" name="pickupDate" value={formData.pickupDate} onChange={handleChange} min={today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div><div><label className="text-sm text-gray-400">{t('Pickup_Time')}</label><input type="time" name="pickupTime" value={formData.pickupTime} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div><div><label className="text-sm text-gray-400">{t('Return_Date')}</label><input type="date" name="returnDate" value={formData.returnDate} onChange={handleChange} min={formData.pickupDate || today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div><div><label className="text-sm text-gray-400">{t('Return_Time')}</label><input type="time" name="returnTime" value={formData.returnTime} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div></div>{errors.date && <p className="text-xs text-red-400">{errors.date}</p>}<div><label className="text-sm text-gray-400">{t('Pickup_Location')}</label><select name="pickupLocation" value={formData.pickupLocation} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"><option value="" disabled>{t('Select_an_option')}</option>{PICKUP_LOCATIONS.map(loc => (<option key={loc.id} value={loc.id}>{getTranslated(loc.label)}</option>))}</select></div> {assignedInsurance && <div><h3 className="text-lg font-semibold text-white mb-2">{t('Assigned_Insurance_Plan_Notice')}</h3><div className={`p-4 rounded-md border ${insuranceError ? 'border-red-500' : 'border-gray-700'} bg-gray-800/50`}><p className="font-semibold text-white">{getTranslated(assignedInsurance.label)}</p><p className="text-sm text-gray-400">{getTranslated(assignedInsurance.description)}</p>{insuranceError && <p className="text-xs text-red-400 mt-2">{insuranceError}</p>}</div></div>}<div><h3 className="text-lg font-semibold text-white mb-2">{t('Extras_and_Addons')}</h3><div className="space-y-2">{RENTAL_EXTRAS.map(extra => (<label key={extra.id} className="flex items-center p-3 bg-gray-800/50 rounded-md border border-gray-700 cursor-pointer has-[:checked]:border-white"><input type="checkbox" name={extra.id} checked={formData.extras.includes(extra.id)} onChange={handleChange} className="h-4 w-4 text-white bg-gray-700 border-gray-600 rounded focus:ring-white"/><span className="ml-3 text-white">{getTranslated(extra.label)}</span><span className="ml-auto font-semibold text-white">{formatPrice(extra.pricePerDay[currency])}/{t('day')}</span></label>))}</div></div><div><h3 className="text-lg font-semibold text-white mb-2">{t('License_Verification')}</h3><div className="p-4 border-2 border-dashed border-gray-700 rounded-lg text-center"><p className="text-sm text-gray-400 mb-4">{t('Please_provide_a_clear_photo_of_your_drivers_license')}</p>{formData.licenseImage ? <div className="relative inline-block"><img src={formData.licenseImage} alt="License Preview" className="h-40 w-auto mx-auto rounded-md object-contain"/><label htmlFor="license-upload" className="absolute -bottom-2 -right-2 bg-white text-black text-xs font-bold px-3 py-1 rounded-full cursor-pointer hover:bg-gray-200">{t('Change_Photo')}</label></div> : <div className="flex justify-center space-x-4"><label htmlFor="license-upload" className="px-4 py-2 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors text-sm cursor-pointer">{t('Upload_File')}</label><button type="button" onClick={handleUseCameraClick} className="px-4 py-2 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors text-sm flex items-center"><CameraIcon className="w-4 h-4 mr-2" />{t('Use_Camera')}</button></div>}<input id="license-upload" type="file" accept="image/*" onChange={handleLicenseUpload} className="sr-only"/>{errors.licenseImage && <p className="text-xs text-red-400 mt-2">{errors.licenseImage}</p>}</div></div></div>;
-            case 3: return paymentStepContent;
-        }
-    }
-    
     if (isQuoteRequest) {
         const departurePoints = isJet ? AIRPORTS : HELI_DEPARTURE_POINTS;
         const arrivalPoints = isJet ? AIRPORTS : HELI_ARRIVAL_POINTS;
@@ -572,73 +350,13 @@ const BookingPage: React.FC = () => {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} className="pt-32 pb-24 bg-black min-h-screen">
-      <AnimatePresence>
-          {isCameraOpen && (
-              <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4"
-              >
-                  <video ref={videoRef} autoPlay playsInline className="max-w-full max-h-[70vh] rounded-lg mb-4" style={{ transform: 'scaleX(-1)' }}></video>
-                  <div className="flex space-x-4">
-                      <button type="button" onClick={handleTakePhoto} className="px-6 py-2 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">
-                          {t('Take_Photo')}
-                      </button>
-                      <button type="button" onClick={handleCloseCamera} className="px-6 py-2 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors">
-                          {t('Close')}
-                      </button>
-                  </div>
-              </motion.div>
-          )}
-      </AnimatePresence>
-      <canvas ref={canvasRef} className="hidden"></canvas>
       <div className="container mx-auto px-6">
         <h1 className="text-4xl md:text-5xl font-bold text-white text-center mb-4">{t('Book_Your')} <span className="text-white">{item.name}</span></h1>
-        {step <= steps.length && <div className="w-full max-w-lg mx-auto mb-12"><div className="flex items-center justify-between">{steps.map((s, index) => (<React.Fragment key={s.id}><div className="flex flex-col items-center text-center"><div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${step >= s.id ? 'bg-white border-white text-black' : 'border-gray-600 text-gray-400'}`}>{s.id}</div><p className={`mt-2 text-xs font-semibold ${step >= s.id ? 'text-white' : 'text-gray-500'}`}>{s.name}</p></div>{index < steps.length - 1 && <div className={`flex-1 h-0.5 mx-4 transition-colors duration-300 ${step > s.id ? 'bg-white' : 'bg-gray-700'}`}></div>}</React.Fragment>))}</div></div>}
-        <div className="lg:grid lg:grid-cols-3 lg:gap-8">
-          <aside className="lg:col-span-1 lg:sticky lg:top-32 self-start mb-8 lg:mb-0">
-            <div className="bg-gray-900/50 p-6 rounded-lg border border-gray-800">
-              <h2 className="text-2xl font-bold text-white mb-4">{isQuoteRequest ? t('Inquiry_Summary') : t('Booking_Summary')}</h2>
-              <img src={item.image} alt={item.name} className="w-full h-40 object-cover rounded-md mb-4"/>
-                {!isQuoteRequest ? (<><div className="space-y-2 text-sm">
-                  {isCar && (<><div className="flex justify-between"><span className="text-gray-400">{t('Total_Duration')}</span><span className="text-white font-medium">{duration.days} {t('days')}, {duration.hours} {t('hours')}</span></div><div className="flex justify-between"><span className="text-gray-400">{t('Rental_Cost')}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div><div className="flex justify-between"><span className="text-gray-400">{t('Insurance')}</span><span className="text-white font-medium">{formatPrice(insuranceCost)}</span></div>{extrasCost > 0 && <div className="flex justify-between"><span className="text-gray-400">{t('Extras')}</span><span className="text-white font-medium">{formatPrice(extrasCost)}</span></div>}</>)}
-                  {isYacht && (<><div className="flex justify-between"><span className="text-gray-400">{t('Duration')}</span><span className="text-white font-medium">{nights} {nights === 1 ? t('Night') : t('Nights')}</span></div><div className="flex justify-between"><span className="text-gray-400">{t('Booking_Cost')}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div></>)}
-                  {(isCar || isYacht) && <div className="flex justify-between"><span className="text-gray-400">{t('Taxes_and_Fees')}</span><span className="text-white font-medium">{formatPrice(taxes)}</span></div>}
-                </div><div className="flex justify-between text-xl border-t border-white/20 pt-2 mt-2"><span className="text-white font-bold">{t('Total')}</span><span className="text-white font-bold">{formatPrice(total)}</span></div></>) : <div className="text-center py-4"><span className="text-xl font-bold text-white">{t('Quote_by_request')}</span><p className="text-sm text-gray-400 mt-1">Submit an inquiry to receive a personalized quote.</p></div>}
-            </div>
-          </aside>
-          <main className="lg:col-span-2">
-            <form onSubmit={handleSubmit}>
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={step}
-                  initial={{ opacity: 0, x: 50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -50 }}
-                  transition={{ duration: 0.3 }}
-                  className="bg-gray-900/50 p-8 rounded-lg border border-gray-800 relative"
-                >
-                  {step <= steps.length && (
-                    <button
-                      type="button"
-                      onClick={() => location.state?.from ? navigate(location.state.from) : navigate('/')}
-                      className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
-                      aria-label="Close"
-                    >
-                      <XIcon className="w-6 h-6" />
-                    </button>
-                  )}
-                  {renderStepContent()}
-                </motion.div>
-              </AnimatePresence>
-              {step <= steps.length && <div className="flex justify-between mt-8"><button type="button" onClick={handleBack} disabled={step === 1} className="px-8 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('Back')}</button>{step < steps.length ? <button type="button" onClick={handleNext} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">{t('Next')}</button> : <button type="submit" disabled={isProcessing} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed">{isProcessing ? <><motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-5 h-5 border-2 border-t-black border-gray-700/50 rounded-full inline-block mr-2"/>{t('Processing')}</> : (isQuoteRequest ? t('Submit_Inquiry') : t('Confirm_Booking'))}</button>}</div>}
-            </form>
-          </main>
-        </div>
+        {renderContent()}
       </div>
     </motion.div>
   );
 };
+}
 
 export default BookingPage;
