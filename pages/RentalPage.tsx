@@ -220,16 +220,18 @@ const JetSearchPage: React.FC = () => {
 const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   const { t, getTranslated } = useTranslation();
   const navigate = useNavigate();
-  const { openBooking } = useBooking();
+  const { openBooking, openCarWizard } = useBooking();
   const { checkVerificationAndProceed } = useVerification();
   
   const category = RENTAL_CATEGORIES.find(cat => cat.id === categoryId);
 
   const handleBook = (item: RentalItem) => {
-    if (['jets', 'helicopters'].includes(categoryId)) {
-        navigate(`/book/${categoryId}/${item.id}`);
+    if (categoryId === 'cars') {
+      openCarWizard(item);
+    } else if (['jets', 'helicopters'].includes(categoryId)) {
+      navigate(`/book/${categoryId}/${item.id}`);
     } else {
-        openBooking(item, categoryId as 'yachts' | 'villas' | 'cars');
+      openBooking(item, categoryId as 'yachts' | 'villas');
     }
   };
 
