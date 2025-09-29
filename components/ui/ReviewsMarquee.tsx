@@ -83,7 +83,7 @@ export const ReviewsMarquee: React.FC<ReviewsMarqueeProps> = ({
     reviews,
     business,
     ratingSummary,
-    speedSeconds = 40,
+    speedSeconds = 10,
     gapPx = 20,
     dark = false,
 }) => {
