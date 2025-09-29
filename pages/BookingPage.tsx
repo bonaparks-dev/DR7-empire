@@ -5,7 +5,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
-import { RENTAL_CATEGORIES, PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, COUNTRIES, INSURANCE_ELIGIBILITY, VALIDATION_MESSAGES, YACHT_PICKUP_MARINAS, AIRPORTS, HELI_DEPARTURE_POINTS, HELI_ARRIVAL_POINTS, VILLA_SERVICE_FEE_PERCENTAGE, CRYPTO_ADDRESSES, AGE_BUCKETS, LICENSE_OBTENTION_YEAR_OPTIONS } from '../constants';
+import { RENTAL_CATEGORIES, PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, COUNTRIES, INSURANCE_ELIGIBILITY, VALIDATION_MESSAGES, YACHT_PICKUP_MARINAS, AIRPORTS, HELI_DEPARTURE_POINTS, HELI_ARRIVAL_POINTS, CRYPTO_ADDRESSES, AGE_BUCKETS, LICENSE_OBTENTION_YEAR_OPTIONS } from '../constants';
 import type { Booking, Inquiry, RentalItem } from '../types';
 
 import { CameraIcon, CreditCardIcon, CryptoIcon, XIcon } from '../components/icons/Icons';
@@ -31,7 +31,7 @@ function isKaskoEligibleByBuckets(
 }
 
 const BookingPage: React.FC = () => {
-  const { category: categoryId, itemId } = useParams<{ category: 'cars' | 'yachts' | 'jets' | 'helicopters' | 'villas'; itemId: string }>();
+  const { category: categoryId, itemId } = useParams<{ category: 'cars' | 'yachts' | 'jets' | 'helicopters'; itemId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const { t, lang, getTranslated } = useTranslation();
@@ -80,16 +80,15 @@ const BookingPage: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isFirstCarBooking, setIsFirstCarBooking] = useState(true);
 
-  const { category, item, isCar, isJet, isHelicopter, isYacht, isVilla, isQuoteRequest } = useMemo(() => {
+  const { category, item, isCar, isJet, isHelicopter, isYacht, isQuoteRequest } = useMemo(() => {
     const cat = RENTAL_CATEGORIES.find(c => c.id === categoryId);
     const itm = cat?.data.find(i => i.id === itemId);
     const car = cat?.id === 'cars';
     const jet = cat?.id === 'jets';
     const helicopter = cat?.id === 'helicopters';
     const yacht = cat?.id === 'yachts';
-    const villa = cat?.id === 'villas';
     const quote = jet || helicopter;
-    return { category: cat, item: itm, isCar: car, isJet: jet, isHelicopter: helicopter, isYacht: yacht, isVilla: villa, isQuoteRequest: quote };
+    return { category: cat, item: itm, isCar: car, isJet: jet, isHelicopter: helicopter, isYacht: yacht, isQuoteRequest: quote };
   }, [categoryId, itemId]);
 
   useEffect(() => {
@@ -112,9 +111,9 @@ const BookingPage: React.FC = () => {
   }, [isCameraOpen, cameraStream]);
   
   const { 
-    duration, rentalCost, insuranceCost, extrasCost, subtotal, taxes, total, nights, serviceFee, villaSubtotal
+    duration, rentalCost, insuranceCost, extrasCost, subtotal, taxes, total, nights
   } = useMemo(() => {
-    const zeroState = { duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, subtotal: 0, taxes: 0, total: 0, nights: 0, serviceFee: 0, villaSubtotal: 0 };
+    const zeroState = { duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, subtotal: 0, taxes: 0, total: 0, nights: 0 };
     if (!item || !item.pricePerDay) return zeroState;
     
     const pricePerDay = item.pricePerDay[currency];
@@ -146,7 +145,7 @@ const BookingPage: React.FC = () => {
       return { ...zeroState, duration: { days, hours }, rentalCost: calculatedRentalCost, insuranceCost: calculatedInsuranceCost, extrasCost: calculatedExtrasCost, subtotal: calculatedSubtotal, taxes: calculatedTaxes, total: calculatedTotal };
     } 
     
-    if (isYacht || isVilla) {
+    if (isYacht) {
       const checkinKey = 'checkinDate';
       const checkoutKey = 'checkoutDate';
 
@@ -160,23 +159,19 @@ const BookingPage: React.FC = () => {
       
       const calculatedRentalCost = diffDays * pricePerDay;
       let calculatedSubtotal = 0;
-      let calculatedServiceFee = 0;
       let calculatedTaxes = 0;
 
       if (isYacht) {
         calculatedSubtotal = calculatedRentalCost;
         calculatedTaxes = calculatedSubtotal * 0.10;
-      } else if (isVilla) {
-        calculatedServiceFee = calculatedRentalCost * VILLA_SERVICE_FEE_PERCENTAGE;
-        calculatedSubtotal = calculatedRentalCost + calculatedServiceFee;
       }
 
       const calculatedTotal = calculatedSubtotal + calculatedTaxes;
 
-      return { ...zeroState, duration: { days: diffDays, hours: 0 }, rentalCost: calculatedRentalCost, subtotal: calculatedSubtotal, taxes: calculatedTaxes, total: calculatedTotal, nights: diffDays, serviceFee: calculatedServiceFee, villaSubtotal: calculatedRentalCost };
+      return { ...zeroState, duration: { days: diffDays, hours: 0 }, rentalCost: calculatedRentalCost, subtotal: calculatedSubtotal, taxes: calculatedTaxes, total: calculatedTotal, nights: diffDays };
     }
     return zeroState;
-  }, [formData, item, currency, isCar, isYacht, isVilla]);
+  }, [formData, item, currency, isCar, isYacht]);
 
   useEffect(() => {
     if (step === (isCar ? 3 : 2) && !isQuoteRequest && total > 0) {
@@ -432,13 +427,18 @@ const BookingPage: React.FC = () => {
           paymentMethod: formData.paymentMethod, bookedAt: new Date().toISOString(),
         };
 
-        let newBookingData: Omit<Booking, 'bookingId'>;
+        let newBookingData: Omit<Booking, 'bookingId'> | undefined;
         if(isCar) {
             newBookingData = { ...commonData, itemCategory: 'cars', pickupDate: formData.pickupDate, pickupTime: formData.pickupTime, returnDate: formData.returnDate, returnTime: formData.returnTime, duration: `${duration.days} ${duration.days === 1 ? t('day') : t('days')}, ${duration.hours} ${duration.hours === 1 ? t('hour') : t('hours')}`, driverLicenseImage: licenseImageUrl, extras: formData.extras, pickupLocation: formData.pickupLocation, insuranceOption: formData.insuranceOption };
         } else if (isYacht) {
             newBookingData = { ...commonData, itemCategory: 'yachts', pickupDate: formData.checkinDate, pickupTime: '15:00', returnDate: formData.checkoutDate, returnTime: '11:00', duration: `${nights} ${nights === 1 ? t('Night') : t('Nights')}`, driverLicenseImage: '', extras: [], pickupLocation: formData.pickupMarina, insuranceOption: 'none' };
-        } else { // isVilla
-            newBookingData = { ...commonData, itemCategory: 'villas', pickupDate: formData.checkinDate, pickupTime: '15:00', returnDate: formData.checkoutDate, returnTime: '11:00', duration: `${nights} ${nights === 1 ? t('Night') : t('Nights')}`, driverLicenseImage: '', extras: [], pickupLocation: item.location || 'Villa', insuranceOption: 'none' };
+        }
+
+        if (!newBookingData) {
+            console.error("Unsupported category for booking.");
+            setErrors(prev => ({...prev, form: "This category cannot be booked."}));
+            setIsProcessing(false);
+            return;
         }
 
         const { data, error } = await supabase
@@ -473,9 +473,9 @@ const BookingPage: React.FC = () => {
   const steps = useMemo(() => {
     if (isCar) return [ { id: 1, name: t('Driver_Information') }, { id: 2, name: t('Configuration_and_Verification') }, { id: 3, name: t('Payment') } ];
     if (isQuoteRequest) return [ { id: 1, name: t('Itinerary') }, { id: 2, name: t('Personal_Information') }, { id: 3, name: t('Review_and_Submit') } ];
-    if (isYacht || isVilla) return [ { id: 1, name: t('Review_your_booking') }, { id: 2, name: t('Payment') }];
+    if (isYacht) return [ { id: 1, name: t('Review_your_booking') }, { id: 2, name: t('Payment') }];
     return [];
-  }, [isCar, isQuoteRequest, isYacht, isVilla, t]);
+  }, [isCar, isQuoteRequest, isYacht, t]);
 
   if (!item) return <div className="pt-32 text-center text-white">Item not found.</div>;
   
@@ -536,7 +536,7 @@ const BookingPage: React.FC = () => {
         }
     }
     
-    if (isYacht || isVilla) {
+    if (isYacht) {
         switch(step) {
             case 1: return (
                 <div className="space-y-6">
@@ -604,7 +604,6 @@ const BookingPage: React.FC = () => {
                 {!isQuoteRequest ? (<><div className="space-y-2 text-sm">
                   {isCar && (<><div className="flex justify-between"><span className="text-gray-400">{t('Total_Duration')}</span><span className="text-white font-medium">{duration.days} {t('days')}, {duration.hours} {t('hours')}</span></div><div className="flex justify-between"><span className="text-gray-400">{t('Rental_Cost')}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div><div className="flex justify-between"><span className="text-gray-400">{t('Insurance')}</span><span className="text-white font-medium">{formatPrice(insuranceCost)}</span></div>{extrasCost > 0 && <div className="flex justify-between"><span className="text-gray-400">{t('Extras')}</span><span className="text-white font-medium">{formatPrice(extrasCost)}</span></div>}</>)}
                   {isYacht && (<><div className="flex justify-between"><span className="text-gray-400">{t('Duration')}</span><span className="text-white font-medium">{nights} {nights === 1 ? t('Night') : t('Nights')}</span></div><div className="flex justify-between"><span className="text-gray-400">{t('Booking_Cost')}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div></>)}
-                  {isVilla && (<><div className="flex justify-between"><span className="text-gray-400">{t('Duration')}</span><span className="text-white font-medium">{nights} {nights === 1 ? t('Night') : t('Nights')}</span></div><div className="flex justify-between"><span className="text-gray-400">{formatPrice(item.pricePerDay?.[currency] || 0)} x {nights} {t('nights')}</span><span className="text-white font-medium">{formatPrice(villaSubtotal)}</span></div><div className="flex justify-between"><span className="text-gray-400">{t('Service_Fee')}</span><span className="text-white font-medium">{formatPrice(serviceFee)}</span></div></>)}
                   {(isCar || isYacht) && <div className="flex justify-between"><span className="text-gray-400">{t('Taxes_and_Fees')}</span><span className="text-white font-medium">{formatPrice(taxes)}</span></div>}
                 </div><div className="flex justify-between text-xl border-t border-white/20 pt-2 mt-2"><span className="text-white font-bold">{t('Total')}</span><span className="text-white font-bold">{formatPrice(total)}</span></div></>) : <div className="text-center py-4"><span className="text-xl font-bold text-white">{t('Quote_by_request')}</span><p className="text-sm text-gray-400 mt-1">Submit an inquiry to receive a personalized quote.</p></div>}
             </div>

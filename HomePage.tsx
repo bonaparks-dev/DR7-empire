@@ -9,7 +9,6 @@ import Carousel from '../components/Carousel';
 const DISPLAY_TITLE: Record<string, string> = {
   cars: 'Cars',
   yachts: 'Yachts',
-  villas: 'Villas',
   helicopters: 'Helicopters',
   jets: 'Private Jets',
 };
@@ -18,7 +17,6 @@ const DISPLAY_TITLE: Record<string, string> = {
 const CATEGORY_IMAGE: Record<string, string> = {
   cars: '/car.jpeg',
   yachts: '/yacht.jpeg',
-  villas: '/villa.jpeg',
   helicopters: '/helicopter.jpeg',
   jets: '/privatejet.jpeg',
 };
