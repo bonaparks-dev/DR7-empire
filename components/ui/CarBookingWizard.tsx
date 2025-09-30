@@ -123,12 +123,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   }, [formData, WIZARD_STORAGE_KEY]);
 
   useEffect(() => {
+    // If the component renders without a user (due to saved data),
+    // immediately trigger the session check to show the expiry modal.
+    if (!user) {
+      checkSession();
+    }
+
     const interval = setInterval(() => {
       checkSession();
     }, 30000); // Check every 30 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   const [insuranceError, setInsuranceError] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -275,8 +281,27 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     const birthDateObj = parseDateString(formData.birthDate);
     const licenseDateObj = parseDateString(formData.licenseIssueDate);
 
-    const calculatedDriverAge = birthDateObj ? new Date().getFullYear() - birthDateObj.getFullYear() : 0;
-    const calculatedLicenseYears = licenseDateObj ? new Date().getFullYear() - licenseDateObj.getFullYear() : 0;
+    let calculatedDriverAge = 0;
+    if (birthDateObj) {
+        const today = new Date();
+        let age = today.getFullYear() - birthDateObj.getFullYear();
+        const m = today.getMonth() - birthDateObj.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDateObj.getDate())) {
+            age--;
+        }
+        calculatedDriverAge = age;
+    }
+
+    let calculatedLicenseYears = 0;
+    if (licenseDateObj) {
+        const today = new Date();
+        let years = today.getFullYear() - licenseDateObj.getFullYear();
+        const m = today.getMonth() - licenseDateObj.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < licenseDateObj.getDate())) {
+            years--;
+        }
+        calculatedLicenseYears = years;
+    }
 
     const calculatedYoungDriverFee = calculatedDriverAge > 0 && calculatedDriverAge < 25 ? 10 * billingDays : 0;
     const calculatedRecentLicenseFee = calculatedLicenseYears >= 2 && calculatedLicenseYears < 3 ? 20 * billingDays : 0;
