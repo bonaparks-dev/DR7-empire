@@ -19,7 +19,6 @@ interface AuthContextType {
   sendPasswordResetEmail: (email: string) => Promise<{ data: {}; error: AuthError | null; }>;
   updateUserPassword: (password: string) => Promise<UserResponse>;
   updateUser: (updates: Partial<AppUser>) => Promise<{ data: AppUser | null; error: Error | null }>;
-  isSessionActive: () => Promise<boolean>;
   // FIX: Removed OtpVerificationError from the return type
   verifyEmailOtp: (token: string) => Promise<{ data: { user: SupabaseUser | null; session: Session | null; }; error: AuthError | null; }>;
 }
@@ -173,16 +172,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return supabase.auth.verifyOtp({ token_hash: token, type: 'signup' });
   }, []);
 
-  const isSessionActive = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    return !!session;
-  }, []);
-
   const value = useMemo(() => ({
     user, loading, authEvent, isFirstSignIn, login, signup, logout, signInWithGoogle,
-    sendPasswordResetEmail, updateUserPassword, updateUser, verifyEmailOtp, isSessionActive,
+    sendPasswordResetEmail, updateUserPassword, updateUser, verifyEmailOtp,
   }), [user, loading, authEvent, isFirstSignIn, login, signup, logout, signInWithGoogle, 
-      sendPasswordResetEmail, updateUserPassword, updateUser, verifyEmailOtp, isSessionActive]);
+      sendPasswordResetEmail, updateUserPassword, updateUser, verifyEmailOtp]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
