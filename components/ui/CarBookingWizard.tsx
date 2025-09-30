@@ -269,7 +269,19 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         recentLicenseFee: calculatedRecentLicenseFee,
         secondDriverFee: calculatedSecondDriverFee
     };
-  }, [formData, item, currency]);
+  }, [
+    formData.pickupDate,
+    formData.pickupTime,
+    formData.returnDate,
+    formData.returnTime,
+    formData.insuranceOption,
+    formData.extras,
+    formData.birthDate,
+    formData.licenseIssueDate,
+    formData.addSecondDriver,
+    item,
+    currency
+  ]);
 
   useEffect(() => {
     const validTimes = getValidPickupTimes(formData.pickupDate);
@@ -321,12 +333,24 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   }, [user]);
 
   useEffect(() => {
+    // This effect automatically selects the best insurance option based on driver eligibility.
+    // It also ensures that if a user's selection becomes invalid (e.g., due to changing their birth date),
+    // their insurance is downgraded to the highest valid tier.
     if (licenseYears === undefined) {
-      setFormData(prev => ({ ...prev, insuranceOption: 'KASKO_BASE' }));
       setInsuranceError('');
       return;
     }
 
+    const currentChoice: KaskoTier = formData.insuranceOption as KaskoTier;
+    const { eligible: isCurrentChoiceEligible } = isKaskoEligibleByBuckets(currentChoice, driverAge, licenseYears);
+
+    // If the user's current choice is valid, don't interfere.
+    if (isCurrentChoiceEligible) {
+      setInsuranceError('');
+      return;
+    }
+
+    // If the current choice is NOT eligible, find the best possible one and set it.
     let bestOption: KaskoTier = 'KASKO_BASE';
     let eligibilityErrorKey: string | undefined;
 
@@ -340,16 +364,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         eligibilityErrorKey = signatureCheck.reasonKey;
       } else {
         const baseCheck = isKaskoEligibleByBuckets('KASKO_BASE', driverAge, licenseYears);
-        if (baseCheck.eligible) {
-          bestOption = 'KASKO_BASE';
-          eligibilityErrorKey = blackCheck.reasonKey;
-        } else {
-          bestOption = 'KASKO_BASE'; // Default to base, error will be shown
+        if (!baseCheck.eligible) {
           eligibilityErrorKey = baseCheck.reasonKey;
+        } else {
+           eligibilityErrorKey = blackCheck.reasonKey;
         }
       }
     }
 
+    // Set the best option as the new selection.
     setFormData(prev => ({ ...prev, insuranceOption: bestOption }));
     setInsuranceError(eligibilityErrorKey ? t(eligibilityErrorKey) : '');
 

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useMemo, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useContext, useMemo, useEffect } from 'react';
 import type { Currency } from '../types';
 
 interface CurrencyContextType {
@@ -18,12 +18,12 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
   
-  const setCurrency = useCallback((newCurrency: Currency) => {
+  const setCurrency = (newCurrency: Currency) => {
       localStorage.setItem('dr7-currency', newCurrency);
       setCurrencyState(newCurrency);
-  }, []);
+  };
 
-  const value = useMemo(() => ({ currency, setCurrency }), [currency, setCurrency]);
+  const value = useMemo(() => ({ currency, setCurrency }), [currency]);
 
   return (
     <CurrencyContext.Provider value={value}>
