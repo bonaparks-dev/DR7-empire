@@ -414,7 +414,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
   const validateStep = () => {
     const newErrors: Record<string, string> = {};
-    const dateRegex = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+    const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/;
 
     const validateDate = (date: string, fieldName: string) => {
       if (!date) {
@@ -422,14 +422,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         return;
       }
       if (!dateRegex.test(date)) {
-        newErrors[fieldName] = "Il formato deve essere DD/MM/YYYY.";
+        newErrors[fieldName] = "Il formato deve essere DD/MM/YYYY con un anno di 4 cifre.";
         return;
       }
       const [day, month, year] = date.split('/').map(Number);
-      if (year.toString().length > 4) {
-          newErrors[fieldName] = "L'anno non può superare i 4 caratteri.";
-          return;
-      }
       const d = new Date(year, month - 1, day);
       if (!(d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day)) {
         newErrors[fieldName] = "La data inserita non è valida.";
@@ -617,9 +613,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
                         <div><label className="text-sm text-gray-400">Cognome *</label><input type="text" name={`${namePrefix}lastName`} value={driverData.lastName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${namePrefix}lastName`] && <p className="text-xs text-red-400 mt-1">{errors[`${namePrefix}lastName`]}</p>}</div>
                         <div><label className="text-sm text-gray-400">Email *</label><input type="email" name={`${namePrefix}email`} value={driverData.email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${namePrefix}email`] && <p className="text-xs text-red-400 mt-1">{errors[`${namePrefix}email`]}</p>}</div>
                         <div><label className="text-sm text-gray-400">Telefono *</label><input type="tel" name={`${namePrefix}phone`} value={driverData.phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${namePrefix}phone`] && <p className="text-xs text-red-400 mt-1">{errors[`${namePrefix}phone`]}</p>}</div>
-                        <div><label className="text-sm text-gray-400">Data di nascita *</label><input type="text" name={`${namePrefix}birthDate`} value={driverData.birthDate} onChange={handleChange} placeholder="DD/MM/YYYY" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${namePrefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${namePrefix}birthDate`]}</p>}</div>
+                        <div><label className="text-sm text-gray-400">Data di nascita *</label><input type="text" name={`${namePrefix}birthDate`} value={driverData.birthDate} onChange={handleChange} placeholder="DD/MM/YYYY" maxLength={10} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${namePrefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${namePrefix}birthDate`]}</p>}</div>
                         <div><label className="text-sm text-gray-400">Numero patente *</label><input type="text" name={`${namePrefix}licenseNumber`} value={driverData.licenseNumber} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${namePrefix}licenseNumber`] && <p className="text-xs text-red-400 mt-1">{errors[`${namePrefix}licenseNumber`]}</p>}</div>
-                        <div><label className="text-sm text-gray-400">Data rilascio patente *</label><input type="text" name={`${namePrefix}licenseIssueDate`} value={driverData.licenseIssueDate} onChange={handleChange} placeholder="DD/MM/YYYY" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${namePrefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${namePrefix}licenseIssueDate`]}</p>}</div>
+                        <div><label className="text-sm text-gray-400">Data rilascio patente *</label><input type="text" name={`${namePrefix}licenseIssueDate`} value={driverData.licenseIssueDate} onChange={handleChange} placeholder="DD/MM/YYYY" maxLength={10} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${namePrefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${namePrefix}licenseIssueDate`]}</p>}</div>
                     </div>
                 );
             };
