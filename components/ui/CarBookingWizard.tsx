@@ -1028,32 +1028,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     }
   };
 
-  if (authLoading) {
+  if (authLoading && !user && !hasSessionExpired) {
     return (
         <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800 relative text-center">
             <h2 className="text-2xl font-bold text-white mb-4">Loading...</h2>
         </div>
-    )
-  }
-
-  if (!user && !hasSessionExpired) {
-    return (
-      <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800 relative text-center">
-        <button
-            type="button"
-            onClick={handleClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
-            aria-label="Close"
-        >
-            <XIcon className="w-6 h-6" />
-        </button>
-        <h2 className="text-2xl font-bold text-white mb-4">Accesso Richiesto</h2>
-        <p className="text-gray-300 mb-6">Devi effettuare l'accesso o registrarti per poter completare una prenotazione.</p>
-        <div className="flex justify-center space-x-4">
-            <Link to="/signin" onClick={handleClose} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">Accedi</Link>
-            <Link to="/signup" onClick={handleClose} className="px-8 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors">Registrati</Link>
-        </div>
-      </div>
     )
   }
 
