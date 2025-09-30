@@ -483,13 +483,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   };
 
   // Upload (File ou dataURL)
-  const uploadToBucket = async (bucket: string, userId: string, fileOrDataUrl: File | string | null, prefix: string) => {
-    if (!fileOrDataUrl) return '';
+  const uploadToBucket = async (bucket: string, userId: string, fileOrDataUrl: File | string | null, prefix: string): Promise<string> => {
+    if (!fileOrDataUrl) {
+      // This case should be handled before calling, but as a safeguard:
+      throw new Error("No file provided for upload.");
+    }
+
     try {
       let fileBlob: Blob;
       let fileExt = 'jpg';
       if (typeof fileOrDataUrl === 'string') {
-        // dataURL
         fileBlob = await dataURLToBlob(fileOrDataUrl);
         const mime = fileBlob.type || 'image/jpeg';
         fileExt = mime.split('/')[1] || 'jpg';
@@ -503,13 +506,20 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       const fileName = `${prefix}_${userId}_${Date.now()}.${fileExt}`;
 
       const { error: upErr } = await supabase.storage.from(bucket).upload(fileName, fileBlob, { contentType: fileBlob.type || 'image/jpeg' });
-      if (upErr) throw upErr;
+      if (upErr) {
+        throw upErr;
+      }
 
       const { data: pub } = supabase.storage.from(bucket).getPublicUrl(fileName);
-      return pub?.publicUrl || '';
-    } catch (e) {
+      if (!pub?.publicUrl) {
+        // This is a critical failure, indicates a problem with storage or permissions
+        throw new Error(`Could not get public URL for uploaded file in bucket '${bucket}'.`);
+      }
+      return pub.publicUrl;
+    } catch (e: any) {
       console.error(`Upload failed for ${prefix}:`, e);
-      return '';
+      // Re-throw a clear, consolidated error message
+      throw new Error(e.message || 'An unknown error occurred during upload.');
     }
   };
 
@@ -520,73 +530,65 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       return;
     }
 
-    // Upload docs
-    const licenseImageUrl = await uploadToBucket('driver-licenses', user.id, formData.licenseImage, 'license');
-    if (!licenseImageUrl) {
-      setErrors(prev => ({ ...prev, form: "Failed to upload license image. Please go back and try again." }));
-      setIsProcessing(false);
-      return;
-    }
-    const idImageUrl = await uploadToBucket('driver-ids', user.id, formData.idImage, 'id');
-    if (!idImageUrl) {
-      setErrors(prev => ({ ...prev, form: "Failed to upload ID image. Please go back and try again." }));
-      setIsProcessing(false);
-      return;
-    }
+    try {
+      // The `handleSubmit` already sets isProcessing to true.
+      // We only set it to false on failure or success.
+      const licenseImageUrl = await uploadToBucket('driver-licenses', user.id, formData.licenseImage, 'license');
+      const idImageUrl = await uploadToBucket('driver-ids', user.id, formData.idImage, 'id');
 
-    const { days, hours } = duration;
+      const { days, hours } = duration;
 
-    const bookingData: Omit<Booking, 'bookingId'> = {
-      userId: user.id,
-      itemId: item.id,
-      itemName: item.name,
-      image: item.image,
-      itemCategory: 'cars',
-      totalPrice: total,
-      currency: currency.toUpperCase() as 'USD' | 'EUR',
-      customer: {
-        fullName: `${formData.firstName} ${formData.lastName}`,
-        email: formData.email,
-        phone: formData.phone,
-        age: driverAge,
-        countryOfResidency: ''
-      },
-      paymentMethod: formData.paymentMethod,
-      bookedAt: new Date().toISOString(),
-      pickupDate: formData.pickupDate,
-      pickupTime: formData.pickupTime,
-      returnDate: formData.returnDate,
-      returnTime: formData.returnTime,
-      duration: `${days} ${days === 1 ? t('day') : t('days')}, ${hours} ${hours === 1 ? t('hour') : t('hours')}`,
-      driverLicenseImage: licenseImageUrl,
-      driverIdImage: idImageUrl,
-      extras: formData.extras,
-      pickupLocation: formData.pickupLocation,
-      insuranceOption: formData.insuranceOption,
-    };
+      const bookingData: Omit<Booking, 'bookingId'> = {
+        userId: user.id,
+        itemId: item.id,
+        itemName: item.name,
+        image: item.image,
+        itemCategory: 'cars',
+        totalPrice: total,
+        currency: currency.toUpperCase() as 'USD' | 'EUR',
+        customer: {
+          fullName: `${formData.firstName} ${formData.lastName}`,
+          email: formData.email,
+          phone: formData.phone,
+          age: driverAge,
+          countryOfResidency: ''
+        },
+        paymentMethod: formData.paymentMethod,
+        bookedAt: new Date().toISOString(),
+        pickupDate: formData.pickupDate,
+        pickupTime: formData.pickupTime,
+        returnDate: formData.returnDate,
+        returnTime: formData.returnTime,
+        duration: `${days} ${days === 1 ? t('day') : t('days')}, ${hours} ${hours === 1 ? t('hour') : t('hours')}`,
+        driverLicenseImage: licenseImageUrl,
+        driverIdImage: idImageUrl,
+        extras: formData.extras,
+        pickupLocation: formData.pickupLocation,
+        insuranceOption: formData.insuranceOption,
+      };
 
-    const { data, error } = await supabase.from('bookings').insert(bookingData).select().single();
-    if (error) {
-      console.error('Error creating booking:', error);
-      setErrors(prev => ({ ...prev, form: "Could not save your booking. Please try again." }));
-      setIsProcessing(false);
-      return;
-    }
+      const { data, error } = await supabase.from('bookings').insert(bookingData).select().single();
+      if (error) {
+        throw error; // Throw to be caught by the outer catch block
+      }
 
-    if (data) {
-      try {
-        await fetch('/.netlify/functions/send-booking-confirmation', {
+      if (data) {
+        // Email sending is non-critical for the user flow, so we don't block on it
+        fetch('/.netlify/functions/send-booking-confirmation', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ booking: data }),
-        });
-      } catch (emailError) {
-        console.error('Failed to send confirmation email:', emailError);
+        }).catch(emailError => console.error('Failed to send confirmation email:', emailError));
       }
-    }
 
-    onBookingComplete(data);
-    setIsProcessing(false);
+      onBookingComplete(data);
+      setIsProcessing(false);
+
+    } catch (e: any) {
+      // This single catch block will now handle errors from uploads and booking insertion.
+      setErrors(prev => ({ ...prev, form: `Booking failed: ${e.message}` }));
+      setIsProcessing(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
