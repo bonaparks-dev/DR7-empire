@@ -80,7 +80,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       },
 
       // Step 3
-      insuranceOption: 'KASKO_BASE',
       extras: [] as string[],
 
       // Step 4
@@ -89,7 +88,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       agreesToPrivacy: false,
       confirmsDocuments: false,
   });
-
+  const [insuranceOption, setInsuranceOption] = useState('KASKO_BASE');
   const [insuranceError, setInsuranceError] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -206,7 +205,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     }
 
     const calculatedRentalCost = billingDays * pricePerDay;
-    const selectedInsurance = INSURANCE_OPTIONS.find(opt => opt.id === formData.insuranceOption);
+    const selectedInsurance = INSURANCE_OPTIONS.find(opt => opt.id === insuranceOption);
     const calculatedInsuranceCost = (selectedInsurance?.pricePerDay[currency] || 0) * billingDays;
     const calculatedExtrasCost = formData.extras.reduce((acc, extraId) => {
       const extra = RENTAL_EXTRAS.find(e => e.id === extraId);
@@ -244,7 +243,19 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         recentLicenseFee: calculatedRecentLicenseFee,
         secondDriverFee: calculatedSecondDriverFee
     };
-  }, [formData, item, currency]);
+  }, [
+    formData.pickupDate,
+    formData.returnDate,
+    formData.pickupTime,
+    formData.returnTime,
+    formData.birthDate,
+    formData.licenseIssueDate,
+    formData.addSecondDriver,
+    formData.extras,
+    insuranceOption,
+    item,
+    currency,
+]);
 
   useEffect(() => {
     const validTimes = getValidPickupTimes(formData.pickupDate);
@@ -297,7 +308,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
   useEffect(() => {
     if (licenseYears === undefined) {
-      setFormData(prev => ({ ...prev, insuranceOption: 'KASKO_BASE' }));
+      setInsuranceOption('KASKO_BASE');
       setInsuranceError('');
       return;
     }
@@ -325,7 +336,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       }
     }
 
-    setFormData(prev => ({ ...prev, insuranceOption: bestOption }));
+    setInsuranceOption(bestOption);
     setInsuranceError(eligibilityErrorKey ? t(eligibilityErrorKey) : '');
 
   }, [driverAge, licenseYears, t]);
@@ -514,7 +525,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         driverLicenseImage: licenseImageUrl,
         extras: formData.extras,
         pickupLocation: formData.pickupLocation,
-        insuranceOption: formData.insuranceOption,
+        insuranceOption: insuranceOption,
     };
 
     const { data, error } = await supabase.from('bookings').insert(bookingData).select().single();
@@ -545,7 +556,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   ];
 
   const renderStepContent = () => {
-    const assignedInsurance = INSURANCE_OPTIONS.find(opt => opt.id === formData.insuranceOption);
+    const assignedInsurance = INSURANCE_OPTIONS.find(opt => opt.id === insuranceOption);
     switch (step) {
         case 1:
             return (
@@ -724,9 +735,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
                         <h3 className="text-lg font-bold text-white mb-4">A. KASKO INSURANCE</h3>
                         <div className="space-y-4">
                             {kaskoOptions.map(opt => (
-                                <div key={opt.id} className={`relative group p-4 rounded-md border ${formData.insuranceOption === opt.id ? 'border-white' : 'border-gray-700'} ${!opt.eligible ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`} onClick={() => opt.eligible && setFormData(p => ({...p, insuranceOption: opt.id}))}>
+                                <div key={opt.id} className={`relative group p-4 rounded-md border ${insuranceOption === opt.id ? 'border-white' : 'border-gray-700'} ${!opt.eligible ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`} onClick={() => opt.eligible && setInsuranceOption(opt.id as KaskoTier)}>
                                     <div className="flex items-center">
-                                        <input type="radio" name="insuranceOption" value={opt.id} checked={formData.insuranceOption === opt.id} disabled={!opt.eligible} className="w-4 h-4 text-white"/>
+                                        <input type="radio" name="insuranceOption" value={opt.id} checked={insuranceOption === opt.id} disabled={!opt.eligible} className="w-4 h-4 text-white"/>
                                         <label className="ml-3 text-white font-semibold">{getTranslated(opt.label)}</label>
                                         {opt.pricePerDay.eur > 0 && <span className="ml-auto text-white">+€{opt.pricePerDay.eur}/giorno</span>}
                                     </div>
@@ -855,7 +866,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
                             <div>
                                 <p className="font-bold text-base text-white mb-2">ASSICURAZIONE E SERVIZI</p>
                                 <hr className="border-gray-600 mb-2"/>
-                                <p>Assicurazione: {getTranslated(INSURANCE_OPTIONS.find(i => i.id === formData.insuranceOption)?.label)}</p>
+                                <p>Assicurazione: {getTranslated(INSURANCE_OPTIONS.find(i => i.id === insuranceOption)?.label)}</p>
                                 <p>✓ Lavaggio completo obbligatorio</p>
                                 {formData.addSecondDriver && <p>✓ Secondo guidatore</p>}
                             </div>
