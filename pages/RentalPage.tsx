@@ -226,17 +226,15 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   const category = RENTAL_CATEGORIES.find(cat => cat.id === categoryId);
 
   const handleBook = (item: RentalItem) => {
-    if (categoryId === 'cars') {
-      openCarWizard(item);
-    } else {
-      checkVerificationAndProceed(() => {
-        if (['jets', 'helicopters'].includes(categoryId)) {
-          navigate(`/book/${categoryId}/${item.id}`);
-        } else {
-          openBooking(item, categoryId as 'yachts' | 'villas');
-        }
-      });
-    }
+    checkVerificationAndProceed(() => {
+      if (categoryId === 'cars') {
+        openCarWizard(item);
+      } else if (['jets', 'helicopters'].includes(categoryId)) {
+        navigate(`/book/${categoryId}/${item.id}`);
+      } else {
+        openBooking(item, categoryId as 'yachts' | 'villas');
+      }
+    });
   };
 
   if (categoryId === 'jets') {
