@@ -78,54 +78,80 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   const { currency } = useCurrency();
   const { user, loading: authLoading } = useAuth();
 
+  const handleClose = () => {
+    sessionStorage.removeItem('carBookingFormData');
+    onClose();
+  };
+
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const today = new Date().toISOString().split('T')[0];
 
-  const [formData, setFormData] = useState({
-      // Step 1
-      pickupLocation: PICKUP_LOCATIONS[0].id,
-      returnLocation: PICKUP_LOCATIONS[0].id,
-      pickupDate: today,
-      pickupTime: '10:30',
-      returnDate: '',
-      returnTime: '09:00',
+  const [formData, setFormData] = useState(() => {
+    const savedData = sessionStorage.getItem('carBookingFormData');
+    const initialData = {
+        // Step 1
+        pickupLocation: PICKUP_LOCATIONS[0].id,
+        returnLocation: PICKUP_LOCATIONS[0].id,
+        pickupDate: today,
+        pickupTime: '10:30',
+        returnDate: '',
+        returnTime: '09:00',
 
-      // Step 2
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      birthDate: '',
-      licenseNumber: '',
-      licenseIssueDate: '',
-      licenseImage: null as File | null,
-      idImage: null as File | null,
-      isSardinianResident: false,
-      confirmsInformation: false,
+        // Step 2
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        birthDate: '',
+        licenseNumber: '',
+        licenseIssueDate: '',
+        licenseImage: null as File | null,
+        idImage: null as File | null,
+        isSardinianResident: false,
+        confirmsInformation: false,
 
-      addSecondDriver: false,
-      secondDriver: {
-          firstName: '',
-          lastName: '',
-          email: '',
-          phone: '',
-          birthDate: '',
-          licenseNumber: '',
-          licenseIssueDate: '',
-          licenseImage: null as File | null,
-          idImage: null as File | null,
-      },
+        addSecondDriver: false,
+        secondDriver: {
+            firstName: '',
+            lastName: '',
+            email: '',
+            phone: '',
+            birthDate: '',
+            licenseNumber: '',
+            licenseIssueDate: '',
+            licenseImage: null as File | null,
+            idImage: null as File | null,
+        },
 
-      // Step 3
-      insuranceOption: 'KASKO_BASE',
-      extras: [] as string[],
+        // Step 3
+        insuranceOption: 'KASKO_BASE',
+        extras: [] as string[],
 
-      // Step 4
-      paymentMethod: 'stripe',
-      agreesToTerms: false,
-      agreesToPrivacy: false,
-      confirmsDocuments: false,
+        // Step 4
+        paymentMethod: 'stripe',
+        agreesToTerms: false,
+        agreesToPrivacy: false,
+        confirmsDocuments: false,
+    };
+
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        return {
+          ...initialData,
+          ...parsedData,
+          secondDriver: {
+            ...initialData.secondDriver,
+            ...(parsedData.secondDriver || {}),
+          },
+        };
+      } catch (error) {
+        console.error("Failed to parse booking data from session storage", error);
+        return initialData;
+      }
+    }
+    return initialData;
   });
 
   const [insuranceError, setInsuranceError] = useState('');
@@ -143,6 +169,20 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isFirstCarBooking, setIsFirstCarBooking] = useState(true);
+
+  useEffect(() => {
+    // Persist form data to session storage to survive redirects.
+    // We can't store File objects, so we omit them. The user will need to re-select files.
+    const { licenseImage, idImage, secondDriver, ...rest } = formData;
+    const { licenseImage: sdLicenseImage, idImage: sdIdImage, ...sdRest } = secondDriver;
+
+    const storableData = {
+      ...rest,
+      secondDriver: sdRest
+    };
+
+    sessionStorage.setItem('carBookingFormData', JSON.stringify(storableData));
+  }, [formData]);
 
   const getValidPickupTimes = (date: string): string[] => {
       const dayOfWeek = new Date(date).getDay();
@@ -552,6 +592,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         setIsProcessing(false);
         return;
     }
+    sessionStorage.removeItem('carBookingFormData');
     onBookingComplete(data);
     setIsProcessing(false);
   };
@@ -950,7 +991,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800 relative text-center">
         <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
             aria-label="Close"
         >
@@ -959,8 +1000,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         <h2 className="text-2xl font-bold text-white mb-4">Accesso Richiesto</h2>
         <p className="text-gray-300 mb-6">Devi effettuare l'accesso o registrarti per poter completare una prenotazione.</p>
         <div className="flex justify-center space-x-4">
-            <Link to="/signin" onClick={onClose} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">Accedi</Link>
-            <Link to="/signup" onClick={onClose} className="px-8 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors">Registrati</Link>
+            <Link to="/signin" onClick={handleClose} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">Accedi</Link>
+            <Link to="/signup" onClick={handleClose} className="px-8 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors">Registrati</Link>
         </div>
       </div>
     )
@@ -1034,7 +1075,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
               >
                 <button
                     type="button"
-                    onClick={onClose}
+                    onClick={handleClose}
                     className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
                     aria-label="Close"
                 >
