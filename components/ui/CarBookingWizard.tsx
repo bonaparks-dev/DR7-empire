@@ -39,7 +39,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   const navigate = useNavigate();
   const { t, lang, getTranslated } = useTranslation();
   const { currency } = useCurrency();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isSessionActive } = useAuth();
   const WIZARD_STORAGE_KEY = `carBookingWizard-${item.id}`;
 
   const [step, setStep] = useState(1);
@@ -122,22 +122,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify(dataToSave));
   }, [formData, WIZARD_STORAGE_KEY]);
 
-
-  const [hasSessionExpired, setHasSessionExpired] = useState(false);
-
-  const handleSessionExpired = useCallback(() => {
-    setHasSessionExpired(true);
-  }, []);
-
-  const checkSession = useCallback(async (): Promise<boolean> => {
-    const active = await isSessionActive();
-    if (!active) {
-      handleSessionExpired();
-      return false;
-    }
-    return true;
-  }, [isSessionActive, handleSessionExpired]);
-
   useEffect(() => {
     // Wait for the initial authentication to complete.
     if (authLoading) {
@@ -176,11 +160,25 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isFirstCarBooking, setIsFirstCarBooking] = useState(true);
+  const [hasSessionExpired, setHasSessionExpired] = useState(false);
 
   const handleClose = () => {
     sessionStorage.removeItem(WIZARD_STORAGE_KEY);
     onClose();
   };
+
+  const handleSessionExpired = useCallback(() => {
+    setHasSessionExpired(true);
+  }, []);
+
+  const checkSession = useCallback(async (): Promise<boolean> => {
+    const active = await isSessionActive();
+    if (!active) {
+      handleSessionExpired();
+      return false;
+    }
+    return true;
+  }, [isSessionActive, handleSessionExpired]);
 
   const getValidPickupTimes = (date: string): string[] => {
       const dayOfWeek = new Date(date).getDay();
@@ -554,7 +552,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    if (!(await checkSession())) return;
     if (validateStep()) {
       setStep(s => s + 1);
     }
@@ -562,6 +561,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   const handleBack = () => setStep(s => s - 1);
 
   const finalizeBooking = async () => {
+    if (!(await checkSession())) return;
     if (!user) {
         setErrors(prev => ({...prev, form: "You must be logged in to book."}));
         return;
@@ -628,6 +628,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!(await checkSession())) return;
     if (!validateStep() || !item) {
       return;
     }
@@ -662,9 +663,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
   const steps = [
     { id: 1, name: t('STEP 1: Date e Località') },
-    { id: 2, name: t('STEP 2: Informazioni Conducente') },
-    { id: 3, name: t('STEP 3: Opzioni e Assicurazioni') },
-    { id: 4, name: t('STEP 4: Pagamento e Conferma') }
+    { id: 2, name: t('STEP 3: Informazioni Conducente') },
+    { id: 3, name: t('STEP 4: Opzioni e Assicurazioni') },
+    { id: 4, name: t('STEP 5: Pagamento e Conferma') }
   ];
 
   const renderStepContent = () => {
@@ -1063,6 +1064,33 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
   return (
     <>
+      <AnimatePresence>
+        {hasSessionExpired && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4"
+          >
+            <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800 relative text-center max-w-sm">
+              <h2 className="text-2xl font-bold text-white mb-4">Session Expired</h2>
+              <p className="text-gray-300 mb-6">Your session has expired, but don't worry, your progress has been saved. Please log in again to continue with your booking.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setHasSessionExpired(false);
+                  // Do not clear storage, so the user can resume after logging in.
+                  onClose();
+                  navigate('/signin');
+                }}
+                className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors"
+              >
+                Go to Login
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <AnimatePresence>
           {isCameraOpen && (
               <motion.div
