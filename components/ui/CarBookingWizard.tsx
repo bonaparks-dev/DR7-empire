@@ -171,6 +171,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     }
   }, [formData.pickupTime]);
 
+  const parseDateString = (dateString: string): Date | null => {
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) return null;
+    const [day, month, year] = dateString.split('/').map(Number);
+    const date = new Date(year, month - 1, day);
+    if (date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
+        return date;
+    }
+    return null;
+  };
+
   const {
     duration, rentalCost, insuranceCost, extrasCost, subtotal, taxes, total, includedKm,
     driverAge, licenseYears, youngDriverFee, recentLicenseFee, secondDriverFee
@@ -203,8 +213,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       return acc + (extra?.pricePerDay[currency] || 0) * billingDays;
     }, 0);
 
-    const calculatedDriverAge = formData.birthDate ? new Date().getFullYear() - new Date(formData.birthDate).getFullYear() : 0;
-    const calculatedLicenseYears = formData.licenseIssueDate ? new Date().getFullYear() - new Date(formData.licenseIssueDate).getFullYear() : 0;
+    const birthDateObj = parseDateString(formData.birthDate);
+    const licenseDateObj = parseDateString(formData.licenseIssueDate);
+
+    const calculatedDriverAge = birthDateObj ? new Date().getFullYear() - birthDateObj.getFullYear() : 0;
+    const calculatedLicenseYears = licenseDateObj ? new Date().getFullYear() - licenseDateObj.getFullYear() : 0;
 
     const calculatedYoungDriverFee = calculatedDriverAge > 0 && calculatedDriverAge < 25 ? 10 * billingDays : 0;
     const calculatedRecentLicenseFee = calculatedLicenseYears >= 2 && calculatedLicenseYears < 3 ? 20 * billingDays : 0;
