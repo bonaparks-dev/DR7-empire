@@ -123,18 +123,27 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   }, [formData, WIZARD_STORAGE_KEY]);
 
   useEffect(() => {
-    // If the component renders without a user (due to saved data),
-    // immediately trigger the session check to show the expiry modal.
-    if (!user) {
-      checkSession();
+    // Wait for the initial authentication to complete.
+    if (authLoading) {
+      return;
     }
 
-    const interval = setInterval(() => {
-      checkSession();
-    }, 30000); // Check every 30 seconds
+    // If there's no user but there's saved data, it means the session has expired.
+    const savedData = sessionStorage.getItem(WIZARD_STORAGE_KEY);
+    if (!user && savedData) {
+      handleSessionExpired();
+      return;
+    }
 
-    return () => clearInterval(interval);
-  }, [user]);
+    // Set up an interval to check the session periodically only if the user is logged in.
+    if (user) {
+      const interval = setInterval(() => {
+        checkSession();
+      }, 30000); // Check every 30 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [user, authLoading, checkSession, handleSessionExpired, WIZARD_STORAGE_KEY]);
 
   const [insuranceError, setInsuranceError] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -153,23 +162,23 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   const [isFirstCarBooking, setIsFirstCarBooking] = useState(true);
   const [hasSessionExpired, setHasSessionExpired] = useState(false);
 
-  const handleSessionExpired = () => {
-    setHasSessionExpired(true);
-  };
-
   const handleClose = () => {
     sessionStorage.removeItem(WIZARD_STORAGE_KEY);
     onClose();
   };
 
-  const checkSession = async (): Promise<boolean> => {
+  const handleSessionExpired = useCallback(() => {
+    setHasSessionExpired(true);
+  }, []);
+
+  const checkSession = useCallback(async (): Promise<boolean> => {
     const active = await isSessionActive();
     if (!active) {
       handleSessionExpired();
       return false;
     }
     return true;
-  };
+  }, [isSessionActive, handleSessionExpired]);
 
   const getValidPickupTimes = (date: string): string[] => {
       const dayOfWeek = new Date(date).getDay();
