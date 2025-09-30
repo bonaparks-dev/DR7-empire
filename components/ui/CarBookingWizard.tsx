@@ -458,6 +458,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         if (!formData.secondDriver.lastName) newErrors['secondDriver.lastName'] = "Il cognome del secondo guidatore è obbligatorio.";
       }
     }
+    if (step === 4) {
+      if (!formData.confirmsDocuments) {
+        newErrors.confirmsDocuments = "Devi confermare che i documenti sono corretti.";
+      }
+      if (!formData.agreesToTerms) {
+        newErrors.agreesToTerms = "Devi accettare i termini e le condizioni.";
+      }
+      if (!formData.agreesToPrivacy) {
+        newErrors.agreesToPrivacy = "Devi accettare l'informativa sulla privacy.";
+      }
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -512,15 +523,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
     // Upload docs
     const licenseImageUrl = await uploadToBucket('driver-licenses', user.id, formData.licenseImage, 'license');
-    const idImageUrl = await uploadToBucket('driver-ids', user.id, formData.idImage, 'id');
-
     if (!licenseImageUrl) {
-      setErrors(prev => ({ ...prev, licenseImage: "Failed to upload license image. Please try again." }));
+      setErrors(prev => ({ ...prev, form: "Failed to upload license image. Please go back and try again." }));
       setIsProcessing(false);
       return;
     }
+    const idImageUrl = await uploadToBucket('driver-ids', user.id, formData.idImage, 'id');
     if (!idImageUrl) {
-      setErrors(prev => ({ ...prev, idImage: "Failed to upload ID image. Please try again." }));
+      setErrors(prev => ({ ...prev, form: "Failed to upload ID image. Please go back and try again." }));
       setIsProcessing(false);
       return;
     }
@@ -593,7 +603,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         return;
       }
 
-      // Ouvre 3-D Secure en modal si requis, sans redirection
       const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
           card: cardElement,
@@ -611,23 +620,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         return;
       }
 
-      // Rare fallback: si Stripe signale encore 'requires_action'
-      if (paymentIntent?.status === 'requires_action') {
-        const { error: actionErr, paymentIntent: pi2 } = await stripe.confirmCardPayment(clientSecret);
-        if (actionErr) {
-          setStripeError(actionErr.message || "Authentication failed.");
-          setIsProcessing(false);
-          return;
-        }
-        if (pi2?.status !== 'succeeded' && pi2?.status !== 'requires_capture') {
-          setStripeError("Payment not completed.");
-          setIsProcessing(false);
-          return;
-        }
+      if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
+        await finalizeBooking();
+      } else {
+        setStripeError("Payment not completed. Status: " + paymentIntent?.status);
+        setIsProcessing(false);
       }
-
-      await finalizeBooking();
-    } else {
+    } else if (formData.paymentMethod === 'agency' && step === 4) {
       await finalizeBooking();
     }
   };
@@ -933,23 +932,32 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
             <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-4 uppercase">Conferme Finali</h3>
               <div className="space-y-4">
-                <div className="flex items-start">
-                  <input id="confirms-documents" name="confirmsDocuments" type="checkbox" checked={formData.confirmsDocuments} onChange={handleChange} className="h-4 w-4 mt-1 rounded border-gray-600 bg-gray-700 text-white focus:ring-white"/>
-                  <label htmlFor="confirms-documents" className="ml-3 block text-sm font-medium text-white">
-                    Confermo che i documenti caricati sono corretti e appartengono al conducente principale.
-                  </label>
+                <div>
+                  <div className="flex items-start">
+                    <input id="confirms-documents" name="confirmsDocuments" type="checkbox" checked={formData.confirmsDocuments} onChange={handleChange} className="h-4 w-4 mt-1 rounded border-gray-600 bg-gray-700 text-white focus:ring-white"/>
+                    <label htmlFor="confirms-documents" className="ml-3 block text-sm font-medium text-white">
+                      Confermo che i documenti caricati sono corretti e appartengono al conducente principale.
+                    </label>
+                  </div>
+                  {errors.confirmsDocuments && <p className="text-xs text-red-400 mt-1 pl-7">{errors.confirmsDocuments}</p>}
                 </div>
-                <div className="flex items-start">
-                  <input id="agrees-to-terms" name="agreesToTerms" type="checkbox" checked={formData.agreesToTerms} onChange={handleChange} className="h-4 w-4 mt-1 rounded border-gray-600 bg-gray-700 text-white focus:ring-white"/>
-                  <label htmlFor="agrees-to-terms" className="ml-3 block text-sm font-medium text-white">
-                    Ho letto e accetto i <Link to="/rental-agreement" target="_blank" className="underline hover:text-white">termini e le condizioni di noleggio</Link>.
-                  </label>
+                <div>
+                  <div className="flex items-start">
+                    <input id="agrees-to-terms" name="agreesToTerms" type="checkbox" checked={formData.agreesToTerms} onChange={handleChange} className="h-4 w-4 mt-1 rounded border-gray-600 bg-gray-700 text-white focus:ring-white"/>
+                    <label htmlFor="agrees-to-terms" className="ml-3 block text-sm font-medium text-white">
+                      Ho letto e accetto i <Link to="/rental-agreement" target="_blank" className="underline hover:text-white">termini e le condizioni di noleggio</Link>.
+                    </label>
+                  </div>
+                  {errors.agreesToTerms && <p className="text-xs text-red-400 mt-1 pl-7">{errors.agreesToTerms}</p>}
                 </div>
-                <div className="flex items-start">
-                  <input id="agrees-to-privacy" name="agreesToPrivacy" type="checkbox" checked={formData.agreesToPrivacy} onChange={handleChange} className="h-4 w-4 mt-1 rounded border-gray-600 bg-gray-700 text-white focus:ring-white"/>
-                  <label htmlFor="agrees-to-privacy" className="ml-3 block text-sm font-medium text-white">
-                    Ho letto e accetto l'<Link to="/privacy-policy" target="_blank" className="underline hover:text-white">informativa sulla privacy</Link>.
-                  </label>
+                <div>
+                  <div className="flex items-start">
+                    <input id="agrees-to-privacy" name="agreesToPrivacy" type="checkbox" checked={formData.agreesToPrivacy} onChange={handleChange} className="h-4 w-4 mt-1 rounded border-gray-600 bg-gray-700 text-white focus:ring-white"/>
+                    <label htmlFor="agrees-to-privacy" className="ml-3 block text-sm font-medium text-white">
+                      Ho letto e accetto l'<Link to="/privacy-policy" target="_blank" className="underline hover:text-white">informativa sulla privacy</Link>.
+                    </label>
+                  </div>
+                  {errors.agreesToPrivacy && <p className="text-xs text-red-400 mt-1 pl-7">{errors.agreesToPrivacy}</p>}
                 </div>
               </div>
             </section>
@@ -1146,6 +1154,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
                 {renderStepContent()}
               </motion.div>
             </AnimatePresence>
+
+            {errors.form && (
+              <div className="mt-4 text-center p-3 rounded-md border border-red-500 bg-red-500/10 text-red-400">
+                <p>{errors.form}</p>
+              </div>
+            )}
 
             <div className="flex justify-between mt-8">
               <button type="button" onClick={handleBack} disabled={step === 1} className="px-8 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('Back')}</button>
