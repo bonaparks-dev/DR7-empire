@@ -918,6 +918,30 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
             </AnimatePresence>
 
             <section className="border-t border-gray-700 pt-6">
+              <h3 className="text-lg font-bold text-white mb-4 uppercase">Conferme Finali</h3>
+              <div className="space-y-4">
+                <div className="flex items-start">
+                  <input id="confirms-documents" name="confirmsDocuments" type="checkbox" checked={formData.confirmsDocuments} onChange={handleChange} className="h-4 w-4 mt-1 rounded border-gray-600 bg-gray-700 text-white focus:ring-white"/>
+                  <label htmlFor="confirms-documents" className="ml-3 block text-sm font-medium text-white">
+                    Confermo che i documenti caricati sono corretti e appartengono al conducente principale.
+                  </label>
+                </div>
+                <div className="flex items-start">
+                  <input id="agrees-to-terms" name="agreesToTerms" type="checkbox" checked={formData.agreesToTerms} onChange={handleChange} className="h-4 w-4 mt-1 rounded border-gray-600 bg-gray-700 text-white focus:ring-white"/>
+                  <label htmlFor="agrees-to-terms" className="ml-3 block text-sm font-medium text-white">
+                    Ho letto e accetto i <Link to="/rental-agreement" target="_blank" className="underline hover:text-white">termini e le condizioni di noleggio</Link>.
+                  </label>
+                </div>
+                <div className="flex items-start">
+                  <input id="agrees-to-privacy" name="agreesToPrivacy" type="checkbox" checked={formData.agreesToPrivacy} onChange={handleChange} className="h-4 w-4 mt-1 rounded border-gray-600 bg-gray-700 text-white focus:ring-white"/>
+                  <label htmlFor="agrees-to-privacy" className="ml-3 block text-sm font-medium text-white">
+                    Ho letto e accetto l'<Link to="/privacy-policy" target="_blank" className="underline hover:text-white">informativa sulla privacy</Link>.
+                  </label>
+                </div>
+              </div>
+            </section>
+
+            <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-4 uppercase">Riepilogo Completo Prenotazione</h3>
               <div className="p-6 bg-gray-800/50 rounded-lg border border-gray-700 space-y-6 text-sm">
                 <div>
