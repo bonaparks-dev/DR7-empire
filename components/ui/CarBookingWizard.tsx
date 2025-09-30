@@ -439,15 +439,20 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     let licenseImageUrl = '';
     if (formData.licenseImage) {
         try {
-            const response = await fetch(formData.licenseImage);
-            const blob = await response.blob();
-            const fileExtension = blob.type.split('/')[1];
+            const file = formData.licenseImage;
+            const fileExtension = file.name.split('.').pop();
             const fileName = `${user.id}_${Date.now()}.${fileExtension}`;
             const filePath = `public/${fileName}`;
-            const { data, error } = await supabase.storage.from('driver-licenses').upload(filePath, blob, { contentType: blob.type });
+
+            const { data, error } = await supabase.storage
+                .from('driver-licenses')
+                .upload(filePath, file, { contentType: file.type });
+
             if (error) throw error;
+
             const { data: publicUrlData } = supabase.storage.from('driver-licenses').getPublicUrl(filePath);
             if (!publicUrlData) throw new Error("Could not get public URL for the uploaded image.");
+
             licenseImageUrl = publicUrlData.publicUrl;
         } catch (error) {
             console.error('Error uploading license image:', error);
