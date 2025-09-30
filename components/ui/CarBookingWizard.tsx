@@ -6,7 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../supabaseClient';
 import { RENTAL_CATEGORIES, PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, COUNTRIES, INSURANCE_ELIGIBILITY, VALIDATION_MESSAGES, YACHT_PICKUP_MARINAS, AIRPORTS, HELI_DEPARTURE_POINTS, HELI_ARRIVAL_POINTS, CRYPTO_ADDRESSES, AGE_BUCKETS, LICENSE_OBTENTION_YEAR_OPTIONS } from '../../constants';
 import type { Booking, Inquiry, RentalItem } from '../../types';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { CameraIcon, CreditCardIcon, XIcon } from '../icons/Icons';
 import DocumentUploader from './DocumentUploader';
 
@@ -36,9 +36,10 @@ interface CarBookingWizardProps {
 }
 
 const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComplete, onClose }) => {
+  const navigate = useNavigate();
   const { t, lang, getTranslated } = useTranslation();
   const { currency } = useCurrency();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isSessionActive } = useAuth();
 
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -105,6 +106,20 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isFirstCarBooking, setIsFirstCarBooking] = useState(true);
+  const [isSessionExpiredModalOpen, setIsSessionExpiredModalOpen] = useState(false);
+
+  const handleSessionExpired = () => {
+    setIsSessionExpiredModalOpen(true);
+  };
+
+  const checkSession = async (): Promise<boolean> => {
+    const active = await isSessionActive();
+    if (!active) {
+      handleSessionExpired();
+      return false;
+    }
+    return true;
+  };
 
   const getValidPickupTimes = (date: string): string[] => {
       const dayOfWeek = new Date(date).getDay();
@@ -465,10 +480,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNext = () => validateStep() && setStep(s => s + 1);
+  const handleNext = async () => {
+    if (!(await checkSession())) return;
+    if (validateStep()) {
+      setStep(s => s + 1);
+    }
+  };
   const handleBack = () => setStep(s => s - 1);
 
   const finalizeBooking = async () => {
+    if (!(await checkSession())) return;
     if (!user) {
         setErrors(prev => ({...prev, form: "You must be logged in to book."}));
         return;
@@ -533,12 +554,38 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); if (!validateStep() || !item) return; setIsProcessing(true);
+    e.preventDefault();
+    if (!(await checkSession())) return;
+    if (!validateStep() || !item) {
+      return;
+    }
+    setIsProcessing(true);
     if (formData.paymentMethod === 'stripe' && step === 4) {
-      setStripeError(null); if (!stripe || !cardElement || !clientSecret) { setStripeError("Payment system is not ready."); setIsProcessing(false); return; }
-      const { error } = await stripe.confirmCardPayment(clientSecret, { payment_method: { card: cardElement, billing_details: { name: `${formData.firstName} ${formData.lastName}`, email: formData.email, phone: formData.phone } }, });
-      if (error) { setStripeError(error.message || "An unexpected error occurred."); setIsProcessing(false); } else { await finalizeBooking(); }
-    } else { await finalizeBooking(); }
+      setStripeError(null);
+      if (!stripe || !cardElement || !clientSecret) {
+        setStripeError("Payment system is not ready.");
+        setIsProcessing(false);
+        return;
+      }
+      const { error } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: cardElement,
+          billing_details: {
+            name: `${formData.firstName} ${formData.lastName}`,
+            email: formData.email,
+            phone: formData.phone,
+          },
+        },
+      });
+      if (error) {
+        setStripeError(error.message || "An unexpected error occurred.");
+        setIsProcessing(false);
+      } else {
+        await finalizeBooking();
+      }
+    } else {
+      await finalizeBooking();
+    }
   };
 
   const steps = [
@@ -944,6 +991,32 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
   return (
     <>
+      <AnimatePresence>
+        {isSessionExpiredModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4"
+          >
+            <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800 relative text-center max-w-sm">
+              <h2 className="text-2xl font-bold text-white mb-4">Session Expired</h2>
+              <p className="text-gray-300 mb-6">Your session has expired. Please log in again to continue with your booking.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSessionExpiredModalOpen(false);
+                  onClose();
+                  navigate('/signin');
+                }}
+                className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors"
+              >
+                Go to Login
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <AnimatePresence>
           {isCameraOpen && (
               <motion.div
