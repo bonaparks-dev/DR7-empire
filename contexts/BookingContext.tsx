@@ -1,4 +1,4 @@
-import React, { createContext, useState, useMemo, useEffect } from 'react';
+import React, { createContext, useState, useMemo, useEffect, useCallback } from 'react';
 import type { RentalItem } from '../types';
 
 interface BookingContextType {
@@ -38,31 +38,31 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [isBookingOpen, isCarWizardOpen]);
 
 
-  const openBooking = (item: RentalItem, categoryId: 'yachts' | 'villas' | 'cars') => {
+  const openBooking = useCallback((item: RentalItem, categoryId: 'yachts' | 'villas' | 'cars') => {
     setBookingItem(item);
     setBookingCategory(categoryId);
     setIsBookingOpen(true);
-  };
+  }, []);
 
-  const closeBooking = () => {
+  const closeBooking = useCallback(() => {
     setIsBookingOpen(false);
     setTimeout(() => {
         setBookingItem(null);
         setBookingCategory(null);
     }, 300);
-  };
+  }, []);
 
-  const openCarWizard = (item: RentalItem) => {
+  const openCarWizard = useCallback((item: RentalItem) => {
     setSelectedCar(item);
     setCarWizardOpen(true);
-  }
+  }, []);
 
-  const closeCarWizard = () => {
+  const closeCarWizard = useCallback(() => {
     setCarWizardOpen(false);
     setTimeout(() => {
       setSelectedCar(null);
     }, 300);
-  }
+  }, []);
   
   const value = useMemo(() => ({
     bookingItem,
@@ -74,7 +74,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     openCarWizard,
     closeCarWizard,
     selectedCar,
-  }), [bookingItem, isBookingOpen, bookingCategory, isCarWizardOpen, selectedCar]);
+  }), [bookingItem, isBookingOpen, bookingCategory, openBooking, closeBooking, isCarWizardOpen, openCarWizard, closeCarWizard, selectedCar]);
 
   return (
     <BookingContext.Provider value={value}>
