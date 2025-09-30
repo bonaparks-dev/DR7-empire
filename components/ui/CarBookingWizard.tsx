@@ -501,12 +501,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       }
 
       const fileName = `${prefix}_${userId}_${Date.now()}.${fileExt}`;
-      const filePath = `public/${fileName}`;
 
-      const { error: upErr } = await supabase.storage.from(bucket).upload(filePath, fileBlob, { contentType: fileBlob.type || 'image/jpeg' });
+      const { error: upErr } = await supabase.storage.from(bucket).upload(fileName, fileBlob, { contentType: fileBlob.type || 'image/jpeg' });
       if (upErr) throw upErr;
 
-      const { data: pub } = supabase.storage.from(bucket).getPublicUrl(filePath);
+      const { data: pub } = supabase.storage.from(bucket).getPublicUrl(fileName);
       return pub?.publicUrl || '';
     } catch (e) {
       console.error(`Upload failed for ${prefix}:`, e);
@@ -1175,7 +1174,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
               ) : (
                 <button
                   type="submit"
-                  disabled={isProcessing || !formData.agreesToTerms || !formData.agreesToPrivacy || !formData.confirmsInformation || !formData.confirmsDocuments || (licenseYears < 2)}
+                  disabled={isProcessing || !formData.agreesToTerms || !formData.agreesToPrivacy || !formData.confirmsDocuments}
                   className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed"
                 >
                   {isProcessing ? 'Processing...' : '✓ CONFERMA PRENOTAZIONE'}
