@@ -16,7 +16,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import BookingModal from './components/ui/BookingModal';
 import CarBookingWizard from './components/ui/CarBookingWizard';
 import { useBooking } from './hooks/useBooking';
-import type { Booking } from './types';
 import BookingPage from './pages/BookingPage';
 import CommercialOperationPage from './pages/CommercialOperationPage';
 import AboutPage from './pages/AboutPage';
@@ -199,9 +198,9 @@ const MainContent = () => {
   const { isCarWizardOpen, closeCarWizard, selectedCar } = useBooking();
   const navigate = useNavigate();
 
-  const handleBookingComplete = (booking: Booking) => {
+  const handleBookingComplete = () => {
     closeCarWizard();
-    navigate('/confirmation-success', { state: { booking } });
+    navigate('/confirmation-success');
   };
 
   return (
