@@ -221,13 +221,15 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   const { t, getTranslated } = useTranslation();
   const navigate = useNavigate();
   const { openBooking, openCarWizard } = useBooking();
-  const { checkVerificationAndProceed } = useVerification();
+  const { checkVerificationAndProceed, checkLoginAndProceed } = useVerification();
   
   const category = RENTAL_CATEGORIES.find(cat => cat.id === categoryId);
 
   const handleBook = (item: RentalItem) => {
     if (categoryId === 'cars') {
-      openCarWizard(item);
+      checkLoginAndProceed(() => {
+        openCarWizard(item);
+      });
     } else {
       checkVerificationAndProceed(() => {
         if (['jets', 'helicopters'].includes(categoryId)) {

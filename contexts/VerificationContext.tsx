@@ -8,6 +8,7 @@ interface VerificationContextType {
   isModalOpen: boolean;
   modalType: ModalType | null;
   checkVerificationAndProceed: (onSuccess: () => void) => void;
+  checkLoginAndProceed: (onSuccess: () => void) => void;
   closeModal: () => void;
 }
 
@@ -43,11 +44,21 @@ export const VerificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     // All checks passed, proceed with the original action
     onSuccess();
   };
+
+  const checkLoginAndProceed = (onSuccess: () => void) => {
+    if (!user) {
+      openModal('login');
+      return;
+    }
+    // Login check passed, proceed with the original action
+    onSuccess();
+  };
   
   const value = useMemo(() => ({
     isModalOpen,
     modalType,
     checkVerificationAndProceed,
+    checkLoginAndProceed,
     closeModal,
   }), [isModalOpen, modalType, user]);
 
