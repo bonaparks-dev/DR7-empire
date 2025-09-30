@@ -416,10 +416,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       }
     }
 
-    setFormData(prev => ({ ...prev, insuranceOption: bestOption }));
-    setInsuranceError(eligibilityErrorKey ? t(eligibilityErrorKey) : '');
+    const newInsuranceError = eligibilityErrorKey ? t(eligibilityErrorKey) : '';
+    if (bestOption !== formData.insuranceOption || newInsuranceError !== insuranceError) {
+      setFormData(prev => ({ ...prev, insuranceOption: bestOption }));
+      setInsuranceError(newInsuranceError);
+    }
 
-  }, [driverAge, licenseYears, t]);
+  }, [driverAge, licenseYears, t, formData.insuranceOption, insuranceError]);
 
   const formatPrice = (price: number) => new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', { style: 'currency', currency: currency.toUpperCase(), minimumFractionDigits: 2 }).format(price);
 
