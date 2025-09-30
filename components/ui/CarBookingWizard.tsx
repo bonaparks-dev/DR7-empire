@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useCurrency } from '../../contexts/CurrencyContext';
@@ -121,6 +121,45 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     };
     sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify(dataToSave));
   }, [formData, WIZARD_STORAGE_KEY]);
+
+
+  const [hasSessionExpired, setHasSessionExpired] = useState(false);
+
+  const handleSessionExpired = useCallback(() => {
+    setHasSessionExpired(true);
+  }, []);
+
+  const checkSession = useCallback(async (): Promise<boolean> => {
+    const active = await isSessionActive();
+    if (!active) {
+      handleSessionExpired();
+      return false;
+    }
+    return true;
+  }, [isSessionActive, handleSessionExpired]);
+
+  useEffect(() => {
+    // Wait for the initial authentication to complete.
+    if (authLoading) {
+      return;
+    }
+
+    // If there's no user but there's saved data, it means the session has expired.
+    const savedData = sessionStorage.getItem(WIZARD_STORAGE_KEY);
+    if (!user && savedData) {
+      handleSessionExpired();
+      return;
+    }
+
+    // Set up an interval to check the session periodically only if the user is logged in.
+    if (user) {
+      const interval = setInterval(() => {
+        checkSession();
+      }, 30000); // Check every 30 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [user, authLoading, checkSession, handleSessionExpired, WIZARD_STORAGE_KEY]);
 
   const [insuranceError, setInsuranceError] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
