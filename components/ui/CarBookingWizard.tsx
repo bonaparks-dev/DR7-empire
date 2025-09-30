@@ -38,7 +38,7 @@ interface CarBookingWizardProps {
 const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComplete, onClose }) => {
   const { t, lang, getTranslated } = useTranslation();
   const { currency } = useCurrency();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -870,6 +870,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         default: return null;
     }
   };
+
+  if (authLoading) {
+    return (
+        <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800 relative text-center">
+            <h2 className="text-2xl font-bold text-white mb-4">Loading...</h2>
+        </div>
+    )
+  }
 
   if (!user) {
     return (
