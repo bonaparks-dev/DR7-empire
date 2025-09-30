@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useCurrency } from '../../contexts/CurrencyContext';
@@ -6,7 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../supabaseClient';
 import { RENTAL_CATEGORIES, PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, COUNTRIES, INSURANCE_ELIGIBILITY, VALIDATION_MESSAGES, YACHT_PICKUP_MARINAS, AIRPORTS, HELI_DEPARTURE_POINTS, HELI_ARRIVAL_POINTS, CRYPTO_ADDRESSES, AGE_BUCKETS, LICENSE_OBTENTION_YEAR_OPTIONS } from '../../constants';
 import type { Booking, Inquiry, RentalItem } from '../../types';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { CameraIcon, CreditCardIcon, XIcon } from '../icons/Icons';
 import DocumentUploader from './DocumentUploader';
 
@@ -36,27 +36,28 @@ interface CarBookingWizardProps {
 }
 
 const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComplete, onClose }) => {
+  const navigate = useNavigate();
   const { t, lang, getTranslated } = useTranslation();
   const { currency } = useCurrency();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isSessionActive } = useAuth();
+  const WIZARD_STORAGE_KEY = `carBookingWizard-${item.id}`;
 
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const today = new Date().toISOString().split('T')[0];
 
-  const [formData, setFormData] = useState({
-      // Step 1
-      pickupLocation: PICKUP_LOCATIONS[0].id,
-      returnLocation: PICKUP_LOCATIONS[0].id,
+  const [formData, setFormData] = useState(() => {
+    const savedData = sessionStorage.getItem(WIZARD_STORAGE_KEY);
+    const initialData = {
+      pickupLocation: PICKUP_LOCATIONS?.[0]?.id || '',
+      returnLocation: PICKUP_LOCATIONS?.[0]?.id || '',
       pickupDate: today,
       pickupTime: '10:30',
       returnDate: '',
       returnTime: '09:00',
-
-      // Step 2
       firstName: '',
       lastName: '',
-      email: '',
+      email: user?.email || '',
       phone: '',
       birthDate: '',
       licenseNumber: '',
@@ -65,7 +66,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       idImage: null as File | null,
       isSardinianResident: false,
       confirmsInformation: false,
-
       addSecondDriver: false,
       secondDriver: {
           firstName: '',
@@ -79,16 +79,81 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
           idImage: null as File | null,
       },
 
-      // Step 3
-      extras: [] as string[],
 
-      // Step 4
+      // Step 3
+
+      insuranceOption: 'KASKO_BASE',
+main
+      extras: [] as string[],
       paymentMethod: 'stripe',
       agreesToTerms: false,
       agreesToPrivacy: false,
       confirmsDocuments: false,
+    };
+
+    if (savedData) {
+        try {
+            const parsed = JSON.parse(savedData);
+            return {
+                ...initialData,
+                ...parsed,
+                licenseImage: null,
+                idImage: null,
+                secondDriver: {
+                    ...initialData.secondDriver,
+                    ...(parsed.secondDriver || {}),
+                    licenseImage: null,
+                    idImage: null,
+                },
+            };
+        } catch (e) {
+            console.error("Could not restore booking form data:", e);
+        }
+    }
+    return initialData;
   });
+
   const [insuranceOption, setInsuranceOption] = useState('KASKO_BASE');
+
+
+  useEffect(() => {
+    const dataToSave = {
+      ...formData,
+      licenseImage: null,
+      idImage: null,
+      secondDriver: {
+        ...formData.secondDriver,
+        licenseImage: null,
+        idImage: null,
+      },
+    };
+    sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify(dataToSave));
+  }, [formData, WIZARD_STORAGE_KEY]);
+
+  useEffect(() => {
+    // Wait for the initial authentication to complete.
+    if (authLoading) {
+      return;
+    }
+
+    // If there's no user but there's saved data, it means the session has expired.
+    const savedData = sessionStorage.getItem(WIZARD_STORAGE_KEY);
+    if (!user && savedData) {
+      handleSessionExpired();
+      return;
+    }
+
+    // Set up an interval to check the session periodically only if the user is logged in.
+    if (user) {
+      const interval = setInterval(() => {
+        checkSession();
+      }, 30000); // Check every 30 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [user, authLoading, checkSession, handleSessionExpired, WIZARD_STORAGE_KEY]);
+
+
   const [insuranceError, setInsuranceError] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -104,6 +169,25 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isFirstCarBooking, setIsFirstCarBooking] = useState(true);
+  const [hasSessionExpired, setHasSessionExpired] = useState(false);
+
+  const handleClose = () => {
+    sessionStorage.removeItem(WIZARD_STORAGE_KEY);
+    onClose();
+  };
+
+  const handleSessionExpired = useCallback(() => {
+    setHasSessionExpired(true);
+  }, []);
+
+  const checkSession = useCallback(async (): Promise<boolean> => {
+    const active = await isSessionActive();
+    if (!active) {
+      handleSessionExpired();
+      return false;
+    }
+    return true;
+  }, [isSessionActive, handleSessionExpired]);
 
   const getValidPickupTimes = (date: string): string[] => {
       const dayOfWeek = new Date(date).getDay();
@@ -215,8 +299,27 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     const birthDateObj = parseDateString(formData.birthDate);
     const licenseDateObj = parseDateString(formData.licenseIssueDate);
 
-    const calculatedDriverAge = birthDateObj ? new Date().getFullYear() - birthDateObj.getFullYear() : 0;
-    const calculatedLicenseYears = licenseDateObj ? new Date().getFullYear() - licenseDateObj.getFullYear() : 0;
+    let calculatedDriverAge = 0;
+    if (birthDateObj) {
+        const today = new Date();
+        let age = today.getFullYear() - birthDateObj.getFullYear();
+        const m = today.getMonth() - birthDateObj.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDateObj.getDate())) {
+            age--;
+        }
+        calculatedDriverAge = age;
+    }
+
+    let calculatedLicenseYears = 0;
+    if (licenseDateObj) {
+        const today = new Date();
+        let years = today.getFullYear() - licenseDateObj.getFullYear();
+        const m = today.getMonth() - licenseDateObj.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < licenseDateObj.getDate())) {
+            years--;
+        }
+        calculatedLicenseYears = years;
+    }
 
     const calculatedYoungDriverFee = calculatedDriverAge > 0 && calculatedDriverAge < 25 ? 10 * billingDays : 0;
     const calculatedRecentLicenseFee = calculatedLicenseYears >= 2 && calculatedLicenseYears < 3 ? 20 * billingDays : 0;
@@ -286,8 +389,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     }
     return () => { if (card) { card.destroy(); setCardElement(null); } };
   }, [stripe, step, formData.paymentMethod, clientSecret]);
-
-  useEffect(() => { if (user) { setFormData(prev => ({ ...prev, email: user.email || '' })); } }, [user]);
 
   useEffect(() => {
     if (!user) {
@@ -472,10 +573,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNext = () => validateStep() && setStep(s => s + 1);
+  const handleNext = async () => {
+    if (!(await checkSession())) return;
+    if (validateStep()) {
+      setStep(s => s + 1);
+    }
+  };
   const handleBack = () => setStep(s => s - 1);
 
   const finalizeBooking = async () => {
+    if (!(await checkSession())) return;
     if (!user) {
         setErrors(prev => ({...prev, form: "You must be logged in to book."}));
         return;
@@ -536,16 +643,43 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         return;
     }
     onBookingComplete(data);
+    sessionStorage.removeItem(WIZARD_STORAGE_KEY);
     setIsProcessing(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); if (!validateStep() || !item) return; setIsProcessing(true);
+    e.preventDefault();
+    if (!(await checkSession())) return;
+    if (!validateStep() || !item) {
+      return;
+    }
+    setIsProcessing(true);
     if (formData.paymentMethod === 'stripe' && step === 4) {
-      setStripeError(null); if (!stripe || !cardElement || !clientSecret) { setStripeError("Payment system is not ready."); setIsProcessing(false); return; }
-      const { error } = await stripe.confirmCardPayment(clientSecret, { payment_method: { card: cardElement, billing_details: { name: `${formData.firstName} ${formData.lastName}`, email: formData.email, phone: formData.phone } }, });
-      if (error) { setStripeError(error.message || "An unexpected error occurred."); setIsProcessing(false); } else { await finalizeBooking(); }
-    } else { await finalizeBooking(); }
+      setStripeError(null);
+      if (!stripe || !cardElement || !clientSecret) {
+        setStripeError("Payment system is not ready.");
+        setIsProcessing(false);
+        return;
+      }
+      const { error } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: cardElement,
+          billing_details: {
+            name: `${formData.firstName} ${formData.lastName}`,
+            email: formData.email,
+            phone: formData.phone,
+          },
+        },
+      });
+      if (error) {
+        setStripeError(error.message || "An unexpected error occurred.");
+        setIsProcessing(false);
+      } else {
+        await finalizeBooking();
+      }
+    } else {
+      await finalizeBooking();
+    }
   };
 
   const steps = [
@@ -928,12 +1062,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     )
   }
 
-  if (!user) {
+  if (!user && !hasSessionExpired) {
     return (
       <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800 relative text-center">
         <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
             aria-label="Close"
         >
@@ -942,8 +1076,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         <h2 className="text-2xl font-bold text-white mb-4">Accesso Richiesto</h2>
         <p className="text-gray-300 mb-6">Devi effettuare l'accesso o registrarti per poter completare una prenotazione.</p>
         <div className="flex justify-center space-x-4">
-            <Link to="/signin" onClick={onClose} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">Accedi</Link>
-            <Link to="/signup" onClick={onClose} className="px-8 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors">Registrati</Link>
+            <Link to="/signin" onClick={handleClose} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">Accedi</Link>
+            <Link to="/signup" onClick={handleClose} className="px-8 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors">Registrati</Link>
         </div>
       </div>
     )
@@ -951,6 +1085,33 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
   return (
     <>
+      <AnimatePresence>
+        {hasSessionExpired && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4"
+          >
+            <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800 relative text-center max-w-sm">
+              <h2 className="text-2xl font-bold text-white mb-4">Session Expired</h2>
+              <p className="text-gray-300 mb-6">Your session has expired, but don't worry, your progress has been saved. Please log in again to continue with your booking.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setHasSessionExpired(false);
+                  // Do not clear storage, so the user can resume after logging in.
+                  onClose();
+                  navigate('/signin');
+                }}
+                className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors"
+              >
+                Go to Login
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <AnimatePresence>
           {isCameraOpen && (
               <motion.div
@@ -1017,7 +1178,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
               >
                 <button
                     type="button"
-                    onClick={onClose}
+                    onClick={handleClose}
                     className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
                     aria-label="Close"
                 >
