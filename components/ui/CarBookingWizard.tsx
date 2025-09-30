@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useCurrency } from '../../contexts/CurrencyContext';
@@ -122,6 +122,21 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify(dataToSave));
   }, [formData, WIZARD_STORAGE_KEY]);
 
+  const [hasSessionExpired, setHasSessionExpired] = useState(false);
+
+  const handleSessionExpired = useCallback(() => {
+    setHasSessionExpired(true);
+  }, []);
+
+  const checkSession = useCallback(async (): Promise<boolean> => {
+    const active = await isSessionActive();
+    if (!active) {
+      handleSessionExpired();
+      return false;
+    }
+    return true;
+  }, [isSessionActive, handleSessionExpired]);
+
   useEffect(() => {
     // Wait for the initial authentication to complete.
     if (authLoading) {
@@ -160,25 +175,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isFirstCarBooking, setIsFirstCarBooking] = useState(true);
-  const [hasSessionExpired, setHasSessionExpired] = useState(false);
 
   const handleClose = () => {
     sessionStorage.removeItem(WIZARD_STORAGE_KEY);
     onClose();
   };
-
-  const handleSessionExpired = useCallback(() => {
-    setHasSessionExpired(true);
-  }, []);
-
-  const checkSession = useCallback(async (): Promise<boolean> => {
-    const active = await isSessionActive();
-    if (!active) {
-      handleSessionExpired();
-      return false;
-    }
-    return true;
-  }, [isSessionActive, handleSessionExpired]);
 
   const getValidPickupTimes = (date: string): string[] => {
       const dayOfWeek = new Date(date).getDay();
