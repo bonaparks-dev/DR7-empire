@@ -7,18 +7,6 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode, role?: 'personal' | 
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  const hasBookingInProgress = () => {
-    if (location.pathname.startsWith('/book/')) {
-        for (let i = 0; i < sessionStorage.length; i++) {
-            const key = sessionStorage.key(i);
-            if (key && key.startsWith('carBookingWizard-')) {
-                return true;
-            }
-        }
-    }
-    return false;
-  };
-
   if (loading) {
     return (
         <div className="min-h-screen flex items-center justify-center pt-24 pb-12 px-4 sm:px-6 lg:px-8 text-white">
@@ -32,9 +20,6 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode, role?: 'personal' | 
   }
 
   if (!user) {
-    if (hasBookingInProgress()) {
-      return <>{children}</>;
-    }
     return <Navigate to="/signin" state={{ from: location }} replace />;
   }
 
