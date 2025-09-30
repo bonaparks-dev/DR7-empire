@@ -563,6 +563,19 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       setIsProcessing(false);
       return;
     }
+
+    if (data) {
+      try {
+        await fetch('/.netlify/functions/send-booking-confirmation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ booking: data }),
+        });
+      } catch (emailError) {
+        console.error('Failed to send confirmation email:', emailError);
+      }
+    }
+
     onBookingComplete(data);
     setIsProcessing(false);
   };

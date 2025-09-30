@@ -8,6 +8,7 @@ import { supabase } from '../supabaseClient';
 import { RENTAL_CATEGORIES, YACHT_PICKUP_MARINAS, AIRPORTS, HELI_DEPARTURE_POINTS, HELI_ARRIVAL_POINTS } from '../constants';
 import type { Booking, Inquiry, RentalItem } from '../types';
 import CarBookingWizard from '../components/ui/CarBookingWizard';
+import BookingConfirmation from '../components/ui/BookingConfirmation';
 
 import { CreditCardIcon, XIcon } from '../components/icons/Icons';
 
@@ -248,18 +249,7 @@ const BookingPage: React.FC = () => {
                 <button type="button" onClick={() => navigate('/')} className="mt-8 bg-white text-black px-6 py-2 rounded-full font-semibold text-sm hover:bg-gray-200 transition-colors">Go to Home</button>
             </div>
         );
-        return (
-            <div className="text-center p-8 bg-gray-900/50 rounded-lg border border-gray-800">
-                <motion.div initial={{scale:0}} animate={{scale:1}} transition={{type: 'spring', stiffness: 260, damping: 20}} className="w-24 h-24 bg-green-500/20 text-green-300 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                </motion.div>
-                <h2 className="text-4xl font-bold text-white mb-3">✅ PRENOTAZIONE CONFERMATA!</h2>
-                <p className="text-gray-300 max-w-lg mx-auto">Grazie per aver prenotato con DR7. Riceverai a breve un'email di conferma con tutti i dettagli della tua prenotazione.</p>
-                <button type="button" onClick={() => navigate('/')} className="mt-10 bg-white text-black px-8 py-3 rounded-full font-bold hover:bg-gray-200 transition-colors text-lg">
-                    Torna alla Home
-                </button>
-            </div>
-        );
+        return <BookingConfirmation booking={completedBooking as Booking} />;
     }
 
     if (isCar) {
