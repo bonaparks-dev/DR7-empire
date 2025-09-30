@@ -29,6 +29,44 @@ function isKaskoEligibleByBuckets(
   return { eligible: ageMin >= 30 && licenseYears >= 10, reasonKey: (ageMin >= 30 && licenseYears >= 10) ? undefined : 'SIGNATURE_REQ' };
 }
 
+const calculateAgeFromDDMMYYYY = (dateString: string): number => {
+    if (!/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateString)) return 0;
+
+    const parts = dateString.split('/');
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // JS months are 0-indexed
+    const year = parseInt(parts[2], 10);
+
+    if (isNaN(day) || isNaN(month) || isNaN(year)) return 0;
+
+    const birthDate = new Date(year, month, day);
+    if (birthDate.getFullYear() !== year || birthDate.getMonth() !== month || birthDate.getDate() !== day) {
+      return 0;
+    }
+
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    return age < 0 ? 0 : age;
+};
+
+const calculateYearsSince = (dateString: string): number => {
+    if (!dateString) return 0;
+    const sinceDate = new Date(dateString);
+    if (isNaN(sinceDate.getTime())) return 0;
+
+    const today = new Date();
+    let years = today.getFullYear() - sinceDate.getFullYear();
+    const m = today.getMonth() - sinceDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < sinceDate.getDate())) {
+        years--;
+    }
+    return years < 0 ? 0 : years;
+};
+
 interface CarBookingWizardProps {
   item: RentalItem;
   onBookingComplete: (booking: Booking) => void;
@@ -203,8 +241,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       return acc + (extra?.pricePerDay[currency] || 0) * billingDays;
     }, 0);
 
-    const calculatedDriverAge = formData.birthDate ? new Date().getFullYear() - new Date(formData.birthDate).getFullYear() : 0;
-    const calculatedLicenseYears = formData.licenseIssueDate ? new Date().getFullYear() - new Date(formData.licenseIssueDate).getFullYear() : 0;
+    const calculatedDriverAge = calculateAgeFromDDMMYYYY(formData.birthDate);
+    const calculatedLicenseYears = calculateYearsSince(formData.licenseIssueDate);
 
     const calculatedYoungDriverFee = calculatedDriverAge > 0 && calculatedDriverAge < 25 ? 10 * billingDays : 0;
     const calculatedRecentLicenseFee = calculatedLicenseYears >= 2 && calculatedLicenseYears < 3 ? 20 * billingDays : 0;
