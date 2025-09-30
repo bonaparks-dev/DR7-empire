@@ -6,6 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../supabaseClient';
 import { RENTAL_CATEGORIES, PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, COUNTRIES, INSURANCE_ELIGIBILITY, VALIDATION_MESSAGES, YACHT_PICKUP_MARINAS, AIRPORTS, HELI_DEPARTURE_POINTS, HELI_ARRIVAL_POINTS, CRYPTO_ADDRESSES, AGE_BUCKETS, LICENSE_OBTENTION_YEAR_OPTIONS } from '../../constants';
 import type { Booking, Inquiry, RentalItem } from '../../types';
+import { Link } from 'react-router-dom';
 import { CameraIcon, CreditCardIcon, XIcon } from '../icons/Icons';
 import DocumentUploader from './DocumentUploader';
 
@@ -63,6 +64,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       licenseImage: null as File | null,
       idImage: null as File | null,
       isSardinianResident: false,
+      confirmsInformation: false,
 
       addSecondDriver: false,
       secondDriver: {
@@ -85,7 +87,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       paymentMethod: 'stripe',
       agreesToTerms: false,
       agreesToPrivacy: false,
-      confirmsInformation: false,
       confirmsDocuments: false,
   });
 
@@ -166,11 +167,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       const returnMinutes = String(tempDate.getMinutes()).padStart(2, '0');
 
       const newReturnTime = `${returnHours}:${returnMinutes}`;
-      if (newReturnTime !== formData.returnTime) {
-        setFormData(prev => ({ ...prev, returnTime: newReturnTime }));
-      }
+      setFormData(prev => ({ ...prev, returnTime: newReturnTime }));
     }
-  }, [formData.pickupTime, formData.returnTime]);
+  }, [formData.pickupTime]);
 
   const {
     duration, rentalCost, insuranceCost, extrasCost, subtotal, taxes, total, includedKm,
@@ -238,9 +237,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     const validTimes = getValidPickupTimes(formData.pickupDate);
     if (validTimes.length > 0 && !validTimes.includes(formData.pickupTime)) {
       setFormData(prev => ({ ...prev, pickupTime: validTimes[0] }));
-    } else if (validTimes.length === 0) {
-      // Handle case where the selected date has no valid times (e.g., Sunday)
-      // Maybe show an error or select the next valid day
+    } else if (validTimes.length === 0 && formData.pickupTime) {
+      setFormData(prev => ({ ...prev, pickupTime: '' }));
     }
   }, [formData.pickupDate]);
 
@@ -402,18 +400,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   };
 
   const validateStep = () => {
+    const newErrors: Record<string, string> = {};
     if (step === 1) {
-      const newErrors: Record<string, string> = {};
-      // Step 1 validation
       if (!formData.pickupDate || !formData.returnDate) newErrors.date = "Seleziona le date.";
       if (new Date(formData.pickupDate) >= new Date(formData.returnDate)) newErrors.date = "La data di riconsegna deve essere successiva a quella di ritiro.";
       if (new Date(formData.pickupDate).getDay() === 0) newErrors.pickupDate = "Le prenotazioni non sono disponibili la domenica.";
-
-      setErrors(newErrors);
-      return Object.keys(newErrors).length === 0;
     }
     if (step === 2) {
-      const newErrors: Record<string, string> = {};
       if (!formData.firstName) newErrors.firstName = "Il nome è obbligatorio.";
       if (!formData.lastName) newErrors.lastName = "Il cognome è obbligatorio.";
       if (!formData.email) newErrors.email = "L'email è obbligatoria.";
@@ -423,30 +416,33 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       if (!formData.licenseIssueDate) newErrors.licenseIssueDate = "La data di rilascio della patente è obbligatoria.";
       if (!formData.licenseImage) newErrors.licenseImage = "La foto della patente è obbligatoria.";
       if (!formData.idImage) newErrors.idImage = "La foto del documento d'identità è obbligatoria.";
-
+      if (!formData.confirmsInformation) newErrors.confirmsInformation = "Devi confermare che le informazioni sono corrette.";
       if(licenseYears < 2) newErrors.licenseIssueDate = "È richiesta una patente con almeno 2 anni di anzianità.";
 
       if (formData.addSecondDriver) {
           if (!formData.secondDriver.firstName) newErrors['secondDriver.firstName'] = "Il nome del secondo guidatore è obbligatorio.";
           if (!formData.secondDriver.lastName) newErrors['secondDriver.lastName'] = "Il cognome del secondo guidatore è obbligatorio.";
       }
-      setErrors(newErrors);
-      return Object.keys(newErrors).length === 0;
     }
-    return true;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleNext = () => validateStep() && setStep(s => s + 1);
   const handleBack = () => setStep(s => s - 1);
 
   const finalizeBooking = async () => {
+    if (!user) {
+        setErrors(prev => ({...prev, form: "You must be logged in to book."}));
+        return;
+    }
     let licenseImageUrl = '';
     if (formData.licenseImage) {
         try {
             const response = await fetch(formData.licenseImage);
             const blob = await response.blob();
             const fileExtension = blob.type.split('/')[1];
-            const fileName = `${user?.id || 'guest'}_${Date.now()}.${fileExtension}`;
+            const fileName = `${user.id}_${Date.now()}.${fileExtension}`;
             const filePath = `public/${fileName}`;
             const { data, error } = await supabase.storage.from('driver-licenses').upload(filePath, blob, { contentType: blob.type });
             if (error) throw error;
@@ -462,7 +458,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     }
 
     const bookingData: Omit<Booking, 'bookingId'> = {
-        userId: user ? user.id : 'guest-user',
+        userId: user.id,
         itemId: item.id,
         itemName: item.name,
         image: item.image,
@@ -543,10 +539,28 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
                     <div>
                         <h3 className="text-lg font-semibold text-white mb-2">DATE AND TIME SELECTION</h3>
                         <div className="grid grid-cols-2 gap-4">
-                            <div><label className="text-sm text-gray-400">Data di ritiro *</label><input type="date" name="pickupDate" value={formData.pickupDate} onChange={handleChange} min={today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
-                            <div><label className="text-sm text-gray-400">Ora di ritiro *</label><input type="time" name="pickupTime" value={formData.pickupTime} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
-                            <div><label className="text-sm text-gray-400">Data di riconsegna *</label><input type="date" name="returnDate" value={formData.returnDate} onChange={handleChange} min={formData.pickupDate || today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
-                            <div><label className="text-sm text-gray-400">Ora di riconsegna *</label><input type="time" name="returnTime" value={formData.returnTime} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
+                            <div>
+                                <label className="text-sm text-gray-400">Data di ritiro *</label>
+                                <input type="date" name="pickupDate" value={formData.pickupDate} onChange={handleChange} min={today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>
+                            </div>
+                            <div>
+                                <label className="text-sm text-gray-400">Ora di ritiro *</label>
+                                <select name="pickupTime" value={formData.pickupTime} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2.5 mt-1 text-white">
+                                    {getValidPickupTimes(formData.pickupDate).length > 0 ? (
+                                        getValidPickupTimes(formData.pickupDate).map(time => <option key={time} value={time}>{time}</option>)
+                                    ) : (
+                                        <option value="" disabled>Seleziona un giorno feriale</option>
+                                    )}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-sm text-gray-400">Data di riconsegna *</label>
+                                <input type="date" name="returnDate" value={formData.returnDate} onChange={handleChange} min={formData.pickupDate || today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>
+                            </div>
+                            <div>
+                                <label className="text-sm text-gray-400">Ora di riconsegna *</label>
+                                <input type="time" name="returnTime" value={formData.returnTime} readOnly className="w-full bg-gray-700 border-gray-700 rounded-md p-2 mt-1 text-white cursor-not-allowed"/>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -561,7 +575,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
                         <div><label className="text-sm text-gray-400">Cognome *</label><input type="text" name={`${namePrefix}lastName`} value={driverData.lastName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${namePrefix}lastName`] && <p className="text-xs text-red-400 mt-1">{errors[`${namePrefix}lastName`]}</p>}</div>
                         <div><label className="text-sm text-gray-400">Email *</label><input type="email" name={`${namePrefix}email`} value={driverData.email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${namePrefix}email`] && <p className="text-xs text-red-400 mt-1">{errors[`${namePrefix}email`]}</p>}</div>
                         <div><label className="text-sm text-gray-400">Telefono *</label><input type="tel" name={`${namePrefix}phone`} value={driverData.phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${namePrefix}phone`] && <p className="text-xs text-red-400 mt-1">{errors[`${namePrefix}phone`]}</p>}</div>
-                        <div><label className="text-sm text-gray-400">Data di nascita *</label><input type="date" name={`${namePrefix}birthDate`} value={driverData.birthDate} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${namePrefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${namePrefix}birthDate`]}</p>}</div>
+                        <div><label className="text-sm text-gray-400">Data di nascita *</label><input type="text" name={`${namePrefix}birthDate`} value={driverData.birthDate} onChange={handleChange} placeholder="DD/MM/YYYY" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${namePrefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${namePrefix}birthDate`]}</p>}</div>
                         <div><label className="text-sm text-gray-400">Numero patente *</label><input type="text" name={`${namePrefix}licenseNumber`} value={driverData.licenseNumber} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${namePrefix}licenseNumber`] && <p className="text-xs text-red-400 mt-1">{errors[`${namePrefix}licenseNumber`]}</p>}</div>
                         <div><label className="text-sm text-gray-400">Data rilascio patente *</label><input type="date" name={`${namePrefix}licenseIssueDate`} value={driverData.licenseIssueDate} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${namePrefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${namePrefix}licenseIssueDate`]}</p>}</div>
                     </div>
@@ -648,6 +662,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
                             <input type="checkbox" name="confirmsInformation" checked={formData.confirmsInformation} onChange={handleChange} id="confirms-information" className="h-4 w-4 mt-1 text-white bg-gray-700 border-gray-600 rounded focus:ring-white"/>
                             <label htmlFor="confirms-information" className="ml-2 text-white">Dichiaro che i dati inseriti sono veritieri e conformi ai requisiti richiesti.</label>
                         </div>
+                        {errors.confirmsInformation && <p className="text-xs text-red-400 mt-1">{errors.confirmsInformation}</p>}
                     </section>
                 </div>
             );
@@ -856,6 +871,27 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     }
   };
 
+  if (!user) {
+    return (
+      <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800 relative text-center">
+        <button
+            type="button"
+            onClick={onClose}
+            className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
+            aria-label="Close"
+        >
+            <XIcon className="w-6 h-6" />
+        </button>
+        <h2 className="text-2xl font-bold text-white mb-4">Accesso Richiesto</h2>
+        <p className="text-gray-300 mb-6">Devi effettuare l'accesso o registrarti per poter completare una prenotazione.</p>
+        <div className="flex justify-center space-x-4">
+            <Link to="/signin" onClick={onClose} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">Accedi</Link>
+            <Link to="/signup" onClick={onClose} className="px-8 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors">Registrati</Link>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <>
       <AnimatePresence>
@@ -936,7 +972,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
             <div className="flex justify-between mt-8">
                 <button type="button" onClick={handleBack} disabled={step === 1} className="px-8 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('Back')}</button>
                 {step < steps.length ?
-                    <button type="button" onClick={handleNext} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors" disabled={licenseYears < 2 && step === 2}>Continua</button> :
+                    <button type="button" onClick={handleNext} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors" disabled={(licenseYears < 2 && step === 2) || (step === 2 && !formData.confirmsInformation)}>Continua</button> :
                     <button type="submit" disabled={isProcessing || !formData.agreesToTerms || !formData.agreesToPrivacy || !formData.confirmsInformation || !formData.confirmsDocuments || (licenseYears < 2)} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed">
                         {isProcessing ? 'Processing...' : '✓ CONFERMA PRENOTAZIONE'}
                     </button>}
