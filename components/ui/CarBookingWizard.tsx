@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useCurrency } from '../../contexts/CurrencyContext';
@@ -6,7 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../supabaseClient';
 import { RENTAL_CATEGORIES, PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, COUNTRIES, INSURANCE_ELIGIBILITY, VALIDATION_MESSAGES, YACHT_PICKUP_MARINAS, AIRPORTS, HELI_DEPARTURE_POINTS, HELI_ARRIVAL_POINTS, CRYPTO_ADDRESSES, AGE_BUCKETS, LICENSE_OBTENTION_YEAR_OPTIONS } from '../../constants';
 import type { Booking, Inquiry, RentalItem } from '../../types';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { CameraIcon, CreditCardIcon, XIcon } from '../icons/Icons';
 import DocumentUploader from './DocumentUploader';
 
@@ -36,28 +36,27 @@ interface CarBookingWizardProps {
 }
 
 const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComplete, onClose }) => {
-  const navigate = useNavigate();
   const { t, lang, getTranslated } = useTranslation();
   const { currency } = useCurrency();
-  const { user, loading: authLoading, isSessionActive } = useAuth();
-  const WIZARD_STORAGE_KEY = `carBookingWizard-${item.id}`;
+  const { user, loading: authLoading } = useAuth();
 
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const today = new Date().toISOString().split('T')[0];
 
-  const [formData, setFormData] = useState(() => {
-    const savedData = sessionStorage.getItem(WIZARD_STORAGE_KEY);
-    const initialData = {
-      pickupLocation: PICKUP_LOCATIONS?.[0]?.id || '',
-      returnLocation: PICKUP_LOCATIONS?.[0]?.id || '',
+  const [formData, setFormData] = useState({
+      // Step 1
+      pickupLocation: PICKUP_LOCATIONS[0].id,
+      returnLocation: PICKUP_LOCATIONS[0].id,
       pickupDate: today,
       pickupTime: '10:30',
       returnDate: '',
       returnTime: '09:00',
+
+      // Step 2
       firstName: '',
       lastName: '',
-      email: user?.email || '',
+      email: '',
       phone: '',
       birthDate: '',
       licenseNumber: '',
@@ -66,6 +65,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       idImage: null as File | null,
       isSardinianResident: false,
       confirmsInformation: false,
+
       addSecondDriver: false,
       secondDriver: {
           firstName: '',
@@ -79,80 +79,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
           idImage: null as File | null,
       },
 
-
       // Step 3
-
       insuranceOption: 'KASKO_BASE',
-main
       extras: [] as string[],
+
+      // Step 4
       paymentMethod: 'stripe',
       agreesToTerms: false,
       agreesToPrivacy: false,
       confirmsDocuments: false,
-    };
-
-    if (savedData) {
-        try {
-            const parsed = JSON.parse(savedData);
-            return {
-                ...initialData,
-                ...parsed,
-                licenseImage: null,
-                idImage: null,
-                secondDriver: {
-                    ...initialData.secondDriver,
-                    ...(parsed.secondDriver || {}),
-                    licenseImage: null,
-                    idImage: null,
-                },
-            };
-        } catch (e) {
-            console.error("Could not restore booking form data:", e);
-        }
-    }
-    return initialData;
   });
-
-  const [insuranceOption, setInsuranceOption] = useState('KASKO_BASE');
-
-
-  useEffect(() => {
-    const dataToSave = {
-      ...formData,
-      licenseImage: null,
-      idImage: null,
-      secondDriver: {
-        ...formData.secondDriver,
-        licenseImage: null,
-        idImage: null,
-      },
-    };
-    sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify(dataToSave));
-  }, [formData, WIZARD_STORAGE_KEY]);
-
-  useEffect(() => {
-    // Wait for the initial authentication to complete.
-    if (authLoading) {
-      return;
-    }
-
-    // If there's no user but there's saved data, it means the session has expired.
-    const savedData = sessionStorage.getItem(WIZARD_STORAGE_KEY);
-    if (!user && savedData) {
-      handleSessionExpired();
-      return;
-    }
-
-    // Set up an interval to check the session periodically only if the user is logged in.
-    if (user) {
-      const interval = setInterval(() => {
-        checkSession();
-      }, 30000); // Check every 30 seconds
-
-      return () => clearInterval(interval);
-    }
-  }, [user, authLoading, checkSession, handleSessionExpired, WIZARD_STORAGE_KEY]);
-
 
   const [insuranceError, setInsuranceError] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -169,25 +105,6 @@ main
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isFirstCarBooking, setIsFirstCarBooking] = useState(true);
-  const [hasSessionExpired, setHasSessionExpired] = useState(false);
-
-  const handleClose = () => {
-    sessionStorage.removeItem(WIZARD_STORAGE_KEY);
-    onClose();
-  };
-
-  const handleSessionExpired = useCallback(() => {
-    setHasSessionExpired(true);
-  }, []);
-
-  const checkSession = useCallback(async (): Promise<boolean> => {
-    const active = await isSessionActive();
-    if (!active) {
-      handleSessionExpired();
-      return false;
-    }
-    return true;
-  }, [isSessionActive, handleSessionExpired]);
 
   const getValidPickupTimes = (date: string): string[] => {
       const dayOfWeek = new Date(date).getDay();
@@ -254,16 +171,6 @@ main
     }
   }, [formData.pickupTime]);
 
-  const parseDateString = (dateString: string): Date | null => {
-    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) return null;
-    const [day, month, year] = dateString.split('/').map(Number);
-    const date = new Date(year, month - 1, day);
-    if (date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
-        return date;
-    }
-    return null;
-  };
-
   const {
     duration, rentalCost, insuranceCost, extrasCost, subtotal, taxes, total, includedKm,
     driverAge, licenseYears, youngDriverFee, recentLicenseFee, secondDriverFee
@@ -289,37 +196,15 @@ main
     }
 
     const calculatedRentalCost = billingDays * pricePerDay;
-    const selectedInsurance = INSURANCE_OPTIONS.find(opt => opt.id === insuranceOption);
+    const selectedInsurance = INSURANCE_OPTIONS.find(opt => opt.id === formData.insuranceOption);
     const calculatedInsuranceCost = (selectedInsurance?.pricePerDay[currency] || 0) * billingDays;
     const calculatedExtrasCost = formData.extras.reduce((acc, extraId) => {
       const extra = RENTAL_EXTRAS.find(e => e.id === extraId);
       return acc + (extra?.pricePerDay[currency] || 0) * billingDays;
     }, 0);
 
-    const birthDateObj = parseDateString(formData.birthDate);
-    const licenseDateObj = parseDateString(formData.licenseIssueDate);
-
-    let calculatedDriverAge = 0;
-    if (birthDateObj) {
-        const today = new Date();
-        let age = today.getFullYear() - birthDateObj.getFullYear();
-        const m = today.getMonth() - birthDateObj.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birthDateObj.getDate())) {
-            age--;
-        }
-        calculatedDriverAge = age;
-    }
-
-    let calculatedLicenseYears = 0;
-    if (licenseDateObj) {
-        const today = new Date();
-        let years = today.getFullYear() - licenseDateObj.getFullYear();
-        const m = today.getMonth() - licenseDateObj.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < licenseDateObj.getDate())) {
-            years--;
-        }
-        calculatedLicenseYears = years;
-    }
+    const calculatedDriverAge = formData.birthDate ? new Date().getFullYear() - new Date(formData.birthDate).getFullYear() : 0;
+    const calculatedLicenseYears = formData.licenseIssueDate ? new Date().getFullYear() - new Date(formData.licenseIssueDate).getFullYear() : 0;
 
     const calculatedYoungDriverFee = calculatedDriverAge > 0 && calculatedDriverAge < 25 ? 10 * billingDays : 0;
     const calculatedRecentLicenseFee = calculatedLicenseYears >= 2 && calculatedLicenseYears < 3 ? 20 * billingDays : 0;
@@ -346,19 +231,7 @@ main
         recentLicenseFee: calculatedRecentLicenseFee,
         secondDriverFee: calculatedSecondDriverFee
     };
-  }, [
-    formData.pickupDate,
-    formData.returnDate,
-    formData.pickupTime,
-    formData.returnTime,
-    formData.birthDate,
-    formData.licenseIssueDate,
-    formData.addSecondDriver,
-    formData.extras,
-    insuranceOption,
-    item,
-    currency,
-]);
+  }, [formData, item, currency]);
 
   useEffect(() => {
     const validTimes = getValidPickupTimes(formData.pickupDate);
@@ -390,6 +263,8 @@ main
     return () => { if (card) { card.destroy(); setCardElement(null); } };
   }, [stripe, step, formData.paymentMethod, clientSecret]);
 
+  useEffect(() => { if (user) { setFormData(prev => ({ ...prev, email: user.email || '' })); } }, [user]);
+
   useEffect(() => {
     if (!user) {
       setIsFirstCarBooking(false);
@@ -409,7 +284,7 @@ main
 
   useEffect(() => {
     if (licenseYears === undefined) {
-      setInsuranceOption('KASKO_BASE');
+      setFormData(prev => ({ ...prev, insuranceOption: 'KASKO_BASE' }));
       setInsuranceError('');
       return;
     }
@@ -437,7 +312,7 @@ main
       }
     }
 
-    setInsuranceOption(bestOption);
+    setFormData(prev => ({ ...prev, insuranceOption: bestOption }));
     setInsuranceError(eligibilityErrorKey ? t(eligibilityErrorKey) : '');
 
   }, [driverAge, licenseYears, t]);
@@ -526,24 +401,6 @@ main
 
   const validateStep = () => {
     const newErrors: Record<string, string> = {};
-    const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/;
-
-    const validateDate = (date: string, fieldName: string) => {
-      if (!date) {
-        newErrors[fieldName] = "La data è obbligatoria.";
-        return;
-      }
-      if (!dateRegex.test(date)) {
-        newErrors[fieldName] = "Il formato deve essere DD/MM/YYYY con un anno di 4 cifre.";
-        return;
-      }
-      const [day, month, year] = date.split('/').map(Number);
-      const d = new Date(year, month - 1, day);
-      if (!(d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day)) {
-        newErrors[fieldName] = "La data inserita non è valida.";
-      }
-    };
-
     if (step === 1) {
       if (!formData.pickupDate || !formData.returnDate) newErrors.date = "Seleziona le date.";
       if (new Date(formData.pickupDate) >= new Date(formData.returnDate)) newErrors.date = "La data di riconsegna deve essere successiva a quella di ritiro.";
@@ -554,11 +411,9 @@ main
       if (!formData.lastName) newErrors.lastName = "Il cognome è obbligatorio.";
       if (!formData.email) newErrors.email = "L'email è obbligatoria.";
       if (!formData.phone) newErrors.phone = "Il telefono è obbligatorio.";
-
-      validateDate(formData.birthDate, 'birthDate');
-      validateDate(formData.licenseIssueDate, 'licenseIssueDate');
-
+      if (!formData.birthDate) newErrors.birthDate = "La data di nascita è obbligatoria.";
       if (!formData.licenseNumber) newErrors.licenseNumber = "Il numero di patente è obbligatorio.";
+      if (!formData.licenseIssueDate) newErrors.licenseIssueDate = "La data di rilascio della patente è obbligatoria.";
       if (!formData.licenseImage) newErrors.licenseImage = "La foto della patente è obbligatoria.";
       if (!formData.idImage) newErrors.idImage = "La foto del documento d'identità è obbligatoria.";
       if (!formData.confirmsInformation) newErrors.confirmsInformation = "Devi confermare che le informazioni sono corrette.";
@@ -573,16 +428,10 @@ main
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNext = async () => {
-    if (!(await checkSession())) return;
-    if (validateStep()) {
-      setStep(s => s + 1);
-    }
-  };
+  const handleNext = () => validateStep() && setStep(s => s + 1);
   const handleBack = () => setStep(s => s - 1);
 
   const finalizeBooking = async () => {
-    if (!(await checkSession())) return;
     if (!user) {
         setErrors(prev => ({...prev, form: "You must be logged in to book."}));
         return;
@@ -632,7 +481,7 @@ main
         driverLicenseImage: licenseImageUrl,
         extras: formData.extras,
         pickupLocation: formData.pickupLocation,
-        insuranceOption: insuranceOption,
+        insuranceOption: formData.insuranceOption,
     };
 
     const { data, error } = await supabase.from('bookings').insert(bookingData).select().single();
@@ -643,43 +492,16 @@ main
         return;
     }
     onBookingComplete(data);
-    sessionStorage.removeItem(WIZARD_STORAGE_KEY);
     setIsProcessing(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!(await checkSession())) return;
-    if (!validateStep() || !item) {
-      return;
-    }
-    setIsProcessing(true);
+    e.preventDefault(); if (!validateStep() || !item) return; setIsProcessing(true);
     if (formData.paymentMethod === 'stripe' && step === 4) {
-      setStripeError(null);
-      if (!stripe || !cardElement || !clientSecret) {
-        setStripeError("Payment system is not ready.");
-        setIsProcessing(false);
-        return;
-      }
-      const { error } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: cardElement,
-          billing_details: {
-            name: `${formData.firstName} ${formData.lastName}`,
-            email: formData.email,
-            phone: formData.phone,
-          },
-        },
-      });
-      if (error) {
-        setStripeError(error.message || "An unexpected error occurred.");
-        setIsProcessing(false);
-      } else {
-        await finalizeBooking();
-      }
-    } else {
-      await finalizeBooking();
-    }
+      setStripeError(null); if (!stripe || !cardElement || !clientSecret) { setStripeError("Payment system is not ready."); setIsProcessing(false); return; }
+      const { error } = await stripe.confirmCardPayment(clientSecret, { payment_method: { card: cardElement, billing_details: { name: `${formData.firstName} ${formData.lastName}`, email: formData.email, phone: formData.phone } }, });
+      if (error) { setStripeError(error.message || "An unexpected error occurred."); setIsProcessing(false); } else { await finalizeBooking(); }
+    } else { await finalizeBooking(); }
   };
 
   const steps = [
@@ -690,7 +512,7 @@ main
   ];
 
   const renderStepContent = () => {
-    const assignedInsurance = INSURANCE_OPTIONS.find(opt => opt.id === insuranceOption);
+    const assignedInsurance = INSURANCE_OPTIONS.find(opt => opt.id === formData.insuranceOption);
     switch (step) {
         case 1:
             return (
@@ -758,9 +580,9 @@ main
                         <div><label className="text-sm text-gray-400">Cognome *</label><input type="text" name={`${namePrefix}lastName`} value={driverData.lastName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${namePrefix}lastName`] && <p className="text-xs text-red-400 mt-1">{errors[`${namePrefix}lastName`]}</p>}</div>
                         <div><label className="text-sm text-gray-400">Email *</label><input type="email" name={`${namePrefix}email`} value={driverData.email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${namePrefix}email`] && <p className="text-xs text-red-400 mt-1">{errors[`${namePrefix}email`]}</p>}</div>
                         <div><label className="text-sm text-gray-400">Telefono *</label><input type="tel" name={`${namePrefix}phone`} value={driverData.phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${namePrefix}phone`] && <p className="text-xs text-red-400 mt-1">{errors[`${namePrefix}phone`]}</p>}</div>
-                        <div><label className="text-sm text-gray-400">Data di nascita *</label><input type="text" name={`${namePrefix}birthDate`} value={driverData.birthDate} onChange={handleChange} placeholder="DD/MM/YYYY" maxLength={10} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${namePrefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${namePrefix}birthDate`]}</p>}</div>
+                        <div><label className="text-sm text-gray-400">Data di nascita *</label><input type="text" name={`${namePrefix}birthDate`} value={driverData.birthDate} onChange={handleChange} placeholder="DD/MM/YYYY" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${namePrefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${namePrefix}birthDate`]}</p>}</div>
                         <div><label className="text-sm text-gray-400">Numero patente *</label><input type="text" name={`${namePrefix}licenseNumber`} value={driverData.licenseNumber} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${namePrefix}licenseNumber`] && <p className="text-xs text-red-400 mt-1">{errors[`${namePrefix}licenseNumber`]}</p>}</div>
-                        <div><label className="text-sm text-gray-400">Data rilascio patente *</label><input type="text" name={`${namePrefix}licenseIssueDate`} value={driverData.licenseIssueDate} onChange={handleChange} placeholder="DD/MM/YYYY" maxLength={10} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${namePrefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${namePrefix}licenseIssueDate`]}</p>}</div>
+                        <div><label className="text-sm text-gray-400">Data rilascio patente *</label><input type="date" name={`${namePrefix}licenseIssueDate`} value={driverData.licenseIssueDate} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${namePrefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${namePrefix}licenseIssueDate`]}</p>}</div>
                     </div>
                 );
             };
@@ -869,9 +691,9 @@ main
                         <h3 className="text-lg font-bold text-white mb-4">A. KASKO INSURANCE</h3>
                         <div className="space-y-4">
                             {kaskoOptions.map(opt => (
-                                <div key={opt.id} className={`relative group p-4 rounded-md border ${insuranceOption === opt.id ? 'border-white' : 'border-gray-700'} ${!opt.eligible ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`} onClick={() => opt.eligible && setInsuranceOption(opt.id as KaskoTier)}>
+                                <div key={opt.id} className={`relative group p-4 rounded-md border ${formData.insuranceOption === opt.id ? 'border-white' : 'border-gray-700'} ${!opt.eligible ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`} onClick={() => opt.eligible && setFormData(p => ({...p, insuranceOption: opt.id}))}>
                                     <div className="flex items-center">
-                                        <input type="radio" name="insuranceOption" value={opt.id} checked={insuranceOption === opt.id} disabled={!opt.eligible} className="w-4 h-4 text-white"/>
+                                        <input type="radio" name="insuranceOption" value={opt.id} checked={formData.insuranceOption === opt.id} disabled={!opt.eligible} className="w-4 h-4 text-white"/>
                                         <label className="ml-3 text-white font-semibold">{getTranslated(opt.label)}</label>
                                         {opt.pricePerDay.eur > 0 && <span className="ml-auto text-white">+€{opt.pricePerDay.eur}/giorno</span>}
                                     </div>
@@ -1000,7 +822,7 @@ main
                             <div>
                                 <p className="font-bold text-base text-white mb-2">ASSICURAZIONE E SERVIZI</p>
                                 <hr className="border-gray-600 mb-2"/>
-                                <p>Assicurazione: {getTranslated(INSURANCE_OPTIONS.find(i => i.id === insuranceOption)?.label)}</p>
+                                <p>Assicurazione: {getTranslated(INSURANCE_OPTIONS.find(i => i.id === formData.insuranceOption)?.label)}</p>
                                 <p>✓ Lavaggio completo obbligatorio</p>
                                 {formData.addSecondDriver && <p>✓ Secondo guidatore</p>}
                             </div>
@@ -1062,12 +884,12 @@ main
     )
   }
 
-  if (!user && !hasSessionExpired) {
+  if (!user) {
     return (
       <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800 relative text-center">
         <button
             type="button"
-            onClick={handleClose}
+            onClick={onClose}
             className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
             aria-label="Close"
         >
@@ -1076,8 +898,8 @@ main
         <h2 className="text-2xl font-bold text-white mb-4">Accesso Richiesto</h2>
         <p className="text-gray-300 mb-6">Devi effettuare l'accesso o registrarti per poter completare una prenotazione.</p>
         <div className="flex justify-center space-x-4">
-            <Link to="/signin" onClick={handleClose} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">Accedi</Link>
-            <Link to="/signup" onClick={handleClose} className="px-8 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors">Registrati</Link>
+            <Link to="/signin" onClick={onClose} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">Accedi</Link>
+            <Link to="/signup" onClick={onClose} className="px-8 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors">Registrati</Link>
         </div>
       </div>
     )
@@ -1085,33 +907,6 @@ main
 
   return (
     <>
-      <AnimatePresence>
-        {hasSessionExpired && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4"
-          >
-            <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800 relative text-center max-w-sm">
-              <h2 className="text-2xl font-bold text-white mb-4">Session Expired</h2>
-              <p className="text-gray-300 mb-6">Your session has expired, but don't worry, your progress has been saved. Please log in again to continue with your booking.</p>
-              <button
-                type="button"
-                onClick={() => {
-                  setHasSessionExpired(false);
-                  // Do not clear storage, so the user can resume after logging in.
-                  onClose();
-                  navigate('/signin');
-                }}
-                className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors"
-              >
-                Go to Login
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
       <AnimatePresence>
           {isCameraOpen && (
               <motion.div
@@ -1178,7 +973,7 @@ main
               >
                 <button
                     type="button"
-                    onClick={handleClose}
+                    onClick={onClose}
                     className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
                     aria-label="Close"
                 >
