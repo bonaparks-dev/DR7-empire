@@ -49,8 +49,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   const [formData, setFormData] = useState(() => {
     const savedData = sessionStorage.getItem(WIZARD_STORAGE_KEY);
     const initialData = {
-      pickupLocation: PICKUP_LOCATIONS[0].id,
-      returnLocation: PICKUP_LOCATIONS[0].id,
+      pickupLocation: PICKUP_LOCATIONS?.[0]?.id || '',
+      returnLocation: PICKUP_LOCATIONS?.[0]?.id || '',
       pickupDate: today,
       pickupTime: '10:30',
       returnDate: '',
@@ -416,13 +416,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       }
     }
 
-    const newInsuranceError = eligibilityErrorKey ? t(eligibilityErrorKey) : '';
-    if (bestOption !== formData.insuranceOption || newInsuranceError !== insuranceError) {
-      setFormData(prev => ({ ...prev, insuranceOption: bestOption }));
-      setInsuranceError(newInsuranceError);
-    }
+    setFormData(prev => ({ ...prev, insuranceOption: bestOption }));
+    setInsuranceError(eligibilityErrorKey ? t(eligibilityErrorKey) : '');
 
-  }, [driverAge, licenseYears, t, formData.insuranceOption, insuranceError]);
+  }, [driverAge, licenseYears, t]);
 
   const formatPrice = (price: number) => new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', { style: 'currency', currency: currency.toUpperCase(), minimumFractionDigits: 2 }).format(price);
 
