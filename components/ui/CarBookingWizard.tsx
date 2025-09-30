@@ -123,12 +123,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   }, [formData, WIZARD_STORAGE_KEY]);
 
   useEffect(() => {
+    // If the component renders without a user (due to saved data),
+    // immediately trigger the session check to show the expiry modal.
+    if (!user) {
+      checkSession();
+    }
+
     const interval = setInterval(() => {
       checkSession();
     }, 30000); // Check every 30 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   const [insuranceError, setInsuranceError] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
