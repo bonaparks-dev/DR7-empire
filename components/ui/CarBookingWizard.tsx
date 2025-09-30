@@ -485,7 +485,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   // Upload (File ou dataURL)
   const uploadToBucket = async (bucket: string, userId: string, fileOrDataUrl: File | string | null, prefix: string): Promise<string> => {
     if (!fileOrDataUrl) {
-      // This case should be handled before calling, but as a safeguard:
       throw new Error("No file provided for upload.");
     }
 
@@ -503,22 +502,23 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         fileExt = guessed || ((fileOrDataUrl as File).type?.split('/')[1] || 'jpg');
       }
 
-      const fileName = `${prefix}_${userId}_${Date.now()}.${fileExt}`;
+      // Path includes the user's ID as a folder, as required by the new RLS policy.
+      const filePath = `${userId}/${prefix}_${Date.now()}.${fileExt}`;
 
-      const { error: upErr } = await supabase.storage.from(bucket).upload(fileName, fileBlob, { contentType: fileBlob.type || 'image/jpeg' });
+      const { data, error: upErr } = await supabase.storage.from(bucket).upload(filePath, fileBlob, { contentType: fileBlob.type || 'image/jpeg' });
       if (upErr) {
         throw upErr;
       }
 
-      const { data: pub } = supabase.storage.from(bucket).getPublicUrl(fileName);
-      if (!pub?.publicUrl) {
-        // This is a critical failure, indicates a problem with storage or permissions
-        throw new Error(`Could not get public URL for uploaded file in bucket '${bucket}'.`);
+      if (!data?.path) {
+        throw new Error(`Upload succeeded but no path was returned.`);
       }
-      return pub.publicUrl;
+
+      // Instead of a public URL, we now return the secure path.
+      return data.path;
+
     } catch (e: any) {
       console.error(`Upload failed for ${prefix}:`, e);
-      // Re-throw a clear, consolidated error message
       throw new Error(e.message || 'An unknown error occurred during upload.');
     }
   };
