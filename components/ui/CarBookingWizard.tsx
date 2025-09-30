@@ -40,24 +40,24 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   const { t, lang, getTranslated } = useTranslation();
   const { currency } = useCurrency();
   const { user, loading: authLoading, isSessionActive } = useAuth();
+  const WIZARD_STORAGE_KEY = `carBookingWizard-${item.id}`;
 
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const today = new Date().toISOString().split('T')[0];
 
-  const [formData, setFormData] = useState({
-      // Step 1
+  const [formData, setFormData] = useState(() => {
+    const savedData = sessionStorage.getItem(WIZARD_STORAGE_KEY);
+    const initialData = {
       pickupLocation: PICKUP_LOCATIONS[0].id,
       returnLocation: PICKUP_LOCATIONS[0].id,
       pickupDate: today,
       pickupTime: '10:30',
       returnDate: '',
       returnTime: '09:00',
-
-      // Step 2
       firstName: '',
       lastName: '',
-      email: '',
+      email: user?.email || '',
       phone: '',
       birthDate: '',
       licenseNumber: '',
@@ -66,7 +66,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       idImage: null as File | null,
       isSardinianResident: false,
       confirmsInformation: false,
-
       addSecondDriver: false,
       secondDriver: {
           firstName: '',
@@ -79,17 +78,57 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
           licenseImage: null as File | null,
           idImage: null as File | null,
       },
-
-      // Step 3
       insuranceOption: 'KASKO_BASE',
       extras: [] as string[],
-
-      // Step 4
       paymentMethod: 'stripe',
       agreesToTerms: false,
       agreesToPrivacy: false,
       confirmsDocuments: false,
+    };
+
+    if (savedData) {
+        try {
+            const parsed = JSON.parse(savedData);
+            return {
+                ...initialData,
+                ...parsed,
+                licenseImage: null,
+                idImage: null,
+                secondDriver: {
+                    ...initialData.secondDriver,
+                    ...(parsed.secondDriver || {}),
+                    licenseImage: null,
+                    idImage: null,
+                },
+            };
+        } catch (e) {
+            console.error("Could not restore booking form data:", e);
+        }
+    }
+    return initialData;
   });
+
+  useEffect(() => {
+    const dataToSave = {
+      ...formData,
+      licenseImage: null,
+      idImage: null,
+      secondDriver: {
+        ...formData.secondDriver,
+        licenseImage: null,
+        idImage: null,
+      },
+    };
+    sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify(dataToSave));
+  }, [formData, WIZARD_STORAGE_KEY]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkSession();
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   const [insuranceError, setInsuranceError] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -290,8 +329,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     }
     return () => { if (card) { card.destroy(); setCardElement(null); } };
   }, [stripe, step, formData.paymentMethod, clientSecret]);
-
-  useEffect(() => { if (user) { setFormData(prev => ({ ...prev, email: user.email || '' })); } }, [user]);
 
   useEffect(() => {
     if (!user) {
@@ -1001,7 +1038,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
           >
             <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800 relative text-center max-w-sm">
               <h2 className="text-2xl font-bold text-white mb-4">Session Expired</h2>
-              <p className="text-gray-300 mb-6">Your session has expired. Please log in again to continue with your booking.</p>
+              <p className="text-gray-300 mb-6">Your session has expired, but don't worry, your progress has been saved. Please log in again to continue with your booking.</p>
               <button
                 type="button"
                 onClick={() => {
