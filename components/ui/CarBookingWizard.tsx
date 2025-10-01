@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { supabase } from "../supabaseClient"; // ⚠️ Vérifiez bien le chemin
+import { supabase } from "../supabaseClient"; 
 import { loadStripe } from "@stripe/stripe-js";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY!);
@@ -37,7 +37,6 @@ export default function CarBookingWizard() {
   const [success, setSuccess] = useState(false);
   const [user, setUser] = useState<any>(null);
 
-  // Vérifie si l’utilisateur est connecté
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUser(data?.user ?? null);
@@ -54,15 +53,11 @@ export default function CarBookingWizard() {
     }));
   };
 
-  const uploadDocument = async (
-    file: File,
-    userId: string,
-    prefix: string
-  ): Promise<string | null> => {
+  const uploadDocument = async (file: File, userId: string, prefix: string) => {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("bucket", "documents"); // ⚠️ Nom du bucket Supabase
+      formData.append("bucket", "documents");
       formData.append("userId", userId);
       formData.append("prefix", prefix);
 
@@ -94,16 +89,13 @@ export default function CarBookingWizard() {
         return;
       }
 
-      // Upload document si fourni
       let licenseUrl: string | null = null;
-      const fileInput = document.getElementById(
-        "licenseFile"
-      ) as HTMLInputElement;
+      const fileInput = document.getElementById("licenseFile") as HTMLInputElement;
       if (fileInput?.files?.[0]) {
         licenseUrl = await uploadDocument(fileInput.files[0], user.id, "license");
       }
 
-      // Insertion dans Supabase
+      // ✅ Ici on insère bien tous les champs qui existent dans ta table bookings
       const { error: insertError } = await supabase.from("bookings").insert([
         {
           user_id: user.id,
@@ -114,30 +106,25 @@ export default function CarBookingWizard() {
           dropoff_date: form.dropoffDate,
           pickup_location: form.pickupLocation,
           dropoff_location: form.dropoffLocation ?? null,
-          price_total: 200, // ⚠️ À calculer dynamiquement
+          price_total: 200,
           currency: "usd",
           license_file_url: licenseUrl,
           terms_accepted: form.termsAccepted,
           booking_details: {
-            ageBucket: form.ageBucket,
-            countryIso2: form.countryIso2,
-            yearsLicensedBucket: form.yearsLicensedBucket,
+            ageBucket: form.ageBucket ?? null,
+            countryIso2: form.countryIso2 ?? null,
+            yearsLicensedBucket: form.yearsLicensedBucket ?? null,
           },
+          status: "pending",
+          payment_status: "pending",
         },
       ]);
 
       if (insertError) throw insertError;
 
-      // Redirection Stripe (optionnel)
-      const stripe = await stripePromise;
-      if (!stripe) throw new Error("Stripe non disponible.");
-
-      // Ici vous devriez appeler une fonction Netlify/Backend qui crée la session Stripe
-      // Exemple : /create-checkout-session
-
       setSuccess(true);
     } catch (err: any) {
-      console.error(err);
+      console.error("Erreur réservation:", err);
       setError(err.message || "Erreur lors de la réservation.");
     } finally {
       setLoading(false);
