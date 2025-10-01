@@ -1,109 +1,117 @@
-import type { Handler, HandlerEvent } from '@netlify/functions';
+import type { Handler } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
 import Busboy from 'busboy';
 
-// Initialize Supabase client
-const supabaseUrl = process.env.SUPABASE_URL;
-if (!supabaseUrl) {
-  throw new Error('SUPABASE_URL is not set.');
+const supabaseUrl = process.env.SUPABASE_URL!;
+const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+if (!supabaseUrl || !serviceRole) {
+  throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
 }
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!supabaseServiceRoleKey) {
-  throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set.');
-}
-const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-export const handler: Handler = async (event: HandlerEvent) => {
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ error: 'Method Not Allowed' }),
-      headers: { 'Allow': 'POST' },
-    };
-  }
+const supabase = createClient(supabaseUrl, serviceRole);
 
-  // Use a promise to handle the async nature of busboy
-  return new Promise((resolve) => {
-    const busboy = new Busboy({
-      headers: { 'content-type': event.headers['content-type'] },
+// Optionnel: limite la taille (en octets). Ici ~15 Mo.
+const MAX_FILE_SIZE = 15 * 1024 * 1024;
+
+export const handler: Handler = async (event) => {
+  try {
+    if (event.httpMethod !== 'POST') {
+      return { statusCode: 405, body: 'Method Not Allowed' };
+    }
+
+    const contentType = event.headers['content-type'] || event.headers['Content-Type'];
+    if (!contentType || !contentType.startsWith('multipart/form-data')) {
+      return { statusCode: 400, body: JSON.stringify({ error: 'Expected multipart/form-data' }) };
+    }
+
+    // Parse multipart avec Busboy
+    const busboy = Busboy({
+      headers: { 'content-type': contentType },
+      limits: { fileSize: MAX_FILE_SIZE, files: 1, fields: 10 },
     });
 
-    const fields: Record<string, string> = {};
+    let bucket = '';
+    let userId = '';
+    let prefix = '';
 
-    // This promise will be resolved with the upload result
-    let uploadPromise: Promise<{ data: any; error: any }> | null = null;
+    // On accumule le fichier en mémoire (OK pour des documents KYC)
+    let fileBuffer: Buffer | null = null;
+    let filename = '';
+    let mimetype = '';
 
-    busboy.on('field', (fieldname, value) => {
-      fields[fieldname] = value;
-    });
-
-    busboy.on('file', (fieldname, fileStream, { filename, mimeType }) => {
-      // When the file stream starts, we immediately begin uploading it to Supabase.
-      // This assumes 'bucket', 'userId', and 'prefix' fields are sent before the file,
-      // which is standard for most HTTP clients.
-
-      const { bucket, userId, prefix } = fields;
-      if (!bucket || !userId || !prefix) {
-        // If required fields are missing, we can't proceed.
-        // We drain the stream to prevent hanging and will fail on 'finish'.
-        fileStream.resume();
-        return;
-      }
-
-      const fileExt = filename.split('.').pop();
-      const filePath = `${userId}/${prefix}_${Date.now()}.${fileExt}`;
-
-      // Start the upload and store the promise.
-      // The 'duplex: 'half'' option is crucial for streaming with Supabase v2 client.
-      uploadPromise = supabase.storage
-        .from(bucket)
-        .upload(filePath, fileStream, {
-          contentType: mimeType,
-          upsert: false,
-          duplex: 'half',
-        });
-    });
-
-    busboy.on('finish', async () => {
-      if (!uploadPromise) {
-        // This happens if the file part came before the required fields,
-        // or if no file was uploaded at all.
-        return resolve({
-          statusCode: 400,
-          body: JSON.stringify({ error: 'Upload failed: Missing file or required fields (bucket, userId, prefix).' }),
-        });
-      }
-
-      try {
-        const { data, error } = await uploadPromise;
-        if (error) {
-          // Handle Supabase-specific errors
-          throw new Error(`Supabase upload error: ${error.message}`);
-        }
-        // Success
-        resolve({
-          statusCode: 200,
-          body: JSON.stringify({ path: data.path }),
-        });
-      } catch (error: any) {
-        console.error('Upload processing failed:', error);
-        resolve({
-          statusCode: 500,
-          body: JSON.stringify({ error: `Upload failed: ${error.message}` }),
-        });
-      }
-    });
-
-    busboy.on('error', (err: Error) => {
-      console.error('Busboy parsing error:', err);
-      resolve({
-        statusCode: 500,
-        body: JSON.stringify({ error: 'Failed to parse form data.' }),
+    const parsing = new Promise<{ ok: boolean; error?: string }>((resolve) => {
+      busboy.on('field', (name, val) => {
+        if (name === 'bucket') bucket = val.trim();
+        if (name === 'userId') userId = val.trim();
+        if (name === 'prefix') prefix = val.trim();
       });
+
+      busboy.on('file', (_name, stream, info) => {
+        filename = info.filename || 'file';
+        mimetype  = info.mimeType || 'application/octet-stream';
+
+        const chunks: Buffer[] = [];
+        stream.on('data', (d: Buffer) => chunks.push(d));
+        stream.on('limit', () => {
+          resolve({ ok: false, error: 'File too large' });
+          stream.resume();
+        });
+        stream.on('end', () => {
+          fileBuffer = Buffer.concat(chunks);
+        });
+      });
+
+      busboy.on('error', (err) => {
+        console.error('Busboy error:', err);
+        resolve({ ok: false, error: 'Parse error' });
+      });
+
+      busboy.on('finish', () => resolve({ ok: true }));
     });
 
-    // Decode the body if it's base64 encoded and pipe it to busboy
-    const encoding = event.isBase64Encoded ? 'base64' : 'binary';
-    busboy.end(Buffer.from(event.body || '', encoding));
-  });
+    // Alimente busboy
+    const bodyBuffer = Buffer.from(event.body || '', event.isBase64Encoded ? 'base64' : 'binary');
+    busboy.end(bodyBuffer);
+
+    const result = await parsing;
+    if (!result.ok) {
+      return { statusCode: 400, body: JSON.stringify({ error: result.error }) };
+    }
+
+    if (!bucket || !userId || !prefix || !fileBuffer) {
+      return { statusCode: 400, body: JSON.stringify({ error: 'Missing fields or file' }) };
+    }
+
+    const ext = filename.includes('.') ? filename.split('.').pop() : 'bin';
+    const path = `${userId}/${prefix}_${Date.now()}.${ext}`;
+
+    const { error: upErr } = await supabase
+      .storage
+      .from(bucket)
+      .upload(path, fileBuffer, {
+        contentType: mimetype,
+        upsert: true, // si tu veux écraser d’anciens docs
+      });
+
+    if (upErr) {
+      console.error('Supabase upload error:', upErr);
+      return { statusCode: 502, body: JSON.stringify({ error: 'Upload failed' }) };
+    }
+
+    // Optionnel: URL publique si le bucket est public
+    const { data: pub } = supabase.storage.from(bucket).getPublicUrl(path);
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        ok: true,
+        bucket,
+        path,
+        publicUrl: pub?.publicUrl ?? null,
+      }),
+    };
+  } catch (e: any) {
+    console.error('Function error:', e);
+    return { statusCode: 500, body: JSON.stringify({ error: 'Server error' }) };
+  }
 };
