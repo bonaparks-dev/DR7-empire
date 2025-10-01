@@ -12,7 +12,6 @@ import { Link } from 'react-router-dom';
 import { XIcon } from '../icons/Icons';
 import DocumentUploader from './DocumentUploader';
 
-// ---------- Functions base (works in local & prod) ----------
 const FUNCTIONS_BASE =
   import.meta.env.VITE_FUNCTIONS_BASE ??
   (location.hostname === 'localhost' || location.hostname === '127.0.0.1'
