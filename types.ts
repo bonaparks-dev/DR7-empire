@@ -136,8 +136,9 @@ export interface Booking {
     age: number;
     countryOfResidency: string;
   };
-  driverLicenseImage: string; // base64 encoded string
-  paymentMethod: 'stripe' | 'crypto';
+  driverLicenseImage: string; // Stores the path to the image in Supabase storage
+  driverIdImage?: string; // Stores the path to the ID image in Supabase storage
+  paymentMethod: 'stripe' | 'crypto' | 'agency';
   bookedAt: string;
   pickupLocation?: string;
   insuranceOption?: string; // e.g., 'premium'
