@@ -1,3 +1,5 @@
+// CarBookingWizard.tsx — corrected & hardened version (ready to paste)
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -9,6 +11,13 @@ import type { Booking, RentalItem } from '../../types';
 import { Link } from 'react-router-dom';
 import { XIcon } from '../icons/Icons';
 import DocumentUploader from './DocumentUploader';
+
+// ---------- Functions base (works in local & prod) ----------
+const FUNCTIONS_BASE =
+  import.meta.env.VITE_FUNCTIONS_BASE ??
+  (location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+    ? 'http://localhost:8888'
+    : window.location.origin);
 
 // Stripe publishable key
 const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
@@ -101,7 +110,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     birthDate: '',
     licenseNumber: '',
     licenseIssueDate: '',
-    licenseImage: null as File | string | null, // peut être File ou dataURL
+    licenseImage: null as File | string | null, // File or dataURL
     idImage: null as File | string | null,
     isSardinianResident: false,
     confirmsInformation: false,
@@ -124,7 +133,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     extras: [] as string[],
 
     // Step 4
-    paymentMethod: 'stripe',
+    paymentMethod: 'stripe' as 'stripe' | 'agency',
     agreesToTerms: false,
     agreesToPrivacy: false,
     confirmsDocuments: false,
@@ -145,6 +154,20 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Health ping (helps detect wrong FUNCTIONS_BASE early)
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${FUNCTIONS_BASE}/.netlify/functions/health`, { method: 'GET' });
+        if (!res.ok) console.warn('Functions health not OK:', res.status, res.statusText);
+        else console.log('Functions health: OK');
+      } catch (e) {
+        console.error('Functions not reachable at', FUNCTIONS_BASE, e);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // === Horaires de retrait admissibles (pas de dimanche) ===
   const getValidPickupTimes = (date: string): string[] => {
@@ -288,7 +311,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       setClientSecret(null);
       setStripeError(null);
 
-      fetch('/.netlify/functions/create-payment-intent', {
+      fetch(`${FUNCTIONS_BASE}/.netlify/functions/create-payment-intent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -298,20 +321,26 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
           email: formData.email
         })
       })
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) { setStripeError(data.error); }
-        else { setClientSecret(data.clientSecret); }
-      })
-      .catch(err => {
-        console.error('Failed to fetch client secret:', err);
-        setStripeError('Could not connect to payment server.');
-      })
-      .finally(() => setIsClientSecretLoading(false));
+        .then(async (res) => {
+          if (!res.ok) {
+            const text = await res.text().catch(() => '');
+            throw new Error(`create-payment-intent ${res.status} ${res.statusText} ${text}`);
+          }
+          return res.json();
+        })
+        .then((data) => {
+          if (data.error) { setStripeError(data.error); }
+          else { setClientSecret(data.clientSecret); }
+        })
+        .catch(err => {
+          console.error('Failed to fetch client secret:', err);
+          setStripeError('Could not connect to payment server.');
+        })
+        .finally(() => setIsClientSecretLoading(false));
     }
   }, [step, total, currency, user?.id, formData.email]);
 
-  // Mount Stripe Card Element (no return_url; 3DS s’ouvre in-page)
+  // Mount Stripe Card Element (no return_url; 3DS in-page)
   useEffect(() => {
     let card: any = null;
     if (stripe && step === 4 && formData.paymentMethod === 'stripe' && cardElementRef.current && clientSecret) {
@@ -433,6 +462,65 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     }
   };
 
+  // ---------- Pure dataURL → Blob (no fetch on data URLs) ----------
+  const dataURLToBlob = (dataUrl: string): Blob => {
+    const parts = dataUrl.split(',');
+    if (parts.length !== 2) throw new Error('Invalid data URL.');
+    const mime = parts[0].match(/data:(.*?);base64/)?.[1] || 'image/jpeg';
+    const binary = atob(parts[1]);
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type: mime });
+  };
+
+  // Upload (File or dataURL)
+  const uploadToBucket = async (bucket: string, userId: string, fileOrDataUrl: File | string | null, prefix: string): Promise<string> => {
+    if (!fileOrDataUrl) {
+      throw new Error("No file provided for upload.");
+    }
+
+    try {
+      let fileBlob: Blob;
+      let fileExt = 'jpg';
+      if (typeof fileOrDataUrl === 'string') {
+        const blob = dataURLToBlob(fileOrDataUrl);
+        fileBlob = blob;
+        const mime = blob.type || 'image/jpeg';
+        fileExt = mime.split('/')[1] || 'jpg';
+      } else {
+        fileBlob = fileOrDataUrl;
+        const name = (fileOrDataUrl as File).name || `upload.${(fileOrDataUrl as File).type?.split('/')[1] || 'jpg'}`;
+        const guessed = name.split('.').pop();
+        fileExt = guessed || ((fileOrDataUrl as File).type?.split('/')[1] || 'jpg');
+      }
+
+      // Path includes the user's ID as a folder, to match RLS policy.
+      const filePath = `${userId}/${prefix}_${Date.now()}.${fileExt}`;
+
+      const { data, error: upErr } = await supabase.storage.from(bucket).upload(
+        filePath,
+        fileBlob,
+        { contentType: fileBlob.type || 'image/jpeg', upsert: false }
+      );
+
+      if (upErr) {
+        throw new Error(`Storage upload error [${bucket}/${filePath}]: ${upErr.message || upErr.name}`);
+      }
+
+      if (!data?.path) {
+        throw new Error(`Upload succeeded but no path was returned.`);
+      }
+
+      // Return secure path (not public URL)
+      return data.path;
+
+    } catch (e: any) {
+      console.error(`Upload failed for ${prefix}:`, e);
+      throw new Error(e.message || 'Unknown upload error');
+    }
+  };
+
   const validateStep = () => {
     const newErrors: Record<string, string> = {};
     if (step === 1) {
@@ -473,56 +561,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNext = () => validateStep() && setStep(s => s + 1);
-  const handleBack = () => setStep(s => s - 1);
-
-  // Helper: convertir dataURL -> Blob
-  const dataURLToBlob = async (dataUrl: string) => {
-    const res = await fetch(dataUrl);
-    return await res.blob();
-  };
-
-  // Upload (File ou dataURL)
-  const uploadToBucket = async (bucket: string, userId: string, fileOrDataUrl: File | string | null, prefix: string): Promise<string> => {
-    if (!fileOrDataUrl) {
-      throw new Error("No file provided for upload.");
-    }
-
-    try {
-      let fileBlob: Blob;
-      let fileExt = 'jpg';
-      if (typeof fileOrDataUrl === 'string') {
-        fileBlob = await dataURLToBlob(fileOrDataUrl);
-        const mime = fileBlob.type || 'image/jpeg';
-        fileExt = mime.split('/')[1] || 'jpg';
-      } else {
-        fileBlob = fileOrDataUrl;
-        const name = (fileOrDataUrl as File).name || `upload.${(fileOrDataUrl as File).type?.split('/')[1] || 'jpg'}`;
-        const guessed = name.split('.').pop();
-        fileExt = guessed || ((fileOrDataUrl as File).type?.split('/')[1] || 'jpg');
-      }
-
-      // Path includes the user's ID as a folder, as required by the new RLS policy.
-      const filePath = `${userId}/${prefix}_${Date.now()}.${fileExt}`;
-
-      const { data, error: upErr } = await supabase.storage.from(bucket).upload(filePath, fileBlob, { contentType: fileBlob.type || 'image/jpeg' });
-      if (upErr) {
-        throw upErr;
-      }
-
-      if (!data?.path) {
-        throw new Error(`Upload succeeded but no path was returned.`);
-      }
-
-      // Instead of a public URL, we now return the secure path.
-      return data.path;
-
-    } catch (e: any) {
-      console.error(`Upload failed for ${prefix}:`, e);
-      throw new Error(e.message || 'An unknown error occurred during upload.');
-    }
-  };
-
   const finalizeBooking = async () => {
     if (!user) {
       setErrors(prev => ({ ...prev, form: "You must be logged in to book." }));
@@ -531,8 +569,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     }
 
     try {
-      // The `handleSubmit` already sets isProcessing to true.
-      // We only set it to false on failure or success.
+      // Upload secure documents
       const licenseImageUrl = await uploadToBucket('driver-licenses', user.id, formData.licenseImage, 'license');
       const idImageUrl = await uploadToBucket('driver-ids', user.id, formData.idImage, 'id');
 
@@ -569,12 +606,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
       const { data, error } = await supabase.from('bookings').insert(bookingData).select().single();
       if (error) {
-        throw error; // Throw to be caught by the outer catch block
+        throw new Error(`DB insert failed: ${error.message || 'permission denied or RLS'}`);
       }
 
       if (data) {
-        // Email sending is non-critical for the user flow, so we don't block on it
-        fetch('/.netlify/functions/send-booking-confirmation', {
+        // Non-blocking confirmation email
+        fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ booking: data }),
@@ -585,7 +622,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       setIsProcessing(false);
 
     } catch (e: any) {
-      // This single catch block will now handle errors from uploads and booking insertion.
       setErrors(prev => ({ ...prev, form: `Booking failed: ${e.message}` }));
       setIsProcessing(false);
     }
@@ -631,6 +667,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       await finalizeBooking();
     }
   };
+
+  const handleNext = () => validateStep() && setStep(s => s + 1);
+  const handleBack = () => setStep(s => s - 1);
 
   const steps = [
     { id: 1, name: t('STEP 1: Date e Località') },
@@ -708,7 +747,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
                 </div>
               </div>
 
-              {/* Info Km inclusi en direct (calculé, pas une option) */}
+              {/* Info Km inclusi en direct */}
               <div className="mt-4 p-3 rounded-md border border-gray-700 bg-gray-800/50">
                 <p className="text-sm text-gray-300">
                   Km inclusi: <span className="font-semibold text-white">{includedKm}</span>
@@ -729,13 +768,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
           const prefix = driverType === 'main' ? '' : 'secondDriver.';
           return (
             <div className="grid grid-cols-2 gap-4">
-              <div><label className="text-sm text-gray-400">Nome *</label><input type="text" name={`${prefix}firstName`} value={driverData.firstName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${prefix}firstName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}firstName`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Cognome *</label><input type="text" name={`${prefix}lastName`} value={driverData.lastName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${prefix}lastName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}lastName`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Email *</label><input type="email" name={`${prefix}email`} value={driverData.email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${prefix}email`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}email`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Telefono *</label><input type="tel" name={`${prefix}phone`} value={driverData.phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${prefix}phone`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}phone`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Data di nascita *</label><input type="text" name={`${prefix}birthDate`} value={driverData.birthDate} onChange={handleChange} placeholder="DD/MM/YYYY" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${prefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}birthDate`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Numero patente *</label><input type="text" name={`${prefix}licenseNumber`} value={driverData.licenseNumber} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${prefix}licenseNumber`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseNumber`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Data rilascio patente *</label><input type="date" name={`${prefix}licenseIssueDate`} value={driverData.licenseIssueDate} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${prefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseIssueDate`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Nome *</label><input type="text" name={`${prefix}firstName`} value={(driverData as any).firstName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${prefix}firstName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}firstName`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Cognome *</label><input type="text" name={`${prefix}lastName`} value={(driverData as any).lastName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${prefix}lastName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}lastName`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Email *</label><input type="email" name={`${prefix}email`} value={(driverData as any).email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${prefix}email`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}email`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Telefono *</label><input type="tel" name={`${prefix}phone`} value={(driverData as any).phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${prefix}phone`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}phone`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Data di nascita *</label><input type="text" name={`${prefix}birthDate`} value={(driverData as any).birthDate} onChange={handleChange} placeholder="DD/MM/YYYY" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${prefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}birthDate`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Numero patente *</label><input type="text" name={`${prefix}licenseNumber`} value={(driverData as any).licenseNumber} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${prefix}licenseNumber`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseNumber`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Data rilascio patente *</label><input type="date" name={`${prefix}licenseIssueDate`} value={(driverData as any).licenseIssueDate} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${prefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseIssueDate`]}</p>}</div>
             </div>
           );
         };
@@ -1191,3 +1230,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 };
 
 export default CarBookingWizard;
+
+
+
+
+
+
