@@ -3,10 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import type { Booking } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { PICKUP_LOCATIONS } from '../../constants';
-import { useNavigate } from 'react-router-dom';
-import type { Booking } from '../../types';
-import { useTranslation } from '../../hooks/useTranslation';
-import { PICKUP_LOCATIONS } from '../../constants';
 
 interface BookingConfirmationProps {
   booking: Booking;

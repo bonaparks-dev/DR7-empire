@@ -474,46 +474,46 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     return new Blob([bytes], { type: mime });
   };
 
-  // Upload (File or dataURL)
+  // Upload (File or dataURL) via Netlify function to handle CORS
   const uploadToBucket = async (bucket: string, userId: string, fileOrDataUrl: File | string | null, prefix: string): Promise<string> => {
     if (!fileOrDataUrl) {
       throw new Error("No file provided for upload.");
     }
 
     try {
-      let fileBlob: Blob;
-      let fileExt = 'jpg';
+      let fileToUpload: Blob;
+      let fileName: string;
+
       if (typeof fileOrDataUrl === 'string') {
-        const blob = dataURLToBlob(fileOrDataUrl);
-        fileBlob = blob;
-        const mime = blob.type || 'image/jpeg';
-        fileExt = mime.split('/')[1] || 'jpg';
+        fileToUpload = dataURLToBlob(fileOrDataUrl);
+        fileName = `${prefix}_${Date.now()}.jpg`;
       } else {
-        fileBlob = fileOrDataUrl;
-        const name = (fileOrDataUrl as File).name || `upload.${(fileOrDataUrl as File).type?.split('/')[1] || 'jpg'}`;
-        const guessed = name.split('.').pop();
-        fileExt = guessed || ((fileOrDataUrl as File).type?.split('/')[1] || 'jpg');
+        fileToUpload = fileOrDataUrl;
+        fileName = fileOrDataUrl.name;
       }
 
-      // Path includes the user's ID as a folder, to match RLS policy.
-      const filePath = `${userId}/${prefix}_${Date.now()}.${fileExt}`;
+      const body = new FormData();
+      body.append('file', fileToUpload, fileName);
+      body.append('bucket', bucket);
+      body.append('userId', userId);
+      body.append('prefix', prefix);
 
-      const { data, error: upErr } = await supabase.storage.from(bucket).upload(
-        filePath,
-        fileBlob,
-        { contentType: fileBlob.type || 'image/jpeg', upsert: false }
-      );
+      const response = await fetch(`${FUNCTIONS_BASE}/.netlify/functions/upload-file`, {
+        method: 'POST',
+        body,
+      });
 
-      if (upErr) {
-        throw new Error(`Storage upload error [${bucket}/${filePath}]: ${upErr.message || upErr.name}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `Server error: ${response.status}` }));
+        throw new Error(errorData.error || 'Upload failed');
       }
 
-      if (!data?.path) {
-        throw new Error(`Upload succeeded but no path was returned.`);
+      const result = await response.json();
+      if (!result.path) {
+        throw new Error('Upload succeeded but no path was returned from function.');
       }
 
-      // Return secure path (not public URL)
-      return data.path;
+      return result.path;
 
     } catch (e: any) {
       console.error(`Upload failed for ${prefix}:`, e);
