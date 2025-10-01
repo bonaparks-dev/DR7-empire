@@ -39,7 +39,8 @@ const parseMultipartForm = (event) => {
     busboy.on('finish', () => resolve(result));
     busboy.on('error', (err) => reject(err));
 
-    busboy.end(Buffer.from(event.body, 'base64'));
+    const encoding = event.isBase64Encoded ? 'base64' : 'utf-8';
+    busboy.end(Buffer.from(event.body, encoding));
   });
 };
 
