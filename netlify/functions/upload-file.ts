@@ -130,7 +130,12 @@ export const handler: Handler = async (event) => {
       return {
         statusCode: 502,
         headers: CORS_HEADERS,
-        body: JSON.stringify({ error: 'Upload failed' }),
+        body: JSON.stringify({
+          error: 'Upload failed',
+          details: upErr.message,
+          bucket,
+          path
+        }),
       };
     }
 

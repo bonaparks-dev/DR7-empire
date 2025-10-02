@@ -504,7 +504,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: `Server error: ${response.status}` }));
-        throw new Error(errorData.error || 'Upload failed');
+        console.error('Upload error response:', errorData);
+        throw new Error(errorData.details || errorData.error || 'Upload failed');
       }
 
       const result = await response.json();
