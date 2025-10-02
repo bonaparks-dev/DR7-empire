@@ -568,6 +568,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       return;
     }
 
+    // Validate required fields before upload
+    if (!formData.pickupDate || !formData.returnDate) {
+      setErrors(prev => ({ ...prev, form: "Pickup and return dates are required." }));
+      setIsProcessing(false);
+      return;
+    }
+
     try {
       // Upload secure documents
       const licenseImageUrl = await uploadToBucket('driver-licenses', user.id, formData.licenseImage, 'license');
