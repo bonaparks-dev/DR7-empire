@@ -398,7 +398,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   const dayOfWeek = new Date(value).getDay();
   if (dayOfWeek === 0) {
     setErrors(prev => ({ ...prev, pickupDate: "Le prenotazioni non sono disponibili la domenica." }));
-    return;  // ← This prevents the date from being saved
   } else {
     setErrors(prev => ({ ...prev, pickupDate: "" }));
   }
