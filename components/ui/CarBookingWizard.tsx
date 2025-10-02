@@ -98,7 +98,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     returnLocation: PICKUP_LOCATIONS[0].id,
     pickupDate: today,
     pickupTime: '10:30',
-    returnDate: '',
+    returnDate: today,
     returnTime: '09:00',
 
     // Step 2
@@ -524,9 +524,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   const validateStep = () => {
     const newErrors: Record<string, string> = {};
     if (step === 1) {
-      if (!formData.pickupDate || !formData.returnDate) newErrors.date = "Seleziona le date.";
-      if (new Date(formData.pickupDate) >= new Date(formData.returnDate)) newErrors.date = "La data di riconsegna deve essere successiva a quella di ritiro.";
-      if (new Date(formData.pickupDate).getDay() === 0) newErrors.pickupDate = "Le prenotazioni non sono disponibili la domenica.";
+      if (!formData.pickupDate || formData.pickupDate.trim() === '') {
+        newErrors.pickupDate = "La data di ritiro è obbligatoria.";
+      }
+      if (!formData.returnDate || formData.returnDate.trim() === '') {
+        newErrors.returnDate = "La data di riconsegna è obbligatoria.";
+      }
+      if (formData.pickupDate && formData.returnDate && new Date(formData.pickupDate) >= new Date(formData.returnDate)) {
+        newErrors.date = "La data di riconsegna deve essere successiva a quella di ritiro.";
+      }
+      if (formData.pickupDate && new Date(formData.pickupDate).getDay() === 0) {
+        newErrors.pickupDate = "Le prenotazioni non sono disponibili la domenica.";
+      }
     }
     if (step === 2) {
       const ly = calculateYearsSince(formData.licenseIssueDate);
@@ -589,6 +598,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         returnTime: formData.returnTime
       });
 
+      // Ensure dates are valid before creating booking
+      if (!formData.pickupDate || !formData.returnDate) {
+        throw new Error('Dates invalides. Veuillez sélectionner les dates de ritiro et riconsegna.');
+      }
+
       const bookingData: Omit<Booking, 'bookingId'> = {
   userId: user.id,
   itemId: item.id,
@@ -596,7 +610,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   vehicle_name: item.name,
   image: item.image,
   itemCategory: 'cars',
-  vehicle_type: item.type || 'car',   // 🔥 Ajoute ce champ
+  vehicle_type: item.type || 'car',
   totalPrice: total,
   currency: currency.toUpperCase() as 'USD' | 'EUR',
   customer: {
@@ -608,10 +622,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   },
   paymentMethod: formData.paymentMethod,
   bookedAt: new Date().toISOString(),
-  pickupDate: formData.pickupDate || null,
-  pickupTime: formData.pickupTime || null,
-  returnDate: formData.returnDate || null,
-  returnTime: formData.returnTime || null,
+  pickupDate: formData.pickupDate,
+  pickupTime: formData.pickupTime,
+  returnDate: formData.returnDate,
+  returnTime: formData.returnTime,
   duration: `${days} ${days === 1 ? t('day') : t('days')}, ${hours} ${hours === 1 ? t('hour') : t('hours')}`,
   driverLicenseImage: licenseImageUrl,
   driverIdImage: idImageUrl,
