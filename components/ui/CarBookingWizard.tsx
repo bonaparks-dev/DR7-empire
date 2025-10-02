@@ -1,5 +1,3 @@
-// CarBookingWizard.tsx — corrected & hardened version (ready to paste)
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -98,7 +96,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     returnLocation: PICKUP_LOCATIONS[0].id,
     pickupDate: today,
     pickupTime: '10:30',
-    returnDate: today,
+    returnDate: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0],
     returnTime: '09:00',
 
     // Step 2
@@ -594,8 +592,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       console.log('FormData dates:', {
         pickup_date: formData.pickupDate,
         pickup_time: formData.pickupTime,
-        dropoff_date: formData.returnDate,  // Changed from return_date
-        dropoff_time: formData.returnTime,  // Changed from return_time
+        dropoff_date: formData.returnDate,
+        dropoff_time: formData.returnTime,
       });
 
       // Ensure dates are valid before creating booking
