@@ -579,6 +579,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   userId: user.id,
   itemId: item.id,
   itemName: item.name,
+  vehicle_name: item.name,
   image: item.image,
   itemCategory: 'cars',
   vehicle_type: item.type || 'car',   // 🔥 Ajoute ce champ
