@@ -592,10 +592,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       const { days, hours } = duration;
 
       console.log('FormData dates:', {
-        pickupDate: formData.pickupDate,
-        pickupTime: formData.pickupTime,
-        returnDate: formData.returnDate,
-        returnTime: formData.returnTime
+        pickup_date: formData.pickupDate,
+        pickup_time: formData.pickupTime,
+        dropoff_date: formData.returnDate,  // Changed from return_date
+        dropoff_time: formData.returnTime,  // Changed from return_time
       });
 
       // Ensure dates are valid before creating booking
