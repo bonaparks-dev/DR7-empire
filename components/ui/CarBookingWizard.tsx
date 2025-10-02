@@ -62,7 +62,7 @@ export default function CarBookingWizard() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("bucket", "documents"); // ⚠️ Nom du bucket Supabase
+      formData.append("bucket", "driver-licenses");
       formData.append("userId", userId);
       formData.append("prefix", prefix);
 
