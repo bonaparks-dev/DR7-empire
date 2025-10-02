@@ -740,29 +740,133 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-white mb-2">DATE AND TIME SELECTION</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm text-gray-400">Data di ritiro *</label>
-                  <input type="date" name="pickupDate" value={formData.pickupDate} onChange={handleChange} min={today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>
+              <h3 className="text-lg font-semibold text-white mb-4">DATE AND TIME SELECTION</h3>
+              <div className="space-y-4">
+                {/* Pickup Date & Time */}
+                <div className="p-4 rounded-lg border border-gray-700 bg-gray-800/30">
+                  <h4 className="text-white font-semibold mb-3 flex items-center">
+                    <span className="mr-2">📅</span> Ritiro del veicolo
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Data di ritiro *
+                        {formData.pickupDate && (
+                          <span className="ml-2 text-xs text-green-400">✓ Selezionata</span>
+                        )}
+                      </label>
+                      <input
+                        type="date"
+                        name="pickupDate"
+                        value={formData.pickupDate}
+                        onChange={handleChange}
+                        min={today}
+                        required
+                        className={`w-full bg-gray-800 rounded-md p-3 text-white border-2 transition-colors ${
+                          errors.pickupDate
+                            ? 'border-red-500 focus:border-red-400'
+                            : formData.pickupDate
+                            ? 'border-green-500 focus:border-green-400'
+                            : 'border-gray-700 focus:border-white'
+                        }`}
+                      />
+                      {errors.pickupDate && (
+                        <p className="text-xs text-red-400 mt-1 flex items-center">
+                          <span className="mr-1">⚠️</span> {errors.pickupDate}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Ora di ritiro *
+                        {formData.pickupTime && (
+                          <span className="ml-2 text-xs text-green-400">✓ {formData.pickupTime}</span>
+                        )}
+                      </label>
+                      <select
+                        name="pickupTime"
+                        value={formData.pickupTime}
+                        onChange={handleChange}
+                        required
+                        disabled={!formData.pickupDate || getValidPickupTimes(formData.pickupDate).length === 0}
+                        className={`w-full bg-gray-800 rounded-md p-3 text-white border-2 transition-colors ${
+                          !formData.pickupDate || getValidPickupTimes(formData.pickupDate).length === 0
+                            ? 'border-gray-700 opacity-50 cursor-not-allowed'
+                            : formData.pickupTime
+                            ? 'border-green-500 focus:border-green-400'
+                            : 'border-gray-700 focus:border-white'
+                        }`}
+                      >
+                        {getValidPickupTimes(formData.pickupDate).length > 0 ? (
+                          getValidPickupTimes(formData.pickupDate).map(time => <option key={time} value={time}>{time}</option>)
+                        ) : (
+                          <option value="">Seleziona prima una data feriale</option>
+                        )}
+                      </select>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm text-gray-400">Ora di ritiro *</label>
-                  <select name="pickupTime" value={formData.pickupTime} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2.5 mt-1 text-white">
-                    {getValidPickupTimes(formData.pickupDate).length > 0 ? (
-                      getValidPickupTimes(formData.pickupDate).map(time => <option key={time} value={time}>{time}</option>)
-                    ) : (
-                      <option value="" disabled>Seleziona un giorno feriale</option>
-                    )}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm text-gray-400">Data di riconsegna *</label>
-                  <input type="date" name="returnDate" value={formData.returnDate} onChange={handleChange} min={formData.pickupDate || today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>
-                </div>
-                <div>
-                  <label className="text-sm text-gray-400">Ora di riconsegna *</label>
-                  <input type="time" name="returnTime" value={formData.returnTime} readOnly className="w-full bg-gray-700 border-gray-700 rounded-md p-2 mt-1 text-white cursor-not-allowed"/>
+
+                {/* Return Date & Time */}
+                <div className="p-4 rounded-lg border border-gray-700 bg-gray-800/30">
+                  <h4 className="text-white font-semibold mb-3 flex items-center">
+                    <span className="mr-2">📅</span> Riconsegna del veicolo
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Data di riconsegna *
+                        {formData.returnDate && (
+                          <span className="ml-2 text-xs text-green-400">✓ Selezionata</span>
+                        )}
+                      </label>
+                      <input
+                        type="date"
+                        name="returnDate"
+                        value={formData.returnDate}
+                        onChange={handleChange}
+                        min={formData.pickupDate || today}
+                        required
+                        disabled={!formData.pickupDate}
+                        className={`w-full bg-gray-800 rounded-md p-3 text-white border-2 transition-colors ${
+                          !formData.pickupDate
+                            ? 'border-gray-700 opacity-50 cursor-not-allowed'
+                            : errors.returnDate || errors.date
+                            ? 'border-red-500 focus:border-red-400'
+                            : formData.returnDate
+                            ? 'border-green-500 focus:border-green-400'
+                            : 'border-gray-700 focus:border-white'
+                        }`}
+                      />
+                      {(errors.returnDate || errors.date) && (
+                        <p className="text-xs text-red-400 mt-1 flex items-center">
+                          <span className="mr-1">⚠️</span> {errors.returnDate || errors.date}
+                        </p>
+                      )}
+                      {!formData.pickupDate && (
+                        <p className="text-xs text-gray-400 mt-1">Seleziona prima la data di ritiro</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Ora di riconsegna
+                        <span className="ml-2 text-xs text-gray-400">(calcolata automaticamente)</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="time"
+                          name="returnTime"
+                          value={formData.returnTime}
+                          readOnly
+                          className="w-full bg-gray-700 border-2 border-gray-600 rounded-md p-3 text-white cursor-not-allowed opacity-75"
+                        />
+                        <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                          <span className="text-gray-400">🔒</span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">Ritiro - 1h30 (automatico)</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
