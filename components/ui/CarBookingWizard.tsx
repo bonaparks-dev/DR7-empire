@@ -601,7 +601,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         throw new Error('Dates invalides. Veuillez sélectionner les dates de ritiro et riconsegna.');
       }
 
-      const bookingData: Omit<Booking, 'bookingId'> = {
+     const bookingData: Omit<Booking, 'bookingId'> = {
   userId: user.id,
   itemId: item.id,
   itemName: item.name,
@@ -620,10 +620,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   },
   paymentMethod: formData.paymentMethod,
   bookedAt: new Date().toISOString(),
-  pickup_date: formData.pickupDate,
-  pickup_time: formData.pickupTime,
-  return_date: formData.returnDate,
-  return_time: formData.returnTime,
+  pickup_date: `${formData.pickupDate}T${formData.pickupTime}:00Z`,  // ← Timestamp format
+  dropoff_date: `${formData.returnDate}T${formData.returnTime}:00Z`, // ← Timestamp format
+  pickup_location: formData.pickupLocation,
   duration: `${days} ${days === 1 ? t('day') : t('days')}, ${hours} ${hours === 1 ? t('hour') : t('hours')}`,
   driverLicenseImage: licenseImageUrl,
   driverIdImage: idImageUrl,
