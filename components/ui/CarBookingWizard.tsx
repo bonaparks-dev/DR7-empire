@@ -601,6 +601,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         throw new Error('Dates invalides. Veuillez sélectionner les dates de ritiro et riconsegna.');
       }
 
+      console.log('DEBUG - Form data before booking:', {
+  pickupDate: formData.pickupDate,
+  pickupTime: formData.pickupTime,
+  returnDate: formData.returnDate,
+  returnTime: formData.returnTime
+});
+      
      const bookingData: Omit<Booking, 'bookingId'> = {
   userId: user.id,
   itemId: item.id,
