@@ -8,10 +8,21 @@ import { Button } from '../components/ui/Button';
 import type { Booking } from '../types';
 import { useCurrency } from '../contexts/CurrencyContext';
 
-const BookingConfirmationDetails: React.FC<{ booking: Booking }> = ({ booking }) => {
+const BookingConfirmationDetails: React.FC<{ booking: any }> = ({ booking }) => {
   const { t } = useTranslation();
   const { currency } = useCurrency();
-  const formatPrice = (price: number) => new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', { style: 'currency', currency: currency.toUpperCase(), minimumFractionDigits: 2 }).format(price);
+  
+  const formatPrice = (priceInCents: number) => 
+    new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', { 
+      style: 'currency', 
+      currency: currency.toUpperCase(), 
+      minimumFractionDigits: 2 
+    }).format(priceInCents / 100);
+
+  const pickupDate = new Date(booking.pickup_date);
+  const dropoffDate = new Date(booking.dropoff_date);
+  const totalPrice = booking.price_total;
+  const isPaid = booking.payment_method !== 'agency';
 
   return (
     <div className="text-left space-y-4">
@@ -19,37 +30,42 @@ const BookingConfirmationDetails: React.FC<{ booking: Booking }> = ({ booking })
 
       <div className="flex justify-between">
         <span className="text-gray-400">Veicolo:</span>
-        <span className="font-semibold text-white">{booking.itemName}</span>
+        <span className="font-semibold text-white">{booking.vehicle_name}</span>
       </div>
       <div className="flex justify-between">
         <span className="text-gray-400">Ritiro:</span>
-        <span className="font-semibold text-white">{booking.pickupDate} alle {booking.pickupTime}</span>
+        <span className="font-semibold text-white">
+          {pickupDate.toLocaleDateString('it-IT')} alle {pickupDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+        </span>
       </div>
       <div className="flex justify-between">
         <span className="text-gray-400">Riconsegna:</span>
-        <span className="font-semibold text-white">{booking.returnDate} alle {booking.returnTime}</span>
+        <span className="font-semibold text-white">
+          {dropoffDate.toLocaleDateString('it-IT')} alle {dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+        </span>
       </div>
       <div className="flex justify-between">
-        <span className="text-gray-400">Durata:</span>
-        <span className="font-semibold text-white">{booking.duration}</span>
+        <span className="text-gray-400">Luogo:</span>
+        <span className="font-semibold text-white capitalize">{booking.pickup_location}</span>
       </div>
       <div className="flex justify-between">
         <span className="text-gray-400">Pagamento:</span>
-        <span className="font-semibold text-white capitalize">{booking.paymentMethod === 'agency' ? 'In Sede' : 'Online'}</span>
+        <span className="font-semibold text-white capitalize">
+          {booking.payment_method === 'agency' ? 'In Sede' : 'Online'}
+        </span>
       </div>
       <div className="border-t border-gray-700 pt-4 mt-4 flex justify-between text-lg">
-        <span className="font-bold text-white">TOTALE PAGATO:</span>
-        <span className="font-bold text-white">{formatPrice(booking.paymentMethod === 'agency' ? 0 : booking.totalPrice)}</span>
+        <span className="font-bold text-white">TOTALE {isPaid ? 'PAGATO' : 'DA PAGARE'}:</span>
+        <span className="font-bold text-white">{formatPrice(totalPrice)}</span>
       </div>
-       {booking.paymentMethod === 'agency' && (
+      {booking.payment_method === 'agency' && (
         <p className="text-xs text-gray-400 text-center pt-2">
-          L'importo totale di {formatPrice(booking.totalPrice)} sarà dovuto al momento del ritiro.
+          L'importo totale di {formatPrice(totalPrice)} sarà dovuto al momento del ritiro.
         </p>
       )}
     </div>
   );
 };
-
 const ConfirmationSuccessPage: React.FC = () => {
   const { t } = useTranslation();
   const { user, loading } = useAuth();
