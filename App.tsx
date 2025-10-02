@@ -198,10 +198,10 @@ const MainContent = () => {
   const { isCarWizardOpen, closeCarWizard, selectedCar } = useBooking();
   const navigate = useNavigate();
 
-  const handleBookingComplete = () => {
-    closeCarWizard();
-    navigate('/confirmation-success');
-  };
+  const handleBookingComplete = (booking: any) => {
+  closeCarWizard();
+  navigate('/confirmation-success', { state: { booking } });
+};
 
   return (
     <>
