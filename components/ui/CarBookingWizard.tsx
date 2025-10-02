@@ -582,6 +582,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
       const { days, hours } = duration;
 
+      console.log('FormData dates:', {
+        pickupDate: formData.pickupDate,
+        pickupTime: formData.pickupTime,
+        returnDate: formData.returnDate,
+        returnTime: formData.returnTime
+      });
+
       const bookingData: Omit<Booking, 'bookingId'> = {
   userId: user.id,
   itemId: item.id,
@@ -601,10 +608,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   },
   paymentMethod: formData.paymentMethod,
   bookedAt: new Date().toISOString(),
-  pickupDate: formData.pickupDate,
-  pickupTime: formData.pickupTime,
-  returnDate: formData.returnDate,
-  returnTime: formData.returnTime,
+  pickupDate: formData.pickupDate || null,
+  pickupTime: formData.pickupTime || null,
+  returnDate: formData.returnDate || null,
+  returnTime: formData.returnTime || null,
   duration: `${days} ${days === 1 ? t('day') : t('days')}, ${hours} ${hours === 1 ? t('hour') : t('hours')}`,
   driverLicenseImage: licenseImageUrl,
   driverIdImage: idImageUrl,
