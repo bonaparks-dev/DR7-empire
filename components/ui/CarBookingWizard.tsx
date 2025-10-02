@@ -638,7 +638,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 };
 
 
-      const { data, error } = await supabase.from('bookings').insert(bookingData).select().single();
+      const { data, error } = await supabase.from('bookings').insert(bookingData).select('*').single();
       if (error) {
         console.error('DB insert error details:', error);
         console.error('Booking data:', bookingData);
@@ -654,7 +654,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         }).catch(emailError => console.error('Failed to send confirmation email:', emailError));
       }
 
-      onBookingComplete(data);
+      onBookingComplete(bookingResult || bookingData);
       setIsProcessing(false);
 
     } catch (e: any) {
