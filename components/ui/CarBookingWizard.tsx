@@ -607,34 +607,34 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   returnTime: formData.returnTime
 });
       
-     const bookingData: Omit<Booking, 'bookingId'> = {
-  userId: user.id,
-  itemId: item.id,
-  itemName: item.name,
-  vehicle_name: item.name,
-  image: item.image,
-  itemCategory: 'cars',
+     const bookingData = {
+  user_id: user.id,
   vehicle_type: item.type || 'car',
-  totalPrice: total,
-  currency: currency.toUpperCase() as 'USD' | 'EUR',
-  customer: {
-    fullName: `${formData.firstName} ${formData.lastName}`,
-    email: formData.email,
-    phone: formData.phone,
-    age: driverAge,
-    countryOfResidency: ''
-  },
-  paymentMethod: formData.paymentMethod,
-  bookedAt: new Date().toISOString(),
-  pickup_date: `${formData.pickupDate}T${formData.pickupTime}:00Z`,  // ← Timestamp format
-  dropoff_date: `${formData.returnDate}T${formData.returnTime}:00Z`, // ← Timestamp format
+  vehicle_name: item.name,
+  vehicle_image_url: item.image,
+  pickup_date: `${formData.pickupDate}T${formData.pickupTime}:00Z`,
+  dropoff_date: `${formData.returnDate}T${formData.returnTime}:00Z`,
   pickup_location: formData.pickupLocation,
-  duration: `${days} ${days === 1 ? t('day') : t('days')}, ${hours} ${hours === 1 ? t('hour') : t('hours')}`,
-  driverLicenseImage: licenseImageUrl,
-  driverIdImage: idImageUrl,
-  extras: formData.extras,
-  pickupLocation: formData.pickupLocation,
-  insuranceOption: formData.insuranceOption,
+  dropoff_location: formData.returnLocation,
+  price_total: Math.round(total * 100), // Convert to cents
+  currency: currency.toUpperCase(),
+  status: 'pending',
+  payment_status: 'pending',
+  payment_method: formData.paymentMethod,
+  booked_at: new Date().toISOString(),
+  booking_details: {
+    customer: {
+      fullName: `${formData.firstName} ${formData.lastName}`,
+      email: formData.email,
+      phone: formData.phone,
+      age: driverAge,
+    },
+    duration: `${days} ${days === 1 ? 'day' : 'days'}`,
+    insuranceOption: formData.insuranceOption,
+    extras: formData.extras,
+    driverLicenseImage: licenseImageUrl,
+    driverIdImage: idImageUrl,
+  }
 };
 
 
