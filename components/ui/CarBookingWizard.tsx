@@ -395,14 +395,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     const isFile = type === 'file';
 
     if (name === 'pickupDate') {
-      const dayOfWeek = new Date(value).getDay();
-      if (dayOfWeek === 0) {
-        setErrors(prev => ({ ...prev, pickupDate: "Le prenotazioni non sono disponibili la domenica." }));
-        return;
-      } else {
-        setErrors(prev => ({ ...prev, pickupDate: "" }));
-      }
-    }
+  const dayOfWeek = new Date(value).getDay();
+  if (dayOfWeek === 0) {
+    setErrors(prev => ({ ...prev, pickupDate: "Le prenotazioni non sono disponibili la domenica." }));
+    return;  // ← This prevents the date from being saved
+  } else {
+    setErrors(prev => ({ ...prev, pickupDate: "" }));
+  }
+}
 
     const [, secondDriverField] = name.split('.');
     if (secondDriverField) {
