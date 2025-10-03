@@ -167,24 +167,39 @@ const CarWashBookingPage: React.FC = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
 
-      // Send confirmation email
+      console.log('Booking created successfully:', data);
+
+      // Send confirmation email (don't block on email failure)
       try {
-        await fetch('/.netlify/functions/send-booking-confirmation', {
+        const emailResponse = await fetch('/.netlify/functions/send-booking-confirmation', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ booking: data })
         });
+
+        if (!emailResponse.ok) {
+          console.warn('Email confirmation failed but booking succeeded');
+        } else {
+          console.log('Email confirmation sent successfully');
+        }
       } catch (emailError) {
-        console.error('Failed to send confirmation email:', emailError);
+        console.error('Email error (non-blocking):', emailError);
         // Don't block the user flow if email fails
       }
 
+      // Navigate to success page
       navigate('/booking-success', { state: { booking: data } });
     } catch (error: any) {
       console.error('Booking error:', error);
-      setErrors({ form: error.message || 'Booking failed' });
+
+      // Show detailed error message
+      const errorMessage = error.message || error.hint || error.details || 'Booking failed. Please try again.';
+      setErrors({ form: errorMessage });
     } finally {
       setIsSubmitting(false);
     }
