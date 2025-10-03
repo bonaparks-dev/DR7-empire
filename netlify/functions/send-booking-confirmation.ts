@@ -121,15 +121,30 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     `;
   }
 
-  const mailOptions = {
+  const customerMailOptions = {
     from: `"DR7 Empire" <dubai.rent7.0srl@gmail.com>`,
     to: customerEmail,
     subject: emailSubject,
     html: emailHtml,
   };
 
+  // Admin notification email
+  const adminMailOptions = {
+    from: `"DR7 Empire" <dubai.rent7.0srl@gmail.com>`,
+    to: 'Dubai.rent7.0srl@gmail.com',
+    subject: `[NUOVA PRENOTAZIONE] ${emailSubject}`,
+    html: emailHtml,
+  };
+
   try {
-    await transporter.sendMail(mailOptions);
+    // Send email to customer
+    await transporter.sendMail(customerMailOptions);
+
+    // Send copy to admin (non-blocking)
+    transporter.sendMail(adminMailOptions).catch(err =>
+      console.error('Failed to send admin notification:', err)
+    );
+
     return {
       statusCode: 200,
       body: JSON.stringify({ message: 'Email sent successfully' }),
