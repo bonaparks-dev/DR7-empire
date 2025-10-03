@@ -39,7 +39,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
   const currency = booking.currency || 'EUR';
 
   const mailOptions = {
-    from: `"DR7 Empire" <no-reply@dr7empire.com>`,
+    from: `"DR7 Empire" <Dubai.rent7.0srl@gmail.com>`,
     to: customerEmail,
     subject: `Conferma Prenotazione #${bookingId.substring(0, 8).toUpperCase()}`,
     html: `
