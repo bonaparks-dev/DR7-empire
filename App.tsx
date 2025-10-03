@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+Here's your complete updated App.tsx:
+typescriptimport React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
@@ -15,6 +16,7 @@ import { RENTAL_CATEGORIES } from './constants';
 import { AnimatePresence, motion } from 'framer-motion';
 import BookingModal from './components/ui/BookingModal';
 import CarBookingWizard from './components/ui/CarBookingWizard';
+import CarBookingConfirmationPage from './components/ui/CarBookingConfirmationPage';
 import { useBooking } from './hooks/useBooking';
 import BookingPage from './pages/BookingPage';
 import CommercialOperationPage from './pages/CommercialOperationPage';
@@ -172,6 +174,7 @@ const AnimatedRoutes = () => {
         <Route path="/check-email" element={<CheckEmailPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/confirmation-success" element={<ConfirmationSuccessPage />} />
+        <Route path="/car-booking-success" element={<CarBookingConfirmationPage />} />
         <Route path="/post/:id" element={<PostPage />} />
       </Routes>
     </AnimatePresence>
@@ -199,9 +202,9 @@ const MainContent = () => {
   const navigate = useNavigate();
 
   const handleBookingComplete = (booking: any) => {
-  closeCarWizard();
-  navigate('/confirmation-success', { state: { booking } });
-};
+    closeCarWizard();
+    navigate('/car-booking-success', { state: { booking } });
+  };
 
   return (
     <>
