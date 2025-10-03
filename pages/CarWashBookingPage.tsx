@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
 import { SERVICES, ADDITIONAL_SERVICES, Service } from './CarWashServicesPage';
+import type { Stripe, StripeElements } from '@stripe/stripe-js';
+
+const STRIPE_PUBLISHABLE_KEY = 'pk_live_51S3dDjQcprtTyo8tBfBy5mAZj8PQXkxfZ1RCnWskrWFZ2WEnm1u93ZnE2tBi316Gz2CCrvLV98IjSoiXb0vSDpOQ003fNG69Y2';
 
 const CarWashBookingPage: React.FC = () => {
   const { lang } = useTranslation();
@@ -39,6 +42,31 @@ const CarWashBookingPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [minDate] = useState(getTodayDate());
 
+  // Stripe payment state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [stripe, setStripe] = useState<Stripe | null>(null);
+  const [elements, setElements] = useState<StripeElements | null>(null);
+  const cardElementRef = useRef<HTMLDivElement>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [isClientSecretLoading, setIsClientSecretLoading] = useState(false);
+  const [stripeError, setStripeError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [pendingBookingData, setPendingBookingData] = useState<any>(null);
+
+  // Initialize Stripe
+  useEffect(() => {
+    if ((window as any).Stripe) {
+      if (!STRIPE_PUBLISHABLE_KEY || STRIPE_PUBLISHABLE_KEY.startsWith('YOUR_')) {
+        console.error("Stripe.js has loaded, but the publishable key is not set.");
+        setStripeError("Payment service is not configured correctly. Please contact support.");
+        return;
+      }
+      const stripeInstance = (window as any).Stripe(STRIPE_PUBLISHABLE_KEY);
+      setStripe(stripeInstance);
+      setElements(stripeInstance.elements());
+    }
+  }, []);
+
   useEffect(() => {
     if (!selectedService) {
       navigate('/car-wash-services');
@@ -55,6 +83,71 @@ const CarWashBookingPage: React.FC = () => {
       }));
     }
   }, [user]);
+
+  // Create payment intent when modal opens
+  useEffect(() => {
+    if (showPaymentModal && calculateTotal() > 0) {
+      setIsClientSecretLoading(true);
+      setStripeError(null);
+      setClientSecret(null);
+
+      fetch('/.netlify/functions/create-payment-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: calculateTotal(),
+          currency: 'eur',
+          email: user?.email,
+          purchaseType: 'car-wash',
+          metadata: {
+            serviceName: lang === 'it' ? selectedService?.name : selectedService?.nameEn,
+            appointmentDate: formData.appointmentDate,
+            appointmentTime: formData.appointmentTime
+          }
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          setStripeError(data.error);
+        } else {
+          setClientSecret(data.clientSecret);
+        }
+      })
+      .catch(error => {
+        console.error('Failed to fetch client secret:', error);
+        setStripeError('Could not connect to payment server.');
+      })
+      .finally(() => {
+        setIsClientSecretLoading(false);
+      });
+    }
+  }, [showPaymentModal, user, selectedService, formData.appointmentDate, formData.appointmentTime, lang]);
+
+  // Mount Stripe card element
+  useEffect(() => {
+    if (elements && clientSecret && cardElementRef.current) {
+      const card = elements.create('card', {
+        style: {
+          base: {
+            color: '#ffffff',
+            fontFamily: '"Exo 2", sans-serif',
+            fontSize: '16px',
+            '::placeholder': { color: '#a0aec0' }
+          },
+          invalid: { color: '#ef4444', iconColor: '#ef4444' }
+        }
+      });
+      card.mount(cardElementRef.current);
+      card.on('change', (event) => {
+        setStripeError(event.error ? event.error.message : null);
+      });
+
+      return () => {
+        card.unmount();
+      };
+    }
+  }, [elements, clientSecret]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -141,77 +234,108 @@ const CarWashBookingPage: React.FC = () => {
     e.preventDefault();
     if (!validate() || !selectedService) return;
 
-    setIsSubmitting(true);
+    // Prepare booking data and open payment modal
+    const bookingData = {
+      user_id: user?.id || null,
+      vehicle_type: 'car',
+      vehicle_name: 'Car Wash Service',
+      service_type: 'car_wash',
+      service_name: lang === 'it' ? selectedService.name : selectedService.nameEn,
+      service_id: selectedService.id,
+      price_total: Math.round(calculateTotal() * 100), // in cents
+      currency: 'EUR',
+      customer_name: formData.fullName,
+      customer_email: formData.email,
+      customer_phone: formData.phone,
+      appointment_date: new Date(`${formData.appointmentDate}T${formData.appointmentTime}`).toISOString(),
+      booking_details: {
+        additionalService: formData.additionalService,
+        additionalServiceHours: formData.additionalServiceHours,
+        notes: formData.notes
+      },
+      status: 'confirmed',
+      payment_status: 'pending',
+      booked_at: new Date().toISOString()
+    };
+
+    setPendingBookingData(bookingData);
+    setShowPaymentModal(true);
+  };
+
+  const handlePayment = async () => {
+    if (!stripe || !elements || !clientSecret || !pendingBookingData) return;
+
+    setIsProcessing(true);
+    setStripeError(null);
 
     try {
-      const bookingData = {
-        user_id: user?.id || null,
-        vehicle_type: 'car',
-        vehicle_name: 'Car Wash Service',
-        service_type: 'car_wash',
-        service_name: lang === 'it' ? selectedService.name : selectedService.nameEn,
-        service_id: selectedService.id,
-        price_total: Math.round(calculateTotal() * 100), // in cents
-        currency: 'EUR',
-        customer_name: formData.fullName,
-        customer_email: formData.email,
-        customer_phone: formData.phone,
-        appointment_date: new Date(`${formData.appointmentDate}T${formData.appointmentTime}`).toISOString(),
-        booking_details: {
-          additionalService: formData.additionalService,
-          additionalServiceHours: formData.additionalServiceHours,
-          notes: formData.notes
-        },
-        status: 'pending',
-        payment_status: 'pending',
-        booked_at: new Date().toISOString()
-      };
-
-      console.log('Attempting to insert booking:', bookingData);
-      console.log('Supabase URL:', supabase.supabaseUrl);
-
-      const { data, error } = await supabase
-        .from('bookings')
-        .insert(bookingData)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Database error:', error);
-        throw error;
+      const cardElement = elements.getElement('card');
+      if (!cardElement) {
+        throw new Error('Card element not found');
       }
 
-      console.log('Booking created successfully:', data);
-
-      // Send confirmation email (don't block on email failure)
-      try {
-        const emailResponse = await fetch('/.netlify/functions/send-booking-confirmation', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ booking: data })
-        });
-
-        if (!emailResponse.ok) {
-          console.warn('Email confirmation failed but booking succeeded');
-        } else {
-          console.log('Email confirmation sent successfully');
+      const { error: paymentError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: cardElement,
+          billing_details: {
+            name: formData.fullName,
+            email: formData.email,
+            phone: formData.phone
+          }
         }
-      } catch (emailError) {
-        console.error('Email error (non-blocking):', emailError);
-        // Don't block the user flow if email fails
+      });
+
+      if (paymentError) {
+        setStripeError(paymentError.message || 'Payment failed');
+        return;
       }
 
-      // Navigate to success page
-      navigate('/booking-success', { state: { booking: data } });
-    } catch (error: any) {
-      console.error('Booking error:', error);
+      if (paymentIntent.status === 'succeeded') {
+        // Payment successful, create booking with paid status
+        const bookingDataWithPayment = {
+          ...pendingBookingData,
+          payment_status: 'paid',
+          stripe_payment_intent_id: paymentIntent.id
+        };
 
-      // Show detailed error message
-      const errorMessage = error.message || error.hint || error.details || 'Booking failed. Please try again.';
-      setErrors({ form: errorMessage });
+        const { data, error } = await supabase
+          .from('bookings')
+          .insert(bookingDataWithPayment)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Database error:', error);
+          throw error;
+        }
+
+        // Send confirmation email (don't block on email failure)
+        try {
+          await fetch('/.netlify/functions/send-booking-confirmation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ booking: data })
+          });
+        } catch (emailError) {
+          console.error('Email error (non-blocking):', emailError);
+        }
+
+        // Navigate to success page
+        navigate('/booking-success', { state: { booking: data } });
+      }
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      setStripeError(error.message || 'Payment processing failed');
     } finally {
-      setIsSubmitting(false);
+      setIsProcessing(false);
     }
+  };
+
+  const handleCloseModal = () => {
+    setShowPaymentModal(false);
+    setClientSecret(null);
+    setStripeError(null);
+    setPendingBookingData(null);
   };
 
   if (!selectedService) return null;
@@ -432,14 +556,111 @@ const CarWashBookingPage: React.FC = () => {
                 disabled={isSubmitting}
                 className="w-full bg-white text-black font-bold py-4 px-6 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60"
               >
-                {isSubmitting
-                  ? (lang === 'it' ? 'Prenotazione in corso...' : 'Booking...')
-                  : (lang === 'it' ? 'CONFERMA PRENOTAZIONE' : 'CONFIRM BOOKING')}
+                {lang === 'it' ? 'PROCEDI AL PAGAMENTO' : 'PROCEED TO PAYMENT'}
               </button>
             </div>
           </form>
         </motion.div>
       </div>
+
+      {/* Payment Modal */}
+      <AnimatePresence>
+        {showPaymentModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={handleCloseModal}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-gray-900 border border-gray-700 rounded-lg p-6 md:p-8 max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-white">
+                  {lang === 'it' ? 'Completa il Pagamento' : 'Complete Payment'}
+                </h2>
+                <button
+                  onClick={handleCloseModal}
+                  className="text-gray-400 hover:text-white text-2xl"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="mb-6 p-4 bg-gray-800 rounded-lg">
+                <div className="flex justify-between text-sm text-gray-300 mb-2">
+                  <span>{lang === 'it' ? 'Servizio' : 'Service'}:</span>
+                  <span className="text-white font-semibold">
+                    {lang === 'it' ? selectedService?.name : selectedService?.nameEn}
+                  </span>
+                </div>
+                {formData.additionalService && (
+                  <div className="flex justify-between text-sm text-gray-300 mb-2">
+                    <span>{lang === 'it' ? 'Servizio Aggiuntivo' : 'Additional Service'}:</span>
+                    <span className="text-white">
+                      {ADDITIONAL_SERVICES.find(s => s.id === formData.additionalService)?.name}
+                    </span>
+                  </div>
+                )}
+                <div className="border-t border-gray-700 my-3"></div>
+                <div className="flex justify-between text-lg font-bold text-white">
+                  <span>{lang === 'it' ? 'Totale' : 'Total'}:</span>
+                  <span>€{calculateTotal()}</span>
+                </div>
+              </div>
+
+              {isClientSecretLoading ? (
+                <div className="text-center py-8 text-gray-400">
+                  {lang === 'it' ? 'Caricamento...' : 'Loading...'}
+                </div>
+              ) : clientSecret ? (
+                <>
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      {lang === 'it' ? 'Dettagli Carta' : 'Card Details'}
+                    </label>
+                    <div
+                      ref={cardElementRef}
+                      className="bg-gray-800 border border-gray-700 rounded-md p-3"
+                    />
+                  </div>
+
+                  {stripeError && (
+                    <div className="mb-4 p-3 bg-red-900/20 border border-red-800 rounded text-sm text-red-400">
+                      {stripeError}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handlePayment}
+                    disabled={isProcessing || !stripe}
+                    className="w-full bg-white text-black font-bold py-3 px-6 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60"
+                  >
+                    {isProcessing
+                      ? (lang === 'it' ? 'Elaborazione...' : 'Processing...')
+                      : (lang === 'it' ? `Paga €${calculateTotal()}` : `Pay €${calculateTotal()}`)}
+                  </button>
+
+                  <p className="text-xs text-gray-400 text-center mt-4">
+                    {lang === 'it'
+                      ? 'Pagamento sicuro elaborato da Stripe'
+                      : 'Secure payment processed by Stripe'}
+                  </p>
+                </>
+              ) : stripeError ? (
+                <div className="p-4 bg-red-900/20 border border-red-800 rounded text-sm text-red-400">
+                  {stripeError}
+                </div>
+              ) : null}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
