@@ -421,6 +421,7 @@ export const INSURANCE_OPTIONS = [
 
 export const RENTAL_EXTRAS = [
     { id: 'additional_driver', label: { en: 'Additional Driver', it: 'Guidatore Aggiuntivo' }, pricePerDay: { usd: 13, eur: 10, crypto: 0 } },
+    { id: 'young_driver_fee', label: { en: 'Young Driver Fee (Under 25)', it: 'Supplemento Giovane Conducente (Sotto 25)' }, pricePerDay: { usd: 11, eur: 10, crypto: 0 }, autoApply: true },
 ];
 
 export const COUNTRIES = [

@@ -271,7 +271,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     const calculatedDriverAge = calculateAgeFromDDMMYYYY(formData.birthDate);
     const calculatedLicenseYears = calculateYearsSince(formData.licenseIssueDate);
 
-    const calculatedYoungDriverFee = calculatedDriverAge > 0 && calculatedDriverAge < 25 ? 10 * billingDays : 0;
+    // Get young driver fee from RENTAL_EXTRAS
+    const youngDriverExtra = RENTAL_EXTRAS.find(e => e.id === 'young_driver_fee');
+    const calculatedYoungDriverFee = calculatedDriverAge > 0 && calculatedDriverAge < 25
+      ? (youngDriverExtra?.pricePerDay[currency] || 10) * billingDays
+      : 0;
     const calculatedRecentLicenseFee = calculatedLicenseYears >= 2 && calculatedLicenseYears < 3 ? 20 * billingDays : 0;
     const calculatedSecondDriverFee = formData.addSecondDriver ? 10 * billingDays : 0;
 
