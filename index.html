@@ -34,12 +34,16 @@
       .font-playfair {
         font-family: 'Playfair Display', serif;
       }
+      @keyframes marqueeMobile {
+        from { transform: translateX(0); }
+        to { transform: translateX(calc(-100% - var(--gap-mobile, 12px))); }
+      }
       @keyframes marquee {
         from { transform: translateX(0); }
         to { transform: translateX(calc(-100% - var(--gap, 20px))); }
       }
       .animate-marquee {
-        animation: marquee var(--speed-mobile, 15s) linear infinite;
+        animation: marqueeMobile var(--speed-mobile, 15s) linear infinite;
       }
       @media (min-width: 768px) {
         .animate-marquee {

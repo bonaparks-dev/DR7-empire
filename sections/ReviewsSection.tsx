@@ -146,6 +146,7 @@ export default function ReviewsSection() {
       speedSeconds={25}
       speedSecondsMobile={15}
       gapPx={20}
+      gapPxMobile={12}
       dark
     />
   );

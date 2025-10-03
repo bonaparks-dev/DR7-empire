@@ -37,6 +37,7 @@ type ReviewsMarqueeProps = {
     speedSeconds?: number;
     speedSecondsMobile?: number;
     gapPx?: number;
+    gapPxMobile?: number;
     dark?: boolean;
 };
 
@@ -57,7 +58,7 @@ const ReviewCard: React.FC<{ review: Review, dark?: boolean }> = ({ review, dark
     const starEmptyColor = dark ? "text-gray-600" : "text-gray-300";
 
     return (
-        <a href={review.sourceUrl} target="_blank" rel="noopener noreferrer" className={`h-full w-[280px] sm:w-[320px] md:w-[350px] shrink-0 rounded-xl p-4 sm:p-6 flex flex-col text-left transition-all duration-300 border backdrop-blur-sm hover:border-white/50 hover:bg-gray-900 ${cardClasses}`} style={{ marginRight: `var(--gap, 20px)` }}>
+        <a href={review.sourceUrl} target="_blank" rel="noopener noreferrer" className={`h-full w-[260px] sm:w-[320px] md:w-[350px] shrink-0 rounded-xl p-4 sm:p-6 flex flex-col text-left transition-all duration-300 border backdrop-blur-sm hover:border-white/50 hover:bg-gray-900 ${cardClasses} mr-3 sm:mr-5`}>
             <div className="flex items-center mb-3 sm:mb-4">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full mr-3 sm:mr-4 bg-gray-700 flex items-center justify-center text-white font-bold text-lg sm:text-xl">
                     {review.author.charAt(0)}
@@ -87,12 +88,14 @@ export const ReviewsMarquee: React.FC<ReviewsMarqueeProps> = ({
     speedSeconds = 10,
     speedSecondsMobile = 10,
     gapPx = 20,
+    gapPxMobile = 12,
     dark = false,
 }) => {
     const marqueeStyle = {
         '--speed': `${speedSeconds}s`,
         '--speed-mobile': `${speedSecondsMobile}s`,
         '--gap': `${gapPx}px`,
+        '--gap-mobile': `${gapPxMobile}px`,
     } as React.CSSProperties;
 
     // Duplicate reviews for a seamless loop
