@@ -53,7 +53,7 @@ function hashId(...parts) {
 // =================================================================================
 // START: REDESIGNED PDF GENERATION FUNCTION
 // =================================================================================
-const generateTicketPdf = (fullName, tickets) => {
+const generateTicketPdf = (fullName, tickets, purchaseDate) => {
   return new Promise(async (resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: 40 });
     const buffers = [];
@@ -102,6 +102,21 @@ const generateTicketPdf = (fullName, tickets) => {
       doc.font('Helvetica').fontSize(14).text('TICKET NUMBER', { align: 'center', characterSpacing: 2 });
       doc.font('Helvetica-Bold').fontSize(36).text(ticket.number.toString().padStart(6, '0'), { align: 'center' });
       doc.moveDown();
+
+      // Purchase date and time
+      if (purchaseDate) {
+        const dateStr = new Date(purchaseDate).toLocaleString('it-IT', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZone: 'Europe/Rome'
+        });
+        doc.font('Helvetica').fontSize(12).text('PURCHASE DATE & TIME', { align: 'center', characterSpacing: 1 });
+        doc.font('Helvetica-Bold').fontSize(14).text(dateStr, { align: 'center' });
+        doc.moveDown();
+      }
 
       // Generate QR code
       const qrCodeDataUrl = await QRCode.toDataURL('https://dr7empire.com/', {
@@ -186,7 +201,10 @@ exports.handler = async (event) => {
       id: hashId(paymentIntentId, incomingEmail, String(number), String(idx)),
     }));
 
-    const pdfBuffer = await generateTicketPdf(fullName || 'Valued Customer', tickets);
+    // Get purchase date from Payment Intent creation timestamp
+    const purchaseDate = pi.created ? new Date(pi.created * 1000) : new Date();
+
+    const pdfBuffer = await generateTicketPdf(fullName || 'Valued Customer', tickets, purchaseDate);
 
     try {
       const transporter = nodemailer.createTransport({
