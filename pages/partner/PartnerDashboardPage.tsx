@@ -4,10 +4,11 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../hooks/useAuth';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  FileTextIcon, CalendarIcon, ZapIcon, PlusIcon, ShieldIcon,
+  FileTextIcon, CalendarIcon, ZapIcon, PlusIcon, ShieldIcon, TicketIcon,
 } from '../../components/icons/Icons';
-import type { RentalItem } from '../../types';
+import type { RentalItem, CommercialOperationTicket } from '../../types';
 import { Button } from '../../components/ui/Button';
+import TicketDisplay from '../../components/ui/TicketDisplay';
 
 const StatusBadge: React.FC<{ status: 'unverified' | 'pending' | 'verified' }> = ({ status }) => {
     const { t } = useTranslation();
@@ -26,6 +27,7 @@ const PartnerDashboardPage: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [myListings, setMyListings] = useState<RentalItem[]>([]);
+    const [tickets, setTickets] = useState<CommercialOperationTicket[]>([]);
 
     useEffect(() => {
         if (location.state?.newListing) {
@@ -34,6 +36,20 @@ const PartnerDashboardPage: React.FC = () => {
             navigate(location.pathname, { replace: true, state: {} });
         }
     }, [location.state, navigate]);
+
+    // Load tickets from localStorage
+    useEffect(() => {
+        if (user) {
+            try {
+                const userTicketsKey = `commercial_operation_tickets_${user.id}`;
+                const savedTickets = JSON.parse(localStorage.getItem(userTicketsKey) || '[]');
+                setTickets(savedTickets);
+            } catch (error) {
+                console.error("Failed to load tickets from local storage", error);
+                setTickets([]);
+            }
+        }
+    }, [user]);
 
     const FeatureCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, description: string }> = ({ icon: Icon, title, description }) => (
         <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 text-center relative overflow-hidden h-full">
@@ -112,18 +128,47 @@ const PartnerDashboardPage: React.FC = () => {
                         )}
                     </div>
 
+                    {/* My Tickets Section */}
+                    <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 md:p-8 mb-12">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                            <div className="flex items-center gap-3">
+                                <TicketIcon className="w-6 h-6 text-white" />
+                                <h2 className="text-2xl font-bold text-white">{t('My_Tickets')}</h2>
+                            </div>
+                            <Button as={Link} to="/commercial-operation" size="sm" variant="outline">
+                                {t('Buy_More_Tickets')}
+                            </Button>
+                        </div>
+                        {tickets.length === 0 ? (
+                            <div className="text-center py-12 border-2 border-dashed border-gray-700 rounded-lg">
+                                <TicketIcon className="w-12 h-12 mx-auto text-gray-600 mb-4" />
+                                <h3 className="text-lg font-semibold text-white">{t('You_have_not_purchased_any_tickets_yet')}</h3>
+                                <p className="text-gray-400 mt-1">{t('Purchase_tickets_to_participate_in_the_giveaway')}</p>
+                                <Button as={Link} to="/commercial-operation" size="sm" className="mt-4">
+                                    DR7 Millions
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {tickets.map((ticket) => (
+                                    <TicketDisplay key={ticket.uuid} ticket={{...ticket, ownerName: user?.fullName || ''}} />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <FeatureCard 
+                        <FeatureCard
                             icon={CalendarIcon}
                             title="View_Bookings"
                             description="Track_upcoming_and_past_bookings"
                         />
-                        <FeatureCard 
+                        <FeatureCard
                             icon={ZapIcon}
                             title="Analytics"
                             description="Gain_insights_into_your_performance"
                         />
-                         <FeatureCard 
+                         <FeatureCard
                             icon={FileTextIcon}
                             title="Manage_Listings"
                             description="Add_edit_and_organize_your_assets"
