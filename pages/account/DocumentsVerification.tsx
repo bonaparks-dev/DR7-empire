@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../hooks/useTranslation';
-import { CameraIcon } from '../../components/icons/Icons'; 
+import { CameraIcon } from '../../components/icons/Icons';
 import { motion } from 'framer-motion';
+import { loadStripe } from '@stripe/stripe-js';
 
 const StatusBadge: React.FC<{ status: 'unverified' | 'pending' | 'verified' }> = ({ status }) => {
     const { t } = useTranslation();
@@ -58,6 +59,8 @@ const ImageUploader: React.FC<{
     );
 };
 
+const stripePromise = loadStripe('pk_live_51S3dDjQcprtTyo8tBfBy5mAZj8PQXkxfZ1RCnWskrWFZ2WEnm1u93ZnE2tBi316Gz2CCrvLV98IjSoiXb0vSDpOQ003fNG69Y2');
+
 const DocumentsVerification = () => {
     const { user, updateUser } = useAuth();
     const { t } = useTranslation();
@@ -65,8 +68,10 @@ const DocumentsVerification = () => {
     const [idFront, setIdFront] = useState(user?.verification.idFrontImage || '');
     const [idBack, setIdBack] = useState(user?.verification.idBackImage || '');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isVerifyingWithStripe, setIsVerifyingWithStripe] = useState(false);
+    const [verificationMethod, setVerificationMethod] = useState<'manual' | 'stripe'>('stripe');
 
-    const handleSubmit = async () => {
+    const handleManualSubmit = async () => {
         if (!idFront || !idBack || !user) return;
         setIsSubmitting(true);
         const newVerificationState = {
@@ -81,8 +86,51 @@ const DocumentsVerification = () => {
         setIsSubmitting(false);
     };
 
+    const handleStripeIdentityVerification = async () => {
+        if (!user) return;
+
+        setIsVerifyingWithStripe(true);
+
+        try {
+            // Create Stripe Identity verification session
+            const response = await fetch('/.netlify/functions/create-identity-verification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: user.id,
+                    email: user.email,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to create verification session');
+            }
+
+            // Load Stripe Identity
+            const stripe = await stripePromise;
+            if (!stripe) {
+                throw new Error('Failed to load Stripe');
+            }
+
+            // Redirect to Stripe Identity verification
+            const { error } = await stripe.verifyIdentity(data.clientSecret);
+
+            if (error) {
+                console.error('Stripe Identity error:', error);
+                alert(error.message || 'Verification failed');
+            }
+        } catch (error: any) {
+            console.error('Error starting verification:', error);
+            alert(error.message || 'Failed to start verification');
+        } finally {
+            setIsVerifyingWithStripe(false);
+        }
+    };
+
     if (!user) return null;
-    
+
     const { idStatus } = user.verification;
 
     return (
@@ -113,27 +161,66 @@ const DocumentsVerification = () => {
             )}
 
             {idStatus === 'unverified' && (
-                <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
-                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <ImageUploader 
-                            label={t('ID_Front')}
-                            description={t('Please_upload_the_front_of_your_ID')}
-                            image={idFront}
-                            onImageSet={setIdFront}
-                        />
-                        <ImageUploader 
-                            label={t('ID_Back')}
-                            description={t('Please_upload_the_back_of_your_ID')}
-                            image={idBack}
-                            onImageSet={setIdBack}
-                        />
-                    </div>
-                    <div className="p-6 bg-gray-900 flex items-center justify-end rounded-b-lg">
-                        <button type="submit" disabled={isSubmitting || !idFront || !idBack} className="px-5 py-2.5 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors text-sm disabled:opacity-60">
-                            {isSubmitting ? t('Please_wait') : t('Submit_for_Verification')}
+                <div className="p-6">
+                    {/* Stripe Identity Option (Recommended) */}
+                    <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-500/30 rounded-lg p-6 mb-6">
+                        <div className="flex items-start justify-between mb-4">
+                            <div>
+                                <h3 className="text-lg font-bold text-white mb-2">
+                                    ✨ {t('Instant_Verification')} <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full ml-2">{t('Recommended')}</span>
+                                </h3>
+                                <p className="text-sm text-gray-300 mb-3">
+                                    {t('Verify_instantly_with_Stripe_Identity')}
+                                </p>
+                                <ul className="text-sm text-gray-400 space-y-1">
+                                    <li>✓ {t('Instant_verification_in_minutes')}</li>
+                                    <li>✓ {t('Secure_and_encrypted')}</li>
+                                    <li>✓ {t('Take_photo_with_your_phone')}</li>
+                                    <li>✓ {t('Powered_by_Stripe')}</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleStripeIdentityVerification}
+                            disabled={isVerifyingWithStripe}
+                            className="w-full md:w-auto px-6 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60"
+                        >
+                            {isVerifyingWithStripe ? t('Please_wait') : t('Start_Instant_Verification')}
                         </button>
                     </div>
-                </form>
+
+                    {/* Manual Upload Option */}
+                    <div className="border border-gray-700 rounded-lg p-6">
+                        <h3 className="text-lg font-bold text-white mb-2">{t('Manual_Upload')}</h3>
+                        <p className="text-sm text-gray-400 mb-4">{t('Or_upload_documents_manually')}</p>
+
+                        <form onSubmit={(e) => { e.preventDefault(); handleManualSubmit(); }}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <ImageUploader
+                                    label={t('ID_Front')}
+                                    description={t('Please_upload_the_front_of_your_ID')}
+                                    image={idFront}
+                                    onImageSet={setIdFront}
+                                />
+                                <ImageUploader
+                                    label={t('ID_Back')}
+                                    description={t('Please_upload_the_back_of_your_ID')}
+                                    image={idBack}
+                                    onImageSet={setIdBack}
+                                />
+                            </div>
+                            <div className="flex justify-end">
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting || !idFront || !idBack}
+                                    className="px-5 py-2.5 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors text-sm disabled:opacity-60"
+                                >
+                                    {isSubmitting ? t('Please_wait') : t('Submit_for_Verification')}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             )}
         </div>
     );
