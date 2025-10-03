@@ -129,6 +129,22 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               </NavLink>
             </div>
 
+            {/* Sign In/Sign Up Button at Top (when not logged in) */}
+            {!user && (
+              <div className="mb-6 pb-6 border-b border-gray-800">
+                <Link
+                  to="/signin"
+                  onClick={onClose}
+                  className="flex items-center justify-center w-full bg-white text-black py-4 rounded-full font-bold text-base hover:bg-gray-200 transition-all duration-300 shadow-lg hover:shadow-xl"
+                >
+                  {t('Sign_In')}
+                </Link>
+                <p className="text-center text-xs text-gray-400 mt-3">
+                  {t('New_here')}? <Link to="/signin" onClick={onClose} className="text-white underline hover:text-gray-300">{t('Create_account')}</Link>
+                </p>
+              </div>
+            )}
+
             <nav className="flex-grow flex flex-col space-y-1">
               {RENTAL_CATEGORIES.map((cat) => (
                 <NavLink
@@ -152,7 +168,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
             </nav>
 
             <div className="mt-auto pt-8 border-t border-gray-800">
-              {user ? (
+              {user && (
                 <div className="space-y-3">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-white font-bold">
@@ -177,16 +193,8 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                     {t('Sign_Out')}
                   </button>
                 </div>
-              ) : (
-                <Link
-                  to="/signin"
-                  onClick={onClose}
-                  className="block w-full text-center bg-white text-black py-3 rounded-full font-bold text-sm hover:bg-gray-200"
-                >
-                  {t('Sign_In')}
-                </Link>
               )}
-              <div className="flex justify-between items-center mt-6">
+              <div className={`flex justify-between items-center ${user ? 'mt-6' : ''}`}>
                 <LanguageSwitcher />
                 <CurrencySwitcher />
               </div>
