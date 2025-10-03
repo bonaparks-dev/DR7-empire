@@ -58,6 +58,7 @@ import CommercialOperationSuccessPage from './pages/CommercialOperationSuccessPa
 import WinRulesPage from './pages/WinRulesPage';
 import LegalTermsPage from './pages/LegalTermsPage';
 import MyTickets from './pages/account/MyTickets';
+import MyBookings from './pages/account/MyBookings';
 import ConfirmationSuccessPage from './pages/ConfirmationSuccessPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
@@ -140,6 +141,7 @@ const AnimatedRoutes = () => {
           <Route path="security" element={<SecuritySettings />} />
           <Route path="documents" element={<DocumentsVerification />} />
           <Route path="membership" element={<MembershipStatus />} />
+          <Route path="bookings" element={<MyBookings />} />
           <Route path="notifications" element={<NotificationSettings />} />
           <Route path="tickets" element={<MyTickets />} />
         </Route>

@@ -14,6 +14,7 @@ const AccountPage = () => {
         { path: '/account/security', label: t('Security') },
         { path: '/account/documents', label: t('Documents') },
         { path: '/account/membership', label: t('My_Membership') },
+        { path: '/account/bookings', label: t('My_Bookings') },
         // My Tickets is available for all roles
         { path: '/account/tickets', label: t('My_Tickets') },
         { path: '/account/notifications', label: t('Notifications') },
