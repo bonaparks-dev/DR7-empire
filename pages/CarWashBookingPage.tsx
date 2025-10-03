@@ -80,8 +80,19 @@ const CarWashBookingPage: React.FC = () => {
     if (!formData.appointmentDate) newErrors.appointmentDate = lang === 'it' ? 'La data è obbligatoria' : 'Date is required';
     if (!formData.appointmentTime) newErrors.appointmentTime = lang === 'it' ? 'L\'ora è obbligatoria' : 'Time is required';
 
+    // Validate date is not in the past
+    if (formData.appointmentDate) {
+      const selectedDate = new Date(formData.appointmentDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset to start of day
+
+      if (selectedDate < today) {
+        newErrors.appointmentDate = lang === 'it' ? 'La data non può essere nel passato' : 'Date cannot be in the past';
+      }
+    }
+
     // Validate working hours
-    if (formData.appointmentDate && formData.appointmentTime) {
+    if (formData.appointmentDate && formData.appointmentTime && !newErrors.appointmentDate) {
       if (!isValidAppointmentTime(formData.appointmentDate, formData.appointmentTime)) {
         const dayOfWeek = new Date(formData.appointmentDate).getDay();
         if (dayOfWeek === 0) {
@@ -119,6 +130,8 @@ const CarWashBookingPage: React.FC = () => {
     try {
       const bookingData = {
         user_id: user?.id || null,
+        vehicle_type: 'car',
+        vehicle_name: 'Car Wash Service',
         service_type: 'car_wash',
         service_name: lang === 'it' ? selectedService.name : selectedService.nameEn,
         service_id: selectedService.id,
@@ -246,7 +259,13 @@ const CarWashBookingPage: React.FC = () => {
                     name="appointmentDate"
                     value={formData.appointmentDate}
                     onChange={handleChange}
-                    min={new Date().toISOString().split('T')[0]}
+                    min={(() => {
+                      const today = new Date();
+                      const year = today.getFullYear();
+                      const month = String(today.getMonth() + 1).padStart(2, '0');
+                      const day = String(today.getDate()).padStart(2, '0');
+                      return `${year}-${month}-${day}`;
+                    })()}
                     className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
                   />
                   {errors.appointmentDate && <p className="text-xs text-red-400 mt-1">{errors.appointmentDate}</p>}
