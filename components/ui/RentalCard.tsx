@@ -15,8 +15,11 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook }) => {
   const { currency } = useCurrency();
 
   const isVilla = item.id.startsWith('villa');
-  const isQuoteRequest = item.id.startsWith('jet') || item.id.startsWith('heli');
-  const imageAspectRatio = isQuoteRequest ? 'aspect-video' : 'aspect-[9/16]';
+  const isJet = item.id.startsWith('jet');
+  const isHelicopter = item.id.startsWith('heli');
+  const isQuoteRequest = isJet || isHelicopter;
+  // Helicopters use vertical format like cars, jets use horizontal
+  const imageAspectRatio = isHelicopter ? 'aspect-[9/16]' : (isJet ? 'aspect-video' : 'aspect-[9/16]');
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', {
@@ -25,6 +28,14 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook }) => {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(price);
+  };
+
+  const handleHelicopterQuote = () => {
+    const message = encodeURIComponent(
+      `Hi! I'm interested in booking the ${item.name}. Could you please provide me with a quote and availability details? Thank you!`
+    );
+    const whatsappUrl = `https://wa.me/393457905205?text=${message}`;
+    window.open(whatsappUrl, '_blank');
   };
 
   return (
@@ -59,8 +70,8 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook }) => {
               {t('Discover_More')}
             </Link>
           ) : (
-            <button 
-              onClick={() => onBook(item)}
+            <button
+              onClick={() => isHelicopter ? handleHelicopterQuote() : onBook(item)}
               disabled={item.available === false}
               className="bg-transparent border-2 border-white text-white px-6 py-2 rounded-full font-semibold text-sm transform transition-all duration-300 group-hover:bg-white group-hover:text-black group-hover:scale-105 disabled:bg-gray-700 disabled:border-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed disabled:scale-100"
             >
