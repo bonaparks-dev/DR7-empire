@@ -62,6 +62,8 @@ import ConfirmationSuccessPage from './pages/ConfirmationSuccessPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import CheckEmailPage from './pages/CheckEmailPage';
+import CarWashServicesPage from './pages/CarWashServicesPage';
+import CarWashBookingPage from './pages/CarWashBookingPage';
 
 const AuthRedirector: React.FC = () => {
   const { user, authEvent } = useAuth();
@@ -174,6 +176,9 @@ const AnimatedRoutes = () => {
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/confirmation-success" element={<ConfirmationSuccessPage />} />
         <Route path="/car-booking-success" element={<CarBookingConfirmationPage />} />
+        <Route path="/booking-success" element={<ConfirmationSuccessPage />} />
+        <Route path="/car-wash-services" element={<CarWashServicesPage />} />
+        <Route path="/car-wash-booking" element={<CarWashBookingPage />} />
         <Route path="/post/:id" element={<PostPage />} />
       </Routes>
     </AnimatePresence>
