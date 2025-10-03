@@ -352,5 +352,5 @@ const BookingPage: React.FC = () => {
     </motion.div>
   );
 };
-
+}
 export default BookingPage;
