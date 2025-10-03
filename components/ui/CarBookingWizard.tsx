@@ -607,7 +607,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   returnTime: formData.returnTime
 });
       
-     const bookingData = {
+  const bookingData = {
   user_id: user.id,
   vehicle_type: item.type || 'car',
   vehicle_name: item.name,
@@ -616,7 +616,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   dropoff_date: `${formData.returnDate}T${formData.returnTime}:00Z`,
   pickup_location: formData.pickupLocation,
   dropoff_location: formData.returnLocation,
-  price_total: Math.round(total * 100), // Convert to cents
+  price_total: Math.round(total * 100),
   currency: currency.toUpperCase(),
   status: 'pending',
   payment_status: 'pending',
@@ -629,7 +629,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       phone: formData.phone,
       age: driverAge,
     },
-    duration: `${days} ${days === 1 ? 'day' : 'days'}`,
+    duration: `${days} days`,
     insuranceOption: formData.insuranceOption,
     extras: formData.extras,
     driverLicenseImage: licenseImageUrl,
@@ -637,30 +637,22 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   }
 };
 
-
-const { data, error } = await supabase
-  .from('bookings')
-  .insert(bookingData)
-  .select();
+const { data, error } = await supabase.from('bookings').insert(bookingData).select().single();
 
 if (error) {
   console.error('DB insert error details:', error);
-  console.error('Booking data:', bookingData);
-  throw new Error(`DB insert failed: ${error.message || 'permission denied or RLS'}. Details: ${JSON.stringify(error.details || error)}`);
+  throw new Error(`DB insert failed: ${error.message}`);
 }
 
-const insertedBooking = Array.isArray(data) && data.length > 0 ? data[0] : bookingData;
-
-if (insertedBooking) {
-  // Non-blocking confirmation email
+if (data) {
   fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ booking: insertedBooking }),
+    body: JSON.stringify({ booking: data }),
   }).catch(emailError => console.error('Failed to send confirmation email:', emailError));
 }
 
-onBookingComplete(insertedBooking);
+onBookingComplete(data);
 setIsProcessing(false);
 
     } catch (e: any) {
