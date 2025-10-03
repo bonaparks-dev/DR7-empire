@@ -656,11 +656,19 @@ if (error) {
 }
 
 if (data) {
+  // Send email confirmation
   fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ booking: data }),
   }).catch(emailError => console.error('Failed to send confirmation email:', emailError));
+
+  // Send WhatsApp notification
+  fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ booking: data }),
+  }).catch(whatsappError => console.error('Failed to send WhatsApp notification:', whatsappError));
 }
 
 onBookingComplete(data);

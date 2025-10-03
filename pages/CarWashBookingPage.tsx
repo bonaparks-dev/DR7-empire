@@ -309,7 +309,7 @@ const CarWashBookingPage: React.FC = () => {
           throw error;
         }
 
-        // Send confirmation email (don't block on email failure)
+        // Send confirmation email and WhatsApp notification (don't block on failure)
         try {
           await fetch('/.netlify/functions/send-booking-confirmation', {
             method: 'POST',
@@ -318,6 +318,16 @@ const CarWashBookingPage: React.FC = () => {
           });
         } catch (emailError) {
           console.error('Email error (non-blocking):', emailError);
+        }
+
+        try {
+          await fetch('/.netlify/functions/send-whatsapp-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ booking: data })
+          });
+        } catch (whatsappError) {
+          console.error('WhatsApp error (non-blocking):', whatsappError);
         }
 
         // Navigate to success page
