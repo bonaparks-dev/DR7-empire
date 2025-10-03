@@ -77,9 +77,15 @@ const CarWashBookingPage: React.FC = () => {
     const [hours, minutes] = time.split(':').map(Number);
     const timeInMinutes = hours * 60 + minutes;
     const minTime = 9 * 60; // 9:00 AM
-    const maxTime = 20 * 60; // 8:00 PM
+    const maxTime = 20 * 60; // 8:00 PM (last appointment slot)
 
-    return timeInMinutes >= minTime && timeInMinutes <= maxTime;
+    // Time must be within range
+    if (timeInMinutes < minTime || timeInMinutes > maxTime) return false;
+
+    // Time must be on 30-minute intervals (0 or 30 minutes)
+    if (minutes !== 0 && minutes !== 30) return false;
+
+    return true;
   };
 
   const validate = () => {
@@ -308,21 +314,38 @@ const CarWashBookingPage: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     {lang === 'it' ? 'Ora' : 'Time'} *
                   </label>
-                  <input
-                    type="time"
+                  <select
                     name="appointmentTime"
                     value={formData.appointmentTime}
                     onChange={handleChange}
-                    min="09:00"
-                    max="20:00"
                     className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
-                  />
+                  >
+                    <option value="">{lang === 'it' ? 'Seleziona orario' : 'Select time'}</option>
+                    <option value="09:00">09:00</option>
+                    <option value="09:30">09:30</option>
+                    <option value="10:00">10:00</option>
+                    <option value="10:30">10:30</option>
+                    <option value="11:00">11:00</option>
+                    <option value="11:30">11:30</option>
+                    <option value="12:00">12:00</option>
+                    <option value="12:30">12:30</option>
+                    <option value="13:00">13:00</option>
+                    <option value="13:30">13:30</option>
+                    <option value="14:00">14:00</option>
+                    <option value="14:30">14:30</option>
+                    <option value="15:00">15:00</option>
+                    <option value="15:30">15:30</option>
+                    <option value="16:00">16:00</option>
+                    <option value="16:30">16:30</option>
+                    <option value="17:00">17:00</option>
+                    <option value="17:30">17:30</option>
+                    <option value="18:00">18:00</option>
+                    <option value="18:30">18:30</option>
+                    <option value="19:00">19:00</option>
+                    <option value="19:30">19:30</option>
+                    <option value="20:00">20:00</option>
+                  </select>
                   {errors.appointmentTime && <p className="text-xs text-red-400 mt-1">{errors.appointmentTime}</p>}
-                  {!errors.appointmentTime && formData.appointmentTime && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      {lang === 'it' ? 'Orario selezionato: ' : 'Selected time: '}{formData.appointmentTime}
-                    </p>
-                  )}
                 </div>
               </div>
             </div>
