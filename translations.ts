@@ -8,6 +8,7 @@ export const translations: Translations = {
   Villas: { en: "Villas", it: "Ville" },
   Jets: { en: "Jets", it: "Jet" },
   Helicopters: { en: "Helicopters", it: "Elicotteri" },
+  Car_Wash: { en: "Car Wash", it: "Autolavaggio" },
   Commercial_Operation: { en: "Commercial Operation", it: "Operazione Commerciale" },
   Membership: { en: "Members", it: "Members" },
   My_Account: { en: "My Account", it: "Il Mio Account" },
