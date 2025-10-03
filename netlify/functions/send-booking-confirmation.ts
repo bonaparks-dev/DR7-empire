@@ -20,8 +20,8 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT),
-    secure: true,
+    port: Number(process.env.SMTP_PORT) || 587,
+    secure: false, // false for port 587 (STARTTLS)
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
