@@ -35,15 +35,25 @@ function isKaskoEligibleByBuckets(
 }
 
 const calculateAgeFromDDMMYYYY = (dateString: string): number => {
-  if (!/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateString)) return 0;
-  const [d, m, y] = dateString.split('/');
-  const day = parseInt(d, 10);
-  const month = parseInt(m, 10) - 1;
-  const year = parseInt(y, 10);
-  if (isNaN(day) || isNaN(month) || isNaN(year)) return 0;
+  if (!dateString) return 0;
 
-  const birthDate = new Date(year, month, day);
-  if (birthDate.getFullYear() !== year || birthDate.getMonth() !== month || birthDate.getDate() !== day) return 0;
+  // Support both YYYY-MM-DD (date input) and DD/MM/YYYY (legacy)
+  let birthDate: Date;
+  if (dateString.includes('/')) {
+    // DD/MM/YYYY format
+    if (!/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateString)) return 0;
+    const [d, m, y] = dateString.split('/');
+    const day = parseInt(d, 10);
+    const month = parseInt(m, 10) - 1;
+    const year = parseInt(y, 10);
+    if (isNaN(day) || isNaN(month) || isNaN(year)) return 0;
+    birthDate = new Date(year, month, day);
+    if (birthDate.getFullYear() !== year || birthDate.getMonth() !== month || birthDate.getDate() !== day) return 0;
+  } else {
+    // YYYY-MM-DD format (from date input)
+    birthDate = new Date(dateString);
+    if (isNaN(birthDate.getTime())) return 0;
+  }
 
   const today = new Date();
   let age = today.getFullYear() - birthDate.getFullYear();
@@ -910,7 +920,7 @@ setIsProcessing(false);
               <div><label className="text-sm text-gray-400">Cognome *</label><input type="text" name={`${prefix}lastName`} value={(driverData as any).lastName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${prefix}lastName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}lastName`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Email *</label><input type="email" name={`${prefix}email`} value={(driverData as any).email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${prefix}email`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}email`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Telefono *</label><input type="tel" name={`${prefix}phone`} value={(driverData as any).phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${prefix}phone`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}phone`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Data di nascita *</label><input type="text" name={`${prefix}birthDate`} value={(driverData as any).birthDate} onChange={handleChange} placeholder="DD/MM/YYYY" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${prefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}birthDate`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Data di nascita *</label><input type="date" name={`${prefix}birthDate`} value={(driverData as any).birthDate} onChange={handleChange} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${prefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}birthDate`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Numero patente *</label><input type="text" name={`${prefix}licenseNumber`} value={(driverData as any).licenseNumber} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${prefix}licenseNumber`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseNumber`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Data rilascio patente *</label><input type="date" name={`${prefix}licenseIssueDate`} value={(driverData as any).licenseIssueDate} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>{errors[`${prefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseIssueDate`]}</p>}</div>
             </div>
