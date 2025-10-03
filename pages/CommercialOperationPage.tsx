@@ -66,6 +66,12 @@ const CommercialOperationPage: React.FC = () => {
     const [stripeError, setStripeError] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
 
+    // Gift Card State
+    const [giftCardCode, setGiftCardCode] = useState('');
+    const [giftCardData, setGiftCardData] = useState<any>(null);
+    const [giftCardError, setGiftCardError] = useState<string | null>(null);
+    const [isValidatingGiftCard, setIsValidatingGiftCard] = useState(false);
+
     useEffect(() => {
         if ((window as any).Stripe) {
             if (!STRIPE_PUBLISHABLE_KEY || STRIPE_PUBLISHABLE_KEY.startsWith('YOUR_')) {
@@ -87,7 +93,16 @@ const CommercialOperationPage: React.FC = () => {
     });
 
     const ticketPrice = currency === 'usd' ? giveaway.ticketPriceUSD : giveaway.ticketPriceEUR;
-    const totalPrice = useMemo(() => quantity * ticketPrice, [quantity, ticketPrice]);
+    const subtotal = useMemo(() => quantity * ticketPrice, [quantity, ticketPrice]);
+
+    // Calculate gift card discount
+    const giftCardDiscount = useMemo(() => {
+        if (!giftCardData || currency === 'usd') return 0;
+        const discountCents = giftCardData.giftCard.remaining_value;
+        return Math.min(discountCents / 100, subtotal);
+    }, [giftCardData, subtotal, currency]);
+
+    const totalPrice = useMemo(() => Math.max(0, subtotal - giftCardDiscount), [subtotal, giftCardDiscount]);
 
     const handleQuantityChange = (amount: number) => setQuantity(prev => Math.max(1, prev + amount));
     
@@ -103,6 +118,51 @@ const CommercialOperationPage: React.FC = () => {
         setShowConfirmModal(false);
         setClientSecret(null);
         setStripeError(null);
+    };
+
+    const validateGiftCard = async () => {
+        if (!giftCardCode.trim()) {
+            setGiftCardError('Please enter a gift card code');
+            return;
+        }
+
+        if (currency === 'usd') {
+            setGiftCardError('Gift cards can only be used with EUR currency');
+            return;
+        }
+
+        setIsValidatingGiftCard(true);
+        setGiftCardError(null);
+
+        try {
+            const response = await fetch('/.netlify/functions/validate-gift-card', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: giftCardCode.trim() })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.valid) {
+                setGiftCardData(data);
+                setGiftCardError(null);
+            } else {
+                setGiftCardError(data.message || 'Invalid gift card');
+                setGiftCardData(null);
+            }
+        } catch (error) {
+            console.error('Gift card validation error:', error);
+            setGiftCardError('Failed to validate gift card');
+            setGiftCardData(null);
+        } finally {
+            setIsValidatingGiftCard(false);
+        }
+    };
+
+    const removeGiftCard = () => {
+        setGiftCardCode('');
+        setGiftCardData(null);
+        setGiftCardError(null);
     };
 
     useEffect(() => {
@@ -179,15 +239,41 @@ const CommercialOperationPage: React.FC = () => {
             setStripeError(error.message || "An unexpected error occurred.");
             setIsProcessing(false);
         } else {
-             fetch('/.netlify/functions/generate-commercial-operation-tickets', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: user.email,
-                    fullName: user.fullName,
-                    quantity,
-                    paymentIntentId: paymentIntent.id
+            // Redeem gift card if used
+            let redeemPromise = Promise.resolve();
+            if (giftCardData && giftCardDiscount > 0) {
+                redeemPromise = fetch('/.netlify/functions/redeem-gift-card', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        code: giftCardCode.trim(),
+                        bookingId: paymentIntent.id,
+                        amountToUse: Math.round(giftCardDiscount * 100)
+                    })
                 })
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success) {
+                        console.error('Failed to redeem gift card:', data);
+                    }
+                })
+                .catch(err => {
+                    console.error('Gift card redemption error:', err);
+                });
+            }
+
+            // Generate tickets after gift card redemption
+            redeemPromise.then(() => {
+                return fetch('/.netlify/functions/generate-commercial-operation-tickets', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: user.email,
+                        fullName: user.fullName,
+                        quantity,
+                        paymentIntentId: paymentIntent.id
+                    })
+                });
             })
             .then(res => res.json())
             .then(data => {
@@ -322,9 +408,75 @@ const CommercialOperationPage: React.FC = () => {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex justify-between items-center text-lg sm:text-xl font-bold mb-6">
-                                    <span className="text-white/80">{t('Total_Price')}</span>
-                                    <span className="text-white">{formatPrice(totalPrice)}</span>
+
+                                {/* Gift Card Section */}
+                                <div className="mb-6 bg-black/40 border border-white/20 rounded-lg p-4">
+                                    <h4 className="text-sm font-semibold text-white/90 mb-3">
+                                        🎁 {t('Have_a_gift_card')}
+                                    </h4>
+                                    {!giftCardData ? (
+                                        <div className="space-y-3">
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={giftCardCode}
+                                                    onChange={(e) => setGiftCardCode(e.target.value.toUpperCase())}
+                                                    placeholder="GIFT-XXXXXXXX"
+                                                    className="flex-1 bg-white/10 border border-white/30 rounded-md px-3 py-2 text-white placeholder-white/50 text-sm focus:outline-none focus:border-white/60"
+                                                    disabled={isValidatingGiftCard || currency === 'usd'}
+                                                />
+                                                <button
+                                                    onClick={validateGiftCard}
+                                                    disabled={isValidatingGiftCard || !giftCardCode.trim() || currency === 'usd'}
+                                                    className="px-4 py-2 bg-white text-black font-semibold rounded-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm transition-colors"
+                                                >
+                                                    {isValidatingGiftCard ? t('Validating') : t('Apply')}
+                                                </button>
+                                            </div>
+                                            {giftCardError && (
+                                                <p className="text-xs text-red-400">{giftCardError}</p>
+                                            )}
+                                            {currency === 'usd' && (
+                                                <p className="text-xs text-yellow-400">Gift cards can only be used with EUR currency</p>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between bg-green-900/30 border border-green-500/50 rounded-md p-3">
+                                                <div className="flex-1">
+                                                    <p className="text-sm font-semibold text-green-200">{giftCardData.giftCard.code}</p>
+                                                    <p className="text-xs text-green-300/80">-{formatPrice(giftCardDiscount)}</p>
+                                                </div>
+                                                <button
+                                                    onClick={removeGiftCard}
+                                                    className="text-red-400 hover:text-red-300 text-sm font-semibold"
+                                                >
+                                                    {t('Remove')}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Price Summary */}
+                                <div className="space-y-2 mb-6">
+                                    {giftCardData && (
+                                        <>
+                                            <div className="flex justify-between items-center text-sm">
+                                                <span className="text-white/60">{t('Subtotal')}</span>
+                                                <span className="text-white/80">{formatPrice(subtotal)}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-sm">
+                                                <span className="text-green-400">{t('Gift_Card_Discount')}</span>
+                                                <span className="text-green-400">-{formatPrice(giftCardDiscount)}</span>
+                                            </div>
+                                            <div className="border-t border-white/20 my-2"></div>
+                                        </>
+                                    )}
+                                    <div className="flex justify-between items-center text-lg sm:text-xl font-bold">
+                                        <span className="text-white/80">{t('Total_Price')}</span>
+                                        <span className="text-white">{formatPrice(totalPrice)}</span>
+                                    </div>
                                 </div>
                                 <button 
                                     onClick={handleBuyClick} 
