@@ -638,24 +638,30 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 };
 
 
-      const { data, error } = await supabase.from('bookings').insert(bookingData).select('*').single();
-      if (error) {
-        console.error('DB insert error details:', error);
-        console.error('Booking data:', bookingData);
-        throw new Error(`DB insert failed: ${error.message || 'permission denied or RLS'}. Details: ${JSON.stringify(error.details || error)}`);
-      }
+const { data, error } = await supabase
+  .from('bookings')
+  .insert(bookingData)
+  .select();
 
-      if (data) {
-        // Non-blocking confirmation email
-        fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ booking: data }),
-        }).catch(emailError => console.error('Failed to send confirmation email:', emailError));
-      }
+if (error) {
+  console.error('DB insert error details:', error);
+  console.error('Booking data:', bookingData);
+  throw new Error(`DB insert failed: ${error.message || 'permission denied or RLS'}. Details: ${JSON.stringify(error.details || error)}`);
+}
 
-      onBookingComplete(bookingResult || bookingData);
-      setIsProcessing(false);
+const insertedBooking = Array.isArray(data) && data.length > 0 ? data[0] : bookingData;
+
+if (insertedBooking) {
+  // Non-blocking confirmation email
+  fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ booking: insertedBooking }),
+  }).catch(emailError => console.error('Failed to send confirmation email:', emailError));
+}
+
+onBookingComplete(insertedBooking);
+setIsProcessing(false);
 
     } catch (e: any) {
       setErrors(prev => ({ ...prev, form: `Booking failed: ${e.message}` }));
