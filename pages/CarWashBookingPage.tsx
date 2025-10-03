@@ -169,6 +169,18 @@ const CarWashBookingPage: React.FC = () => {
 
       if (error) throw error;
 
+      // Send confirmation email
+      try {
+        await fetch('/.netlify/functions/send-booking-confirmation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ booking: data })
+        });
+      } catch (emailError) {
+        console.error('Failed to send confirmation email:', emailError);
+        // Don't block the user flow if email fails
+      }
+
       navigate('/booking-success', { state: { booking: data } });
     } catch (error: any) {
       console.error('Booking error:', error);
