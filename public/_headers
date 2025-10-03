@@ -1,0 +1,11 @@
+# Cache static assets
+/favicon.ico
+  Cache-Control: public, max-age=86400
+/favicon-16x16.png
+  Cache-Control: public, max-age=86400
+/favicon-32x32.png
+  Cache-Control: public, max-age=86400
+/DR7logo.png
+  Cache-Control: public, max-age=86400
+/site.webmanifest
+  Cache-Control: public, max-age=86400
