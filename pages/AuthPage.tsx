@@ -17,7 +17,7 @@ const AuthPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState((location.state as any)?.error || '');
 
   useEffect(() => {
     if (!loading && user) {

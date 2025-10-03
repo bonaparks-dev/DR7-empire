@@ -10,21 +10,43 @@ const AuthCallbackPage: React.FC = () => {
 
   useEffect(() => {
     const run = async () => {
-      // 1) Échange le code OAuth présent dans l’URL contre une session
-      const { error } = await supabase.auth.exchangeCodeForSession();
+      console.log('[OAuth] Starting authentication callback...');
+
+      // 1) Exchange the OAuth code in the URL for a session
+      const { data, error } = await supabase.auth.exchangeCodeForSession();
       if (error) {
-        console.error('[OAuth] exchangeCodeForSession failed:', error.message);
-        navigate('/signin', { replace: true, state: { error: 'Authentication failed. Please try again.' } });
+        console.error('[OAuth] exchangeCodeForSession failed:', error);
+        console.error('[OAuth] Error details:', {
+          message: error.message,
+          status: error.status,
+          name: error.name
+        });
+        navigate('/signin', {
+          replace: true,
+          state: {
+            error: `Authentication failed: ${error.message}. Please check your Supabase OAuth configuration.`
+          }
+        });
         return;
       }
 
-      // 2) Redirige où tu veux (selon rôle si tu veux)
-      // Tu peux récupérer le user à nouveau si besoin :
-      const { data: { user: freshUser } } = await supabase.auth.getUser();
+      console.log('[OAuth] Session exchange successful');
+
+      // 2) Get fresh user data and redirect based on role
+      const { data: { user: freshUser }, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !freshUser) {
+        console.error('[OAuth] Failed to get user:', userError);
+        navigate('/signin', { replace: true, state: { error: 'Failed to retrieve user data.' } });
+        return;
+      }
+
+      console.log('[OAuth] User retrieved:', freshUser.email, 'Role:', freshUser.user_metadata?.role);
 
       const destination =
         freshUser?.user_metadata?.role === 'business' ? '/partner/dashboard' : '/account';
 
+      console.log('[OAuth] Redirecting to:', destination);
       navigate(destination, { replace: true });
     };
 
