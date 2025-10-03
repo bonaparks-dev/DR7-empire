@@ -161,6 +161,9 @@ const CarWashBookingPage: React.FC = () => {
         booked_at: new Date().toISOString()
       };
 
+      console.log('Attempting to insert booking:', bookingData);
+      console.log('Supabase URL:', supabase.supabaseUrl);
+
       const { data, error } = await supabase
         .from('bookings')
         .insert(bookingData)
