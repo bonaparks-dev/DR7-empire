@@ -15,6 +15,15 @@ const CarWashBookingPage: React.FC = () => {
   const serviceId = (location.state as any)?.serviceId;
   const selectedService = SERVICES.find(s => s.id === serviceId);
 
+  // Get today's date in YYYY-MM-DD format for min attribute
+  const getTodayDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -28,6 +37,7 @@ const CarWashBookingPage: React.FC = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [minDate] = useState(getTodayDate());
 
   useEffect(() => {
     if (!selectedService) {
@@ -259,13 +269,7 @@ const CarWashBookingPage: React.FC = () => {
                     name="appointmentDate"
                     value={formData.appointmentDate}
                     onChange={handleChange}
-                    min={(() => {
-                      const today = new Date();
-                      const year = today.getFullYear();
-                      const month = String(today.getMonth() + 1).padStart(2, '0');
-                      const day = String(today.getDate()).padStart(2, '0');
-                      return `${year}-${month}-${day}`;
-                    })()}
+                    min={minDate}
                     className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
                   />
                   {errors.appointmentDate && <p className="text-xs text-red-400 mt-1">{errors.appointmentDate}</p>}
