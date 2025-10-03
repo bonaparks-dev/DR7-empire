@@ -35,6 +35,7 @@ type ReviewsMarqueeProps = {
     ratingSummary?: RatingSummary;
     googleReviewsUrl?: string;
     speedSeconds?: number;
+    speedSecondsMobile?: number;
     gapPx?: number;
     dark?: boolean;
 };
@@ -56,25 +57,25 @@ const ReviewCard: React.FC<{ review: Review, dark?: boolean }> = ({ review, dark
     const starEmptyColor = dark ? "text-gray-600" : "text-gray-300";
 
     return (
-        <a href={review.sourceUrl} target="_blank" rel="noopener noreferrer" className={`h-full w-[350px] shrink-0 rounded-xl p-6 flex flex-col text-left transition-all duration-300 border backdrop-blur-sm hover:border-white/50 hover:bg-gray-900 ${cardClasses}`} style={{ marginRight: `var(--gap, 20px)` }}>
-            <div className="flex items-center mb-4">
-                <div className="w-12 h-12 rounded-full mr-4 bg-gray-700 flex items-center justify-center text-white font-bold text-xl">
+        <a href={review.sourceUrl} target="_blank" rel="noopener noreferrer" className={`h-full w-[280px] sm:w-[320px] md:w-[350px] shrink-0 rounded-xl p-4 sm:p-6 flex flex-col text-left transition-all duration-300 border backdrop-blur-sm hover:border-white/50 hover:bg-gray-900 ${cardClasses}`} style={{ marginRight: `var(--gap, 20px)` }}>
+            <div className="flex items-center mb-3 sm:mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full mr-3 sm:mr-4 bg-gray-700 flex items-center justify-center text-white font-bold text-lg sm:text-xl">
                     {review.author.charAt(0)}
                 </div>
                 <div>
-                    <h3 className={`font-bold ${authorColor}`}>{review.author}</h3>
-                    <p className={`text-sm ${dateColor}`}>{formattedDate}</p>
+                    <h3 className={`font-bold text-sm sm:text-base ${authorColor}`}>{review.author}</h3>
+                    <p className={`text-xs sm:text-sm ${dateColor}`}>{formattedDate}</p>
                 </div>
             </div>
-            <div className="flex mb-4">
+            <div className="flex mb-3 sm:mb-4">
                 {Array.from({ length: 5 }).map((_, i) => (
                     <StarIcon
                         key={i}
-                        className={`w-5 h-5 ${i < review.rating ? starColor : starEmptyColor}`}
+                        className={`w-4 h-4 sm:w-5 sm:h-5 ${i < review.rating ? starColor : starEmptyColor}`}
                     />
                 ))}
             </div>
-            <p className="text-sm leading-relaxed flex-grow line-clamp-6">{review.body}</p>
+            <p className="text-xs sm:text-sm leading-relaxed flex-grow line-clamp-5 sm:line-clamp-6">{review.body}</p>
         </a>
     );
 };
@@ -84,14 +85,16 @@ export const ReviewsMarquee: React.FC<ReviewsMarqueeProps> = ({
     business,
     ratingSummary,
     speedSeconds = 10,
+    speedSecondsMobile = 10,
     gapPx = 20,
     dark = false,
 }) => {
     const marqueeStyle = {
         '--speed': `${speedSeconds}s`,
+        '--speed-mobile': `${speedSecondsMobile}s`,
         '--gap': `${gapPx}px`,
     } as React.CSSProperties;
-    
+
     // Duplicate reviews for a seamless loop
     const doubledReviews = [...reviews, ...reviews, ...reviews, ...reviews];
     

@@ -143,7 +143,8 @@ export default function ReviewsSection() {
       }}
       ratingSummary={{ ratingValue: 4.9, reviewCount: 154 }}
       googleReviewsUrl="https://share.google/o5c8DO8nmk3XMn0hF"
-      speedSeconds={40}
+      speedSeconds={25}
+      speedSecondsMobile={15}
       gapPx={20}
       dark
     />

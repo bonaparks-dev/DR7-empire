@@ -39,7 +39,12 @@
         to { transform: translateX(calc(-100% - var(--gap, 20px))); }
       }
       .animate-marquee {
-        animation: marquee var(--speed, 40s) linear infinite;
+        animation: marquee var(--speed-mobile, 15s) linear infinite;
+      }
+      @media (min-width: 768px) {
+        .animate-marquee {
+          animation: marquee var(--speed, 25s) linear infinite;
+        }
       }
     </style>
 
