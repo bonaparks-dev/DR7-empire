@@ -19,10 +19,6 @@ const CarWashBookingPage: React.FC = () => {
     fullName: '',
     email: '',
     phone: '',
-    carMake: '',
-    carModel: '',
-    carYear: '',
-    licensePlate: '',
     appointmentDate: '',
     appointmentTime: '',
     additionalService: '',
@@ -58,15 +54,43 @@ const CarWashBookingPage: React.FC = () => {
     }
   };
 
+  const isValidAppointmentTime = (date: string, time: string) => {
+    if (!date || !time) return false;
+
+    const appointmentDate = new Date(date);
+    const dayOfWeek = appointmentDate.getDay();
+
+    // Sunday = 0, Monday = 1, Saturday = 6
+    if (dayOfWeek === 0) return false;
+
+    // Check time is between 9:00 and 20:00
+    const [hours, minutes] = time.split(':').map(Number);
+    const timeInMinutes = hours * 60 + minutes;
+    const minTime = 9 * 60; // 9:00 AM
+    const maxTime = 20 * 60; // 8:00 PM
+
+    return timeInMinutes >= minTime && timeInMinutes <= maxTime;
+  };
+
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.fullName) newErrors.fullName = lang === 'it' ? 'Il nome è obbligatorio' : 'Name is required';
     if (!formData.email) newErrors.email = lang === 'it' ? 'L\'email è obbligatoria' : 'Email is required';
     if (!formData.phone) newErrors.phone = lang === 'it' ? 'Il telefono è obbligatorio' : 'Phone is required';
-    if (!formData.carMake) newErrors.carMake = lang === 'it' ? 'La marca è obbligatoria' : 'Make is required';
-    if (!formData.carModel) newErrors.carModel = lang === 'it' ? 'Il modello è obbligatorio' : 'Model is required';
     if (!formData.appointmentDate) newErrors.appointmentDate = lang === 'it' ? 'La data è obbligatoria' : 'Date is required';
     if (!formData.appointmentTime) newErrors.appointmentTime = lang === 'it' ? 'L\'ora è obbligatoria' : 'Time is required';
+
+    // Validate working hours
+    if (formData.appointmentDate && formData.appointmentTime) {
+      if (!isValidAppointmentTime(formData.appointmentDate, formData.appointmentTime)) {
+        const dayOfWeek = new Date(formData.appointmentDate).getDay();
+        if (dayOfWeek === 0) {
+          newErrors.appointmentDate = lang === 'it' ? 'Siamo chiusi la domenica' : 'We are closed on Sundays';
+        } else {
+          newErrors.appointmentTime = lang === 'it' ? 'Orario disponibile: Lunedì-Sabato 9:00-20:00' : 'Available hours: Monday-Saturday 9:00-20:00';
+        }
+      }
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -105,10 +129,6 @@ const CarWashBookingPage: React.FC = () => {
         customer_phone: formData.phone,
         appointment_date: new Date(`${formData.appointmentDate}T${formData.appointmentTime}`).toISOString(),
         booking_details: {
-          carMake: formData.carMake,
-          carModel: formData.carModel,
-          carYear: formData.carYear,
-          licensePlate: formData.licensePlate,
           additionalService: formData.additionalService,
           additionalServiceHours: formData.additionalServiceHours,
           notes: formData.notes
@@ -199,74 +219,23 @@ const CarWashBookingPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Car Info */}
-            <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
-              <h2 className="text-2xl font-bold text-white mb-6">
-                {lang === 'it' ? 'Informazioni Veicolo' : 'Vehicle Information'}
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {lang === 'it' ? 'Marca' : 'Make'} *
-                  </label>
-                  <input
-                    type="text"
-                    name="carMake"
-                    value={formData.carMake}
-                    onChange={handleChange}
-                    placeholder="Mercedes, BMW, Audi..."
-                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
-                  />
-                  {errors.carMake && <p className="text-xs text-red-400 mt-1">{errors.carMake}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {lang === 'it' ? 'Modello' : 'Model'} *
-                  </label>
-                  <input
-                    type="text"
-                    name="carModel"
-                    value={formData.carModel}
-                    onChange={handleChange}
-                    placeholder="GLE, X5, Q7..."
-                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
-                  />
-                  {errors.carModel && <p className="text-xs text-red-400 mt-1">{errors.carModel}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {lang === 'it' ? 'Anno' : 'Year'}
-                  </label>
-                  <input
-                    type="text"
-                    name="carYear"
-                    value={formData.carYear}
-                    onChange={handleChange}
-                    placeholder="2023"
-                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {lang === 'it' ? 'Targa' : 'License Plate'}
-                  </label>
-                  <input
-                    type="text"
-                    name="licensePlate"
-                    value={formData.licensePlate}
-                    onChange={handleChange}
-                    placeholder="AB123CD"
-                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
-                  />
-                </div>
-              </div>
-            </div>
-
             {/* Appointment */}
             <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
-              <h2 className="text-2xl font-bold text-white mb-6">
+              <h2 className="text-2xl font-bold text-white mb-4">
                 {lang === 'it' ? 'Data e Ora Appuntamento' : 'Appointment Date & Time'}
               </h2>
+              <div className="mb-4 p-3 bg-gray-800/50 rounded-md border border-gray-700">
+                <p className="text-sm text-gray-300">
+                  <span className="font-semibold text-white">
+                    {lang === 'it' ? 'Orari di apertura:' : 'Opening hours:'}
+                  </span>
+                  {' '}
+                  {lang === 'it' ? 'Lunedì - Sabato, 9:00 - 20:00' : 'Monday - Saturday, 9:00 AM - 8:00 PM'}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {lang === 'it' ? 'Chiusi la domenica' : 'Closed on Sundays'}
+                </p>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -291,9 +260,16 @@ const CarWashBookingPage: React.FC = () => {
                     name="appointmentTime"
                     value={formData.appointmentTime}
                     onChange={handleChange}
+                    min="09:00"
+                    max="20:00"
                     className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
                   />
                   {errors.appointmentTime && <p className="text-xs text-red-400 mt-1">{errors.appointmentTime}</p>}
+                  {!errors.appointmentTime && formData.appointmentTime && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      {lang === 'it' ? 'Orario selezionato: ' : 'Selected time: '}{formData.appointmentTime}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

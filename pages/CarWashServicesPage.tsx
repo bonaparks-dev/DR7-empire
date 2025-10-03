@@ -167,22 +167,8 @@ const CarWashServicesPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black">
-      <div className="pt-32 pb-16 px-6">
-        <div className="container mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            <h1 className="text-6xl md:text-7xl font-bold text-white mb-6">DR7</h1>
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">RAPID SERVICE</h2>
-            <p className="text-2xl text-gray-400">LISTINO LAVAGGIO</p>
-          </motion.div>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-6 pb-16">
+    <div className="min-h-screen bg-black pt-32 pb-16">
+      <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {SERVICES.map((service, index) => (
             <motion.div
