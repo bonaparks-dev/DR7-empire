@@ -99,7 +99,19 @@ const JetSearchResultsPage: React.FC = () => {
                 {searchResults.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {searchResults.map(item => (
-                            <RentalCard key={item.id} item={item} onBook={handleBook} />
+                            <RentalCard
+                                key={item.id}
+                                item={item}
+                                onBook={handleBook}
+                                jetSearchData={{
+                                    departure: getAirportName(searchCriteria.departure),
+                                    arrival: getAirportName(searchCriteria.arrival),
+                                    departureDate: searchCriteria.departureDate || undefined,
+                                    returnDate: searchCriteria.returnDate || undefined,
+                                    passengers: searchCriteria.passengers,
+                                    tripType: searchCriteria.tripType,
+                                }}
+                            />
                         ))}
                     </div>
                 ) : (

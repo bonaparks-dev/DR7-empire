@@ -8,9 +8,17 @@ import { Link } from 'react-router-dom';
 interface RentalCardProps {
   item: RentalItem;
   onBook: (item: RentalItem) => void;
+  jetSearchData?: {
+    departure?: string;
+    arrival?: string;
+    departureDate?: string;
+    returnDate?: string;
+    passengers?: number;
+    tripType?: string;
+  };
 }
 
-const RentalCard: React.FC<RentalCardProps> = ({ item, onBook }) => {
+const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) => {
   const { t, getTranslated } = useTranslation();
   const { currency } = useCurrency();
 
@@ -18,8 +26,8 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook }) => {
   const isJet = item.id.startsWith('jet');
   const isHelicopter = item.id.startsWith('heli');
   const isQuoteRequest = isJet || isHelicopter;
-  // Helicopters use vertical format like cars, jets use horizontal
-  const imageAspectRatio = isHelicopter ? 'aspect-[9/16]' : (isJet ? 'aspect-video' : 'aspect-[9/16]');
+  // All use vertical format like cars
+  const imageAspectRatio = 'aspect-[9/16]';
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', {
@@ -35,6 +43,28 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook }) => {
       `Hi! I'm interested in booking the ${item.name}. Could you please provide me with a quote and availability details? Thank you!`
     );
     const whatsappUrl = `https://wa.me/393457905205?text=${message}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const handleJetQuote = () => {
+    let message = `Hi! I'm interested in booking the ${item.name}.\n\n`;
+
+    if (jetSearchData) {
+      message += `Flight Details:\n`;
+      message += `• Trip Type: ${jetSearchData.tripType === 'round-trip' ? 'Round Trip' : 'One Way'}\n`;
+      if (jetSearchData.departure) message += `• Departure: ${jetSearchData.departure}\n`;
+      if (jetSearchData.arrival) message += `• Arrival: ${jetSearchData.arrival}\n`;
+      if (jetSearchData.departureDate) message += `• Departure Date: ${jetSearchData.departureDate}\n`;
+      if (jetSearchData.returnDate && jetSearchData.tripType === 'round-trip') {
+        message += `• Return Date: ${jetSearchData.returnDate}\n`;
+      }
+      if (jetSearchData.passengers) message += `• Passengers: ${jetSearchData.passengers}\n`;
+      message += `\n`;
+    }
+
+    message += `Could you please provide me with a quote? Thank you!`;
+
+    const whatsappUrl = `https://wa.me/393457905205?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 
@@ -71,7 +101,11 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook }) => {
             </Link>
           ) : (
             <button
-              onClick={() => isHelicopter ? handleHelicopterQuote() : onBook(item)}
+              onClick={() => {
+                if (isHelicopter) handleHelicopterQuote();
+                else if (isJet) handleJetQuote();
+                else onBook(item);
+              }}
               disabled={item.available === false}
               className="bg-transparent border-2 border-white text-white px-6 py-2 rounded-full font-semibold text-sm transform transition-all duration-300 group-hover:bg-white group-hover:text-black group-hover:scale-105 disabled:bg-gray-700 disabled:border-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed disabled:scale-100"
             >
