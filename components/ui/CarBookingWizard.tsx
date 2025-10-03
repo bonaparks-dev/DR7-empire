@@ -75,14 +75,15 @@ const calculateYearsSince = (dateString: string): number => {
 };
 
 // === Km inclusi per durata ===
-// 1gg=100, 2gg=180, 3gg=240, 4gg=300, dal 5° giorno +60/giorno
+// 1gg=100, 2gg=180, 3gg=240, 4gg=280, 5gg=300, dal 5° giorno in poi +60/giorno
 const calculateIncludedKm = (days: number) => {
   if (days <= 0) return 0;
   if (days === 1) return 100;
   if (days === 2) return 180;
   if (days === 3) return 240;
-  if (days === 4) return 300;
-  return 300 + ((days - 4) * 60);
+  if (days === 4) return 280;
+  if (days === 5) return 300;
+  return 300 + ((days - 5) * 60);
 };
 
 interface CarBookingWizardProps {
@@ -904,7 +905,7 @@ setIsProcessing(false);
                   )}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
-                  1gg=100 • 2gg=180 • 3gg=240 • 4gg=300 • dal 5° giorno +60km/giorno
+                  1gg=100 • 2gg=180 • 3gg=240 • 4gg=280 • 5gg=300 • dal 5° giorno +60km/giorno
                 </p>
               </div>
             </div>
@@ -1297,7 +1298,7 @@ setIsProcessing(false);
             <div className="space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-gray-400">Durata noleggio:</span><span className="text-white font-medium">{duration.days} giorni</span></div>
               <div className="flex justify-between"><span className="text-gray-400">Chilometri inclusi:</span><span className="text-white font-medium">{includedKm} km</span></div>
-              <p className="text-[11px] text-gray-400">1gg=100 • 2gg=180 • 3gg=240 • 4gg=300 • dal 5° giorno +60/giorno</p>
+              <p className="text-[11px] text-gray-400">1gg=100 • 2gg=180 • 3gg=240 • 4gg=280 • 5gg=300 • dal 5° giorno +60/giorno</p>
 
               <div className="border-t border-gray-700 my-2"></div>
 
