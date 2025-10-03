@@ -8,7 +8,6 @@ import { supabase } from '../supabaseClient';
 import { RENTAL_CATEGORIES, YACHT_PICKUP_MARINAS, AIRPORTS, HELI_DEPARTURE_POINTS, HELI_ARRIVAL_POINTS } from '../constants';
 import type { Booking, Inquiry, RentalItem } from '../types';
 import CarBookingWizard from '../components/ui/CarBookingWizard';
-import BookingConfirmation from '../components/ui/BookingConfirmation';
 
 import { CreditCardIcon, XIcon } from '../components/icons/Icons';
 
@@ -249,7 +248,13 @@ const BookingPage: React.FC = () => {
                 <button type="button" onClick={() => navigate('/')} className="mt-8 bg-white text-black px-6 py-2 rounded-full font-semibold text-sm hover:bg-gray-200 transition-colors">Go to Home</button>
             </div>
         );
-        return <BookingConfirmation booking={completedBooking as Booking} />;
+        return (
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-white mb-2">Booking Confirmed!</h2>
+            <p className="text-gray-300 max-w-md mx-auto">Your booking has been confirmed.</p>
+            <button type="button" onClick={() => navigate('/account')} className="mt-8 bg-white text-black px-6 py-2 rounded-full font-semibold text-sm hover:bg-gray-200 transition-colors">View My Bookings</button>
+          </div>
+        );
     }
 
     if (isCar) {
@@ -347,6 +352,5 @@ const BookingPage: React.FC = () => {
     </motion.div>
   );
 };
-}
 
 export default BookingPage;
