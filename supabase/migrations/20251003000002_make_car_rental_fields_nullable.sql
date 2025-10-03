@@ -53,9 +53,25 @@ BEGIN
         RAISE NOTICE 'vehicle_name: %', SQLERRM;
     END;
 
+    -- pickup_location should be nullable (car wash doesn't need it)
+    BEGIN
+        ALTER TABLE public.bookings ALTER COLUMN pickup_location DROP NOT NULL;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'pickup_location: %', SQLERRM;
+    END;
+
+    -- dropoff_location should be nullable
+    BEGIN
+        ALTER TABLE public.bookings ALTER COLUMN dropoff_location DROP NOT NULL;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'dropoff_location: %', SQLERRM;
+    END;
+
 END $$;
 
 -- Add comment explaining the nullable fields
 COMMENT ON COLUMN public.bookings.pickup_date IS 'Required for car rentals, NULL for car wash bookings';
 COMMENT ON COLUMN public.bookings.dropoff_date IS 'Required for car rentals, NULL for car wash bookings';
+COMMENT ON COLUMN public.bookings.pickup_location IS 'Required for car rentals, NULL for car wash bookings';
+COMMENT ON COLUMN public.bookings.dropoff_location IS 'Required for car rentals, NULL for car wash bookings';
 COMMENT ON COLUMN public.bookings.appointment_date IS 'Required for car wash, NULL for car rentals';
