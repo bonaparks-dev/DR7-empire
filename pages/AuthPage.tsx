@@ -44,22 +44,21 @@ const AuthPage: React.FC = () => {
   };
 
   const handleGoogleSignIn = async () => {
-  setError('');
-  setIsSubmitting(true);
-
-  try {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-    });
-
-    if (error) throw error;
-
-   
-  } catch (err: any) {
-    setError(err?.message ?? t('Something_went_wrong'));
-    setIsSubmitting(false); // only runs if redirect fails
-  }
-};
+    setError('');
+    setIsSubmitting(true);
+    try {
+      const { error } = await signInWithGoogle();
+      if (error) {
+        // The error will be displayed to the user.
+        throw error;
+      }
+      // On success, the user is redirected to Google, so no need to reset isSubmitting.
+      // It will reset if the user returns to the page without authenticating.
+    } catch (err: any) {
+      setError(err?.message ?? t('Something_went_wrong'));
+      setIsSubmitting(false); // Only reset on failure.
+    }
+  };
 
   return (
     <motion.div

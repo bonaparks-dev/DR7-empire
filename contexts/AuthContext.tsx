@@ -135,36 +135,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return result;
   }, []);
   
+  // ✅ SIMPLE GOOGLE SIGN-IN: Let Supabase use your Dashboard "Site URL"
   const signInWithGoogle = useCallback(async () => {
-    try {
-      sessionStorage.setItem('oauth_in_progress', 'true');
-      console.log('[OAuth] Starting Google sign-in...');
-      console.log('[OAuth] Redirect URL:', `${window.location.origin}/auth/callback`);
-
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
-      });
-
-      if (error) {
-        console.error('[OAuth] Sign-in error:', error);
-        sessionStorage.removeItem('oauth_in_progress');
-        return { data: null, error };
-      }
-
-      console.log('[OAuth] OAuth redirect initiated');
-      return { data, error: null };
-    } catch (err: any) {
-      console.error('[OAuth] Exception during sign-in:', err);
-      sessionStorage.removeItem('oauth_in_progress');
-      return { data: null, error: err };
-    }
+    return supabase.auth.signInWithOAuth({
+      provider: 'google',
+      // no options.redirectTo, no queryParams — simplest flow
+    });
   }, []);
 
   const sendPasswordResetEmail = useCallback(async (email: string) => {
