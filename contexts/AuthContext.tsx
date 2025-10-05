@@ -136,36 +136,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
   
   const signInWithGoogle = useCallback(async () => {
-    try {
-      sessionStorage.setItem('oauth_in_progress', 'true');
-      console.log('[OAuth] Starting Google sign-in...');
-      console.log('[OAuth] Redirect URL:', `${window.location.origin}/auth/callback`);
+  try {
+    // Simple direct Google login: Supabase will redirect automatically
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+    });
 
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
-      });
-
-      if (error) {
-        console.error('[OAuth] Sign-in error:', error);
-        sessionStorage.removeItem('oauth_in_progress');
-        return { data: null, error };
-      }
-
-      console.log('[OAuth] OAuth redirect initiated');
-      return { data, error: null };
-    } catch (err: any) {
-      console.error('[OAuth] Exception during sign-in:', err);
-      sessionStorage.removeItem('oauth_in_progress');
-      return { data: null, error: err };
+    if (error) {
+      console.error('[OAuth] Sign-in error:', error);
+      return { data: null, error };
     }
-  }, []);
+
+    console.log('[OAuth] Redirecting to Google sign-in...');
+    return { data, error: null };
+  } catch (err: any) {
+    console.error('[OAuth] Exception during sign-in:', err);
+    return { data: null, error: err };
+  }
+}, []);
 
   const sendPasswordResetEmail = useCallback(async (email: string) => {
     // Redirect to the app root. The AuthRedirector will handle routing
