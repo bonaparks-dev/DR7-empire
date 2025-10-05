@@ -1,62 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { useLanguage } from '../../contexts/LanguageContext';
-import { useCurrency } from '../../contexts/CurrencyContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { RENTAL_CATEGORIES } from '../../constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MenuIcon, XIcon, UsersIcon, SignOutIcon } from '../icons/Icons';
 import { useAuth } from '../../hooks/useAuth';
-
-const LanguageSwitcher: React.FC = () => {
-  const { language, setLanguage } = useLanguage();
-
-  return (
-    <div className="flex items-center border border-gray-700 rounded-full p-1">
-      <button
-        onClick={() => setLanguage('en')}
-        className={`px-4 py-1 text-sm rounded-full transition-colors duration-300 ${
-          language === 'en' ? 'bg-white text-black' : 'text-gray-300 hover:bg-gray-800'
-        }`}
-      >
-        EN
-      </button>
-      <button
-        onClick={() => setLanguage('it')}
-        className={`px-4 py-1 text-sm rounded-full transition-colors duration-300 ${
-          language === 'it' ? 'bg-white text-black' : 'text-gray-300 hover:bg-gray-800'
-        }`}
-      >
-        IT
-      </button>
-    </div>
-  );
-};
-
-const CurrencySwitcher: React.FC = () => {
-  const { currency, setCurrency } = useCurrency();
-
-  return (
-    <div className="flex items-center border border-gray-700 rounded-full p-1">
-      <button
-        onClick={() => setCurrency('usd')}
-        className={`px-4 py-1 text-sm rounded-full transition-colors duration-300 ${
-          currency === 'usd' ? 'bg-white text-black' : 'text-gray-300 hover:bg-gray-800'
-        }`}
-      >
-        USD
-      </button>
-      <button
-        onClick={() => setCurrency('eur')}
-        className={`px-4 py-1 text-sm rounded-full transition-colors duration-300 ${
-          currency === 'eur' ? 'bg-white text-black' : 'text-gray-300 hover:bg-gray-800'
-        }`}
-      >
-        EUR
-      </button>
-    </div>
-  );
-};
 
 const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { t } = useTranslation();
@@ -195,8 +143,6 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                 </div>
               )}
               <div className={`flex justify-between items-center ${user ? 'mt-6' : ''}`}>
-                <LanguageSwitcher />
-                <CurrencySwitcher />
               </div>
             </div>
           </motion.div>
