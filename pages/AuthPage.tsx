@@ -46,15 +46,20 @@ const AuthPage: React.FC = () => {
   const handleGoogleSignIn = async () => {
   setError('');
   setIsSubmitting(true);
+
   try {
-      const { error } = await signInWithGoogle();
-      if (error) throw error;
-  } catch(err: any) {
-      setError(err.message || t('Something_went_wrong'));
-  } finally {
-      setIsSubmitting(false);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+    });
+
+    if (error) throw error;
+
+   
+  } catch (err: any) {
+    setError(err?.message ?? t('Something_went_wrong'));
+    setIsSubmitting(false); // only runs if redirect fails
   }
-}
+};
 
   return (
     <motion.div
