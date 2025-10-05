@@ -403,6 +403,23 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       minimumFractionDigits: 2
     }).format(price);
 
+  const formatDeposit = (price: number) =>
+    new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', {
+      style: 'currency',
+      currency: currency.toUpperCase(),
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(price).replace(/\./g, ' ');
+
+  // Calculate deposit based on car (Urus has different amounts)
+  const getDeposit = () => {
+    const isUrus = item.name.toLowerCase().includes('urus');
+    if (isUrus) {
+      return formData.isSardinianResident ? 5000 : 10000;
+    }
+    return formData.isSardinianResident ? 2500 : 5000;
+  };
+
   // Handlers
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -542,8 +559,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       if (!formData.returnDate || formData.returnDate.trim() === '') {
         newErrors.returnDate = "La data di riconsegna è obbligatoria.";
       }
-      if (formData.pickupDate && formData.returnDate && new Date(formData.pickupDate) >= new Date(formData.returnDate)) {
-        newErrors.date = "La data di riconsegna deve essere successiva a quella di ritiro.";
+      if (formData.pickupDate && formData.returnDate) {
+        const pickup = new Date(formData.pickupDate);
+        const returnD = new Date(formData.returnDate);
+        const diffDays = Math.floor((returnD.getTime() - pickup.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays < 1) {
+          newErrors.date = "Il noleggio minimo è di 1 giorno.";
+        }
       }
       if (formData.pickupDate && new Date(formData.pickupDate).getDay() === 0) {
         newErrors.pickupDate = "Le prenotazioni non sono disponibili la domenica.";
@@ -1217,7 +1239,7 @@ setIsProcessing(false);
                 </div>
 
                 <div>
-                  <p className="font-bold text-white">DEPOSITO CAUZIONALE: {formatPrice(formData.isSardinianResident ? 2500 : 5000)}</p>
+                  <p className="font-bold text-white">DEPOSITO CAUZIONALE: {formatDeposit(getDeposit())}</p>
                   <p className="text-xs text-gray-400">({formData.isSardinianResident ? 'Residente' : 'Non residente'} in Sardegna)</p>
                 </div>
 
@@ -1327,7 +1349,7 @@ setIsProcessing(false);
 
               <div className="border-t border-gray-700 my-2"></div>
 
-              <p className="text-sm text-gray-300">DEPOSITO CAUZIONALE: <span className="font-bold text-white">{formatPrice(formData.isSardinianResident ? 2500 : 5000)}</span></p>
+              <p className="text-sm text-gray-300">DEPOSITO CAUZIONALE: <span className="font-bold text-white">{formatDeposit(getDeposit())}</span></p>
               <p className="text-xs text-gray-400">({formData.isSardinianResident ? 'Residente' : 'Non residente'} in Sardegna)</p>
             </div>
           </div>
