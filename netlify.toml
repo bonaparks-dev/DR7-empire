@@ -25,3 +25,7 @@
   for = "/*.css"
   [headers.values]
     Cache-Control = "public, max-age=31536000"
+
+[dev]
+  command = "vite"
+  targetPort = 5173
