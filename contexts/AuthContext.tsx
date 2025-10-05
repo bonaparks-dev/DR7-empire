@@ -137,24 +137,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   // ✅ SIMPLE GOOGLE SIGN-IN: Let Supabase use your Dashboard "Site URL"
   const signInWithGoogle = useCallback(async () => {
-  try {
-    // Simple direct Google login: Supabase will redirect automatically
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    return supabase.auth.signInWithOAuth({
       provider: 'google',
+      // no options.redirectTo, no queryParams — simplest flow
     });
-
-    if (error) {
-      console.error('[OAuth] Sign-in error:', error);
-      return { data: null, error };
-    }
-
-    console.log('[OAuth] Redirecting to Google sign-in...');
-    return { data, error: null };
-  } catch (err: any) {
-    console.error('[OAuth] Exception during sign-in:', err);
-    return { data: null, error: err };
-  }
-}, []);
+  }, []);
 
   const sendPasswordResetEmail = useCallback(async (email: string) => {
     // Redirect to the app root. The AuthRedirector will handle routing
