@@ -47,6 +47,14 @@
           animation: marquee var(--speed, 25s) linear infinite;
         }
       }
+      /* Hide scrollbar for swipeable carousel */
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
     </style>
 
     <!-- Stripe -->

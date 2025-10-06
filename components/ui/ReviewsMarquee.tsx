@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { StarIcon } from '../icons/Icons';
 import { useTranslation } from '../../hooks/useTranslation';
 
@@ -91,6 +91,12 @@ export const ReviewsMarquee: React.FC<ReviewsMarqueeProps> = ({
     gapPxMobile = 12,
     dark = false,
 }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [startX, setStartX] = useState(0);
+    const [scrollLeft, setScrollLeft] = useState(0);
+    const [isPaused, setIsPaused] = useState(false);
+
     const marqueeStyle = {
         '--speed': `${speedSeconds}s`,
         '--speed-mobile': `${speedSecondsMobile}s`,
@@ -100,7 +106,7 @@ export const ReviewsMarquee: React.FC<ReviewsMarqueeProps> = ({
 
     // Duplicate reviews for a seamless loop
     const doubledReviews = [...reviews, ...reviews, ...reviews, ...reviews];
-    
+
     const jsonLd = business && ratingSummary ? {
         "@context": "https://schema.org",
         "@type": "LocalBusiness",
@@ -137,14 +143,53 @@ export const ReviewsMarquee: React.FC<ReviewsMarqueeProps> = ({
         }))
     } : null;
 
+    // Touch/Mouse handlers for swipe on mobile
+    const handleTouchStart = (e: React.TouchEvent | React.MouseEvent) => {
+        setIsDragging(true);
+        setIsPaused(true);
+        const pageX = 'touches' in e ? e.touches[0].pageX : e.pageX;
+        setStartX(pageX - (containerRef.current?.offsetLeft || 0));
+        setScrollLeft(containerRef.current?.scrollLeft || 0);
+    };
+
+    const handleTouchMove = (e: React.TouchEvent | React.MouseEvent) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        const pageX = 'touches' in e ? e.touches[0].pageX : e.pageX;
+        const x = pageX - (containerRef.current?.offsetLeft || 0);
+        const walk = (x - startX) * 2;
+        if (containerRef.current) {
+            containerRef.current.scrollLeft = scrollLeft - walk;
+        }
+    };
+
+    const handleTouchEnd = () => {
+        setIsDragging(false);
+        setTimeout(() => setIsPaused(false), 500);
+    };
+
     return (
-        <div className="w-full overflow-hidden group flex flex-col" style={marqueeStyle}>
+        <div
+            ref={containerRef}
+            className="w-full overflow-x-auto overflow-y-hidden group flex flex-col scrollbar-hide cursor-grab active:cursor-grabbing"
+            style={marqueeStyle}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onMouseDown={handleTouchStart}
+            onMouseMove={handleTouchMove}
+            onMouseUp={handleTouchEnd}
+            onMouseLeave={handleTouchEnd}
+        >
             {jsonLd && (
                 <script type="application/ld+json">
                     {JSON.stringify(jsonLd)}
                 </script>
             )}
-            <div className="flex shrink-0 animate-marquee group-hover:[animation-play-state:paused]">
+            <div
+                className={`flex shrink-0 ${isPaused ? '' : 'animate-marquee'} group-hover:[animation-play-state:paused]`}
+                style={{ userSelect: 'none' }}
+            >
                 {doubledReviews.map((review, i) => (
                     <ReviewCard key={i} review={review} dark={dark} />
                 ))}
