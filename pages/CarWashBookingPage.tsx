@@ -221,7 +221,7 @@ const CarWashBookingPage: React.FC = () => {
 
     if (formData.additionalService && formData.additionalServiceHours > 0) {
       const addService = ADDITIONAL_SERVICES.find(s => s.id === formData.additionalService);
-      const priceOption = addService?.prices.find(p => p.hours === formData.additionalServiceHours);
+      const priceOption = addService?.prices.find(p => p.hours === Number(formData.additionalServiceHours));
       if (priceOption) {
         total += priceOption.price;
       }
