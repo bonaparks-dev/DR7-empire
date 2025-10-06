@@ -9,6 +9,13 @@ import type { Booking, RentalItem } from '../../types';
 import { Link } from 'react-router-dom';
 import { XIcon } from '../icons/Icons';
 import DocumentUploader from './DocumentUploader';
+import {
+  getKmPackages,
+  getUnlimitedKmOptions,
+  calculateUnlimitedKmPrice,
+  recommendKmPackage,
+  isPremiumVehicle
+} from '../../data/kmPricingData';
 
 const FUNCTIONS_BASE =
   import.meta.env.VITE_FUNCTIONS_BASE ??
@@ -139,6 +146,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     // Step 3
     insuranceOption: 'KASKO_BASE',
     extras: [] as string[],
+    kmPackageType: 'package' as 'package' | 'unlimited',
+    kmPackageDistance: 100, // default 100km package
+    expectedKm: 0, // user's expected distance for recommendation
 
     // Step 4
     paymentMethod: 'stripe' as 'stripe' | 'agency',
@@ -237,10 +247,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
   // === Calculs tarifaires / durée / km inclus ===
   const {
-    duration, rentalCost, insuranceCost, extrasCost, subtotal, taxes, total, includedKm,
-    driverAge, licenseYears, youngDriverFee, recentLicenseFee, secondDriverFee
+    duration, rentalCost, insuranceCost, extrasCost, kmPackageCost, subtotal, taxes, total, includedKm,
+    driverAge, licenseYears, youngDriverFee, recentLicenseFee, secondDriverFee, recommendedKm
   } = useMemo(() => {
-    const zero = { duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, subtotal: 0, taxes: 0, total: 0, includedKm: 0, driverAge: 0, licenseYears: 0, youngDriverFee: 0, recentLicenseFee: 0, secondDriverFee: 0 };
+    const zero = { duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, kmPackageCost: 0, subtotal: 0, taxes: 0, total: 0, includedKm: 0, driverAge: 0, licenseYears: 0, youngDriverFee: 0, recentLicenseFee: 0, secondDriverFee: 0, recommendedKm: null };
     if (!item || !item.pricePerDay) return zero;
 
     const pricePerDay = item.pricePerDay[currency];
@@ -279,17 +289,40 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     const calculatedRecentLicenseFee = calculatedLicenseYears >= 2 && calculatedLicenseYears < 3 ? 20 * billingDays : 0;
     const calculatedSecondDriverFee = formData.addSecondDriver ? 10 * billingDays : 0;
 
-    const calculatedSubtotal = calculatedRentalCost + calculatedInsuranceCost + calculatedExtrasCost + calculatedYoungDriverFee + calculatedRecentLicenseFee + calculatedSecondDriverFee;
+    // Calculate KM package cost (only for Ferrari/Lamborghini)
+    let calculatedKmPackageCost = 0;
+    let calculatedIncludedKm = 0;
+
+    if (isPremiumVehicle(item.name)) {
+      // Ferrari/Lamborghini: Paid KM packages
+      if (formData.kmPackageType === 'unlimited') {
+        calculatedKmPackageCost = calculateUnlimitedKmPrice(item.name, billingDays, true);
+        calculatedIncludedKm = 9999; // Unlimited
+      } else {
+        const packages = getKmPackages(item.name);
+        const selectedPackage = packages.find(pkg => pkg.distance_km === formData.kmPackageDistance);
+        calculatedKmPackageCost = selectedPackage?.price_first_purchase || 0;
+        calculatedIncludedKm = formData.kmPackageDistance;
+      }
+    } else {
+      // Other cars: FREE km included based on duration (old system)
+      calculatedKmPackageCost = 0; // FREE
+      calculatedIncludedKm = calculateIncludedKm(billingDays);
+    }
+
+    // Get recommendation
+    const calculatedRecommendedKm = recommendKmPackage(formData.expectedKm, item.name, billingDays);
+
+    const calculatedSubtotal = calculatedRentalCost + calculatedInsuranceCost + calculatedExtrasCost + calculatedKmPackageCost + calculatedYoungDriverFee + calculatedRecentLicenseFee + calculatedSecondDriverFee;
     const calculatedTaxes = calculatedSubtotal * 0.10;
     const calculatedTotal = calculatedSubtotal + calculatedTaxes;
-
-    const calculatedIncludedKm = calculateIncludedKm(billingDays);
 
     return {
       duration: { days, hours },
       rentalCost: calculatedRentalCost,
       insuranceCost: calculatedInsuranceCost,
       extrasCost: calculatedExtrasCost,
+      kmPackageCost: calculatedKmPackageCost,
       subtotal: calculatedSubtotal,
       taxes: calculatedTaxes,
       total: calculatedTotal,
@@ -298,11 +331,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       licenseYears: calculatedLicenseYears,
       youngDriverFee: calculatedYoungDriverFee,
       recentLicenseFee: calculatedRecentLicenseFee,
-      secondDriverFee: calculatedSecondDriverFee
+      secondDriverFee: calculatedSecondDriverFee,
+      recommendedKm: calculatedRecommendedKm
     };
   }, [
     formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime,
     formData.insuranceOption, formData.extras, formData.birthDate, formData.licenseIssueDate, formData.addSecondDriver,
+    formData.kmPackageType, formData.kmPackageDistance, formData.expectedKm,
     item, currency
   ]);
 
@@ -669,6 +704,19 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     duration: `${days} days`,
     insuranceOption: formData.insuranceOption,
     extras: formData.extras,
+    kmPackage: isPremiumVehicle(item.name) ? {
+      type: formData.kmPackageType,
+      distance: formData.kmPackageType === 'unlimited' ? 'unlimited' : formData.kmPackageDistance,
+      cost: kmPackageCost,
+      includedKm: includedKm,
+      isPremium: true
+    } : {
+      type: 'included',
+      distance: includedKm,
+      cost: 0,
+      includedKm: includedKm,
+      isPremium: false
+    },
     driverLicenseImage: licenseImageUrl,
     driverIdImage: idImageUrl,
   }
@@ -930,16 +978,13 @@ setIsProcessing(false);
                 </div>
               </div>
 
-              {/* Info Km inclusi en direct */}
+              {/* Info message about KM */}
               <div className="mt-4 p-3 rounded-md border border-gray-700 bg-gray-800/50">
                 <p className="text-sm text-gray-300">
-                  Km inclusi: <span className="font-semibold text-white">{includedKm}</span>
-                  {duration.days > 0 && (
-                    <span className="text-gray-400"> (per {duration.days} {duration.days === 1 ? 'giorno' : 'giorni'})</span>
-                  )}
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  1gg=100 • 2gg=180 • 3gg=240 • 4gg=280 • 5gg=300 • dal 5° giorno +60km/giorno
+                  ℹ️ {isPremiumVehicle(item.name)
+                    ? 'I pacchetti chilometrici saranno selezionabili nel passo 3 (Opzioni)'
+                    : 'I chilometri inclusi gratuitamente saranno mostrati nel passo 3 (Opzioni)'
+                  }
                 </p>
               </div>
             </div>
@@ -1051,6 +1096,10 @@ setIsProcessing(false);
           </div>
         );
       case 3:
+        const kmPackages = getKmPackages(item.name);
+        const unlimitedOptions = getUnlimitedKmOptions(item.name);
+        const isPremium = isPremiumVehicle(item.name);
+
         return (
           <div className="space-y-8">
             <section>
@@ -1078,7 +1127,128 @@ setIsProcessing(false);
             </section>
 
             <section className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-bold text-white mb-4">B. ADDITIONAL SERVICES</h3>
+              <h3 className="text-lg font-bold text-white mb-4">
+                B. CHILOMETRI {isPremium && <span className="text-yellow-400 text-sm">(Premium Vehicle - Pacchetti a pagamento)</span>}
+              </h3>
+
+              {isPremium ? (
+                // Ferrari/Lamborghini: Paid KM packages
+                <>
+                  {/* Expected Distance Input */}
+                  <div className="mb-4 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Quanti km prevedi di percorrere? (opzionale - per raccomandazione)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="es. 150"
+                      value={formData.expectedKm || ''}
+                      onChange={(e) => setFormData(p => ({...p, expectedKm: parseInt(e.target.value) || 0}))}
+                      className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-2 text-white text-sm"
+                    />
+                    {recommendedKm && formData.expectedKm > 0 && (
+                      <div className="mt-2 p-2 bg-blue-900/30 border border-blue-700 rounded text-sm text-blue-300">
+                        💡 <strong>Raccomandato:</strong> {recommendedKm.type === 'unlimited' ? 'Km Illimitati' : `${recommendedKm.packageKm} km`} - €{recommendedKm.price}
+                        <br/><span className="text-xs text-blue-400">{recommendedKm.reason}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* KM Package Options */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-gray-300 mb-2">PACCHETTI CHILOMETRICI:</h4>
+                    {kmPackages.map(pkg => (
+                      <div
+                        key={pkg.distance_km}
+                        className={`p-4 rounded-md border cursor-pointer transition-all ${
+                          formData.kmPackageType === 'package' && formData.kmPackageDistance === pkg.distance_km
+                            ? 'border-white bg-white/5'
+                            : 'border-gray-700 hover:border-gray-500'
+                        }`}
+                        onClick={() => setFormData(p => ({...p, kmPackageType: 'package', kmPackageDistance: pkg.distance_km}))}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <input
+                              type="radio"
+                              name="kmPackage"
+                              checked={formData.kmPackageType === 'package' && formData.kmPackageDistance === pkg.distance_km}
+                              onChange={() => setFormData(p => ({...p, kmPackageType: 'package', kmPackageDistance: pkg.distance_km}))}
+                              className="w-4 h-4 text-white"
+                            />
+                            <label className="ml-3 text-white font-semibold">{pkg.distance_km} KM</label>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-white font-bold">€{pkg.price_first_purchase}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    <h4 className="text-sm font-semibold text-gray-300 mb-2 mt-4">KM ILLIMITATI:</h4>
+                    <div
+                      className={`p-4 rounded-md border cursor-pointer transition-all ${
+                        formData.kmPackageType === 'unlimited'
+                          ? 'border-white bg-white/5'
+                          : 'border-gray-700 hover:border-gray-500'
+                      }`}
+                      onClick={() => setFormData(p => ({...p, kmPackageType: 'unlimited'}))}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center">
+                          <input
+                            type="radio"
+                            name="kmPackage"
+                            checked={formData.kmPackageType === 'unlimited'}
+                            onChange={() => setFormData(p => ({...p, kmPackageType: 'unlimited'}))}
+                            className="w-4 h-4 text-white"
+                          />
+                          <label className="ml-3 text-white font-semibold">KM ILLIMITATI</label>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-white font-bold">€{calculateUnlimitedKmPrice(item.name, duration.days || 1, true)}</span>
+                        </div>
+                      </div>
+                      <div className="ml-7 text-xs text-gray-400">
+                        <p>Per {duration.days || 1} {duration.days === 1 ? 'giorno' : 'giorni'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* KM Package Summary */}
+                  <div className="mt-4 p-3 bg-gray-800/50 rounded-md border border-gray-700">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-300">Km selezionati:</span>
+                      <span className="text-white font-semibold">
+                        {formData.kmPackageType === 'unlimited' ? 'ILLIMITATI' : `${formData.kmPackageDistance} km`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm mt-1">
+                      <span className="text-gray-300">Costo pacchetto km:</span>
+                      <span className="text-white font-semibold">€{kmPackageCost}</span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                // Other cars: FREE km included based on duration
+                <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-white font-semibold">✓ Km inclusi nel noleggio</span>
+                    <span className="text-green-400 font-bold text-lg">{includedKm} km</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Inclusi GRATIS per {duration.days} {duration.days === 1 ? 'giorno' : 'giorni'}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    1gg=100km • 2gg=180km • 3gg=240km • 4gg=280km • 5gg=300km • dal 5° giorno +60km/giorno
+                  </p>
+                </div>
+              )}
+            </section>
+
+            <section className="border-t border-gray-700 pt-6">
+              <h3 className="text-lg font-bold text-white mb-4">C. ADDITIONAL SERVICES</h3>
               <div className="space-y-3">
                 <div className="flex items-center p-3 bg-gray-800/50 rounded-md border border-gray-700">
                   <input type="checkbox" checked disabled className="h-4 w-4"/>
@@ -1200,7 +1370,7 @@ setIsProcessing(false);
                   <p>Ritiro: {formData.pickupDate} alle {formData.pickupTime} - {getTranslated(PICKUP_LOCATIONS.find(l => l.id === formData.pickupLocation)?.label)}</p>
                   <p>Riconsegna: {formData.returnDate} alle {formData.returnTime} - {getTranslated(PICKUP_LOCATIONS.find(l => l.id === formData.returnLocation)?.label)}</p>
                   <p>Durata: {duration.days} giorni</p>
-                  <p>Km inclusi: {includedKm} km</p>
+                  <p>Pacchetto km: {formData.kmPackageType === 'unlimited' ? 'ILLIMITATI' : `${includedKm} km`}</p>
                 </div>
 
                 <div>
@@ -1229,6 +1399,9 @@ setIsProcessing(false);
                   <p className="font-bold text-base text-white mb-2">DETTAGLIO COSTI</p>
                   <hr className="border-gray-600 mb-2"/>
                   <div className="flex justify-between"><span>Noleggio ({duration.days} gg × {formatPrice(item.pricePerDay[currency])})</span> <span>{formatPrice(rentalCost)}</span></div>
+                  {isPremiumVehicle(item.name) && kmPackageCost > 0 && (
+                    <div className="flex justify-between"><span>Pacchetto km ({formData.kmPackageType === 'unlimited' ? 'illimitati' : `${includedKm} km`})</span> <span>{formatPrice(kmPackageCost)}</span></div>
+                  )}
                   <div className="flex justify-between"><span>Assicurazione KASKO</span> <span>{formatPrice(insuranceCost)}</span></div>
                   <div className="flex justify-between"><span>Lavaggio obbligatorio</span> <span>{formatPrice(30)}</span></div>
                   {secondDriverFee > 0 && <div className="flex justify-between"><span>Secondo guidatore ({duration.days} gg × €10)</span> <span>{formatPrice(secondDriverFee)}</span></div>}
@@ -1331,12 +1504,22 @@ setIsProcessing(false);
             <img src={item.image} alt={item.name} className="w-full h-40 object-cover rounded-md mb-4"/>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-gray-400">Durata noleggio:</span><span className="text-white font-medium">{duration.days} giorni</span></div>
-              <div className="flex justify-between"><span className="text-gray-400">Chilometri inclusi:</span><span className="text-white font-medium">{includedKm} km</span></div>
-              <p className="text-[11px] text-gray-400">1gg=100 • 2gg=180 • 3gg=240 • 4gg=280 • 5gg=300 • dal 5° giorno +60/giorno</p>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Km {isPremiumVehicle(item.name) ? 'pacchetto' : 'inclusi'}:</span>
+                <span className="text-white font-medium">
+                  {isPremiumVehicle(item.name)
+                    ? (formData.kmPackageType === 'unlimited' ? 'ILLIMITATI' : `${includedKm} km`)
+                    : `${includedKm} km (gratis)`
+                  }
+                </span>
+              </div>
 
               <div className="border-t border-gray-700 my-2"></div>
 
               <div className="flex justify-between"><span className="text-gray-400">Noleggio {item.name}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div>
+              {isPremiumVehicle(item.name) && kmPackageCost > 0 && (
+                <div className="flex justify-between"><span className="text-gray-400">Pacchetto chilometrici</span><span className="text-white font-medium">{formatPrice(kmPackageCost)}</span></div>
+              )}
               <div className="flex justify-between"><span className="text-gray-400">Assicurazione KASKO</span><span className="text-white font-medium">{formatPrice(insuranceCost)}</span></div>
               <div className="flex justify-between"><span className="text-gray-400">Lavaggio obbligatorio</span><span className="text-white font-medium">{formatPrice(30)}</span></div>
               {secondDriverFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Secondo guidatore</span><span className="text-white font-medium">{formatPrice(secondDriverFee)}</span></div>}
