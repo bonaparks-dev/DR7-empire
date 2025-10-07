@@ -271,6 +271,34 @@ exports.handler = async (event) => {
       });
 
       console.log(`[Tickets] ✅ Email sent successfully to ${email} (PDF size: ${(pdfBuffer.length / 1024).toFixed(2)} KB)`);
+
+      // Send admin notification
+      try {
+        await transporter.sendMail({
+          from: `"DR7 Empire" <${process.env.GMAIL_USER}>`,
+          to: 'dubai.rent7.0srl@gmail.com',
+          subject: `Nuovo Acquisto Biglietti - ${qty} biglietto/i - ${fullName}`,
+          html: `
+            <h2>Nuovo Acquisto Operazione Commerciale</h2>
+            <p><strong>Cliente:</strong> ${fullName}</p>
+            <p><strong>Email:</strong> ${email}</p>
+            <p><strong>Quantità:</strong> ${qty} biglietto/i</p>
+            <p><strong>Importo:</strong> €${(pi.amount / 100).toFixed(2)}</p>
+            <p><strong>Payment Intent:</strong> ${paymentIntentId}</p>
+            <p><strong>Data:</strong> ${purchaseDate.toLocaleString('it-IT', { timeZone: 'Europe/Rome' })}</p>
+            <hr>
+            <h3>Numeri Biglietti:</h3>
+            <ul>
+              ${tickets.map(t => `<li>Biglietto #${String(t.number).padStart(6, '0')} (ID: ${t.uuid})</li>`).join('')}
+            </ul>
+          `
+        });
+        console.log(`[Tickets] ✅ Admin notification sent`);
+      } catch (adminEmailError) {
+        console.error(`[Tickets] ❌ Failed to send admin notification:`, adminEmailError);
+        // Don't fail the whole request if admin email fails
+      }
+
     } catch (emailError) {
       console.error(`[Tickets] ❌ Failed to send email to ${email} (PDF size: ${(pdfBuffer.length / 1024).toFixed(2)} KB):`, emailError);
       console.error(`[Tickets] Error details:`, {
