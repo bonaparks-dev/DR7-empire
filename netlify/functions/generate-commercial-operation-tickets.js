@@ -54,7 +54,7 @@ function hashId(...parts) {
 // =================================================================================
 const generateTicketPdf = (fullName, tickets, purchaseDate) => {
   return new Promise(async (resolve, reject) => {
-    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const doc = new PDFDocument({ size: 'A4', margin: 40 });
     const buffers = [];
 
     doc.on('data', buffers.push.bind(buffers));
@@ -69,41 +69,12 @@ const generateTicketPdf = (fullName, tickets, purchaseDate) => {
     for (const ticket of tickets) {
       const pageWidth = doc.page.width;
       const pageHeight = doc.page.height;
-      const margin = 50;
+      const margin = 40;
 
-      // Draw main border
+      // Draw main border - simplified
       doc.rect(30, 30, pageWidth - 60, pageHeight - 60)
-         .lineWidth(3)
-         .strokeColor('#000000')
-         .stroke();
-
-      // Draw decorative corners
-      const cornerSize = 40;
-      const cornerOffset = 40;
-
-      // Top-left corner
-      doc.moveTo(cornerOffset, cornerOffset + cornerSize)
-         .lineTo(cornerOffset, cornerOffset)
-         .lineTo(cornerOffset + cornerSize, cornerOffset)
          .lineWidth(2)
-         .stroke();
-
-      // Top-right corner
-      doc.moveTo(pageWidth - cornerOffset - cornerSize, cornerOffset)
-         .lineTo(pageWidth - cornerOffset, cornerOffset)
-         .lineTo(pageWidth - cornerOffset, cornerOffset + cornerSize)
-         .stroke();
-
-      // Bottom-left corner
-      doc.moveTo(cornerOffset, pageHeight - cornerOffset - cornerSize)
-         .lineTo(cornerOffset, pageHeight - cornerOffset)
-         .lineTo(cornerOffset + cornerSize, pageHeight - cornerOffset)
-         .stroke();
-
-      // Bottom-right corner
-      doc.moveTo(pageWidth - cornerOffset - cornerSize, pageHeight - cornerOffset)
-         .lineTo(pageWidth - cornerOffset, pageHeight - cornerOffset)
-         .lineTo(pageWidth - cornerOffset, pageHeight - cornerOffset - cornerSize)
+         .strokeColor('#000000')
          .stroke();
 
       let yPosition = 80;
@@ -231,24 +202,18 @@ const generateTicketPdf = (fullName, tickets, purchaseDate) => {
         yPosition += 50;
       }
 
-      // QR Code - Centered in the middle section
-      const qrSize = 200;
+      // QR Code - Centered
+      const qrSize = 180;
       const qrCodeDataUrl = await QRCode.toDataURL('https://dr7empire.com/', {
         errorCorrectionLevel: 'H',
         type: 'image/png',
-        margin: 0,
+        margin: 1,
         width: qrSize,
         color: { dark: '#000000', light: '#FFFFFF' }
       });
 
-      // QR Code border
-      const qrX = (pageWidth - qrSize - 30) / 2;
+      const qrX = (pageWidth - qrSize) / 2;
       const qrY = (pageHeight - qrSize) / 2 + 20;
-      
-      doc.rect(qrX - 15, qrY - 15, qrSize + 30, qrSize + 30)
-         .lineWidth(2)
-         .strokeColor('#000000')
-         .stroke();
 
       doc.image(qrCodeDataUrl, qrX, qrY, {
         width: qrSize,
@@ -402,7 +367,6 @@ exports.handler = async (event) => {
                   <p style="font-size: 24px; margin: 10px 0;"><strong>${qty} Bigliett${qty > 1 ? 'i' : 'o'}</strong></p>
                   <p>I tuoi biglietti sono allegati a questa email in formato PDF.</p>
                 </div>
-                <p><strong>🎁 BONUS:</strong> Riceverai anche una Gift Card da €25 via email separata!</p>
                 <p><strong>🎄 Data Estrazione:</strong> 25 Dicembre 2025</p>
                 <p style="margin-top: 30px;"><strong>Buona fortuna!</strong></p>
                 <div class="footer">
@@ -423,9 +387,14 @@ exports.handler = async (event) => {
         ],
       });
 
-      console.log(`[Tickets] ✅ Email sent successfully to ${email}`);
+      console.log(`[Tickets] ✅ Email sent successfully to ${email} (PDF size: ${(pdfBuffer.length / 1024).toFixed(2)} KB)`);
     } catch (emailError) {
-      console.error(`[Tickets] ❌ Failed to send email to ${email}:`, emailError);
+      console.error(`[Tickets] ❌ Failed to send email to ${email} (PDF size: ${(pdfBuffer.length / 1024).toFixed(2)} KB):`, emailError);
+      console.error(`[Tickets] Error details:`, {
+        message: emailError.message,
+        code: emailError.code,
+        command: emailError.command
+      });
       return createResponse(500, {
           success: false,
           error: 'Payment succeeded, but failed to send ticket email. Please contact support.'
