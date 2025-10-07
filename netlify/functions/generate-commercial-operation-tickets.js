@@ -65,20 +65,24 @@ const generateTicketPdf = (fullName, tickets, purchaseDate) => {
     });
 
     for (const ticket of tickets) {
-      // Draw ticket border
-      doc.rect(40, 40, doc.page.width - 80, doc.page.height - 80).lineWidth(3).strokeColor('#FFD700').stroke();
+      // Draw outer border (space between gold border and edge)
+      doc.rect(30, 30, doc.page.width - 60, doc.page.height - 60).lineWidth(3).strokeColor('#FFD700').stroke();
 
-      doc.font('Helvetica-Bold').fontSize(22).text('DR7 EMPIRE OFFICIAL TICKET', { align: 'center' });
-      doc.moveDown(2);
+      // Top section with ticket info
+      let yPos = 80;
+      doc.font('Helvetica-Bold').fontSize(22).text('DR7 EMPIRE OFFICIAL TICKET', 50, yPos, { align: 'center', width: doc.page.width - 100 });
+      yPos += 50;
 
       // Ticket details
-      doc.font('Helvetica').fontSize(14).text('TICKET HOLDER', { align: 'center', characterSpacing: 2 });
-      doc.font('Helvetica-Bold').fontSize(20).text(fullName.toUpperCase(), { align: 'center' });
-      doc.moveDown();
+      doc.font('Helvetica').fontSize(14).text('TICKET HOLDER', 50, yPos, { align: 'center', width: doc.page.width - 100, characterSpacing: 2 });
+      yPos += 25;
+      doc.font('Helvetica-Bold').fontSize(20).text(fullName.toUpperCase(), 50, yPos, { align: 'center', width: doc.page.width - 100 });
+      yPos += 40;
 
-      doc.font('Helvetica').fontSize(14).text('TICKET NUMBER', { align: 'center', characterSpacing: 2 });
-      doc.font('Helvetica-Bold').fontSize(36).text(ticket.number.toString().padStart(6, '0'), { align: 'center' });
-      doc.moveDown();
+      doc.font('Helvetica').fontSize(14).text('TICKET NUMBER', 50, yPos, { align: 'center', width: doc.page.width - 100, characterSpacing: 2 });
+      yPos += 25;
+      doc.font('Helvetica-Bold').fontSize(36).text(ticket.number.toString().padStart(6, '0'), 50, yPos, { align: 'center', width: doc.page.width - 100 });
+      yPos += 55;
 
       // Purchase date and time
       if (purchaseDate) {
@@ -90,29 +94,32 @@ const generateTicketPdf = (fullName, tickets, purchaseDate) => {
           minute: '2-digit',
           timeZone: 'Europe/Rome'
         });
-        doc.font('Helvetica').fontSize(12).text('PURCHASE DATE & TIME', { align: 'center', characterSpacing: 1 });
-        doc.font('Helvetica-Bold').fontSize(14).text(dateStr, { align: 'center' });
-        doc.moveDown();
+        doc.font('Helvetica').fontSize(12).text('PURCHASE DATE & TIME', 50, yPos, { align: 'center', width: doc.page.width - 100, characterSpacing: 1 });
+        yPos += 20;
+        doc.font('Helvetica-Bold').fontSize(14).text(dateStr, 50, yPos, { align: 'center', width: doc.page.width - 100 });
+        yPos += 35;
       }
 
-      // Generate QR code
+      // Center QR code
+      const qrSize = 200;
       const qrCodeDataUrl = await QRCode.toDataURL('https://dr7empire.com/', {
         errorCorrectionLevel: 'H',
         type: 'image/png',
         margin: 2,
         color: { dark: '#000000', light: '#FFFFFF' }
       });
-      doc.image(qrCodeDataUrl, {
-        fit: [200, 200],
-        align: 'center',
-      });
-      doc.moveDown();
+      const qrX = (doc.page.width - qrSize) / 2;
+      doc.image(qrCodeDataUrl, qrX, yPos, { width: qrSize, height: qrSize });
+      yPos += qrSize + 15;
 
-      doc.font('Courier').fontSize(10).text(`ID: ${ticket.id}`, { align: 'center' });
+      doc.font('Courier').fontSize(10).text(`ID: ${ticket.id}`, 50, yPos, { align: 'center', width: doc.page.width - 100 });
 
-      // Footer
-      doc.font('Helvetica-Oblique').fontSize(10).text('Good Luck! The draw will be held on Christmas Day.',
-        doc.page.width / 2 - 150, doc.page.height - 100, { align: 'center', width: 300 });
+      // Footer with draw date
+      const footerY = doc.page.height - 80;
+      doc.font('Helvetica-Oblique').fontSize(10).text('Data Estrazione: 24 Dicembre 2025, ore 10:00',
+        50, footerY, { align: 'center', width: doc.page.width - 100 });
+      doc.font('Helvetica-Oblique').fontSize(10).text('Good Luck!',
+        50, footerY + 15, { align: 'center', width: doc.page.width - 100 });
 
       if (tickets.indexOf(ticket) < tickets.length - 1) {
         doc.addPage();
