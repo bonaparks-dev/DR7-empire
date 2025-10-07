@@ -368,15 +368,13 @@ exports.handler = async (event) => {
           });
         }
 
-        // Handle new gift card system for commercial operation
+        // Gift card system for commercial operation is disabled
+        // Keeping this commented for future reference
+        /*
         if (paymentIntent.metadata.purchaseType === 'commercial-operation-ticket') {
           console.log('[GiftCard] Commercial operation payment detected');
 
-          // Calculate ticket quantity from amount
-          // €20 per ticket (2000 cents)
           const ticketQuantity = Math.floor(paymentIntent.amount / 2000);
-
-          // Get booking ID from metadata or create placeholder
           const bookingId = paymentIntent.metadata.bookingId || null;
 
           try {
@@ -388,9 +386,9 @@ exports.handler = async (event) => {
             });
           } catch (error) {
             console.error('[GiftCard] Failed to create gift card, but payment succeeded:', error);
-            // Don't throw - payment already succeeded
           }
         }
+        */
         break;
       }
 
