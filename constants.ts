@@ -222,7 +222,7 @@ const helicopterSpecs = [
 export const RENTAL_CATEGORIES: RentalCategory[] = [
   {
     id: 'cars',
-    label: { en: 'Cars', it: 'Auto' },
+    label: { en: 'Exotic Supercars', it: 'Exotic Supercars' },
     data: mappedCars,
     icon: CarIcon,
   },
