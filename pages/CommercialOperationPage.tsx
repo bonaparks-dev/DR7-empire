@@ -30,7 +30,7 @@ const calculateTimeLeft = (drawDate: string) => {
 const TimerBox: React.FC<{ value: number, label: string }> = ({ value, label }) => (
     <div className="bg-black/80 backdrop-blur-sm p-2 sm:p-3 rounded-lg text-center border border-white/30">
         <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white tracking-tighter" style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}>{String(value).padStart(2, '0')}</div>
-        <div className="text-xs sm:text-sm text-white/80 uppercase tracking-widest">{label}</div>
+        <div className="text-[9px] sm:text-[10px] text-white/80 uppercase tracking-wider">{label}</div>
     </div>
 );
 
