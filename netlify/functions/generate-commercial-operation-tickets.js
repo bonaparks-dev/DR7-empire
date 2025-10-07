@@ -49,9 +49,7 @@ function hashId(...parts) {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
 }
 
-// =================================================================================
-// START: REDESIGNED PDF GENERATION FUNCTION
-// =================================================================================
+// Simple PDF generation (working version from Oct 4)
 const generateTicketPdf = (fullName, tickets, purchaseDate) => {
   return new Promise(async (resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: 40 });
@@ -67,122 +65,22 @@ const generateTicketPdf = (fullName, tickets, purchaseDate) => {
     });
 
     for (const ticket of tickets) {
-      const pageWidth = doc.page.width;
-      const pageHeight = doc.page.height;
-      const margin = 40;
+      // Draw ticket border
+      doc.rect(40, 40, doc.page.width - 80, doc.page.height - 80).lineWidth(3).strokeColor('#FFD700').stroke();
 
-      // Draw main border - simplified
-      doc.rect(30, 30, pageWidth - 60, pageHeight - 60)
-         .lineWidth(2)
-         .strokeColor('#000000')
-         .stroke();
+      doc.font('Helvetica-Bold').fontSize(22).text('DR7 EMPIRE OFFICIAL TICKET', { align: 'center' });
+      doc.moveDown(2);
 
-      let yPosition = 80;
+      // Ticket details
+      doc.font('Helvetica').fontSize(14).text('TICKET HOLDER', { align: 'center', characterSpacing: 2 });
+      doc.font('Helvetica-Bold').fontSize(20).text(fullName.toUpperCase(), { align: 'center' });
+      doc.moveDown();
 
-      // Main Title - 7 MILIONI DI €
-      doc.font('Helvetica-Bold')
-         .fontSize(28)
-         .fillColor('#000000')
-         .text('7 MILIONI DI €', margin, yPosition, {
-           align: 'center',
-           width: pageWidth - margin * 2,
-         });
-      yPosition += 35;
+      doc.font('Helvetica').fontSize(14).text('TICKET NUMBER', { align: 'center', characterSpacing: 2 });
+      doc.font('Helvetica-Bold').fontSize(36).text(ticket.number.toString().padStart(6, '0'), { align: 'center' });
+      doc.moveDown();
 
-      // Subtitle - Biglietto Ufficiale
-      doc.font('Helvetica')
-         .fontSize(11)
-         .fillColor('#666666')
-         .text('BIGLIETTO UFFICIALE', margin, yPosition, {
-           align: 'center',
-           width: pageWidth - margin * 2,
-           characterSpacing: 4,
-         });
-      yPosition += 18;
-
-      // Subtitle - Operazione Commerciale
-      doc.font('Helvetica')
-         .fontSize(11)
-         .fillColor('#666666')
-         .text('OPERAZIONE COMMERCIALE', margin, yPosition, {
-           align: 'center',
-           width: pageWidth - margin * 2,
-           characterSpacing: 4,
-         });
-      yPosition += 30;
-
-      // Divider line
-      const dividerWidth = 60;
-      doc.moveTo((pageWidth - dividerWidth) / 2, yPosition)
-         .lineTo((pageWidth + dividerWidth) / 2, yPosition)
-         .lineWidth(2)
-         .strokeColor('#000000')
-         .stroke();
-      yPosition += 30;
-
-      // Ticket Holder Label
-      doc.font('Helvetica-Bold')
-         .fontSize(10)
-         .fillColor('#999999')
-         .text('TITOLARE DEL BIGLIETTO', margin, yPosition, {
-           align: 'center',
-           width: pageWidth - margin * 2,
-           characterSpacing: 3,
-         });
-      yPosition += 15;
-
-      // Ticket Holder Name
-      doc.font('Helvetica-Bold')
-         .fontSize(24)
-         .fillColor('#000000')
-         .text(fullName.toUpperCase(), margin, yPosition, {
-           align: 'center',
-           width: pageWidth - margin * 2,
-         });
-      yPosition += 35;
-
-      // Divider line
-      doc.moveTo((pageWidth - dividerWidth) / 2, yPosition)
-         .lineTo((pageWidth + dividerWidth) / 2, yPosition)
-         .lineWidth(2)
-         .strokeColor('#000000')
-         .stroke();
-      yPosition += 30;
-
-      // Ticket Number Label
-      doc.font('Helvetica-Bold')
-         .fontSize(10)
-         .fillColor('#999999')
-         .text('NUMERO BIGLIETTO', margin, yPosition, {
-           align: 'center',
-           width: pageWidth - margin * 2,
-           characterSpacing: 3,
-         });
-      yPosition += 15;
-
-      // Ticket Number
-      doc.font('Helvetica-Bold')
-         .fontSize(56)
-         .fillColor('#000000')
-         .text(ticket.number.toString().padStart(6, '0'), margin, yPosition, {
-           align: 'center',
-           width: pageWidth - margin * 2,
-           characterSpacing: 8,
-         });
-      yPosition += 70;
-
-      // Purchase Date & Time Label
-      doc.font('Helvetica-Bold')
-         .fontSize(10)
-         .fillColor('#999999')
-         .text('DATA E ORA DI ACQUISTO', margin, yPosition, {
-           align: 'center',
-           width: pageWidth - margin * 2,
-           characterSpacing: 3,
-         });
-      yPosition += 15;
-
-      // Purchase Date & Time Value
+      // Purchase date and time
       if (purchaseDate) {
         const dateStr = new Date(purchaseDate).toLocaleString('it-IT', {
           day: '2-digit',
@@ -192,57 +90,29 @@ const generateTicketPdf = (fullName, tickets, purchaseDate) => {
           minute: '2-digit',
           timeZone: 'Europe/Rome'
         });
-        doc.font('Helvetica-Bold')
-           .fontSize(14)
-           .fillColor('#000000')
-           .text(dateStr, margin, yPosition, {
-             align: 'center',
-             width: pageWidth - margin * 2,
-           });
-        yPosition += 50;
+        doc.font('Helvetica').fontSize(12).text('PURCHASE DATE & TIME', { align: 'center', characterSpacing: 1 });
+        doc.font('Helvetica-Bold').fontSize(14).text(dateStr, { align: 'center' });
+        doc.moveDown();
       }
 
-      // QR Code - Centered
-      const qrSize = 180;
+      // Generate QR code
       const qrCodeDataUrl = await QRCode.toDataURL('https://dr7empire.com/', {
         errorCorrectionLevel: 'H',
         type: 'image/png',
-        margin: 1,
-        width: qrSize,
+        margin: 2,
         color: { dark: '#000000', light: '#FFFFFF' }
       });
-
-      const qrX = (pageWidth - qrSize) / 2;
-      const qrY = (pageHeight - qrSize) / 2 + 20;
-
-      doc.image(qrCodeDataUrl, qrX, qrY, {
-        width: qrSize,
-        height: qrSize,
+      doc.image(qrCodeDataUrl, {
+        fit: [200, 200],
+        align: 'center',
       });
+      doc.moveDown();
 
-      // Ticket ID below QR code
-      doc.font('Courier')
-         .fontSize(9)
-         .fillColor('#666666')
-         .text(`ID: ${ticket.id}`, margin, qrY + qrSize + 30, {
-           align: 'center',
-           width: pageWidth - margin * 2,
-         });
+      doc.font('Courier').fontSize(10).text(`ID: ${ticket.id}`, { align: 'center' });
 
       // Footer
-      const footerY = pageHeight - 100;
-      doc.font('Helvetica')
-         .fontSize(11)
-         .fillColor('#666666')
-         .text('Buona fortuna! L\'estrazione si terrà il giorno di Natale.', margin, footerY, {
-           align: 'center',
-           width: pageWidth - margin * 2,
-         });
-      
-      doc.text('Per domande, visita dr7empire.com', margin, footerY + 20, {
-        align: 'center',
-        width: pageWidth - margin * 2,
-      });
+      doc.font('Helvetica-Oblique').fontSize(10).text('Good Luck! The draw will be held on Christmas Day.',
+        doc.page.width / 2 - 150, doc.page.height - 100, { align: 'center', width: 300 });
 
       if (tickets.indexOf(ticket) < tickets.length - 1) {
         doc.addPage();
@@ -252,9 +122,6 @@ const generateTicketPdf = (fullName, tickets, purchaseDate) => {
     doc.end();
   });
 };
-// =================================================================================
-// END: REDESIGNED PDF GENERATION FUNCTION
-// =================================================================================
 
 
 exports.handler = async (event) => {
