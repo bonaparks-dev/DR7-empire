@@ -72,9 +72,9 @@ const CommercialOperationSuccessPage: React.FC = () => {
                     {t('Purchase_Success').replace('{count}', String(tickets.length))}
                 </h1>
                 <p className="text-lg text-gray-300 mb-10 max-w-2xl mx-auto">
-                    Your tickets have been sent to your email. You can also view them below or in your account's "My Tickets" section. Good luck!
+                    {t('Tickets_Sent_Message')}
                 </p>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
                     {ticketsWithData.map((ticket, i) => (
                         <TicketDisplay key={i} ticket={ticket} />
@@ -83,10 +83,10 @@ const CommercialOperationSuccessPage: React.FC = () => {
 
                 <div className='flex justify-center items-center gap-4'>
                     <Button as={Link} to="/account/tickets" variant="primary" size="lg" className="mt-12">
-                        View My Tickets
+                        {t('View_My_Tickets')}
                     </Button>
                     <Button as={Link} to="/commercial-operation" variant="outline" size="lg" className="mt-12">
-                        Back to Commercial Operation
+                        {t('Back_To_Commercial_Operation')}
                     </Button>
                 </div>
             </div>
