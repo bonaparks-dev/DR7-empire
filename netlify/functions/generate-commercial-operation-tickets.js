@@ -112,7 +112,7 @@ const generateTicketPdf = (fullName, tickets, purchaseDate) => {
       doc.image(qrCodeDataUrl, qrX, yPos, { width: qrSize, height: qrSize });
       yPos += qrSize + 15;
 
-      doc.font('Courier').fontSize(10).text(`ID: ${ticket.id}`, 50, yPos, { align: 'center', width: doc.page.width - 100 });
+      doc.font('Courier').fontSize(10).text(`ID: ${ticket.uuid}`, 50, yPos, { align: 'center', width: doc.page.width - 100 });
       yPos += 25;
 
       // Gift card info
@@ -183,7 +183,7 @@ exports.handler = async (event) => {
     const numbers = generateDeterministicUniqueNumbers(qty, RANGE_MIN, RANGE_MAX, seed);
     const tickets = numbers.map((number, idx) => ({
       number,
-      id: hashId(paymentIntentId, incomingEmail, String(number), String(idx)),
+      uuid: hashId(paymentIntentId, incomingEmail, String(number), String(idx)),
     }));
 
     // Get purchase date from Payment Intent creation timestamp
