@@ -5,6 +5,11 @@ const nodemailer = require('nodemailer');
 const { createHash } = require('crypto');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
+const { createClient } = require('@supabase/supabase-js');
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
 const CORS_HEADERS = {
   'Content-Type': 'application/json',
@@ -277,6 +282,37 @@ exports.handler = async (event) => {
           success: false,
           error: 'Payment succeeded, but failed to send ticket email. Please contact support.'
       });
+    }
+
+    // Save tickets to Supabase
+    console.log(`[Tickets] Saving ${qty} tickets to Supabase...`);
+    try {
+      const ticketsToInsert = tickets.map(ticket => ({
+        uuid: ticket.uuid,
+        ticket_number: ticket.number,
+        user_id: null, // Will be linked if user is authenticated
+        email: email,
+        full_name: fullName || 'Cliente Stimato',
+        payment_intent_id: paymentIntentId,
+        amount_paid: pi.amount,
+        currency: pi.currency,
+        purchase_date: purchaseDate.toISOString(),
+        quantity: qty
+      }));
+
+      const { data, error } = await supabase
+        .from('commercial_operation_tickets')
+        .insert(ticketsToInsert);
+
+      if (error) {
+        console.error(`[Tickets] ❌ Failed to save to Supabase:`, error);
+        // Don't fail the whole request if Supabase fails
+      } else {
+        console.log(`[Tickets] ✅ Saved ${qty} tickets to Supabase`);
+      }
+    } catch (supabaseError) {
+      console.error(`[Tickets] ❌ Supabase error:`, supabaseError);
+      // Don't fail the whole request if Supabase fails
     }
 
     const alreadyFlagged = pi.metadata && pi.metadata.tickets_issued === 'true';
