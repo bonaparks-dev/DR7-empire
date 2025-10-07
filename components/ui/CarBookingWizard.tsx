@@ -995,11 +995,6 @@ setIsProcessing(false);
               </div>
 
               {/* Info message about KM */}
-              <div className="mt-4 p-3 rounded-md border border-gray-700 bg-gray-800/50">
-                <p className="text-sm text-gray-300">
-                  ℹ️ I pacchetti chilometrici saranno selezionabili nel passo 3 (Opzioni)
-                </p>
-              </div>
             </div>
           </div>
         );
@@ -1010,25 +1005,49 @@ setIsProcessing(false);
           const birthDate = (driverData as any).birthDate || '';
           const [birthYear, birthMonth, birthDay] = birthDate ? birthDate.split('-') : ['', '', ''];
 
+          const licenseDate = (driverData as any).licenseIssueDate || '';
+          const [licenseYear, licenseMonth, licenseDay] = licenseDate ? licenseDate.split('-') : ['', '', ''];
+
           const handleDateDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
             const { name, value } = e.target;
-            const [_, dateType] = name.split('_'); // prefix_day, prefix_month, prefix_year
+            const parts = name.split('_'); // prefix_day, prefix_month, prefix_year or prefix_license_day, etc
+            const isLicense = parts.includes('license');
+            const dateType = parts[parts.length - 1]; // last part is day/month/year
 
-            let currentBirthDate = (driverData as any).birthDate || '';
-            let [year, month, day] = currentBirthDate ? currentBirthDate.split('-') : ['', '', ''];
+            if (isLicense) {
+              let currentLicenseDate = (driverData as any).licenseIssueDate || '';
+              let [year, month, day] = currentLicenseDate ? currentLicenseDate.split('-') : ['', '', ''];
 
-            if (dateType === 'day') day = value;
-            if (dateType === 'month') month = value;
-            if (dateType === 'year') year = value;
+              if (dateType === 'day') day = value;
+              if (dateType === 'month') month = value;
+              if (dateType === 'year') year = value;
 
-            if (year && month && day) {
-              const syntheticEvent = {
-                target: {
-                  name: `${prefix}birthDate`,
-                  value: `${year}-${month}-${day}`
-                }
-              } as any;
-              handleChange(syntheticEvent);
+              if (year && month && day) {
+                const syntheticEvent = {
+                  target: {
+                    name: `${prefix}licenseIssueDate`,
+                    value: `${year}-${month}-${day}`
+                  }
+                } as any;
+                handleChange(syntheticEvent);
+              }
+            } else {
+              let currentBirthDate = (driverData as any).birthDate || '';
+              let [year, month, day] = currentBirthDate ? currentBirthDate.split('-') : ['', '', ''];
+
+              if (dateType === 'day') day = value;
+              if (dateType === 'month') month = value;
+              if (dateType === 'year') year = value;
+
+              if (year && month && day) {
+                const syntheticEvent = {
+                  target: {
+                    name: `${prefix}birthDate`,
+                    value: `${year}-${month}-${day}`
+                  }
+                } as any;
+                handleChange(syntheticEvent);
+              }
             }
           };
 
@@ -1048,34 +1067,58 @@ setIsProcessing(false);
             { value: '12', label: 'Dicembre' }
           ];
           const currentYear = new Date().getFullYear();
-          const years = Array.from({ length: 100 }, (_, i) => String(currentYear - 20 - i));
+          const birthYears = Array.from({ length: 100 }, (_, i) => String(currentYear - 20 - i));
+          const licenseYearsRange = Array.from({ length: 80 }, (_, i) => String(currentYear - i));
 
           return (
-            <div className="grid grid-cols-2 gap-4">
-              <div><label className="text-sm text-gray-400">Nome *</label><input type="text" name={`${prefix}firstName`} value={(driverData as any).firstName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}firstName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}firstName`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Cognome *</label><input type="text" name={`${prefix}lastName`} value={(driverData as any).lastName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}lastName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}lastName`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Email *</label><input type="email" name={`${prefix}email`} value={(driverData as any).email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}email`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}email`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Telefono *</label><input type="tel" name={`${prefix}phone`} value={(driverData as any).phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}phone`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}phone`]}</p>}</div>
-              <div className="col-span-2">
+            <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="text-sm text-gray-400">Nome *</label><input type="text" name={`${prefix}firstName`} value={(driverData as any).firstName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}firstName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}firstName`]}</p>}</div>
+                <div><label className="text-sm text-gray-400">Cognome *</label><input type="text" name={`${prefix}lastName`} value={(driverData as any).lastName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}lastName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}lastName`]}</p>}</div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="text-sm text-gray-400">Email *</label><input type="email" name={`${prefix}email`} value={(driverData as any).email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}email`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}email`]}</p>}</div>
+                <div><label className="text-sm text-gray-400">Telefono *</label><input type="tel" name={`${prefix}phone`} value={(driverData as any).phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}phone`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}phone`]}</p>}</div>
+              </div>
+              <div>
                 <label className="text-sm text-gray-400">Data di nascita *</label>
                 <div className="grid grid-cols-3 gap-2 mt-1">
-                  <select name={`${prefix}_day`} value={birthDay} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 text-white text-sm">
+                  <select name={`${prefix}_day`} value={birthDay} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-2 py-1.5 text-white text-sm">
                     <option value="">Giorno</option>
                     {days.map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
-                  <select name={`${prefix}_month`} value={birthMonth} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 text-white text-sm">
+                  <select name={`${prefix}_month`} value={birthMonth} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-2 py-1.5 text-white text-sm">
                     <option value="">Mese</option>
                     {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                   </select>
-                  <select name={`${prefix}_year`} value={birthYear} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 text-white text-sm">
+                  <select name={`${prefix}_year`} value={birthYear} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-2 py-1.5 text-white text-sm">
                     <option value="">Anno</option>
-                    {years.map(y => <option key={y} value={y}>{y}</option>)}
+                    {birthYears.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
                 </div>
                 {errors[`${prefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}birthDate`]}</p>}
               </div>
-              <div><label className="text-sm text-gray-400">Numero patente *</label><input type="text" name={`${prefix}licenseNumber`} value={(driverData as any).licenseNumber} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}licenseNumber`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseNumber`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Data rilascio patente *</label><input type="date" name={`${prefix}licenseIssueDate`} value={(driverData as any).licenseIssueDate} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseIssueDate`]}</p>}</div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="text-sm text-gray-400">Numero patente *</label><input type="text" name={`${prefix}licenseNumber`} value={(driverData as any).licenseNumber} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}licenseNumber`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseNumber`]}</p>}</div>
+              </div>
+              <div>
+                <label className="text-sm text-gray-400">Data rilascio patente *</label>
+                <div className="grid grid-cols-3 gap-2 mt-1">
+                  <select name={`${prefix}_license_day`} value={licenseDay} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-2 py-1.5 text-white text-sm">
+                    <option value="">Giorno</option>
+                    {days.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                  <select name={`${prefix}_license_month`} value={licenseMonth} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-2 py-1.5 text-white text-sm">
+                    <option value="">Mese</option>
+                    {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                  </select>
+                  <select name={`${prefix}_license_year`} value={licenseYear} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-2 py-1.5 text-white text-sm">
+                    <option value="">Anno</option>
+                    {licenseYearsRange.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
+                {errors[`${prefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseIssueDate`]}</p>}
+              </div>
             </div>
           );
         };
