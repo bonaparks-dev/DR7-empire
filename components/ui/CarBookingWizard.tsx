@@ -1002,48 +1002,50 @@ setIsProcessing(false);
         const renderDriverForm = (driverType: 'main' | 'second') => {
           const driverData = driverType === 'main' ? formData : formData.secondDriver;
           const prefix = driverType === 'main' ? '' : 'secondDriver.';
-          const birthDate = (driverData as any).birthDate || '';
-          const [birthYear, birthMonth, birthDay] = birthDate ? birthDate.split('-') : ['', '', ''];
 
+          // Parse existing dates
+          const birthDate = (driverData as any).birthDate || '';
           const licenseDate = (driverData as any).licenseIssueDate || '';
-          const [licenseYear, licenseMonth, licenseDay] = licenseDate ? licenseDate.split('-') : ['', '', ''];
+
+          // Local state for dropdown selections
+          const [birthDropdowns, setBirthDropdowns] = React.useState(() => {
+            const [year, month, day] = birthDate ? birthDate.split('-') : ['', '', ''];
+            return { day, month, year };
+          });
+
+          const [licenseDropdowns, setLicenseDropdowns] = React.useState(() => {
+            const [year, month, day] = licenseDate ? licenseDate.split('-') : ['', '', ''];
+            return { day, month, year };
+          });
 
           const handleDateDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
             const { name, value } = e.target;
-            const parts = name.split('_'); // prefix_day, prefix_month, prefix_year or prefix_license_day, etc
+            const parts = name.split('_');
             const isLicense = parts.includes('license');
-            const dateType = parts[parts.length - 1]; // last part is day/month/year
+            const dateType = parts[parts.length - 1];
 
             if (isLicense) {
-              let currentLicenseDate = (driverData as any).licenseIssueDate || '';
-              let [year, month, day] = currentLicenseDate ? currentLicenseDate.split('-') : ['', '', ''];
+              const newDropdowns = { ...licenseDropdowns, [dateType]: value };
+              setLicenseDropdowns(newDropdowns);
 
-              if (dateType === 'day') day = value;
-              if (dateType === 'month') month = value;
-              if (dateType === 'year') year = value;
-
-              if (year && month && day) {
+              if (newDropdowns.day && newDropdowns.month && newDropdowns.year) {
                 const syntheticEvent = {
                   target: {
                     name: `${prefix}licenseIssueDate`,
-                    value: `${year}-${month}-${day}`
+                    value: `${newDropdowns.year}-${newDropdowns.month}-${newDropdowns.day}`
                   }
                 } as any;
                 handleChange(syntheticEvent);
               }
             } else {
-              let currentBirthDate = (driverData as any).birthDate || '';
-              let [year, month, day] = currentBirthDate ? currentBirthDate.split('-') : ['', '', ''];
+              const newDropdowns = { ...birthDropdowns, [dateType]: value };
+              setBirthDropdowns(newDropdowns);
 
-              if (dateType === 'day') day = value;
-              if (dateType === 'month') month = value;
-              if (dateType === 'year') year = value;
-
-              if (year && month && day) {
+              if (newDropdowns.day && newDropdowns.month && newDropdowns.year) {
                 const syntheticEvent = {
                   target: {
                     name: `${prefix}birthDate`,
-                    value: `${year}-${month}-${day}`
+                    value: `${newDropdowns.year}-${newDropdowns.month}-${newDropdowns.day}`
                   }
                 } as any;
                 handleChange(syntheticEvent);
@@ -1083,15 +1085,15 @@ setIsProcessing(false);
               <div>
                 <label className="text-sm text-gray-400">Data di nascita *</label>
                 <div className="grid grid-cols-3 gap-2 mt-1">
-                  <select name={`${prefix}_day`} value={birthDay} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-2 py-1.5 text-white text-sm">
+                  <select name={`${prefix}_day`} value={birthDropdowns.day} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-2 py-1.5 text-white text-sm">
                     <option value="">Giorno</option>
                     {days.map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
-                  <select name={`${prefix}_month`} value={birthMonth} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-2 py-1.5 text-white text-sm">
+                  <select name={`${prefix}_month`} value={birthDropdowns.month} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-2 py-1.5 text-white text-sm">
                     <option value="">Mese</option>
                     {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                   </select>
-                  <select name={`${prefix}_year`} value={birthYear} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-2 py-1.5 text-white text-sm">
+                  <select name={`${prefix}_year`} value={birthDropdowns.year} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-2 py-1.5 text-white text-sm">
                     <option value="">Anno</option>
                     {birthYears.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
@@ -1104,15 +1106,15 @@ setIsProcessing(false);
               <div>
                 <label className="text-sm text-gray-400">Data rilascio patente *</label>
                 <div className="grid grid-cols-3 gap-2 mt-1">
-                  <select name={`${prefix}_license_day`} value={licenseDay} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-2 py-1.5 text-white text-sm">
+                  <select name={`${prefix}_license_day`} value={licenseDropdowns.day} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-2 py-1.5 text-white text-sm">
                     <option value="">Giorno</option>
                     {days.map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
-                  <select name={`${prefix}_license_month`} value={licenseMonth} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-2 py-1.5 text-white text-sm">
+                  <select name={`${prefix}_license_month`} value={licenseDropdowns.month} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-2 py-1.5 text-white text-sm">
                     <option value="">Mese</option>
                     {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                   </select>
-                  <select name={`${prefix}_license_year`} value={licenseYear} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-2 py-1.5 text-white text-sm">
+                  <select name={`${prefix}_license_year`} value={licenseDropdowns.year} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-2 py-1.5 text-white text-sm">
                     <option value="">Anno</option>
                     {licenseYearsRange.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
