@@ -340,7 +340,7 @@ export const COMMERCIAL_OPERATION_GIVEAWAY: CommercialOperation = {
   subtitle: { en: 'Prize Pool Worth Over €7,000,000', it: 'Montepremi di Oltre €7.000.000' },
   image: '/main.jpeg',
   ticketPriceUSD: 23.60,
-  ticketPriceEUR: 20,
+  ticketPriceEUR: 1,
   drawDate: '2025-12-24T10:00:00Z',
   prizes: [
     {
