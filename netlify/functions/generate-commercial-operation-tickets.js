@@ -225,8 +225,8 @@ exports.handler = async (event) => {
             <meta charset="UTF-8">
             <style>
               body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background: linear-gradient(135deg, #000000 0%, #434343 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; background: white; }
+              .header { background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); color: #000; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
               .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
               .ticket-info { background: white; border: 2px solid #000; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center; }
               .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
