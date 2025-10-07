@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTranslation } from '../../hooks/useTranslation';
+import { useAuth } from '../../hooks/useAuth';
 
 const WelcomePopup: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
-  const { t } = useTranslation();
+  const { user } = useAuth();
 
   useEffect(() => {
+    // Don't show if user is logged in
+    if (user) {
+      return;
+    }
+
     const hasSeenPopup = sessionStorage.getItem('dr7-welcome-popup-seen');
     if (!hasSeenPopup) {
       setIsVisible(true);
@@ -16,7 +21,7 @@ const WelcomePopup: React.FC = () => {
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [user]);
 
   return (
     <AnimatePresence>
@@ -33,7 +38,7 @@ const WelcomePopup: React.FC = () => {
         >
           <div className="text-center">
             <h2 className="text-4xl font-bold text-white uppercase tracking-widest">
-              {t('Welcome_to_DR7_Empire')}
+              Welcome to DR7 Empire
             </h2>
           </div>
         </motion.div>

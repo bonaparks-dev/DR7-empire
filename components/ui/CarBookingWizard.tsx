@@ -268,10 +268,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
   // === Calculs tarifaires / durée / km inclus ===
   const {
-    duration, rentalCost, insuranceCost, extrasCost, kmPackageCost, subtotal, taxes, total, includedKm,
+    duration, rentalCost, insuranceCost, extrasCost, kmPackageCost, pickupFee, dropoffFee, subtotal, taxes, total, includedKm,
     driverAge, licenseYears, youngDriverFee, recentLicenseFee, secondDriverFee, recommendedKm
   } = useMemo(() => {
-    const zero = { duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, kmPackageCost: 0, subtotal: 0, taxes: 0, total: 0, includedKm: 0, driverAge: 0, licenseYears: 0, youngDriverFee: 0, recentLicenseFee: 0, secondDriverFee: 0, recommendedKm: null };
+    const zero = { duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, kmPackageCost: 0, pickupFee: 0, dropoffFee: 0, subtotal: 0, taxes: 0, total: 0, includedKm: 0, driverAge: 0, licenseYears: 0, youngDriverFee: 0, recentLicenseFee: 0, secondDriverFee: 0, recommendedKm: null };
     if (!item || !item.pricePerDay) return zero;
 
     const pricePerDay = item.pricePerDay[currency];
@@ -331,7 +331,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     // Get recommendation
     const calculatedRecommendedKm = recommendKmPackage(formData.expectedKm, item.name, billingDays);
 
-    const calculatedSubtotal = calculatedRentalCost + calculatedInsuranceCost + calculatedExtrasCost + calculatedKmPackageCost + calculatedYoungDriverFee + calculatedRecentLicenseFee + calculatedSecondDriverFee;
+    // Pickup and Drop-off fees (€50 each)
+    const calculatedPickupFee = 50;
+    const calculatedDropoffFee = 50;
+
+    const calculatedSubtotal = calculatedRentalCost + calculatedInsuranceCost + calculatedExtrasCost + calculatedKmPackageCost + calculatedYoungDriverFee + calculatedRecentLicenseFee + calculatedSecondDriverFee + calculatedPickupFee + calculatedDropoffFee;
     const calculatedTaxes = calculatedSubtotal * 0.10;
     const calculatedTotal = calculatedSubtotal + calculatedTaxes;
 
@@ -341,6 +345,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       insuranceCost: calculatedInsuranceCost,
       extrasCost: calculatedExtrasCost,
       kmPackageCost: calculatedKmPackageCost,
+      pickupFee: calculatedPickupFee,
+      dropoffFee: calculatedDropoffFee,
       subtotal: calculatedSubtotal,
       taxes: calculatedTaxes,
       total: calculatedTotal,
@@ -1001,13 +1007,73 @@ setIsProcessing(false);
         const renderDriverForm = (driverType: 'main' | 'second') => {
           const driverData = driverType === 'main' ? formData : formData.secondDriver;
           const prefix = driverType === 'main' ? '' : 'secondDriver.';
+          const birthDate = (driverData as any).birthDate || '';
+          const [birthYear, birthMonth, birthDay] = birthDate ? birthDate.split('-') : ['', '', ''];
+
+          const handleDateDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+            const { name, value } = e.target;
+            const [_, dateType] = name.split('_'); // prefix_day, prefix_month, prefix_year
+
+            let currentBirthDate = (driverData as any).birthDate || '';
+            let [year, month, day] = currentBirthDate ? currentBirthDate.split('-') : ['', '', ''];
+
+            if (dateType === 'day') day = value;
+            if (dateType === 'month') month = value;
+            if (dateType === 'year') year = value;
+
+            if (year && month && day) {
+              const syntheticEvent = {
+                target: {
+                  name: `${prefix}birthDate`,
+                  value: `${year}-${month}-${day}`
+                }
+              } as any;
+              handleChange(syntheticEvent);
+            }
+          };
+
+          const days = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
+          const months = [
+            { value: '01', label: 'Gennaio' },
+            { value: '02', label: 'Febbraio' },
+            { value: '03', label: 'Marzo' },
+            { value: '04', label: 'Aprile' },
+            { value: '05', label: 'Maggio' },
+            { value: '06', label: 'Giugno' },
+            { value: '07', label: 'Luglio' },
+            { value: '08', label: 'Agosto' },
+            { value: '09', label: 'Settembre' },
+            { value: '10', label: 'Ottobre' },
+            { value: '11', label: 'Novembre' },
+            { value: '12', label: 'Dicembre' }
+          ];
+          const currentYear = new Date().getFullYear();
+          const years = Array.from({ length: 100 }, (_, i) => String(currentYear - 20 - i));
+
           return (
             <div className="grid grid-cols-2 gap-4">
               <div><label className="text-sm text-gray-400">Nome *</label><input type="text" name={`${prefix}firstName`} value={(driverData as any).firstName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}firstName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}firstName`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Cognome *</label><input type="text" name={`${prefix}lastName`} value={(driverData as any).lastName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}lastName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}lastName`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Email *</label><input type="email" name={`${prefix}email`} value={(driverData as any).email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}email`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}email`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Telefono *</label><input type="tel" name={`${prefix}phone`} value={(driverData as any).phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}phone`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}phone`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Data di nascita *</label><input type="date" name={`${prefix}birthDate`} value={(driverData as any).birthDate} onChange={handleChange} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}birthDate`]}</p>}</div>
+              <div className="col-span-2">
+                <label className="text-sm text-gray-400">Data di nascita *</label>
+                <div className="grid grid-cols-3 gap-2 mt-1">
+                  <select name={`${prefix}_day`} value={birthDay} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 text-white text-sm">
+                    <option value="">Giorno</option>
+                    {days.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                  <select name={`${prefix}_month`} value={birthMonth} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 text-white text-sm">
+                    <option value="">Mese</option>
+                    {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                  </select>
+                  <select name={`${prefix}_year`} value={birthYear} onChange={handleDateDropdownChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 text-white text-sm">
+                    <option value="">Anno</option>
+                    {years.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
+                {errors[`${prefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}birthDate`]}</p>}
+              </div>
               <div><label className="text-sm text-gray-400">Numero patente *</label><input type="text" name={`${prefix}licenseNumber`} value={(driverData as any).licenseNumber} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}licenseNumber`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseNumber`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Data rilascio patente *</label><input type="date" name={`${prefix}licenseIssueDate`} value={(driverData as any).licenseIssueDate} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseIssueDate`]}</p>}</div>
             </div>
@@ -1051,8 +1117,6 @@ setIsProcessing(false);
               <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 space-y-2">
                 <p>✓ Età conducente: {driverAgeLocal || '--'} anni</p>
                 <p>✓ Anzianità patente: {licenseYearsLocal || '--'} anni</p>
-                {driverAgeLocal > 0 && driverAgeLocal < 25 && <p className="text-yellow-400">⚠️ Supplemento giovane conducente: €10/giorno</p>}
-                {licenseYearsLocal >= 2 && licenseYearsLocal < 3 && <p className="text-yellow-400">⚠️ Supplemento patente recente: €20/giorno</p>}
                 {licenseYearsLocal < 2 && formData.licenseIssueDate && <p className="text-red-500 font-bold">❌ ATTENZIONE: È richiesta una patente con almeno 2 anni di anzianità per noleggiare.</p>}
               </div>
             </section>
@@ -1354,6 +1418,8 @@ setIsProcessing(false);
                   <div className="flex justify-between"><span>Pacchetto km ({formData.kmPackageType === 'unlimited' ? 'illimitati' : `${includedKm} km`})</span> <span>{formatPrice(kmPackageCost)}</span></div>
                   <div className="flex justify-between"><span>Assicurazione KASKO</span> <span>{formatPrice(insuranceCost)}</span></div>
                   <div className="flex justify-between"><span>Lavaggio obbligatorio</span> <span>{formatPrice(30)}</span></div>
+                  <div className="flex justify-between"><span>Spese di ritiro</span> <span>{formatPrice(pickupFee)}</span></div>
+                  <div className="flex justify-between"><span>Spese di riconsegna</span> <span>{formatPrice(dropoffFee)}</span></div>
                   {secondDriverFee > 0 && <div className="flex justify-between"><span>Secondo guidatore ({duration.days} gg × €10)</span> <span>{formatPrice(secondDriverFee)}</span></div>}
                   {youngDriverFee > 0 && <div className="flex justify-between"><span>Supplemento under 25 ({duration.days} gg × €10)</span> <span>{formatPrice(youngDriverFee)}</span></div>}
                   {recentLicenseFee > 0 && <div className="flex justify-between"><span>Supplemento patente recente ({duration.days} gg × €20)</span> <span>{formatPrice(recentLicenseFee)}</span></div>}
@@ -1447,43 +1513,47 @@ setIsProcessing(false);
         </div>
       </div>
 
-      <div className="lg:grid lg:grid-cols-3 lg:gap-8">
-        <aside className="lg:col-span-1 lg:sticky lg:top-32 self-start mb-8 lg:mb-0">
-          <div className="bg-gray-900/50 p-6 rounded-lg border border-gray-800">
-            <h2 className="text-2xl font-bold text-white mb-4">RIEPILOGO COSTI</h2>
-            <img src={item.image} alt={item.name} className="w-full h-40 object-cover rounded-md mb-4"/>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-gray-400">Durata noleggio:</span><span className="text-white font-medium">{duration.days} giorni</span></div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Km pacchetto:</span>
-                <span className="text-white font-medium">
-                  {formData.kmPackageType === 'unlimited' ? 'ILLIMITATI' : `${includedKm} km`}
-                </span>
+      <div className={step === 4 ? "lg:grid lg:grid-cols-3 lg:gap-8" : ""}>
+        {step === 4 && (
+          <aside className="lg:col-span-1 lg:sticky lg:top-32 self-start mb-8 lg:mb-0">
+            <div className="bg-gray-900/50 p-6 rounded-lg border border-gray-800">
+              <h2 className="text-2xl font-bold text-white mb-4">RIEPILOGO COSTI</h2>
+              <img src={item.image} alt={item.name} className="w-full h-40 object-cover rounded-md mb-4"/>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-gray-400">Durata noleggio:</span><span className="text-white font-medium">{duration.days} giorni</span></div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Km pacchetto:</span>
+                  <span className="text-white font-medium">
+                    {formData.kmPackageType === 'unlimited' ? 'ILLIMITATI' : `${includedKm} km`}
+                  </span>
+                </div>
+
+                <div className="border-t border-gray-700 my-2"></div>
+
+                <div className="flex justify-between"><span className="text-gray-400">Noleggio {item.name}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-400">Pacchetto chilometrici</span><span className="text-white font-medium">{formatPrice(kmPackageCost)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-400">Assicurazione KASKO</span><span className="text-white font-medium">{formatPrice(insuranceCost)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-400">Lavaggio obbligatorio</span><span className="text-white font-medium">{formatPrice(30)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-400">Spese di ritiro</span><span className="text-white font-medium">{formatPrice(pickupFee)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-400">Spese di riconsegna</span><span className="text-white font-medium">{formatPrice(dropoffFee)}</span></div>
+                {secondDriverFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Secondo guidatore</span><span className="text-white font-medium">{formatPrice(secondDriverFee)}</span></div>}
+                {youngDriverFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Supplemento under 25</span><span className="text-white font-medium">{formatPrice(youngDriverFee)}</span></div>}
+                {recentLicenseFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Supplemento patente recente</span><span className="text-white font-medium">{formatPrice(recentLicenseFee)}</span></div>}
+
+                <div className="border-t border-white/20 my-2"></div>
+
+                <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(total)}</span></div>
+
+                <div className="border-t border-gray-700 my-2"></div>
+
+                <p className="text-sm text-gray-300">DEPOSITO CAUZIONALE: <span className="font-bold text-white">{formatDeposit(getDeposit())}</span></p>
+                <p className="text-xs text-gray-400">({formData.isSardinianResident ? 'Residente' : 'Non residente'} in Sardegna)</p>
               </div>
-
-              <div className="border-t border-gray-700 my-2"></div>
-
-              <div className="flex justify-between"><span className="text-gray-400">Noleggio {item.name}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div>
-              <div className="flex justify-between"><span className="text-gray-400">Pacchetto chilometrici</span><span className="text-white font-medium">{formatPrice(kmPackageCost)}</span></div>
-              <div className="flex justify-between"><span className="text-gray-400">Assicurazione KASKO</span><span className="text-white font-medium">{formatPrice(insuranceCost)}</span></div>
-              <div className="flex justify-between"><span className="text-gray-400">Lavaggio obbligatorio</span><span className="text-white font-medium">{formatPrice(30)}</span></div>
-              {secondDriverFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Secondo guidatore</span><span className="text-white font-medium">{formatPrice(secondDriverFee)}</span></div>}
-              {youngDriverFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Supplemento under 25</span><span className="text-white font-medium">{formatPrice(youngDriverFee)}</span></div>}
-              {recentLicenseFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Supplemento patente recente</span><span className="text-white font-medium">{formatPrice(recentLicenseFee)}</span></div>}
-
-              <div className="border-t border-white/20 my-2"></div>
-
-              <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(total)}</span></div>
-
-              <div className="border-t border-gray-700 my-2"></div>
-
-              <p className="text-sm text-gray-300">DEPOSITO CAUZIONALE: <span className="font-bold text-white">{formatDeposit(getDeposit())}</span></p>
-              <p className="text-xs text-gray-400">({formData.isSardinianResident ? 'Residente' : 'Non residente'} in Sardegna)</p>
             </div>
-          </div>
-        </aside>
+          </aside>
+        )}
 
-        <main className="lg:col-span-2">
+        <main className={step === 4 ? "lg:col-span-2" : ""}>
           <form onSubmit={handleSubmit}>
             <AnimatePresence mode="wait">
               <motion.div
@@ -1518,7 +1588,7 @@ setIsProcessing(false);
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors"
+                  className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={(licenseYears < 2 && step === 2) || (step === 2 && !formData.confirmsInformation)}
                 >
                   Continua
