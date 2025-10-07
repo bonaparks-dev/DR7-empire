@@ -267,6 +267,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         days = Math.floor(totalHours / 24);
         hours = totalHours % 24;
         billingDays = days + (hours > 0 ? 1 : 0);
+        // Ensure days is at least 1 for display purposes (minimum 1 day rental)
+        if (days === 0 && hours > 0) {
+          days = 1;
+        }
       }
     }
 
