@@ -51,7 +51,7 @@ function hashId(...parts) {
 }
 
 // =================================================================================
-// REDESIGNED PDF GENERATION FUNCTION - PROFESSIONAL BLACK & WHITE WITH EXO STYLE
+// START: REDESIGNED PDF GENERATION FUNCTION
 // =================================================================================
 const generateTicketPdf = (fullName, tickets, purchaseDate) => {
   return new Promise(async (resolve, reject) => {
@@ -70,11 +70,12 @@ const generateTicketPdf = (fullName, tickets, purchaseDate) => {
     // Fetch logo image
     let logoBuffer;
     try {
-      const logoUrl = 'https://firebasestorage.googleapis.com/v0/b/dr7-empire.appspot.com/o/DR7logo.png?alt=media';
-      const response = await axios.get(logoUrl, { responseType: 'arraybuffer' });
-      logoBuffer = response.data;
+        const logoUrl = 'https://firebasestorage.googleapis.com/v0/b/dr7-empire.appspot.com/o/DR7logo.png?alt=media';
+        const response = await axios.get(logoUrl, { responseType: 'arraybuffer' });
+        logoBuffer = response.data;
     } catch (error) {
-      console.error("Failed to fetch logo:", error);
+        console.error("Failed to fetch logo:", error);
+        // Continue without logo if it fails
     }
 
     for (const ticket of tickets) {
@@ -368,9 +369,10 @@ exports.handler = async (event) => {
       id: hashId(paymentIntentId, incomingEmail, String(number), String(idx)),
     }));
 
+    // Get purchase date from Payment Intent creation timestamp
     const purchaseDate = pi.created ? new Date(pi.created * 1000) : new Date();
 
-    const pdfBuffer = await generateTicketPdf(fullName || 'Cliente Stimato', tickets, purchaseDate);
+    const pdfBuffer = await generateTicketPdf(fullName || 'Valued Customer', tickets, purchaseDate);
 
     try {
       const transporter = nodemailer.createTransport({
@@ -384,11 +386,11 @@ exports.handler = async (event) => {
       await transporter.sendMail({
         from: `"DR7 Empire" <${process.env.GMAIL_USER}>`,
         to: email,
-        subject: 'I Tuoi Biglietti DR7 Operazione Commerciale',
-        text: `Ciao ${fullName || 'Cliente Stimato'},\n\nGrazie per il tuo acquisto. I tuoi biglietti dell'Operazione Commerciale sono allegati a questa email in formato PDF.\n\nBuona fortuna!\n\nIl Team DR7 Empire`,
+        subject: 'Your DR7 Commercial Operation Tickets',
+        text: `Hello ${fullName || 'Valued Customer'},\n\nThank you for your purchase. Your Commercial Operation tickets are attached to this email as a PDF.\n\nGood luck!\n\nThe DR7 Empire Team`,
         attachments: [
           {
-            filename: 'Biglietti-DR7-Operazione-Commerciale.pdf',
+            filename: 'DR7-Commercial-Operation-Tickets.pdf',
             content: pdfBuffer,
             contentType: 'application/pdf',
           },
