@@ -169,6 +169,86 @@ const specMappings: Record<string, { label: { en: string; it: string }; icon: Re
 
 const EUR_TO_USD_RATE = 1.1;
 
+const urbanCarsRawData = [
+  {
+    "id": 201,
+    "name": "VW T-ROC",
+    "dailyPrice": 49,
+    "specs": {
+      "power": "150Cv",
+      "engine": "1.5L TSI",
+      "seats": "5 posti"
+    },
+    "image": "/troc.jpeg"
+  },
+  {
+    "id": 202,
+    "name": "VW Tiguan",
+    "dailyPrice": 59,
+    "specs": {
+      "power": "150Cv",
+      "engine": "2.0L TDI",
+      "seats": "5 posti"
+    },
+    "image": "/tiguan.jpeg"
+  },
+  {
+    "id": 203,
+    "name": "Cupra Formentor",
+    "dailyPrice": 49,
+    "specs": {
+      "power": "150Cv",
+      "engine": "1.5L TSI",
+      "seats": "5 posti"
+    },
+    "image": "/cupra.jpeg"
+  },
+  {
+    "id": 204,
+    "name": "Citroen C5 Aircross",
+    "dailyPrice": 29,
+    "specs": {
+      "power": "130Cv",
+      "engine": "1.5L BlueHDi",
+      "seats": "5 posti"
+    },
+    "image": "/c5.jpeg"
+  },
+  {
+    "id": 205,
+    "name": "Fiat Ducato Maxi",
+    "dailyPrice": 79,
+    "specs": {
+      "power": "140Cv",
+      "engine": "2.3L MultiJet",
+      "seats": "9 posti"
+    },
+    "image": "/ducato.jpeg"
+  },
+  {
+    "id": 206,
+    "name": "Fiat Panda",
+    "dailyPrice": 29,
+    "specs": {
+      "power": "70Cv",
+      "engine": "1.2L",
+      "seats": "5 posti"
+    },
+    "image": "/panda.jpeg"
+  },
+  {
+    "id": 207,
+    "name": "Fiat 500X",
+    "dailyPrice": 39,
+    "specs": {
+      "power": "120Cv",
+      "engine": "1.3L MultiJet",
+      "seats": "5 posti"
+    },
+    "image": "/500x.jpeg"
+  }
+];
+
 const mappedCars = newCarsRawData.map(car => {
     const specs: any[] = [];
     if (car.specs) {
@@ -206,6 +286,37 @@ const mappedCars = newCarsRawData.map(car => {
     };
 });
 
+const mappedUrbanCars = urbanCarsRawData.map(car => {
+    const specs: any[] = [];
+    if (car.specs) {
+        for (const [key, value] of Object.entries(car.specs)) {
+            const mapping = specMappings[key as keyof typeof specMappings];
+            if (mapping) {
+                specs.push({
+                    label: mapping.label,
+                    value: 'transform' in mapping && mapping.transform ? mapping.transform(value as string) : value,
+                    icon: mapping.icon
+                });
+            }
+        }
+    }
+
+    const isAvailable = car.available !== false;
+
+    return {
+        id: `urban-car-${car.id}`,
+        name: car.name,
+        image: car.image,
+        available: isAvailable,
+        pricePerDay: isAvailable && car.dailyPrice ? {
+            usd: Math.round(car.dailyPrice * EUR_TO_USD_RATE),
+            eur: car.dailyPrice,
+            crypto: 0
+        } : undefined,
+        specs: specs
+    };
+});
+
 
 const yachtSpecs = [
     { label: { en: 'Guests', it: 'Ospiti' }, value: '12', icon: UsersIcon },
@@ -224,6 +335,12 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
     id: 'cars',
     label: { en: 'Exotic Supercars', it: 'Exotic Supercars' },
     data: mappedCars,
+    icon: CarIcon,
+  },
+  {
+    id: 'urban-cars',
+    label: { en: 'Urban Cars', it: 'Urban Cars' },
+    data: mappedUrbanCars,
     icon: CarIcon,
   },
   {

@@ -10,7 +10,7 @@ import { PaperAirplaneIcon } from '../components/icons/Icons';
 import { useVerification } from '../hooks/useVerification';
 
 interface RentalPageProps {
-  categoryId: 'cars' | 'yachts' | 'villas' | 'jets' | 'helicopters';
+  categoryId: 'cars' | 'urban-cars' | 'yachts' | 'villas' | 'jets' | 'helicopters';
 }
 
 const JetSearchPage: React.FC = () => {
@@ -226,7 +226,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   const category = RENTAL_CATEGORIES.find(cat => cat.id === categoryId);
 
   const handleBook = (item: RentalItem) => {
-    if (categoryId === 'cars') {
+    if (categoryId === 'cars' || categoryId === 'urban-cars') {
       openCarWizard(item);
     } else if (['jets', 'helicopters'].includes(categoryId)) {
       navigate(`/book/${categoryId}/${item.id}`);
