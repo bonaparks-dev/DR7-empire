@@ -250,7 +250,7 @@ export const translations: Translations = {
   Step_2: { en: "Step 2", it: "Passo 2" },
   Step_3: { en: "Step 3", it: "Passo 3" },
   Buy_your_tickets: { en: "Buy your tickets", it: "Acquista i tuoi biglietti" },
-  Wait_for_the_draw: { en: "Wait for the draw on Christmas Day", it: "Attendi l'estrazione il giorno di Natale" },
+  Wait_for_the_draw: { en: "Wait for the draw on December 24 at 10:00 AM", it: "Attendi l'estrazione il 24 Dicembre alle ore 10:00" },
   Win_amazing_prizes: { en: "Win amazing prizes!", it: "Vinci premi fantastici!" },
 
 
