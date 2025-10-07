@@ -246,6 +246,17 @@ const urbanCarsRawData = [
       "seats": "5 posti"
     },
     "image": "/500x.jpeg"
+  },
+  {
+    "id": 208,
+    "name": "Mercedes A250",
+    "dailyPrice": 59,
+    "specs": {
+      "power": "224Cv",
+      "engine": "2.0L Turbo",
+      "seats": "5 posti"
+    },
+    "image": "/a250.jpeg"
   }
 ];
 
