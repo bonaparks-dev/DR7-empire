@@ -85,6 +85,7 @@ export const ReviewsMarquee: React.FC<ReviewsMarqueeProps> = ({
     reviews,
     business,
     ratingSummary,
+    googleReviewsUrl,
     speedSeconds = 10,
     speedSecondsMobile = 10,
     gapPx = 20,
@@ -168,31 +169,62 @@ export const ReviewsMarquee: React.FC<ReviewsMarqueeProps> = ({
         setTimeout(() => setIsPaused(false), 500);
     };
 
+    const starColor = dark ? "text-white" : "text-yellow-500";
+
     return (
-        <div
-            ref={containerRef}
-            className="w-full overflow-x-auto overflow-y-hidden group flex flex-col scrollbar-hide cursor-grab active:cursor-grabbing"
-            style={marqueeStyle}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            onMouseDown={handleTouchStart}
-            onMouseMove={handleTouchMove}
-            onMouseUp={handleTouchEnd}
-            onMouseLeave={handleTouchEnd}
-        >
-            {jsonLd && (
-                <script type="application/ld+json">
-                    {JSON.stringify(jsonLd)}
-                </script>
+        <div className="w-full">
+            {ratingSummary && googleReviewsUrl && (
+                <div className="mb-8 flex flex-col items-center justify-center">
+                    <a
+                        href={googleReviewsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`flex items-center gap-3 px-6 py-4 rounded-xl transition-all duration-300 ${
+                            dark
+                                ? 'bg-black/50 border border-white/20 hover:border-white/50 hover:bg-black/70'
+                                : 'bg-white/90 border border-gray-200 hover:border-gray-300 hover:bg-white'
+                        }`}
+                    >
+                        <div className="flex items-center gap-1">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                                <StarIcon
+                                    key={i}
+                                    className={`w-6 h-6 ${starColor}`}
+                                />
+                            ))}
+                        </div>
+                        <div className={`text-left ${dark ? 'text-white' : 'text-gray-900'}`}>
+                            <p className="text-2xl font-bold">{ratingSummary.ratingValue.toFixed(1)}/5</p>
+                            <p className="text-sm opacity-80">{ratingSummary.reviewCount} recensioni Google</p>
+                        </div>
+                    </a>
+                </div>
             )}
             <div
-                className={`flex shrink-0 ${isPaused ? '' : 'animate-marquee'} group-hover:[animation-play-state:paused]`}
-                style={{ userSelect: 'none' }}
+                ref={containerRef}
+                className="w-full overflow-x-auto overflow-y-hidden group flex flex-col scrollbar-hide cursor-grab active:cursor-grabbing"
+                style={marqueeStyle}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onMouseDown={handleTouchStart}
+                onMouseMove={handleTouchMove}
+                onMouseUp={handleTouchEnd}
+                onMouseLeave={handleTouchEnd}
             >
-                {doubledReviews.map((review, i) => (
-                    <ReviewCard key={i} review={review} dark={dark} />
-                ))}
+                {jsonLd && (
+                    <script type="application/ld+json">
+                        {JSON.stringify(jsonLd)}
+                    </script>
+                )}
+                <div
+                    className={`flex shrink-0 ${isPaused ? '' : 'animate-marquee'} group-hover:[animation-play-state:paused]`}
+                    style={{ userSelect: 'none' }}
+                >
+                    {doubledReviews.map((review, i) => (
+                        <ReviewCard key={i} review={review} dark={dark} />
+                    ))}
+                </div>
             </div>
         </div>
     );

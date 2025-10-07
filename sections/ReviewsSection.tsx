@@ -309,7 +309,7 @@ export default function ReviewsSection() {
           addressCountry: "IT",
         },
       }}
-      ratingSummary={{ ratingValue: 4.9, reviewCount: 154 }}
+      ratingSummary={{ ratingValue: 5.0, reviewCount: 242 }}
       googleReviewsUrl="https://share.google/vSxG17ifqlzJNSrSz"
       speedSeconds={15}
       speedSecondsMobile={8}
