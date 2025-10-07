@@ -70,16 +70,16 @@ const generateTicketPdf = (fullName, tickets, purchaseDate) => {
 
       // Top section with ticket info
       let yPos = 80;
-      doc.font('Helvetica-Bold').fontSize(22).text('DR7 EMPIRE OFFICIAL TICKET', 50, yPos, { align: 'center', width: doc.page.width - 100 });
+      doc.font('Helvetica-Bold').fontSize(22).text('BIGLIETTO UFFICIALE DR7 EMPIRE', 50, yPos, { align: 'center', width: doc.page.width - 100 });
       yPos += 50;
 
       // Ticket details
-      doc.font('Helvetica').fontSize(14).text('TICKET HOLDER', 50, yPos, { align: 'center', width: doc.page.width - 100, characterSpacing: 2 });
+      doc.font('Helvetica').fontSize(14).text('TITOLARE DEL BIGLIETTO', 50, yPos, { align: 'center', width: doc.page.width - 100, characterSpacing: 2 });
       yPos += 25;
       doc.font('Helvetica-Bold').fontSize(20).text(fullName.toUpperCase(), 50, yPos, { align: 'center', width: doc.page.width - 100 });
       yPos += 40;
 
-      doc.font('Helvetica').fontSize(14).text('TICKET NUMBER', 50, yPos, { align: 'center', width: doc.page.width - 100, characterSpacing: 2 });
+      doc.font('Helvetica').fontSize(14).text('NUMERO BIGLIETTO', 50, yPos, { align: 'center', width: doc.page.width - 100, characterSpacing: 2 });
       yPos += 25;
       doc.font('Helvetica-Bold').fontSize(36).text(ticket.number.toString().padStart(6, '0'), 50, yPos, { align: 'center', width: doc.page.width - 100 });
       yPos += 55;
@@ -94,7 +94,7 @@ const generateTicketPdf = (fullName, tickets, purchaseDate) => {
           minute: '2-digit',
           timeZone: 'Europe/Rome'
         });
-        doc.font('Helvetica').fontSize(12).text('PURCHASE DATE & TIME', 50, yPos, { align: 'center', width: doc.page.width - 100, characterSpacing: 1 });
+        doc.font('Helvetica').fontSize(12).text('DATA E ORA DI ACQUISTO', 50, yPos, { align: 'center', width: doc.page.width - 100, characterSpacing: 1 });
         yPos += 20;
         doc.font('Helvetica-Bold').fontSize(14).text(dateStr, 50, yPos, { align: 'center', width: doc.page.width - 100 });
         yPos += 35;
@@ -113,12 +113,18 @@ const generateTicketPdf = (fullName, tickets, purchaseDate) => {
       yPos += qrSize + 15;
 
       doc.font('Courier').fontSize(10).text(`ID: ${ticket.id}`, 50, yPos, { align: 'center', width: doc.page.width - 100 });
+      yPos += 25;
+
+      // Gift card info
+      doc.font('Helvetica').fontSize(10).text('Questo biglietto è valido come gift card da 25€', 50, yPos, { align: 'center', width: doc.page.width - 100 });
+      yPos += 15;
+      doc.font('Helvetica').fontSize(10).text('con validità dal 1.2.2026 al 1.3.2026', 50, yPos, { align: 'center', width: doc.page.width - 100 });
 
       // Footer with draw date
       const footerY = doc.page.height - 80;
       doc.font('Helvetica-Oblique').fontSize(10).text('Data Estrazione: 24 Dicembre 2025, ore 10:00',
         50, footerY, { align: 'center', width: doc.page.width - 100 });
-      doc.font('Helvetica-Oblique').fontSize(10).text('Good Luck!',
+      doc.font('Helvetica-Oblique').fontSize(10).text('Buona Fortuna!',
         50, footerY + 15, { align: 'center', width: doc.page.width - 100 });
 
       if (tickets.indexOf(ticket) < tickets.length - 1) {
