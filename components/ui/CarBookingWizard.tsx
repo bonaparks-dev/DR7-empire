@@ -173,6 +173,27 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Handle browser back button to go to previous wizard step instead of leaving page
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      e.preventDefault();
+      if (step > 1) {
+        setStep(step - 1);
+        window.history.pushState(null, '', window.location.href);
+      } else {
+        onClose();
+      }
+    };
+
+    // Push initial state to enable back button handling
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [step, onClose]);
+
   // Health ping (helps detect wrong FUNCTIONS_BASE early)
   useEffect(() => {
     (async () => {
