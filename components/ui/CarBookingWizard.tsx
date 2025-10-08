@@ -773,6 +773,26 @@ if (data) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ booking: data }),
   }).catch(whatsappError => console.error('Failed to send WhatsApp notification:', whatsappError));
+
+  // Create Google Calendar event
+  fetch(`${FUNCTIONS_BASE}/.netlify/functions/create-calendar-event`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      vehicleName: item.name,
+      customerName: `${formData.firstName} ${formData.lastName}`,
+      customerEmail: formData.email,
+      customerPhone: formData.phone,
+      pickupDate: formData.pickupDate,
+      pickupTime: formData.pickupTime,
+      returnDate: formData.returnDate,
+      returnTime: formData.returnTime,
+      pickupLocation: PICKUP_LOCATIONS.find(l => l.id === formData.pickupLocation)?.name || formData.pickupLocation,
+      returnLocation: PICKUP_LOCATIONS.find(l => l.id === formData.returnLocation)?.name || formData.returnLocation,
+      totalPrice: total,
+      bookingId: data.id,
+    }),
+  }).catch(calendarError => console.error('Failed to create calendar event:', calendarError));
 }
 
 onBookingComplete(data);
