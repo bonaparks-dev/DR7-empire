@@ -21,22 +21,35 @@ const handler: Handler = async (event) => {
   const sig = event.headers['stripe-signature'];
 
   if (!sig) {
+    console.error('[Identity Webhook] No signature provided');
     return {
       statusCode: 400,
       body: JSON.stringify({ error: 'No signature provided' }),
     };
   }
 
+  if (!webhookSecret) {
+    console.error('[Identity Webhook] No webhook secret configured');
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Webhook secret not configured' }),
+    };
+  }
+
   let stripeEvent: Stripe.Event;
 
   try {
+    // Netlify Functions provides the raw body as a string
+    const body = event.body || '';
+
     stripeEvent = stripe.webhooks.constructEvent(
-      event.body || '',
+      body,
       sig,
       webhookSecret
     );
   } catch (err: any) {
     console.error('[Identity Webhook] Signature verification failed:', err.message);
+    console.error('[Identity Webhook] Webhook secret exists:', !!webhookSecret);
     return {
       statusCode: 400,
       body: JSON.stringify({ error: `Webhook Error: ${err.message}` }),
