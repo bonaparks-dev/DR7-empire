@@ -105,8 +105,8 @@ export const ReviewsMarquee: React.FC<ReviewsMarqueeProps> = ({
         '--gap-mobile': `${gapPxMobile}px`,
     } as React.CSSProperties;
 
-    // Duplicate reviews for a seamless loop
-    const doubledReviews = [...reviews, ...reviews, ...reviews, ...reviews];
+    // Duplicate reviews for seamless infinite loop
+    const doubledReviews = [...reviews, ...reviews];
 
     const jsonLd = business && ratingSummary ? {
         "@context": "https://schema.org",
