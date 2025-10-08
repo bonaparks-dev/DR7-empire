@@ -1726,18 +1726,6 @@ setIsProcessing(false);
                 <div className="border-t border-white/20 my-2"></div>
 
                 <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(total)}</span></div>
-
-                <div className="border-t border-gray-700 my-3"></div>
-
-                {/* Sidebar Deposit - Sixt Style */}
-                <div className="bg-blue-900/20 border border-blue-600 rounded-md p-3">
-                  <p className="text-xs text-blue-200 mb-1">CAUZIONE</p>
-                  <p className="text-lg font-bold text-white">{formatDeposit(getDeposit())}</p>
-                  <p className="text-xs text-blue-300 mt-1">+ Costo del noleggio</p>
-                  <p className="text-xs text-gray-400 mt-2">
-                    Bloccato sulla carta, rilasciato entro 24-48h
-                  </p>
-                </div>
               </div>
             </div>
           </aside>
