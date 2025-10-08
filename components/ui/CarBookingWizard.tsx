@@ -1553,44 +1553,42 @@ setIsProcessing(false);
                   <div className="flex justify-between font-bold text-lg"><span>TOTALE</span> <span>{formatPrice(total)}</span></div>
                 </div>
 
-                {/* Security Deposit - Sixt Style */}
-                <div className="border-t border-gray-600 pt-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="font-bold text-white text-base">CAUZIONE / SECURITY DEPOSIT</p>
-                  </div>
-                  <div className="bg-blue-900/20 border border-blue-600 rounded-lg p-4">
-                    <p className="text-white font-semibold mb-2">
-                      Al ritiro del veicolo verrà bloccato sulla carta di credito:
+                {/* Security Deposit - Compact Style */}
+                <div className="border-t border-gray-600 pt-3">
+                  <div className="bg-blue-900/20 border border-blue-600 rounded-md p-3">
+                    <p className="text-[10px] uppercase tracking-wide text-blue-300 mb-1">CAUZIONE / SECURITY DEPOSIT</p>
+                    <p className="text-xs text-blue-200 mb-1">
+                      Al ritiro verrà bloccato sulla carta di credito:
                     </p>
-                    <p className="text-2xl font-bold text-white mb-1">
+                    <p className="text-sm font-bold text-white mb-1">
                       {formatDeposit(getDeposit())} + Costo del noleggio
                     </p>
-                    <p className="text-sm text-blue-200 mb-3">
-                      La cauzione verrà rilasciata entro 24-48 ore dalla riconsegna del veicolo.
+                    <p className="text-[10px] text-blue-200 mb-2">
+                      Rilascio entro 24-48h dalla riconsegna del veicolo.
                     </p>
 
                     {/* Expandable info */}
                     <details className="group">
-                      <summary className="cursor-pointer text-sm text-blue-300 hover:text-blue-200 flex items-center gap-1">
-                        <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
-                        ℹ️ Maggiori informazioni sulla cauzione
+                      <summary className="cursor-pointer text-[10px] text-blue-300 hover:text-blue-200 flex items-center gap-1">
+                        <span className="group-open:rotate-90 transition-transform inline-block text-[8px]">▶</span>
+                        ℹ️ Maggiori informazioni
                       </summary>
-                      <div className="mt-3 pl-4 text-sm text-gray-300 space-y-2 border-l-2 border-blue-500">
+                      <div className="mt-2 pl-3 text-[10px] text-gray-300 space-y-1 border-l border-blue-500">
                         <p>
-                          <strong>Importo cauzione:</strong>
+                          <strong>Importo:</strong>
                         </p>
-                        <ul className="list-disc pl-5 space-y-1">
-                          <li>Residenti in Sardegna: €{formData.isSardinianResident ? formatDeposit(getDeposit()) : '2.500 o 5.000'} (a seconda del veicolo)</li>
-                          <li>Non residenti: €{!formData.isSardinianResident ? formatDeposit(getDeposit()) : '5.000 o 10.000'} (a seconda del veicolo)</li>
+                        <ul className="list-disc pl-4 space-y-0.5 text-[9px]">
+                          <li>Residenti Sardegna: €{formData.isSardinianResident ? formatDeposit(getDeposit()) : '2.500 o 5.000'}</li>
+                          <li>Non residenti: €{!formData.isSardinianResident ? formatDeposit(getDeposit()) : '5.000 o 10.000'}</li>
                         </ul>
-                        <p className="mt-2">
-                          <strong>Modalità:</strong> La cauzione viene bloccata (pre-autorizzazione) sulla carta di credito al momento del ritiro. Non viene addebitata, ma temporaneamente trattenuta dalla banca.
+                        <p className="text-[9px] mt-1">
+                          <strong>Modalità:</strong> Pre-autorizzazione (non addebito). Bloccato temporaneamente.
                         </p>
-                        <p>
-                          <strong>Rilascio:</strong> La cauzione viene rilasciata automaticamente entro 24-48 ore dalla riconsegna del veicolo, a condizione che non ci siano danni o violazioni del contratto.
+                        <p className="text-[9px]">
+                          <strong>Rilascio:</strong> Automatico entro 24-48h, senza danni/violazioni.
                         </p>
-                        <p className="text-yellow-300">
-                          ⚠️ È richiesta una carta di credito (non prepagata) a nome del conducente principale.
+                        <p className="text-yellow-300 text-[9px] mt-1">
+                          ⚠️ Carta di credito richiesta (non prepagata).
                         </p>
                       </div>
                     </details>
