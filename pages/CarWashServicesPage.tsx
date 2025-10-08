@@ -169,6 +169,22 @@ const CarWashServicesPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-black pt-32 pb-16">
       <div className="container mx-auto px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16"
+        >
+          <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
+            {lang === 'it' ? 'LUXURY WASH' : 'LUXURY WASH'}
+          </h1>
+          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+            {lang === 'it'
+              ? 'Scegli il servizio perfetto per la tua auto'
+              : 'Choose the perfect service for your car'}
+          </p>
+        </motion.div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {SERVICES.map((service, index) => (
             <motion.div
