@@ -1,5 +1,6 @@
 import type { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
 import nodemailer from "nodemailer";
+import { createCalendarEvent, formatCarRentalEvent, formatCarWashEvent } from './utils/googleCalendar';
 
 const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
   if (event.httpMethod !== 'POST') {
@@ -144,6 +145,19 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     transporter.sendMail(adminMailOptions).catch(err =>
       console.error('Failed to send admin notification:', err)
     );
+
+    // Create Google Calendar event (non-blocking)
+    try {
+      const eventDetails = serviceType === 'car_wash'
+        ? formatCarWashEvent(booking)
+        : formatCarRentalEvent(booking);
+
+      await createCalendarEvent(eventDetails);
+      console.log('Calendar event created successfully');
+    } catch (calendarError: any) {
+      console.error('Failed to create calendar event:', calendarError.message);
+      // Don't fail the entire request if calendar creation fails
+    }
 
     return {
       statusCode: 200,
