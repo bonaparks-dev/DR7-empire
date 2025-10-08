@@ -4,7 +4,6 @@ const nodemailer = require('nodemailer');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
 const crypto = require('crypto');
-const axios = require('axios');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -69,27 +68,6 @@ const generateVoucherPDF = async (voucherData) => {
   const doc = new PDFDocument({ size: 'A6', margin: 40 });
   const buffers = [];
   doc.on('data', buffers.push.bind(buffers));
-
-  // Fetch logo image
-  let logoBuffer;
-  try {
-    const logoUrl = 'https://firebasestorage.googleapis.com/v0/b/dr7-empire.appspot.com/o/DR7logo.png?alt=media';
-    const response = await axios.get(logoUrl, { responseType: 'arraybuffer' });
-    logoBuffer = response.data;
-  } catch (error) {
-    console.error("Failed to fetch logo:", error);
-    // Continue without logo if it fails
-  }
-
-  // Logo
-  if (logoBuffer) {
-    try {
-      doc.image(logoBuffer, { fit: [60, 60], align: 'center' });
-      doc.moveDown(0.5);
-    } catch (err) {
-      console.error("Error adding logo:", err);
-    }
-  }
 
   // PDF Content
   doc.font('Helvetica-Bold').fontSize(20).text('DR7 Gift Card', { align: 'center' });

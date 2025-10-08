@@ -5,7 +5,6 @@ const nodemailer = require('nodemailer');
 const { createHash } = require('crypto');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
-const axios = require('axios');
 
 const CORS_HEADERS = {
   'Content-Type': 'application/json',
@@ -67,17 +66,6 @@ const generateTicketPdf = (fullName, tickets, purchaseDate) => {
       reject(err);
     });
 
-    // Fetch logo image
-    let logoBuffer;
-    try {
-        const logoUrl = 'https://firebasestorage.googleapis.com/v0/b/dr7-empire.appspot.com/o/DR7logo.png?alt=media';
-        const response = await axios.get(logoUrl, { responseType: 'arraybuffer' });
-        logoBuffer = response.data;
-    } catch (error) {
-        console.error("Failed to fetch logo:", error);
-        // Continue without logo if it fails
-    }
-
     for (const ticket of tickets) {
       const pageWidth = doc.page.width;
       const pageHeight = doc.page.height;
@@ -92,47 +80,33 @@ const generateTicketPdf = (fullName, tickets, purchaseDate) => {
       // Draw decorative corners
       const cornerSize = 40;
       const cornerOffset = 40;
-      
+
       // Top-left corner
       doc.moveTo(cornerOffset, cornerOffset + cornerSize)
          .lineTo(cornerOffset, cornerOffset)
          .lineTo(cornerOffset + cornerSize, cornerOffset)
          .lineWidth(2)
          .stroke();
-      
+
       // Top-right corner
       doc.moveTo(pageWidth - cornerOffset - cornerSize, cornerOffset)
          .lineTo(pageWidth - cornerOffset, cornerOffset)
          .lineTo(pageWidth - cornerOffset, cornerOffset + cornerSize)
          .stroke();
-      
+
       // Bottom-left corner
       doc.moveTo(cornerOffset, pageHeight - cornerOffset - cornerSize)
          .lineTo(cornerOffset, pageHeight - cornerOffset)
          .lineTo(cornerOffset + cornerSize, pageHeight - cornerOffset)
          .stroke();
-      
+
       // Bottom-right corner
       doc.moveTo(pageWidth - cornerOffset - cornerSize, pageHeight - cornerOffset)
          .lineTo(pageWidth - cornerOffset, pageHeight - cornerOffset)
          .lineTo(pageWidth - cornerOffset, pageHeight - cornerOffset - cornerSize)
          .stroke();
 
-      let yPosition = 60;
-
-      // Logo
-      if (logoBuffer) {
-        try {
-          doc.image(logoBuffer, (pageWidth - 70) / 2, yPosition, {
-            fit: [70, 70],
-            align: 'center',
-          });
-          yPosition += 85;
-        } catch (err) {
-          console.error("Error adding logo:", err);
-          yPosition += 20;
-        }
-      }
+      let yPosition = 80;
 
       // Main Title - 7 MILIONI DI €
       doc.font('Helvetica-Bold')
@@ -372,8 +346,20 @@ exports.handler = async (event) => {
     // Get purchase date from Payment Intent creation timestamp
     const purchaseDate = pi.created ? new Date(pi.created * 1000) : new Date();
 
-    const pdfBuffer = await generateTicketPdf(fullName || 'Valued Customer', tickets, purchaseDate);
+    console.log(`[Tickets] Generating PDF for ${qty} tickets for ${email}`);
+    let pdfBuffer;
+    try {
+      pdfBuffer = await generateTicketPdf(fullName || 'Cliente Stimato', tickets, purchaseDate);
+      console.log(`[Tickets] PDF generated successfully, size: ${pdfBuffer.length} bytes`);
+    } catch (pdfError) {
+      console.error(`[Tickets] PDF generation failed:`, pdfError);
+      return createResponse(500, {
+        success: false,
+        error: 'Failed to generate ticket PDF. Please contact support.'
+      });
+    }
 
+    console.log(`[Tickets] Preparing to send email to ${email}`);
     try {
       const transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -383,23 +369,63 @@ exports.handler = async (event) => {
         },
       });
 
+      console.log(`[Tickets] Transporter created, sending email...`);
       await transporter.sendMail({
         from: `"DR7 Empire" <${process.env.GMAIL_USER}>`,
         to: email,
-        subject: 'Your DR7 Commercial Operation Tickets',
-        text: `Hello ${fullName || 'Valued Customer'},\n\nThank you for your purchase. Your Commercial Operation tickets are attached to this email as a PDF.\n\nGood luck!\n\nThe DR7 Empire Team`,
+        subject: 'I Tuoi Biglietti DR7 - Operazione Commerciale 7 MILIONI DI EURO',
+        text: `Ciao ${fullName || 'Cliente Stimato'},\n\nGrazie per il tuo acquisto! I tuoi ${qty} bigliett${qty > 1 ? 'i' : 'o'} dell'Operazione Commerciale sono allegat${qty > 1 ? 'i' : 'o'} a questa email in formato PDF.\n\nBuona fortuna! L'estrazione si terrà il giorno di Natale.\n\nIl Team DR7 Empire`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: linear-gradient(135deg, #000000 0%, #434343 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+              .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+              .ticket-info { background: white; border: 2px solid #000; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center; }
+              .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🎟️ I TUOI BIGLIETTI SONO PRONTI!</h1>
+              </div>
+              <div class="content">
+                <p><strong>Ciao ${fullName || 'Cliente Stimato'},</strong></p>
+                <p>Grazie per aver partecipato all'Operazione Commerciale <strong>"7 MILIONI DI EURO"</strong>!</p>
+                <div class="ticket-info">
+                  <h2 style="margin: 0;">📋 Dettagli Acquisto</h2>
+                  <p style="font-size: 24px; margin: 10px 0;"><strong>${qty} Bigliett${qty > 1 ? 'i' : 'o'}</strong></p>
+                  <p>I tuoi biglietti sono allegati a questa email in formato PDF.</p>
+                </div>
+                <p><strong>🎁 BONUS:</strong> Riceverai anche una Gift Card da €25 via email separata!</p>
+                <p><strong>🎄 Data Estrazione:</strong> 25 Dicembre 2025</p>
+                <p style="margin-top: 30px;"><strong>Buona fortuna!</strong></p>
+                <div class="footer">
+                  <p>DR7 Empire – Luxury Car Rental & Services</p>
+                  <p>Per domande: <a href="https://dr7empire.com">dr7empire.com</a></p>
+                </div>
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
         attachments: [
           {
-            filename: 'DR7-Commercial-Operation-Tickets.pdf',
+            filename: 'Biglietti-DR7-Operazione-Commerciale.pdf',
             content: pdfBuffer,
             contentType: 'application/pdf',
           },
         ],
       });
 
-      console.log(`Email with PDF attachment sent successfully to ${email}.`);
+      console.log(`[Tickets] ✅ Email sent successfully to ${email}`);
     } catch (emailError) {
-      console.error(`Failed to send email to ${email}:`, emailError);
+      console.error(`[Tickets] ❌ Failed to send email to ${email}:`, emailError);
       return createResponse(500, {
           success: false,
           error: 'Payment succeeded, but failed to send ticket email. Please contact support.'
