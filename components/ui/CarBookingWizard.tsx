@@ -159,6 +159,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [expandedInsurance, setExpandedInsurance] = useState<string | null>(null);
 
   // Stripe
   const cardElementRef = useRef<HTMLDivElement>(null);
@@ -1163,8 +1164,6 @@ setIsProcessing(false);
             swiss: 'TARGA SVIZZERA: FRANCHIGIA EUR €10.000 ( FISSA )'
           }
         };
-
-        const [expandedInsurance, setExpandedInsurance] = useState<string | null>(null);
 
         return (
           <div className="space-y-8">
