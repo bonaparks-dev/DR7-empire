@@ -891,20 +891,6 @@ setIsProcessing(false);
                   ))}
                 </div>
               </div>
-
-              {/* Display total pickup/dropoff fees */}
-              {(formData.pickupLocation === 'cagliari_airport' || formData.returnLocation === 'cagliari_airport') && (
-                <div className="mt-4 p-3 bg-yellow-900/20 border border-yellow-600 rounded-md">
-                  <p className="text-yellow-300 text-sm font-semibold">
-                    💰 Spese aeroportuali totali: €{pickupFee + dropoffFee}
-                  </p>
-                  <div className="text-xs text-yellow-200 mt-1">
-                    {formData.pickupLocation === 'cagliari_airport' && <span>• Ritiro aeroporto: €50</span>}
-                    {formData.pickupLocation === 'cagliari_airport' && formData.returnLocation === 'cagliari_airport' && <br/>}
-                    {formData.returnLocation === 'cagliari_airport' && <span>• Riconsegna aeroporto: €50</span>}
-                  </div>
-                </div>
-              )}
             </div>
 
             <div>
