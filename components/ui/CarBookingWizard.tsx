@@ -1460,15 +1460,6 @@ setIsProcessing(false);
                 })}
               </div>
             </section>
-
-            <section className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-bold text-white mb-4">C. AUTOMATIC SUPPLEMENTS</h3>
-              <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 space-y-2">
-                {youngDriverFee > 0 && <div className="flex justify-between"><span className="text-yellow-400">⚠️ UNDER 25 ANNI</span> <span className="text-white">€{youngDriverFee}</span></div>}
-                {recentLicenseFee > 0 && <div className="flex justify-between"><span className="text-yellow-400">⚠️ UNDER 3 ANNI PATENTE</span> <span className="text-white">€{recentLicenseFee}</span></div>}
-                {youngDriverFee === 0 && recentLicenseFee === 0 && <p className="text-gray-400">Nessun supplemento applicato.</p>}
-              </div>
-            </section>
           </div>
         );
       case 4:
