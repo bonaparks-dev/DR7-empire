@@ -822,9 +822,9 @@ setIsProcessing(false);
 
   const steps = [
     { id: 1, name: t('STEP 1: Date e Località') },
-    { id: 2, name: t('STEP 3: Informazioni Conducente') },
-    { id: 3, name: t('STEP 4: Opzioni e Assicurazioni') },
-    { id: 4, name: t('STEP 5: Pagamento e Conferma') }
+    { id: 2, name: t('STEP 2: Informazioni Conducente') },
+    { id: 3, name: t('STEP 3: Opzioni e Assicurazioni') },
+    { id: 4, name: t('STEP 4: Pagamento e Conferma') }
   ];
 
   const renderStepContent = () => {
