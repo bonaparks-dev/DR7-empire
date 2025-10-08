@@ -306,7 +306,9 @@ export default function ReviewsSection() {
     const loadReviews = async () => {
       try {
         const data = await fetchGoogleReviews();
-        setReviews(data.reviews);
+        // Combine Google reviews with fallback reviews for a larger carousel
+        const combinedReviews = [...data.reviews, ...fallbackReviews];
+        setReviews(combinedReviews);
         setRatingSummary(data.ratingSummary);
       } catch (error) {
         console.error("Failed to load Google reviews, using fallback:", error);
