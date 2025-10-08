@@ -521,7 +521,6 @@ export const RENTAL_EXTRAS = [
     { id: 'infant_seat', label: { en: 'Infant Seat', it: 'Seggiolino Neonato' }, pricePerDay: { usd: 27.23, eur: 24.75, crypto: 0 }, description: { en: 'Suitable for infants and small children up to 4 years old (40–105 cm), rear-facing only', it: 'Adatto per neonati e bambini piccoli fino a 4 anni (40-105 cm), solo rivolto all\'indietro' } },
     { id: 'child_seat', label: { en: 'Child Seat', it: 'Seggiolino Bambino' }, pricePerDay: { usd: 27.23, eur: 24.75, crypto: 0 }, description: { en: 'For children aged 15 months – 12 years (67–150 cm)', it: 'Per bambini dai 15 mesi ai 12 anni (67-150 cm)' } },
     { id: 'booster_seat', label: { en: 'Booster Seat', it: 'Rialzo' }, pricePerDay: { usd: 10.18, eur: 9.25, crypto: 0 }, description: { en: 'For children aged 8 – 12 years (135–150 cm)', it: 'Per bambini dagli 8 ai 12 anni (135-150 cm)' } },
-    { id: 'interior_protection', label: { en: 'Interior Protection', it: 'Protezione Interni' }, pricePerDay: { usd: 0, eur: 0, crypto: 0 }, variablePrice: true, description: { en: 'Covers damages or stains to the vehicle\'s interior', it: 'Copre danni o macchie agli interni del veicolo' } },
 ];
 
 export const COUNTRIES = [
