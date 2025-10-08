@@ -50,7 +50,6 @@ import PartnerProfileSettings from './pages/partner/settings/PartnerProfileSetti
 import PartnerSecuritySettings from './pages/partner/settings/PartnerSecuritySettings';
 import PartnerNotificationSettings from './pages/partner/settings/PartnerNotificationSettings';
 import PartnerPayoutSettings from './pages/partner/settings/PartnerPayoutSettings';
-import WelcomePopup from './components/ui/WelcomePopup';
 import CookieBanner from './components/ui/CookieBanner';
 import { useAuth } from './hooks/useAuth';
 import AuthCallbackPage from './pages/AuthCallbackPage';
@@ -225,7 +224,6 @@ const MainContent = () => {
           </main>
           <Footer />
         </div>
-        <WelcomePopup />
         <BookingModal />
         <VerificationModal />
         <CookieBanner />
