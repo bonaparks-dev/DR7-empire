@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { ReviewsMarquee } from "../components/ui/ReviewsMarquee";
+import { fetchGoogleReviews, Review, RatingSummary } from "../services/googleReviews";
 
-const reviews = [
+// Fallback reviews in case API fails
+const fallbackReviews = [
   {
     author: "Christian Pistis",
     rating: 5,
@@ -293,6 +295,30 @@ const reviews = [
 ];
 
 export default function ReviewsSection() {
+  const [reviews, setReviews] = useState<Review[]>(fallbackReviews);
+  const [ratingSummary, setRatingSummary] = useState<RatingSummary>({
+    ratingValue: 5.0,
+    reviewCount: 242
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadReviews = async () => {
+      try {
+        const data = await fetchGoogleReviews();
+        setReviews(data.reviews);
+        setRatingSummary(data.ratingSummary);
+      } catch (error) {
+        console.error("Failed to load Google reviews, using fallback:", error);
+        // Keep using fallback reviews
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadReviews();
+  }, []);
+
   return (
     <ReviewsMarquee
       reviews={reviews}
@@ -309,13 +335,14 @@ export default function ReviewsSection() {
           addressCountry: "IT",
         },
       }}
-      ratingSummary={{ ratingValue: 5.0, reviewCount: 242 }}
+      ratingSummary={ratingSummary}
       googleReviewsUrl="https://share.google/vSxG17ifqlzJNSrSz"
       speedSeconds={15}
       speedSecondsMobile={8}
       gapPx={20}
       gapPxMobile={12}
       dark
+      isLoading={isLoading}
     />
   );
 }

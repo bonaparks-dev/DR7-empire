@@ -39,6 +39,7 @@ type ReviewsMarqueeProps = {
     gapPx?: number;
     gapPxMobile?: number;
     dark?: boolean;
+    isLoading?: boolean;
 };
 
 const ReviewCard: React.FC<{ review: Review, dark?: boolean }> = ({ review, dark }) => {
@@ -91,6 +92,7 @@ export const ReviewsMarquee: React.FC<ReviewsMarqueeProps> = ({
     gapPx = 20,
     gapPxMobile = 12,
     dark = false,
+    isLoading = false,
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -194,7 +196,7 @@ export const ReviewsMarquee: React.FC<ReviewsMarqueeProps> = ({
                             ))}
                         </div>
                         <div className={`text-left ${dark ? 'text-white' : 'text-gray-900'}`}>
-                            <p className="text-2xl font-bold">{ratingSummary.ratingValue.toFixed(1)}/5</p>
+                            <p className="text-2xl font-bold">{ratingSummary.ratingValue.toFixed(1)}/5.0</p>
                             <p className="text-sm opacity-80">{ratingSummary.reviewCount} recensioni Google</p>
                         </div>
                     </a>
