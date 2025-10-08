@@ -1176,17 +1176,17 @@ setIsProcessing(false);
         // Define detailed insurance coverage info
         const insuranceDetails: Record<string, { title: string; requirements: string; standard: string }> = {
           KASKO_BASE: {
-            title: 'COPERTURA BASE CON FRANCHIGIA E PERCENTUALE SUL DANNO',
+            title: 'KASKO BASE',
             requirements: 'DISPONIBILE SOLO PER CLIENTI CON ALMENO 2 ANNI DI PATENTE',
             standard: 'FRANCHIGIA EUR €5.000 + 30% DEL DANNO'
           },
           KASKO_BLACK: {
-            title: 'COPERTURA INTERMEDIA CON FRANCHIGIA FISSA',
+            title: 'KASKO BLACK',
             requirements: "DISPONIBILE SOLO PER CLIENTI CON 25 ANNI DI ETA' E 5 ANNI DI PATENTE",
             standard: 'FRANCHIGIA EUR €5.000 + 10% DEL DANNO'
           },
           KASKO_SIGNATURE: {
-            title: 'COPERTURA TOP DI GAMMA CON FRANCHIGIE RIDOTTE',
+            title: 'KASKO SIGNATURE',
             requirements: "DISPONIBILE SOLO PER CLIENTI CON 30 ANNI DI ETA' E 10 ANNI DI PATENTE",
             standard: 'FRANCHIGIA EUR €3.000 ( FISSA )'
           }
