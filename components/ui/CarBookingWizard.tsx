@@ -1550,52 +1550,46 @@ setIsProcessing(false);
                   <div className="flex justify-between font-bold text-lg"><span>TOTALE</span> <span>{formatPrice(total)}</span></div>
                 </div>
 
-                {/* Security Deposit - Compact Style */}
+                {/* Maggiori informazioni */}
                 <div className="border-t border-gray-600 pt-3">
-                  <div className="bg-gray-800/50 border border-gray-700 rounded-md p-3">
-                    <p className="text-[10px] uppercase tracking-wide text-gray-400 mb-1">CAUZIONE</p>
-                    <p className="text-xs text-gray-300 mb-1">
-                      Al ritiro verrà bloccato sulla carta di credito:
-                    </p>
-                    <p className="text-sm font-bold text-white mb-1">
-                      {formatDeposit(getDeposit())} + Costo del noleggio
-                    </p>
-                    <p className="text-[10px] text-gray-400 mb-2">
-                      Rilascio entro 24-48h dalla riconsegna del veicolo.
-                    </p>
-
-                    {/* Expandable info */}
-                    <details className="group">
-                      <summary className="cursor-pointer text-[10px] text-gray-400 hover:text-white flex items-center gap-1">
-                        <span className="group-open:rotate-90 transition-transform inline-block text-[8px]">▶</span>
-                        ℹ️ Maggiori informazioni
-                      </summary>
-                      <div className="mt-2 pl-3 text-[10px] text-gray-300 space-y-1 border-l border-gray-600">
-                        <p>
-                          <strong>Importo:</strong>
+                  <details className="group">
+                    <summary className="cursor-pointer text-sm text-gray-300 hover:text-white flex items-center gap-2 font-semibold">
+                      <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
+                      ℹ️ Maggiori informazioni
+                    </summary>
+                    <div className="mt-3 pl-4 space-y-3 border-l-2 border-gray-600">
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-gray-400 mb-1 font-semibold">CAUZIONE</p>
+                        <p className="text-sm text-gray-300 mb-1">
+                          Al ritiro verrà bloccato sulla carta di credito:
                         </p>
-                        <ul className="list-disc pl-4 space-y-0.5 text-[9px]">
-                          <li>Residenti Sardegna: €{formData.isSardinianResident ? formatDeposit(getDeposit()) : '2.500 o 5.000'}</li>
-                          <li>Non residenti: €{!formData.isSardinianResident ? formatDeposit(getDeposit()) : '5.000 o 10.000'}</li>
-                        </ul>
-                        <p className="text-[9px] mt-1">
-                          <strong>Modalità:</strong> Pre-autorizzazione (non addebito). Bloccato temporaneamente.
+                        <p className="text-base font-bold text-white mb-1">
+                          {formatDeposit(getDeposit())} + Costo del noleggio
                         </p>
-                        <p className="text-[9px]">
-                          <strong>Rilascio:</strong> Automatico entro 24-48h, senza danni/violazioni.
+                        <p className="text-xs text-gray-400 mb-2">
+                          Rilascio entro 24-48h dalla riconsegna del veicolo.
                         </p>
-                        <p className="text-yellow-300 text-[9px] mt-1">
-                          ⚠️ Carta di credito richiesta (non prepagata).
-                        </p>
+                        <div className="mt-2 text-xs text-gray-300 space-y-1">
+                          <p>
+                            <strong>Importo:</strong>
+                          </p>
+                          <ul className="list-disc pl-4 space-y-0.5 text-xs">
+                            <li>Residenti Sardegna: €{formData.isSardinianResident ? formatDeposit(getDeposit()) : '2.500 o 5.000'}</li>
+                            <li>Non residenti: €{!formData.isSardinianResident ? formatDeposit(getDeposit()) : '5.000 o 10.000'}</li>
+                          </ul>
+                          <p className="text-xs mt-1">
+                            <strong>Modalità:</strong> Pre-autorizzazione (non addebito). Bloccato temporaneamente.
+                          </p>
+                          <p className="text-xs">
+                            <strong>Rilascio:</strong> Automatico entro 24-48h, senza danni/violazioni.
+                          </p>
+                          <p className="text-yellow-300 text-xs mt-1">
+                            ⚠️ Carta di credito richiesta (non prepagata).
+                          </p>
+                        </div>
                       </div>
-                    </details>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="font-bold text-base text-white mb-2">MODALITÀ DI PAGAMENTO</p>
-                  <hr className="border-gray-600 mb-2"/>
-                  <p>Paga ora online</p>
+                    </div>
+                  </details>
                 </div>
               </div>
             </section>
