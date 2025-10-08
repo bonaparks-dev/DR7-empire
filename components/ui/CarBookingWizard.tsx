@@ -151,7 +151,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     expectedKm: 0, // user's expected distance for recommendation
 
     // Step 4
-    paymentMethod: 'stripe' as 'stripe' | 'agency',
+    paymentMethod: 'stripe' as 'stripe',
     agreesToTerms: false,
     agreesToPrivacy: false,
     confirmsDocuments: false,
@@ -777,8 +777,6 @@ setIsProcessing(false);
         setStripeError("Payment not completed. Status: " + paymentIntent?.status);
         setIsProcessing(false);
       }
-    } else if (formData.paymentMethod === 'agency' && step === 4) {
-      await finalizeBooking();
     }
   };
 
@@ -1244,48 +1242,12 @@ setIsProcessing(false);
         return (
           <div className="space-y-8">
             <section>
-              <h3 className="text-lg font-bold text-white mb-4">A. PAYMENT METHOD</h3>
-              <div className="space-y-4">
-                <div className={`p-4 rounded-md border ${formData.paymentMethod === 'stripe' ? 'border-white' : 'border-gray-700'} cursor-pointer`} onClick={() => setFormData(p => ({...p, paymentMethod: 'stripe'}))}>
-                  <div className="flex items-center">
-                    <input type="radio" name="paymentMethod" value="stripe" checked={formData.paymentMethod === 'stripe'} className="w-4 h-4 text-white"/>
-                    <label className="ml-3 text-white font-semibold">PAGA SUBITO ONLINE</label>
-                  </div>
-                  <div className="ml-7 text-sm text-gray-400 mt-1">
-                    <p>• Prenotazione garantita, Conferma immediata, Pagamento sicuro</p>
-                  </div>
-                </div>
-                <div className={`p-4 rounded-md border ${formData.paymentMethod === 'agency' ? 'border-white' : 'border-gray-700'} cursor-pointer`} onClick={() => setFormData(p => ({...p, paymentMethod: 'agency'}))}>
-                  <div className="flex items-center">
-                    <input type="radio" name="paymentMethod" value="agency" checked={formData.paymentMethod === 'agency'} className="w-4 h-4 text-white"/>
-                    <label className="ml-3 text-white font-semibold">PAGA ALL'AGENZIA</label>
-                  </div>
-                  <div className="ml-7 text-sm text-gray-400 mt-1">
-                    <p>• Massima flessibilità, Modifica e Annullamento gratuiti</p>
-                  </div>
-                </div>
+              <h3 className="text-lg font-bold text-white mb-4">DATI CARTA DI CREDITO/DEBITO</h3>
+              <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 min-h-[56px] flex items-center">
+                {isClientSecretLoading ? <div className="text-gray-400 text-sm">Initializing Payment...</div> : <div ref={cardElementRef} className="w-full"/>}
               </div>
+              {stripeError && <p className="text-xs text-red-400 mt-1">{stripeError}</p>}
             </section>
-
-            <AnimatePresence>
-              {formData.paymentMethod === 'stripe' ? (
-                <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="border-t border-gray-700 pt-6">
-                  <h3 className="text-lg font-bold text-white mb-4">DATI CARTA DI CREDITO/DEBITO</h3>
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 min-h-[56px] flex items-center">
-                    {isClientSecretLoading ? <div className="text-gray-400 text-sm">Initializing Payment...</div> : <div ref={cardElementRef} className="w-full"/>}
-                  </div>
-                  {stripeError && <p className="text-xs text-red-400 mt-1">{stripeError}</p>}
-                </motion.section>
-              ) : (
-                <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="border-t border-gray-700 pt-6">
-                  <h3 className="text-lg font-bold text-white mb-4">PAGAMENTO ALL'AGENZIA</h3>
-                  <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-                    <p>Pagherai l'intero importo al momento del ritiro del veicolo.</p>
-                    <p className="font-bold mt-2">METODI ACCETTATI: Carta di credito, debito, contanti.</p>
-                  </div>
-                </motion.section>
-              )}
-            </AnimatePresence>
 
             <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-4 uppercase">Conferme Finali</h3>
@@ -1382,7 +1344,7 @@ setIsProcessing(false);
                 <div>
                   <p className="font-bold text-base text-white mb-2">MODALITÀ DI PAGAMENTO</p>
                   <hr className="border-gray-600 mb-2"/>
-                  <p>{formData.paymentMethod === 'stripe' ? 'Paga ora online' : 'Paga in sede'}</p>
+                  <p>Paga ora online</p>
                 </div>
               </div>
             </section>

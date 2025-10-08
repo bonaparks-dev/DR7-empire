@@ -29,19 +29,6 @@ import {
 
 const newCarsRawData = [
   {
-    "id": 1,
-    "name": "Hummer H2",
-    "dailyPrice": 40,
-    "specs": {
-      "acceleration": "0–100 in 7.8s",
-      "maxSpeed": "Max speed: 160km/h",
-      "power": "398Cv",
-      "torque": "574Nm",
-      "engine": "6.2L V8"
-    },
-    "image": "/hummer1.jpeg"
-  },
-  {
     "id": 2,
     "name": "Audi RS3",
     "dailyPrice": 70,
