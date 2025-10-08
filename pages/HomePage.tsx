@@ -137,44 +137,6 @@ const HomePage: React.FC = () => {
           </div>
         </div>
       </section>
-
-      {/* ===== Membership Section ===== */}
-      <section className="py-24 bg-gray-900/40">
-        <div className="container mx-auto px-6 text-center">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.5 }}
-            transition={{ duration: 0.5 }}
-            className="text-4xl font-bold text-white"
-          >
-            {t('The_DR7_Club')}
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.5 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="mt-4 text-lg text-gray-400 max-w-2xl mx-auto"
-          >
-            {t('Unlock_a_new_level_of_luxury_with_our_exclusive_membership_tiers')}
-          </motion.p>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.5 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="mt-8"
-          >
-            <Link
-              to="/membership"
-              className="bg-transparent border-2 border-white text-white px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm hover:bg-white hover:text-black transition-all duration-300 transform hover:scale-105"
-            >
-              {t('View_Tiers')}
-            </Link>
-          </motion.div>
-        </div>
-      </section>
     </motion.div>
   );
 };
