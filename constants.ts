@@ -25,6 +25,7 @@ import {
   CubeTransparentIcon,
   TicketIcon,
   HelicopterIcon,
+  SparklesIcon,
 } from './components/icons/Icons';
 
 const newCarsRawData = [
@@ -388,6 +389,12 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
         { id: 'heli-2', name: 'Bell 505 Jet Ranger X', image: '/helicopters/bell_505.jpeg', specs: helicopterSpecs },
     ],
     icon: HelicopterIcon,
+  },
+  {
+    id: 'car-wash-services',
+    label: { en: 'Car Wash', it: 'Lavaggio' },
+    data: [],
+    icon: SparklesIcon,
   },
 ];
 

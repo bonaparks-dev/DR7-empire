@@ -11,6 +11,7 @@ const DISPLAY_TITLE: Record<string, string> = {
   villas: 'Villas',
   helicopters: 'Helicopters',
   jets: 'Private Jets',
+  'car-wash-services': 'Lavaggio',
 };
 
 // Map category ids to image filenames in /public
@@ -20,6 +21,7 @@ const CATEGORY_IMAGE: Record<string, string> = {
   villas: '/villa.jpeg',
   helicopters: '/helicopter.jpeg',
   jets: '/privatejet.jpeg',
+  'car-wash-services': '/car.jpeg',
 };
 
 const HeroSection: React.FC = () => {
