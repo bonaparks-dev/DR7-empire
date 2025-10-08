@@ -252,11 +252,6 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
     id: 'jets',
     label: { en: 'Jets', it: 'Jet' },
     data: [
-      { id: 'jet-1', name: 'Gulfstream G650', image: '/privatejet1.jpeg', specs: [
-        { label: { en: 'Passengers', it: 'Passeggeri' }, value: '19', icon: UsersIcon },
-        { label: { en: 'Range', it: 'Autonomia' }, value: '7,500 nm', icon: PaperAirplaneIcon },
-        { label: { en: 'Speed', it: 'Velocità' }, value: 'Mach 0.925', icon: ZapIcon },
-      ], petsAllowed: true, smokingAllowed: false },
       { id: 'jet-2', name: 'Bombardier Global 7500', image: '/privatejet2.jpeg', specs: [
         { label: { en: 'Passengers', it: 'Passeggeri' }, value: '19', icon: UsersIcon },
         { label: { en: 'Range', it: 'Autonomia' }, value: '7,700 nm', icon: PaperAirplaneIcon },
@@ -267,11 +262,6 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
         { label: { en: 'Range', it: 'Autonomia' }, value: '3,500 nm', icon: PaperAirplaneIcon },
         { label: { en: 'Speed', it: 'Velocità' }, value: '483 ktas', icon: ZapIcon },
       ], petsAllowed: false, smokingAllowed: false },
-      { id: 'jet-4', name: 'Embraer Phenom 300E', image: '/jets/embraer.jpeg', specs: [
-        { label: { en: 'Passengers', it: 'Passeggeri' }, value: '10', icon: UsersIcon },
-        { label: { en: 'Range', it: 'Autonomia' }, value: '2,010 nm', icon: PaperAirplaneIcon },
-        { label: { en: 'Speed', it: 'Velocità' }, value: '464 ktas', icon: ZapIcon },
-      ], petsAllowed: true, smokingAllowed: false },
     ],
     icon: PaperAirplaneIcon,
   },

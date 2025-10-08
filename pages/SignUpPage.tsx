@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
-import { GoogleIcon, EyeIcon, EyeSlashIcon } from '../components/icons/Icons';
+import { EyeIcon, EyeSlashIcon } from '../components/icons/Icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
@@ -33,7 +33,7 @@ const PasswordStrengthMeter: React.FC<{ password?: string }> = ({ password = '' 
 
 const SignUpPage: React.FC = () => {
   const { t } = useTranslation();
-  const { signup, signInWithGoogle, user } = useAuth();
+  const { signup, user } = useAuth();
   const navigate = useNavigate();
 
   const [accountType, setAccountType] = useState<'personal' | 'business'>('personal');
@@ -84,18 +84,6 @@ const SignUpPage: React.FC = () => {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setGeneralError('');
-    setIsSubmitting(true);
-    try {
-        const { error } = await signInWithGoogle();
-        if (error) throw error;
-    } catch(err: any) {
-        setGeneralError(err.message || t('Something_went_wrong'));
-    } finally {
-        setIsSubmitting(false);
-    }
-  }
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
@@ -135,8 +123,6 @@ const SignUpPage: React.FC = () => {
                 {errors.terms && <p className="text-xs text-red-400">{errors.terms}</p>}
                 <button type="submit" disabled={isSubmitting} className="w-full py-3 px-4 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60">{isSubmitting ? t('Please_wait') : t('Create_Account')}</button>
             </form>
-            <div className="relative flex py-2 items-center"><div className="flex-grow border-t border-gray-700"></div><span className="flex-shrink mx-4 text-gray-400 text-sm">{t('OR')}</span><div className="flex-grow border-t border-gray-700"></div></div>
-            <button type="button" onClick={handleGoogleSignIn} disabled={isSubmitting} className="w-full flex items-center justify-center py-3 px-4 border border-gray-700 rounded-full bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60"><GoogleIcon className="w-5 h-5 mr-2" />{t('Sign_up_with_Google')}</button>
             <div className="text-sm text-center"><p className="text-gray-400">{t('Already_have_an_account')}{' '}<Link to="/signin" className="font-medium text-white hover:text-gray-300">{t('Sign_In')}</Link></p></div>
           </motion.div>
         </div>

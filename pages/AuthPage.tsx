@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
-import { GoogleIcon, EyeIcon, EyeSlashIcon } from '../components/icons/Icons';
+import { EyeIcon, EyeSlashIcon } from '../components/icons/Icons';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 const AuthPage: React.FC = () => {
   const { t } = useTranslation();
-  const { login, signInWithGoogle, user, loading } = useAuth();
+  const { login, user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -43,22 +43,6 @@ const AuthPage: React.FC = () => {
       }
   };
 
-  const handleGoogleSignIn = async () => {
-    setError('');
-    setIsSubmitting(true);
-    try {
-      const { error } = await signInWithGoogle();
-      if (error) {
-        // The error will be displayed to the user.
-        throw error;
-      }
-      // On success, the user is redirected to Google, so no need to reset isSubmitting.
-      // It will reset if the user returns to the page without authenticating.
-    } catch (err: any) {
-      setError(err?.message ?? t('Something_went_wrong'));
-      setIsSubmitting(false); // Only reset on failure.
-    }
-  };
 
   return (
     <motion.div
@@ -99,18 +83,6 @@ const AuthPage: React.FC = () => {
               </div>
               <button type="submit" disabled={isSubmitting} className="w-full py-3 px-4 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60">{isSubmitting ? t('Please_wait') : t('Sign_In')}</button>
             </form>
-            
-            <div className="relative flex py-2 items-center"><div className="flex-grow border-t border-gray-700"></div><span className="flex-shrink mx-4 text-gray-400 text-sm">{t('OR')}</span><div className="flex-grow border-t border-gray-700"></div></div>
-
-            <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                disabled={isSubmitting}
-                className="w-full flex items-center justify-center py-3 px-4 border border-gray-700 rounded-full bg-gray-800 text-sm font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-60"
-              >
-                <GoogleIcon className="w-5 h-5 mr-2" />
-                {t('Sign_in_with_Google')}
-              </button>
 
             <div className="text-sm text-center pt-2">
               <p className="text-gray-400">
