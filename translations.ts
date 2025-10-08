@@ -209,7 +209,7 @@ export const translations: Translations = {
   Subscribe: { en: "Subscribe", it: "Iscriviti" },
   About_Us: { en: "About Us", it: "Chi Siamo" },
   Press: { en: "Press", it: "Stampa" },
-  Careers: { en: "Careers", it: "Lavora con Noi" },
+  Careers: { en: "Franchising", it: "Franchising" },
   Cookie_Policy: { en: "Cookie Policy", it: "Informativa Cookie" },
   Privacy_Policy: { en: "Privacy Policy", it: "Informativa Privacy" },
   Contact: { en: "Contact", it: "Contatti" },
