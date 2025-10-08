@@ -905,7 +905,6 @@ setIsProcessing(false);
 
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">LOCATION SELECTION</h3>
-              <p className="text-sm text-yellow-400 mb-3">ℹ️ Il ritiro o la riconsegna presso l'aeroporto comporta un costo aggiuntivo di €50 per ogni servizio</p>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm text-gray-400 font-semibold mb-2 block">Luogo di ritiro *</label>
@@ -914,7 +913,6 @@ setIsProcessing(false);
                       <input type="radio" id={`pickup-${loc.id}`} name="pickupLocation" value={loc.id} checked={formData.pickupLocation === loc.id} onChange={handleChange} className="w-4 h-4 mt-1 text-white bg-gray-700 border-gray-600 focus:ring-white" />
                       <label htmlFor={`pickup-${loc.id}`} className="ml-2 text-white flex-1">
                         {getTranslated(loc.label)}
-                        {loc.id === 'cagliari_airport' && <span className="block text-xs text-yellow-400 mt-0.5">+ €50 spese aeroportuali</span>}
                       </label>
                     </div>
                   ))}
@@ -926,7 +924,6 @@ setIsProcessing(false);
                       <input type="radio" id={`return-${loc.id}`} name="returnLocation" value={loc.id} checked={formData.returnLocation === loc.id} onChange={handleChange} className="w-4 h-4 mt-1 text-white bg-gray-700 border-gray-600 focus:ring-white" />
                       <label htmlFor={`return-${loc.id}`} className="ml-2 text-white flex-1">
                         {getTranslated(loc.label)}
-                        {loc.id === 'cagliari_airport' && <span className="block text-xs text-yellow-400 mt-0.5">+ €50 spese aeroportuali</span>}
                       </label>
                     </div>
                   ))}
