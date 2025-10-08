@@ -398,7 +398,7 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
   },
   {
     id: 'membership',
-    label: { en: 'Membership', it: 'Membership' },
+    label: { en: 'Members', it: 'Members' },
     data: [],
     icon: CrownIcon,
   },

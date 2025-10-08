@@ -12,7 +12,7 @@ const DISPLAY_TITLE: Record<string, string> = {
   helicopters: 'Helicopters',
   jets: 'Private Jets',
   'car-wash-services': 'Lavaggio',
-  membership: 'Membership',
+  membership: 'Members',
 };
 
 // Map category ids to image filenames in /public
