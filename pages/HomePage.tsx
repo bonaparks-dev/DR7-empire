@@ -22,8 +22,8 @@ const CATEGORY_IMAGE: Record<string, string> = {
   villas: '/villa.jpeg',
   helicopters: '/helicopter.jpeg',
   jets: '/privatejet.jpeg',
-  'car-wash-services': '/car.jpeg',
-  membership: '/main.jpeg',
+  'car-wash-services': '/luxurywash.jpeg',
+  membership: '/members.jpeg',
 };
 
 const HeroSection: React.FC = () => {
