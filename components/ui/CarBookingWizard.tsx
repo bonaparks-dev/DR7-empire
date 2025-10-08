@@ -1566,25 +1566,25 @@ setIsProcessing(false);
 
                 {/* Security Deposit - Compact Style */}
                 <div className="border-t border-gray-600 pt-3">
-                  <div className="bg-blue-900/20 border border-blue-600 rounded-md p-3">
-                    <p className="text-[10px] uppercase tracking-wide text-blue-300 mb-1">CAUZIONE / SECURITY DEPOSIT</p>
-                    <p className="text-xs text-blue-200 mb-1">
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-md p-3">
+                    <p className="text-[10px] uppercase tracking-wide text-gray-400 mb-1">CAUZIONE</p>
+                    <p className="text-xs text-gray-300 mb-1">
                       Al ritiro verrà bloccato sulla carta di credito:
                     </p>
                     <p className="text-sm font-bold text-white mb-1">
                       {formatDeposit(getDeposit())} + Costo del noleggio
                     </p>
-                    <p className="text-[10px] text-blue-200 mb-2">
+                    <p className="text-[10px] text-gray-400 mb-2">
                       Rilascio entro 24-48h dalla riconsegna del veicolo.
                     </p>
 
                     {/* Expandable info */}
                     <details className="group">
-                      <summary className="cursor-pointer text-[10px] text-blue-300 hover:text-blue-200 flex items-center gap-1">
+                      <summary className="cursor-pointer text-[10px] text-gray-400 hover:text-white flex items-center gap-1">
                         <span className="group-open:rotate-90 transition-transform inline-block text-[8px]">▶</span>
                         ℹ️ Maggiori informazioni
                       </summary>
-                      <div className="mt-2 pl-3 text-[10px] text-gray-300 space-y-1 border-l border-blue-500">
+                      <div className="mt-2 pl-3 text-[10px] text-gray-300 space-y-1 border-l border-gray-600">
                         <p>
                           <strong>Importo:</strong>
                         </p>
