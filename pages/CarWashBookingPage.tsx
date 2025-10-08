@@ -178,6 +178,21 @@ const CarWashBookingPage: React.FC = () => {
     // Time must be on 30-minute intervals (0 or 30 minutes)
     if (minutes !== 0 && minutes !== 30) return false;
 
+    // Check if appointment is in the past
+    const now = new Date();
+    const isToday = appointmentDate.toDateString() === now.toDateString();
+
+    if (isToday) {
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      const currentTimeInMinutes = currentHour * 60 + currentMinute;
+
+      // Add 2 hours buffer to allow preparation time
+      const minTimeInMinutes = currentTimeInMinutes + 120;
+
+      if (timeInMinutes < minTimeInMinutes) return false;
+    }
+
     return true;
   };
 

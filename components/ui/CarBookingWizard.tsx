@@ -230,6 +230,27 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     } else if (dayOfWeek === 6) {
       addTimes(10 * 60 + 30, 13 * 60 + 30, 30);
     }
+
+    // Filter out past times if the selected date is today
+    const selectedDate = new Date(date);
+    const now = new Date();
+    const isToday = selectedDate.toDateString() === now.toDateString();
+
+    if (isToday) {
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      const currentTimeInMinutes = currentHour * 60 + currentMinute;
+
+      // Add 2 hours buffer (120 minutes) to allow preparation time
+      const minTimeInMinutes = currentTimeInMinutes + 120;
+
+      return times.filter(time => {
+        const [hours, minutes] = time.split(':').map(Number);
+        const timeInMinutes = hours * 60 + minutes;
+        return timeInMinutes >= minTimeInMinutes;
+      });
+    }
+
     return times;
   };
 
