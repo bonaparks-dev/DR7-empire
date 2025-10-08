@@ -1405,15 +1405,6 @@ setIsProcessing(false);
                   <span className="ml-auto font-semibold text-white">€30</span>
                 </div>
 
-                {/* Second driver if added */}
-                {formData.addSecondDriver && (
-                  <div className="flex items-center p-3 bg-gray-800/50 rounded-md border border-gray-700">
-                    <input type="checkbox" checked disabled className="h-4 w-4"/>
-                    <span className="ml-3 text-white">MAX 2 GUIDATORI</span>
-                    <span className="ml-auto font-semibold text-white">€{secondDriverFee}</span>
-                  </div>
-                )}
-
                 {/* Rental Extras from constants */}
                 {RENTAL_EXTRAS.filter(extra => !extra.autoApply).map(extra => {
                   const isSelected = formData.extras.includes(extra.id);
