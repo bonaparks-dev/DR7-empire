@@ -1417,7 +1417,7 @@ setIsProcessing(false);
                 </div>
 
                 {/* Rental Extras from constants */}
-                {RENTAL_EXTRAS.filter(extra => !extra.autoApply).map(extra => {
+                {RENTAL_EXTRAS.filter(extra => !extra.autoApply && extra.id !== 'additional_driver').map(extra => {
                   const isSelected = formData.extras.includes(extra.id);
                   const priceDisplay = extra.oneTime
                     ? `€${extra.pricePerDay.eur}`
