@@ -70,7 +70,7 @@ const Footer: React.FC = () => {
             className="inline-flex items-center space-x-3 text-lg text-gray-300 hover:text-white transition-colors group"
             aria-label="Contact us on WhatsApp"
           >
-            <WhatsAppIcon className="w-8 h-8 text-green-500 group-hover:text-green-400 transition-colors" />
+            <WhatsAppIcon className="w-8 h-8" />
             <span className="font-semibold tracking-wider">+39 345 790 5205</span>
           </a>
         </div>
