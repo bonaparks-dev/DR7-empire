@@ -14,7 +14,8 @@ import {
   getUnlimitedKmOptions,
   calculateUnlimitedKmPrice,
   recommendKmPackage,
-  isPremiumVehicle
+  isPremiumVehicle,
+  isDucatoVehicle
 } from '../../data/kmPricingData';
 
 const FUNCTIONS_BASE =
@@ -146,7 +147,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     // Step 3
     insuranceOption: 'KASKO_BASE',
     extras: [] as string[],
-    kmPackageType: 'package' as 'package' | 'unlimited',
+    kmPackageType: 'none' as 'none' | 'package' | 'unlimited', // 'none' = only free included km
     kmPackageDistance: 100, // default 100km package
     expectedKm: 0, // user's expected distance for recommendation
 
@@ -314,19 +315,23 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     const calculatedRecentLicenseFee = calculatedLicenseYears >= 2 && calculatedLicenseYears < 3 ? 20 * billingDays : 0;
     const calculatedSecondDriverFee = formData.addSecondDriver ? 10 * billingDays : 0;
 
-    // Calculate KM package cost (ALL cars have paid packages)
+    // Calculate FREE included KM based on rental duration
+    const freeIncludedKm = calculateIncludedKm(billingDays);
+
+    // Calculate KM package cost (OPTIONAL - user can add extra km)
     let calculatedKmPackageCost = 0;
-    let calculatedIncludedKm = 0;
+    let calculatedIncludedKm = freeIncludedKm; // Start with free KM
 
     if (formData.kmPackageType === 'unlimited') {
       calculatedKmPackageCost = calculateUnlimitedKmPrice(item.name, billingDays, true);
       calculatedIncludedKm = 9999; // Unlimited
-    } else {
+    } else if (formData.kmPackageType === 'package') {
       const packages = getKmPackages(item.name);
       const selectedPackage = packages.find(pkg => pkg.distance_km === formData.kmPackageDistance);
       calculatedKmPackageCost = selectedPackage?.price_first_purchase || 0;
-      calculatedIncludedKm = formData.kmPackageDistance;
+      calculatedIncludedKm = freeIncludedKm + formData.kmPackageDistance; // Free KM + extra package
     }
+    // else kmPackageType === 'none' -> only free KM included
 
     // Get recommendation
     const calculatedRecommendedKm = recommendKmPackage(formData.expectedKm, item.name, billingDays);
@@ -839,28 +844,60 @@ setIsProcessing(false);
       case 1:
         return (
           <div className="space-y-6">
+            {/* Car Image Preview */}
+            <div className="mb-6">
+              <img
+                src={item.image}
+                alt={item.name}
+                className="w-full h-48 object-cover rounded-lg border border-gray-700"
+              />
+              <h2 className="text-2xl font-bold text-white mt-3">{item.name}</h2>
+              <p className="text-gray-400 text-sm">Prezzo base: {formatPrice(item.pricePerDay[currency])}/giorno</p>
+            </div>
+
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">LOCATION SELECTION</h3>
+              <p className="text-sm text-yellow-400 mb-3">ℹ️ Il ritiro o la riconsegna presso l'aeroporto comporta un costo aggiuntivo di €50 per ogni servizio</p>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-gray-400">Luogo di ritiro *</label>
+                  <label className="text-sm text-gray-400 font-semibold mb-2 block">Luogo di ritiro *</label>
                   {PICKUP_LOCATIONS.map(loc => (
-                    <div key={loc.id} className="flex items-center mt-1">
-                      <input type="radio" id={`pickup-${loc.id}`} name="pickupLocation" value={loc.id} checked={formData.pickupLocation === loc.id} onChange={handleChange} className="w-4 h-4 text-white bg-gray-700 border-gray-600 focus:ring-white" />
-                      <label htmlFor={`pickup-${loc.id}`} className="ml-2 text-white">{getTranslated(loc.label)}</label>
+                    <div key={loc.id} className="flex items-start mt-2 p-2 rounded hover:bg-gray-800/30 transition-colors">
+                      <input type="radio" id={`pickup-${loc.id}`} name="pickupLocation" value={loc.id} checked={formData.pickupLocation === loc.id} onChange={handleChange} className="w-4 h-4 mt-1 text-white bg-gray-700 border-gray-600 focus:ring-white" />
+                      <label htmlFor={`pickup-${loc.id}`} className="ml-2 text-white flex-1">
+                        {getTranslated(loc.label)}
+                        {loc.id === 'cagliari_airport' && <span className="block text-xs text-yellow-400 mt-0.5">+ €50 spese aeroportuali</span>}
+                      </label>
                     </div>
                   ))}
                 </div>
                 <div>
-                  <label className="text-sm text-gray-400">Luogo di riconsegna *</label>
+                  <label className="text-sm text-gray-400 font-semibold mb-2 block">Luogo di riconsegna *</label>
                   {PICKUP_LOCATIONS.map(loc => (
-                    <div key={loc.id} className="flex items-center mt-1">
-                      <input type="radio" id={`return-${loc.id}`} name="returnLocation" value={loc.id} checked={formData.returnLocation === loc.id} onChange={handleChange} className="w-4 h-4 text-white bg-gray-700 border-gray-600 focus:ring-white" />
-                      <label htmlFor={`return-${loc.id}`} className="ml-2 text-white">{getTranslated(loc.label)}</label>
+                    <div key={loc.id} className="flex items-start mt-2 p-2 rounded hover:bg-gray-800/30 transition-colors">
+                      <input type="radio" id={`return-${loc.id}`} name="returnLocation" value={loc.id} checked={formData.returnLocation === loc.id} onChange={handleChange} className="w-4 h-4 mt-1 text-white bg-gray-700 border-gray-600 focus:ring-white" />
+                      <label htmlFor={`return-${loc.id}`} className="ml-2 text-white flex-1">
+                        {getTranslated(loc.label)}
+                        {loc.id === 'cagliari_airport' && <span className="block text-xs text-yellow-400 mt-0.5">+ €50 spese aeroportuali</span>}
+                      </label>
                     </div>
                   ))}
                 </div>
               </div>
+
+              {/* Display total pickup/dropoff fees */}
+              {(formData.pickupLocation === 'cagliari_airport' || formData.returnLocation === 'cagliari_airport') && (
+                <div className="mt-4 p-3 bg-yellow-900/20 border border-yellow-600 rounded-md">
+                  <p className="text-yellow-300 text-sm font-semibold">
+                    💰 Spese aeroportuali totali: €{pickupFee + dropoffFee}
+                  </p>
+                  <div className="text-xs text-yellow-200 mt-1">
+                    {formData.pickupLocation === 'cagliari_airport' && <span>• Ritiro aeroporto: €50</span>}
+                    {formData.pickupLocation === 'cagliari_airport' && formData.returnLocation === 'cagliari_airport' && <br/>}
+                    {formData.returnLocation === 'cagliari_airport' && <span>• Riconsegna aeroporto: €50</span>}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
@@ -1073,18 +1110,16 @@ setIsProcessing(false);
               </AnimatePresence>
             </section>
 
-            {/* Security Deposit */}
+            {/* Security Deposit - Sixt Style */}
             <section className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-bold text-white mb-4">💰 DEPOSITO CAUZIONALE RICHIESTO</h3>
-              <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-                <p className="text-sm text-gray-300">Al ritiro del veicolo è richiesto un deposito cauzionale a garanzia.</p>
-                <div className="mt-4">
-                  <p className="text-base font-semibold text-white">Sei residente in Sardegna? *</p>
-                  <div className="flex items-center mt-2">
+              <div className="mt-4">
+                <p className="text-base font-semibold text-white mb-3">Sei residente in Sardegna? *</p>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center">
                     <input type="radio" id="resident-yes" name="isSardinianResident" checked={formData.isSardinianResident} onChange={() => setFormData(p => ({...p, isSardinianResident: true}))} className="w-4 h-4 text-white"/>
                     <label htmlFor="resident-yes" className="ml-2 text-white">Sì - Residente in Sardegna</label>
                   </div>
-                  <div className="flex items-center mt-1">
+                  <div className="flex items-center">
                     <input type="radio" id="resident-no" name="isSardinianResident" checked={!formData.isSardinianResident} onChange={() => setFormData(p => ({...p, isSardinianResident: false}))} className="w-4 h-4 text-white"/>
                     <label htmlFor="resident-no" className="ml-2 text-white">No - Non residente</label>
                   </div>
@@ -1107,61 +1142,164 @@ setIsProcessing(false);
         const unlimitedOptions = getUnlimitedKmOptions(item.name);
         const isPremium = isPremiumVehicle(item.name);
 
+        // Define detailed insurance coverage info
+        const insuranceDetails: Record<string, { title: string; requirements: string; standard: string; swiss: string }> = {
+          KASKO_BASE: {
+            title: 'COPERTURA BASE CON FRANCHIGIA E PERCENTUALE SUL DANNO',
+            requirements: 'DISPONIBILE SOLO PER CLIENTI CON ALMENO 2 ANNI DI PATENTE',
+            standard: 'FRANCHIGIA EUR €5.000 + 30% DEL DANNO',
+            swiss: 'TARGA SVIZZERA: FRANCHIGIA EUR €20.000 + 30% DEL DANNO'
+          },
+          KASKO_BLACK: {
+            title: 'COPERTURA INTERMEDIA CON FRANCHIGIA FISSA',
+            requirements: "DISPONIBILE SOLO PER CLIENTI CON 25 ANNI DI ETA' E 5 ANNI DI PATENTE",
+            standard: 'FRANCHIGIA EUR €5.000 + 10% DEL DANNO',
+            swiss: 'TARGA SVIZZERA: FRANCHIGIA EUR €10.000 + 30% DEL DANNO'
+          },
+          KASKO_SIGNATURE: {
+            title: 'COPERTURA TOP DI GAMMA CON FRANCHIGIE RIDOTTE',
+            requirements: "DISPONIBILE SOLO PER CLIENTI CON 30 ANNI DI ETA' E 10 ANNI DI PATENTE",
+            standard: 'FRANCHIGIA EUR €3.000 ( FISSA )',
+            swiss: 'TARGA SVIZZERA: FRANCHIGIA EUR €10.000 ( FISSA )'
+          }
+        };
+
+        const [expandedInsurance, setExpandedInsurance] = useState<string | null>(null);
+
         return (
           <div className="space-y-8">
             <section>
               <h3 className="text-lg font-bold text-white mb-4">A. KASKO INSURANCE</h3>
               <div className="space-y-4">
-                {kaskoOptions.map(opt => (
-                  <div key={opt.id} className={`relative group p-4 rounded-md border ${formData.insuranceOption === opt.id ? 'border-white' : 'border-gray-700'} ${!opt.eligible ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`} onClick={() => opt.eligible && setFormData(p => ({...p, insuranceOption: opt.id}))}>
-                    <div className="flex items-center">
-                      <input type="radio" name="insuranceOption" value={opt.id} checked={formData.insuranceOption === opt.id} disabled={!opt.eligible} className="w-4 h-4 text-white"/>
-                      <label className="ml-3 text-white font-semibold">{getTranslated(opt.label)}</label>
-                      {opt.pricePerDay.eur > 0 && <span className="ml-auto text-white">+€{opt.pricePerDay.eur}/giorno</span>}
-                    </div>
-                    <div className="ml-7 text-sm text-gray-400 mt-1">
-                      <p>{getTranslated(opt.description)}</p>
-                      {!opt.eligible && <p className="text-red-400 text-xs mt-1">❌ Non disponibile.</p>}
-                    </div>
-                    {!opt.eligible && opt.tooltip && (
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-2 py-1 bg-black text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                        {opt.tooltip}
+                {kaskoOptions.map(opt => {
+                  const details = insuranceDetails[opt.id as keyof typeof insuranceDetails];
+                  const isExpanded = expandedInsurance === opt.id;
+
+                  return (
+                    <div key={opt.id} className={`relative group rounded-md border ${formData.insuranceOption === opt.id ? 'border-white' : 'border-gray-700'} ${!opt.eligible ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                      <div className={`p-4 ${!opt.eligible ? '' : 'cursor-pointer'}`} onClick={() => opt.eligible && setFormData(p => ({...p, insuranceOption: opt.id}))}>
+                        <div className="flex items-center">
+                          <input type="radio" name="insuranceOption" value={opt.id} checked={formData.insuranceOption === opt.id} disabled={!opt.eligible} className="w-4 h-4 text-white"/>
+                          <label className="ml-3 text-white font-semibold">{getTranslated(opt.label)}</label>
+                          {opt.pricePerDay.eur > 0 && <span className="ml-auto text-white">+€{opt.pricePerDay.eur}/giorno</span>}
+                        </div>
+                        <div className="ml-7 text-sm text-gray-400 mt-1">
+                          <p>{getTranslated(opt.description)}</p>
+                          {!opt.eligible && <p className="text-red-400 text-xs mt-1">❌ Non disponibile.</p>}
+                        </div>
+                        {!opt.eligible && opt.tooltip && (
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-2 py-1 bg-black text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                            {opt.tooltip}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                ))}
+
+                      {/* Expandable details button */}
+                      {details && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedInsurance(isExpanded ? null : opt.id);
+                            }}
+                            className="w-full px-4 py-2 text-xs text-gray-400 hover:text-white border-t border-gray-700 flex items-center justify-between transition-colors"
+                          >
+                            <span>{isExpanded ? '▼ Nascondi dettagli copertura' : '▶ Mostra dettagli copertura'}</span>
+                          </button>
+
+                          {/* Expanded details */}
+                          <AnimatePresence>
+                            {isExpanded && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="overflow-hidden border-t border-gray-700"
+                              >
+                                <div className="p-4 bg-gray-800/30 space-y-3 text-xs">
+                                  <div>
+                                    <p className="text-white font-semibold mb-1">{details.title}</p>
+                                    <p className="text-yellow-400">{details.requirements}</p>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <p className="text-gray-300">
+                                      <span className="font-semibold">Franchigia Standard:</span><br />
+                                      {details.standard}
+                                    </p>
+                                    <p className="text-gray-300">
+                                      <span className="font-semibold">Targa Svizzera:</span><br />
+                                      {details.swiss}
+                                    </p>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </section>
 
             <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-4">
-                B. PACCHETTI CHILOMETRICI {isPremium && <span className="text-yellow-400 text-sm">(Premium Vehicle)</span>}
+                B. CHILOMETRI INCLUSI
               </h3>
 
-              {/* Expected Distance Input */}
-              <div className="mb-4 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Quanti km prevedi di percorrere? (opzionale - per raccomandazione)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="es. 150"
-                  value={formData.expectedKm || ''}
-                  onChange={(e) => setFormData(p => ({...p, expectedKm: parseInt(e.target.value) || 0}))}
-                  className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-2 text-white text-sm"
-                />
-                {recommendedKm && formData.expectedKm > 0 && (
-                  <div className="mt-2 p-2 bg-blue-900/30 border border-blue-700 rounded text-sm text-blue-300">
-                    💡 <strong>Raccomandato:</strong> {recommendedKm.type === 'unlimited' ? 'Km Illimitati' : `${recommendedKm.packageKm} km`} - €{recommendedKm.price}
-                    <br/><span className="text-xs text-blue-400">{recommendedKm.reason}</span>
+              {/* Free KM Display */}
+              <div className="mb-4 p-4 bg-green-900/20 border border-green-600 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-green-300 font-semibold">✓ Km inclusi GRATIS nel noleggio</p>
+                    <p className="text-xs text-green-200 mt-1">Basato sulla durata del noleggio</p>
                   </div>
-                )}
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-green-400">{includedKm} km</p>
+                    <p className="text-xs text-green-200">per {duration.days} {duration.days === 1 ? 'giorno' : 'giorni'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <h3 className="text-lg font-bold text-white mb-4 mt-6">
+                C. PACCHETTI CHILOMETRICI AGGIUNTIVI (OPZIONALE) {isPremium && <span className="text-yellow-400 text-sm">(Premium Vehicle)</span>}
+              </h3>
+              <p className="text-sm text-gray-400 mb-4">Vuoi aggiungere più chilometri? Seleziona un pacchetto aggiuntivo</p>
+
+              {/* No Extra KM Option (Default) */}
+              <div className="space-y-3 mb-4">
+                <div
+                  className={`p-4 rounded-md border cursor-pointer transition-all ${
+                    formData.kmPackageType === 'none'
+                      ? 'border-white bg-white/5'
+                      : 'border-gray-700 hover:border-gray-500'
+                  }`}
+                  onClick={() => setFormData(p => ({...p, kmPackageType: 'none'}))}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <input
+                        type="radio"
+                        name="kmPackage"
+                        checked={formData.kmPackageType === 'none'}
+                        onChange={() => setFormData(p => ({...p, kmPackageType: 'none'}))}
+                        className="w-4 h-4 text-white"
+                      />
+                      <label className="ml-3 text-white font-semibold">Solo km inclusi ({includedKm} km)</label>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-green-400 font-bold">GRATIS</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* KM Package Options */}
               <div className="space-y-3">
-                <h4 className="text-sm font-semibold text-gray-300 mb-2">PACCHETTI CHILOMETRICI:</h4>
+                <h4 className="text-sm font-semibold text-gray-300 mb-2">AGGIUNGI PACCHETTI KM EXTRA:</h4>
                 {kmPackages.map(pkg => (
                   <div
                     key={pkg.distance_km}
@@ -1181,7 +1319,10 @@ setIsProcessing(false);
                           onChange={() => setFormData(p => ({...p, kmPackageType: 'package', kmPackageDistance: pkg.distance_km}))}
                           className="w-4 h-4 text-white"
                         />
-                        <label className="ml-3 text-white font-semibold">{pkg.distance_km} KM</label>
+                        <div className="ml-3">
+                          <label className="text-white font-semibold">+{pkg.distance_km} KM EXTRA</label>
+                          <p className="text-xs text-gray-400">Totale: {includedKm + pkg.distance_km} km</p>
+                        </div>
                       </div>
                       <div className="text-right">
                         <span className="text-white font-bold">€{pkg.price_first_purchase}</span>
@@ -1215,34 +1356,57 @@ setIsProcessing(false);
                     </div>
                   </div>
                   <div className="ml-7 text-xs text-gray-400">
-                    <p>Per {duration.days || 1} {duration.days === 1 ? 'giorno' : 'giorni'}</p>
+                    {isDucatoVehicle(item.name) ? (
+                      <p>Prezzo fisso per Ducato</p>
+                    ) : (
+                      <p>Per {duration.days || 1} {duration.days === 1 ? 'giorno' : 'giorni'}</p>
+                    )}
                   </div>
                 </div>
               </div>
 
               {/* KM Package Summary */}
               <div className="mt-4 p-3 bg-gray-800/50 rounded-md border border-gray-700">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-300">Km selezionati:</span>
-                  <span className="text-white font-semibold">
-                    {formData.kmPackageType === 'unlimited' ? 'ILLIMITATI' : `${formData.kmPackageDistance} km`}
-                  </span>
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-gray-300">Km inclusi gratis:</span>
+                  <span className="text-green-400 font-semibold">{includedKm} km</span>
                 </div>
-                <div className="flex justify-between text-sm mt-1">
-                  <span className="text-gray-300">Costo pacchetto km:</span>
-                  <span className="text-white font-semibold">€{kmPackageCost}</span>
+                {formData.kmPackageType !== 'none' && (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-300">Pacchetto extra selezionato:</span>
+                      <span className="text-white font-semibold">
+                        {formData.kmPackageType === 'unlimited' ? 'ILLIMITATI' : `+${formData.kmPackageDistance} km`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm mt-1">
+                      <span className="text-gray-300">Costo pacchetto extra:</span>
+                      <span className="text-white font-semibold">€{kmPackageCost}</span>
+                    </div>
+                  </>
+                )}
+                <div className="border-t border-gray-600 mt-2 pt-2">
+                  <div className="flex justify-between text-base font-bold">
+                    <span className="text-white">Km totali disponibili:</span>
+                    <span className="text-white">
+                      {formData.kmPackageType === 'unlimited' ? '∞ ILLIMITATI' : `${includedKm} km`}
+                    </span>
+                  </div>
                 </div>
               </div>
             </section>
 
             <section className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-bold text-white mb-4">C. ADDITIONAL SERVICES</h3>
+              <h3 className="text-lg font-bold text-white mb-4">C. ADDITIONAL SERVICES & OPTIONS</h3>
               <div className="space-y-3">
+                {/* Mandatory car wash */}
                 <div className="flex items-center p-3 bg-gray-800/50 rounded-md border border-gray-700">
                   <input type="checkbox" checked disabled className="h-4 w-4"/>
                   <span className="ml-3 text-white">LAVAGGIO COMPLETO [OBBLIGATORIO]</span>
                   <span className="ml-auto font-semibold text-white">€30</span>
                 </div>
+
+                {/* Second driver if added */}
                 {formData.addSecondDriver && (
                   <div className="flex items-center p-3 bg-gray-800/50 rounded-md border border-gray-700">
                     <input type="checkbox" checked disabled className="h-4 w-4"/>
@@ -1250,6 +1414,51 @@ setIsProcessing(false);
                     <span className="ml-auto font-semibold text-white">€{secondDriverFee}</span>
                   </div>
                 )}
+
+                {/* Rental Extras from constants */}
+                {RENTAL_EXTRAS.filter(extra => !extra.autoApply).map(extra => {
+                  const isSelected = formData.extras.includes(extra.id);
+                  const priceDisplay = extra.oneTime
+                    ? `€${extra.pricePerDay.eur}`
+                    : `€${extra.pricePerDay.eur}/giorno`;
+
+                  return (
+                    <div
+                      key={extra.id}
+                      className={`p-3 rounded-md border cursor-pointer transition-all ${
+                        isSelected
+                          ? 'border-white bg-white/5'
+                          : 'border-gray-700 hover:border-gray-500'
+                      }`}
+                      onClick={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          extras: isSelected
+                            ? prev.extras.filter(id => id !== extra.id)
+                            : [...prev.extras, extra.id]
+                        }));
+                      }}
+                    >
+                      <div className="flex items-start">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {}}
+                          className="h-4 w-4 mt-1 text-white"
+                        />
+                        <div className="ml-3 flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-white font-medium">{getTranslated(extra.label)}</span>
+                            <span className="font-semibold text-white">{priceDisplay}</span>
+                          </div>
+                          {extra.description && (
+                            <p className="text-xs text-gray-400 mt-1">{getTranslated(extra.description)}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </section>
 
@@ -1363,9 +1572,48 @@ setIsProcessing(false);
                   <div className="flex justify-between font-bold text-lg"><span>TOTALE</span> <span>{formatPrice(total)}</span></div>
                 </div>
 
-                <div>
-                  <p className="font-bold text-white">DEPOSITO CAUZIONALE: {formatDeposit(getDeposit())}</p>
-                  <p className="text-xs text-gray-400">({formData.isSardinianResident ? 'Residente' : 'Non residente'} in Sardegna)</p>
+                {/* Security Deposit - Sixt Style */}
+                <div className="border-t border-gray-600 pt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="font-bold text-white text-base">CAUZIONE / SECURITY DEPOSIT</p>
+                  </div>
+                  <div className="bg-blue-900/20 border border-blue-600 rounded-lg p-4">
+                    <p className="text-white font-semibold mb-2">
+                      Al ritiro del veicolo verrà bloccato sulla carta di credito:
+                    </p>
+                    <p className="text-2xl font-bold text-white mb-1">
+                      {formatDeposit(getDeposit())} + Costo del noleggio
+                    </p>
+                    <p className="text-sm text-blue-200 mb-3">
+                      La cauzione verrà rilasciata entro 24-48 ore dalla riconsegna del veicolo.
+                    </p>
+
+                    {/* Expandable info */}
+                    <details className="group">
+                      <summary className="cursor-pointer text-sm text-blue-300 hover:text-blue-200 flex items-center gap-1">
+                        <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
+                        ℹ️ Maggiori informazioni sulla cauzione
+                      </summary>
+                      <div className="mt-3 pl-4 text-sm text-gray-300 space-y-2 border-l-2 border-blue-500">
+                        <p>
+                          <strong>Importo cauzione:</strong>
+                        </p>
+                        <ul className="list-disc pl-5 space-y-1">
+                          <li>Residenti in Sardegna: €{formData.isSardinianResident ? formatDeposit(getDeposit()) : '2.500 o 5.000'} (a seconda del veicolo)</li>
+                          <li>Non residenti: €{!formData.isSardinianResident ? formatDeposit(getDeposit()) : '5.000 o 10.000'} (a seconda del veicolo)</li>
+                        </ul>
+                        <p className="mt-2">
+                          <strong>Modalità:</strong> La cauzione viene bloccata (pre-autorizzazione) sulla carta di credito al momento del ritiro. Non viene addebitata, ma temporaneamente trattenuta dalla banca.
+                        </p>
+                        <p>
+                          <strong>Rilascio:</strong> La cauzione viene rilasciata automaticamente entro 24-48 ore dalla riconsegna del veicolo, a condizione che non ci siano danni o violazioni del contratto.
+                        </p>
+                        <p className="text-yellow-300">
+                          ⚠️ È richiesta una carta di credito (non prepagata) a nome del conducente principale.
+                        </p>
+                      </div>
+                    </details>
+                  </div>
                 </div>
 
                 <div>
@@ -1480,10 +1728,17 @@ setIsProcessing(false);
 
                 <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(total)}</span></div>
 
-                <div className="border-t border-gray-700 my-2"></div>
+                <div className="border-t border-gray-700 my-3"></div>
 
-                <p className="text-sm text-gray-300">DEPOSITO CAUZIONALE: <span className="font-bold text-white">{formatDeposit(getDeposit())}</span></p>
-                <p className="text-xs text-gray-400">({formData.isSardinianResident ? 'Residente' : 'Non residente'} in Sardegna)</p>
+                {/* Sidebar Deposit - Sixt Style */}
+                <div className="bg-blue-900/20 border border-blue-600 rounded-md p-3">
+                  <p className="text-xs text-blue-200 mb-1">CAUZIONE</p>
+                  <p className="text-lg font-bold text-white">{formatDeposit(getDeposit())}</p>
+                  <p className="text-xs text-blue-300 mt-1">+ Costo del noleggio</p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Bloccato sulla carta, rilasciato entro 24-48h
+                  </p>
+                </div>
               </div>
             </div>
           </aside>

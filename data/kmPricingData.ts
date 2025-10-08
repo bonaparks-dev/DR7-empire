@@ -213,6 +213,14 @@ export const isPremiumVehicle = (vehicleName: string): boolean => {
 };
 
 /**
+ * Check if a vehicle is Ducato (special pricing)
+ */
+export const isDucatoVehicle = (vehicleName: string): boolean => {
+  const lowerName = vehicleName.toLowerCase();
+  return lowerName.includes('ducato');
+};
+
+/**
  * Get KM packages for a vehicle
  */
 export const getKmPackages = (vehicleName: string): KmPackage[] => {
@@ -234,6 +242,11 @@ export const calculateUnlimitedKmPrice = (
   rentalDays: number,
   isFirstPurchase: boolean = true
 ): number => {
+  // Special pricing for Ducato: flat €100 for unlimited km
+  if (isDucatoVehicle(vehicleName)) {
+    return 100;
+  }
+
   const options = getUnlimitedKmOptions(vehicleName);
   const priceKey = isFirstPurchase ? 'price_first_purchase' : 'price_plus_20_percent_travel';
 
