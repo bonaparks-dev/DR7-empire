@@ -396,6 +396,12 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
     data: [],
     icon: SparklesIcon,
   },
+  {
+    id: 'membership',
+    label: { en: 'Membership', it: 'Membership' },
+    data: [],
+    icon: CrownIcon,
+  },
 ];
 
 // FIX: Export missing constants
