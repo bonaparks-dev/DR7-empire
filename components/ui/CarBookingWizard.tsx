@@ -1136,24 +1136,21 @@ setIsProcessing(false);
         const isPremium = isPremiumVehicle(item.name);
 
         // Define detailed insurance coverage info
-        const insuranceDetails: Record<string, { title: string; requirements: string; standard: string; swiss: string }> = {
+        const insuranceDetails: Record<string, { title: string; requirements: string; standard: string }> = {
           KASKO_BASE: {
             title: 'COPERTURA BASE CON FRANCHIGIA E PERCENTUALE SUL DANNO',
             requirements: 'DISPONIBILE SOLO PER CLIENTI CON ALMENO 2 ANNI DI PATENTE',
-            standard: 'FRANCHIGIA EUR €5.000 + 30% DEL DANNO',
-            swiss: 'TARGA SVIZZERA: FRANCHIGIA EUR €20.000 + 30% DEL DANNO'
+            standard: 'FRANCHIGIA EUR €5.000 + 30% DEL DANNO'
           },
           KASKO_BLACK: {
             title: 'COPERTURA INTERMEDIA CON FRANCHIGIA FISSA',
             requirements: "DISPONIBILE SOLO PER CLIENTI CON 25 ANNI DI ETA' E 5 ANNI DI PATENTE",
-            standard: 'FRANCHIGIA EUR €5.000 + 10% DEL DANNO',
-            swiss: 'TARGA SVIZZERA: FRANCHIGIA EUR €10.000 + 30% DEL DANNO'
+            standard: 'FRANCHIGIA EUR €5.000 + 10% DEL DANNO'
           },
           KASKO_SIGNATURE: {
             title: 'COPERTURA TOP DI GAMMA CON FRANCHIGIE RIDOTTE',
             requirements: "DISPONIBILE SOLO PER CLIENTI CON 30 ANNI DI ETA' E 10 ANNI DI PATENTE",
-            standard: 'FRANCHIGIA EUR €3.000 ( FISSA )',
-            swiss: 'TARGA SVIZZERA: FRANCHIGIA EUR €10.000 ( FISSA )'
+            standard: 'FRANCHIGIA EUR €3.000 ( FISSA )'
           }
         };
 
@@ -1216,12 +1213,8 @@ setIsProcessing(false);
                                   </div>
                                   <div className="space-y-1">
                                     <p className="text-gray-300">
-                                      <span className="font-semibold">Franchigia Standard:</span><br />
+                                      <span className="font-semibold">Franchigia:</span><br />
                                       {details.standard}
-                                    </p>
-                                    <p className="text-gray-300">
-                                      <span className="font-semibold">Targa Svizzera:</span><br />
-                                      {details.swiss}
                                     </p>
                                   </div>
                                 </div>
