@@ -1257,7 +1257,7 @@ setIsProcessing(false);
                     <p className="text-xs text-green-200 mt-1">Basato sulla durata del noleggio</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-bold text-green-400">{includedKm} km</p>
+                    <p className="text-2xl font-bold text-green-400">{calculateIncludedKm(duration.days)} km</p>
                     <p className="text-xs text-green-200">per {duration.days} {duration.days === 1 ? 'giorno' : 'giorni'}</p>
                   </div>
                 </div>
@@ -1287,7 +1287,7 @@ setIsProcessing(false);
                         onChange={() => setFormData(p => ({...p, kmPackageType: 'none'}))}
                         className="w-4 h-4 text-white"
                       />
-                      <label className="ml-3 text-white font-semibold">Solo km inclusi ({includedKm} km)</label>
+                      <label className="ml-3 text-white font-semibold">Solo km inclusi ({calculateIncludedKm(duration.days)} km)</label>
                     </div>
                     <div className="text-right">
                       <span className="text-green-400 font-bold">GRATIS</span>
@@ -1320,7 +1320,7 @@ setIsProcessing(false);
                         />
                         <div className="ml-3">
                           <label className="text-white font-semibold">+{pkg.distance_km} KM EXTRA</label>
-                          <p className="text-xs text-gray-400">Totale: {includedKm + pkg.distance_km} km</p>
+                          <p className="text-xs text-gray-400">Totale: {calculateIncludedKm(duration.days) + pkg.distance_km} km</p>
                         </div>
                       </div>
                       <div className="text-right">
@@ -1366,16 +1366,18 @@ setIsProcessing(false);
 
               {/* KM Package Summary */}
               <div className="mt-4 p-3 bg-gray-800/50 rounded-md border border-gray-700">
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-300">Km inclusi gratis:</span>
-                  <span className="text-green-400 font-semibold">{includedKm} km</span>
-                </div>
+                {formData.kmPackageType !== 'unlimited' && (
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-gray-300">Km inclusi gratis:</span>
+                    <span className="text-green-400 font-semibold">{calculateIncludedKm(duration.days)} km</span>
+                  </div>
+                )}
                 {formData.kmPackageType !== 'none' && (
                   <>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-300">Pacchetto extra selezionato:</span>
                       <span className="text-white font-semibold">
-                        {formData.kmPackageType === 'unlimited' ? 'ILLIMITATI' : `+${formData.kmPackageDistance} km`}
+                        {formData.kmPackageType === 'unlimited' ? '∞ KM ILLIMITATI' : `+${formData.kmPackageDistance} km`}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm mt-1">
@@ -1388,7 +1390,7 @@ setIsProcessing(false);
                   <div className="flex justify-between text-base font-bold">
                     <span className="text-white">Km totali disponibili:</span>
                     <span className="text-white">
-                      {formData.kmPackageType === 'unlimited' ? '∞ ILLIMITATI' : `${includedKm} km`}
+                      {formData.kmPackageType === 'unlimited' ? '∞ ILLIMITATI' : `${calculateIncludedKm(duration.days) + (formData.kmPackageType === 'package' ? formData.kmPackageDistance : 0)} km`}
                     </span>
                   </div>
                 </div>
