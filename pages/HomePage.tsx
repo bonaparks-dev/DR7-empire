@@ -11,7 +11,7 @@ const DISPLAY_TITLE: Record<string, string> = {
   villas: 'Villas',
   helicopters: 'Helicopters',
   jets: 'Private Jets',
-  'car-wash-services': 'Lavaggio',
+  'car-wash-services': 'Luxury Wash',
   membership: 'Members',
 };
 

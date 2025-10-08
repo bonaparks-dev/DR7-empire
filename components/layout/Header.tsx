@@ -104,14 +104,8 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                   <span>{t(cat.label.en.replace(/ /g, '_') as any)}</span>
                 </NavLink>
               ))}
-              <NavLink to="/car-wash-services" onClick={onClose} className={navLinkClasses}>
-                <span>{t('Car_Wash')}</span>
-              </NavLink>
               <NavLink to="/commercial-operation" onClick={onClose} className={navLinkClasses}>
                 <span>{t('7_MILIONI_DI_EURO')}</span>
-              </NavLink>
-              <NavLink to="/membership" onClick={onClose} className={navLinkClasses}>
-                <span>{t('Membership')}</span>
               </NavLink>
             </nav>
 

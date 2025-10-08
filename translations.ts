@@ -9,6 +9,7 @@ export const translations: Translations = {
   Jets: { en: "Jets", it: "Jet" },
   Helicopters: { en: "Helicopters", it: "Elicotteri" },
   Car_Wash: { en: "Car Wash", it: "Autolavaggio" },
+  Luxury_Wash: { en: "Luxury Wash", it: "Luxury Wash" },
   Commercial_Operation: { en: "Commercial Operation", it: "Operazione Commerciale" },
   Membership: { en: "Members", it: "Members" },
   My_Account: { en: "My Account", it: "Il Mio Account" },
