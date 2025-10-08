@@ -1404,7 +1404,10 @@ setIsProcessing(false);
             </section>
 
             <section className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-bold text-white mb-4">C. ADDITIONAL SERVICES & OPTIONS</h3>
+              <h3 className="text-lg font-bold text-white mb-2">C. SERVIZI AGGIUNTIVI</h3>
+              <p className="text-sm text-gray-400 mb-4">
+                Aggiungi servizi extra per un viaggio più confortevole e sicuro.
+              </p>
               <div className="space-y-3">
                 {/* Mandatory car wash */}
                 <div className="flex items-center p-3 bg-gray-800/50 rounded-md border border-gray-700">
