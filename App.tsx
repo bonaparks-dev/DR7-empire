@@ -98,11 +98,15 @@ const AnimatedRoutes = () => {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<HomePage />} />
         <Route path="/jets/search" element={<JetSearchResultsPage />} />
-        {RENTAL_CATEGORIES.map(category => (
-            <Route 
-                key={category.id} 
-                path={`/${category.id}`} 
-                element={<RentalPage categoryId={category.id} />} 
+        <Route path="/car-wash-services" element={<CarWashServicesPage />} />
+        <Route path="/car-wash-booking" element={<CarWashBookingPage />} />
+        {RENTAL_CATEGORIES
+          .filter(category => !['car-wash-services', 'membership'].includes(category.id))
+          .map(category => (
+            <Route
+                key={category.id}
+                path={`/${category.id}`}
+                element={<RentalPage categoryId={category.id} />}
             />
         ))}
         <Route 
@@ -179,8 +183,6 @@ const AnimatedRoutes = () => {
         <Route path="/confirmation-success" element={<ConfirmationSuccessPage />} />
         <Route path="/car-booking-success" element={<CarBookingConfirmationPage />} />
         <Route path="/booking-success" element={<ConfirmationSuccessPage />} />
-        <Route path="/car-wash-services" element={<CarWashServicesPage />} />
-        <Route path="/car-wash-booking" element={<CarWashBookingPage />} />
         <Route path="/post/:id" element={<PostPage />} />
       </Routes>
     </AnimatePresence>
