@@ -18,7 +18,7 @@ const WelcomePopup: React.FC = () => {
       sessionStorage.setItem('dr7-welcome-popup-seen', 'true');
       const timer = setTimeout(() => {
         setIsVisible(false);
-      }, 2000); // 2 seconds display time
+      }, 1000); // 1 second display time
       return () => clearTimeout(timer);
     }
   }, [user]);
