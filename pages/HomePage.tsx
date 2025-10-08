@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 
 // Optional: if you want to map category ids to specific display titles
 const DISPLAY_TITLE: Record<string, string> = {
-  cars: 'Cars',
+  cars: 'Exotic Supercars',
   yachts: 'Yachts',
   villas: 'Villas',
   helicopters: 'Helicopters',
