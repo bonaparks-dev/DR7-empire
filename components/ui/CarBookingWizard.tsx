@@ -300,9 +300,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     const calculatedRentalCost = billingDays * pricePerDay;
     const selectedInsurance = INSURANCE_OPTIONS.find(opt => opt.id === formData.insuranceOption);
     const calculatedInsuranceCost = (selectedInsurance?.pricePerDay[currency] || 0) * billingDays;
-    const calculatedExtrasCost = formData.extras.reduce((acc, extraId) => {
+
+    // Calculate extras cost (excluding interior protection for now)
+    const calculatedExtrasCostBase = formData.extras.reduce((acc, extraId) => {
       const extra = RENTAL_EXTRAS.find(e => e.id === extraId);
-      return acc + (extra?.pricePerDay[currency] || 0) * billingDays;
+      if (!extra || extra.variablePrice) return acc; // Skip variable price items
+      if (extra.oneTime) {
+        return acc + (extra.pricePerDay[currency] || 0);
+      }
+      return acc + (extra.pricePerDay[currency] || 0) * billingDays;
     }, 0);
 
     const calculatedDriverAge = calculateAgeFromDDMMYYYY(formData.birthDate);
@@ -338,10 +344,20 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     const calculatedRecommendedKm = recommendKmPackage(formData.expectedKm, item.name, billingDays);
 
     // Pickup and Drop-off fees (€50 each)
-    const calculatedPickupFee = 50;
-    const calculatedDropoffFee = 50;
+    const calculatedPickupFee = formData.pickupLocation === 'cagliari_airport' ? 50 : 0;
+    const calculatedDropoffFee = formData.returnLocation === 'cagliari_airport' ? 50 : 0;
 
-    const calculatedSubtotal = calculatedRentalCost + calculatedInsuranceCost + calculatedExtrasCost + calculatedKmPackageCost + calculatedYoungDriverFee + calculatedRecentLicenseFee + calculatedSecondDriverFee + calculatedPickupFee + calculatedDropoffFee;
+    // Calculate subtotal WITHOUT interior protection first
+    const subtotalBeforeInteriorProtection = calculatedRentalCost + calculatedInsuranceCost + calculatedExtrasCostBase + calculatedKmPackageCost + calculatedYoungDriverFee + calculatedRecentLicenseFee + calculatedSecondDriverFee + calculatedPickupFee + calculatedDropoffFee + 30; // +30 for mandatory car wash
+
+    // Interior Protection: 5% of subtotal (if selected)
+    const hasInteriorProtection = formData.extras.includes('interior_protection');
+    const calculatedInteriorProtectionCost = hasInteriorProtection ? Math.round(subtotalBeforeInteriorProtection * 0.05 * 100) / 100 : 0;
+
+    // Final extras cost includes base + interior protection
+    const calculatedExtrasCost = calculatedExtrasCostBase + calculatedInteriorProtectionCost;
+
+    const calculatedSubtotal = subtotalBeforeInteriorProtection + calculatedInteriorProtectionCost;
     const calculatedTaxes = calculatedSubtotal * 0.10;
     const calculatedTotal = calculatedSubtotal + calculatedTaxes;
 
@@ -1410,9 +1426,18 @@ setIsProcessing(false);
                 {/* Rental Extras from constants */}
                 {RENTAL_EXTRAS.filter(extra => !extra.autoApply).map(extra => {
                   const isSelected = formData.extras.includes(extra.id);
-                  const priceDisplay = extra.oneTime
-                    ? `€${extra.pricePerDay.eur}`
-                    : `€${extra.pricePerDay.eur}/giorno`;
+
+                  // Calculate variable price for interior protection (5% of subtotal)
+                  let priceDisplay = '';
+                  if (extra.variablePrice) {
+                    const subtotalForCalc = rentalCost + insuranceCost + kmPackageCost + youngDriverFee + recentLicenseFee + secondDriverFee + pickupFee + dropoffFee + 30;
+                    const interiorProtectionPrice = Math.round(subtotalForCalc * 0.05 * 100) / 100;
+                    priceDisplay = `€${interiorProtectionPrice} (5% del totale)`;
+                  } else if (extra.oneTime) {
+                    priceDisplay = `€${extra.pricePerDay.eur}`;
+                  } else {
+                    priceDisplay = `€${extra.pricePerDay.eur}/giorno`;
+                  }
 
                   return (
                     <div
