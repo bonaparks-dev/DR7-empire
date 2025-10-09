@@ -905,7 +905,7 @@ setIsProcessing(false);
 
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">LOCATION SELECTION</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm text-gray-400 font-semibold mb-2 block">Luogo di ritiro *</label>
                   {PICKUP_LOCATIONS.map(loc => (
@@ -1072,7 +1072,7 @@ setIsProcessing(false);
           const prefix = driverType === 'main' ? '' : 'secondDriver.';
 
           return (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div><label className="text-sm text-gray-400">Nome *</label><input type="text" name={`${prefix}firstName`} value={(driverData as any).firstName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}firstName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}firstName`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Cognome *</label><input type="text" name={`${prefix}lastName`} value={(driverData as any).lastName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}lastName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}lastName`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Email *</label><input type="email" name={`${prefix}email`} value={(driverData as any).email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}email`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}email`]}</p>}</div>
@@ -1741,7 +1741,7 @@ setIsProcessing(false);
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -50 }}
                 transition={{ duration: 0.3 }}
-                className="bg-gray-900/50 p-8 rounded-lg border border-gray-800 relative"
+                className="bg-gray-900/50 p-4 sm:p-6 md:p-8 rounded-lg border border-gray-800 relative"
               >
                 <button
                   type="button"
