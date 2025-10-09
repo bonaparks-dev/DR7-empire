@@ -18,14 +18,14 @@ const CarWashBookingPage: React.FC = () => {
   const serviceId = (location.state as any)?.serviceId;
   const selectedService = SERVICES.find(s => s.id === serviceId);
 
-  // Get today's date in YYYY-MM-DD format for min attribute (dynamic)
-  const getTodayDate = () => {
+  // Get today's date in YYYY-MM-DD format - memoized to always reflect current date
+  const minDate = useMemo(() => {
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
-  };
+  }, []); // Empty dependency array, but will re-evaluate on every render
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -244,14 +244,10 @@ const CarWashBookingPage: React.FC = () => {
     if (!formData.appointmentDate) newErrors.appointmentDate = lang === 'it' ? 'La data è obbligatoria' : 'Date is required';
     if (!formData.appointmentTime) newErrors.appointmentTime = lang === 'it' ? 'L\'ora è obbligatoria' : 'Time is required';
 
-    // Validate date is not in the past
+    // Validate date is not in the past (strict comparison with today's date string)
     if (formData.appointmentDate) {
-      const selectedDate = new Date(formData.appointmentDate);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); // Reset to start of day
-
-      if (selectedDate < today) {
-        newErrors.appointmentDate = lang === 'it' ? 'La data non può essere nel passato' : 'Date cannot be in the past';
+      if (formData.appointmentDate < minDate) {
+        newErrors.appointmentDate = lang === 'it' ? 'La data non può essere nel passato. Seleziona da oggi in poi.' : 'Date cannot be in the past. Select from today onwards.';
       }
     }
 
@@ -494,7 +490,7 @@ const CarWashBookingPage: React.FC = () => {
                     name="appointmentDate"
                     value={formData.appointmentDate}
                     onChange={handleChange}
-                    min={getTodayDate()}
+                    min={minDate}
                     className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
                   />
                   {errors.appointmentDate && <p className="text-xs text-red-400 mt-1">{errors.appointmentDate}</p>}
