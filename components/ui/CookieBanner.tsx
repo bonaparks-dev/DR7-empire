@@ -36,16 +36,17 @@ const CookieBanner: React.FC = () => {
           />
 
           {/* Centered cookie popup */}
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ duration: 0.4, ease: 'easeOut' }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-lg mx-4"
-            role="dialog"
-            aria-live="polite"
-            aria-label="Cookie consent"
-          >
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+              className="w-full max-w-lg"
+              role="dialog"
+              aria-live="polite"
+              aria-label="Cookie consent"
+            >
             <div className="bg-[#181818] border border-white/10 p-8 md:p-10">
               {/* Welcome message */}
               <div className="text-center mb-8">
@@ -89,7 +90,8 @@ const CookieBanner: React.FC = () => {
                 </button>
               </div>
             </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>
