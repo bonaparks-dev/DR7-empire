@@ -17,14 +17,14 @@ Example stored data:
 
 | ID | Name | Price/Day | Type |
 |-----|------|-----------|------|
-| `mobility_service` | Servizio Mobilità | €6.49/day | Per day |
-| `accident_insurance` | Assicurazione Infortuni | €9.47/day | Per day |
+| `mobility_service` | Servizio Mobilità | €7.00/day | Per day |
+| `accident_insurance` | Assicurazione Infortuni | €9.00/day | Per day |
 | `navigation_system` | Sistema di Navigazione | €18.00/day | Per day |
 | `refueling_service` | Servizio Rifornimento | €22.00 | One-time |
 | `international_coverage` | Copertura Internazionale | €20.00 | One-time |
-| `infant_seat` | Seggiolino Neonato | €24.75/day | Per day |
-| `child_seat` | Seggiolino Bambino | €24.75/day | Per day |
-| `booster_seat` | Rialzo | €9.25/day | Per day |
+| `infant_seat` | Seggiolino Neonato | €24.00/day | Per day |
+| `child_seat` | Seggiolino Bambino | €24.00/day | Per day |
+| `booster_seat` | Rialzo | €9.00/day | Per day |
 
 ### Previously Existing Extras:
 - `additional_driver` - Guidatore Aggiuntivo - €10/day
