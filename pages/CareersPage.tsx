@@ -24,7 +24,7 @@ const CareersPage: React.FC = () => {
             </div>
 
             <h2 className="mt-12">Come Candidarsi</h2>
-            <p>Se pensi di avere ciò che serve per far parte di DR7 Empire, invia il tuo curriculum vitae e una lettera di presentazione a <a href="mailto:amministrazione@dr7luxuryempire.com" className="text-white underline hover:text-gray-300">amministrazione@dr7luxuryempire.com</a>.</p>
+            <p>Se pensi di avere ciò che serve per far parte di DR7 Empire, invia il tuo curriculum vitae e una lettera di presentazione a <a href="mailto:Dubai.rent7.0srl@gmail.com" className="text-white underline hover:text-gray-300">Dubai.rent7.0srl@gmail.com</a>.</p>
         </LegalPageLayout>
     );
 };
