@@ -157,6 +157,36 @@ const CarWashBookingPage: React.FC = () => {
     }
   };
 
+  const getAvailableTimeSlots = () => {
+    const timeSlots = [
+      '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+      '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
+      '15:00', '15:30', '16:00', '16:30', '17:00', '17:30',
+      '18:00', '18:30', '19:00'
+    ];
+
+    // If no date selected or date is in the future, show all slots
+    if (!formData.appointmentDate) return timeSlots;
+
+    const selectedDate = new Date(formData.appointmentDate);
+    const today = new Date();
+    const isToday = selectedDate.toDateString() === today.toDateString();
+
+    // If not today, show all slots
+    if (!isToday) return timeSlots;
+
+    // For today, filter out past times with 2-hour buffer
+    const now = new Date();
+    const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+    const minTimeWithBuffer = currentTimeInMinutes + 120; // 2 hours buffer
+
+    return timeSlots.filter(slot => {
+      const [hours, minutes] = slot.split(':').map(Number);
+      const slotTimeInMinutes = hours * 60 + minutes;
+      return slotTimeInMinutes >= minTimeWithBuffer;
+    });
+  };
+
   const isValidAppointmentTime = (date: string, time: string) => {
     if (!date || !time) return false;
 
@@ -166,11 +196,11 @@ const CarWashBookingPage: React.FC = () => {
     // Sunday = 0, Monday = 1, Saturday = 6
     if (dayOfWeek === 0) return false;
 
-    // Check time is between 9:00 and 20:00
+    // Check time is between 9:00 and 19:00
     const [hours, minutes] = time.split(':').map(Number);
     const timeInMinutes = hours * 60 + minutes;
     const minTime = 9 * 60; // 9:00 AM
-    const maxTime = 20 * 60; // 8:00 PM (last appointment slot)
+    const maxTime = 19 * 60; // 7:00 PM (last appointment slot)
 
     // Time must be within range
     if (timeInMinutes < minTime || timeInMinutes > maxTime) return false;
@@ -222,7 +252,7 @@ const CarWashBookingPage: React.FC = () => {
         if (dayOfWeek === 0) {
           newErrors.appointmentDate = lang === 'it' ? 'Siamo chiusi la domenica' : 'We are closed on Sundays';
         } else {
-          newErrors.appointmentTime = lang === 'it' ? 'Orario disponibile: Lunedì-Sabato 9:00-20:00' : 'Available hours: Monday-Saturday 9:00-20:00';
+          newErrors.appointmentTime = lang === 'it' ? 'Orario disponibile: Lunedì-Sabato 9:00-19:00 (minimo 2 ore in anticipo)' : 'Available hours: Monday-Saturday 9:00-19:00 (minimum 2 hours in advance)';
         }
       }
     }
@@ -438,7 +468,7 @@ const CarWashBookingPage: React.FC = () => {
                     {lang === 'it' ? 'Orari di apertura:' : 'Opening hours:'}
                   </span>
                   {' '}
-                  {lang === 'it' ? 'Lunedì - Sabato, 9:00 - 20:00' : 'Monday - Saturday, 9:00 AM - 8:00 PM'}
+                  {lang === 'it' ? 'Lunedì - Sabato, 9:00 - 19:00' : 'Monday - Saturday, 9:00 AM - 7:00 PM'}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
                   {lang === 'it' ? 'Chiusi la domenica' : 'Closed on Sundays'}
@@ -470,29 +500,9 @@ const CarWashBookingPage: React.FC = () => {
                     className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
                   >
                     <option value="">{lang === 'it' ? 'Seleziona orario' : 'Select time'}</option>
-                    <option value="09:00">09:00</option>
-                    <option value="09:30">09:30</option>
-                    <option value="10:00">10:00</option>
-                    <option value="10:30">10:30</option>
-                    <option value="11:00">11:00</option>
-                    <option value="11:30">11:30</option>
-                    <option value="12:00">12:00</option>
-                    <option value="12:30">12:30</option>
-                    <option value="13:00">13:00</option>
-                    <option value="13:30">13:30</option>
-                    <option value="14:00">14:00</option>
-                    <option value="14:30">14:30</option>
-                    <option value="15:00">15:00</option>
-                    <option value="15:30">15:30</option>
-                    <option value="16:00">16:00</option>
-                    <option value="16:30">16:30</option>
-                    <option value="17:00">17:00</option>
-                    <option value="17:30">17:30</option>
-                    <option value="18:00">18:00</option>
-                    <option value="18:30">18:30</option>
-                    <option value="19:00">19:00</option>
-                    <option value="19:30">19:30</option>
-                    <option value="20:00">20:00</option>
+                    {getAvailableTimeSlots().map(slot => (
+                      <option key={slot} value={slot}>{slot}</option>
+                    ))}
                   </select>
                   {errors.appointmentTime && <p className="text-xs text-red-400 mt-1">{errors.appointmentTime}</p>}
                 </div>
