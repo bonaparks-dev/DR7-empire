@@ -95,7 +95,7 @@ const CarWashBookingPage: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: Math.round(calculateTotal() * 100), // Convert euros to cents
+          amount: calculateTotal(), // Amount in euros (backend will convert to cents)
           currency: 'eur',
           email: user?.email,
           purchaseType: 'car-wash',
