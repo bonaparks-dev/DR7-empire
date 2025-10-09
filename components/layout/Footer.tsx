@@ -81,6 +81,7 @@ const Footer: React.FC = () => {
             <li><Link to="/about" className="hover:text-white transition-colors">{t('About_Us')}</Link></li>
             <li><Link to="/press" className="hover:text-white transition-colors">{t('Press')}</Link></li>
             <li><Link to="/careers" className="hover:text-white transition-colors">{t('Careers')}</Link></li>
+            <li><Link to="/franchising" className="hover:text-white transition-colors">{t('Franchising')}</Link></li>
           </ul>
           <ul className="flex flex-wrap justify-center gap-x-8 gap-y-2">
             <li><Link to="/cookie-policy" className="hover:text-white transition-colors">{t('Cookie_Policy')}</Link></li>

@@ -25,6 +25,7 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import RentalAgreementPage from './pages/RentalAgreementPage';
 import CookiePolicyPage from './pages/CookiePolicyPage';
 import CareersPage from './pages/CareersPage';
+import FranchisingPage from './pages/FranchisingPage';
 import PressPage from './pages/PressPage';
 import FAQPage from './pages/FAQPage';
 import AuthPage from './pages/AuthPage';
@@ -171,6 +172,7 @@ const AnimatedRoutes = () => {
         <Route path="/rental-agreement" element={<RentalAgreementPage />} />
         <Route path="/cookie-policy" element={<CookiePolicyPage />} />
         <Route path="/careers" element={<CareersPage />} />
+        <Route path="/franchising" element={<FranchisingPage />} />
         <Route path="/press" element={<PressPage />} />
         <Route path="/faq" element={<FAQPage />} />
         <Route path="/signin" element={<AuthPage />} />
