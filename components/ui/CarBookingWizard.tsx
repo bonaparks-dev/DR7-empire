@@ -1684,7 +1684,7 @@ setIsProcessing(false);
       </AnimatePresence>
       <canvas ref={canvasRef} className="hidden"></canvas>
 
-      <div className="w-full max-w-lg mx-auto mb-12">
+      <div className="w-full max-w-lg mx-auto mb-12 px-4">
         <div className="flex items-center justify-between">
           {steps.map((s, index) => (
             <React.Fragment key={s.id}>
@@ -1698,7 +1698,7 @@ setIsProcessing(false);
         </div>
       </div>
 
-      <div className={step === 4 ? "lg:grid lg:grid-cols-3 lg:gap-8" : ""}>
+      <div className={step === 4 ? "lg:grid lg:grid-cols-3 lg:gap-8 px-4" : "px-4"}>
         {step === 4 && (
           <aside className="lg:col-span-1 lg:sticky lg:top-32 self-start mb-8 lg:mb-0">
             <div className="bg-gray-900/50 p-6 rounded-lg border border-gray-800">
@@ -1762,13 +1762,13 @@ setIsProcessing(false);
               </div>
             )}
 
-            <div className="flex justify-between mt-8">
-              <button type="button" onClick={handleBack} disabled={step === 1} className="px-8 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('Back')}</button>
+            <div className="flex justify-between gap-4 mt-8">
+              <button type="button" onClick={handleBack} disabled={step === 1} className="px-4 sm:px-8 py-3 bg-gray-700 text-white text-sm sm:text-base font-bold rounded-full hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('Back')}</button>
               {step < steps.length ? (
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="px-4 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={(licenseYears < 2 && step === 2) || (step === 2 && !formData.confirmsInformation)}
                 >
                   Continua
@@ -1777,7 +1777,7 @@ setIsProcessing(false);
                 <button
                   type="submit"
                   disabled={isProcessing || !formData.agreesToTerms || !formData.agreesToPrivacy || !formData.confirmsDocuments}
-                  className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed"
+                  className="px-4 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed"
                 >
                   {isProcessing ? 'Processing...' : '✓ CONFERMA PRENOTAZIONE'}
                 </button>

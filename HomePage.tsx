@@ -32,9 +32,17 @@ const HeroSection: React.FC = () => {
   const { t } = useTranslation();
   return (
     <div className="relative h-[70vh] flex items-center justify-center text-center overflow-hidden">
-      {/* Background image */}
+      {/* Background video */}
       <div className="absolute inset-0 z-0">
-        <Carousel images={carouselImages} />
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover"
+        >
+          <source src="/main.mp4" type="video/mp4" />
+        </video>
       </div>
 
       {/* Text Overlay */}
