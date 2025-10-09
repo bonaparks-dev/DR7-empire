@@ -62,7 +62,7 @@ const handler: Handler = async (event) => {
         },
       },
       // Return URL after verification
-      return_url: `${process.env.URL || 'https://dr7empire.com'}/account/settings?tab=documents`,
+      return_url: `${process.env.URL || 'https://dr7empire.com'}/account/documents`,
     });
 
     console.log('[Stripe Identity] Created verification session:', verificationSession.id);
