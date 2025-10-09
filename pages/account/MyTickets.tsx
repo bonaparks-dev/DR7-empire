@@ -6,6 +6,7 @@ import { TicketIcon } from '../../components/icons/Icons';
 import type { CommercialOperationTicket } from '../../types';
 import TicketDisplay from '../../components/ui/TicketDisplay';
 import { Button } from '../../components/ui/Button';
+import { supabase } from '../../supabaseClient';
 
 const MyTickets = () => {
     const { user } = useAuth();
@@ -14,21 +15,77 @@ const MyTickets = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (user) {
+        const fetchTickets = async () => {
+            if (!user) {
+                setLoading(false);
+                return;
+            }
+
             setLoading(true);
             try {
+                // Fetch tickets from Supabase database
+                const { data: dbTickets, error } = await supabase
+                    .from('commercial_operation_tickets')
+                    .select('*')
+                    .or(`user_id.eq.${user.id},email.eq.${user.email}`)
+                    .order('purchase_date', { ascending: false });
+
+                if (error) {
+                    console.error("Failed to load tickets from database:", error);
+                }
+
+                // Link tickets to user if they match by email but don't have user_id
+                if (dbTickets && user.email) {
+                    const ticketsToLink = dbTickets.filter(
+                        ticket => !ticket.user_id && ticket.email === user.email
+                    );
+
+                    if (ticketsToLink.length > 0) {
+                        // Update tickets with user_id
+                        const updatePromises = ticketsToLink.map(ticket =>
+                            supabase
+                                .from('commercial_operation_tickets')
+                                .update({ user_id: user.id })
+                                .eq('uuid', ticket.uuid)
+                        );
+
+                        await Promise.all(updatePromises);
+                        console.log(`Linked ${ticketsToLink.length} tickets to user account`);
+                    }
+                }
+
+                // Also load from localStorage for backwards compatibility
                 const userTicketsKey = `commercial_operation_tickets_${user.id}`;
-                const savedTickets = JSON.parse(localStorage.getItem(userTicketsKey) || '[]');
-                setTickets(savedTickets);
+                const localTickets = JSON.parse(localStorage.getItem(userTicketsKey) || '[]');
+
+                // Merge tickets from both sources
+                const allTickets = [
+                    ...(dbTickets || []).map(ticket => ({
+                        uuid: ticket.uuid,
+                        number: ticket.ticket_number,
+                        email: ticket.email,
+                        fullName: ticket.full_name,
+                        paymentIntentId: ticket.payment_intent_id,
+                        purchaseDate: ticket.purchase_date,
+                    })),
+                    ...localTickets
+                ];
+
+                // Remove duplicates based on UUID
+                const uniqueTickets = allTickets.filter((ticket, index, self) =>
+                    index === self.findIndex(t => t.uuid === ticket.uuid)
+                );
+
+                setTickets(uniqueTickets);
             } catch (error) {
-                console.error("Failed to load tickets from local storage", error);
+                console.error("Failed to load tickets:", error);
                 setTickets([]);
             } finally {
                 setLoading(false);
             }
-        } else {
-            setLoading(false);
-        }
+        };
+
+        fetchTickets();
     }, [user]);
 
     return (
