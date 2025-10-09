@@ -897,7 +897,7 @@ setIsProcessing(false);
               <img
                 src={item.image}
                 alt={item.name}
-                className="w-full h-48 object-cover rounded-lg border border-gray-700"
+                className="w-full h-48 object-contain rounded-lg border border-gray-700 bg-gray-800/30"
               />
               <h2 className="text-2xl font-bold text-white mt-3">{item.name}</h2>
               <p className="text-gray-400 text-sm">Prezzo base: {formatPrice(item.pricePerDay[currency])}/giorno</p>
@@ -1702,7 +1702,7 @@ setIsProcessing(false);
           <aside className="lg:col-span-1 lg:sticky lg:top-32 self-start mb-8 lg:mb-0">
             <div className="bg-gray-900/50 p-6 rounded-lg border border-gray-800">
               <h2 className="text-2xl font-bold text-white mb-4">RIEPILOGO COSTI</h2>
-              <img src={item.image} alt={item.name} className="w-full h-40 object-cover rounded-md mb-4"/>
+              <img src={item.image} alt={item.name} className="w-full h-40 object-contain rounded-md mb-4 bg-gray-800/30"/>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-gray-400">Durata noleggio:</span><span className="text-white font-medium">{duration.days} giorni</span></div>
                 <div className="flex justify-between">
