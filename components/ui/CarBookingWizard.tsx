@@ -1608,15 +1608,14 @@ setIsProcessing(false);
                             <li>Residenti Sardegna: €{formData.isSardinianResident ? formatDeposit(getDeposit()) : '2.500 o 5.000'}</li>
                             <li>Non residenti: €{!formData.isSardinianResident ? formatDeposit(getDeposit()) : '5.000 o 10.000'}</li>
                           </ul>
-                          <p className="text-xs mt-1">
-                            <strong>Modalità:</strong> Pre-autorizzazione (non addebito). Bloccato temporaneamente.
-                          </p>
                           <p className="text-xs">
                             <strong>Rilascio:</strong> Automatico entro 24-48h, senza danni/violazioni.
                           </p>
-                          <p className="text-yellow-300 text-xs mt-1">
-                            ⚠️ Carta di credito richiesta (non prepagata).
-                          </p>
+                          {!item.id.startsWith('urban-car-') && (
+                            <p className="text-yellow-300 text-xs mt-1">
+                              ⚠️ Carta di credito richiesta (non prepagata).
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
