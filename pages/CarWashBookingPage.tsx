@@ -18,7 +18,7 @@ const CarWashBookingPage: React.FC = () => {
   const serviceId = (location.state as any)?.serviceId;
   const selectedService = SERVICES.find(s => s.id === serviceId);
 
-  // Get today's date in YYYY-MM-DD format for min attribute
+  // Get today's date in YYYY-MM-DD format for min attribute (dynamic)
   const getTodayDate = () => {
     const today = new Date();
     const year = today.getFullYear();
@@ -40,7 +40,6 @@ const CarWashBookingPage: React.FC = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [minDate] = useState(getTodayDate());
 
   // Stripe payment state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -83,6 +82,17 @@ const CarWashBookingPage: React.FC = () => {
       }));
     }
   }, [user]);
+
+  // Clear selected time when date changes to ensure valid time selection
+  useEffect(() => {
+    if (formData.appointmentDate && formData.appointmentTime) {
+      // Check if the currently selected time is still valid for the selected date
+      const availableSlots = getAvailableTimeSlots();
+      if (!availableSlots.includes(formData.appointmentTime)) {
+        setFormData(prev => ({ ...prev, appointmentTime: '' }));
+      }
+    }
+  }, [formData.appointmentDate]);
 
   // Create payment intent when modal opens
   useEffect(() => {
@@ -484,7 +494,7 @@ const CarWashBookingPage: React.FC = () => {
                     name="appointmentDate"
                     value={formData.appointmentDate}
                     onChange={handleChange}
-                    min={minDate}
+                    min={getTodayDate()}
                     className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
                   />
                   {errors.appointmentDate && <p className="text-xs text-red-400 mt-1">{errors.appointmentDate}</p>}
