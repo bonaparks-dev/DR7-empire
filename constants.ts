@@ -368,12 +368,12 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
     id: 'jets',
     label: { en: 'Jets', it: 'Jet' },
     data: [
-      { id: 'jet-2', name: 'Bombardier Global 7500', image: '/privatejet2.jpeg', specs: [
+      { id: 'jet-2', name: 'Bombardier Global 7500', image: '/jet1.jpeg', images: ['/jet1.jpeg', '/jet2.jpeg'], specs: [
         { label: { en: 'Passengers', it: 'Passeggeri' }, value: '19', icon: UsersIcon },
         { label: { en: 'Range', it: 'Autonomia' }, value: '7,700 nm', icon: PaperAirplaneIcon },
         { label: { en: 'Speed', it: 'Velocità' }, value: 'Mach 0.925', icon: ZapIcon },
       ], petsAllowed: true, smokingAllowed: true },
-      { id: 'jet-3', name: 'Cessna Citation Longitude', image: '/jets/cessna.jpeg', specs: [
+      { id: 'jet-3', name: 'Cessna Citation Longitude', image: '/jet3.jpeg', images: ['/jet3.jpeg', '/jet4.jpeg'], specs: [
         { label: { en: 'Passengers', it: 'Passeggeri' }, value: '12', icon: UsersIcon },
         { label: { en: 'Range', it: 'Autonomia' }, value: '3,500 nm', icon: PaperAirplaneIcon },
         { label: { en: 'Speed', it: 'Velocità' }, value: '483 ktas', icon: ZapIcon },

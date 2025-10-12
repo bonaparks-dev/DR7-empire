@@ -26,8 +26,8 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
   const isJet = item.id.startsWith('jet');
   const isHelicopter = item.id.startsWith('heli');
   const isQuoteRequest = isJet || isHelicopter;
-  // All use vertical format like cars
-  const imageAspectRatio = 'aspect-[9/16]';
+  // Jets use landscape format, others use vertical format
+  const imageAspectRatio = isJet ? 'aspect-[16/9]' : 'aspect-[9/16]';
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', {
