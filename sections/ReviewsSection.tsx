@@ -298,7 +298,7 @@ export default function ReviewsSection() {
   const [reviews, setReviews] = useState<Review[]>(fallbackReviews);
   const [ratingSummary, setRatingSummary] = useState<RatingSummary>({
     ratingValue: 5.0,
-    reviewCount: 242
+    reviewCount: 246
   });
   const [isLoading, setIsLoading] = useState(true);
 

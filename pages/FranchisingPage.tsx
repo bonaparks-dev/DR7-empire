@@ -1,9 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import LegalPageLayout from '../components/layout/LegalPageLayout';
 import { useTranslation } from '../hooks/useTranslation';
+import { fetchGoogleReviews } from '../services/googleReviews';
 
 const FranchisingPage: React.FC = () => {
     const { t } = useTranslation();
+    const [reviewCount, setReviewCount] = useState(246); // Fallback value
+
+    useEffect(() => {
+        const loadReviewCount = async () => {
+            try {
+                const data = await fetchGoogleReviews();
+                setReviewCount(data.ratingSummary.reviewCount);
+            } catch (error) {
+                console.error('Failed to load review count:', error);
+                // Keep fallback value
+            }
+        };
+        loadReviewCount();
+    }, []);
+
     return (
         <LegalPageLayout title={t('Franchising')}>
             <div className="space-y-6">
@@ -13,7 +29,7 @@ const FranchisingPage: React.FC = () => {
                     Più di 1.700 contratti chiusi.<br/>
                     Più di 1.400.000 € di fatturato<br/>
                     Più di 900 clienti certificati<br/>
-                    Più di 240 recensioni a 5 stelle<br/>
+                    Più di {reviewCount} recensioni a 5 stelle<br/>
                     TUTTO in poco più di un anno.
                 </p>
 
