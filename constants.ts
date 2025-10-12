@@ -31,7 +31,7 @@ import {
 const newCarsRawData = [
   {
     "id": 2,
-    "name": "Audi RS3",
+    "name": "Audi RS3 Verde",
     "dailyPrice": 19,
     "specs": {
       "acceleration": "0–100 in 3.8s",
@@ -45,7 +45,7 @@ const newCarsRawData = [
   },
   {
     "id": 3,
-    "name": "Audi RS3",
+    "name": "Audi RS3 Rossa",
     "dailyPrice": 39,
     "specs": {
       "acceleration": "0–100 in 3.8s",
