@@ -24,6 +24,7 @@ const BookingModal: React.FC = () => {
 
   const today = new Date().toISOString().split('T')[0];
   const isCar = bookingCategory === 'cars';
+  const isYacht = bookingCategory === 'yachts';
 
   useEffect(() => {
     if (user) {
@@ -77,9 +78,26 @@ const BookingModal: React.FC = () => {
     }, 300);
   };
 
+  const handleYachtQuoteRequest = () => {
+    if (!bookingItem || !pickupDate || !returnDate) return;
+
+    const formattedPickup = formatDate(pickupDate);
+    const formattedReturn = formatDate(returnDate);
+
+    const message = `Ciao! Sono interessato a noleggiare ${bookingItem.name}.\n\nDettagli:\n• Data inizio: ${formattedPickup}\n• Data fine: ${formattedReturn}\n• Nome: ${fullName}\n• Email: ${email}\n• Telefono: ${phone}\n\nPotreste fornirmi un preventivo? Grazie!`;
+    const whatsappUrl = `https://wa.me/393457905205?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!bookingItem || totalDays <= 0 || !bookingCategory) return;
+
+    // For yachts, just open WhatsApp with quote request
+    if (isYacht) {
+      handleYachtQuoteRequest();
+      return;
+    }
 
     const unitLabel = isCar
       ? (totalDays === 1 ? t('Day') : t('Days'))
@@ -238,10 +256,12 @@ const BookingModal: React.FC = () => {
                     />
 
                     <div className="flex-grow">
-                      <div className="flex justify-between items-center text-white font-bold text-xl">
-                        <span>{t('Total_Price')}</span>
-                        <span>{formatPrice(totalPrice)}</span>
-                      </div>
+                      {!isYacht && (
+                        <div className="flex justify-between items-center text-white font-bold text-xl">
+                          <span>{t('Total_Price')}</span>
+                          <span>{formatPrice(totalPrice)}</span>
+                        </div>
+                      )}
                     </div>
 
                     <button
@@ -249,7 +269,7 @@ const BookingModal: React.FC = () => {
                       disabled={totalDays <= 0}
                       className="w-full mt-6 bg-white text-black px-6 py-3 rounded-full font-bold uppercase tracking-wider text-sm hover:bg-gray-200 transition-all duration-300 transform hover:scale-105 disabled:bg-gray-600 disabled:cursor-not-allowed disabled:scale-100"
                     >
-                      {t('Confirm_Booking')}
+                      {isYacht ? t('Request_Quote') : t('Confirm_Booking')}
                     </button>
                   </div>
                 </div>

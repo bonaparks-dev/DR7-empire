@@ -26,7 +26,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
   const isJet = item.id.startsWith('jet');
   const isHelicopter = item.id.startsWith('heli');
   const isYacht = item.id.startsWith('yacht');
-  const isQuoteRequest = isJet || isHelicopter || isYacht;
+  const isQuoteRequest = isJet || isHelicopter;
   // Jets use landscape format, yachts use landscape, others use vertical format
   const imageAspectRatio = (isJet || isYacht) ? 'aspect-[16/9]' : 'aspect-[9/16]';
 
@@ -69,11 +69,6 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
     window.open(whatsappUrl, '_blank');
   };
 
-  const handleYachtQuote = () => {
-    const message = `Ciao! Sono interessato a noleggiare ${item.name}.\n\nPotreste fornirmi un preventivo con disponibilità? Grazie!`;
-    const whatsappUrl = `https://wa.me/393457905205?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-  };
 
   return (
     <motion.div 
@@ -90,7 +85,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
       <div className="p-6 flex-grow flex flex-col">
         <div className="flex justify-between items-center mt-auto pt-4">
           <div>
-            {item.available !== false && item.pricePerDay ? (
+            {item.available !== false && item.pricePerDay && !isYacht ? (
               <>
                 <span className="text-xl font-bold text-white">{formatPrice(item.pricePerDay[currency])}</span>
                 <span className="text-sm text-gray-400 ml-1">/{t('per_day')}</span>
@@ -111,7 +106,6 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
               onClick={() => {
                 if (isHelicopter) handleHelicopterQuote();
                 else if (isJet) handleJetQuote();
-                else if (isYacht) handleYachtQuote();
                 else onBook(item);
               }}
               disabled={item.available === false}
