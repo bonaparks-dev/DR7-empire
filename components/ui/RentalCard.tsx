@@ -25,9 +25,10 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
   const isVilla = item.id.startsWith('villa');
   const isJet = item.id.startsWith('jet');
   const isHelicopter = item.id.startsWith('heli');
-  const isQuoteRequest = isJet || isHelicopter;
-  // Jets use landscape format, others use vertical format
-  const imageAspectRatio = isJet ? 'aspect-[16/9]' : 'aspect-[9/16]';
+  const isYacht = item.id.startsWith('yacht');
+  const isQuoteRequest = isJet || isHelicopter || isYacht;
+  // Jets use landscape format, yachts use landscape, others use vertical format
+  const imageAspectRatio = (isJet || isYacht) ? 'aspect-[16/9]' : 'aspect-[9/16]';
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', {
@@ -68,6 +69,12 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
     window.open(whatsappUrl, '_blank');
   };
 
+  const handleYachtQuote = () => {
+    const message = `Ciao! Sono interessato a noleggiare ${item.name}.\n\nPotreste fornirmi un preventivo con disponibilità? Grazie!`;
+    const whatsappUrl = `https://wa.me/393457905205?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -104,6 +111,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
               onClick={() => {
                 if (isHelicopter) handleHelicopterQuote();
                 else if (isJet) handleJetQuote();
+                else if (isYacht) handleYachtQuote();
                 else onBook(item);
               }}
               disabled={item.available === false}
