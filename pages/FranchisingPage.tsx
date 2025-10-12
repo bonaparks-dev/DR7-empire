@@ -90,8 +90,8 @@ const FranchisingPage: React.FC = () => {
                     <h2 className="text-2xl font-bold mb-4">Contattaci</h2>
                     <p>Per candidarti o per maggiori informazioni, contattaci a:</p>
                     <p className="mt-4">
-                        <a href="mailto:support@dr7empire.com" className="text-white font-semibold hover:underline">
-                            support@dr7empire.com
+                        <a href="mailto:Dubai.rent7.0spa@gmail.com" className="text-white font-semibold hover:underline">
+                            Dubai.rent7.0spa@gmail.com
                         </a>
                     </p>
                 </div>
