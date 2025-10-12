@@ -263,22 +263,39 @@ const CommercialOperationPage: React.FC = () => {
                         transition={{ duration: 0.8 }}
                         className="mb-16 sm:mb-20 md:mb-24"
                     >
-                        {/* First Carousel - Images */}
-                        <div className="mb-12">
-                            <div className="max-w-md mx-auto">
-                                <div className="aspect-square overflow-hidden rounded-2xl">
+                        <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12 text-white">
+                            {t('Prize_Gallery')}
+                        </h2>
+
+                        {/* Side by Side Carousels on Desktop, Stacked on Mobile */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+                            {/* First Carousel */}
+                            <motion.div
+                                initial={{ opacity: 0, x: -30 }}
+                                whileInView={{ opacity: 1, x: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ duration: 0.6 }}
+                                className="relative group"
+                            >
+                                <div className="aspect-square overflow-hidden rounded-2xl shadow-2xl border-2 border-white/10 bg-black">
                                     <ImageCarousel images={carousel1Images} autoplaySpeed={1500} />
                                 </div>
-                            </div>
-                        </div>
-                        
-                        {/* Second Carousel - Images */}
-                        <div className="mb-12">
-                            <div className="max-w-md mx-auto">
-                                <div className="aspect-square overflow-hidden rounded-2xl">
+                                <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                            </motion.div>
+
+                            {/* Second Carousel */}
+                            <motion.div
+                                initial={{ opacity: 0, x: 30 }}
+                                whileInView={{ opacity: 1, x: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ duration: 0.6, delay: 0.2 }}
+                                className="relative group"
+                            >
+                                <div className="aspect-square overflow-hidden rounded-2xl shadow-2xl border-2 border-white/10 bg-black">
                                     <ImageCarousel images={carousel2Images} autoplaySpeed={1800} />
                                 </div>
-                            </div>
+                                <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                            </motion.div>
                         </div>
                     </motion.div>
 

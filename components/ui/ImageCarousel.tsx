@@ -23,17 +23,22 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({ images, autoplaySp
   }
 
   return (
-    <div className="relative w-full h-full overflow-hidden">
-      <AnimatePresence initial={false}>
+    <div className="relative w-full h-full overflow-hidden bg-black">
+      <AnimatePresence initial={false} mode="sync">
         <motion.img
           key={index}
           src={images[index]}
           alt={`Carousel image ${index + 1}`}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.8, ease: 'easeInOut' }}
+          initial={{ opacity: 0, scale: 1.1 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.7, ease: 'easeInOut' }}
           className="absolute inset-0 w-full h-full object-cover"
+          style={{ objectFit: 'cover' }}
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+          }}
         />
       </AnimatePresence>
     </div>
