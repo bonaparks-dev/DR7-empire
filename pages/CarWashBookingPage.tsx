@@ -51,6 +51,29 @@ const CarWashBookingPage: React.FC = () => {
   const [stripeError, setStripeError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [pendingBookingData, setPendingBookingData] = useState<any>(null);
+  const [existingBookings, setExistingBookings] = useState<any[]>([]);
+
+  // Helper function to get service duration in hours based on price
+  const getServiceDurationInHours = (price: number): number => {
+    // Each 25€ = 1 hour
+    return Math.ceil(price / 25);
+  };
+
+  // Fetch existing bookings for selected date
+  useEffect(() => {
+    if (formData.appointmentDate) {
+      supabase
+        .from('car_wash_bookings')
+        .select('*')
+        .eq('appointment_date', formData.appointmentDate)
+        .eq('payment_status', 'succeeded')
+        .then(({ data, error }) => {
+          if (!error && data) {
+            setExistingBookings(data);
+          }
+        });
+    }
+  }, [formData.appointmentDate]);
 
   // Initialize Stripe
   useEffect(() => {
@@ -161,6 +184,18 @@ const CarWashBookingPage: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+
+    // Block past dates immediately when date field changes
+    if (name === 'appointmentDate' && value && value < minDate) {
+      setErrors(prev => ({
+        ...prev,
+        appointmentDate: lang === 'it'
+          ? 'Non puoi selezionare date passate. Seleziona da oggi in poi.'
+          : 'You cannot select past dates. Select from today onwards.'
+      }));
+      return; // Don't update the form data
+    }
+
     setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
@@ -168,72 +203,97 @@ const CarWashBookingPage: React.FC = () => {
   };
 
   const getAvailableTimeSlots = () => {
-    const timeSlots = [
-      '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-      '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
-      '15:00', '15:30', '16:00', '16:30', '17:00', '17:30',
-      '18:00', '18:30', '19:00'
-    ];
+    if (!selectedService || !formData.appointmentDate) return [];
 
-    // If no date selected or date is in the future, show all slots
-    if (!formData.appointmentDate) return timeSlots;
+    const serviceDuration = getServiceDurationInHours(selectedService.price);
+
+    // Define valid time slots based on time ranges
+    // Morning: 9:00-12:00, Afternoon: 15:00-18:00
+    const allTimeSlots = [
+      '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00',
+      '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00'
+    ];
 
     const selectedDate = new Date(formData.appointmentDate);
     const today = new Date();
     const isToday = selectedDate.toDateString() === today.toDateString();
 
-    // If not today, show all slots
-    if (!isToday) return timeSlots;
+    // Helper to convert time string to minutes
+    const timeToMinutes = (time: string) => {
+      const [h, m] = time.split(':').map(Number);
+      return h * 60 + m;
+    };
 
-    // For today, filter out past times with 2-hour buffer
-    const now = new Date();
-    const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
-    const minTimeWithBuffer = currentTimeInMinutes + 120; // 2 hours buffer
+    // Helper to check if a time range overlaps with existing booking
+    const hasOverlap = (startTime: string, durationHours: number) => {
+      const startMinutes = timeToMinutes(startTime);
+      const endMinutes = startMinutes + (durationHours * 60);
 
-    return timeSlots.filter(slot => {
-      const [hours, minutes] = slot.split(':').map(Number);
-      const slotTimeInMinutes = hours * 60 + minutes;
-      return slotTimeInMinutes >= minTimeWithBuffer;
+      return existingBookings.some(booking => {
+        const bookingStart = timeToMinutes(booking.appointment_time);
+        const bookingDuration = getServiceDurationInHours(booking.price_total / 100);
+        const bookingEnd = bookingStart + (bookingDuration * 60);
+
+        // Check if there's any overlap
+        return (startMinutes < bookingEnd && endMinutes > bookingStart);
+      });
+    };
+
+    // Helper to check if service can fit in time range
+    const canFitInRange = (startTime: string, durationHours: number) => {
+      const startMinutes = timeToMinutes(startTime);
+      const endMinutes = startMinutes + (durationHours * 60);
+
+      // Check if fits in morning range (9:00-12:00)
+      if (startMinutes >= 9 * 60 && startMinutes < 12 * 60) {
+        return endMinutes <= 12 * 60;
+      }
+
+      // Check if fits in afternoon range (15:00-18:00)
+      if (startMinutes >= 15 * 60 && startMinutes < 18 * 60) {
+        return endMinutes <= 18 * 60;
+      }
+
+      return false;
+    };
+
+    return allTimeSlots.filter(slot => {
+      // Check if service fits in time range
+      if (!canFitInRange(slot, serviceDuration)) {
+        return false;
+      }
+
+      // Check for past times with 2-hour buffer if today
+      if (isToday) {
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const slotMinutes = timeToMinutes(slot);
+        if (slotMinutes < currentMinutes + 120) {
+          return false;
+        }
+      }
+
+      // Check for overlaps with existing bookings
+      if (hasOverlap(slot, serviceDuration)) {
+        return false;
+      }
+
+      return true;
     });
   };
 
   const isValidAppointmentTime = (date: string, time: string) => {
-    if (!date || !time) return false;
+    if (!date || !time || !selectedService) return false;
 
     const appointmentDate = new Date(date);
     const dayOfWeek = appointmentDate.getDay();
 
-    // Sunday = 0, Monday = 1, Saturday = 6
+    // Sunday = 0 - closed on Sundays
     if (dayOfWeek === 0) return false;
 
-    // Check time is between 9:00 and 19:00
-    const [hours, minutes] = time.split(':').map(Number);
-    const timeInMinutes = hours * 60 + minutes;
-    const minTime = 9 * 60; // 9:00 AM
-    const maxTime = 19 * 60; // 7:00 PM (last appointment slot)
-
-    // Time must be within range
-    if (timeInMinutes < minTime || timeInMinutes > maxTime) return false;
-
-    // Time must be on 30-minute intervals (0 or 30 minutes)
-    if (minutes !== 0 && minutes !== 30) return false;
-
-    // Check if appointment is in the past
-    const now = new Date();
-    const isToday = appointmentDate.toDateString() === now.toDateString();
-
-    if (isToday) {
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-      const currentTimeInMinutes = currentHour * 60 + currentMinute;
-
-      // Add 2 hours buffer to allow preparation time
-      const minTimeInMinutes = currentTimeInMinutes + 120;
-
-      if (timeInMinutes < minTimeInMinutes) return false;
-    }
-
-    return true;
+    // Check if the selected time is in the available slots
+    const availableSlots = getAvailableTimeSlots();
+    return availableSlots.includes(time);
   };
 
   const validate = () => {
@@ -491,9 +551,14 @@ const CarWashBookingPage: React.FC = () => {
                     value={formData.appointmentDate}
                     onChange={handleChange}
                     min={minDate}
-                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
+                    required
+                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                    style={{ colorScheme: 'dark' }}
                   />
-                  {errors.appointmentDate && <p className="text-xs text-red-400 mt-1">{errors.appointmentDate}</p>}
+                  {errors.appointmentDate && <p className="text-xs text-red-400 mt-1 font-semibold">{errors.appointmentDate}</p>}
+                  <p className="text-xs text-gray-500 mt-1">
+                    {lang === 'it' ? '⚠️ Solo date da oggi in poi sono selezionabili' : '⚠️ Only dates from today onwards are selectable'}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
