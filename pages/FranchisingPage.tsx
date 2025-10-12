@@ -59,22 +59,26 @@ const FranchisingPage: React.FC = () => {
                     <h3 className="text-2xl font-bold text-white mb-6 text-center">Il Nostro Piano di Espansione</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="text-center">
-                            <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <span className="text-2xl">🏢</span>
+                            <div className="w-16 h-16 bg-gradient-to-br from-white/20 to-white/10 border border-white/30 rounded-lg flex items-center justify-center mx-auto mb-4">
+                                <div className="w-8 h-8 bg-white rounded-sm"></div>
                             </div>
                             <h4 className="text-lg font-semibold text-white mb-2">Cagliari</h4>
                             <p className="text-gray-400 text-sm">Sede Principale</p>
                         </div>
                         <div className="text-center">
-                            <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <span className="text-2xl">🚀</span>
+                            <div className="w-16 h-16 bg-gradient-to-br from-white/20 to-white/10 border border-white/30 rounded-lg flex items-center justify-center mx-auto mb-4">
+                                <div className="w-8 h-8 border-2 border-white transform rotate-45"></div>
                             </div>
                             <h4 className="text-lg font-semibold text-white mb-2">Iglesias</h4>
                             <p className="text-gray-400 text-sm">Franchising Operativo</p>
                         </div>
                         <div className="text-center">
-                            <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <span className="text-2xl">🎯</span>
+                            <div className="w-16 h-16 bg-gradient-to-br from-white/20 to-white/10 border border-white/30 rounded-lg flex items-center justify-center mx-auto mb-4">
+                                <div className="space-y-1">
+                                    <div className="w-8 h-1 bg-white"></div>
+                                    <div className="w-8 h-1 bg-white"></div>
+                                    <div className="w-8 h-1 bg-white"></div>
+                                </div>
                             </div>
                             <h4 className="text-lg font-semibold text-white mb-2">300 Sedi</h4>
                             <p className="text-gray-400 text-sm">Obiettivo Italia</p>
@@ -102,8 +106,10 @@ const FranchisingPage: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="bg-gradient-to-br from-gray-900/50 to-black/50 border border-gray-800 rounded-2xl p-6">
                         <div className="flex items-start space-x-4">
-                            <div className="flex-shrink-0 w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center text-2xl">
-                                ✓
+                            <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-white/20 to-white/10 border border-white/30 rounded-lg flex items-center justify-center">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                </svg>
                             </div>
                             <div>
                                 <h4 className="text-xl font-bold text-white mb-2">Zero Fee d'Ingresso</h4>
@@ -113,8 +119,10 @@ const FranchisingPage: React.FC = () => {
                     </div>
                     <div className="bg-gradient-to-br from-gray-900/50 to-black/50 border border-gray-800 rounded-2xl p-6">
                         <div className="flex items-start space-x-4">
-                            <div className="flex-shrink-0 w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center text-2xl">
-                                🏆
+                            <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-white/20 to-white/10 border border-white/30 rounded-lg flex items-center justify-center">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
                             </div>
                             <div>
                                 <h4 className="text-xl font-bold text-white mb-2">Più di un Brand</h4>
