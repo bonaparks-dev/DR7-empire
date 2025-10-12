@@ -98,10 +98,10 @@ const PressPage: React.FC = () => {
                     <div className="flex items-center gap-2">
                         <span className="text-gray-400">Email:</span>
                         <a
-                            href="mailto:support@dr7empire.com"
+                            href="mailto:Dubai.rent7.0spa@gmail.com"
                             className="text-white hover:text-gray-300 transition-colors font-semibold"
                         >
-                            support@dr7empire.com
+                            Dubai.rent7.0spa@gmail.com
                         </a>
                     </div>
                 </motion.div>
