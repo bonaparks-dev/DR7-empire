@@ -27,6 +27,16 @@ const CarWashBookingPage: React.FC = () => {
     return `${year}-${month}-${day}`;
   };
 
+  // Get tomorrow's date in YYYY-MM-DD format to exclude today from selection
+  const getTomorrowDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const year = tomorrow.getFullYear();
+    const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const day = String(tomorrow.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -40,7 +50,9 @@ const CarWashBookingPage: React.FC = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [minDate] = useState(getTodayDate());
+  const [minDate] = useState(getTomorrowDate());
+  const [existingBookings, setExistingBookings] = useState<any[]>([]);
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
 
   // Stripe payment state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -83,6 +95,50 @@ const CarWashBookingPage: React.FC = () => {
       }));
     }
   }, [user]);
+
+  // Fetch existing bookings when date changes
+  useEffect(() => {
+    const fetchBookings = async () => {
+      if (!formData.appointmentDate) {
+        setExistingBookings([]);
+        setIsLoadingSlots(false);
+        return;
+      }
+
+      setIsLoadingSlots(true);
+      try {
+        // Get start and end of selected date
+        const selectedDate = new Date(formData.appointmentDate);
+        const startOfDay = new Date(selectedDate);
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const endOfDay = new Date(selectedDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const { data, error } = await supabase
+          .from('bookings')
+          .select('*')
+          .eq('service_type', 'car_wash')
+          .gte('appointment_date', startOfDay.toISOString())
+          .lte('appointment_date', endOfDay.toISOString())
+          .in('status', ['confirmed', 'pending']);
+
+        if (error) {
+          console.error('Error fetching bookings:', error);
+          setIsLoadingSlots(false);
+          return;
+        }
+
+        setExistingBookings(data || []);
+      } catch (error) {
+        console.error('Error fetching bookings:', error);
+      } finally {
+        setIsLoadingSlots(false);
+      }
+    };
+
+    fetchBookings();
+  }, [formData.appointmentDate]);
 
   // Create payment intent when modal opens
   useEffect(() => {
@@ -151,10 +207,105 @@ const CarWashBookingPage: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+
+    // Clear appointment time when date changes to force reselection
+    if (name === 'appointmentDate') {
+      setFormData(prev => ({ ...prev, [name]: value, appointmentTime: '' }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
+  };
+
+  // Get service duration in hours based on price
+  const getServiceDuration = (price: number) => {
+    if (price === 25) return 1;
+    if (price >= 49 && price <= 50) return 2;
+    if (price === 75) return 3;
+    if (price >= 99) return 4;
+    return 1;
+  };
+
+  // Check if a time slot conflicts with existing bookings
+  const isTimeSlotAvailable = (date: string, time: string) => {
+    if (!selectedService || !date || !time) return true;
+
+    const duration = getServiceDuration(selectedService.price);
+    const [hours, minutes] = time.split(':').map(Number);
+    const startTime = hours * 60 + minutes;
+    const endTime = startTime + duration * 60;
+
+    // Check against all existing bookings for this date
+    for (const booking of existingBookings) {
+      const bookingDate = new Date(booking.appointment_date);
+      const bookingDateStr = `${bookingDate.getFullYear()}-${String(bookingDate.getMonth() + 1).padStart(2, '0')}-${String(bookingDate.getDate()).padStart(2, '0')}`;
+
+      if (bookingDateStr !== date) continue;
+
+      const bookingHours = bookingDate.getHours();
+      const bookingMinutes = bookingDate.getMinutes();
+      const bookingStartTime = bookingHours * 60 + bookingMinutes;
+
+      // Get duration from booking details
+      const bookingPrice = booking.price_total / 100; // Convert from cents
+      const bookingDuration = getServiceDuration(bookingPrice);
+      const bookingEndTime = bookingStartTime + bookingDuration * 60;
+
+      // Check for overlap: new booking overlaps if it starts before existing ends AND ends after existing starts
+      if (startTime < bookingEndTime && endTime > bookingStartTime) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  // Get available time slots based on service price and existing bookings
+  const getAvailableTimeSlots = () => {
+    if (!selectedService) return [];
+
+    const price = selectedService.price;
+    let allSlots: string[] = [];
+
+    // €25 service (1 hour): 9:00-12:00 and 15:00-18:00
+    if (price === 25) {
+      allSlots = [
+        '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00',
+        '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00'
+      ];
+    }
+    // €49-50 service (2 hours): 9:00-11:00 and 15:00-17:00
+    else if (price >= 49 && price <= 50) {
+      allSlots = [
+        '09:00', '09:30', '10:00', '10:30', '11:00',
+        '15:00', '15:30', '16:00', '16:30', '17:00'
+      ];
+    }
+    // €75 service (3 hours): 9:00-10:00 and 15:00-16:00
+    else if (price === 75) {
+      allSlots = [
+        '09:00', '09:30', '10:00',
+        '15:00', '15:30', '16:00'
+      ];
+    }
+    // €99-100 service (4 hours): only 9:00 or 15:00
+    else if (price >= 99) {
+      allSlots = ['09:00', '15:00'];
+    }
+    // Default fallback
+    else {
+      allSlots = ['09:00', '15:00'];
+    }
+
+    // Filter out slots that conflict with existing bookings
+    if (formData.appointmentDate) {
+      return allSlots.filter(slot => isTimeSlotAvailable(formData.appointmentDate, slot));
+    }
+
+    return allSlots;
   };
 
   const isValidAppointmentTime = (date: string, time: string) => {
@@ -166,32 +317,21 @@ const CarWashBookingPage: React.FC = () => {
     // Sunday = 0, Monday = 1, Saturday = 6
     if (dayOfWeek === 0) return false;
 
-    // Check time is between 9:00 and 20:00
-    const [hours, minutes] = time.split(':').map(Number);
-    const timeInMinutes = hours * 60 + minutes;
-    const minTime = 9 * 60; // 9:00 AM
-    const maxTime = 20 * 60; // 8:00 PM (last appointment slot)
-
-    // Time must be within range
-    if (timeInMinutes < minTime || timeInMinutes > maxTime) return false;
-
-    // Time must be on 30-minute intervals (0 or 30 minutes)
-    if (minutes !== 0 && minutes !== 30) return false;
+    // Check if time is in available slots for this service
+    const availableSlots = getAvailableTimeSlots();
+    if (!availableSlots.includes(time)) return false;
 
     // Check if appointment is in the past
     const now = new Date();
-    const isToday = appointmentDate.toDateString() === now.toDateString();
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
 
-    if (isToday) {
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-      const currentTimeInMinutes = currentHour * 60 + currentMinute;
+    const selectedDate = new Date(date);
+    selectedDate.setHours(0, 0, 0, 0);
 
-      // Add 2 hours buffer to allow preparation time
-      const minTimeInMinutes = currentTimeInMinutes + 120;
-
-      if (timeInMinutes < minTimeInMinutes) return false;
-    }
+    // Must be at least tomorrow
+    if (selectedDate < tomorrow) return false;
 
     return true;
   };
@@ -204,14 +344,15 @@ const CarWashBookingPage: React.FC = () => {
     if (!formData.appointmentDate) newErrors.appointmentDate = lang === 'it' ? 'La data è obbligatoria' : 'Date is required';
     if (!formData.appointmentTime) newErrors.appointmentTime = lang === 'it' ? 'L\'ora è obbligatoria' : 'Time is required';
 
-    // Validate date is not in the past
+    // Validate date is not in the past or today
     if (formData.appointmentDate) {
       const selectedDate = new Date(formData.appointmentDate);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); // Reset to start of day
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0); // Reset to start of day
 
-      if (selectedDate < today) {
-        newErrors.appointmentDate = lang === 'it' ? 'La data non può essere nel passato' : 'Date cannot be in the past';
+      if (selectedDate < tomorrow) {
+        newErrors.appointmentDate = lang === 'it' ? 'La data deve essere almeno domani' : 'Date must be at least tomorrow';
       }
     }
 
@@ -222,7 +363,9 @@ const CarWashBookingPage: React.FC = () => {
         if (dayOfWeek === 0) {
           newErrors.appointmentDate = lang === 'it' ? 'Siamo chiusi la domenica' : 'We are closed on Sundays';
         } else {
-          newErrors.appointmentTime = lang === 'it' ? 'Orario disponibile: Lunedì-Sabato 9:00-20:00' : 'Available hours: Monday-Saturday 9:00-20:00';
+          newErrors.appointmentTime = lang === 'it'
+            ? 'Orario non disponibile per questo servizio. Controlla le fasce orarie disponibili.'
+            : 'Time not available for this service. Check available time slots.';
         }
       }
     }
@@ -435,10 +578,14 @@ const CarWashBookingPage: React.FC = () => {
               <div className="mb-4 p-3 bg-gray-800/50 rounded-md border border-gray-700">
                 <p className="text-sm text-gray-300">
                   <span className="font-semibold text-white">
-                    {lang === 'it' ? 'Orari di apertura:' : 'Opening hours:'}
+                    {lang === 'it' ? 'Fasce orarie disponibili:' : 'Available time slots:'}
                   </span>
-                  {' '}
-                  {lang === 'it' ? 'Lunedì - Sabato, 9:00 - 20:00' : 'Monday - Saturday, 9:00 AM - 8:00 PM'}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {lang === 'it' ? 'Mattina: 9:00-12:00 | Pomeriggio: 15:00-18:00' : 'Morning: 9:00-12:00 | Afternoon: 15:00-18:00'}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {lang === 'it' ? 'Gli orari disponibili variano in base al servizio selezionato' : 'Available times vary based on selected service'}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
                   {lang === 'it' ? 'Chiusi la domenica' : 'Closed on Sundays'}
@@ -467,33 +614,32 @@ const CarWashBookingPage: React.FC = () => {
                     name="appointmentTime"
                     value={formData.appointmentTime}
                     onChange={handleChange}
-                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
+                    disabled={!formData.appointmentDate || isLoadingSlots}
+                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <option value="">{lang === 'it' ? 'Seleziona orario' : 'Select time'}</option>
-                    <option value="09:00">09:00</option>
-                    <option value="09:30">09:30</option>
-                    <option value="10:00">10:00</option>
-                    <option value="10:30">10:30</option>
-                    <option value="11:00">11:00</option>
-                    <option value="11:30">11:30</option>
-                    <option value="12:00">12:00</option>
-                    <option value="12:30">12:30</option>
-                    <option value="13:00">13:00</option>
-                    <option value="13:30">13:30</option>
-                    <option value="14:00">14:00</option>
-                    <option value="14:30">14:30</option>
-                    <option value="15:00">15:00</option>
-                    <option value="15:30">15:30</option>
-                    <option value="16:00">16:00</option>
-                    <option value="16:30">16:30</option>
-                    <option value="17:00">17:00</option>
-                    <option value="17:30">17:30</option>
-                    <option value="18:00">18:00</option>
-                    <option value="18:30">18:30</option>
-                    <option value="19:00">19:00</option>
-                    <option value="19:30">19:30</option>
-                    <option value="20:00">20:00</option>
+                    <option value="">
+                      {isLoadingSlots
+                        ? (lang === 'it' ? 'Caricamento...' : 'Loading...')
+                        : !formData.appointmentDate
+                        ? (lang === 'it' ? 'Seleziona prima una data' : 'Select a date first')
+                        : (lang === 'it' ? 'Seleziona orario' : 'Select time')}
+                    </option>
+                    {!isLoadingSlots && getAvailableTimeSlots().map(time => (
+                      <option key={time} value={time}>{time}</option>
+                    ))}
                   </select>
+                  {!isLoadingSlots && formData.appointmentDate && getAvailableTimeSlots().length === 0 && (
+                    <p className="text-xs text-yellow-400 mt-1">
+                      {lang === 'it' ? 'Nessun orario disponibile per questa data' : 'No time slots available for this date'}
+                    </p>
+                  )}
+                  {!isLoadingSlots && formData.appointmentDate && getAvailableTimeSlots().length > 0 && (
+                    <p className="text-xs text-green-400 mt-1">
+                      {lang === 'it'
+                        ? `${getAvailableTimeSlots().length} orari disponibili`
+                        : `${getAvailableTimeSlots().length} time slots available`}
+                    </p>
+                  )}
                   {errors.appointmentTime && <p className="text-xs text-red-400 mt-1">{errors.appointmentTime}</p>}
                 </div>
               </div>

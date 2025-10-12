@@ -119,20 +119,36 @@ export const formatCarWashEvent = (booking: any): CalendarEventDetails => {
   const additionalService = booking.booking_details?.additionalService;
   const notes = booking.booking_details?.notes;
 
-  // Car wash appointments are typically 1-2 hours
+  // Calculate duration based on service price
+  // €25 = 1 hour, €49 = 2 hours, €75 = 3 hours, €99-100 = 4 hours
+  let durationHours = 1;
+  if (totalPrice >= 99) {
+    durationHours = 4;
+  } else if (totalPrice >= 75) {
+    durationHours = 3;
+  } else if (totalPrice >= 49) {
+    durationHours = 2;
+  } else {
+    durationHours = 1;
+  }
+
   const endDate = new Date(appointmentDate);
-  endDate.setHours(endDate.getHours() + 2);
+  endDate.setHours(endDate.getHours() + durationHours);
 
   return {
-    summary: `🚿 LUXURY WASH - ${serviceName} - ${customerName}`,
+    summary: `🚿 LUXURY WASH (${durationHours}h) - ${serviceName} - ${customerName}`,
     description: `
 📋 Booking ID: DR7-${bookingId}
 👤 Customer: ${customerName}
 📧 Email: ${customerEmail}
+📞 Phone: ${booking.customer_phone || 'N/A'}
 🚿 Service: ${serviceName}
+⏱️ Duration: ${durationHours} hour${durationHours > 1 ? 's' : ''}
 ${additionalService ? `➕ Additional: ${additionalService}` : ''}
 💰 Total: ${new Intl.NumberFormat('it-IT', { style: 'currency', currency }).format(totalPrice)}
 ${notes ? `📝 Notes: ${notes}` : ''}
+
+🔒 SLOT BLOCKED: ${appointmentDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
     `.trim(),
     startDateTime: appointmentDate.toISOString(),
     endDateTime: endDate.toISOString(),
