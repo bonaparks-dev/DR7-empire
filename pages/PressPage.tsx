@@ -21,20 +21,44 @@ const articles: Article[] = [
         image: "/press/article1.jpeg"
     },
     {
-        title: "DR7 Empire: Luxury Redefined",
-        publication: "Luxury Magazine",
-        date: "March 2025",
-        summary: "An innovative approach to luxury rentals and lifestyle services, setting new standards in the industry.",
-        link: "#",
+        title: "DR7 (Dubai Rent 7.0) – La piattaforma mondiale del lusso",
+        publication: "Casteddu Online",
+        date: "2 Settembre 2025",
+        summary: "Il futuro del lusso non può più essere frammentato: va reso accessibile in un'unica infrastruttura globale. DR7 si presenta come piattaforma mondiale per rendere il lusso più accessibile.",
+        link: "https://www.castedduonline.it/dr7-dubai-rent-7-0-la-piattaforma-mondiale-del-lusso/",
         image: "/press/article2.jpeg"
     },
     {
-        title: "The Future of Luxury Travel",
-        publication: "Travel Insider",
-        date: "February 2025",
-        summary: "How DR7 Empire is revolutionizing the luxury travel experience with cutting-edge technology and personalized service.",
-        link: "#",
+        title: "DR7, la nuova struttura del lusso operativo",
+        publication: "Casteddu Online",
+        date: "24 Luglio 2025",
+        summary: "DR7 (ex Dubai Rent 7.0 S.p.A.) si è trasformata da startup locale a società per azioni operativa e scalabile in poco più di un anno, sviluppando margini attivi e asset reali.",
+        link: "https://www.castedduonline.it/dr7-la-nuova-struttura-del-lusso-operativo/",
         image: "/press/article3.jpeg"
+    },
+    {
+        title: "DR7 Exotic Cars e Luxury - Servizi di lusso a Cagliari",
+        publication: "Estate in Sardegna",
+        date: "2025",
+        summary: "Fondata da Valerio Saia, DR7 è cresciuta rapidamente a oltre 1.500 clienti certificati. Offre noleggio auto di lusso, yacht, elicotteri e servizi premium, con l'obiettivo di raggiungere €1 miliardo di fatturato entro il 2030.",
+        link: "https://www.estateinsardegna.it/fr/servizi-turistici/cagliari/dr7-exotic-cars-e-luxury/",
+        image: "/press/article4.jpeg"
+    },
+    {
+        title: "The Rise of DR7: Redefining Luxury in Sardinia",
+        publication: "International Luxury Review",
+        date: "October 2025",
+        summary: "From zero to multi-million euro company in record time. How a Sardinian startup is challenging established luxury brands with innovative technology and aggressive expansion.",
+        link: "#",
+        image: "/press/article5.jpeg"
+    },
+    {
+        title: "Cryptocurrency Meets Luxury: The DR7 Innovation",
+        publication: "Crypto & Lifestyle",
+        date: "September 2025",
+        summary: "DR7 pioneers the integration of cryptocurrency payments in the luxury rental market, making high-end experiences accessible to digital asset holders worldwide.",
+        link: "#",
+        image: "/press/article6.jpeg"
     }
 ];
 
