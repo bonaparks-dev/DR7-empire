@@ -368,16 +368,32 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
     id: 'jets',
     label: { en: 'Jets', it: 'Jet' },
     data: [
-      { id: 'jet-2', name: 'Bombardier Global 7500', image: '/jet1.jpeg', images: ['/jet1.jpeg', '/jet2.jpeg'], specs: [
-        { label: { en: 'Passengers', it: 'Passeggeri' }, value: '19', icon: UsersIcon },
-        { label: { en: 'Range', it: 'Autonomia' }, value: '7,700 nm', icon: PaperAirplaneIcon },
-        { label: { en: 'Speed', it: 'Velocità' }, value: 'Mach 0.925', icon: ZapIcon },
-      ], petsAllowed: true, smokingAllowed: true },
-      { id: 'jet-3', name: 'Cessna Citation Longitude', image: '/jet3.jpeg', images: ['/jet3.jpeg', '/jet4.jpeg'], specs: [
-        { label: { en: 'Passengers', it: 'Passeggeri' }, value: '12', icon: UsersIcon },
-        { label: { en: 'Range', it: 'Autonomia' }, value: '3,500 nm', icon: PaperAirplaneIcon },
-        { label: { en: 'Speed', it: 'Velocità' }, value: '483 ktas', icon: ZapIcon },
-      ], petsAllowed: false, smokingAllowed: false },
+      {
+        id: 'jet-1',
+        name: 'Cessna Citation Mustang',
+        image: '/jet1.jpeg',
+        images: ['/jet1.jpeg', '/jet2.jpeg'],
+        specs: [
+          { label: { en: 'Passengers', it: 'Passeggeri' }, value: '4', icon: UsersIcon },
+          { label: { en: 'Year', it: 'Anno' }, value: '2008', icon: CalendarIcon },
+          { label: { en: 'Type', it: 'Tipo' }, value: 'Entry Level Jet', icon: PaperAirplaneIcon },
+        ],
+        petsAllowed: false,
+        smokingAllowed: false
+      },
+      {
+        id: 'jet-2',
+        name: 'Cessna Citation CJ2',
+        image: '/jet3.jpeg',
+        images: ['/jet3.jpeg', '/jet4.jpeg'],
+        specs: [
+          { label: { en: 'Passengers', it: 'Passeggeri' }, value: '6', icon: UsersIcon },
+          { label: { en: 'Year', it: 'Anno' }, value: '2004', icon: CalendarIcon },
+          { label: { en: 'Type', it: 'Tipo' }, value: 'Light Jet', icon: PaperAirplaneIcon },
+        ],
+        petsAllowed: false,
+        smokingAllowed: false
+      },
     ],
     icon: PaperAirplaneIcon,
   },
