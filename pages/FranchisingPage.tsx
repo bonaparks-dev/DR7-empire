@@ -10,8 +10,11 @@ const FranchisingPage: React.FC = () => {
                 <p className="text-lg font-semibold">Non stiamo crescendo. Stiamo conquistando.</p>
 
                 <p>
-                    Oltre 1.700 contratti chiusi.<br/>
-                    Più di 1.400.000 € di fatturato in poco più di un anno.
+                    Più di 1.700 contratti chiusi.<br/>
+                    Più di 1.400.000 € di fatturato<br/>
+                    Più di 900 clienti certificati<br/>
+                    Più di 240 recensioni a 5 stelle<br/>
+                    TUTTO in poco più di un anno.
                 </p>
 
                 <p>
@@ -54,7 +57,7 @@ const FranchisingPage: React.FC = () => {
                 <p className="font-semibold">
                     Non cerchiamo affiliati.<br/>
                     Cerchiamo dominatori di mercato.<br/>
-                    Imprenditori pronti a portare il nome DR7 – Luxury Empire nel proprio territorio.
+                    Imprenditori pronti a portare il nome DR7  Luxury Empire nel proprio territorio.
                 </p>
 
                 <p className="text-lg font-bold mt-8">
@@ -63,7 +66,7 @@ const FranchisingPage: React.FC = () => {
                 </p>
 
                 <p className="text-xl font-bold mt-8">
-                    DR7 – Luxury Empire.<br/>
+                    DR7 Luxury Empire.<br/>
                     Non segui il mercato. Lo governi.
                 </p>
 
