@@ -244,6 +244,11 @@ const CarWashBookingPage: React.FC = () => {
       const startMinutes = timeToMinutes(startTime);
       const endMinutes = startMinutes + (durationHours * 60);
 
+      // For 4-hour services (€99), only allow 9:00 or 15:00
+      if (durationHours >= 4) {
+        return startMinutes === 9 * 60 || startMinutes === 15 * 60;
+      }
+
       // Check if fits in morning range (9:00-12:00)
       if (startMinutes >= 9 * 60 && startMinutes < 12 * 60) {
         return endMinutes <= 12 * 60;
