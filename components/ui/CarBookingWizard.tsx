@@ -1551,33 +1551,12 @@ setIsProcessing(false);
                     </summary>
                     <div className="mt-3 pl-4 space-y-3 border-l-2 border-gray-600">
                       <div>
-                        <p className="text-xs uppercase tracking-wide text-gray-400 mb-1 font-semibold">CAUZIONE</p>
-                        <p className="text-sm text-gray-300 mb-1">
-                          Al ritiro verrà bloccato sulla carta di credito:
+                        <p className="text-sm text-gray-300">
+                          Al Check-in vi verrà richiesto un deposito cauzionale di 2500€
                         </p>
-                        <p className="text-base font-bold text-white mb-1">
-                          {formatDeposit(getDeposit())} + Costo del noleggio
+                        <p className="text-sm text-gray-300 mt-2">
+                          Non residente in sardegna 5000€
                         </p>
-                        <p className="text-xs text-gray-400 mb-2">
-                          Rilascio entro 24-48h dalla riconsegna del veicolo.
-                        </p>
-                        <div className="mt-2 text-xs text-gray-300 space-y-1">
-                          <p>
-                            <strong>Importo:</strong>
-                          </p>
-                          <ul className="list-disc pl-4 space-y-0.5 text-xs">
-                            <li>Residenti Sardegna: €{formData.isSardinianResident ? formatDeposit(getDeposit()) : '2.500 o 5.000'}</li>
-                            <li>Non residenti: €{!formData.isSardinianResident ? formatDeposit(getDeposit()) : '5.000 o 10.000'}</li>
-                          </ul>
-                          <p className="text-xs">
-                            <strong>Rilascio:</strong> Automatico entro 24-48h, senza danni/violazioni.
-                          </p>
-                          {!item.id.startsWith('urban-car-') && (
-                            <p className="text-yellow-300 text-xs mt-1">
-                              ⚠️ Carta di credito richiesta (non prepagata).
-                            </p>
-                          )}
-                        </div>
                       </div>
                     </div>
                   </details>
