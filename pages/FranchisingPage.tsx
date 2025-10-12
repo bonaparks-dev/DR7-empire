@@ -22,77 +22,145 @@ const FranchisingPage: React.FC = () => {
 
     return (
         <LegalPageLayout title={t('Franchising')}>
-            <div className="space-y-6">
-                <p className="text-lg font-semibold">Non stiamo crescendo. Stiamo conquistando.</p>
+            <div className="space-y-8">
+                {/* Hero Statement */}
+                <div className="text-center py-8 border-b border-gray-800">
+                    <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                        Non stiamo crescendo. Stiamo conquistando.
+                    </h2>
+                </div>
 
-                <p>
-                    Più di 1.700 contratti chiusi.<br/>
-                    Più di 1.400.000 € di fatturato<br/>
-                    Più di 900 clienti certificati<br/>
-                    Più di {reviewCount} recensioni a 5 stelle<br/>
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="bg-gradient-to-br from-gray-900/80 to-black/80 border border-gray-800 rounded-xl p-6 text-center transform transition-all duration-300 hover:scale-105 hover:border-white/30">
+                        <div className="text-4xl font-bold text-white mb-2">1.700+</div>
+                        <div className="text-gray-400 text-sm">Contratti Chiusi</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-gray-900/80 to-black/80 border border-gray-800 rounded-xl p-6 text-center transform transition-all duration-300 hover:scale-105 hover:border-white/30">
+                        <div className="text-4xl font-bold text-white mb-2">€1.4M+</div>
+                        <div className="text-gray-400 text-sm">Fatturato</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-gray-900/80 to-black/80 border border-gray-800 rounded-xl p-6 text-center transform transition-all duration-300 hover:scale-105 hover:border-white/30">
+                        <div className="text-4xl font-bold text-white mb-2">900+</div>
+                        <div className="text-gray-400 text-sm">Clienti Certificati</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-gray-900/80 to-black/80 border border-gray-800 rounded-xl p-6 text-center transform transition-all duration-300 hover:scale-105 hover:border-white/30">
+                        <div className="text-4xl font-bold text-white mb-2">{reviewCount}+</div>
+                        <div className="text-gray-400 text-sm">Recensioni 5 Stelle</div>
+                    </div>
+                </div>
+
+                <div className="text-center text-gray-400 text-sm">
                     TUTTO in poco più di un anno.
-                </p>
+                </div>
 
-                <p>
-                    Una sede principale a Cagliari.<br/>
-                    Un franchising operativo a Iglesias.<br/>
-                    E un piano preciso: 300 sedi in tutta Italia.
-                </p>
+                {/* Expansion Plan */}
+                <div className="bg-gradient-to-br from-gray-900/50 to-black/50 border border-gray-800 rounded-2xl p-8">
+                    <h3 className="text-2xl font-bold text-white mb-6 text-center">Il Nostro Piano di Espansione</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="text-center">
+                            <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span className="text-2xl">🏢</span>
+                            </div>
+                            <h4 className="text-lg font-semibold text-white mb-2">Cagliari</h4>
+                            <p className="text-gray-400 text-sm">Sede Principale</p>
+                        </div>
+                        <div className="text-center">
+                            <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span className="text-2xl">🚀</span>
+                            </div>
+                            <h4 className="text-lg font-semibold text-white mb-2">Iglesias</h4>
+                            <p className="text-gray-400 text-sm">Franchising Operativo</p>
+                        </div>
+                        <div className="text-center">
+                            <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span className="text-2xl">🎯</span>
+                            </div>
+                            <h4 className="text-lg font-semibold text-white mb-2">300 Sedi</h4>
+                            <p className="text-gray-400 text-sm">Obiettivo Italia</p>
+                        </div>
+                    </div>
+                </div>
 
-                <p>
-                    Nata come Dubai Rent 7.0 S.p.A., oggi DR7 è un impero del lusso e della mobilità.<br/>
-                    Non un marchio. Non un esperimento.<br/>
-                    Ma una macchina che funziona, cresce e domina.
-                </p>
+                {/* About DR7 */}
+                <div className="bg-gradient-to-br from-gray-900/50 to-black/50 border border-gray-800 rounded-2xl p-8">
+                    <h3 className="text-2xl font-bold text-white mb-6">L'Impero DR7</h3>
+                    <div className="space-y-4 text-gray-300">
+                        <p>
+                            Nata come Dubai Rent 7.0 S.p.A., oggi DR7 è un impero del lusso e della mobilità.
+                            Non un marchio. Non un esperimento. Ma una macchina che funziona, cresce e domina.
+                        </p>
+                        <p>
+                            Abbiamo costruito un modello che integra mobilità, lusso ed esperienza in un solo ecosistema:
+                            auto, supercar, yacht, elicotteri, jet privati e ville di lusso.
+                            Un sistema già operativo, già profittevole, già riconosciuto.
+                        </p>
+                    </div>
+                </div>
 
-                <p>
-                    Abbiamo costruito un modello che integra mobilità, lusso ed esperienza in un solo ecosistema:<br/>
-                    auto, supercar, yacht, elicotteri, jet privati e ville di lusso.<br/>
-                    Un sistema già operativo, già profittevole, già riconosciuto.
-                </p>
+                {/* Benefits */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-gradient-to-br from-gray-900/50 to-black/50 border border-gray-800 rounded-2xl p-6">
+                        <div className="flex items-start space-x-4">
+                            <div className="flex-shrink-0 w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center text-2xl">
+                                ✓
+                            </div>
+                            <div>
+                                <h4 className="text-xl font-bold text-white mb-2">Zero Fee d'Ingresso</h4>
+                                <p className="text-gray-400">Accesso solo su selezione. Non tutti possono far parte di un impero.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="bg-gradient-to-br from-gray-900/50 to-black/50 border border-gray-800 rounded-2xl p-6">
+                        <div className="flex items-start space-x-4">
+                            <div className="flex-shrink-0 w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center text-2xl">
+                                🏆
+                            </div>
+                            <div>
+                                <h4 className="text-xl font-bold text-white mb-2">Più di un Brand</h4>
+                                <p className="text-gray-400">Un metodo, una struttura, una reputazione. Un nome sinonimo di dominio.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                <p className="font-semibold">
-                    Zero fee d'ingresso.<br/>
-                    Accesso solo su selezione.<br/>
-                    Non tutti possono far parte di un impero.
-                </p>
+                {/* Call to Action */}
+                <div className="bg-gradient-to-br from-white/10 to-white/5 border-2 border-white/30 rounded-2xl p-8 text-center">
+                    <h3 className="text-2xl font-bold text-white mb-4">
+                        Cerchiamo Dominatori di Mercato
+                    </h3>
+                    <p className="text-gray-300 mb-6">
+                        Non affiliati. Imprenditori pronti a portare il nome DR7 Luxury Empire nel proprio territorio.
+                    </p>
+                    <div className="inline-block bg-white/10 border border-white/30 rounded-xl p-6 mb-6">
+                        <p className="text-white font-semibold mb-2">
+                            Se vuoi entrare in un impero destinato a durare, il momento è ora.
+                        </p>
+                        <p className="text-gray-400 text-sm">
+                            I posti sono limitati. Le sedi non si conquistano due volte.
+                        </p>
+                    </div>
+                </div>
 
-                <p>
-                    Chi entra in DR7 riceve molto più di un brand:<br/>
-                    riceve un metodo, una struttura, una reputazione.<br/>
-                    Un nome che in Sardegna è già sinonimo di dominio.<br/>
-                    E che presto lo sarà in tutta Italia.
-                </p>
+                {/* Contact Section */}
+                <div className="bg-gradient-to-br from-gray-900/80 to-black/80 border-2 border-gray-800 rounded-2xl p-8 text-center">
+                    <h3 className="text-2xl font-bold text-white mb-4">Candidati Ora</h3>
+                    <p className="text-gray-300 mb-6">Per candidarti o per maggiori informazioni, contattaci:</p>
+                    <a
+                        href="mailto:Dubai.rent7.0spa@gmail.com"
+                        className="inline-block bg-white text-black px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-200 transition-all duration-300 transform hover:scale-105"
+                    >
+                        Dubai.rent7.0spa@gmail.com
+                    </a>
+                </div>
 
-                <p>
-                    Se vuoi semplicemente aprire un'attività, non siamo noi.<br/>
-                    Se vuoi entrare in un impero destinato a durare,<br/>
-                    il momento è ora.
-                </p>
-
-                <p className="font-semibold">
-                    Non cerchiamo affiliati.<br/>
-                    Cerchiamo dominatori di mercato.<br/>
-                    Imprenditori pronti a portare il nome DR7  Luxury Empire nel proprio territorio.
-                </p>
-
-                <p className="text-lg font-bold mt-8">
-                    📝 Candidati ora.<br/>
-                    I posti sono limitati. Le sedi non si conquistano due volte.
-                </p>
-
-                <p className="text-xl font-bold mt-8">
-                    DR7 Luxury Empire.<br/>
-                    Non segui il mercato. Lo governi.
-                </p>
-
-                <div className="mt-12 p-6 bg-gray-900/50 border border-gray-800 rounded-lg">
-                    <h2 className="text-2xl font-bold mb-4">Contattaci</h2>
-                    <p>Per candidarti o per maggiori informazioni, contattaci a:</p>
-                    <p className="mt-4">
-                        <a href="mailto:Dubai.rent7.0spa@gmail.com" className="text-white font-semibold hover:underline">
-                            Dubai.rent7.0spa@gmail.com
-                        </a>
+                {/* Footer Statement */}
+                <div className="text-center py-8 border-t border-gray-800">
+                    <p className="text-2xl font-bold text-white">
+                        DR7 Luxury Empire.
+                    </p>
+                    <p className="text-xl text-gray-400 mt-2">
+                        Non segui il mercato. Lo governi.
                     </p>
                 </div>
             </div>
