@@ -29,13 +29,7 @@ const CarBookingConfirmationPage: React.FC = () => {
   const customerEmail = booking.booking_details?.customer?.email || 'N/A';
 
   const getPickupAddress = () => {
-    if (booking.pickup_location === 'cagliari_airport') {
-      return 'Cagliari Elmas Airport, Via dei Trasvolatori, 09030 Elmas CA, Italia';
-    }
-    if (booking.pickup_location === 'dr7_office') {
-      return 'DR7 Office, Via Roma, 123, 09123 Cagliari CA, Italia';
-    }
-    return 'Indirizzo non specificato';
+    return 'Viale Marconi 229, Cagliari 09131';
   };
 
   return (
@@ -82,20 +76,18 @@ const CarBookingConfirmationPage: React.FC = () => {
             <ul className="space-y-2 text-gray-300">
               <li>✓ Carta d'identità o passaporto valido</li>
               <li>✓ Patente di guida valida</li>
-              <li>✓ Carta di credito al nome del conducente</li>
               <li>✓ Codice prenotazione: <span className="font-mono">{`DR7-${booking.id.substring(0, 8).toUpperCase()}`}</span></li>
             </ul>
           </div>
           <div className="bg-gray-800/50 p-6 rounded-lg border border-gray-700">
             <h3 className="text-xl font-bold mb-4">INDIRIZZO RITIRO:</h3>
-            <p className="font-semibold">{pickupLocationDetails ? getTranslated(pickupLocationDetails.label) : 'N/A'}</p>
             <p className="text-gray-300">{getPickupAddress()}</p>
             <h3 className="text-xl font-bold mt-6 mb-4">CONTATTI:</h3>
             <div className="flex items-center space-x-4">
-              <span>Tel: +39 123 456 7890</span>
+              <span>Tel: 3457905205</span>
             </div>
             <div className="flex items-center space-x-4 mt-2">
-              <span>Email: info@dr7empire.com</span>
+              <span>Email: Dubai.rent7.0spa@gmail.com</span>
             </div>
           </div>
         </div>
