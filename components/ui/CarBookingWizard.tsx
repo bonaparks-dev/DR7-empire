@@ -1551,12 +1551,28 @@ setIsProcessing(false);
                     </summary>
                     <div className="mt-3 pl-4 space-y-3 border-l-2 border-gray-600">
                       <div>
-                        <p className="text-sm text-gray-300">
-                          Al Check-in vi verrà richiesto un deposito cauzionale di 2500€
-                        </p>
-                        <p className="text-sm text-gray-300 mt-2">
-                          Non residente in sardegna 5000€
-                        </p>
+                        {isPremiumVehicle(item.name) ? (
+                          <>
+                            <p className="text-sm text-gray-300">
+                              Al Check-in vi verrà richiesto un deposito cauzionale di 5000€
+                            </p>
+                            <p className="text-sm text-gray-300 mt-2">
+                              O un veicolo dal 2020 in poi di proprietà in buone condizioni,con un supplemento di servizio di 20€ al gg
+                            </p>
+                            <p className="text-sm text-gray-300 mt-2">
+                              Non residente in sardegna 10.000€
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-sm text-gray-300">
+                              Al Check-in vi verrà richiesto un deposito cauzionale di 2500€
+                            </p>
+                            <p className="text-sm text-gray-300 mt-2">
+                              Non residente in sardegna 5000€
+                            </p>
+                          </>
+                        )}
                       </div>
                     </div>
                   </details>
