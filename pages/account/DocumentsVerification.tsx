@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../hooks/useTranslation';
 import { loadStripe } from '@stripe/stripe-js';
+import { supabase } from '../../supabaseClient';
 
 const StatusBadge: React.FC<{ status: 'unverified' | 'pending' | 'verified' }> = ({ status }) => {
     const { t } = useTranslation();
@@ -20,6 +21,20 @@ const DocumentsVerification = () => {
     const { t } = useTranslation();
 
     const [isVerifyingWithStripe, setIsVerifyingWithStripe] = useState(false);
+
+    // Refresh user session on component mount (especially after returning from Stripe)
+    useEffect(() => {
+        const refreshSession = async () => {
+            const { data: { session }, error } = await supabase.auth.refreshSession();
+            if (error) {
+                console.error('Failed to refresh session:', error);
+            } else {
+                console.log('Session refreshed successfully');
+            }
+        };
+
+        refreshSession();
+    }, []);
 
     const handleStripeIdentityVerification = async () => {
         if (!user) return;

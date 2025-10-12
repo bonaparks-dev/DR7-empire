@@ -10,7 +10,6 @@ import { Link } from 'react-router-dom';
 import { XIcon } from '../icons/Icons';
 import DocumentUploader from './DocumentUploader';
 import {
-  getKmPackages,
   getUnlimitedKmOptions,
   calculateUnlimitedKmPrice,
   recommendKmPackage,
@@ -147,7 +146,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     // Step 3
     insuranceOption: 'KASKO_BASE',
     extras: [] as string[],
-    kmPackageType: 'none' as 'none' | 'package' | 'unlimited', // 'none' = only free included km
+    kmPackageType: 'none' as 'none' | 'unlimited', // 'none' = only free included km
     kmPackageDistance: 100, // default 100km package
     expectedKm: 0, // user's expected distance for recommendation
 
@@ -353,11 +352,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     if (formData.kmPackageType === 'unlimited') {
       calculatedKmPackageCost = calculateUnlimitedKmPrice(item.name, billingDays, true);
       calculatedIncludedKm = 9999; // Unlimited
-    } else if (formData.kmPackageType === 'package') {
-      const packages = getKmPackages(item.name);
-      const selectedPackage = packages.find(pkg => pkg.distance_km === formData.kmPackageDistance);
-      calculatedKmPackageCost = selectedPackage?.price_first_purchase || 0;
-      calculatedIncludedKm = freeIncludedKm + formData.kmPackageDistance; // Free KM + extra package
     }
     // else kmPackageType === 'none' -> only free KM included
 
@@ -795,25 +789,7 @@ if (data) {
     body: JSON.stringify({ booking: data }),
   }).catch(whatsappError => console.error('Failed to send WhatsApp notification:', whatsappError));
 
-  // Create Google Calendar event
-  fetch(`${FUNCTIONS_BASE}/.netlify/functions/create-calendar-event`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      vehicleName: item.name,
-      customerName: `${formData.firstName} ${formData.lastName}`,
-      customerEmail: formData.email,
-      customerPhone: formData.phone,
-      pickupDate: formData.pickupDate,
-      pickupTime: formData.pickupTime,
-      returnDate: formData.returnDate,
-      returnTime: formData.returnTime,
-      pickupLocation: PICKUP_LOCATIONS.find(l => l.id === formData.pickupLocation)?.name || formData.pickupLocation,
-      returnLocation: PICKUP_LOCATIONS.find(l => l.id === formData.returnLocation)?.name || formData.returnLocation,
-      totalPrice: total,
-      bookingId: data.id,
-    }),
-  }).catch(calendarError => console.error('Failed to create calendar event:', calendarError));
+  // Note: Google Calendar event is created automatically by send-booking-confirmation function
 }
 
 onBookingComplete(data);
@@ -905,7 +881,7 @@ setIsProcessing(false);
 
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">LOCATION SELECTION</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm text-gray-400 font-semibold mb-2 block">Luogo di ritiro *</label>
                   {PICKUP_LOCATIONS.map(loc => (
@@ -1072,7 +1048,7 @@ setIsProcessing(false);
           const prefix = driverType === 'main' ? '' : 'secondDriver.';
 
           return (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div><label className="text-sm text-gray-400">Nome *</label><input type="text" name={`${prefix}firstName`} value={(driverData as any).firstName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}firstName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}firstName`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Cognome *</label><input type="text" name={`${prefix}lastName`} value={(driverData as any).lastName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}lastName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}lastName`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Email *</label><input type="email" name={`${prefix}email`} value={(driverData as any).email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}email`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}email`]}</p>}</div>
@@ -1169,7 +1145,6 @@ setIsProcessing(false);
           </div>
         );
       case 3:
-        const kmPackages = getKmPackages(item.name);
         const unlimitedOptions = getUnlimitedKmOptions(item.name);
         const isPremium = isPremiumVehicle(item.name);
 
@@ -1321,39 +1296,7 @@ setIsProcessing(false);
 
               {/* KM Package Options */}
               <div className="space-y-3">
-                <h4 className="text-sm font-semibold text-gray-300 mb-2">AGGIUNGI PACCHETTI KM EXTRA:</h4>
-                {kmPackages.map(pkg => (
-                  <div
-                    key={pkg.distance_km}
-                    className={`p-4 rounded-md border cursor-pointer transition-all ${
-                      formData.kmPackageType === 'package' && formData.kmPackageDistance === pkg.distance_km
-                        ? 'border-white bg-white/5'
-                        : 'border-gray-700 hover:border-gray-500'
-                    }`}
-                    onClick={() => setFormData(p => ({...p, kmPackageType: 'package', kmPackageDistance: pkg.distance_km}))}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <input
-                          type="radio"
-                          name="kmPackage"
-                          checked={formData.kmPackageType === 'package' && formData.kmPackageDistance === pkg.distance_km}
-                          onChange={() => setFormData(p => ({...p, kmPackageType: 'package', kmPackageDistance: pkg.distance_km}))}
-                          className="w-4 h-4 text-white"
-                        />
-                        <div className="ml-3">
-                          <label className="text-white font-semibold">+{pkg.distance_km} KM EXTRA</label>
-                          <p className="text-xs text-gray-400">Totale: {calculateIncludedKm(duration.days) + pkg.distance_km} km</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-white font-bold">€{pkg.price_first_purchase}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                <h4 className="text-sm font-semibold text-gray-300 mb-2 mt-4">KM ILLIMITATI:</h4>
+                <h4 className="text-sm font-semibold text-gray-300 mb-2">KM ILLIMITATI:</h4>
                 <div
                   className={`p-4 rounded-md border cursor-pointer transition-all ${
                     formData.kmPackageType === 'unlimited'
@@ -1413,7 +1356,7 @@ setIsProcessing(false);
                   <div className="flex justify-between text-base font-bold">
                     <span className="text-white">Km totali disponibili:</span>
                     <span className="text-white">
-                      {formData.kmPackageType === 'unlimited' ? '∞ ILLIMITATI' : `${calculateIncludedKm(duration.days) + (formData.kmPackageType === 'package' ? formData.kmPackageDistance : 0)} km`}
+                      {formData.kmPackageType === 'unlimited' ? '∞ ILLIMITATI' : `${calculateIncludedKm(duration.days)} km`}
                     </span>
                   </div>
                 </div>
@@ -1590,33 +1533,28 @@ setIsProcessing(false);
                     </summary>
                     <div className="mt-3 pl-4 space-y-3 border-l-2 border-gray-600">
                       <div>
-                        <p className="text-xs uppercase tracking-wide text-gray-400 mb-1 font-semibold">CAUZIONE</p>
-                        <p className="text-sm text-gray-300 mb-1">
-                          Al ritiro verrà bloccato sulla carta di credito:
-                        </p>
-                        <p className="text-base font-bold text-white mb-1">
-                          {formatDeposit(getDeposit())} + Costo del noleggio
-                        </p>
-                        <p className="text-xs text-gray-400 mb-2">
-                          Rilascio entro 24-48h dalla riconsegna del veicolo.
-                        </p>
-                        <div className="mt-2 text-xs text-gray-300 space-y-1">
-                          <p>
-                            <strong>Importo:</strong>
-                          </p>
-                          <ul className="list-disc pl-4 space-y-0.5 text-xs">
-                            <li>Residenti Sardegna: €{formData.isSardinianResident ? formatDeposit(getDeposit()) : '2.500 o 5.000'}</li>
-                            <li>Non residenti: €{!formData.isSardinianResident ? formatDeposit(getDeposit()) : '5.000 o 10.000'}</li>
-                          </ul>
-                          <p className="text-xs">
-                            <strong>Rilascio:</strong> Automatico entro 24-48h, senza danni/violazioni.
-                          </p>
-                          {!item.id.startsWith('urban-car-') && (
-                            <p className="text-yellow-300 text-xs mt-1">
-                              ⚠️ Carta di credito richiesta (non prepagata).
+                        {isPremiumVehicle(item.name) ? (
+                          <>
+                            <p className="text-sm text-gray-300">
+                              Al Check-in vi verrà richiesto un deposito cauzionale di 5000€
                             </p>
-                          )}
-                        </div>
+                            <p className="text-sm text-gray-300 mt-2">
+                              O un veicolo dal 2020 in poi di proprietà in buone condizioni,con un supplemento di servizio di 20€ al gg
+                            </p>
+                            <p className="text-sm text-gray-300 mt-2">
+                              Non residente in sardegna 10.000€
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-sm text-gray-300">
+                              Al Check-in vi verrà richiesto un deposito cauzionale di 2500€
+                            </p>
+                            <p className="text-sm text-gray-300 mt-2">
+                              Non residente in sardegna 5000€
+                            </p>
+                          </>
+                        )}
                       </div>
                     </div>
                   </details>
@@ -1741,7 +1679,7 @@ setIsProcessing(false);
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -50 }}
                 transition={{ duration: 0.3 }}
-                className="bg-gray-900/50 p-8 rounded-lg border border-gray-800 relative"
+                className="bg-gray-900/50 p-4 sm:p-6 md:p-8 rounded-lg border border-gray-800 relative"
               >
                 <button
                   type="button"

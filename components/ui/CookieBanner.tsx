@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
-import { Button } from './Button';
-import { CookieIcon } from '../icons/Icons';
 
 const CookieBanner: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -26,39 +24,75 @@ const CookieBanner: React.FC = () => {
   return (
     <AnimatePresence>
       {isVisible && (
-        <motion.div
-          initial={{ y: '100%', opacity: 0 }}
-          animate={{ y: '0%', opacity: 1 }}
-          exit={{ y: '100%', opacity: 0 }}
-          transition={{ duration: 0.5, ease: 'easeInOut' }}
-          className="fixed bottom-0 left-0 right-0 z-50 p-4"
-          role="dialog"
-          aria-live="polite"
-          aria-label="Cookie consent"
-        >
-          <div className="max-w-4xl mx-auto bg-gray-900/80 backdrop-blur-lg border border-gray-700 rounded-2xl shadow-2xl shadow-black/50 p-6 flex flex-col md:flex-row items-center gap-6">
-            <div className="flex-shrink-0">
-                <CookieIcon className="w-10 h-10 text-white" />
-            </div>
-            <div className="flex-grow text-center md:text-left">
-                <h2 className="text-lg font-bold text-white mb-1">{t('cookie.title')}</h2>
-                <p className="text-sm text-gray-300">
-                    {t('cookie.description')}{' '}
-                    <Link to="/cookie-policy" className="underline hover:text-white font-semibold">
-                        {t('Cookie_Policy')}
-                    </Link>.
+        <>
+          {/* Backdrop overlay */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            onClick={() => handleConsent(true)}
+          />
+
+          {/* Centered cookie popup */}
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+              className="w-full max-w-lg"
+              role="dialog"
+              aria-live="polite"
+              aria-label="Cookie consent"
+            >
+            <div className="bg-[#181818] border border-white/10 p-8 md:p-10">
+              {/* Welcome message */}
+              <div className="text-center mb-8">
+                <h1 className="text-2xl md:text-3xl font-bold text-white tracking-wide mb-2">
+                  WELCOME TO DR7 EMPIRE
+                </h1>
+                <div className="w-16 h-0.5 bg-white mx-auto" />
+              </div>
+
+              {/* Cookie message */}
+              <div className="text-center mb-8">
+                <h2 className="text-base font-semibold text-white mb-3 uppercase tracking-wider">
+                  {t('cookie.title')}
+                </h2>
+                <p className="text-sm text-white/70 leading-relaxed mb-4">
+                  {t('cookie.description')}{' '}
+                  <Link to="/cookie-policy" className="text-white underline hover:text-white/90 transition-colors">
+                    {t('Cookie_Policy')}
+                  </Link>.
                 </p>
+                <p className="text-xs text-white/60 italic">
+                  Entrando, confermi di avere più di 18 anni.
+                </p>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <button
+                  onClick={() => handleConsent(false)}
+                  className="px-8 py-3 border border-white text-white text-sm font-semibold uppercase tracking-widest transition-all duration-300 hover:bg-white hover:text-black"
+                  style={{ backgroundColor: 'transparent' }}
+                >
+                  {t('cookie.decline')}
+                </button>
+                <button
+                  onClick={() => handleConsent(true)}
+                  className="px-8 py-3 border border-white text-sm font-semibold uppercase tracking-widest transition-all duration-300 hover:bg-transparent hover:text-white"
+                  style={{ backgroundColor: 'white', color: 'black' }}
+                >
+                  {t('cookie.accept')}
+                </button>
+              </div>
             </div>
-            <div className="flex-shrink-0 flex items-center gap-4 w-full md:w-auto">
-                <Button variant="outline" size="sm" onClick={() => handleConsent(false)} className="w-full">
-                    {t('cookie.decline')}
-                </Button>
-                <Button variant="primary" size="sm" onClick={() => handleConsent(true)} className="w-full">
-                    {t('cookie.accept')}
-                </Button>
-            </div>
+            </motion.div>
           </div>
-        </motion.div>
+        </>
       )}
     </AnimatePresence>
   );

@@ -1,17 +1,36 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import LegalPageLayout from '../components/layout/LegalPageLayout';
 import { useTranslation } from '../hooks/useTranslation';
+import { fetchGoogleReviews } from '../services/googleReviews';
 
 const FranchisingPage: React.FC = () => {
     const { t } = useTranslation();
+    const [reviewCount, setReviewCount] = useState(246); // Fallback value
+
+    useEffect(() => {
+        const loadReviewCount = async () => {
+            try {
+                const data = await fetchGoogleReviews();
+                setReviewCount(data.ratingSummary.reviewCount);
+            } catch (error) {
+                console.error('Failed to load review count:', error);
+                // Keep fallback value
+            }
+        };
+        loadReviewCount();
+    }, []);
+
     return (
         <LegalPageLayout title={t('Franchising')}>
             <div className="space-y-6">
                 <p className="text-lg font-semibold">Non stiamo crescendo. Stiamo conquistando.</p>
 
                 <p>
-                    Oltre 1.700 contratti chiusi.<br/>
-                    Più di 1.400.000 € di fatturato in poco più di un anno.
+                    Più di 1.700 contratti chiusi.<br/>
+                    Più di 1.400.000 € di fatturato<br/>
+                    Più di 900 clienti certificati<br/>
+                    Più di {reviewCount} recensioni a 5 stelle<br/>
+                    TUTTO in poco più di un anno.
                 </p>
 
                 <p>
@@ -54,7 +73,7 @@ const FranchisingPage: React.FC = () => {
                 <p className="font-semibold">
                     Non cerchiamo affiliati.<br/>
                     Cerchiamo dominatori di mercato.<br/>
-                    Imprenditori pronti a portare il nome DR7 – Luxury Empire nel proprio territorio.
+                    Imprenditori pronti a portare il nome DR7  Luxury Empire nel proprio territorio.
                 </p>
 
                 <p className="text-lg font-bold mt-8">
@@ -63,7 +82,7 @@ const FranchisingPage: React.FC = () => {
                 </p>
 
                 <p className="text-xl font-bold mt-8">
-                    DR7 – Luxury Empire.<br/>
+                    DR7 Luxury Empire.<br/>
                     Non segui il mercato. Lo governi.
                 </p>
 
@@ -71,8 +90,8 @@ const FranchisingPage: React.FC = () => {
                     <h2 className="text-2xl font-bold mb-4">Contattaci</h2>
                     <p>Per candidarti o per maggiori informazioni, contattaci a:</p>
                     <p className="mt-4">
-                        <a href="mailto:support@dr7empire.com" className="text-white font-semibold hover:underline">
-                            support@dr7empire.com
+                        <a href="mailto:Dubai.rent7.0spa@gmail.com" className="text-white font-semibold hover:underline">
+                            Dubai.rent7.0spa@gmail.com
                         </a>
                     </p>
                 </div>

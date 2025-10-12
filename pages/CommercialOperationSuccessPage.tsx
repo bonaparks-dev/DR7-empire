@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import type { CommercialOperationTicket } from '../types';
 import TicketDisplay from '../components/ui/TicketDisplay';
+import { supabase } from '../supabaseClient';
 
 const CommercialOperationSuccessPage: React.FC = () => {
     const location = useLocation();
@@ -18,20 +19,39 @@ const CommercialOperationSuccessPage: React.FC = () => {
     const ticketsWithData: CommercialOperationTicket[] = tickets.map(t => ({...t, ownerName: ownerName || user?.fullName || ''}));
 
     useEffect(() => {
-        if (user && ticketsWithData && ticketsWithData.length > 0) {
-            try {
-                const userTicketsKey = `commercial_operation_tickets_${user.id}`;
-                const existingTickets = JSON.parse(localStorage.getItem(userTicketsKey) || '[]') as CommercialOperationTicket[];
-                const newTickets = ticketsWithData.filter(
-                    (newTicket: CommercialOperationTicket) => !existingTickets.some((existing: CommercialOperationTicket) => existing.uuid === newTicket.uuid)
-                );
-                if (newTickets.length > 0) {
-                    localStorage.setItem(userTicketsKey, JSON.stringify([...existingTickets, ...newTickets]));
+        const linkTicketsToUser = async () => {
+            if (user && ticketsWithData && ticketsWithData.length > 0) {
+                try {
+                    // Save to localStorage for backwards compatibility
+                    const userTicketsKey = `commercial_operation_tickets_${user.id}`;
+                    const existingTickets = JSON.parse(localStorage.getItem(userTicketsKey) || '[]') as CommercialOperationTicket[];
+                    const newTickets = ticketsWithData.filter(
+                        (newTicket: CommercialOperationTicket) => !existingTickets.some((existing: CommercialOperationTicket) => existing.uuid === newTicket.uuid)
+                    );
+                    if (newTickets.length > 0) {
+                        localStorage.setItem(userTicketsKey, JSON.stringify([...existingTickets, ...newTickets]));
+                    }
+
+                    // Link tickets in database to user_id if they're not already linked
+                    if (user.email) {
+                        const updatePromises = ticketsWithData.map(ticket =>
+                            supabase
+                                .from('commercial_operation_tickets')
+                                .update({ user_id: user.id })
+                                .eq('uuid', ticket.uuid)
+                                .is('user_id', null)
+                        );
+
+                        await Promise.all(updatePromises);
+                        console.log(`Linked ${ticketsWithData.length} tickets to user account in database`);
+                    }
+                } catch (error) {
+                    console.error("Failed to save/link tickets:", error);
                 }
-            } catch (error) {
-                console.error("Failed to save tickets to local storage:", error);
             }
-        }
+        };
+
+        linkTicketsToUser();
     }, [user, ticketsWithData]);
 
     if (!tickets || tickets.length === 0) {

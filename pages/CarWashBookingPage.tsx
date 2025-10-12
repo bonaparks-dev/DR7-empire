@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -18,24 +18,14 @@ const CarWashBookingPage: React.FC = () => {
   const serviceId = (location.state as any)?.serviceId;
   const selectedService = SERVICES.find(s => s.id === serviceId);
 
-  // Get today's date in YYYY-MM-DD format for min attribute
-  const getTodayDate = () => {
+  // Get today's date in YYYY-MM-DD format - memoized to always reflect current date
+  const minDate = useMemo(() => {
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
-  };
-
-  // Get tomorrow's date in YYYY-MM-DD format to exclude today from selection
-  const getTomorrowDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const year = tomorrow.getFullYear();
-    const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
-    const day = String(tomorrow.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  }, []); // Empty dependency array, but will re-evaluate on every render
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -50,9 +40,6 @@ const CarWashBookingPage: React.FC = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [minDate] = useState(getTomorrowDate());
-  const [existingBookings, setExistingBookings] = useState<any[]>([]);
-  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
 
   // Stripe payment state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -64,6 +51,29 @@ const CarWashBookingPage: React.FC = () => {
   const [stripeError, setStripeError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [pendingBookingData, setPendingBookingData] = useState<any>(null);
+  const [existingBookings, setExistingBookings] = useState<any[]>([]);
+
+  // Helper function to get service duration in hours based on price
+  const getServiceDurationInHours = (price: number): number => {
+    // Each 25€ = 1 hour
+    return Math.ceil(price / 25);
+  };
+
+  // Fetch existing bookings for selected date
+  useEffect(() => {
+    if (formData.appointmentDate) {
+      supabase
+        .from('car_wash_bookings')
+        .select('*')
+        .eq('appointment_date', formData.appointmentDate)
+        .eq('payment_status', 'succeeded')
+        .then(({ data, error }) => {
+          if (!error && data) {
+            setExistingBookings(data);
+          }
+        });
+    }
+  }, [formData.appointmentDate]);
 
   // Initialize Stripe
   useEffect(() => {
@@ -96,48 +106,15 @@ const CarWashBookingPage: React.FC = () => {
     }
   }, [user]);
 
-  // Fetch existing bookings when date changes
+  // Clear selected time when date changes to ensure valid time selection
   useEffect(() => {
-    const fetchBookings = async () => {
-      if (!formData.appointmentDate) {
-        setExistingBookings([]);
-        setIsLoadingSlots(false);
-        return;
+    if (formData.appointmentDate && formData.appointmentTime) {
+      // Check if the currently selected time is still valid for the selected date
+      const availableSlots = getAvailableTimeSlots();
+      if (!availableSlots.includes(formData.appointmentTime)) {
+        setFormData(prev => ({ ...prev, appointmentTime: '' }));
       }
-
-      setIsLoadingSlots(true);
-      try {
-        // Get start and end of selected date
-        const selectedDate = new Date(formData.appointmentDate);
-        const startOfDay = new Date(selectedDate);
-        startOfDay.setHours(0, 0, 0, 0);
-
-        const endOfDay = new Date(selectedDate);
-        endOfDay.setHours(23, 59, 59, 999);
-
-        const { data, error } = await supabase
-          .from('bookings')
-          .select('*')
-          .eq('service_type', 'car_wash')
-          .gte('appointment_date', startOfDay.toISOString())
-          .lte('appointment_date', endOfDay.toISOString())
-          .in('status', ['confirmed', 'pending']);
-
-        if (error) {
-          console.error('Error fetching bookings:', error);
-          setIsLoadingSlots(false);
-          return;
-        }
-
-        setExistingBookings(data || []);
-      } catch (error) {
-        console.error('Error fetching bookings:', error);
-      } finally {
-        setIsLoadingSlots(false);
-      }
-    };
-
-    fetchBookings();
+    }
   }, [formData.appointmentDate]);
 
   // Create payment intent when modal opens
@@ -151,7 +128,7 @@ const CarWashBookingPage: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: Math.round(calculateTotal() * 100), // Convert euros to cents
+          amount: calculateTotal(), // Amount in euros (backend will convert to cents)
           currency: 'eur',
           email: user?.email,
           purchaseType: 'car-wash',
@@ -208,132 +185,115 @@ const CarWashBookingPage: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
 
-    // Clear appointment time when date changes to force reselection
-    if (name === 'appointmentDate') {
-      setFormData(prev => ({ ...prev, [name]: value, appointmentTime: '' }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+    // Block past dates immediately when date field changes
+    if (name === 'appointmentDate' && value && value < minDate) {
+      setErrors(prev => ({
+        ...prev,
+        appointmentDate: lang === 'it'
+          ? 'Non puoi selezionare date passate. Seleziona da oggi in poi.'
+          : 'You cannot select past dates. Select from today onwards.'
+      }));
+      return; // Don't update the form data
     }
 
+    setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
-  // Get service duration in hours based on price
-  const getServiceDuration = (price: number) => {
-    if (price === 25) return 1;
-    if (price >= 49 && price <= 50) return 2;
-    if (price === 75) return 3;
-    if (price >= 99) return 4;
-    return 1;
-  };
+  const getAvailableTimeSlots = () => {
+    if (!selectedService || !formData.appointmentDate) return [];
 
-  // Check if a time slot conflicts with existing bookings
-  const isTimeSlotAvailable = (date: string, time: string) => {
-    if (!selectedService || !date || !time) return true;
+    const serviceDuration = getServiceDurationInHours(selectedService.price);
 
-    const duration = getServiceDuration(selectedService.price);
-    const [hours, minutes] = time.split(':').map(Number);
-    const startTime = hours * 60 + minutes;
-    const endTime = startTime + duration * 60;
+    // Define valid time slots based on time ranges
+    // Morning: 9:00-12:00, Afternoon: 15:00-18:00
+    const allTimeSlots = [
+      '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00',
+      '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00'
+    ];
 
-    // Check against all existing bookings for this date
-    for (const booking of existingBookings) {
-      const bookingDate = new Date(booking.appointment_date);
-      const bookingDateStr = `${bookingDate.getFullYear()}-${String(bookingDate.getMonth() + 1).padStart(2, '0')}-${String(bookingDate.getDate()).padStart(2, '0')}`;
+    const selectedDate = new Date(formData.appointmentDate);
+    const today = new Date();
+    const isToday = selectedDate.toDateString() === today.toDateString();
 
-      if (bookingDateStr !== date) continue;
+    // Helper to convert time string to minutes
+    const timeToMinutes = (time: string) => {
+      const [h, m] = time.split(':').map(Number);
+      return h * 60 + m;
+    };
 
-      const bookingHours = bookingDate.getHours();
-      const bookingMinutes = bookingDate.getMinutes();
-      const bookingStartTime = bookingHours * 60 + bookingMinutes;
+    // Helper to check if a time range overlaps with existing booking
+    const hasOverlap = (startTime: string, durationHours: number) => {
+      const startMinutes = timeToMinutes(startTime);
+      const endMinutes = startMinutes + (durationHours * 60);
 
-      // Get duration from booking details
-      const bookingPrice = booking.price_total / 100; // Convert from cents
-      const bookingDuration = getServiceDuration(bookingPrice);
-      const bookingEndTime = bookingStartTime + bookingDuration * 60;
+      return existingBookings.some(booking => {
+        const bookingStart = timeToMinutes(booking.appointment_time);
+        const bookingDuration = getServiceDurationInHours(booking.price_total / 100);
+        const bookingEnd = bookingStart + (bookingDuration * 60);
 
-      // Check for overlap: new booking overlaps if it starts before existing ends AND ends after existing starts
-      if (startTime < bookingEndTime && endTime > bookingStartTime) {
+        // Check if there's any overlap
+        return (startMinutes < bookingEnd && endMinutes > bookingStart);
+      });
+    };
+
+    // Helper to check if service can fit in time range
+    const canFitInRange = (startTime: string, durationHours: number) => {
+      const startMinutes = timeToMinutes(startTime);
+      const endMinutes = startMinutes + (durationHours * 60);
+
+      // Check if fits in morning range (9:00-12:00)
+      if (startMinutes >= 9 * 60 && startMinutes < 12 * 60) {
+        return endMinutes <= 12 * 60;
+      }
+
+      // Check if fits in afternoon range (15:00-18:00)
+      if (startMinutes >= 15 * 60 && startMinutes < 18 * 60) {
+        return endMinutes <= 18 * 60;
+      }
+
+      return false;
+    };
+
+    return allTimeSlots.filter(slot => {
+      // Check if service fits in time range
+      if (!canFitInRange(slot, serviceDuration)) {
         return false;
       }
-    }
 
-    return true;
-  };
+      // Check for past times with 2-hour buffer if today
+      if (isToday) {
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const slotMinutes = timeToMinutes(slot);
+        if (slotMinutes < currentMinutes + 120) {
+          return false;
+        }
+      }
 
-  // Get available time slots based on service price and existing bookings
-  const getAvailableTimeSlots = () => {
-    if (!selectedService) return [];
+      // Check for overlaps with existing bookings
+      if (hasOverlap(slot, serviceDuration)) {
+        return false;
+      }
 
-    const price = selectedService.price;
-    let allSlots: string[] = [];
-
-    // €25 service (1 hour): 9:00-12:00 and 15:00-18:00
-    if (price === 25) {
-      allSlots = [
-        '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00',
-        '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00'
-      ];
-    }
-    // €49-50 service (2 hours): 9:00-11:00 and 15:00-17:00
-    else if (price >= 49 && price <= 50) {
-      allSlots = [
-        '09:00', '09:30', '10:00', '10:30', '11:00',
-        '15:00', '15:30', '16:00', '16:30', '17:00'
-      ];
-    }
-    // €75 service (3 hours): 9:00-10:00 and 15:00-16:00
-    else if (price === 75) {
-      allSlots = [
-        '09:00', '09:30', '10:00',
-        '15:00', '15:30', '16:00'
-      ];
-    }
-    // €99-100 service (4 hours): only 9:00 or 15:00
-    else if (price >= 99) {
-      allSlots = ['09:00', '15:00'];
-    }
-    // Default fallback
-    else {
-      allSlots = ['09:00', '15:00'];
-    }
-
-    // Filter out slots that conflict with existing bookings
-    if (formData.appointmentDate) {
-      return allSlots.filter(slot => isTimeSlotAvailable(formData.appointmentDate, slot));
-    }
-
-    return allSlots;
+      return true;
+    });
   };
 
   const isValidAppointmentTime = (date: string, time: string) => {
-    if (!date || !time) return false;
+    if (!date || !time || !selectedService) return false;
 
     const appointmentDate = new Date(date);
     const dayOfWeek = appointmentDate.getDay();
 
-    // Sunday = 0, Monday = 1, Saturday = 6
+    // Sunday = 0 - closed on Sundays
     if (dayOfWeek === 0) return false;
 
-    // Check if time is in available slots for this service
+    // Check if the selected time is in the available slots
     const availableSlots = getAvailableTimeSlots();
-    if (!availableSlots.includes(time)) return false;
-
-    // Check if appointment is in the past
-    const now = new Date();
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
-
-    const selectedDate = new Date(date);
-    selectedDate.setHours(0, 0, 0, 0);
-
-    // Must be at least tomorrow
-    if (selectedDate < tomorrow) return false;
-
-    return true;
+    return availableSlots.includes(time);
   };
 
   const validate = () => {
@@ -344,15 +304,10 @@ const CarWashBookingPage: React.FC = () => {
     if (!formData.appointmentDate) newErrors.appointmentDate = lang === 'it' ? 'La data è obbligatoria' : 'Date is required';
     if (!formData.appointmentTime) newErrors.appointmentTime = lang === 'it' ? 'L\'ora è obbligatoria' : 'Time is required';
 
-    // Validate date is not in the past or today
+    // Validate date is not in the past (strict comparison with today's date string)
     if (formData.appointmentDate) {
-      const selectedDate = new Date(formData.appointmentDate);
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(0, 0, 0, 0); // Reset to start of day
-
-      if (selectedDate < tomorrow) {
-        newErrors.appointmentDate = lang === 'it' ? 'La data deve essere almeno domani' : 'Date must be at least tomorrow';
+      if (formData.appointmentDate < minDate) {
+        newErrors.appointmentDate = lang === 'it' ? 'La data non può essere nel passato. Seleziona da oggi in poi.' : 'Date cannot be in the past. Select from today onwards.';
       }
     }
 
@@ -363,9 +318,7 @@ const CarWashBookingPage: React.FC = () => {
         if (dayOfWeek === 0) {
           newErrors.appointmentDate = lang === 'it' ? 'Siamo chiusi la domenica' : 'We are closed on Sundays';
         } else {
-          newErrors.appointmentTime = lang === 'it'
-            ? 'Orario non disponibile per questo servizio. Controlla le fasce orarie disponibili.'
-            : 'Time not available for this service. Check available time slots.';
+          newErrors.appointmentTime = lang === 'it' ? 'Orario disponibile: Lunedì-Sabato 9:00-19:00 (minimo 2 ore in anticipo)' : 'Available hours: Monday-Saturday 9:00-19:00 (minimum 2 hours in advance)';
         }
       }
     }
@@ -578,14 +531,10 @@ const CarWashBookingPage: React.FC = () => {
               <div className="mb-4 p-3 bg-gray-800/50 rounded-md border border-gray-700">
                 <p className="text-sm text-gray-300">
                   <span className="font-semibold text-white">
-                    {lang === 'it' ? 'Fasce orarie disponibili:' : 'Available time slots:'}
+                    {lang === 'it' ? 'Orari di apertura:' : 'Opening hours:'}
                   </span>
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  {lang === 'it' ? 'Mattina: 9:00-12:00 | Pomeriggio: 15:00-18:00' : 'Morning: 9:00-12:00 | Afternoon: 15:00-18:00'}
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  {lang === 'it' ? 'Gli orari disponibili variano in base al servizio selezionato' : 'Available times vary based on selected service'}
+                  {' '}
+                  {lang === 'it' ? 'Lunedì - Sabato, 9:00 - 19:00' : 'Monday - Saturday, 9:00 AM - 7:00 PM'}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
                   {lang === 'it' ? 'Chiusi la domenica' : 'Closed on Sundays'}
@@ -602,9 +551,14 @@ const CarWashBookingPage: React.FC = () => {
                     value={formData.appointmentDate}
                     onChange={handleChange}
                     min={minDate}
-                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
+                    required
+                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                    style={{ colorScheme: 'dark' }}
                   />
-                  {errors.appointmentDate && <p className="text-xs text-red-400 mt-1">{errors.appointmentDate}</p>}
+                  {errors.appointmentDate && <p className="text-xs text-red-400 mt-1 font-semibold">{errors.appointmentDate}</p>}
+                  <p className="text-xs text-gray-500 mt-1">
+                    {lang === 'it' ? '⚠️ Solo date da oggi in poi sono selezionabili' : '⚠️ Only dates from today onwards are selectable'}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -614,32 +568,13 @@ const CarWashBookingPage: React.FC = () => {
                     name="appointmentTime"
                     value={formData.appointmentTime}
                     onChange={handleChange}
-                    disabled={!formData.appointmentDate || isLoadingSlots}
-                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
                   >
-                    <option value="">
-                      {isLoadingSlots
-                        ? (lang === 'it' ? 'Caricamento...' : 'Loading...')
-                        : !formData.appointmentDate
-                        ? (lang === 'it' ? 'Seleziona prima una data' : 'Select a date first')
-                        : (lang === 'it' ? 'Seleziona orario' : 'Select time')}
-                    </option>
-                    {!isLoadingSlots && getAvailableTimeSlots().map(time => (
-                      <option key={time} value={time}>{time}</option>
+                    <option value="">{lang === 'it' ? 'Seleziona orario' : 'Select time'}</option>
+                    {getAvailableTimeSlots().map(slot => (
+                      <option key={slot} value={slot}>{slot}</option>
                     ))}
                   </select>
-                  {!isLoadingSlots && formData.appointmentDate && getAvailableTimeSlots().length === 0 && (
-                    <p className="text-xs text-yellow-400 mt-1">
-                      {lang === 'it' ? 'Nessun orario disponibile per questa data' : 'No time slots available for this date'}
-                    </p>
-                  )}
-                  {!isLoadingSlots && formData.appointmentDate && getAvailableTimeSlots().length > 0 && (
-                    <p className="text-xs text-green-400 mt-1">
-                      {lang === 'it'
-                        ? `${getAvailableTimeSlots().length} orari disponibili`
-                        : `${getAvailableTimeSlots().length} time slots available`}
-                    </p>
-                  )}
                   {errors.appointmentTime && <p className="text-xs text-red-400 mt-1">{errors.appointmentTime}</p>}
                 </div>
               </div>

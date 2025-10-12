@@ -70,17 +70,26 @@ const handler: Handler = async (event) => {
           break;
         }
 
-        // Update user verification status in Supabase
-        const { error } = await supabase
-          .from('users')
-          .update({
+        // Get current user data
+        const { data: { user: currentUser }, error: getUserError } = await supabase.auth.admin.getUserById(userId);
+
+        if (getUserError || !currentUser) {
+          console.error('[Identity Webhook] Failed to get user:', getUserError);
+          break;
+        }
+
+        // Update user metadata with verification status
+        const { error } = await supabase.auth.admin.updateUserById(userId, {
+          user_metadata: {
+            ...currentUser.user_metadata,
             verification: {
+              ...(currentUser.user_metadata?.verification || {}),
               idStatus: 'verified',
               stripeVerificationSessionId: session.id,
               verifiedAt: new Date().toISOString(),
             },
-          })
-          .eq('id', userId);
+          },
+        });
 
         if (error) {
           console.error('[Identity Webhook] Failed to update user:', error);
@@ -98,16 +107,25 @@ const handler: Handler = async (event) => {
         const userId = session.metadata?.user_id;
         if (!userId) break;
 
+        // Get current user data
+        const { data: { user: currentUser }, error: getUserError } = await supabase.auth.admin.getUserById(userId);
+
+        if (getUserError || !currentUser) {
+          console.error('[Identity Webhook] Failed to get user:', getUserError);
+          break;
+        }
+
         // Update status to pending (user needs to provide more info)
-        await supabase
-          .from('users')
-          .update({
+        await supabase.auth.admin.updateUserById(userId, {
+          user_metadata: {
+            ...currentUser.user_metadata,
             verification: {
+              ...(currentUser.user_metadata?.verification || {}),
               idStatus: 'pending',
               stripeVerificationSessionId: session.id,
             },
-          })
-          .eq('id', userId);
+          },
+        });
 
         break;
       }
@@ -119,16 +137,25 @@ const handler: Handler = async (event) => {
         const userId = session.metadata?.user_id;
         if (!userId) break;
 
+        // Get current user data
+        const { data: { user: currentUser }, error: getUserError } = await supabase.auth.admin.getUserById(userId);
+
+        if (getUserError || !currentUser) {
+          console.error('[Identity Webhook] Failed to get user:', getUserError);
+          break;
+        }
+
         // Reset to unverified
-        await supabase
-          .from('users')
-          .update({
+        await supabase.auth.admin.updateUserById(userId, {
+          user_metadata: {
+            ...currentUser.user_metadata,
             verification: {
+              ...(currentUser.user_metadata?.verification || {}),
               idStatus: 'unverified',
               stripeVerificationSessionId: session.id,
             },
-          })
-          .eq('id', userId);
+          },
+        });
 
         break;
       }

@@ -31,8 +31,8 @@ import {
 const newCarsRawData = [
   {
     "id": 2,
-    "name": "Audi RS3",
-    "dailyPrice": 70,
+    "name": "Audi RS3 Verde",
+    "dailyPrice": 19,
     "specs": {
       "acceleration": "0–100 in 3.8s",
       "maxSpeed": "Max speed: 250km/h",
@@ -45,8 +45,8 @@ const newCarsRawData = [
   },
   {
     "id": 3,
-    "name": "Audi RS3",
-    "dailyPrice": 70,
+    "name": "Audi RS3 Rossa",
+    "dailyPrice": 39,
     "specs": {
       "acceleration": "0–100 in 3.8s",
       "power": "400Cv",
@@ -59,7 +59,7 @@ const newCarsRawData = [
   {
     "id": 4,
     "name": "Mercedes A45 S AMG",
-    "dailyPrice": 70,
+    "dailyPrice": 39,
     "specs": {
       "acceleration": "0–100 in 3.9s",
       "power": "421Cv",
@@ -71,7 +71,7 @@ const newCarsRawData = [
   {
     "id": 5,
     "name": "BMW M3 Competition",
-    "dailyPrice": 100,
+    "dailyPrice": 49,
     "specs": {
       "acceleration": "0–100 in 3.9s",
       "maxSpeed": "Max speed: 250km/h",
@@ -84,7 +84,7 @@ const newCarsRawData = [
   {
     "id": 6,
     "name": "BMW M4 Competition",
-    "dailyPrice": 100,
+    "dailyPrice": 59,
     "specs": {
       "acceleration": "0–100 in 3.8s",
       "power": "510Cv",
@@ -96,7 +96,7 @@ const newCarsRawData = [
   {
     "id": 7,
     "name": "Porsche 992 Carrera 4S",
-    "dailyPrice": 120,
+    "dailyPrice": 119,
     "specs": {
       "acceleration": "0–100 in 3.6s",
       "maxSpeed": "Max speed: 306km/h",
@@ -109,7 +109,7 @@ const newCarsRawData = [
   {
     "id": 8,
     "name": "Mercedes C63 S AMG",
-    "dailyPrice": 120,
+    "dailyPrice": 99,
     "specs": {
       "acceleration": "0–100 in 3.9s",
       "power": "510Cv",
@@ -121,7 +121,7 @@ const newCarsRawData = [
   {
     "id": 9,
     "name": "Porsche Macan GTS",
-    "dailyPrice": 100,
+    "dailyPrice": 69,
     "specs": {
       "acceleration": "0–100 in 4.5s",
       "power": "440Cv",
@@ -133,7 +133,7 @@ const newCarsRawData = [
   {
     "id": 10,
     "name": "Mercedes GLE 63 AMG",
-    "dailyPrice": 120,
+    "dailyPrice": 69,
     "specs": {
       "acceleration": "0–100 in 3.8s",
       "power": "612Cv",
@@ -145,7 +145,7 @@ const newCarsRawData = [
   {
     "id": 11,
     "name": "Lamborghini Urus Performante",
-    "dailyPrice": 500,
+    "dailyPrice": 399,
     "specs": {
       "acceleration": "0–100 in 3.3s",
       "maxSpeed": "Max speed: 306km/h",
@@ -368,12 +368,12 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
     id: 'jets',
     label: { en: 'Jets', it: 'Jet' },
     data: [
-      { id: 'jet-2', name: 'Bombardier Global 7500', image: '/privatejet2.jpeg', specs: [
+      { id: 'jet-2', name: 'Bombardier Global 7500', image: '/jet1.jpeg', images: ['/jet1.jpeg', '/jet2.jpeg'], specs: [
         { label: { en: 'Passengers', it: 'Passeggeri' }, value: '19', icon: UsersIcon },
         { label: { en: 'Range', it: 'Autonomia' }, value: '7,700 nm', icon: PaperAirplaneIcon },
         { label: { en: 'Speed', it: 'Velocità' }, value: 'Mach 0.925', icon: ZapIcon },
       ], petsAllowed: true, smokingAllowed: true },
-      { id: 'jet-3', name: 'Cessna Citation Longitude', image: '/jets/cessna.jpeg', specs: [
+      { id: 'jet-3', name: 'Cessna Citation Longitude', image: '/jet3.jpeg', images: ['/jet3.jpeg', '/jet4.jpeg'], specs: [
         { label: { en: 'Passengers', it: 'Passeggeri' }, value: '12', icon: UsersIcon },
         { label: { en: 'Range', it: 'Autonomia' }, value: '3,500 nm', icon: PaperAirplaneIcon },
         { label: { en: 'Speed', it: 'Velocità' }, value: '483 ktas', icon: ZapIcon },
