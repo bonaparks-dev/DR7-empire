@@ -192,33 +192,50 @@ const CarWashBookingPage: React.FC = () => {
 
   // Mount Stripe card element
   useEffect(() => {
-    if (elements && clientSecret && cardElementRef.current) {
-      // Check if card element already exists
+    if (elements && clientSecret && cardElementRef.current && showPaymentModal) {
+      // Clear any existing card element first
       const existingCard = elements.getElement('card');
-
-      if (!existingCard) {
-        const card = elements.create('card', {
-          style: {
-            base: {
-              color: '#ffffff',
-              fontFamily: '"Exo 2", sans-serif',
-              fontSize: '16px',
-              '::placeholder': { color: '#a0aec0' }
-            },
-            invalid: { color: '#ef4444', iconColor: '#ef4444' }
-          }
-        });
-        card.mount(cardElementRef.current);
-        card.on('change', (event) => {
-          setStripeError(event.error ? event.error.message : null);
-        });
-
-        return () => {
-          card.unmount();
-        };
+      if (existingCard) {
+        existingCard.unmount();
       }
+
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        if (cardElementRef.current) {
+          const card = elements.create('card', {
+            style: {
+              base: {
+                color: '#ffffff',
+                fontFamily: '"Exo 2", sans-serif',
+                fontSize: '16px',
+                '::placeholder': { color: '#a0aec0' }
+              },
+              invalid: { color: '#ef4444', iconColor: '#ef4444' }
+            }
+          });
+
+          try {
+            card.mount(cardElementRef.current);
+            console.log('Stripe card element mounted successfully');
+            card.on('change', (event) => {
+              setStripeError(event.error ? event.error.message : null);
+            });
+          } catch (error) {
+            console.error('Error mounting Stripe card element:', error);
+            setStripeError('Failed to load payment form. Please refresh the page.');
+          }
+        }
+      }, 100);
+
+      return () => {
+        clearTimeout(timer);
+        const card = elements.getElement('card');
+        if (card) {
+          card.unmount();
+        }
+      };
     }
-  }, [elements, clientSecret]);
+  }, [elements, clientSecret, showPaymentModal]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -834,8 +851,14 @@ const CarWashBookingPage: React.FC = () => {
                     </label>
                     <div
                       ref={cardElementRef}
-                      className="bg-gray-800 border border-gray-700 rounded-md p-3"
+                      className="bg-gray-800 border border-gray-700 rounded-md p-3 min-h-[44px]"
+                      style={{ position: 'relative', zIndex: 1 }}
                     />
+                    <p className="text-xs text-gray-400 mt-2">
+                      {lang === 'it'
+                        ? 'Inserisci i dettagli della tua carta qui sopra'
+                        : 'Enter your card details above'}
+                    </p>
                   </div>
 
                   {stripeError && (
