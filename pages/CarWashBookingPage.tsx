@@ -410,6 +410,7 @@ const CarWashBookingPage: React.FC = () => {
       },
       status: 'confirmed',
       payment_status: 'pending',
+      payment_method: 'online',
       booked_at: new Date().toISOString()
     };
 
