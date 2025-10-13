@@ -106,7 +106,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
-  const today = new Date().toISOString().split('T')[0];
+  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
 
   const [formData, setFormData] = useState({
     // Step 1
@@ -513,13 +513,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     const isFile = type === 'file';
 
     if (name === 'pickupDate') {
-  const dayOfWeek = new Date(value).getDay();
-  if (dayOfWeek === 0) {
-    setErrors(prev => ({ ...prev, pickupDate: "Le prenotazioni non sono disponibili la domenica." }));
-  } else {
-    setErrors(prev => ({ ...prev, pickupDate: "" }));
-  }
-}
+      const currentDate = new Date().toISOString().split('T')[0];
+      if (value < currentDate) {
+        setErrors(prev => ({ ...prev, pickupDate: "Non puoi selezionare una data passata." }));
+        return; // Don't update the form data
+      }
+      const dayOfWeek = new Date(value).getDay();
+      if (dayOfWeek === 0) {
+        setErrors(prev => ({ ...prev, pickupDate: "Le prenotazioni non sono disponibili la domenica." }));
+      } else {
+        setErrors(prev => ({ ...prev, pickupDate: "" }));
+      }
+    }
 
     const [, secondDriverField] = name.split('.');
     if (secondDriverField) {

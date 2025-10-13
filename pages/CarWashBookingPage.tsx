@@ -627,9 +627,6 @@ const CarWashBookingPage: React.FC = () => {
                     style={{ colorScheme: 'dark' }}
                   />
                   {errors.appointmentDate && <p className="text-xs text-red-400 mt-1 font-semibold">{errors.appointmentDate}</p>}
-                  <p className="text-xs text-gray-500 mt-1">
-                    {lang === 'it' ? '⚠️ Solo date da oggi in poi sono selezionabili' : '⚠️ Only dates from today onwards are selectable'}
-                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">

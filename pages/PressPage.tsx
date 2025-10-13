@@ -12,18 +12,32 @@ interface Article {
 
 const articles: Article[] = [
     {
-        title: "Dubai Rent 7.0: la startup sarda che insegue Elon Musk (e punta a superarlo)",
+        title: "Dubai Rent, la prima startup al mondo nel noleggio auto di lusso, a diventare Società per Azioni con €100.000 di capitale sociale",
         publication: "Casteddu Online",
-        date: "16 Giugno 2025",
-        summary: "Nata da zero nel 2024, già S.p.A. in 12 mesi. Ora prepara l'espansione globale e una holding da €500 miliardi entro il 2030.",
-        link: "https://www.castedduonline.it/dubai-rent-7-0-la-startup-sarda-che-insegue-elon-musk-e-punta-a-superarlo/"
+        date: "28 Maggio 2025",
+        summary: "Dubai Rent è diventata la prima startup mondiale nel settore del noleggio auto di lusso a trasformarsi in una Società per Azioni, con un capitale sociale di 100.000 euro, segnando un importante punto di svolta nel proprio sviluppo imprenditoriale.",
+        link: "https://www.castedduonline.it/dubai-rent-la-prima-startup-al-mondo-nel-noleggio-auto-di-lusso-a-diventare-societa-per-azioni-con-e100-000-di-capitale-sociale/"
     },
     {
-        title: "DR7 (Dubai Rent 7.0) – La piattaforma mondiale del lusso",
+        title: "DR7: nasce la prima piattaforma al mondo dedicata al lusso integrato",
         publication: "Casteddu Online",
-        date: "2 Settembre 2025",
-        summary: "Il futuro del lusso non può più essere frammentato: va reso accessibile in un'unica infrastruttura globale. DR7 si presenta come piattaforma mondiale per rendere il lusso più accessibile.",
-        link: "https://www.castedduonline.it/dr7-dubai-rent-7-0-la-piattaforma-mondiale-del-lusso/"
+        date: "18 Settembre 2025",
+        summary: "DR7 è la prima piattaforma globale che riunisce in un unico ecosistema integrato supercar, yacht, jet, elicotteri, ville, B&B, SPA ed esperienze esclusive. Il progetto rappresenta un punto di svolta innovativo nel settore del lusso.",
+        link: "https://www.castedduonline.it/dr7-nasce-la-prima-piattaforma-al-mondo-dedicata-al-lusso-integrato/"
+    },
+    {
+        title: "DR7: Saia Valerio, l'uomo che sta costruendo il nuovo impero del lusso globale entro il 2030",
+        publication: "Casteddu Online",
+        date: "31 Luglio 2025",
+        summary: "Valerio Saia ha un obiettivo chiaro: raggiungere un traguardo miliardario entro il 2030 attraverso la costruzione di un nuovo impero nel settore del lusso globale con una strategia di espansione ambiziosa.",
+        link: "https://www.castedduonline.it/dr7-saia-valerio-luomo-che-sta-costruendo-il-nuovo-impero-del-lusso-globale-entro-il-2030/"
+    },
+    {
+        title: "DR7 Exotic Cars e Luxury - Servizi di lusso a Cagliari",
+        publication: "Estate in Sardegna",
+        date: "2025",
+        summary: "Fondata da Valerio Saia, DR7 è cresciuta rapidamente a oltre 1.500 clienti certificati. Offre noleggio auto di lusso, yacht, elicotteri e servizi premium, con l'obiettivo di raggiungere €1 miliardo di fatturato entro il 2030.",
+        link: "https://www.estateinsardegna.it/fr/servizi-turistici/cagliari/dr7-exotic-cars-e-luxury/"
     },
     {
         title: "DR7, la nuova struttura del lusso operativo",
@@ -33,11 +47,11 @@ const articles: Article[] = [
         link: "https://www.castedduonline.it/dr7-la-nuova-struttura-del-lusso-operativo/"
     },
     {
-        title: "DR7 Exotic Cars e Luxury - Servizi di lusso a Cagliari",
-        publication: "Estate in Sardegna",
-        date: "2025",
-        summary: "Fondata da Valerio Saia, DR7 è cresciuta rapidamente a oltre 1.500 clienti certificati. Offre noleggio auto di lusso, yacht, elicotteri e servizi premium, con l'obiettivo di raggiungere €1 miliardo di fatturato entro il 2030.",
-        link: "https://www.estateinsardegna.it/fr/servizi-turistici/cagliari/dr7-exotic-cars-e-luxury/"
+        title: "DR7 (Dubai Rent 7.0) – La piattaforma mondiale del lusso",
+        publication: "Casteddu Online",
+        date: "2 Settembre 2025",
+        summary: "Il futuro del lusso non può più essere frammentato: va reso accessibile in un'unica infrastruttura globale. DR7 si presenta come piattaforma mondiale per rendere il lusso più accessibile.",
+        link: "https://www.castedduonline.it/dr7-dubai-rent-7-0-la-piattaforma-mondiale-del-lusso/"
     }
 ];
 
