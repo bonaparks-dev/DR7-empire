@@ -496,18 +496,55 @@ const CarWashBookingPage: React.FC = () => {
           appointment_date: appointmentDateTime.toISOString()
         };
 
-        console.log('Inserting booking into database:', bookingDataWithPayment);
-        const { data, error } = await supabase
-          .from('bookings')
-          .insert(bookingDataWithPayment)
-          .select()
-          .single();
+        console.log('Inserting booking into database:', JSON.stringify(bookingDataWithPayment, null, 2));
+        console.log('User authenticated:', !!user);
+        console.log('User ID:', user?.id);
+
+        // Retry logic for network issues
+        let data = null;
+        let error = null;
+        let retries = 0;
+        const maxRetries = 3;
+
+        while (retries < maxRetries) {
+          try {
+            const result = await supabase
+              .from('bookings')
+              .insert(bookingDataWithPayment)
+              .select()
+              .single();
+
+            data = result.data;
+            error = result.error;
+
+            if (!error) break; // Success, exit retry loop
+
+            console.log(`Attempt ${retries + 1} failed:`, error);
+            retries++;
+
+            if (retries < maxRetries) {
+              console.log(`Retrying in ${retries} seconds...`);
+              await new Promise(resolve => setTimeout(resolve, retries * 1000));
+            }
+          } catch (fetchError: any) {
+            console.error(`Fetch error on attempt ${retries + 1}:`, fetchError);
+            error = { message: fetchError.message, code: 'FETCH_ERROR' };
+            retries++;
+
+            if (retries < maxRetries) {
+              await new Promise(resolve => setTimeout(resolve, retries * 1000));
+            }
+          }
+        }
 
         if (error) {
-          console.error('Database error:', error);
+          console.error('Database error after retries:', error);
           console.error('Error details:', JSON.stringify(error, null, 2));
           console.error('Booking data that failed:', JSON.stringify(bookingDataWithPayment, null, 2));
-          throw error;
+          setStripeError(lang === 'it'
+            ? `Errore durante la creazione della prenotazione: ${error.message || 'Errore sconosciuto'}. Il pagamento è stato elaborato. Contattaci per assistenza.`
+            : `Error creating booking: ${error.message || 'Unknown error'}. Payment was processed. Please contact us for assistance.`);
+          return;
         }
 
         console.log('Booking created successfully:', data);
