@@ -211,12 +211,28 @@ const CarWashBookingPage: React.FC = () => {
           ? 'Non puoi selezionare date passate. Seleziona da oggi in poi.'
           : 'You cannot select past dates. Select from today onwards.'
       }));
-      return; // Don't update the form data
+      // Reset to empty instead of keeping invalid date
+      setFormData(prev => ({ ...prev, appointmentDate: '' }));
+      return;
     }
 
     setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleDateBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Double-check on blur in case mobile browser allows past dates
+    if (value && value < minDate) {
+      setErrors(prev => ({
+        ...prev,
+        appointmentDate: lang === 'it'
+          ? 'Non puoi selezionare date passate. Seleziona da oggi in poi.'
+          : 'You cannot select past dates. Select from today onwards.'
+      }));
+      setFormData(prev => ({ ...prev, appointmentDate: '' }));
     }
   };
 
@@ -628,6 +644,7 @@ const CarWashBookingPage: React.FC = () => {
                     name="appointmentDate"
                     value={formData.appointmentDate}
                     onChange={handleChange}
+                    onBlur={handleDateBlur}
                     min={minDate}
                     required
                     className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white [&::-webkit-calendar-picker-indicator]:cursor-pointer"
