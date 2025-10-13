@@ -11,18 +11,60 @@ import { useCurrency } from '../contexts/CurrencyContext';
 const BookingConfirmationDetails: React.FC<{ booking: any }> = ({ booking }) => {
   const { t } = useTranslation();
   const { currency } = useCurrency();
-  
-  const formatPrice = (priceInCents: number) => 
-    new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', { 
-      style: 'currency', 
-      currency: currency.toUpperCase(), 
-      minimumFractionDigits: 2 
+
+  const formatPrice = (priceInCents: number) =>
+    new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', {
+      style: 'currency',
+      currency: currency.toUpperCase(),
+      minimumFractionDigits: 2
     }).format(priceInCents / 100);
 
+  const totalPrice = booking.price_total;
+  const isCarWash = booking.service_type === 'car_wash';
+  const isPaid = booking.payment_method !== 'agency';
+
+  // For car wash bookings
+  if (isCarWash) {
+    return (
+      <div className="text-left space-y-4">
+        <h2 className="text-xl font-bold text-white border-b border-gray-700 pb-2 mb-4">Riepilogo Prenotazione</h2>
+
+        <div className="flex justify-between">
+          <span className="text-gray-400">Servizio:</span>
+          <span className="font-semibold text-white">{booking.service_name}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-400">Data:</span>
+          <span className="font-semibold text-white">
+            {new Date(booking.appointment_date + 'T00:00:00').toLocaleDateString('it-IT')}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-400">Orario:</span>
+          <span className="font-semibold text-white">{booking.appointment_time}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-400">Cliente:</span>
+          <span className="font-semibold text-white">{booking.customer_name}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-400">Pagamento:</span>
+          <span className="font-semibold text-white">Online</span>
+        </div>
+        <div className="border-t border-gray-700 pt-4 mt-4 flex justify-between text-lg">
+          <span className="font-bold text-white">TOTALE PAGATO:</span>
+          <span className="font-bold text-white">{formatPrice(totalPrice)}</span>
+        </div>
+        <p className="text-xs text-gray-400 text-center pt-2">
+          Riceverai una conferma via email a {booking.customer_email}
+        </p>
+      </div>
+    );
+  }
+
+  // For car rental bookings
   const pickupDate = new Date(booking.pickup_date);
   const dropoffDate = new Date(booking.dropoff_date);
-  const totalPrice = booking.price_total;
-  const isPaid = booking.payment_method !== 'agency';
 
   return (
     <div className="text-left space-y-4">
