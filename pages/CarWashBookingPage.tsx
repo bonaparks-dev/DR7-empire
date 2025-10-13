@@ -368,7 +368,14 @@ const CarWashBookingPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate() || !selectedService) return;
+    console.log('handleSubmit called');
+    console.log('selectedService:', selectedService);
+    console.log('validation result:', validate());
+
+    if (!validate() || !selectedService) {
+      console.log('Validation failed or no selected service');
+      return;
+    }
 
     // Prepare booking data and open payment modal
     const bookingData = {
@@ -395,22 +402,29 @@ const CarWashBookingPage: React.FC = () => {
       booked_at: new Date().toISOString()
     };
 
+    console.log('Setting pending booking data and opening modal');
     setPendingBookingData(bookingData);
     setShowPaymentModal(true);
   };
 
   const handlePayment = async () => {
-    if (!stripe || !elements || !clientSecret || !pendingBookingData) return;
+    console.log('handlePayment called');
+    if (!stripe || !elements || !clientSecret || !pendingBookingData) {
+      console.log('Missing required data:', { stripe: !!stripe, elements: !!elements, clientSecret: !!clientSecret, pendingBookingData: !!pendingBookingData });
+      return;
+    }
 
     setIsProcessing(true);
     setStripeError(null);
 
     try {
+      console.log('Getting card element...');
       const cardElement = elements.getElement('card');
       if (!cardElement) {
         throw new Error('Card element not found');
       }
 
+      console.log('Confirming card payment...');
       const { error: paymentError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
           card: cardElement,
@@ -423,11 +437,15 @@ const CarWashBookingPage: React.FC = () => {
       });
 
       if (paymentError) {
+        console.error('Payment error:', paymentError);
         setStripeError(paymentError.message || 'Payment failed');
         return;
       }
 
+      console.log('Payment intent status:', paymentIntent.status);
+
       if (paymentIntent.status === 'succeeded') {
+        console.log('Payment succeeded! Creating booking...');
         // Payment successful, create booking with paid status
         const bookingDataWithPayment = {
           ...pendingBookingData,
@@ -435,6 +453,7 @@ const CarWashBookingPage: React.FC = () => {
           stripe_payment_intent_id: paymentIntent.id
         };
 
+        console.log('Inserting booking into database:', bookingDataWithPayment);
         const { data, error } = await supabase
           .from('bookings')
           .insert(bookingDataWithPayment)
@@ -446,8 +465,11 @@ const CarWashBookingPage: React.FC = () => {
           throw error;
         }
 
+        console.log('Booking created successfully:', data);
+
         // Send confirmation email and WhatsApp notification (don't block on failure)
         try {
+          console.log('Sending confirmation email...');
           await fetch('/.netlify/functions/send-booking-confirmation', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -458,6 +480,7 @@ const CarWashBookingPage: React.FC = () => {
         }
 
         try {
+          console.log('Sending WhatsApp notification...');
           await fetch('/.netlify/functions/send-whatsapp-notification', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -468,6 +491,7 @@ const CarWashBookingPage: React.FC = () => {
         }
 
         // Navigate to success page
+        console.log('Navigating to success page with booking:', data);
         navigate('/booking-success', { state: { booking: data } });
       }
     } catch (error: any) {
