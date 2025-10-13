@@ -63,13 +63,19 @@ const CarWashBookingPage: React.FC = () => {
   useEffect(() => {
     if (formData.appointmentDate) {
       supabase
-        .from('car_wash_bookings')
+        .from('bookings')
         .select('*')
-        .eq('appointment_date', formData.appointmentDate)
+        .eq('service_type', 'car_wash')
         .eq('payment_status', 'succeeded')
         .then(({ data, error }) => {
           if (!error && data) {
-            setExistingBookings(data);
+            // Filter by date in code since appointment_date comparison needs special handling
+            const filtered = data.filter(booking => {
+              if (!booking.appointment_date) return false;
+              const bookingDate = new Date(booking.appointment_date).toISOString().split('T')[0];
+              return bookingDate === formData.appointmentDate;
+            });
+            setExistingBookings(filtered);
           }
         });
     }
@@ -214,8 +220,11 @@ const CarWashBookingPage: React.FC = () => {
       '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00'
     ];
 
-    const selectedDate = new Date(formData.appointmentDate);
+    // Parse selected date as local date to avoid timezone issues
+    const [year, month, day] = formData.appointmentDate.split('-').map(Number);
+    const selectedDate = new Date(year, month - 1, day);
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time for accurate comparison
     const isToday = selectedDate.toDateString() === today.toDateString();
 
     // Helper to convert time string to minutes
@@ -290,7 +299,9 @@ const CarWashBookingPage: React.FC = () => {
   const isValidAppointmentTime = (date: string, time: string) => {
     if (!date || !time || !selectedService) return false;
 
-    const appointmentDate = new Date(date);
+    // Parse date string as local date to avoid timezone issues
+    const [year, month, day] = date.split('-').map(Number);
+    const appointmentDate = new Date(year, month - 1, day);
     const dayOfWeek = appointmentDate.getDay();
 
     // Sunday = 0 - closed on Sundays
@@ -319,7 +330,9 @@ const CarWashBookingPage: React.FC = () => {
     // Validate working hours
     if (formData.appointmentDate && formData.appointmentTime && !newErrors.appointmentDate) {
       if (!isValidAppointmentTime(formData.appointmentDate, formData.appointmentTime)) {
-        const dayOfWeek = new Date(formData.appointmentDate).getDay();
+        // Parse date string as local date to avoid timezone issues
+        const [year, month, day] = formData.appointmentDate.split('-').map(Number);
+        const dayOfWeek = new Date(year, month - 1, day).getDay();
         if (dayOfWeek === 0) {
           newErrors.appointmentDate = lang === 'it' ? 'Siamo chiusi la domenica' : 'We are closed on Sundays';
         } else {
@@ -363,7 +376,8 @@ const CarWashBookingPage: React.FC = () => {
       customer_name: formData.fullName,
       customer_email: formData.email,
       customer_phone: formData.phone,
-      appointment_date: new Date(`${formData.appointmentDate}T${formData.appointmentTime}`).toISOString(),
+      appointment_date: formData.appointmentDate,
+      appointment_time: formData.appointmentTime,
       booking_details: {
         additionalService: formData.additionalService,
         additionalServiceHours: formData.additionalServiceHours,

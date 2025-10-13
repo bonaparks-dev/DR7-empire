@@ -8,7 +8,6 @@ interface Article {
     date: string;
     summary: string;
     link: string;
-    image?: string;
 }
 
 const articles: Article[] = [
@@ -17,48 +16,28 @@ const articles: Article[] = [
         publication: "Casteddu Online",
         date: "16 Giugno 2025",
         summary: "Nata da zero nel 2024, già S.p.A. in 12 mesi. Ora prepara l'espansione globale e una holding da €500 miliardi entro il 2030.",
-        link: "https://www.castedduonline.it/dubai-rent-7-0-la-startup-sarda-che-insegue-elon-musk-e-punta-a-superarlo/",
-        image: "/article1.jpeg"
+        link: "https://www.castedduonline.it/dubai-rent-7-0-la-startup-sarda-che-insegue-elon-musk-e-punta-a-superarlo/"
     },
     {
         title: "DR7 (Dubai Rent 7.0) – La piattaforma mondiale del lusso",
         publication: "Casteddu Online",
         date: "2 Settembre 2025",
         summary: "Il futuro del lusso non può più essere frammentato: va reso accessibile in un'unica infrastruttura globale. DR7 si presenta come piattaforma mondiale per rendere il lusso più accessibile.",
-        link: "https://www.castedduonline.it/dr7-dubai-rent-7-0-la-piattaforma-mondiale-del-lusso/",
-        image: "/article2.jpeg"
+        link: "https://www.castedduonline.it/dr7-dubai-rent-7-0-la-piattaforma-mondiale-del-lusso/"
     },
     {
         title: "DR7, la nuova struttura del lusso operativo",
         publication: "Casteddu Online",
         date: "24 Luglio 2025",
         summary: "DR7 (ex Dubai Rent 7.0 S.p.A.) si è trasformata da startup locale a società per azioni operativa e scalabile in poco più di un anno, sviluppando margini attivi e asset reali.",
-        link: "https://www.castedduonline.it/dr7-la-nuova-struttura-del-lusso-operativo/",
-        image: "/article3.jpeg"
+        link: "https://www.castedduonline.it/dr7-la-nuova-struttura-del-lusso-operativo/"
     },
     {
         title: "DR7 Exotic Cars e Luxury - Servizi di lusso a Cagliari",
         publication: "Estate in Sardegna",
         date: "2025",
         summary: "Fondata da Valerio Saia, DR7 è cresciuta rapidamente a oltre 1.500 clienti certificati. Offre noleggio auto di lusso, yacht, elicotteri e servizi premium, con l'obiettivo di raggiungere €1 miliardo di fatturato entro il 2030.",
-        link: "https://www.estateinsardegna.it/fr/servizi-turistici/cagliari/dr7-exotic-cars-e-luxury/",
-        image: "/article4.jpeg"
-    },
-    {
-        title: "The Rise of DR7: Redefining Luxury in Sardinia",
-        publication: "International Luxury Review",
-        date: "October 2025",
-        summary: "From zero to multi-million euro company in record time. How a Sardinian startup is challenging established luxury brands with innovative technology and aggressive expansion.",
-        link: "#",
-        image: "/article5.jpeg"
-    },
-    {
-        title: "Cryptocurrency Meets Luxury: The DR7 Innovation",
-        publication: "Crypto & Lifestyle",
-        date: "September 2025",
-        summary: "DR7 pioneers the integration of cryptocurrency payments in the luxury rental market, making high-end experiences accessible to digital asset holders worldwide.",
-        link: "#",
-        image: "/article6.jpeg"
+        link: "https://www.estateinsardegna.it/fr/servizi-turistici/cagliari/dr7-exotic-cars-e-luxury/"
     }
 ];
 
@@ -124,22 +103,7 @@ const PressPage: React.FC = () => {
                                 transition={{ duration: 0.6, delay: 0.1 * (index + 3) }}
                                 className="bg-gray-900/50 border border-gray-800 rounded-xl overflow-hidden hover:border-gray-600 transition-all duration-300 group"
                             >
-                                {article.image && (
-                                    <div className="relative h-48 overflow-hidden">
-                                        <img
-                                            src={article.image}
-                                            alt={article.title}
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                            onError={(e) => {
-                                                const target = e.target as HTMLImageElement;
-                                                target.style.display = 'none';
-                                            }}
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent opacity-60"></div>
-                                    </div>
-                                )}
-
-                                <div className="p-6">
+                                <div className="p-8">
                                     <div className="flex items-center gap-2 text-sm text-gray-400 mb-3">
                                         <span className="font-semibold">{article.publication}</span>
                                         <span>•</span>
