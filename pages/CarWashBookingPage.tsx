@@ -18,6 +18,13 @@ const CarWashBookingPage: React.FC = () => {
   const serviceId = (location.state as any)?.serviceId;
   const selectedService = SERVICES.find(s => s.id === serviceId);
 
+  // Debug logging
+  useEffect(() => {
+    console.log('CarWashBookingPage - serviceId:', serviceId);
+    console.log('CarWashBookingPage - selectedService:', selectedService);
+    console.log('CarWashBookingPage - SERVICES:', SERVICES);
+  }, [serviceId, selectedService]);
+
   // Get today's date in YYYY-MM-DD format - memoized to always reflect current date
   const minDate = useMemo(() => {
     const today = new Date();
@@ -478,7 +485,16 @@ const CarWashBookingPage: React.FC = () => {
     setPendingBookingData(null);
   };
 
-  if (!selectedService) return null;
+  if (!selectedService) {
+    return (
+      <div className="min-h-screen bg-black pt-32 pb-16 px-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white">{lang === 'it' ? 'Caricamento...' : 'Loading...'}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black pt-32 pb-16 px-6">
