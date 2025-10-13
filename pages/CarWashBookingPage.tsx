@@ -77,7 +77,13 @@ const CarWashBookingPage: React.FC = () => {
         .eq('service_type', 'car_wash')
         .eq('payment_status', 'succeeded')
         .then(({ data, error }) => {
-          if (!error && data) {
+          if (error) {
+            console.error('Error fetching existing bookings:', error);
+            // Don't block the booking flow if we can't fetch existing bookings
+            setExistingBookings([]);
+            return;
+          }
+          if (data) {
             // Filter by date in code since appointment_date comparison needs special handling
             const filtered = data.filter(booking => {
               if (!booking.appointment_date) return false;
@@ -86,6 +92,10 @@ const CarWashBookingPage: React.FC = () => {
             });
             setExistingBookings(filtered);
           }
+        })
+        .catch(err => {
+          console.error('Failed to fetch existing bookings:', err);
+          setExistingBookings([]);
         });
     }
   }, [formData.appointmentDate]);
@@ -578,7 +588,10 @@ const CarWashBookingPage: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Payment error:', error);
-      setStripeError(error.message || 'Payment processing failed');
+      console.error('Payment error type:', typeof error);
+      console.error('Payment error stringified:', JSON.stringify(error, null, 2));
+      console.error('Payment error stack:', error?.stack);
+      setStripeError(error.message || error.toString() || 'Payment processing failed');
     } finally {
       setIsProcessing(false);
     }
