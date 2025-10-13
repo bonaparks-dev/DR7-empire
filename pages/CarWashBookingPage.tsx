@@ -383,6 +383,9 @@ const CarWashBookingPage: React.FC = () => {
     }
 
     // Prepare booking data and open payment modal
+    console.log('User object:', user);
+    console.log('User ID:', user?.id);
+
     const bookingData = {
       user_id: user?.id || null,
       vehicle_type: 'car',
@@ -406,6 +409,8 @@ const CarWashBookingPage: React.FC = () => {
       payment_status: 'pending',
       booked_at: new Date().toISOString()
     };
+
+    console.log('Complete booking data being prepared:', JSON.stringify(bookingData, null, 2));
 
     console.log('Setting pending booking data and opening modal');
     setPendingBookingData(bookingData);
