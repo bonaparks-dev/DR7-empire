@@ -386,6 +386,9 @@ const CarWashBookingPage: React.FC = () => {
     console.log('User object:', user);
     console.log('User ID:', user?.id);
 
+    // Create full appointment timestamp
+    const appointmentDateTime = new Date(`${formData.appointmentDate}T${formData.appointmentTime}:00`);
+
     const bookingData = {
       user_id: user?.id || null,
       vehicle_type: 'car',
@@ -398,7 +401,7 @@ const CarWashBookingPage: React.FC = () => {
       customer_name: formData.fullName,
       customer_email: formData.email,
       customer_phone: formData.phone,
-      appointment_date: formData.appointmentDate,
+      appointment_date: appointmentDateTime.toISOString(),
       appointment_time: formData.appointmentTime,
       booking_details: {
         additionalService: formData.additionalService,
@@ -456,11 +459,14 @@ const CarWashBookingPage: React.FC = () => {
 
       if (paymentIntent.status === 'succeeded') {
         console.log('Payment succeeded! Creating booking...');
-        // Payment successful, create booking with paid status
+        // Payment successful, create booking with succeeded status
+        const appointmentDateTime = new Date(`${formData.appointmentDate}T${formData.appointmentTime}:00`);
         const bookingDataWithPayment = {
           ...pendingBookingData,
-          payment_status: 'paid',
-          stripe_payment_intent_id: paymentIntent.id
+          payment_status: 'succeeded',
+          stripe_payment_intent_id: paymentIntent.id,
+          // Ensure proper timestamp format
+          appointment_date: appointmentDateTime.toISOString()
         };
 
         console.log('Inserting booking into database:', bookingDataWithPayment);
