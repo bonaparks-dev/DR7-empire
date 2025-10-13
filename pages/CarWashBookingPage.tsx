@@ -25,14 +25,16 @@ const CarWashBookingPage: React.FC = () => {
     console.log('CarWashBookingPage - SERVICES:', SERVICES);
   }, [serviceId, selectedService]);
 
-  // Get today's date in YYYY-MM-DD format - memoized to always reflect current date
-  const minDate = useMemo(() => {
+  // Get today's date in YYYY-MM-DD format - always get fresh current date
+  const getTodayDate = () => {
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
-  }, []); // Empty dependency array, but will re-evaluate on every render
+  };
+
+  const minDate = getTodayDate();
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -87,6 +89,14 @@ const CarWashBookingPage: React.FC = () => {
         });
     }
   }, [formData.appointmentDate]);
+
+  // Enforce min date on mount and update for mobile browsers
+  useEffect(() => {
+    const dateInput = document.querySelector('input[name="appointmentDate"]') as HTMLInputElement;
+    if (dateInput) {
+      dateInput.setAttribute('min', getTodayDate());
+    }
+  }, []);
 
   // Initialize Stripe
   useEffect(() => {
