@@ -148,14 +148,22 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
     // Create Google Calendar event (non-blocking)
     try {
+      console.log('🗓️ Starting calendar event creation...');
+      console.log('Service type:', serviceType);
+      console.log('Booking data:', JSON.stringify(booking, null, 2));
+
       const eventDetails = serviceType === 'car_wash'
         ? formatCarWashEvent(booking)
         : formatCarRentalEvent(booking);
 
+      console.log('Event details formatted:', JSON.stringify(eventDetails, null, 2));
+
       await createCalendarEvent(eventDetails);
-      console.log('Calendar event created successfully');
+      console.log('✅ Calendar event created successfully');
     } catch (calendarError: any) {
-      console.error('Failed to create calendar event:', calendarError.message);
+      console.error('❌ Failed to create calendar event:', calendarError);
+      console.error('Error message:', calendarError.message);
+      console.error('Error stack:', calendarError.stack);
       // Don't fail the entire request if calendar creation fails
     }
 
