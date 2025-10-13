@@ -495,73 +495,28 @@ const CarWashBookingPage: React.FC = () => {
       console.log('Payment intent status:', paymentIntent.status);
 
       if (paymentIntent.status === 'succeeded') {
-        console.log('Payment succeeded! Creating booking...');
-        // Payment successful, create booking with succeeded status
-        const appointmentDateTime = new Date(`${formData.appointmentDate}T${formData.appointmentTime}:00`);
+        // Payment successful, create booking with paid status
         const bookingDataWithPayment = {
           ...pendingBookingData,
-          payment_status: 'succeeded',
-          stripe_payment_intent_id: paymentIntent.id,
-          // Ensure proper timestamp format
-          appointment_date: appointmentDateTime.toISOString()
+          payment_status: 'paid',
+          stripe_payment_intent_id: paymentIntent.id
         };
 
-        console.log('Inserting booking into database:', JSON.stringify(bookingDataWithPayment, null, 2));
-        console.log('User authenticated:', !!user);
-        console.log('User ID:', user?.id);
-
-        // Retry logic for network issues
-        let data = null;
-        let error = null;
-        let retries = 0;
-        const maxRetries = 3;
-
-        while (retries < maxRetries) {
-          try {
-            const result = await supabase
-              .from('bookings')
-              .insert(bookingDataWithPayment)
-              .select()
-              .single();
-
-            data = result.data;
-            error = result.error;
-
-            if (!error) break; // Success, exit retry loop
-
-            console.log(`Attempt ${retries + 1} failed:`, error);
-            retries++;
-
-            if (retries < maxRetries) {
-              console.log(`Retrying in ${retries} seconds...`);
-              await new Promise(resolve => setTimeout(resolve, retries * 1000));
-            }
-          } catch (fetchError: any) {
-            console.error(`Fetch error on attempt ${retries + 1}:`, fetchError);
-            error = { message: fetchError.message, code: 'FETCH_ERROR' };
-            retries++;
-
-            if (retries < maxRetries) {
-              await new Promise(resolve => setTimeout(resolve, retries * 1000));
-            }
-          }
-        }
+        const { data, error } = await supabase
+          .from('bookings')
+          .insert(bookingDataWithPayment)
+          .select()
+          .single();
 
         if (error) {
-          console.error('Database error after retries:', error);
-          console.error('Error details:', JSON.stringify(error, null, 2));
-          console.error('Booking data that failed:', JSON.stringify(bookingDataWithPayment, null, 2));
-          setStripeError(lang === 'it'
-            ? `Errore durante la creazione della prenotazione: ${error.message || 'Errore sconosciuto'}. Il pagamento è stato elaborato. Contattaci per assistenza.`
-            : `Error creating booking: ${error.message || 'Unknown error'}. Payment was processed. Please contact us for assistance.`);
-          return;
+          console.error('Database error:', error);
+          throw error;
         }
 
         console.log('Booking created successfully:', data);
 
         // Send confirmation email and WhatsApp notification (don't block on failure)
         try {
-          console.log('Sending confirmation email...');
           await fetch('/.netlify/functions/send-booking-confirmation', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -572,7 +527,6 @@ const CarWashBookingPage: React.FC = () => {
         }
 
         try {
-          console.log('Sending WhatsApp notification...');
           await fetch('/.netlify/functions/send-whatsapp-notification', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -583,15 +537,11 @@ const CarWashBookingPage: React.FC = () => {
         }
 
         // Navigate to success page
-        console.log('Navigating to success page with booking:', data);
         navigate('/booking-success', { state: { booking: data } });
       }
     } catch (error: any) {
       console.error('Payment error:', error);
-      console.error('Payment error type:', typeof error);
-      console.error('Payment error stringified:', JSON.stringify(error, null, 2));
-      console.error('Payment error stack:', error?.stack);
-      setStripeError(error.message || error.toString() || 'Payment processing failed');
+      setStripeError(error.message || 'Payment processing failed');
     } finally {
       setIsProcessing(false);
     }
