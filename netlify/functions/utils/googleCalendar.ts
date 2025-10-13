@@ -109,8 +109,8 @@ export const formatCarRentalEvent = (booking: any): CalendarEventDetails => {
 };
 
 export const formatCarWashEvent = (booking: any): CalendarEventDetails => {
-  // Combine appointment_date (YYYY-MM-DD) and appointment_time (HH:MM) into a full datetime
-  const appointmentDate = new Date(`${booking.appointment_date}T${booking.appointment_time}:00`);
+  // appointment_date is now stored as a full ISO timestamp
+  const appointmentDate = new Date(booking.appointment_date);
   const serviceName = booking.service_name;
   const customerName = booking.customer_name || booking.booking_details?.customer?.fullName || 'Cliente';
   const customerEmail = booking.customer_email || booking.booking_details?.customer?.email;
