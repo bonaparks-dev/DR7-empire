@@ -173,25 +173,30 @@ const CarWashBookingPage: React.FC = () => {
   // Mount Stripe card element
   useEffect(() => {
     if (elements && clientSecret && cardElementRef.current) {
-      const card = elements.create('card', {
-        style: {
-          base: {
-            color: '#ffffff',
-            fontFamily: '"Exo 2", sans-serif',
-            fontSize: '16px',
-            '::placeholder': { color: '#a0aec0' }
-          },
-          invalid: { color: '#ef4444', iconColor: '#ef4444' }
-        }
-      });
-      card.mount(cardElementRef.current);
-      card.on('change', (event) => {
-        setStripeError(event.error ? event.error.message : null);
-      });
+      // Check if card element already exists
+      const existingCard = elements.getElement('card');
 
-      return () => {
-        card.unmount();
-      };
+      if (!existingCard) {
+        const card = elements.create('card', {
+          style: {
+            base: {
+              color: '#ffffff',
+              fontFamily: '"Exo 2", sans-serif',
+              fontSize: '16px',
+              '::placeholder': { color: '#a0aec0' }
+            },
+            invalid: { color: '#ef4444', iconColor: '#ef4444' }
+          }
+        });
+        card.mount(cardElementRef.current);
+        card.on('change', (event) => {
+          setStripeError(event.error ? event.error.message : null);
+        });
+
+        return () => {
+          card.unmount();
+        };
+      }
     }
   }, [elements, clientSecret]);
 
@@ -462,6 +467,8 @@ const CarWashBookingPage: React.FC = () => {
 
         if (error) {
           console.error('Database error:', error);
+          console.error('Error details:', JSON.stringify(error, null, 2));
+          console.error('Booking data that failed:', JSON.stringify(bookingDataWithPayment, null, 2));
           throw error;
         }
 
