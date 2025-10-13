@@ -41,29 +41,29 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
 
   const handleHelicopterQuote = () => {
     const message = encodeURIComponent(
-      `Hi! I'm interested in booking the ${item.name}. Could you please provide me with a quote and availability details? Thank you!`
+      `Ciao! Sono interessato a prenotare ${item.name}. Potrebbe fornirmi un preventivo e i dettagli sulla disponibilità? Grazie!`
     );
     const whatsappUrl = `https://wa.me/393457905205?text=${message}`;
     window.open(whatsappUrl, '_blank');
   };
 
   const handleJetQuote = () => {
-    let message = `Hi! I'm interested in booking the ${item.name}.\n\n`;
+    let message = `Ciao! Sono interessato a prenotare ${item.name}.\n\n`;
 
     if (jetSearchData) {
-      message += `Flight Details:\n`;
-      message += `• Trip Type: ${jetSearchData.tripType === 'round-trip' ? 'Round Trip' : 'One Way'}\n`;
-      if (jetSearchData.departure) message += `• Departure: ${jetSearchData.departure}\n`;
-      if (jetSearchData.arrival) message += `• Arrival: ${jetSearchData.arrival}\n`;
-      if (jetSearchData.departureDate) message += `• Departure Date: ${jetSearchData.departureDate}\n`;
+      message += `Dettagli del volo:\n`;
+      message += `• Tipo di viaggio: ${jetSearchData.tripType === 'round-trip' ? 'Andata e ritorno' : 'Solo andata'}\n`;
+      if (jetSearchData.departure) message += `• Partenza: ${jetSearchData.departure}\n`;
+      if (jetSearchData.arrival) message += `• Arrivo: ${jetSearchData.arrival}\n`;
+      if (jetSearchData.departureDate) message += `• Data di partenza: ${jetSearchData.departureDate}\n`;
       if (jetSearchData.returnDate && jetSearchData.tripType === 'round-trip') {
-        message += `• Return Date: ${jetSearchData.returnDate}\n`;
+        message += `• Data di ritorno: ${jetSearchData.returnDate}\n`;
       }
-      if (jetSearchData.passengers) message += `• Passengers: ${jetSearchData.passengers}\n`;
+      if (jetSearchData.passengers) message += `• Passeggeri: ${jetSearchData.passengers}\n`;
       message += `\n`;
     }
 
-    message += `Could you please provide me with a quote? Thank you!`;
+    message += `Potrebbe fornirmi un preventivo? Grazie!`;
 
     const whatsappUrl = `https://wa.me/393457905205?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
