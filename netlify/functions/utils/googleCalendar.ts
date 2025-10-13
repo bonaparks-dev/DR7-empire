@@ -10,13 +10,35 @@ interface CalendarEventDetails {
 }
 
 const getCalendarClient = () => {
+  // Try OAuth first (preferred method)
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+
+  if (clientId && clientSecret && refreshToken) {
+    console.log('Using OAuth authentication for Google Calendar');
+    const oauth2Client = new google.auth.OAuth2(
+      clientId,
+      clientSecret,
+      'http://localhost' // redirect URI (not used for refresh token flow)
+    );
+
+    oauth2Client.setCredentials({
+      refresh_token: refreshToken,
+    });
+
+    return google.calendar({ version: 'v3', auth: oauth2Client });
+  }
+
+  // Fallback to service account if OAuth not configured
   const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
   const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
 
   if (!privateKey || !clientEmail) {
-    throw new Error('Google Calendar credentials not configured');
+    throw new Error('Google Calendar credentials not configured. Need either OAuth (CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN) or Service Account (PRIVATE_KEY, SERVICE_ACCOUNT_EMAIL)');
   }
 
+  console.log('Using Service Account authentication for Google Calendar');
   const auth = new google.auth.JWT({
     email: clientEmail,
     key: privateKey,
