@@ -109,7 +109,8 @@ export const formatCarRentalEvent = (booking: any): CalendarEventDetails => {
 };
 
 export const formatCarWashEvent = (booking: any): CalendarEventDetails => {
-  const appointmentDate = new Date(booking.appointment_date);
+  // Combine appointment_date (YYYY-MM-DD) and appointment_time (HH:MM) into a full datetime
+  const appointmentDate = new Date(`${booking.appointment_date}T${booking.appointment_time}:00`);
   const serviceName = booking.service_name;
   const customerName = booking.customer_name || booking.booking_details?.customer?.fullName || 'Cliente';
   const customerEmail = booking.customer_email || booking.booking_details?.customer?.email;
@@ -119,18 +120,8 @@ export const formatCarWashEvent = (booking: any): CalendarEventDetails => {
   const additionalService = booking.booking_details?.additionalService;
   const notes = booking.booking_details?.notes;
 
-  // Calculate duration based on service price
-  // €25 = 1 hour, €49 = 2 hours, €75 = 3 hours, €99-100 = 4 hours
-  let durationHours = 1;
-  if (totalPrice >= 99) {
-    durationHours = 4;
-  } else if (totalPrice >= 75) {
-    durationHours = 3;
-  } else if (totalPrice >= 49) {
-    durationHours = 2;
-  } else {
-    durationHours = 1;
-  }
+  // Calculate duration based on service price (€25 per hour formula)
+  const durationHours = Math.ceil(totalPrice / 25);
 
   const endDate = new Date(appointmentDate);
   endDate.setHours(endDate.getHours() + durationHours);
