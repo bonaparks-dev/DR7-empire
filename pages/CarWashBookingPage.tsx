@@ -553,6 +553,42 @@ const CarWashBookingPage: React.FC = () => {
           console.error('WhatsApp error (non-blocking):', whatsappError);
         }
 
+        // Generate WhatsApp prefilled message for customer
+        const bookingId = data.id.substring(0, 8).toUpperCase();
+        const serviceName = data.service_name;
+        const appointmentDate = new Date(data.appointment_date);
+        const customerName = formData.customerName;
+        const customerPhone = formData.customerPhone;
+        const totalPrice = (data.price_total / 100).toFixed(2);
+        const additionalService = data.booking_details?.additionalService || '';
+        const notes = data.booking_details?.notes || '';
+
+        let whatsappMessage = `Ciao! Ho appena completato una prenotazione autolavaggio sul vostro sito.\n\n` +
+          `📋 *Dettagli Prenotazione*\n` +
+          `*ID:* DR7-${bookingId}\n` +
+          `*Nome:* ${customerName}\n` +
+          `*Telefono:* ${customerPhone}\n` +
+          `*Servizio:* ${serviceName}\n` +
+          `*Data e Ora:* ${appointmentDate.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })} alle ${appointmentDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n`;
+
+        if (additionalService) {
+          whatsappMessage += `*Servizio Aggiuntivo:* ${additionalService}\n`;
+        }
+        if (notes) {
+          whatsappMessage += `*Note:* ${notes}\n`;
+        }
+
+        whatsappMessage += `*Totale:* €${totalPrice}\n\n` +
+          `Grazie!`;
+
+        const officeWhatsAppNumber = '393457905205';
+        const whatsappUrl = `https://wa.me/${officeWhatsAppNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+
+        // Open WhatsApp in a new tab after a short delay
+        setTimeout(() => {
+          window.open(whatsappUrl, '_blank');
+        }, 1000);
+
         // Navigate to success page
         navigate('/booking-success', { state: { booking: data } });
       }

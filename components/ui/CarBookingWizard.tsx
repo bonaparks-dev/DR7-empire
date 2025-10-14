@@ -787,7 +787,7 @@ if (data) {
     body: JSON.stringify({ booking: data }),
   }).catch(emailError => console.error('Failed to send confirmation email:', emailError));
 
-  // Send WhatsApp notification
+  // Send WhatsApp notification to admin
   fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -795,6 +795,37 @@ if (data) {
   }).catch(whatsappError => console.error('Failed to send WhatsApp notification:', whatsappError));
 
   // Note: Google Calendar event is created automatically by send-booking-confirmation function
+
+  // Generate WhatsApp prefilled message for customer
+  const bookingId = data.id.substring(0, 8).toUpperCase();
+  const vehicleName = data.vehicle_name;
+  const pickupDate = new Date(data.pickup_date);
+  const dropoffDate = new Date(data.dropoff_date);
+  const customerName = formData.customer.fullName;
+  const customerPhone = formData.customer.phone;
+  const totalPrice = (data.price_total / 100).toFixed(2);
+  const insuranceOption = data.insurance_option || data.booking_details?.insuranceOption || 'Nessuna';
+
+  const whatsappMessage = `Ciao! Ho appena completato una prenotazione sul vostro sito.\n\n` +
+    `📋 *Dettagli Prenotazione*\n` +
+    `*ID:* DR7-${bookingId}\n` +
+    `*Nome:* ${customerName}\n` +
+    `*Telefono:* ${customerPhone}\n` +
+    `*Veicolo:* ${vehicleName}\n` +
+    `*Data Ritiro:* ${pickupDate.toLocaleDateString('it-IT')} alle ${pickupDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n` +
+    `*Data Riconsegna:* ${dropoffDate.toLocaleDateString('it-IT')} alle ${dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n` +
+    `*Luogo Ritiro:* ${data.pickup_location}\n` +
+    `*Assicurazione:* ${insuranceOption}\n` +
+    `*Totale:* €${totalPrice}\n\n` +
+    `Grazie!`;
+
+  const officeWhatsAppNumber = '393457905205';
+  const whatsappUrl = `https://wa.me/${officeWhatsAppNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+
+  // Open WhatsApp in a new tab after a short delay
+  setTimeout(() => {
+    window.open(whatsappUrl, '_blank');
+  }, 1000);
 }
 
 onBookingComplete(data);
@@ -935,7 +966,11 @@ setIsProcessing(false);
                         onChange={handleChange}
                         min={today}
                         required
-                        className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors ${
+                        style={{
+                          colorScheme: 'dark',
+                          cursor: 'pointer'
+                        }}
+                        className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors cursor-pointer ${
                           errors.pickupDate
                             ? 'border-red-500 focus:border-red-400'
                             : formData.pickupDate
@@ -1001,14 +1036,18 @@ setIsProcessing(false);
                         min={formData.pickupDate || today}
                         required
                         disabled={!formData.pickupDate}
+                        style={{
+                          colorScheme: 'dark',
+                          cursor: formData.pickupDate ? 'pointer' : 'not-allowed'
+                        }}
                         className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors ${
                           !formData.pickupDate
                             ? 'border-gray-700 opacity-50 cursor-not-allowed'
                             : errors.returnDate || errors.date
-                            ? 'border-red-500 focus:border-red-400'
+                            ? 'border-red-500 focus:border-red-400 cursor-pointer'
                             : formData.returnDate
-                            ? 'border-green-500 focus:border-green-400'
-                            : 'border-gray-700 focus:border-white'
+                            ? 'border-green-500 focus:border-green-400 cursor-pointer'
+                            : 'border-gray-700 focus:border-white cursor-pointer'
                         }`}
                       />
                       {(errors.returnDate || errors.date) && (
@@ -1058,9 +1097,9 @@ setIsProcessing(false);
               <div><label className="text-sm text-gray-400">Cognome *</label><input type="text" name={`${prefix}lastName`} value={(driverData as any).lastName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}lastName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}lastName`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Email *</label><input type="email" name={`${prefix}email`} value={(driverData as any).email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}email`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}email`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Telefono *</label><input type="tel" name={`${prefix}phone`} value={(driverData as any).phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}phone`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}phone`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Data di nascita *</label><input type="date" name={`${prefix}birthDate`} value={(driverData as any).birthDate} onChange={handleChange} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}birthDate`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Data di nascita *</label><input type="date" name={`${prefix}birthDate`} value={(driverData as any).birthDate} onChange={handleChange} max={new Date().toISOString().split('T')[0]} style={{ colorScheme: 'dark', cursor: 'pointer' }} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm cursor-pointer"/>{errors[`${prefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}birthDate`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Numero patente *</label><input type="text" name={`${prefix}licenseNumber`} value={(driverData as any).licenseNumber} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}licenseNumber`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseNumber`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Data rilascio patente *</label><input type="date" name={`${prefix}licenseIssueDate`} value={(driverData as any).licenseIssueDate} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseIssueDate`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Data rilascio patente *</label><input type="date" name={`${prefix}licenseIssueDate`} value={(driverData as any).licenseIssueDate} onChange={handleChange} style={{ colorScheme: 'dark', cursor: 'pointer' }} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm cursor-pointer"/>{errors[`${prefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseIssueDate`]}</p>}</div>
             </div>
           );
         };

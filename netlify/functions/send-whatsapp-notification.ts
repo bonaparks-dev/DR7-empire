@@ -77,6 +77,7 @@ const handler: Handler = async (event) => {
     const pickupDate = new Date(booking.pickup_date);
     const dropoffDate = new Date(booking.dropoff_date);
     const pickupLocation = booking.pickup_location;
+    const insuranceOption = booking.insurance_option || booking.booking_details?.insuranceOption || 'Nessuna';
 
     message = `🚘 *NUOVA PRENOTAZIONE NOLEGGIO*\n\n`;
     message += `*ID:* DR7-${bookingId}\n`;
@@ -87,6 +88,7 @@ const handler: Handler = async (event) => {
     message += `*Ritiro:* ${pickupDate.toLocaleDateString('it-IT')} alle ${pickupDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n`;
     message += `*Riconsegna:* ${dropoffDate.toLocaleDateString('it-IT')} alle ${dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n`;
     message += `*Luogo Ritiro:* ${pickupLocation}\n`;
+    message += `*Assicurazione:* ${insuranceOption}\n`;
     message += `*Totale:* €${totalPrice}\n`;
     message += `*Stato Pagamento:* ${booking.payment_status === 'paid' ? '✅ Pagato' : '⏳ In attesa'}`;
   }

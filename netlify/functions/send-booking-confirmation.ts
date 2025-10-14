@@ -85,6 +85,8 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     const vehicleName = booking.vehicle_name;
     const pickupDate = new Date(booking.pickup_date);
     const dropoffDate = new Date(booking.dropoff_date);
+    const customerPhone = booking.customer_phone || booking.booking_details?.customer?.phone || 'N/A';
+    const insuranceOption = booking.insurance_option || booking.booking_details?.insuranceOption || 'Nessuna';
 
     emailSubject = `Conferma Prenotazione #${bookingId.substring(0, 8).toUpperCase()}`;
     emailHtml = `
@@ -97,9 +99,13 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
           <h2 style="margin-top: 0;">Riepilogo Prenotazione</h2>
           <p><strong>Veicolo:</strong> ${vehicleName}</p>
           <p><strong>Numero Prenotazione:</strong> DR7-${bookingId.substring(0, 8).toUpperCase()}</p>
+          <p><strong>Nome:</strong> ${customerName}</p>
+          <p><strong>Email:</strong> ${customerEmail}</p>
+          <p><strong>Telefono:</strong> ${customerPhone}</p>
           <p><strong>Data e Ora Ritiro:</strong> ${pickupDate.toLocaleDateString('it-IT')} alle ${pickupDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</p>
           <p><strong>Data e Ora Riconsegna:</strong> ${dropoffDate.toLocaleDateString('it-IT')} alle ${dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</p>
           <p><strong>Luogo di Ritiro:</strong> ${booking.pickup_location}</p>
+          <p><strong>Assicurazione:</strong> ${insuranceOption}</p>
           <p><strong>Stato Pagamento:</strong> ${booking.payment_status === 'pending' ? 'In attesa' : 'Completato'}</p>
         </div>
 
@@ -140,11 +146,16 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
   try {
     // Send email to customer
     await transporter.sendMail(customerMailOptions);
+    console.log('✅ Customer email sent successfully');
 
-    // Send copy to admin (non-blocking)
-    transporter.sendMail(adminMailOptions).catch(err =>
-      console.error('Failed to send admin notification:', err)
-    );
+    // Send copy to admin (blocking to catch errors)
+    try {
+      await transporter.sendMail(adminMailOptions);
+      console.log('✅ Admin notification email sent successfully');
+    } catch (adminError: any) {
+      console.error('❌ Failed to send admin notification:', adminError.message);
+      console.error('Admin email error details:', adminError);
+    }
 
     // Create Google Calendar event (non-blocking)
     try {
