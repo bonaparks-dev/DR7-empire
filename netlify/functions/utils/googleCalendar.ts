@@ -38,6 +38,12 @@ export const createCalendarEvent = async (eventDetails: CalendarEventDetails) =>
     const calendar = getCalendarClient();
     const calendarId = process.env.GOOGLE_CALENDAR_ID || 'dubai.rent7.0srl@gmail.com';
 
+    console.log(`📅 Creating calendar event for: ${eventDetails.summary}`);
+    console.log(`📧 Customer: ${eventDetails.customerName} (${eventDetails.customerEmail})`);
+    console.log(`🗓️ Start: ${eventDetails.startDateTime}`);
+    console.log(`🗓️ End: ${eventDetails.endDateTime}`);
+    console.log(`📍 Calendar ID: ${calendarId}`);
+
     const event = {
       summary: eventDetails.summary,
       description: eventDetails.description,
@@ -67,10 +73,28 @@ export const createCalendarEvent = async (eventDetails: CalendarEventDetails) =>
       sendUpdates: 'all', // Send email notifications to attendees (OAuth2 supports this)
     });
 
-    console.log('Calendar event created:', response.data.id);
+    console.log('✅ Calendar event created successfully!');
+    console.log(`🆔 Event ID: ${response.data.id}`);
+    console.log(`🔗 Event link: ${response.data.htmlLink}`);
     return response.data;
   } catch (error: any) {
-    console.error('Error creating calendar event:', error.message);
+    console.error('❌ Error creating calendar event:', error.message);
+    console.error('Error details:', {
+      code: error.code,
+      status: error.status,
+      statusText: error.statusText,
+      errors: error.errors,
+    });
+
+    // Provide more helpful error messages
+    if (error.code === 401) {
+      console.error('⚠️ Authentication error: Refresh token may be expired or invalid');
+    } else if (error.code === 403) {
+      console.error('⚠️ Permission error: Check if calendar is shared with the OAuth account');
+    } else if (error.code === 404) {
+      console.error('⚠️ Calendar not found: Verify GOOGLE_CALENDAR_ID is correct');
+    }
+
     throw error;
   }
 };

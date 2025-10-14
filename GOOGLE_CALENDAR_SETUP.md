@@ -139,9 +139,22 @@ The booking system automatically creates Google Calendar events for both car ren
   - Valid time windows (9:00-12:00, 15:00-18:00)
 - Calendar events are informational only; conflicts are prevented at booking time
 
-## Testing
+## Testing & Verification
 
-To test the integration:
+### Quick Test (Recommended)
+
+After deploying, visit the test endpoint:
+```
+https://your-site.netlify.app/.netlify/functions/test-google-calendar
+```
+
+This will verify:
+- ✅ OAuth credentials are configured
+- ✅ Refresh token is valid
+- ✅ Calendar API is accessible
+- ✅ Target calendar has proper permissions
+
+### Manual Testing
 
 1. Make a test booking through the website
 2. Check Netlify function logs for calendar creation
@@ -149,10 +162,13 @@ To test the integration:
 4. Confirm the duration matches the service price
 5. Check that all booking details are included
 
+For detailed verification steps and troubleshooting, see [GOOGLE_CALENDAR_VERIFICATION.md](./GOOGLE_CALENDAR_VERIFICATION.md)
+
 ## Support
 
 For issues with Google Calendar integration:
 - Check Netlify function logs
+- Run the test endpoint: `/.netlify/functions/test-google-calendar`
 - Review Google Cloud Console audit logs
-- Verify service account permissions
+- Verify OAuth credentials are current
 - Contact: dubai.rent7.0srl@gmail.com
