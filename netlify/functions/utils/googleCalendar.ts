@@ -10,42 +10,27 @@ interface CalendarEventDetails {
 }
 
 const getCalendarClient = () => {
-  // Try OAuth first (preferred method)
+  // Use OAuth2 authentication only
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
 
-  if (clientId && clientSecret && refreshToken) {
-    console.log('Using OAuth authentication for Google Calendar');
-    const oauth2Client = new google.auth.OAuth2(
-      clientId,
-      clientSecret,
-      'http://localhost' // redirect URI (not used for refresh token flow)
-    );
-
-    oauth2Client.setCredentials({
-      refresh_token: refreshToken,
-    });
-
-    return google.calendar({ version: 'v3', auth: oauth2Client });
+  if (!clientId || !clientSecret || !refreshToken) {
+    throw new Error('Google Calendar OAuth credentials not configured. Required: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN');
   }
 
-  // Fallback to service account if OAuth not configured
-  const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  console.log('Using OAuth2 authentication for Google Calendar');
+  const oauth2Client = new google.auth.OAuth2(
+    clientId,
+    clientSecret,
+    'http://localhost' // redirect URI (not used for refresh token flow)
+  );
 
-  if (!privateKey || !clientEmail) {
-    throw new Error('Google Calendar credentials not configured. Need either OAuth (CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN) or Service Account (PRIVATE_KEY, SERVICE_ACCOUNT_EMAIL)');
-  }
-
-  console.log('Using Service Account authentication for Google Calendar');
-  const auth = new google.auth.JWT({
-    email: clientEmail,
-    key: privateKey,
-    scopes: ['https://www.googleapis.com/auth/calendar'],
+  oauth2Client.setCredentials({
+    refresh_token: refreshToken,
   });
 
-  return google.calendar({ version: 'v3', auth });
+  return google.calendar({ version: 'v3', auth: oauth2Client });
 };
 
 export const createCalendarEvent = async (eventDetails: CalendarEventDetails) => {
@@ -79,7 +64,7 @@ export const createCalendarEvent = async (eventDetails: CalendarEventDetails) =>
     const response = await calendar.events.insert({
       calendarId: calendarId,
       requestBody: event,
-      sendUpdates: 'all', // Send email notifications to attendees
+      sendUpdates: 'all', // Send email notifications to attendees (OAuth2 supports this)
     });
 
     console.log('Calendar event created:', response.data.id);

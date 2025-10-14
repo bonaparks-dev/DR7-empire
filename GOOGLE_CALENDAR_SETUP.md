@@ -1,85 +1,91 @@
 # Google Calendar Integration Setup
 
-This document explains how to set up Google Calendar integration for DR7 Empire car wash bookings.
+This document explains how to set up Google Calendar integration for DR7 Empire car and car wash bookings.
 
 ## Required Environment Variables
 
 You need to add these environment variables to your Netlify deployment:
 
-### Method 1: Service Account (Recommended) - Used by `googleCalendar.ts`
+### OAuth 2.0 Authentication (Current Implementation)
 
-1. **GOOGLE_SERVICE_ACCOUNT_EMAIL**
-   - The email address of your Google Service Account
-   - Example: `dr7-calendar@your-project.iam.gserviceaccount.com`
+The application uses **OAuth 2.0** authentication for Google Calendar integration. This method is configured in `googleCalendar.ts`.
 
-2. **GOOGLE_PRIVATE_KEY**
-   - The private key from your service account JSON file
-   - Must include the full key with `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----`
-   - Note: Netlify will handle newlines automatically
+Required variables:
 
-3. **GOOGLE_CALENDAR_ID**
+1. **GOOGLE_CLIENT_ID**
+   - Your OAuth 2.0 Client ID from Google Cloud Console
+
+2. **GOOGLE_CLIENT_SECRET**
+   - Your OAuth 2.0 Client Secret from Google Cloud Console
+
+3. **GOOGLE_REFRESH_TOKEN**
+   - A refresh token generated for your Google account
+
+4. **GOOGLE_CALENDAR_ID** (optional)
    - The calendar ID where events will be created
    - Default: `dubai.rent7.0srl@gmail.com`
    - Find it in Google Calendar Settings → Calendar → Integrate calendar
 
-### Method 2: OAuth (Alternative) - Used by `create-calendar-event.ts`
-
-1. **GOOGLE_CLIENT_ID**
-2. **GOOGLE_CLIENT_SECRET**
-3. **GOOGLE_REFRESH_TOKEN**
-4. **GOOGLE_CALENDAR_ID**
-
 ## Setup Steps
 
-### Option A: Service Account Setup (Recommended)
+### OAuth 2.0 Setup (Current Implementation)
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select existing one
-3. Enable Google Calendar API:
+1. **Go to Google Cloud Console**
+   - Visit [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select an existing one
+
+2. **Enable Google Calendar API**
    - Go to "APIs & Services" → "Enable APIs and Services"
-   - Search for "Google Calendar API" and enable it
-4. Create Service Account:
-   - Go to "IAM & Admin" → "Service Accounts"
-   - Click "Create Service Account"
-   - Give it a name (e.g., "DR7 Calendar Service")
-   - Grant it the "Editor" role (or create custom role)
-5. Create Key:
-   - Click on the service account
-   - Go to "Keys" tab
-   - Click "Add Key" → "Create new key"
-   - Choose JSON format
-   - Save the downloaded JSON file securely
-6. Share Calendar with Service Account:
-   - Open Google Calendar
-   - Go to Settings → Select your calendar
-   - Under "Share with specific people"
-   - Add the service account email with "Make changes to events" permission
-7. Add to Netlify:
+   - Search for "Google Calendar API"
+   - Click "Enable"
+
+3. **Create OAuth 2.0 Credentials**
+   - Go to "APIs & Services" → "Credentials"
+   - Click "Create Credentials" → "OAuth Client ID"
+   - Choose application type: "Web application"
+   - Add authorized redirect URI: `http://localhost` (for getting refresh token)
+   - Save and note down your Client ID and Client Secret
+
+4. **Get Refresh Token**
+   - Use one of the helper files in the project (`get-refresh-token.js`, `get-oauth-token-final.html`)
+   - Or use [Google OAuth 2.0 Playground](https://developers.google.com/oauthplayground/)
+   - Select "Google Calendar API v3" scope: `https://www.googleapis.com/auth/calendar`
+   - Authorize and exchange authorization code for tokens
+   - Save the refresh token securely
+
+5. **Add to Netlify Environment Variables**
    - Go to Netlify Dashboard → Site Settings → Environment Variables
    - Add:
-     - `GOOGLE_SERVICE_ACCOUNT_EMAIL`: Copy email from JSON
-     - `GOOGLE_PRIVATE_KEY`: Copy entire `private_key` value from JSON
-     - `GOOGLE_CALENDAR_ID`: Your calendar email or ID
-
-### Option B: OAuth Setup
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create OAuth 2.0 credentials
-3. Get refresh token using OAuth Playground
-4. Add credentials to Netlify environment variables
+     - `GOOGLE_CLIENT_ID`: Your OAuth Client ID
+     - `GOOGLE_CLIENT_SECRET`: Your OAuth Client Secret
+     - `GOOGLE_REFRESH_TOKEN`: Your refresh token
+     - `GOOGLE_CALENDAR_ID`: Your calendar email (optional, defaults to dubai.rent7.0srl@gmail.com)
 
 ## Current Implementation
 
-The car wash booking system:
+The booking system automatically creates Google Calendar events for both car rentals and car washes:
 
-✅ **Automatically creates Google Calendar events** when a booking is confirmed
+### Car Rental Events
+
+✅ **Event format**: 🚙 CAR RENTAL - Vehicle Name - Customer Name
+✅ **Includes**:
+   - Customer name and contact info
+   - Vehicle name and type
+   - Pickup/dropoff dates and locations
+   - Booking ID (DR7-XXXXXXXX)
+   - Total price and payment status
+   - Insurance details
+
+### Car Wash Events
+
+✅ **Event format**: 🚿 LUXURY WASH (4h) - Service Name - Customer Name
 ✅ **Calculates correct duration** based on service price:
    - €25 service = 1 hour
    - €49 service = 2 hours
    - €75 service = 3 hours
    - €99 service = 4 hours
 
-✅ **Includes comprehensive event details**:
+✅ **Includes**:
    - Customer name and contact info
    - Service name and duration
    - Booking ID (DR7-XXXXXXXX)
@@ -87,9 +93,12 @@ The car wash booking system:
    - Time slot blocked (e.g., "09:00 - 13:00")
    - Additional services and notes
 
-✅ **Event format**: 🚿 LUXURY WASH (4h) - Service Name - Customer Name
+### General Features
 
+✅ **OAuth 2.0 Authentication**: Secure, user-authorized access
+✅ **Email Notifications**: Can send invites to customers (OAuth supports this)
 ✅ **Non-blocking**: If calendar creation fails, the booking still succeeds
+✅ **Automatic Reminders**: 1 day and 1 hour before the event
 
 ## How It Works
 
