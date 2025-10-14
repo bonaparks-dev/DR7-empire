@@ -557,11 +557,27 @@ const CarWashBookingPage: React.FC = () => {
         const bookingId = data.id.substring(0, 8).toUpperCase();
         const serviceName = data.service_name;
         const appointmentDate = new Date(data.appointment_date);
-        const customerName = formData.customerName;
-        const customerPhone = formData.customerPhone;
+        const customerName = formData.fullName;
+        const customerPhone = formData.phone;
         const totalPrice = (data.price_total / 100).toFixed(2);
         const additionalService = data.booking_details?.additionalService || '';
         const notes = data.booking_details?.notes || '';
+
+        // Format date and time in Europe/Rome timezone
+        const dateOptions: Intl.DateTimeFormatOptions = {
+          weekday: 'long',
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric',
+          timeZone: 'Europe/Rome'
+        };
+        const timeOptions: Intl.DateTimeFormatOptions = {
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZone: 'Europe/Rome'
+        };
+        const formattedDate = appointmentDate.toLocaleDateString('it-IT', dateOptions);
+        const formattedTime = appointmentDate.toLocaleTimeString('it-IT', timeOptions);
 
         let whatsappMessage = `Ciao! Ho appena completato una prenotazione autolavaggio sul vostro sito.\n\n` +
           `📋 *Dettagli Prenotazione*\n` +
@@ -569,7 +585,7 @@ const CarWashBookingPage: React.FC = () => {
           `*Nome:* ${customerName}\n` +
           `*Telefono:* ${customerPhone}\n` +
           `*Servizio:* ${serviceName}\n` +
-          `*Data e Ora:* ${appointmentDate.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })} alle ${appointmentDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n`;
+          `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n`;
 
         if (additionalService) {
           whatsappMessage += `*Servizio Aggiuntivo:* ${additionalService}\n`;

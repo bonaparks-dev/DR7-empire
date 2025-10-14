@@ -51,18 +51,27 @@ const handler: Handler = async (event) => {
     const additionalService = booking.booking_details?.additionalService;
     const notes = booking.booking_details?.notes;
 
+    // Format date and time in Europe/Rome timezone
+    const formattedDate = appointmentDate.toLocaleDateString('it-IT', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'Europe/Rome'
+    });
+    const formattedTime = appointmentDate.toLocaleTimeString('it-IT', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Europe/Rome'
+    });
+
     message = `🚗 *NUOVA PRENOTAZIONE AUTOLAVAGGIO*\n\n`;
     message += `*ID:* DR7-${bookingId}\n`;
     message += `*Cliente:* ${customerName}\n`;
     message += `*Email:* ${customerEmail}\n`;
     message += `*Telefono:* ${customerPhone}\n`;
     message += `*Servizio:* ${serviceName}\n`;
-    message += `*Data e Ora:* ${appointmentDate.toLocaleDateString('it-IT', {
-      weekday: 'long',
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    })} alle ${appointmentDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n`;
+    message += `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n`;
     if (additionalService) {
       message += `*Servizio Aggiuntivo:* ${additionalService}\n`;
     }
@@ -79,14 +88,20 @@ const handler: Handler = async (event) => {
     const pickupLocation = booking.pickup_location;
     const insuranceOption = booking.insurance_option || booking.booking_details?.insuranceOption || 'Nessuna';
 
+    // Format dates and times in Europe/Rome timezone
+    const pickupDateFormatted = pickupDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' });
+    const pickupTimeFormatted = pickupDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
+    const dropoffDateFormatted = dropoffDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' });
+    const dropoffTimeFormatted = dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
+
     message = `🚘 *NUOVA PRENOTAZIONE NOLEGGIO*\n\n`;
     message += `*ID:* DR7-${bookingId}\n`;
     message += `*Cliente:* ${customerName}\n`;
     message += `*Email:* ${customerEmail}\n`;
     message += `*Telefono:* ${customerPhone}\n`;
     message += `*Veicolo:* ${vehicleName}\n`;
-    message += `*Ritiro:* ${pickupDate.toLocaleDateString('it-IT')} alle ${pickupDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n`;
-    message += `*Riconsegna:* ${dropoffDate.toLocaleDateString('it-IT')} alle ${dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n`;
+    message += `*Ritiro:* ${pickupDateFormatted} alle ${pickupTimeFormatted}\n`;
+    message += `*Riconsegna:* ${dropoffDateFormatted} alle ${dropoffTimeFormatted}\n`;
     message += `*Luogo Ritiro:* ${pickupLocation}\n`;
     message += `*Assicurazione:* ${insuranceOption}\n`;
     message += `*Totale:* €${totalPrice}\n`;

@@ -48,6 +48,20 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     const additionalService = booking.booking_details?.additionalService;
     const notes = booking.booking_details?.notes;
 
+    // Format date and time in Europe/Rome timezone
+    const formattedDate = appointmentDate.toLocaleDateString('it-IT', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'Europe/Rome'
+    });
+    const formattedTime = appointmentDate.toLocaleTimeString('it-IT', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Europe/Rome'
+    });
+
     emailSubject = `🚗 Conferma Prenotazione Autolavaggio #${bookingId.substring(0, 8).toUpperCase()}`;
     emailHtml = `
       <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
@@ -59,7 +73,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
           <h2 style="margin-top: 0;">Riepilogo Appuntamento</h2>
           <p><strong>Servizio:</strong> ${serviceName}</p>
           <p><strong>Numero Prenotazione:</strong> DR7-${bookingId.substring(0, 8).toUpperCase()}</p>
-          <p><strong>Data e Ora:</strong> ${appointmentDate.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })} alle ${appointmentDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</p>
+          <p><strong>Data e Ora:</strong> ${formattedDate} alle ${formattedTime}</p>
           ${additionalService ? `<p><strong>Servizio Aggiuntivo:</strong> ${additionalService}</p>` : ''}
           ${notes ? `<p><strong>Note:</strong> ${notes}</p>` : ''}
         </div>
@@ -88,6 +102,12 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     const customerPhone = booking.customer_phone || booking.booking_details?.customer?.phone || 'N/A';
     const insuranceOption = booking.insurance_option || booking.booking_details?.insuranceOption || 'Nessuna';
 
+    // Format dates and times in Europe/Rome timezone
+    const pickupDateFormatted = pickupDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' });
+    const pickupTimeFormatted = pickupDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
+    const dropoffDateFormatted = dropoffDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' });
+    const dropoffTimeFormatted = dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
+
     emailSubject = `Conferma Prenotazione #${bookingId.substring(0, 8).toUpperCase()}`;
     emailHtml = `
       <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
@@ -102,8 +122,8 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
           <p><strong>Nome:</strong> ${customerName}</p>
           <p><strong>Email:</strong> ${customerEmail}</p>
           <p><strong>Telefono:</strong> ${customerPhone}</p>
-          <p><strong>Data e Ora Ritiro:</strong> ${pickupDate.toLocaleDateString('it-IT')} alle ${pickupDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</p>
-          <p><strong>Data e Ora Riconsegna:</strong> ${dropoffDate.toLocaleDateString('it-IT')} alle ${dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</p>
+          <p><strong>Data e Ora Ritiro:</strong> ${pickupDateFormatted} alle ${pickupTimeFormatted}</p>
+          <p><strong>Data e Ora Riconsegna:</strong> ${dropoffDateFormatted} alle ${dropoffTimeFormatted}</p>
           <p><strong>Luogo di Ritiro:</strong> ${booking.pickup_location}</p>
           <p><strong>Assicurazione:</strong> ${insuranceOption}</p>
           <p><strong>Stato Pagamento:</strong> ${booking.payment_status === 'pending' ? 'In attesa' : 'Completato'}</p>
