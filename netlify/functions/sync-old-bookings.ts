@@ -13,7 +13,17 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 const handler: Handler = async (event) => {
   // Simple authentication to prevent abuse
   const secret = event.queryStringParameters?.secret;
-  const expectedSecret = process.env.SYNC_SECRET || 'dr7-sync-2025'; // Change this in Netlify env vars
+  const expectedSecret = process.env.SYNC_SECRET;
+
+  if (!expectedSecret) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        error: 'Configuration Error',
+        message: 'SYNC_SECRET environment variable not set'
+      }),
+    };
+  }
 
   if (secret !== expectedSecret) {
     return {
