@@ -154,12 +154,14 @@ const FranchisingPage: React.FC = () => {
                 <div className="bg-gradient-to-br from-gray-900/80 to-black/80 border-2 border-gray-800 rounded-2xl p-8 text-center">
                     <h3 className="text-2xl font-bold text-white mb-4">Candidati Ora</h3>
                     <p className="text-gray-300 mb-6">Per candidarti o per maggiori informazioni, contattaci:</p>
-                    <a
-                        href="mailto:Dubai.rent7.0spa@gmail.com"
-                        className="inline-block bg-white text-black px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-200 transition-all duration-300 transform hover:scale-105"
-                    >
-                        Dubai.rent7.0spa@gmail.com
-                    </a>
+                    <div className="flex justify-center">
+                        <a
+                            href="mailto:Dubai.rent7.0spa@gmail.com"
+                            className="inline-block bg-white text-black px-6 md:px-8 py-4 rounded-full font-bold text-base md:text-lg hover:bg-gray-200 transition-all duration-300 transform hover:scale-105 break-all max-w-full"
+                        >
+                            Dubai.rent7.0spa@gmail.com
+                        </a>
+                    </div>
                 </div>
 
                 {/* Footer Statement */}
