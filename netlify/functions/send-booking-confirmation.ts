@@ -90,7 +90,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
         <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
         <p style="font-size: 12px; color: #666;">
-          Per qualsiasi domanda, contattaci all'indirizzo <a href="mailto:support@dr7empire.com">support@dr7empire.com</a>
+          Per qualsiasi domanda, contattaci all'indirizzo <a href="mailto:dubai.rent7.0srl@gmail.com">dubai.rent7.0srl@gmail.com</a>
         </p>
       </div>
     `;
@@ -142,7 +142,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
         <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
         <p style="font-size: 12px; color: #666;">
-          Per qualsiasi domanda, contattaci all'indirizzo <a href="mailto:support@dr7empire.com">support@dr7empire.com</a>
+          Per qualsiasi domanda, contattaci all'indirizzo <a href="mailto:dubai.rent7.0srl@gmail.com">dubai.rent7.0srl@gmail.com</a>
         </p>
       </div>
     `;
