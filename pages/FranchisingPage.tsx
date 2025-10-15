@@ -156,10 +156,10 @@ const FranchisingPage: React.FC = () => {
                     <p className="text-sm md:text-base text-gray-300 mb-6">Per candidarti o per maggiori informazioni, contattaci:</p>
                     <div className="flex justify-center">
                         <a
-                            href="mailto:Dubai.rent7.0spa@gmail.com"
+                            href="mailto:dubai.rent7.0srl@gmail.com"
                             className="inline-block bg-white text-black px-6 md:px-8 py-4 rounded-full font-bold text-base md:text-lg hover:bg-gray-200 transition-all duration-300 transform hover:scale-105 break-all max-w-full"
                         >
-                            Dubai.rent7.0spa@gmail.com
+                            dubai.rent7.0srl@gmail.com
                         </a>
                     </div>
                 </div>
