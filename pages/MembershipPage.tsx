@@ -64,11 +64,11 @@ const TierCard: React.FC<{ tier: MembershipTier; billingCycle: 'monthly' | 'annu
 
 
 const MembershipPage: React.FC = () => {
-    const { t } = useTranslation();
+    const { t, lang } = useTranslation();
     const navigate = useNavigate();
     const { user } = useAuth();
-    const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('annually');
-    
+    const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('monthly');
+
     const handleSelectTier = (tierId: string) => {
         if (user) {
             navigate(`/membership/enroll/${tierId}?billing=${billingCycle}`);
@@ -102,36 +102,20 @@ const MembershipPage: React.FC = () => {
                     transition={{ duration: 0.5 }}
                     className="text-center"
                 >
-                    <h1 className="text-4xl md:text-5xl font-bold text-white">
-                        {t('Join_The_Club')}
+                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                        💎 DR7 MEMBERSHIP CLUB
                     </h1>
-                    <p className="mt-4 text-lg text-gray-400 max-w-2xl mx-auto">{t('Choose_your_tier_and_unlock_a_world_of_privileges')}</p>
+                    <p className="text-xl text-gray-300 mb-2 max-w-2xl mx-auto font-semibold">
+                        {lang === 'it' ? 'Non è un abbonamento. È uno status.' : 'It\'s not a subscription. It\'s a status.'}
+                    </p>
+                    <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+                        {lang === 'it'
+                          ? 'Diventa parte del DR7 Luxury Empire — accesso, vantaggi, precedenza.'
+                          : 'Become part of DR7 Luxury Empire — access, benefits, priority.'}
+                    </p>
                 </motion.div>
 
-                <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.2 }}
-                    className="mt-10 flex justify-center items-center space-x-4"
-                >
-                    <span className={`font-semibold transition-colors ${billingCycle === 'monthly' ? 'text-white' : 'text-gray-500'}`}>{t('Monthly')}</span>
-                    <div className="relative">
-                        <input 
-                            type="checkbox" 
-                            id="billing-toggle" 
-                            className="sr-only" 
-                            checked={billingCycle === 'annually'}
-                            onChange={() => setBillingCycle(prev => prev === 'monthly' ? 'annually' : 'monthly')}
-                        />
-                        <label htmlFor="billing-toggle" className="block w-14 h-8 bg-gray-800 rounded-full cursor-pointer border border-gray-700">
-                            <span className={`block w-6 h-6 mt-1 ml-1 bg-white rounded-full transform transition-transform duration-300 ${billingCycle === 'annually' ? 'translate-x-6 bg-white' : ''}`}></span>
-                        </label>
-                    </div>
-                    <span className={`font-semibold transition-colors ${billingCycle === 'annually' ? 'text-white' : 'text-gray-500'}`}>{t('Annually')}</span>
-                    <span className="bg-gray-700 text-gray-200 text-xs font-bold px-2 py-1 rounded-md">{t('Save')} 16%</span>
-                </motion.div>
-
-                <motion.div 
+                <motion.div
                     variants={containerVariants}
                     initial="hidden"
                     animate="visible"
@@ -140,6 +124,33 @@ const MembershipPage: React.FC = () => {
                     {MEMBERSHIP_TIERS.map(tier => (
                         <TierCard key={tier.id} tier={tier} billingCycle={billingCycle} onSelect={() => handleSelectTier(tier.id)} />
                     ))}
+                </motion.div>
+
+                {/* Optional Add-on Section */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.4 }}
+                    className="mt-16 max-w-4xl mx-auto"
+                >
+                    <div className="bg-gradient-to-r from-gray-900/80 to-black border border-gray-800 rounded-lg p-8 text-center">
+                        <h3 className="text-2xl font-bold text-white mb-4">
+                            {lang === 'it' ? '📱 Add-on opzionale per tutti i piani' : '📱 Optional Add-on for All Plans'}
+                        </h3>
+                        <div className="bg-black/40 border border-gray-700 rounded-lg p-6 inline-block">
+                            <p className="text-gray-300 mb-2">
+                                <span className="text-3xl font-bold text-white">€250</span>
+                                <span className="text-gray-400 ml-2">
+                                    {lang === 'it' ? 'una tantum' : 'one-time'}
+                                </span>
+                            </p>
+                            <p className="text-lg text-gray-300">
+                                {lang === 'it'
+                                  ? 'Tessera fisica DR7 in acciaio personalizzata'
+                                  : 'Personalized DR7 physical steel card'}
+                            </p>
+                        </div>
+                    </div>
                 </motion.div>
             </div>
         </div>
