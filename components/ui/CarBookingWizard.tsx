@@ -16,6 +16,7 @@ import {
   isPremiumVehicle,
   isDucatoVehicle
 } from '../../data/kmPricingData';
+import { checkVehicleAvailability } from '../../utils/bookingValidation';
 
 const FUNCTIONS_BASE =
   import.meta.env.VITE_FUNCTIONS_BASE ??
@@ -159,6 +160,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedInsurance, setExpandedInsurance] = useState<string | null>(null);
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
 
   // Stripe
   const cardElementRef = useRef<HTMLDivElement>(null);
@@ -288,6 +291,44 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     }
   }, [formData.pickupTime]);
 
+  // Check vehicle availability when dates change
+  useEffect(() => {
+    const checkAvailability = async () => {
+      if (!item || !formData.pickupDate || !formData.returnDate || !formData.pickupTime || !formData.returnTime) {
+        setAvailabilityError(null);
+        return;
+      }
+
+      setIsCheckingAvailability(true);
+      setAvailabilityError(null);
+
+      try {
+        const pickupDateTime = `${formData.pickupDate}T${formData.pickupTime}:00`;
+        const dropoffDateTime = `${formData.returnDate}T${formData.returnTime}:00`;
+
+        const conflicts = await checkVehicleAvailability(item.name, pickupDateTime, dropoffDateTime);
+
+        if (conflicts.length > 0) {
+          const conflict = conflicts[0];
+          const conflictStart = new Date(conflict.pickup_date).toLocaleDateString('it-IT');
+          const conflictEnd = new Date(conflict.dropoff_date).toLocaleDateString('it-IT');
+          setAvailabilityError(
+            `❌ Questo veicolo non è disponibile per le date selezionate. È già prenotato dal ${conflictStart} al ${conflictEnd}. Per favore scegli date diverse.`
+          );
+        }
+      } catch (error) {
+        console.error('Error checking availability:', error);
+        // Don't block the user if there's an error checking availability
+      } finally {
+        setIsCheckingAvailability(false);
+      }
+    };
+
+    // Debounce the availability check
+    const timeoutId = setTimeout(checkAvailability, 500);
+    return () => clearTimeout(timeoutId);
+  }, [item, formData.pickupDate, formData.returnDate, formData.pickupTime, formData.returnTime]);
+
   // === Calculs tarifaires / durée / km inclus ===
   const {
     duration, rentalCost, insuranceCost, extrasCost, kmPackageCost, pickupFee, dropoffFee, subtotal, taxes, total, includedKm,
@@ -305,15 +346,25 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
       const ret = new Date(`${formData.returnDate}T${formData.returnTime}`);
       if (pickup < ret) {
+        // Calculate calendar days for display (how many different days the car is being used)
+        const pickupDateOnly = new Date(formData.pickupDate);
+        const returnDateOnly = new Date(formData.returnDate);
+        const timeDiff = returnDateOnly.getTime() - pickupDateOnly.getTime();
+        const calendarDays = Math.round(timeDiff / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end days
+
+        // Calculate billing based on hours for pricing
         const diffMs = ret.getTime() - pickup.getTime();
         const totalHours = Math.ceil(diffMs / (1000 * 60 * 60));
-        days = Math.floor(totalHours / 24);
+        const hourDays = Math.floor(totalHours / 24);
         hours = totalHours % 24;
-        billingDays = days + (hours > 0 ? 1 : 0);
-        // Ensure days is at least 1 for display purposes (minimum 1 day rental)
-        if (days === 0 && hours > 0) {
-          days = 1;
-        }
+        billingDays = hourDays + (hours > 0 ? 1 : 0);
+
+        // Use calendar days for display (shows how many days customer has the car)
+        days = calendarDays;
+
+        // Ensure at least 1 day
+        if (days < 1) days = 1;
+        if (billingDays < 1) billingDays = 1;
       }
     }
 
@@ -689,6 +740,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       }
       if (formData.pickupDate && new Date(formData.pickupDate).getDay() === 0) {
         newErrors.pickupDate = "Le prenotazioni non sono disponibili la domenica.";
+      }
+
+      // Check if there's an availability error
+      if (availabilityError) {
+        newErrors.availability = availabilityError;
       }
     }
     if (step === 2) {
@@ -1122,6 +1178,18 @@ setIsProcessing(false);
                       <p className="text-xs text-gray-400 mt-1">Ritiro - 1h30 (automatico)</p>
                     </div>
                   </div>
+
+                  {/* Vehicle Availability Check */}
+                  {isCheckingAvailability && (
+                    <div className="mt-4 p-3 bg-blue-900/20 border border-blue-600 rounded-lg">
+                      <p className="text-blue-300 text-sm">🔍 Verifica disponibilità veicolo...</p>
+                    </div>
+                  )}
+                  {availabilityError && (
+                    <div className="mt-4 p-4 bg-red-900/30 border-2 border-red-500 rounded-lg">
+                      <p className="text-red-300 font-semibold">{availabilityError}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
