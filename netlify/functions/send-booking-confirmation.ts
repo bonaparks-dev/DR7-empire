@@ -158,7 +158,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
   // Admin notification email
   const adminMailOptions = {
     from: `"DR7 Empire" <dubai.rent7.0srl@gmail.com>`,
-    to: 'Dubai.rent7.0srl@gmail.com',
+    to: 'dubai.rent7.0srl@gmail.com',
     subject: `[NUOVA PRENOTAZIONE] ${emailSubject}`,
     html: emailHtml,
   };
