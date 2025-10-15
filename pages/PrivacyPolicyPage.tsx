@@ -7,7 +7,7 @@ const PrivacyPolicyPage: React.FC = () => {
             <p><strong>Ultimo aggiornamento: {new Date().toLocaleDateString('it-IT')}</strong></p>
 
             <h2>1. Introduzione e Titolare del Trattamento</h2>
-            <p>Dubai Rent 7.0 S.r.l. – DR7 Empire ("noi", "nostro" o "ci") si impegna a proteggere la tua privacy. Questa Informativa sulla Privacy spiega come raccogliamo, utilizziamo, divulghiamo e proteggiamo i tuoi dati personali quando utilizzi i nostri servizi. Questa informativa è fornita in conformità con il Regolamento Generale sulla Protezione dei Dati (GDPR) dell'UE.</p>
+            <p>Dubai Rent 7.0 S.p.A. – DR7 Empire ("noi", "nostro" o "ci") si impegna a proteggere la tua privacy. Questa Informativa sulla Privacy spiega come raccogliamo, utilizziamo, divulghiamo e proteggiamo i tuoi dati personali quando utilizzi i nostri servizi. Questa informativa è fornita in conformità con il Regolamento Generale sulla Protezione dei Dati (GDPR) dell'UE.</p>
             <p>DR7 Empire è il Titolare del Trattamento dei dati personali raccolti attraverso la nostra piattaforma ed è responsabile dei tuoi dati personali.</p>
 
             <h2>2. Dati Personali che Raccogliamo</h2>
@@ -59,7 +59,7 @@ const PrivacyPolicyPage: React.FC = () => {
             <p>Se hai domande su questa Informativa sulla Privacy o sulle nostre pratiche di privacy, contatta il nostro Responsabile della Privacy dei Dati all'indirizzo: <a href="mailto:Dubai.rent7.0spa@gmail.com">Dubai.rent7.0spa@gmail.com</a>.</p>
 
             <p className="mt-8 text-sm text-gray-500">
-                Dubai Rent 7.0 S.r.l.<br/>
+                Dubai Rent 7.0 S.p.A.<br/>
                 Viale Marconi, 229, 09131 Cagliari CA<br/>
                 Email: Dubai.rent7.0spa@gmail.com
             </p>

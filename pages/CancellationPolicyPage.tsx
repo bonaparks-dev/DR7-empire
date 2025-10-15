@@ -18,8 +18,8 @@ const CancellationPolicyPage = () => {
           en: '1. Cancellation within 48 hours of booking'
         },
         content: {
-          it: 'Il Cliente ha facoltà di annullare la propria prenotazione entro 48 (quarantotto) ore dalla data e ora di conferma della stessa. In tal caso, Dubai Rent 7.0 S.r.l. provvederà all\'emissione di un voucher nominativo pari al 95% (novantacinque per cento) dell\'importo versato, utilizzabile per futuri noleggi o servizi DR7 entro il termine di dodici (12) mesi dalla data di emissione. Il voucher non è cedibile a terzi né convertibile in denaro contante.',
-          en: 'The Customer has the right to cancel their booking within 48 (forty-eight) hours of the confirmation date and time. In such cases, Dubai Rent 7.0 S.r.l. will issue a nominal voucher equal to 95% (ninety-five percent) of the amount paid, usable for future rentals or DR7 services within twelve (12) months from the date of issue. The voucher is not transferable to third parties nor convertible into cash.'
+          it: 'Il Cliente ha facoltà di annullare la propria prenotazione entro 48 (quarantotto) ore dalla data e ora di conferma della stessa. In tal caso, Dubai Rent 7.0 S.p.A. provvederà all\'emissione di un voucher nominativo pari al 95% (novantacinque per cento) dell\'importo versato, utilizzabile per futuri noleggi o servizi DR7 entro il termine di dodici (12) mesi dalla data di emissione. Il voucher non è cedibile a terzi né convertibile in denaro contante.',
+          en: 'The Customer has the right to cancel their booking within 48 (forty-eight) hours of the confirmation date and time. In such cases, Dubai Rent 7.0 S.p.A. will issue a nominal voucher equal to 95% (ninety-five percent) of the amount paid, usable for future rentals or DR7 services within twelve (12) months from the date of issue. The voucher is not transferable to third parties nor convertible into cash.'
         }
       },
       {
@@ -143,7 +143,7 @@ const CancellationPolicyPage = () => {
               Dubai.rent7.0spa@gmail.com
             </a>
             <p className="text-gray-500 text-sm mt-6">
-              Dubai Rent 7.0 S.r.l. - Viale Marconi, 229, 09131 Cagliari CA
+              Dubai Rent 7.0 S.p.A. - Viale Marconi, 229, 09131 Cagliari CA
             </p>
           </div>
         </div>
