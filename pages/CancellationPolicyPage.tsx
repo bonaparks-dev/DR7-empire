@@ -150,7 +150,8 @@ const CancellationPolicyPage = () => {
               Dubai.rent7.0spa@gmail.com
             </a>
             <p className="text-gray-500 text-sm mt-6">
-              Dubai Rent 7.0 S.r.l. - Viale Marconi, 229, 09131 Cagliari CA
+              Dubai Rent 7.0 S.r.l. - Via del Fangario 25, Cagliari<br/>
+              P.IVA: 04104640927
             </p>
           </div>
         </div>
