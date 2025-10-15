@@ -33,7 +33,7 @@ const TierCard: React.FC<{ tier: MembershipTier; billingCycle: 'monthly' | 'annu
             <h3 className="text-2xl font-bold text-white text-center">{tier.name[lang]}</h3>
             <div className="my-6 text-center">
                 <span className="text-5xl font-extrabold text-white">{formattedPrice}</span>
-                <span className="text-gray-400">/{t(billingCycle === 'monthly' ? 'Monthly' : 'Annually')}</span>
+                <span className="text-gray-400" translate="no">/{t(billingCycle === 'monthly' ? 'Monthly' : 'Annually')}</span>
             </div>
             <ul className="space-y-4 text-gray-300 mb-8 flex-grow">
                 {tier.features[lang].map((feature, index) => (
