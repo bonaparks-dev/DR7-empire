@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import BackButton from '../components/ui/BackButton';
 
-const CancellationPolicyPage: React.FC = () => {
+const CancellationPolicyPage = () => {
   const { t, lang } = useTranslation();
 
   const policy = {
