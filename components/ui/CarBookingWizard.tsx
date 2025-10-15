@@ -651,11 +651,40 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         newErrors.returnDate = "La data di riconsegna è obbligatoria.";
       }
       if (formData.pickupDate && formData.returnDate) {
-        const pickup = new Date(formData.pickupDate);
-        const returnD = new Date(formData.returnDate);
-        const diffDays = Math.floor((returnD.getTime() - pickup.getTime()) / (1000 * 60 * 60 * 24));
+        const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
+        const returnD = new Date(`${formData.returnDate}T${formData.returnTime}`);
+        const diffMs = returnD.getTime() - pickup.getTime();
+        const diffHours = diffMs / (1000 * 60 * 60);
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
         if (diffDays < 1) {
           newErrors.date = "Il noleggio minimo è di 1 giorno.";
+        }
+
+        // Check minimum rental duration of 2 hours for airport drop-offs
+        const isAirportDropoff = formData.returnLocation === 'cagliari_airport';
+        if (isAirportDropoff && diffHours < 2) {
+          newErrors.returnTime = "Per la riconsegna in aeroporto, la durata minima del noleggio è di 2 ore.";
+        }
+
+        // Check Saturday drop-off time limits
+        const returnDayOfWeek = returnD.getDay();
+        if (returnDayOfWeek === 6) { // Saturday = 6
+          const returnHour = parseInt(formData.returnTime.split(':')[0]);
+          const returnMinutes = parseInt(formData.returnTime.split(':')[1]);
+          const returnTimeInMinutes = returnHour * 60 + returnMinutes;
+
+          if (isAirportDropoff) {
+            // Airport: maximum 11:00
+            if (returnTimeInMinutes > 11 * 60) {
+              newErrors.returnTime = "Il sabato, la riconsegna in aeroporto deve essere entro le 11:00.";
+            }
+          } else {
+            // Office: maximum 12:00
+            if (returnTimeInMinutes > 12 * 60) {
+              newErrors.returnTime = "Il sabato, la riconsegna in ufficio deve essere entro le 12:00.";
+            }
+          }
         }
       }
       if (formData.pickupDate && new Date(formData.pickupDate).getDay() === 0) {
