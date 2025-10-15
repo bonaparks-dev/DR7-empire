@@ -280,7 +280,7 @@ const CarWashServicesPage: React.FC = () => {
                 </div>
 
                 <div className="bg-black/30 p-5 rounded-lg border border-gray-700">
-                  <h4 className="text-white font-bold mb-2">• Lavaggio da 50 euro</h4>
+                  <h4 className="text-white font-bold mb-2">• Lavaggio da 49 euro</h4>
                   <p className="text-sm mb-2"><strong className="text-white">Durata:</strong> 2 ore.</p>
                   <p className="text-sm">Si può prenotare al mattino alle 9:00, 9:30, 10:00, 10:30 o 11:00, e al pomeriggio alle 15:00, 15:30, 16:00, 16:30 o 17:00.</p>
                 </div>
@@ -292,7 +292,7 @@ const CarWashServicesPage: React.FC = () => {
                 </div>
 
                 <div className="bg-black/30 p-5 rounded-lg border border-gray-700">
-                  <h4 className="text-white font-bold mb-2">• Lavaggio da 100 euro</h4>
+                  <h4 className="text-white font-bold mb-2">• Lavaggio da 99 euro</h4>
                   <p className="text-sm mb-2"><strong className="text-white">Durata:</strong> 4 ore.</p>
                   <p className="text-sm">È il lavaggio più completo e richiede un'intera fascia di lavoro continuativa. Può essere prenotato solo alle 9:00 del mattino (durata 9–13) oppure alle 15:00 del pomeriggio (durata 15–19).</p>
                 </div>

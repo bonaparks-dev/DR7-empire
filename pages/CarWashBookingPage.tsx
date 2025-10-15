@@ -323,14 +323,44 @@ const CarWashBookingPage: React.FC = () => {
         return startMinutes === 9 * 60 || startMinutes === 15 * 60;
       }
 
-      // Check if fits in morning range (9:00-12:00)
-      if (startMinutes >= 9 * 60 && startMinutes < 12 * 60) {
-        return endMinutes <= 12 * 60;
+      // For 1-hour services (€25 - LAVAGGIO COMPLETO), allow booking up to and including 12:00 and 18:00
+      if (durationHours === 1) {
+        // Morning: 9:00 to 12:00 (inclusive)
+        if (startMinutes >= 9 * 60 && startMinutes <= 12 * 60) {
+          return true;
+        }
+        // Afternoon: 15:00 to 18:00 (inclusive)
+        if (startMinutes >= 15 * 60 && startMinutes <= 18 * 60) {
+          return true;
+        }
+        return false;
       }
 
-      // Check if fits in afternoon range (15:00-18:00)
-      if (startMinutes >= 15 * 60 && startMinutes < 18 * 60) {
-        return endMinutes <= 18 * 60;
+      // For 2-hour services (€49 - LAVAGGIO TOP), allow booking up to 11:00 morning and 17:00 afternoon
+      if (durationHours === 2) {
+        // Morning: 9:00 to 11:00 (inclusive)
+        if (startMinutes >= 9 * 60 && startMinutes <= 11 * 60) {
+          return true;
+        }
+        // Afternoon: 15:00 to 17:00 (inclusive)
+        if (startMinutes >= 15 * 60 && startMinutes <= 17 * 60) {
+          return true;
+        }
+        return false;
+      }
+
+      // For 3-hour services (€75), they must complete within the shift
+      // Morning: can only start at 9:00, 9:30, or 10:00 to finish by 12:00
+      if (durationHours === 3) {
+        // Morning: 9:00 to 10:00 (inclusive)
+        if (startMinutes >= 9 * 60 && startMinutes <= 10 * 60) {
+          return endMinutes <= 13 * 60; // Allow ending at 13:00
+        }
+        // Afternoon: 15:00 to 16:00 (inclusive)
+        if (startMinutes >= 15 * 60 && startMinutes <= 16 * 60) {
+          return endMinutes <= 19 * 60; // Allow ending at 19:00
+        }
+        return false;
       }
 
       return false;
