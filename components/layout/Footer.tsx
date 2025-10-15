@@ -86,7 +86,7 @@ const Footer: React.FC = () => {
           <ul className="flex flex-wrap justify-center gap-x-8 gap-y-2">
             <li><Link to="/cookie-policy" className="hover:text-white transition-colors">{t('Cookie_Policy')}</Link></li>
             <li><Link to="/privacy" className="hover:text-white transition-colors">{t('Privacy_Policy')}</Link></li>
-            <li><Link to="/cancellation-policy" className="hover:text-white transition-colors">{t({ it: 'Politica di Cancellazione', en: 'Cancellation Policy' })}</Link></li>
+            <li><Link to="/cancellation-policy" className="hover:text-white transition-colors">Politica di Cancellazione</Link></li>
           </ul>
         </div>
 
