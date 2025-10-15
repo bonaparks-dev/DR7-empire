@@ -106,13 +106,40 @@ const MembershipPage: React.FC = () => {
                         💎 DR7 MEMBERSHIP CLUB
                     </h1>
                     <p className="text-xl text-gray-300 mb-2 max-w-2xl mx-auto font-semibold">
-                        {lang === 'it' ? 'Non è un abbonamento. È uno status.' : 'It\'s not a subscription. It\'s a status.'}
+                        Non è un abbonamento. È uno status.
                     </p>
-                    <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-                        {lang === 'it'
-                          ? 'Diventa parte del DR7 Luxury Empire — accesso, vantaggi, precedenza.'
-                          : 'Become part of DR7 Luxury Empire — access, benefits, priority.'}
+                    <p className="text-lg text-gray-400 max-w-2xl mx-auto mb-8">
+                        Diventa parte del DR7 Luxury Empire — accesso, vantaggi, precedenza.
                     </p>
+
+                    {/* Billing Cycle Toggle */}
+                    <div className="inline-flex items-center bg-gray-900/50 border border-gray-800 rounded-full p-1 mt-4">
+                        <button
+                            onClick={() => setBillingCycle('monthly')}
+                            className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 ${
+                                billingCycle === 'monthly'
+                                    ? 'bg-white text-black'
+                                    : 'text-gray-400 hover:text-white'
+                            }`}
+                        >
+                            <span translate="no">Mensile</span>
+                        </button>
+                        <button
+                            onClick={() => setBillingCycle('annually')}
+                            className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 ${
+                                billingCycle === 'annually'
+                                    ? 'bg-white text-black'
+                                    : 'text-gray-400 hover:text-white'
+                            }`}
+                        >
+                            <span translate="no">Annuale</span>
+                        </button>
+                    </div>
+                    {billingCycle === 'annually' && (
+                        <p className="text-sm text-green-400 mt-2">
+                            🎉 Risparmia 2 mesi pagando annualmente
+                        </p>
+                    )}
                 </motion.div>
 
                 <motion.div
@@ -135,19 +162,15 @@ const MembershipPage: React.FC = () => {
                 >
                     <div className="bg-gradient-to-r from-gray-900/80 to-black border border-gray-800 rounded-lg p-8 text-center">
                         <h3 className="text-2xl font-bold text-white mb-4">
-                            {lang === 'it' ? '📱 Add-on opzionale per tutti i piani' : '📱 Optional Add-on for All Plans'}
+                            📱 Add-on opzionale per tutti i piani
                         </h3>
                         <div className="bg-black/40 border border-gray-700 rounded-lg p-6 inline-block">
                             <p className="text-gray-300 mb-2">
                                 <span className="text-3xl font-bold text-white">€250</span>
-                                <span className="text-gray-400 ml-2">
-                                    {lang === 'it' ? 'una tantum' : 'one-time'}
-                                </span>
+                                <span className="text-gray-400 ml-2">una tantum</span>
                             </p>
                             <p className="text-lg text-gray-300">
-                                {lang === 'it'
-                                  ? 'Tessera fisica DR7 in acciaio personalizzata'
-                                  : 'Personalized DR7 physical steel card'}
+                                Tessera fisica DR7 in acciaio personalizzata
                             </p>
                         </div>
                     </div>

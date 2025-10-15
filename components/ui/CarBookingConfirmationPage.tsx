@@ -59,8 +59,8 @@ const CarBookingConfirmationPage: React.FC = () => {
               )}
             </div>
             <div>
-              <p><span className="font-semibold">Ritiro:</span> {pickupDate.toLocaleDateString('it-IT')} alle {pickupDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</p>
-              <p><span className="font-semibold">Riconsegna:</span> {dropoffDate.toLocaleDateString('it-IT')} alle {dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</p>
+              <p><span className="font-semibold">Ritiro:</span> {pickupDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })} alle {pickupDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })}</p>
+              <p><span className="font-semibold">Riconsegna:</span> {dropoffDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })} alle {dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })}</p>
               <p><span className="font-semibold">Luogo:</span> {pickupLocationDetails ? getTranslated(pickupLocationDetails.label) : booking.pickup_location}</p>
               <p className="text-2xl font-bold mt-4">{formatPrice(booking.price_total)}</p>
               {booking.payment_method === 'agency' && (

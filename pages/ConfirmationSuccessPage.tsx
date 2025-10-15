@@ -36,7 +36,7 @@ const BookingConfirmationDetails: React.FC<{ booking: any }> = ({ booking }) => 
         <div className="flex justify-between">
           <span className="text-gray-400">Data:</span>
           <span className="font-semibold text-white">
-            {new Date(booking.appointment_date + 'T00:00:00').toLocaleDateString('it-IT')}
+            {new Date(booking.appointment_date + 'T00:00:00').toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })}
           </span>
         </div>
         <div className="flex justify-between">
@@ -77,13 +77,13 @@ const BookingConfirmationDetails: React.FC<{ booking: any }> = ({ booking }) => 
       <div className="flex justify-between">
         <span className="text-gray-400">Ritiro:</span>
         <span className="font-semibold text-white">
-          {pickupDate.toLocaleDateString('it-IT')} alle {pickupDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+          {pickupDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })} alle {pickupDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })}
         </span>
       </div>
       <div className="flex justify-between">
         <span className="text-gray-400">Riconsegna:</span>
         <span className="font-semibold text-white">
-          {dropoffDate.toLocaleDateString('it-IT')} alle {dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+          {dropoffDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })} alle {dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })}
         </span>
       </div>
       <div className="flex justify-between">
