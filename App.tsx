@@ -57,6 +57,7 @@ import AuthCallbackPage from './pages/AuthCallbackPage';
 import CommercialOperationSuccessPage from './pages/CommercialOperationSuccessPage';
 import WinRulesPage from './pages/WinRulesPage';
 import LegalTermsPage from './pages/LegalTermsPage';
+import CancellationPolicyPage from './pages/CancellationPolicyPage';
 import MyTickets from './pages/account/MyTickets';
 import MyBookings from './pages/account/MyBookings';
 import ConfirmationSuccessPage from './pages/ConfirmationSuccessPage';
@@ -127,11 +128,15 @@ const AnimatedRoutes = () => {
             path="/win-rules"
             element={<WinRulesPage />}
         />
-        <Route 
+        <Route
             path="/legal-terms"
             element={<LegalTermsPage />}
         />
-        <Route 
+        <Route
+            path="/cancellation-policy"
+            element={<CancellationPolicyPage />}
+        />
+        <Route
             path="/commercial-operation/success"
             element={<CommercialOperationSuccessPage />}
         />
