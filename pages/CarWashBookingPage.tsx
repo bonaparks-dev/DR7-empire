@@ -469,8 +469,24 @@ const CarWashBookingPage: React.FC = () => {
     console.log('User object:', user);
     console.log('User ID:', user?.id);
 
-    // Create full appointment timestamp
-    const appointmentDateTime = new Date(`${formData.appointmentDate}T${formData.appointmentTime}:00`);
+    // Create full appointment timestamp in Europe/Rome timezone
+    // This ensures the time is always interpreted as Italy time, regardless of user's browser timezone
+    const [year, month, day] = formData.appointmentDate.split('-').map(Number);
+    const [hours, minutes] = formData.appointmentTime.split(':').map(Number);
+
+    // Create date string in ISO format with explicit timezone offset for Europe/Rome
+    // Italy is UTC+1 in winter (standard time) and UTC+2 in summer (daylight saving time)
+    // We'll construct the date and let the server handle the timezone conversion properly
+    const dateString = `${formData.appointmentDate}T${formData.appointmentTime}:00`;
+    const appointmentDateTime = new Date(dateString);
+
+    // Adjust for timezone: interpret the selected time as Italy time
+    // Get the offset between UTC and Europe/Rome at this date
+    const italyTimeString = new Date(dateString).toLocaleString('en-US', { timeZone: 'Europe/Rome' });
+    const italyDate = new Date(italyTimeString);
+    const localDate = new Date(dateString);
+    const offset = localDate.getTime() - italyDate.getTime();
+    const adjustedDateTime = new Date(appointmentDateTime.getTime() - offset);
 
     const bookingData = {
       user_id: user?.id || null,
@@ -484,7 +500,7 @@ const CarWashBookingPage: React.FC = () => {
       customer_name: formData.fullName,
       customer_email: formData.email,
       customer_phone: formData.phone,
-      appointment_date: appointmentDateTime.toISOString(),
+      appointment_date: adjustedDateTime.toISOString(),
       appointment_time: formData.appointmentTime,
       booking_details: {
         additionalService: formData.additionalService,

@@ -735,13 +735,27 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   returnTime: formData.returnTime
 });
       
+  // Create pickup and dropoff dates in Europe/Rome timezone
+  // This ensures times are always interpreted as Italy time, regardless of user's browser timezone
+  const createItalyDateTime = (dateStr: string, timeStr: string) => {
+    const dateTimeString = `${dateStr}T${timeStr}:00`;
+    const localDate = new Date(dateTimeString);
+    const italyTimeString = new Date(dateTimeString).toLocaleString('en-US', { timeZone: 'Europe/Rome' });
+    const italyDate = new Date(italyTimeString);
+    const offset = localDate.getTime() - italyDate.getTime();
+    return new Date(localDate.getTime() - offset);
+  };
+
+  const pickupDateTime = createItalyDateTime(formData.pickupDate, formData.pickupTime);
+  const dropoffDateTime = createItalyDateTime(formData.returnDate, formData.returnTime);
+
   const bookingData = {
   user_id: user.id,
   vehicle_type: item.type || 'car',
   vehicle_name: item.name,
   vehicle_image_url: item.image,
-  pickup_date: `${formData.pickupDate}T${formData.pickupTime}:00Z`,
-  dropoff_date: `${formData.returnDate}T${formData.returnTime}:00Z`,
+  pickup_date: pickupDateTime.toISOString(),
+  dropoff_date: dropoffDateTime.toISOString(),
   pickup_location: formData.pickupLocation,
   dropoff_location: formData.returnLocation,
   price_total: Math.round(total * 100),
