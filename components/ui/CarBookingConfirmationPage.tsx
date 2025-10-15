@@ -76,6 +76,7 @@ const CarBookingConfirmationPage: React.FC = () => {
             <ul className="space-y-2 text-gray-300">
               <li>✓ Carta d'identità o passaporto valido</li>
               <li>✓ Patente di guida valida</li>
+              <li>✓ Cauzione</li>
               <li>✓ Codice prenotazione: <span className="font-mono">{`DR7-${booking.id.substring(0, 8).toUpperCase()}`}</span></li>
             </ul>
           </div>
