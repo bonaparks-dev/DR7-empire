@@ -66,6 +66,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import CheckEmailPage from './pages/CheckEmailPage';
 import CarWashServicesPage from './pages/CarWashServicesPage';
 import CarWashBookingPage from './pages/CarWashBookingPage';
+import InvestitoriPage from './pages/InvestitoriPage';
 
 const AuthRedirector: React.FC = () => {
   const { user, authEvent } = useAuth();
@@ -172,6 +173,7 @@ const AnimatedRoutes = () => {
         </Route>
 
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/investitori" element={<InvestitoriPage />} />
         <Route path="/terms" element={<TermsOfServicePage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/rental-agreement" element={<RentalAgreementPage />} />

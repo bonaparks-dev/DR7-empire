@@ -1325,7 +1325,7 @@ setIsProcessing(false);
         return (
           <div className="space-y-8">
             <section>
-              <h3 className="text-lg font-bold text-white mb-4">A. KASKO INSURANCE</h3>
+              <h3 className="text-lg font-bold text-white mb-4 notranslate">A. KASKO INSURANCE</h3>
               <div className="space-y-4">
                 {kaskoOptions.map(opt => {
                   const details = insuranceDetails[opt.id as keyof typeof insuranceDetails];
@@ -1336,7 +1336,7 @@ setIsProcessing(false);
                       <div className={`p-4 ${!opt.eligible ? '' : 'cursor-pointer'}`} onClick={() => opt.eligible && setFormData(p => ({...p, insuranceOption: opt.id}))}>
                         <div className="flex items-center">
                           <input type="radio" name="insuranceOption" value={opt.id} checked={formData.insuranceOption === opt.id} disabled={!opt.eligible} className="w-4 h-4 text-white"/>
-                          <label className="ml-3 text-white font-semibold">{getTranslated(opt.label)}</label>
+                          <label className="ml-3 text-white font-semibold notranslate">{getTranslated(opt.label)}</label>
                           {opt.pricePerDay.eur > 0 && <span className="ml-auto text-white">+€{opt.pricePerDay.eur}/giorno</span>}
                         </div>
                         <div className="ml-7 text-sm text-gray-400 mt-1">
@@ -1376,7 +1376,7 @@ setIsProcessing(false);
                               >
                                 <div className="p-4 bg-gray-800/30 space-y-3 text-xs">
                                   <div>
-                                    <p className="text-white font-semibold mb-1">{details.title}</p>
+                                    <p className="text-white font-semibold mb-1 notranslate">{details.title}</p>
                                     <p className="text-yellow-400">{details.requirements}</p>
                                   </div>
                                   <div className="space-y-1">

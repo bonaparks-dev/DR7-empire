@@ -110,6 +110,9 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               <NavLink to="/franchising" onClick={onClose} className={navLinkClasses}>
                 <span>{t('Franchising')}</span>
               </NavLink>
+              <NavLink to="/investitori" onClick={onClose} className={navLinkClasses}>
+                <span className="notranslate">Investitori</span>
+              </NavLink>
             </nav>
 
             <div className="mt-auto pt-8 border-t border-gray-800">
