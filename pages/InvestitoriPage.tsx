@@ -205,7 +205,9 @@ const InvestitoriPage: React.FC = () => {
                 Ogni proposta di partecipazione viene valutata singolarmente in base ai requisiti dell'investitore, alla compatibilità strategica e alle disponibilità di quote.
               </p>
               <a
-                href="mailto:investitori@dr7empire.com?subject=Richiesta%20Accesso%20Investitori"
+                href="https://wa.me/393457905205?text=Buongiorno%2C%20sono%20interessato%20ad%20entrare%20nel%20Club%20Azionisti%20DR7.%20Vorrei%20ricevere%20maggiori%20informazioni%20sulle%20opportunit%C3%A0%20di%20investimento%20e%20partecipazione%20al%20capitale."
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-block bg-white text-black px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-200 transition-colors"
               >
                 RICHIEDI ACCESSO INVESTITORI
