@@ -96,14 +96,6 @@ export const VEHICLES_PRICING: VehiclePricingData[] = [
     refill_value_euros: 192.0,
     value_per_door_euros: 19.2,
     overage_cost_per_km_euros: 1.5
-  },
-  {
-    model: "Lamborghini Urus S Performante",
-    tank_capacity_liters: 75,
-    doors: 9,
-    refill_value_euros: 225.0,
-    value_per_door_euros: 25.0,
-    overage_cost_per_km_euros: 2.99
   }
 ];
 

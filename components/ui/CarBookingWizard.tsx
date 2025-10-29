@@ -352,12 +352,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         const timeDiff = returnDateOnly.getTime() - pickupDateOnly.getTime();
         const calendarDays = Math.round(timeDiff / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end days
 
-        // Calculate billing based on hours for pricing
+        // Calculate billing based on hours for pricing (22.5 hour days)
         const diffMs = ret.getTime() - pickup.getTime();
-        const totalHours = Math.ceil(diffMs / (1000 * 60 * 60));
-        const hourDays = Math.floor(totalHours / 24);
-        hours = totalHours % 24;
-        billingDays = hourDays + (hours > 0 ? 1 : 0);
+        const totalHours = diffMs / (1000 * 60 * 60);
+        const dayLength = 22.5; // 22h30 = one rental day
+        billingDays = Math.ceil(totalHours / dayLength);
+        hours = 0; // Reset hours since we're using 22.5h day system
 
         // Use calendar days for display (shows how many days customer has the car)
         days = calendarDays;
@@ -548,12 +548,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       maximumFractionDigits: 0
     }).format(price).replace(/\./g, ' ');
 
-  // Calculate deposit based on car (Urus has different amounts)
+  // Calculate deposit based on residency
   const getDeposit = () => {
-    const isUrus = item.name.toLowerCase().includes('urus');
-    if (isUrus) {
-      return formData.isSardinianResident ? 5000 : 10000;
-    }
     return formData.isSardinianResident ? 2500 : 5000;
   };
 

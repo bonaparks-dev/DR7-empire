@@ -141,19 +141,6 @@ const newCarsRawData = [
       "engine": "4.0L V8 BiTurbo"
     },
     "image": "/mercedes-gle.jpeg"
-  },
-  {
-    "id": 11,
-    "name": "Lamborghini Urus Performante",
-    "dailyPrice": 399,
-    "specs": {
-      "acceleration": "0–100 in 3.3s",
-      "maxSpeed": "Max speed: 306km/h",
-      "power": "666Cv",
-      "torque": "850Nm",
-      "engine": "4.0L Twin-Turbo V8"
-    },
-    "image": "/urus.jpeg"
   }
 ];
 

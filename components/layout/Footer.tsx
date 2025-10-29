@@ -78,10 +78,21 @@ const Footer: React.FC = () => {
         {/* Middle Section: Links */}
         <div className="flex flex-col items-center justify-center gap-4 text-sm my-8">
           <ul className="flex flex-wrap justify-center gap-x-8 gap-y-2">
+            <li><Link to="/cars" className="hover:text-white transition-colors">{t('Exotic_Supercars')}</Link></li>
+            <li><Link to="/urban-cars" className="hover:text-white transition-colors">{t('Urban_Cars')}</Link></li>
+            <li><Link to="/yachts" className="hover:text-white transition-colors">{t('Yachts')}</Link></li>
+            <li><Link to="/jets" className="hover:text-white transition-colors">{t('Jets')}</Link></li>
+            <li><Link to="/helicopters" className="hover:text-white transition-colors">{t('Helicopters')}</Link></li>
+            <li><Link to="/car-wash-services" className="hover:text-white transition-colors">{t('Luxury_Wash')}</Link></li>
+            <li><Link to="/membership" className="hover:text-white transition-colors">{t('Members')}</Link></li>
+          </ul>
+          <ul className="flex flex-wrap justify-center gap-x-8 gap-y-2">
+            <li><Link to="/commercial-operation" className="hover:text-white transition-colors">{t('7_MILIONI_DI_EURO')}</Link></li>
+            <li><Link to="/franchising" className="hover:text-white transition-colors">{t('Franchising')}</Link></li>
+            <li><Link to="/investitori" className="hover:text-white transition-colors">Investitori</Link></li>
             <li><Link to="/about" className="hover:text-white transition-colors">{t('About_Us')}</Link></li>
             <li><Link to="/press" className="hover:text-white transition-colors">{t('Press')}</Link></li>
             <li><Link to="/careers" className="hover:text-white transition-colors">{t('Careers')}</Link></li>
-            <li><Link to="/franchising" className="hover:text-white transition-colors">{t('Franchising')}</Link></li>
           </ul>
           <ul className="flex flex-wrap justify-center gap-x-8 gap-y-2">
             <li><Link to="/cookie-policy" className="hover:text-white transition-colors">{t('Cookie_Policy')}</Link></li>

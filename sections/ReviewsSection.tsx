@@ -193,7 +193,7 @@ const fallbackReviews = [
     rating: 5,
     date: "2025-05-18",
     body:
-      "Se volete vivere un'esperienza di guida straordinaria a prezzi davvero competitivi, Dubai Rent 7.0 S.p.A. è la scelta perfetta! Ho noleggiato diverse auto da loro, tra cui l'Audi RS3, l'Alfa Romeo Stelvio Quadrifoglio, l'Audi R8, la Lamborghini Urus (per ben due volte!) e il Porsche Macan GTS. Auto impeccabili e pulitissime. Servizio clienti eccezionale: team super professionale, prenotazione rapida, consegna puntuale e attenzione ai dettagli. Emozioni indimenticabili e prezzi vantaggiosi. Il miglior autonoleggio!",
+      "Se volete vivere un'esperienza di guida straordinaria a prezzi davvero competitivi, Dubai Rent 7.0 S.p.A. è la scelta perfetta! Ho noleggiato diverse auto da loro, tra cui l'Audi RS3, l'Alfa Romeo Stelvio Quadrifoglio, l'Audi R8 e il Porsche Macan GTS. Auto impeccabili e pulitissime. Servizio clienti eccezionale: team super professionale, prenotazione rapida, consegna puntuale e attenzione ai dettagli. Emozioni indimenticabili e prezzi vantaggiosi. Il miglior autonoleggio!",
     sourceUrl: "https://share.google/o5c8DO8nmk3XMn0hF",
   },
   {
