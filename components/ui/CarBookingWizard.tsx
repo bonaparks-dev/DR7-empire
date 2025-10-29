@@ -1314,7 +1314,7 @@ setIsProcessing(false);
           KASKO_SIGNATURE: {
             title: 'KASKO SIGNATURE',
             requirements: "DISPONIBILE SOLO PER CLIENTI CON 30 ANNI DI ETA' E 10 ANNI DI PATENTE",
-            standard: 'FRANCHIGIA EUR €3.000 ( FISSA )'
+            standard: 'FRANCHIGIA EUR €5.000 ( FISSA )'
           }
         };
 
