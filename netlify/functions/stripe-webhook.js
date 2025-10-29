@@ -368,6 +368,33 @@ exports.handler = async (event) => {
           });
         }
 
+        // Send WhatsApp notification for ticket purchases
+        if (paymentIntent.metadata.purchaseType === 'commercial-operation-ticket') {
+          console.log('[Ticket] Commercial operation payment detected');
+
+          const ticketQuantity = Math.floor(paymentIntent.amount / 2000);
+
+          try {
+            await fetch(`${process.env.URL}/.netlify/functions/send-whatsapp-notification`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'ticket',
+                ticket: {
+                  customer_name: paymentIntent.metadata.name || 'Cliente',
+                  customer_email: paymentIntent.metadata.email,
+                  quantity: ticketQuantity,
+                  total_price: paymentIntent.amount,
+                  ticket_numbers: paymentIntent.metadata.ticketNumbers ? JSON.parse(paymentIntent.metadata.ticketNumbers) : []
+                }
+              })
+            });
+            console.log('[Ticket] WhatsApp notification sent');
+          } catch (error) {
+            console.error('[Ticket] Failed to send WhatsApp notification:', error);
+          }
+        }
+
         // Gift card system for commercial operation is disabled
         // Keeping this commented for future reference
         /*
