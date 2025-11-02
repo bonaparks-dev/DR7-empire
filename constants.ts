@@ -547,6 +547,12 @@ export const INSURANCE_OPTIONS = [
     { id: 'KASKO_SIGNATURE', label: { en: 'KASKO SIGNATURE', it: 'KASKO SIGNATURE' }, description: { en: 'Zero excess. Complete peace of mind.', it: 'Zero franchigia. Massima tranquillità.' }, pricePerDay: { usd: 220, eur: 200, crypto: 0 } },
 ];
 
+export const URBAN_INSURANCE_OPTIONS = [
+    { id: 'KASKO_BASE', label: { en: 'KASKO BASE', it: 'KASKO BASE' }, description: { en: 'Base coverage with deductible and damage percentage.', it: 'Copertura base con franchigia e percentuale sul danno.' }, pricePerDay: { usd: 0, eur: 0, crypto: 0 } },
+    { id: 'KASKO_BLACK', label: { en: 'KASKO BLACK', it: 'KASKO BLACK' }, description: { en: 'Intermediate coverage with fixed deductible.', it: 'Copertura intermedia con franchigia fissa.' }, pricePerDay: { usd: 6, eur: 5, crypto: 0 } },
+    { id: 'KASKO_SIGNATURE', label: { en: 'KASKO SIGNATURE', it: 'KASKO SIGNATURE' }, description: { en: 'Top-tier coverage with reduced deductible.', it: 'Copertura top di gamma con franchigia ridotta.' }, pricePerDay: { usd: 28, eur: 25, crypto: 0 } },
+];
+
 export const RENTAL_EXTRAS = [
     { id: 'additional_driver', label: { en: 'Additional Driver', it: 'Guidatore Aggiuntivo' }, pricePerDay: { usd: 13, eur: 10, crypto: 0 } },
     { id: 'young_driver_fee', label: { en: 'Young Driver Fee (Under 25)', it: 'Supplemento Giovane Conducente (Sotto 25)' }, pricePerDay: { usd: 11, eur: 10, crypto: 0 }, autoApply: true },
@@ -564,6 +570,12 @@ export const COUNTRIES = [
 
 export const INSURANCE_ELIGIBILITY = {
     KASKO_BASE: { minAge: 20, minLicenseYears: 2 },
+    KASKO_BLACK: { minAge: 25, minLicenseYears: 5 },
+    KASKO_SIGNATURE: { minAge: 30, minLicenseYears: 10 },
+};
+
+export const URBAN_INSURANCE_ELIGIBILITY = {
+    KASKO_BASE: { minAge: 18, minLicenseYears: 3 },
     KASKO_BLACK: { minAge: 25, minLicenseYears: 5 },
     KASKO_SIGNATURE: { minAge: 30, minLicenseYears: 10 },
 };

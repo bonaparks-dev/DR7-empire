@@ -4,7 +4,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../supabaseClient';
-import { PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, INSURANCE_ELIGIBILITY } from '../../constants';
+import { PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, INSURANCE_ELIGIBILITY, URBAN_INSURANCE_OPTIONS, URBAN_INSURANCE_ELIGIBILITY } from '../../constants';
 import type { Booking, RentalItem } from '../../types';
 import { Link } from 'react-router-dom';
 import { XIcon } from '../icons/Icons';
@@ -29,17 +29,34 @@ const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ''
 
 type KaskoTier = 'KASKO_BASE' | 'KASKO_BLACK' | 'KASKO_SIGNATURE';
 
+// Helper function to determine if a car is an urban car
+function isUrbanCar(carId: string): boolean {
+  return carId.startsWith('urban-car-');
+}
+
 function isKaskoEligibleByBuckets(
   tier: KaskoTier,
   ageMin?: number,
-  licenseYears?: number
+  licenseYears?: number,
+  isUrban: boolean = false
 ): { eligible: boolean; reasonKey?: 'AGE_MISSING'|'LIC_MISSING'|'BASE_REQ'|'BLACK_REQ'|'SIGNATURE_REQ' } {
   if (!ageMin)  return { eligible: false, reasonKey: 'AGE_MISSING' };
   if (licenseYears === undefined || licenseYears === null) return { eligible: false, reasonKey: 'LIC_MISSING' };
 
-  if (tier === 'KASKO_BASE')       return { eligible: licenseYears >= 2,  reasonKey: licenseYears >= 2 ? undefined : 'BASE_REQ' };
-  if (tier === 'KASKO_BLACK')      return { eligible: ageMin >= 25 && licenseYears >= 5,  reasonKey: (ageMin >= 25 && licenseYears >= 5) ? undefined : 'BLACK_REQ' };
-  return { eligible: ageMin >= 30 && licenseYears >= 10, reasonKey: (ageMin >= 30 && licenseYears >= 10) ? undefined : 'SIGNATURE_REQ' };
+  const eligibility = isUrban ? URBAN_INSURANCE_ELIGIBILITY : INSURANCE_ELIGIBILITY;
+
+  if (tier === 'KASKO_BASE') {
+    const minYears = eligibility.KASKO_BASE.minLicenseYears;
+    return { eligible: licenseYears >= minYears, reasonKey: licenseYears >= minYears ? undefined : 'BASE_REQ' };
+  }
+  if (tier === 'KASKO_BLACK') {
+    const minAge = eligibility.KASKO_BLACK.minAge;
+    const minYears = eligibility.KASKO_BLACK.minLicenseYears;
+    return { eligible: ageMin >= minAge && licenseYears >= minYears, reasonKey: (ageMin >= minAge && licenseYears >= minYears) ? undefined : 'BLACK_REQ' };
+  }
+  const minAge = eligibility.KASKO_SIGNATURE.minAge;
+  const minYears = eligibility.KASKO_SIGNATURE.minLicenseYears;
+  return { eligible: ageMin >= minAge && licenseYears >= minYears, reasonKey: (ageMin >= minAge && licenseYears >= minYears) ? undefined : 'SIGNATURE_REQ' };
 }
 
 const calculateAgeFromDDMMYYYY = (dateString: string): number => {
@@ -104,6 +121,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   const { t, getTranslated } = useTranslation();
   const { currency } = useCurrency();
   const { user, loading: authLoading } = useAuth();
+
+  // Determine if this is an urban car
+  const isUrban = useMemo(() => isUrbanCar(item.id), [item.id]);
+
+  // Get appropriate insurance options based on vehicle type
+  const insuranceOptions = useMemo(() => isUrban ? URBAN_INSURANCE_OPTIONS : INSURANCE_OPTIONS, [isUrban]);
+  const insuranceEligibility = useMemo(() => isUrban ? URBAN_INSURANCE_ELIGIBILITY : INSURANCE_ELIGIBILITY, [isUrban]);
 
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -369,7 +393,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     }
 
     const calculatedRentalCost = billingDays * pricePerDay;
-    const selectedInsurance = INSURANCE_OPTIONS.find(opt => opt.id === formData.insuranceOption);
+    const selectedInsurance = insuranceOptions.find(opt => opt.id === formData.insuranceOption);
     const calculatedInsuranceCost = (selectedInsurance?.pricePerDay[currency] || 0) * billingDays;
 
     // Calculate extras cost
@@ -520,18 +544,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   // Éligibilité KASKO auto (downgrade si non éligible)
   useEffect(() => {
     const currentChoice: KaskoTier = formData.insuranceOption as KaskoTier;
-    const { eligible: currentOk } = isKaskoEligibleByBuckets(currentChoice, driverAge, licenseYears);
+    const { eligible: currentOk } = isKaskoEligibleByBuckets(currentChoice, driverAge, licenseYears, isUrban);
     if (currentOk) return;
 
     let best: KaskoTier = 'KASKO_BASE';
-    const sig = isKaskoEligibleByBuckets('KASKO_SIGNATURE', driverAge, licenseYears);
-    const blk = isKaskoEligibleByBuckets('KASKO_BLACK', driverAge, licenseYears);
+    const sig = isKaskoEligibleByBuckets('KASKO_SIGNATURE', driverAge, licenseYears, isUrban);
+    const blk = isKaskoEligibleByBuckets('KASKO_BLACK', driverAge, licenseYears, isUrban);
     if (sig.eligible) best = 'KASKO_SIGNATURE';
     else if (blk.eligible) best = 'KASKO_BLACK';
     else best = 'KASKO_BASE';
 
     setFormData(prev => ({ ...prev, insuranceOption: best }));
-  }, [driverAge, licenseYears]);
+  }, [driverAge, licenseYears, isUrban]);
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', {
@@ -982,14 +1006,14 @@ setIsProcessing(false);
   ];
 
   const renderStepContent = () => {
-    const kaskoOptions = INSURANCE_OPTIONS.map(opt => {
-      const { eligible, reasonKey } = isKaskoEligibleByBuckets(opt.id as KaskoTier, driverAge, licenseYears);
+    const kaskoOptions = insuranceOptions.map(opt => {
+      const { eligible, reasonKey } = isKaskoEligibleByBuckets(opt.id as KaskoTier, driverAge, licenseYears, isUrban);
       let tooltip = '';
       if (!eligible) {
         if (reasonKey?.includes('AGE')) {
-          tooltip = `Età minima richiesta: ${INSURANCE_ELIGIBILITY[opt.id as KaskoTier].minAge} anni (tu hai ${driverAge} anni)`;
+          tooltip = `Età minima richiesta: ${insuranceEligibility[opt.id as KaskoTier].minAge} anni (tu hai ${driverAge} anni)`;
         } else if (reasonKey?.includes('LIC')) {
-          tooltip = `Anzianità patente richiesta: ${INSURANCE_ELIGIBILITY[opt.id as KaskoTier].minLicenseYears} anni (tu hai ${licenseYears} anni)`;
+          tooltip = `Anzianità patente richiesta: ${insuranceEligibility[opt.id as KaskoTier].minLicenseYears} anni (tu hai ${licenseYears} anni)`;
         }
       }
       return { ...opt, eligible, tooltip };
@@ -1299,8 +1323,33 @@ setIsProcessing(false);
         const unlimitedOptions = getUnlimitedKmOptions(item.name);
         const isPremium = isPremiumVehicle(item.name);
 
+        // Check if vehicle requires higher deductible (for urban cars only)
+        const isPremiumUrbanVehicle = isUrban && (
+          item.name.includes('Tiguan') ||
+          item.name.includes('T-ROC') ||
+          item.name.includes('T-Roc') ||
+          item.name.includes('Formentor') ||
+          item.name.includes('Ducato')
+        );
+
         // Define detailed insurance coverage info
-        const insuranceDetails: Record<string, { title: string; requirements: string; standard: string }> = {
+        const insuranceDetails: Record<string, { title: string; requirements: string; standard: string }> = isUrban ? {
+          KASKO_BASE: {
+            title: 'KASKO BASE',
+            requirements: 'DISPONIBILE SOLO PER CLIENTI CON ALMENO 3 ANNI DI PATENTE',
+            standard: isPremiumUrbanVehicle ? 'FRANCHIGIA EUR €3.000' : 'FRANCHIGIA EUR €2.000'
+          },
+          KASKO_BLACK: {
+            title: 'KASKO BLACK',
+            requirements: "DISPONIBILE SOLO PER CLIENTI CON 25 ANNI DI ETA' E 5 ANNI DI PATENTE",
+            standard: isPremiumUrbanVehicle ? 'FRANCHIGIA EUR €1.500' : 'FRANCHIGIA EUR €1.000'
+          },
+          KASKO_SIGNATURE: {
+            title: 'KASKO SIGNATURE',
+            requirements: "DISPONIBILE SOLO PER CLIENTI CON 30 ANNI DI ETA' E 10 ANNI DI PATENTE",
+            standard: 'FRANCHIGIA EUR €250'
+          }
+        } : {
           KASKO_BASE: {
             title: 'KASKO BASE',
             requirements: 'DISPONIBILE SOLO PER CLIENTI CON ALMENO 2 ANNI DI PATENTE',
@@ -1654,7 +1703,7 @@ setIsProcessing(false);
                 <div>
                   <p className="font-bold text-base text-white mb-2">ASSICURAZIONE E SERVIZI</p>
                   <hr className="border-gray-600 mb-2"/>
-                  <p>Assicurazione: {getTranslated(INSURANCE_OPTIONS.find(i => i.id === formData.insuranceOption)?.label)}</p>
+                  <p>Assicurazione: {getTranslated(insuranceOptions.find(i => i.id === formData.insuranceOption)?.label)}</p>
                   <p>✓ Lavaggio completo obbligatorio</p>
                   {formData.addSecondDriver && <p>✓ Secondo guidatore</p>}
                 </div>
