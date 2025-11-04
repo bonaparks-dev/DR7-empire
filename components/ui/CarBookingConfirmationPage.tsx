@@ -88,7 +88,7 @@ const CarBookingConfirmationPage: React.FC = () => {
               <span>Tel: 3457905205</span>
             </div>
             <div className="flex items-center space-x-4 mt-2">
-              <span>Email: dubai.rent7.0srl@gmail.com</span>
+              <span>Email: info@dr7.app</span>
             </div>
           </div>
         </div>

@@ -56,12 +56,12 @@ const PrivacyPolicyPage: React.FC = () => {
             <p>Se desideri esercitare uno di questi diritti, ti preghiamo di contattarci. Hai anche il diritto di presentare un reclamo in qualsiasi momento presso l'autorità italiana per la protezione dei dati, il Garante per la protezione dei dati personali.</p>
 
             <h2>7. Contattaci</h2>
-            <p>Se hai domande su questa Informativa sulla Privacy o sulle nostre pratiche di privacy, contatta il nostro Responsabile della Privacy dei Dati all'indirizzo: <a href="mailto:dubai.rent7.0srl@gmail.com">dubai.rent7.0srl@gmail.com</a>.</p>
+            <p>Se hai domande su questa Informativa sulla Privacy o sulle nostre pratiche di privacy, contatta il nostro Responsabile della Privacy dei Dati all'indirizzo: <a href="mailto:info@dr7.app">info@dr7.app</a>.</p>
 
             <p className="mt-8 text-sm text-gray-500">
                 Dubai Rent 7.0 S.p.A.<br/>
                 Viale Marconi, 229, 09131 Cagliari CA<br/>
-                Email: dubai.rent7.0srl@gmail.com
+                Email: info@dr7.app
             </p>
         </LegalPageLayout>
     );

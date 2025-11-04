@@ -116,8 +116,8 @@ const CancellationPolicyPage = () => {
             <ul className="space-y-2 text-gray-300">
               <li>
                 • {lang === 'it'
-                  ? 'Tutte le richieste di cancellazione devono essere inviate per iscritto a dubai.rent7.0srl@gmail.com'
-                  : 'All cancellation requests must be submitted in writing to dubai.rent7.0srl@gmail.com'}
+                  ? 'Tutte le richieste di cancellazione devono essere inviate per iscritto a info@dr7.app'
+                  : 'All cancellation requests must be submitted in writing to info@dr7.app'}
               </li>
               <li>
                 • {lang === 'it'
@@ -137,10 +137,10 @@ const CancellationPolicyPage = () => {
               {lang === 'it' ? 'Per assistenza o informazioni:' : 'For assistance or information:'}
             </p>
             <a
-              href="mailto:dubai.rent7.0srl@gmail.com"
+              href="mailto:info@dr7.app"
               className="text-white hover:underline font-semibold text-lg"
             >
-              dubai.rent7.0srl@gmail.com
+              info@dr7.app
             </a>
             <p className="text-gray-500 text-sm mt-6">
               Dubai Rent 7.0 S.p.A. - Viale Marconi, 229, 09131 Cagliari CA

@@ -90,7 +90,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
         <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
         <p style="font-size: 12px; color: #666;">
-          Per qualsiasi domanda, contattaci all'indirizzo <a href="mailto:dubai.rent7.0srl@gmail.com">dubai.rent7.0srl@gmail.com</a>
+          Per qualsiasi domanda, contattaci all'indirizzo <a href="mailto:info@dr7.app">info@dr7.app</a>
         </p>
       </div>
     `;
@@ -142,14 +142,14 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
         <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
         <p style="font-size: 12px; color: #666;">
-          Per qualsiasi domanda, contattaci all'indirizzo <a href="mailto:dubai.rent7.0srl@gmail.com">dubai.rent7.0srl@gmail.com</a>
+          Per qualsiasi domanda, contattaci all'indirizzo <a href="mailto:info@dr7.app">info@dr7.app</a>
         </p>
       </div>
     `;
   }
 
   const customerMailOptions = {
-    from: `"DR7 Empire" <dubai.rent7.0srl@gmail.com>`,
+    from: `"DR7 Empire" <info@dr7.app>`,
     to: customerEmail,
     subject: emailSubject,
     html: emailHtml,
@@ -157,8 +157,8 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
   // Admin notification email
   const adminMailOptions = {
-    from: `"DR7 Empire" <dubai.rent7.0srl@gmail.com>`,
-    to: 'dubai.rent7.0srl@gmail.com',
+    from: `"DR7 Empire" <info@dr7.app>`,
+    to: 'info@dr7.app',
     subject: `[NUOVA PRENOTAZIONE] ${emailSubject}`,
     html: emailHtml,
   };

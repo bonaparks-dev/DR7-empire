@@ -39,53 +39,24 @@ const FranchisingPage: React.FC = () => {
 
                 {/* Main Stats - First Row */}
                 <div className="text-center mb-4">
-                    <h3 className="text-xl md:text-2xl font-bold text-white mb-2">🚀 In soli 18 mesi di attività (tutto certificato):</h3>
+                    <h3 className="text-xl md:text-2xl font-bold text-white mb-2">🚀 In soli 18 mesi di attività</h3>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6">
-                    <div className="bg-gradient-to-br from-gray-900/80 to-black/80 border border-gray-800 rounded-xl p-4 md:p-6 text-center transform transition-all duration-300 hover:scale-105 hover:border-white/30">
-                        <div className="text-2xl md:text-4xl font-bold text-white mb-2">1.800+</div>
-                        <div className="text-gray-400 text-xs md:text-sm">Contratti Firmati</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-gray-900/80 to-black/80 border border-gray-800 rounded-xl p-4 md:p-6 text-center transform transition-all duration-300 hover:scale-105 hover:border-white/30">
-                        <div className="text-2xl md:text-4xl font-bold text-white mb-2">€1.5M+</div>
-                        <div className="text-gray-400 text-xs md:text-sm">Fatturato Netto</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-gray-900/80 to-black/80 border border-gray-800 rounded-xl p-4 md:p-6 text-center transform transition-all duration-300 hover:scale-105 hover:border-white/30">
-                        <div className="text-2xl md:text-4xl font-bold text-white mb-2">€3M+</div>
-                        <div className="text-gray-400 text-xs md:text-sm">Veicoli e Beni Acquisiti</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-gray-900/80 to-black/80 border border-gray-800 rounded-xl p-4 md:p-6 text-center transform transition-all duration-300 hover:scale-105 hover:border-white/30">
-                        <div className="text-2xl md:text-4xl font-bold text-white mb-2">900+</div>
-                        <div className="text-gray-400 text-xs md:text-sm">Clienti Attivi</div>
-                    </div>
-                </div>
-
-                {/* Additional Stats - Second Row */}
-                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6">
-                    <div className="bg-gradient-to-br from-gray-900/80 to-black/80 border border-gray-800 rounded-xl p-4 md:p-6 text-center transform transition-all duration-300 hover:scale-105 hover:border-white/30">
-                        <div className="text-2xl md:text-4xl font-bold text-white mb-2">{reviewCount}+</div>
-                        <div className="text-gray-400 text-xs md:text-sm">Recensioni 5 Stelle Reali</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-gray-900/80 to-black/80 border border-gray-800 rounded-xl p-4 md:p-6 text-center transform transition-all duration-300 hover:scale-105 hover:border-white/30">
-                        <div className="text-2xl md:text-4xl font-bold text-white mb-2">€15M</div>
-                        <div className="text-gray-400 text-xs md:text-sm">Valutazione Aziendale</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-gray-900/80 to-black/80 border border-gray-800 rounded-xl p-4 md:p-6 text-center transform transition-all duration-300 hover:scale-105 hover:border-white/30">
-                        <div className="text-2xl md:text-4xl font-bold text-white mb-2">€4M+</div>
-                        <div className="text-gray-400 text-xs md:text-sm">Valutazione Brand</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-gray-900/80 to-black/80 border border-gray-800 rounded-xl p-4 md:p-6 text-center transform transition-all duration-300 hover:scale-105 hover:border-white/30">
-                        <div className="text-2xl md:text-4xl font-bold text-white mb-2">S.P.A.</div>
-                        <div className="text-gray-400 text-xs md:text-sm">Da S.R.L. a S.P.A. in un anno</div>
-                    </div>
+                <div className="space-y-3 text-gray-300 px-4">
+                    <p>* oltre 1.800 contratti firmati</p>
+                    <p>* più di €1.500.000 di fatturato netto</p>
+                    <p>* oltre €1.500.000 in parco auto</p>
+                    <p>* più di 900 clienti attivi</p>
+                    <p>* {reviewCount > 250 ? reviewCount : '250'} recensioni a 5 stelle reali</p>
+                    <p>* Valutazione aziendale: €15.000.000</p>
+                    <p>* Valutazione brand: oltre €4.000.000</p>
+                    <p>* Da S.R.L. a S.P.A. in un solo anno.</p>
                 </div>
 
                 <div className="text-center py-4">
-                    <p className="text-lg md:text-xl font-bold text-white mb-2">🔱 Tutto certificato e verificabile.</p>
+                    <p className="text-lg md:text-xl font-bold text-white mb-2">🔱</p>
                     <p className="text-base md:text-lg text-gray-300">Il brand di lusso più riconosciuto d'Italia.</p>
-                    <p className="text-sm text-gray-400 mt-2">Italia • Dubai</p>
-                    <p className="text-sm text-gray-500 mt-1">Rent 7.0 S.p.A.</p>
+                    <p className="text-sm text-gray-400 mt-2">Italia • Dubai Rent 7.0 S.p.A.</p>
                 </div>
 
                 {/* Expansion Plan */}
@@ -188,25 +159,23 @@ const FranchisingPage: React.FC = () => {
                 <div className="bg-gradient-to-br from-gray-900/80 to-black/80 border-2 border-gray-800 rounded-2xl p-6 md:p-8 text-center">
                     <h3 className="text-xl md:text-2xl font-bold text-white mb-4">💼 Invia la tua candidatura</h3>
                     <p className="text-sm md:text-base text-gray-300 mb-6">
-                        Scopri come aprire la tua sede ufficiale DR7. Per candidarti o per maggiori informazioni, contattaci:
+                        e scopri come aprire la tua sede ufficiale DR7.
                     </p>
                     <div className="flex justify-center">
                         <a
-                            href="mailto:dubai.rent7.0srl@gmail.com"
+                            href="mailto:info@dr7.app"
                             className="inline-block bg-white text-black px-6 md:px-8 py-4 rounded-full font-bold text-base md:text-lg hover:bg-gray-200 transition-all duration-300 transform hover:scale-105 break-all max-w-full"
                         >
-                            dubai.rent7.0srl@gmail.com
+                            info@dr7.app
                         </a>
                     </div>
                 </div>
 
                 {/* Footer Statement */}
                 <div className="text-center py-8 border-t border-gray-800">
-                    <p className="text-2xl font-bold text-white">
-                        DR7 Luxury Empire.
-                    </p>
-                    <p className="text-xl text-gray-400 mt-2">
-                        Non segui il mercato. Lo governi.
+                    <p className="text-sm text-gray-300 mb-4">
+                        -<br />
+                        &gt; "📩 Solo per veri imprenditori. Posti limitati per le nuove aperture 2025."
                     </p>
                 </div>
             </div>
