@@ -108,20 +108,7 @@ const FranchisingPage: React.FC = () => {
                 </div>
 
                 {/* Benefits */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                    <div className="bg-gradient-to-br from-gray-900/50 to-black/50 border border-gray-800 rounded-2xl p-4 md:p-6">
-                        <div className="flex items-start space-x-3 md:space-x-4">
-                            <div className="flex-shrink-0 w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-white/20 to-white/10 border border-white/30 rounded-lg flex items-center justify-center">
-                                <svg className="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h4 className="text-lg md:text-xl font-bold text-white mb-2">Zero Fee d'Ingresso</h4>
-                                <p className="text-sm md:text-base text-gray-400">Accesso solo su selezione. Non tutti possono far parte di un impero.</p>
-                            </div>
-                        </div>
-                    </div>
+                <div className="grid grid-cols-1 gap-4 md:gap-6">
                     <div className="bg-gradient-to-br from-gray-900/50 to-black/50 border border-gray-800 rounded-2xl p-4 md:p-6">
                         <div className="flex items-start space-x-3 md:space-x-4">
                             <div className="flex-shrink-0 w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-white/20 to-white/10 border border-white/30 rounded-lg flex items-center justify-center">
