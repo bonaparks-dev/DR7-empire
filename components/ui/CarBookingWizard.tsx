@@ -726,9 +726,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         const returnD = new Date(`${formData.returnDate}T${formData.returnTime}`);
         const diffMs = returnD.getTime() - pickup.getTime();
         const diffHours = diffMs / (1000 * 60 * 60);
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        // Use 22.5 hour day system (22h30 = 1 rental day)
+        const dayLength = 22.5;
+        const rentalDays = diffHours / dayLength;
 
-        if (diffDays < 1) {
+        if (rentalDays < 1) {
           newErrors.date = "Il noleggio minimo è di 1 giorno.";
         }
 

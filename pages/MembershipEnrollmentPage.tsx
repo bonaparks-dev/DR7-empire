@@ -113,7 +113,7 @@ const MembershipEnrollmentPage: React.FC = () => {
         const renewalDate = new Date();
         if (billingCycle === 'monthly') renewalDate.setMonth(renewalDate.getMonth() + 1);
         else renewalDate.setFullYear(renewalDate.getFullYear() + 1);
-        
+
         await updateUser({
             membership: {
                 tierId: tier.id,
@@ -121,6 +121,32 @@ const MembershipEnrollmentPage: React.FC = () => {
                 renewalDate: renewalDate.toISOString()
             }
         });
+
+        // Generate WhatsApp message for membership enrollment
+        const tierName = tier.name[lang];
+        const billingText = billingCycle === 'monthly' ? (lang === 'it' ? 'Mensile' : 'Monthly') : (lang === 'it' ? 'Annuale' : 'Annual');
+        const renewalDateFormatted = renewalDate.toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        let message = `Ciao! Mi sono appena iscritto al DR7 Club.\n\n`;
+        message += `Membership: ${tierName}\n`;
+        message += `Piano: ${billingText}\n`;
+        message += `Prezzo: ${formatPrice(price)}\n`;
+        message += `Data rinnovo: ${renewalDateFormatted}\n\n`;
+        if (user) {
+            message += `Nome: ${user.fullName || ''}\n`;
+            message += `Email: ${user.email || ''}\n\n`;
+        }
+        message += `Grazie!`;
+
+        const whatsappUrl = `https://wa.me/393457905205?text=${encodeURIComponent(message)}`;
+        setTimeout(() => {
+            window.open(whatsappUrl, '_blank');
+        }, 1000);
+
         setIsProcessing(false);
         setIsConfirmed(true);
     };
