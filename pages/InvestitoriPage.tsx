@@ -204,14 +204,22 @@ const InvestitoriPage: React.FC = () => {
               <p className="text-lg text-gray-300 leading-relaxed mb-10">
                 Ogni proposta di partecipazione viene valutata singolarmente in base ai requisiti dell'investitore, alla compatibilità strategica e alle disponibilità di quote.
               </p>
-              <a
-                href="https://wa.me/393457905205?text=Buongiorno%2C%20sono%20interessato%20ad%20entrare%20nel%20Club%20Azionisti%20DR7.%20Vorrei%20ricevere%20maggiori%20informazioni%20sulle%20opportunit%C3%A0%20di%20investimento%20e%20partecipazione%20al%20capitale."
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block bg-white text-black px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-200 transition-colors"
-              >
-                RICHIEDI ACCESSO INVESTITORI
-              </a>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <a
+                  href="https://wa.me/393457905205?text=Buongiorno%2C%20sono%20interessato%20ad%20entrare%20nel%20Club%20Azionisti%20DR7.%20Vorrei%20ricevere%20maggiori%20informazioni%20sulle%20opportunit%C3%A0%20di%20investimento%20e%20partecipazione%20al%20capitale."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block bg-white text-black px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-200 transition-colors"
+                >
+                  RICHIEDI ACCESSO INVESTITORI
+                </a>
+                <a
+                  href="mailto:investor@dr7.app"
+                  className="inline-block bg-gray-800 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-700 transition-colors border border-gray-700"
+                >
+                  investor@dr7.app
+                </a>
+              </div>
             </div>
           </motion.div>
         </div>
