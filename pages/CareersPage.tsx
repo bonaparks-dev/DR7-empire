@@ -24,7 +24,13 @@ const CareersPage: React.FC = () => {
             </div>
 
             <h2 className="mt-12">Come Candidarsi</h2>
-            <p>Se pensi di avere ciò che serve per far parte di DR7 Empire, invia il tuo curriculum vitae e una lettera di presentazione a <a href="mailto:Dubai.rent7.0srl@gmail.com" className="text-white underline hover:text-gray-300">Dubai.rent7.0srl@gmail.com</a>.</p>
+            <p>Se pensi di avere ciò che serve per far parte di DR7 Empire, invia il tuo curriculum vitae e una lettera di presentazione a <a href="mailto:candidatura@dr7.app" className="text-white underline hover:text-gray-300">candidatura@dr7.app</a>.</p>
+
+            <h2 className="mt-12">Opportunità di Business</h2>
+            <div className="space-y-4">
+                <p>Interessato a portare il marchio DR7 nella tua città? Contattaci per opportunità di franchising: <a href="mailto:franchising@dr7.app" className="text-white underline hover:text-gray-300">franchising@dr7.app</a></p>
+                <p>Vuoi investire in DR7 Empire? Scopri le nostre opportunità di investimento: <a href="mailto:investor@dr7.app" className="text-white underline hover:text-gray-300">investor@dr7.app</a></p>
+            </div>
         </LegalPageLayout>
     );
 };
