@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const HelicopterBookingForm: React.FC = () => {
+  const navigate = useNavigate();
   const WHATSAPP_NUMBER = "393457905205";
 
   const [formData, setFormData] = useState({
@@ -83,6 +85,15 @@ Potete confermare disponibilità e prezzo? Grazie 🙏
 
   return (
     <div className="max-w-3xl mx-auto bg-black/60 border border-zinc-800 rounded-xl p-6 md:p-8 text-white">
+      <button
+        onClick={() => navigate('/helicopters')}
+        className="mb-4 text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-2"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Indietro
+      </button>
       <h2 className="text-2xl md:text-3xl font-semibold mb-4">Prenota il Tuo Volo in Elicottero</h2>
       <p className="text-sm mb-6 text-zinc-300">
         Compila il modulo qui sotto e verrai reindirizzato su WhatsApp con la tua richiesta precompilata.
@@ -98,7 +109,7 @@ Potete confermare disponibilità e prezzo? Grazie 🙏
               name="firstName"
               value={formData.firstName}
               onChange={handleChange}
-              className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 focus:outline-none focus:border-amber-400"
+              className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 focus:outline-none focus:border-white"
               placeholder="es. Marco"
             />
             {errors.firstName && <p className="text-red-400 text-xs mt-1">{errors.firstName}</p>}
@@ -110,7 +121,7 @@ Potete confermare disponibilità e prezzo? Grazie 🙏
               name="lastName"
               value={formData.lastName}
               onChange={handleChange}
-              className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 focus:outline-none focus:border-amber-400"
+              className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 focus:outline-none focus:border-white"
               placeholder="es. Rossi"
             />
             {errors.lastName && <p className="text-red-400 text-xs mt-1">{errors.lastName}</p>}
@@ -126,7 +137,7 @@ Potete confermare disponibilità e prezzo? Grazie 🙏
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 focus:outline-none focus:border-amber-400"
+              className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 focus:outline-none focus:border-white"
               placeholder="tuaemail@mail.com"
             />
             {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
@@ -138,7 +149,7 @@ Potete confermare disponibilità e prezzo? Grazie 🙏
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 focus:outline-none focus:border-amber-400"
+              className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 focus:outline-none focus:border-white"
               placeholder="+39 ..."
             />
             {errors.phone && <p className="text-red-400 text-xs mt-1">{errors.phone}</p>}
@@ -154,7 +165,7 @@ Potete confermare disponibilità e prezzo? Grazie 🙏
               name="flightDate"
               value={formData.flightDate}
               onChange={handleChange}
-              className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 focus:outline-none focus:border-amber-400"
+              className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 focus:outline-none focus:border-white"
             />
             {errors.flightDate && <p className="text-red-400 text-xs mt-1">{errors.flightDate}</p>}
           </div>
@@ -165,7 +176,7 @@ Potete confermare disponibilità e prezzo? Grazie 🙏
               name="flightTime"
               value={formData.flightTime}
               onChange={handleChange}
-              className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 focus:outline-none focus:border-amber-400"
+              className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 focus:outline-none focus:border-white"
             />
           </div>
         </div>
@@ -257,7 +268,7 @@ Potete confermare disponibilità e prezzo? Grazie 🙏
         {/* Submit */}
         <button
           type="submit"
-          className="w-full bg-amber-500 hover:bg-amber-400 text-black font-semibold py-2.5 rounded-md transition"
+          className="w-full bg-white hover:bg-gray-200 text-black font-semibold py-2.5 rounded-md transition"
         >
           Invia Richiesta via WhatsApp
         </button>
