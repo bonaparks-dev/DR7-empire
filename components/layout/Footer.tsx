@@ -32,7 +32,7 @@ const Footer: React.FC = () => {
             <h3 className="text-2xl font-bold text-white mb-2">{t('Stay_Connected')}</h3>
             <p className="text-sm mb-4">{t('Receive_exclusive_offers_and_fleet_updates')}</p>
             <div className="flex space-x-4">
-              <a href="https://www.instagram.com/dr7_S.p.A/" aria-label="Instagram" className="text-gray-400 hover:text-white transition-colors">
+              <a href="https://www.instagram.com/dubai_rent_7.0_s_p_a_" aria-label="Instagram" className="text-gray-400 hover:text-white transition-colors">
                 <InstagramIcon className="w-7 h-7" />
               </a>
               <a href="https://www.tiktok.com/@dr7luxuryempire" aria-label="Tiktok" className="text-gray-400 hover:text-white transition-colors">
