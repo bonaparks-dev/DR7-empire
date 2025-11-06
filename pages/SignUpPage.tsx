@@ -37,7 +37,7 @@ const SignUpPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [accountType, setAccountType] = useState<'personal' | 'business'>('personal');
-  const [formData, setFormData] = useState({ fullName: '', companyName: '', email: '', password: '', confirmPassword: '' });
+  const [formData, setFormData] = useState({ fullName: '', companyName: '', email: '', phone: '', password: '', confirmPassword: '' });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,6 +56,8 @@ const SignUpPage: React.FC = () => {
     if (accountType === 'business' && !formData.companyName) newErrors.companyName = t('Company_name_is_required');
     if (!formData.email) newErrors.email = t('Email_is_required');
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = t('Please_enter_a_valid_email_address');
+    if (!formData.phone) newErrors.phone = t('Phone_number_is_required');
+    else if (!/^[\d\s+()-]+$/.test(formData.phone)) newErrors.phone = t('Please_enter_a_valid_phone_number');
     if (!formData.password) newErrors.password = t('Password_is_required');
     else if (formData.password.length < 8) newErrors.password = t('Password_is_too_weak');
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = t('Passwords_do_not_match');
@@ -72,6 +74,7 @@ const SignUpPage: React.FC = () => {
     try {
         const { error } = await signup(formData.email, formData.password, {
             full_name: formData.fullName,
+            phone: formData.phone,
             company_name: accountType === 'business' ? formData.companyName : undefined,
             role: accountType,
         });
@@ -115,6 +118,8 @@ const SignUpPage: React.FC = () => {
                 </>)}
                 <input type="email" name="email" placeholder={t('Email_Address')} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"/>
                 {errors.email && <p className="text-xs text-red-400">{errors.email}</p>}
+                <input type="tel" name="phone" placeholder={t('Phone_Number')} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"/>
+                {errors.phone && <p className="text-xs text-red-400">{errors.phone}</p>}
                 <div className="relative"><input type={showPassword ? 'text' : 'password'} name="password" placeholder={t('Password')} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"/><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400">{showPassword ? <EyeSlashIcon className="w-5 h-5"/> : <EyeIcon className="w-5 h-5"/>}</button></div>
                 {errors.password ? <p className="text-xs text-red-400">{errors.password}</p> : <PasswordStrengthMeter password={formData.password} />}
                 <input type="password" name="confirmPassword" placeholder={t('Confirm_Password')} onChange={e => setFormData({...formData, confirmPassword: e.target.value})} className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"/>
