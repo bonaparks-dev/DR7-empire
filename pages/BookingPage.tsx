@@ -64,7 +64,7 @@ const BookingPage: React.FC = () => {
     const jet = cat?.id === 'jets';
     const helicopter = cat?.id === 'helicopters';
     const yacht = cat?.id === 'yachts';
-    const quote = jet || helicopter;
+    const quote = jet;
     return { category: cat, item: itm, isCar: car, isJet: jet, isHelicopter: helicopter, isYacht: yacht, isQuoteRequest: quote };
   }, [categoryId, itemId]);
 
@@ -447,5 +447,5 @@ const BookingPage: React.FC = () => {
     </motion.div>
   );
 };
-}
+
 export default BookingPage;
