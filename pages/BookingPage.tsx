@@ -286,6 +286,7 @@ const BookingPage: React.FC = () => {
             message += `Check-out: ${formatDate(formData.checkoutDate)} alle 11:00\n`;
             message += `Durata: ${nights} ${nights === 1 ? 'notte' : 'notti'}\n`;
             message += `Marina: ${marinaLabel}\n`;
+            message += `Passeggeri: ${formData.guests}\n`;
             message += `Totale: ${formatPrice(total)}\n\n`;
             message += `Nome: ${formData.fullName}\n`;
             message += `Email: ${formData.email}\n`;
@@ -415,11 +416,17 @@ const BookingPage: React.FC = () => {
                                 <div><label className="text-sm text-gray-400">{t('Check_in_Date')}</label><input type="date" name="checkinDate" value={formData.checkinDate} onChange={handleChange} min={today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
                                 <div><label className="text-sm text-gray-400">{t('Check_out_Date')}</label><input type="date" name="checkoutDate" value={formData.checkoutDate} onChange={handleChange} min={formData.checkinDate || today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/></div>
                             </div>
-                            <div>
-                                <label className="text-sm text-gray-400">{t('Pickup_Marina')}</label>
-                                <select name="pickupMarina" value={formData.pickupMarina} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white">
-                                    {YACHT_PICKUP_MARINAS.map(loc => (<option key={loc.id} value={loc.id}>{getTranslated(loc.label)}</option>))}
-                                </select>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-sm text-gray-400">{t('Pickup_Marina')}</label>
+                                    <select name="pickupMarina" value={formData.pickupMarina} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white">
+                                        {YACHT_PICKUP_MARINAS.map(loc => (<option key={loc.id} value={loc.id}>{getTranslated(loc.label)}</option>))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-sm text-gray-400">{t('Number_of_Passengers')}</label>
+                                    <input type="number" name="guests" value={formData.guests} onChange={handleChange} min="1" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"/>
+                                </div>
                             </div>
                         </div>
                     )}
