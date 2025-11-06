@@ -39,13 +39,6 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
     }).format(price);
   };
 
-  const handleHelicopterQuote = () => {
-    const message = encodeURIComponent(
-      `Ciao! Sono interessato a prenotare ${item.name}. Potrebbe fornirmi un preventivo e i dettagli sulla disponibilità? Grazie!`
-    );
-    const whatsappUrl = `https://wa.me/393457905205?text=${message}`;
-    window.open(whatsappUrl, '_blank');
-  };
 
   const handleJetQuote = () => {
     let message = `Ciao! Sono interessato a prenotare ${item.name}.\n\n`;
@@ -104,8 +97,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
           ) : (
             <button
               onClick={() => {
-                if (isHelicopter) handleHelicopterQuote();
-                else if (isJet) handleJetQuote();
+                if (isJet) handleJetQuote();
                 else onBook(item);
               }}
               disabled={item.available === false}
