@@ -349,7 +349,11 @@ const BookingPage: React.FC = () => {
     }
 
     if (isHelicopter) {
-      return <HelicopterBookingForm />;
+      return (
+        <div className="max-w-2xl mx-auto">
+          <HelicopterBookingForm />
+        </div>
+      );
     }
 
     const renderStepContent = () => {

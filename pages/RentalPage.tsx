@@ -207,9 +207,6 @@ const JetSearchPage: React.FC = () => {
                         </div>
                     </motion.div>
 
-                    <div className="mt-16 text-center text-gray-400">
-                        <p>Explore our fleet of world-class private jets. For bespoke travel arrangements, contact our concierge.</p>
-                    </div>
                 </div>
             </div>
         </motion.div>
