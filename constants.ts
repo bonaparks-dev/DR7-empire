@@ -32,7 +32,7 @@ const newCarsRawData = [
   {
     "id": 2,
     "name": "Audi RS3 Verde",
-    "dailyPrice": 19,
+    "dailyPrice": 40,
     "specs": {
       "acceleration": "0–100 in 3.8s",
       "maxSpeed": "Max speed: 250km/h",
@@ -46,7 +46,7 @@ const newCarsRawData = [
   {
     "id": 3,
     "name": "Audi RS3 Rossa",
-    "dailyPrice": 39,
+    "dailyPrice": 60,
     "specs": {
       "acceleration": "0–100 in 3.8s",
       "power": "400Cv",
@@ -59,7 +59,7 @@ const newCarsRawData = [
   {
     "id": 4,
     "name": "Mercedes A45 S AMG",
-    "dailyPrice": 39,
+    "dailyPrice": 70,
     "specs": {
       "acceleration": "0–100 in 3.9s",
       "power": "421Cv",
@@ -71,7 +71,7 @@ const newCarsRawData = [
   {
     "id": 5,
     "name": "BMW M3 Competition",
-    "dailyPrice": 49,
+    "dailyPrice": 70,
     "specs": {
       "acceleration": "0–100 in 3.9s",
       "maxSpeed": "Max speed: 250km/h",
@@ -84,7 +84,7 @@ const newCarsRawData = [
   {
     "id": 6,
     "name": "BMW M4 Competition",
-    "dailyPrice": 59,
+    "dailyPrice": 80,
     "specs": {
       "acceleration": "0–100 in 3.8s",
       "power": "510Cv",
@@ -96,7 +96,7 @@ const newCarsRawData = [
   {
     "id": 7,
     "name": "Porsche 992 Carrera 4S",
-    "dailyPrice": 119,
+    "dailyPrice": 150,
     "specs": {
       "acceleration": "0–100 in 3.6s",
       "maxSpeed": "Max speed: 306km/h",
@@ -109,7 +109,7 @@ const newCarsRawData = [
   {
     "id": 8,
     "name": "Mercedes C63 S AMG",
-    "dailyPrice": 99,
+    "dailyPrice": 100,
     "specs": {
       "acceleration": "0–100 in 3.9s",
       "power": "510Cv",
@@ -121,7 +121,7 @@ const newCarsRawData = [
   {
     "id": 9,
     "name": "Porsche Macan GTS",
-    "dailyPrice": 69,
+    "dailyPrice": 80,
     "specs": {
       "acceleration": "0–100 in 4.5s",
       "power": "440Cv",
@@ -133,7 +133,7 @@ const newCarsRawData = [
   {
     "id": 10,
     "name": "Mercedes GLE 63 AMG",
-    "dailyPrice": 69,
+    "dailyPrice": 80,
     "specs": {
       "acceleration": "0–100 in 3.8s",
       "power": "612Cv",
@@ -160,51 +160,65 @@ const EUR_TO_USD_RATE = 1.1;
 const urbanCarsRawData = [
   {
     "id": 201,
-    "name": "VW T-ROC",
-    "dailyPrice": 49,
+    "name": "Fiat Panda Benzina (Arancione)",
+    "dailyPrice": 29.90,
     "specs": {
-      "power": "150Cv",
-      "engine": "1.5L TSI",
+      "power": "70Cv",
+      "engine": "1.2L Benzina",
       "seats": "5 posti"
     },
-    "image": "/troc.jpeg"
+    "image": "/panda.jpeg",
+    "color": "Arancione"
   },
   {
     "id": 202,
-    "name": "VW Tiguan",
-    "dailyPrice": 59,
+    "name": "Fiat Panda Benzina (Bianca)",
+    "dailyPrice": 29.90,
     "specs": {
-      "power": "150Cv",
-      "engine": "2.0L TDI",
+      "power": "70Cv",
+      "engine": "1.2L Benzina",
       "seats": "5 posti"
     },
-    "image": "/tiguan.jpeg"
+    "image": "/panda.jpeg",
+    "color": "Bianca"
   },
   {
     "id": 203,
-    "name": "Cupra Formentor",
-    "dailyPrice": 49,
+    "name": "Fiat Panda Diesel (Grigia)",
+    "dailyPrice": 34.90,
     "specs": {
-      "power": "150Cv",
-      "engine": "1.5L TSI",
+      "power": "95Cv",
+      "engine": "1.3L MultiJet Diesel",
       "seats": "5 posti"
     },
-    "image": "/cupra.jpeg"
+    "image": "/panda.jpeg",
+    "color": "Grigia"
   },
   {
     "id": 204,
-    "name": "Citroen C5 Aircross",
-    "dailyPrice": 29,
+    "name": "Renault Captur",
+    "dailyPrice": 44.90,
     "specs": {
       "power": "130Cv",
-      "engine": "1.5L BlueHDi",
+      "engine": "1.3L TCe",
       "seats": "5 posti"
     },
-    "image": "/c5.jpeg"
+    "image": "/captur.jpeg"
   },
   {
     "id": 205,
-    "name": "Fiat Ducato Maxi",
+    "name": "Mercedes V Class VIP DR7",
+    "dailyPrice": 249,
+    "specs": {
+      "power": "163Cv",
+      "engine": "2.0L Diesel",
+      "seats": "7 posti"
+    },
+    "image": "/v-class.jpeg"
+  },
+  {
+    "id": 206,
+    "name": "Furgone DR7 (Fiat Ducato Maxi)",
     "dailyPrice": 79,
     "specs": {
       "power": "140Cv",
@@ -212,39 +226,6 @@ const urbanCarsRawData = [
       "seats": "9 posti"
     },
     "image": "/ducato.jpeg"
-  },
-  {
-    "id": 206,
-    "name": "Fiat Panda",
-    "dailyPrice": 29,
-    "specs": {
-      "power": "70Cv",
-      "engine": "1.2L",
-      "seats": "5 posti"
-    },
-    "image": "/panda.jpeg"
-  },
-  {
-    "id": 207,
-    "name": "Fiat 500X",
-    "dailyPrice": 39,
-    "specs": {
-      "power": "120Cv",
-      "engine": "1.3L MultiJet",
-      "seats": "5 posti"
-    },
-    "image": "/500x.jpeg"
-  },
-  {
-    "id": 208,
-    "name": "Mercedes A250",
-    "dailyPrice": 59,
-    "specs": {
-      "power": "224Cv",
-      "engine": "2.0L Turbo",
-      "seats": "5 posti"
-    },
-    "image": "/a250.jpeg"
   }
 ];
 
