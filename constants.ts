@@ -167,7 +167,7 @@ const urbanCarsRawData = [
       "engine": "1.2L Benzina",
       "seats": "5 posti"
     },
-    "image": "/panda.jpeg",
+    "image": "/panda1.jpeg",
     "color": "Arancione"
   },
   {
@@ -179,7 +179,7 @@ const urbanCarsRawData = [
       "engine": "1.2L Benzina",
       "seats": "5 posti"
     },
-    "image": "/panda.jpeg",
+    "image": "/panda2.jpeg",
     "color": "Bianca"
   },
   {
@@ -191,7 +191,7 @@ const urbanCarsRawData = [
       "engine": "1.3L MultiJet Diesel",
       "seats": "5 posti"
     },
-    "image": "/panda.jpeg",
+    "image": "/panda3.jpeg",
     "color": "Grigia"
   },
   {
