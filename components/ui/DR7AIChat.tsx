@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XIcon, SparklesIcon, MessageCircleIcon, SendIcon } from '../icons/Icons';
+import { XIcon, BotIcon, MessageCircleIcon, SendIcon } from '../icons/Icons';
 
 interface Message {
   id: string;
@@ -134,7 +134,7 @@ const DR7AIChat: React.FC<DR7AIChatProps> = ({ isOpen, onClose }) => {
           <div className="bg-gradient-to-r from-white to-gray-300 px-6 py-4 flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
-                <SparklesIcon className="w-5 h-5 text-white" />
+                <BotIcon className="w-5 h-5 text-white" />
               </div>
               <div>
                 <h3 className="text-black font-bold text-lg">DR7 AI Assistant</h3>
