@@ -250,7 +250,7 @@ export const DR7AIFloatingButton: React.FC = () => {
         className="fixed bottom-6 right-6 z-40 bg-white text-black p-4 rounded-full shadow-2xl hover:shadow-white/20 transition-all border border-gray-300"
         title="Chatta con DR7 AI"
       >
-        <MessageCircleIcon className="w-6 h-6" />
+        <BotIcon className="w-6 h-6" />
       </motion.button>
 
       <DR7AIChat isOpen={isOpen} onClose={() => setIsOpen(false)} />
