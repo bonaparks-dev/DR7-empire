@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XIcon, BotIcon, MessageCircleIcon, SendIcon } from '../icons/Icons';
+import { Link } from 'react-router-dom';
 
 interface Message {
   id: string;
@@ -8,6 +9,60 @@ interface Message {
   isUser: boolean;
   timestamp: Date;
 }
+
+// Function to parse markdown links and convert to React elements
+const parseMessageContent = (content: string) => {
+  const parts: (string | JSX.Element)[] = [];
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = linkRegex.exec(content)) !== null) {
+    // Add text before the link
+    if (match.index > lastIndex) {
+      parts.push(content.substring(lastIndex, match.index));
+    }
+
+    const linkText = match[1];
+    const linkUrl = match[2];
+    const isInternal = linkUrl.startsWith('/') || linkUrl.includes('dr7empire.com');
+
+    // Create link element
+    if (isInternal) {
+      const path = linkUrl.replace('https://dr7empire.com', '').replace('http://dr7empire.com', '');
+      parts.push(
+        <Link
+          key={match.index}
+          to={path}
+          className="text-blue-400 hover:text-blue-300 underline font-semibold"
+        >
+          {linkText}
+        </Link>
+      );
+    } else {
+      parts.push(
+        <a
+          key={match.index}
+          href={linkUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-400 hover:text-blue-300 underline font-semibold"
+        >
+          {linkText}
+        </a>
+      );
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    parts.push(content.substring(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : content;
+};
 
 interface DR7AIChatProps {
   isOpen: boolean;
@@ -165,7 +220,9 @@ const DR7AIChat: React.FC<DR7AIChatProps> = ({ isOpen, onClose }) => {
                       : 'bg-gray-900 text-white border border-gray-800'
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                  <div className="text-sm whitespace-pre-wrap leading-relaxed">
+                    {parseMessageContent(message.content)}
+                  </div>
                   <p className={`text-xs mt-1 ${message.isUser ? 'text-black/60' : 'text-gray-500'}`}>
                     {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
