@@ -3,7 +3,7 @@ import { NavLink, Link } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { RENTAL_CATEGORIES } from '../../constants';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MenuIcon, XIcon, UsersIcon, SignOutIcon } from '../icons/Icons';
+import { MenuIcon, XIcon, UsersIcon, SignOutIcon, CogIcon } from '../icons/Icons';
 import { useAuth } from '../../hooks/useAuth';
 
 const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
@@ -206,7 +206,7 @@ const Header: React.FC = () => {
                       user.role === 'business' ? t('Partner_Dashboard') : t('My_Account')
                     }
                   >
-                    <UsersIcon className="w-5 h-5" />
+                    <CogIcon className="w-5 h-5" />
                   </Link>
                   <button
                     onClick={logout}
