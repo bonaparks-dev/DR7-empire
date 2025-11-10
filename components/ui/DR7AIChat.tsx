@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, Sparkles, MessageCircle } from 'lucide-react';
+import { XIcon, SparklesIcon, MessageCircleIcon, SendIcon } from '../icons/Icons';
 import { useLanguage } from '../../hooks/useLanguage';
 
 interface Message {
@@ -136,7 +136,7 @@ const DR7AIChat: React.FC<DR7AIChatProps> = ({ isOpen, onClose }) => {
           <div className="bg-gradient-to-r from-white to-gray-300 px-6 py-4 flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-white" />
+                <SparklesIcon className="w-5 h-5 text-white" />
               </div>
               <div>
                 <h3 className="text-black font-bold text-lg">DR7 AI Assistant</h3>
@@ -147,7 +147,7 @@ const DR7AIChat: React.FC<DR7AIChatProps> = ({ isOpen, onClose }) => {
               onClick={onClose}
               className="text-black hover:text-gray-700 transition-colors p-2 rounded-full hover:bg-black/10"
             >
-              <X className="w-5 h-5" />
+              <XIcon className="w-5 h-5" />
             </button>
           </div>
 
@@ -227,7 +227,7 @@ const DR7AIChat: React.FC<DR7AIChatProps> = ({ isOpen, onClose }) => {
                 disabled={!input.trim() || isLoading}
                 className="bg-white text-black p-3 rounded-full hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Send className="w-5 h-5" />
+                <SendIcon className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -252,7 +252,7 @@ export const DR7AIFloatingButton: React.FC = () => {
         className="fixed bottom-6 right-6 z-40 bg-white text-black p-4 rounded-full shadow-2xl hover:shadow-white/20 transition-all border border-gray-300"
         title="Chatta con DR7 AI"
       >
-        <MessageCircle className="w-6 h-6" />
+        <MessageCircleIcon className="w-6 h-6" />
       </motion.button>
 
       <DR7AIChat isOpen={isOpen} onClose={() => setIsOpen(false)} />
