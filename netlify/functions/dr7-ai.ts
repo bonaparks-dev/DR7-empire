@@ -115,12 +115,19 @@ export const handler: Handler = async (event) => {
     };
   } catch (error: any) {
     console.error("Error in DR7 AI function:", error);
+    console.error("Error details:", {
+      message: error.message,
+      status: error.status,
+      type: error.type,
+      stack: error.stack
+    });
     return {
       statusCode: 500,
       headers: corsHeaders,
       body: JSON.stringify({
         error: "Failed to generate response",
-        details: error.message
+        details: error.message,
+        type: error.type || 'unknown'
       }),
     };
   }
