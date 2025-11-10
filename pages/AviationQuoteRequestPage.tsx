@@ -70,6 +70,40 @@ const AviationQuoteRequestPage: React.FC = () => {
         // Don't fail the whole process if notification fails
       }
 
+      // Generate WhatsApp prefilled message for customer
+      const flightType = formData.flight_type === 'round_trip' ? 'Andata/Ritorno' : 'Solo Andata';
+      const customerName = formData.customer_name;
+
+      let whatsappMessage = `Ciao! Ho appena richiesto un preventivo per un volo privato sul vostro sito.\n\n` +
+        `🚁 *Richiesta Preventivo Jet/Elicottero*\n` +
+        `*Nome:* ${customerName}\n` +
+        `*Email:* ${formData.customer_email}\n` +
+        `*Telefono:* ${formData.customer_phone}\n` +
+        `*Da:* ${formData.departure_location}\n` +
+        `*A:* ${formData.arrival_location}\n` +
+        `*Tipo:* ${flightType}\n` +
+        `*Data Partenza:* ${new Date(formData.departure_date).toLocaleDateString('it-IT')}\n`;
+
+      if (formData.flight_type === 'round_trip' && formData.return_date) {
+        whatsappMessage += `*Data Ritorno:* ${new Date(formData.return_date).toLocaleDateString('it-IT')}\n`;
+      }
+
+      whatsappMessage += `*Passeggeri:* ${formData.passenger_count}\n`;
+
+      if (formData.notes) {
+        whatsappMessage += `*Note:* ${formData.notes}\n`;
+      }
+
+      whatsappMessage += `\nGrazie!`;
+
+      const officeWhatsAppNumber = '393457905205';
+      const whatsappUrl = `https://wa.me/${officeWhatsAppNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+
+      // Open WhatsApp in a new tab after a short delay
+      setTimeout(() => {
+        window.open(whatsappUrl, '_blank');
+      }, 1000);
+
       // Show success message
       alert('Richiesta preventivo inviata con successo! Ti contatteremo entro 24 ore.');
       navigate('/');
