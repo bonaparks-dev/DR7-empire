@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XIcon, SparklesIcon, MessageCircleIcon, SendIcon } from '../icons/Icons';
-import { useLanguage } from '../../hooks/useLanguage';
 
 interface Message {
   id: string;
@@ -20,7 +19,6 @@ const DR7AIChat: React.FC<DR7AIChatProps> = ({ isOpen, onClose }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { language } = useLanguage();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
