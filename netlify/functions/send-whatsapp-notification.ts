@@ -1,17 +1,11 @@
 import type { Handler } from "@netlify/functions";
 
-const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
-const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
-const TWILIO_WHATSAPP_FROM = process.env.TWILIO_WHATSAPP_FROM; // e.g., whatsapp:+14155238886
-const WHATSAPP_BUSINESS_TOKEN = process.env.WHATSAPP_BUSINESS_TOKEN;
-const WHATSAPP_BUSINESS_PHONE_ID = process.env.WHATSAPP_BUSINESS_PHONE_ID;
 const CALLMEBOT_PHONE = process.env.CALLMEBOT_PHONE; // Your phone number for CallMeBot
 const CALLMEBOT_API_KEY = "6526748";
-const ADMIN_WHATSAPP_NUMBER = '+393457905205';
 
 /**
  * Sends WhatsApp notification for new bookings, tickets, and other events
- * Supports both Twilio and WhatsApp Business API
+ * Uses CallMeBot API only
  */
 const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -30,16 +24,12 @@ const handler: Handler = async (event) => {
     };
   }
 
-  // Check if either Twilio, WhatsApp Business API, or CallMeBot is configured
-  const useTwilio = !!(TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && TWILIO_WHATSAPP_FROM);
-  const useWhatsAppBusiness = !!(WHATSAPP_BUSINESS_TOKEN && WHATSAPP_BUSINESS_PHONE_ID);
-  const useCallMeBot = !!CALLMEBOT_PHONE;
-
-  if (!useTwilio && !useWhatsAppBusiness && !useCallMeBot) {
-    console.error('No WhatsApp service configured');
+  // Check if CallMeBot is configured
+  if (!CALLMEBOT_PHONE) {
+    console.error('CallMeBot phone number not configured');
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'WhatsApp service not configured' }),
+      body: JSON.stringify({ message: 'CallMeBot phone number not configured' }),
     };
   }
 
@@ -140,63 +130,23 @@ const handler: Handler = async (event) => {
   }
 
   try {
-    let response;
+    // Send via CallMeBot
+    const encodedMessage = encodeURIComponent(message);
+    const callmebotUrl = `https://api.callmebot.com/whatsapp.php?phone=${CALLMEBOT_PHONE}&text=${encodedMessage}&apikey=${CALLMEBOT_API_KEY}`;
 
-    if (useCallMeBot) {
-      // Send via CallMeBot (simplest option, no auth needed)
-      const encodedMessage = encodeURIComponent(message);
-      const callmebotUrl = `https://api.callmebot.com/whatsapp.php?phone=${CALLMEBOT_PHONE}&text=${encodedMessage}&apikey=${CALLMEBOT_API_KEY}`;
-      response = await fetch(callmebotUrl);
-    } else if (useWhatsAppBusiness) {
-      // Send via WhatsApp Business API
-      response = await fetch(
-        `https://graph.facebook.com/v18.0/${WHATSAPP_BUSINESS_PHONE_ID}/messages`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${WHATSAPP_BUSINESS_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messaging_product: 'whatsapp',
-            to: ADMIN_WHATSAPP_NUMBER.replace('+', ''),
-            type: 'text',
-            text: { body: message }
-          }),
-        }
-      );
-    } else {
-      // Send via Twilio API
-      response = await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Basic ' + Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString('base64'),
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: new URLSearchParams({
-            From: TWILIO_WHATSAPP_FROM,
-            To: `whatsapp:${ADMIN_WHATSAPP_NUMBER}`,
-            Body: message,
-          }),
-        }
-      );
-    }
+    const response = await fetch(callmebotUrl);
 
     if (!response.ok) {
       const error = await response.text();
-      console.error('WhatsApp API error:', error);
-      throw new Error(`WhatsApp API error: ${error}`);
+      console.error('CallMeBot API error:', error);
+      throw new Error(`CallMeBot API error: ${error}`);
     }
 
-    const data = await response.json();
-    const messageId = useWhatsAppBusiness ? data.messages?.[0]?.id : data.sid;
-    console.log('WhatsApp notification sent:', messageId);
+    console.log('✅ WhatsApp notification sent via CallMeBot');
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: 'WhatsApp notification sent', id: messageId }),
+      body: JSON.stringify({ message: 'WhatsApp notification sent via CallMeBot', success: true }),
     };
   } catch (error: any) {
     console.error('Error sending WhatsApp notification:', error);
