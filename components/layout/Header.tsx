@@ -114,7 +114,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                 <span className="notranslate">Investitori</span>
               </NavLink>
               <NavLink to="/token" onClick={onClose} className={navLinkClasses}>
-                <span className="notranslate">TOKEN</span>
+                <span className="notranslate">Token</span>
               </NavLink>
             </nav>
 
