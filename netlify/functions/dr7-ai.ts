@@ -98,7 +98,7 @@ export const handler: Handler = async (event) => {
     ];
 
     const response = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-latest",
+      model: "claude-sonnet-4-20250514",
       max_tokens: 1500,
       system: SYSTEM_PROMPT + `\n\nRispondi SEMPRE in italiano.`,
       messages,
