@@ -33,6 +33,7 @@ import SignUpPage from './pages/SignUpPage';
 import ScrollToTop from './components/routing/ScrollToTop';
 import PostPage from './pages/PostPage';
 import JetSearchResultsPage from './pages/JetSearchResultsPage';
+import AviationQuoteRequestPage from './pages/AviationQuoteRequestPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AccountPage from './pages/AccountPage';
 import ProfileSettings from './pages/account/ProfileSettings';
@@ -100,6 +101,8 @@ const AnimatedRoutes = () => {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<HomePage />} />
         <Route path="/jets/search" element={<JetSearchResultsPage />} />
+        <Route path="/jets/quote" element={<AviationQuoteRequestPage />} />
+        <Route path="/helicopters/quote" element={<AviationQuoteRequestPage />} />
         <Route path="/car-wash-services" element={<CarWashServicesPage />} />
         <Route path="/car-wash-booking" element={<CarWashBookingPage />} />
         {RENTAL_CATEGORIES
