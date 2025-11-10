@@ -1,0 +1,263 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Send, Sparkles, MessageCircle } from 'lucide-react';
+import { useLanguage } from '../../hooks/useLanguage';
+
+interface Message {
+  id: string;
+  content: string;
+  isUser: boolean;
+  timestamp: Date;
+}
+
+interface DR7AIChatProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const DR7AIChat: React.FC<DR7AIChatProps> = ({ isOpen, onClose }) => {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { language } = useLanguage();
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    if (isOpen && messages.length === 0) {
+      // Welcome message
+      const welcomeMessage: Message = {
+        id: '1',
+        content: "Ciao! Sono l'assistente AI di DR7 Empire. Come posso aiutarti oggi?\n\nPosso aiutarti con:\n• Noleggio auto esotiche e di lusso\n• Yacht e aviazione privata\n• Servizi premium e memberships\n• Informazioni su DR7 Token",
+        isUser: false,
+        timestamp: new Date()
+      };
+      setMessages([welcomeMessage]);
+    }
+  }, [isOpen]);
+
+  const sendMessage = async () => {
+    if (!input.trim() || isLoading) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      content: input,
+      isUser: true,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
+
+    try {
+      // Build conversation history for context
+      const conversationHistory = messages.map(msg => ({
+        role: msg.isUser ? "user" as const : "assistant" as const,
+        content: msg.content
+      }));
+
+      const response = await fetch('/.netlify/functions/dr7-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: input,
+          conversationHistory
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to get AI response');
+
+      const data = await response.json();
+
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: data.response,
+        isUser: false,
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Error:', error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "Mi dispiace, si è verificato un errore. Riprova tra poco.",
+        isUser: false,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  const quickQuestions = [
+    "Quali auto esotiche avete?",
+    "Info sui jet privati",
+    "Cos'è DR7 Token?",
+    "Prezzi membership"
+  ];
+
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ y: "100%", opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: "100%", opacity: 0 }}
+          transition={{ type: "spring", damping: 30, stiffness: 300 }}
+          onClick={(e) => e.stopPropagation()}
+          className="bg-black border border-gray-800 w-full md:w-[500px] h-[600px] md:h-[700px] md:rounded-2xl flex flex-col shadow-2xl"
+        >
+          {/* Header */}
+          <div className="bg-gradient-to-r from-white to-gray-300 px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-black font-bold text-lg">DR7 AI Assistant</h3>
+                <p className="text-black/70 text-xs">Sempre al tuo servizio</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-black hover:text-gray-700 transition-colors p-2 rounded-full hover:bg-black/10"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-black">
+            {messages.map((message) => (
+              <motion.div
+                key={message.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-[80%] px-4 py-3 rounded-2xl ${
+                    message.isUser
+                      ? 'bg-white text-black'
+                      : 'bg-gray-900 text-white border border-gray-800'
+                  }`}
+                >
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                  <p className={`text-xs mt-1 ${message.isUser ? 'text-black/60' : 'text-gray-500'}`}>
+                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+
+            {isLoading && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex justify-start"
+              >
+                <div className="bg-gray-900 border border-gray-800 px-4 py-3 rounded-2xl">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-white rounded-full animate-bounce" />
+                    <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                    <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Quick Questions */}
+          {messages.length <= 1 && (
+            <div className="px-6 py-3 border-t border-gray-800">
+              <div className="flex flex-wrap gap-2">
+                {quickQuestions.map((question, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setInput(question)}
+                    className="text-xs bg-gray-900 text-white px-3 py-2 rounded-full border border-gray-800 hover:bg-gray-800 transition-colors"
+                  >
+                    {question}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Input */}
+          <div className="px-6 py-4 border-t border-gray-800">
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Scrivi un messaggio..."
+                className="flex-1 bg-gray-900 border border-gray-800 text-white px-4 py-3 rounded-full focus:outline-none focus:border-white transition-colors placeholder-gray-500"
+                disabled={isLoading}
+              />
+              <button
+                onClick={sendMessage}
+                disabled={!input.trim() || isLoading}
+                className="bg-white text-black p-3 rounded-full hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Send className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
+// Floating Chat Button Component
+export const DR7AIFloatingButton: React.FC = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      <motion.button
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-6 right-6 z-40 bg-white text-black p-4 rounded-full shadow-2xl hover:shadow-white/20 transition-all border border-gray-300"
+        title="Chatta con DR7 AI"
+      >
+        <MessageCircle className="w-6 h-6" />
+      </motion.button>
+
+      <DR7AIChat isOpen={isOpen} onClose={() => setIsOpen(false)} />
+    </>
+  );
+};
+
+export default DR7AIChat;

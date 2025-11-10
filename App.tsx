@@ -55,6 +55,7 @@ import PartnerPayoutSettings from './pages/partner/settings/PartnerPayoutSetting
 import CookieBanner from './components/ui/CookieBanner';
 import { useAuth } from './hooks/useAuth';
 import AuthCallbackPage from './pages/AuthCallbackPage';
+import { DR7AIFloatingButton } from './components/ui/DR7AIChat';
 import CommercialOperationSuccessPage from './pages/CommercialOperationSuccessPage';
 import WinRulesPage from './pages/WinRulesPage';
 import LegalTermsPage from './pages/LegalTermsPage';
@@ -68,6 +69,7 @@ import CheckEmailPage from './pages/CheckEmailPage';
 import CarWashServicesPage from './pages/CarWashServicesPage';
 import CarWashBookingPage from './pages/CarWashBookingPage';
 import InvestitoriPage from './pages/InvestitoriPage';
+import TokenPage from './pages/TokenPage';
 
 const AuthRedirector: React.FC = () => {
   const { user, authEvent } = useAuth();
@@ -177,6 +179,7 @@ const AnimatedRoutes = () => {
 
         <Route path="/about" element={<AboutPage />} />
         <Route path="/investitori" element={<InvestitoriPage />} />
+        <Route path="/token" element={<TokenPage />} />
         <Route path="/terms" element={<TermsOfServicePage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/rental-agreement" element={<RentalAgreementPage />} />
@@ -239,6 +242,7 @@ const MainContent = () => {
         <BookingModal />
         <VerificationModal />
         <CookieBanner />
+        <DR7AIFloatingButton />
         <AnimatePresence>
           {isCarWizardOpen && selectedCar && (
             <motion.div
