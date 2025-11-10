@@ -327,11 +327,9 @@ export const SparklesIcon: React.FC<{ className?: string }> = ({ className = "w-
 export const BotIcon: React.FC<{ className?: string }> = ({ className = "w-6 h-6" }) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
       <path d="M12 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1z"/>
-      <rect x="6" y="6" width="12" height="13" rx="3" fill="currentColor"/>
-      <circle cx="9.5" cy="11" r="1.5" fill="white"/>
-      <circle cx="14.5" cy="11" r="1.5" fill="white"/>
-      <path d="M9 15c.5.5 1.5 1 3 1s2.5-.5 3-1" stroke="white" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-      <rect x="3" y="10" width="2" height="4" rx="1" fill="currentColor"/>
-      <rect x="19" y="10" width="2" height="4" rx="1" fill="currentColor"/>
+      <rect x="7" y="6" width="10" height="12" rx="2" fill="currentColor"/>
+      <circle cx="10" cy="11" r="1.2" fill="white"/>
+      <circle cx="14" cy="11" r="1.2" fill="white"/>
+      <path d="M10 15c.5.4 1.2.8 2 .8s1.5-.4 2-.8" stroke="white" strokeWidth="1.2" strokeLinecap="round" fill="none"/>
     </svg>
 );
