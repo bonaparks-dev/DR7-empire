@@ -58,6 +58,18 @@ const AviationQuoteRequestPage: React.FC = () => {
 
       if (error) throw error;
 
+      // Send WhatsApp notification
+      try {
+        await fetch('/.netlify/functions/send-aviation-quote-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+      } catch (notificationError) {
+        console.error('Failed to send WhatsApp notification:', notificationError);
+        // Don't fail the whole process if notification fails
+      }
+
       // Show success message
       alert('Richiesta preventivo inviata con successo! Ti contatteremo entro 24 ore.');
       navigate('/');

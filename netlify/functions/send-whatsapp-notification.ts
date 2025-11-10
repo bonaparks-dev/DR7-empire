@@ -5,6 +5,8 @@ const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_WHATSAPP_FROM = process.env.TWILIO_WHATSAPP_FROM; // e.g., whatsapp:+14155238886
 const WHATSAPP_BUSINESS_TOKEN = process.env.WHATSAPP_BUSINESS_TOKEN;
 const WHATSAPP_BUSINESS_PHONE_ID = process.env.WHATSAPP_BUSINESS_PHONE_ID;
+const CALLMEBOT_PHONE = process.env.CALLMEBOT_PHONE; // Your phone number for CallMeBot
+const CALLMEBOT_API_KEY = "6526748";
 const ADMIN_WHATSAPP_NUMBER = '+393457905205';
 
 /**
@@ -28,11 +30,12 @@ const handler: Handler = async (event) => {
     };
   }
 
-  // Check if either Twilio or WhatsApp Business API is configured
+  // Check if either Twilio, WhatsApp Business API, or CallMeBot is configured
   const useTwilio = !!(TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && TWILIO_WHATSAPP_FROM);
   const useWhatsAppBusiness = !!(WHATSAPP_BUSINESS_TOKEN && WHATSAPP_BUSINESS_PHONE_ID);
+  const useCallMeBot = !!CALLMEBOT_PHONE;
 
-  if (!useTwilio && !useWhatsAppBusiness) {
+  if (!useTwilio && !useWhatsAppBusiness && !useCallMeBot) {
     console.error('No WhatsApp service configured');
     return {
       statusCode: 500,
@@ -139,7 +142,12 @@ const handler: Handler = async (event) => {
   try {
     let response;
 
-    if (useWhatsAppBusiness) {
+    if (useCallMeBot) {
+      // Send via CallMeBot (simplest option, no auth needed)
+      const encodedMessage = encodeURIComponent(message);
+      const callmebotUrl = `https://api.callmebot.com/whatsapp.php?phone=${CALLMEBOT_PHONE}&text=${encodedMessage}&apikey=${CALLMEBOT_API_KEY}`;
+      response = await fetch(callmebotUrl);
+    } else if (useWhatsAppBusiness) {
       // Send via WhatsApp Business API
       response = await fetch(
         `https://graph.facebook.com/v18.0/${WHATSAPP_BUSINESS_PHONE_ID}/messages`,
