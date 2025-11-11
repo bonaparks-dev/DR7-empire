@@ -102,8 +102,8 @@ const SalesPopTickets: React.FC = () => {
 
   const formatTimeAgo = (minutes: number): string => {
     if (minutes === 0) return "adesso";
-    if (minutes === 1) return "1 minuto fa";
-    return `${minutes} minuti fa`;
+    if (minutes === 1) return "1 min fa";
+    return `${minutes} min fa`;
   };
 
   return (
@@ -111,25 +111,25 @@ const SalesPopTickets: React.FC = () => {
       initial={{ opacity: 0, x: -100, y: 20 }}
       animate={{ opacity: 1, x: 0, y: 0 }}
       transition={{ type: "spring", damping: 25, stiffness: 200 }}
-      className="fixed bottom-6 left-6 z-50 max-w-sm"
+      className="fixed bottom-4 left-4 right-4 md:left-6 md:right-auto md:bottom-6 z-50 md:max-w-sm"
     >
       <div className="bg-black/95 backdrop-blur-md border border-white/30 rounded-2xl shadow-2xl relative overflow-hidden">
         {/* Gold accent bar */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-dr7-gold via-yellow-400 to-dr7-gold" />
 
         {/* Header */}
-        <div className="px-4 py-3 border-b border-white/20 flex items-center justify-between">
+        <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-white/20 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dr7-gold to-yellow-600 flex items-center justify-center">
-              <svg className="w-4 h-4 text-black" fill="currentColor" viewBox="0 0 20 20">
+            <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-dr7-gold to-yellow-600 flex items-center justify-center flex-shrink-0">
+              <svg className="w-3.5 h-3.5 md:w-4 md:h-4 text-black" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2 6a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 100 4v2a2 2 0 01-2 2H4a2 2 0 01-2-2v-2a2 2 0 100-4V6z" />
               </svg>
             </div>
-            <h3 className="text-sm font-bold text-white">Acquisti Recenti</h3>
+            <h3 className="text-xs md:text-sm font-bold text-white">Acquisti Recenti</h3>
           </div>
           <button
             onClick={handleClose}
-            className="text-white/70 hover:text-white transition-colors"
+            className="text-white/70 hover:text-white transition-colors p-1"
             aria-label="Close notification"
           >
             <XIcon className="w-4 h-4" />
@@ -137,7 +137,7 @@ const SalesPopTickets: React.FC = () => {
         </div>
 
         {/* List of buyers */}
-        <div className="max-h-80 overflow-hidden">
+        <div className="max-h-64 md:max-h-80 overflow-y-auto">
           <AnimatePresence mode="popLayout">
             {purchases.map((purchase) => {
               const bigliettiText = purchase.quantity === 1 ? "biglietto" : "biglietti";
@@ -153,20 +153,20 @@ const SalesPopTickets: React.FC = () => {
                     height: { duration: 0.3 },
                     layout: { duration: 0.3 }
                   }}
-                  className="px-4 py-3 border-b border-white/10 hover:bg-white/5 transition-colors"
+                  className="px-3 py-2 md:px-4 md:py-3 border-b border-white/10 hover:bg-white/5 transition-colors"
                 >
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white font-medium leading-tight">
+                      <p className="text-xs md:text-sm text-white font-medium leading-tight">
                         <span className="font-bold">{purchase.name}</span>
-                        <span className="text-white/70 text-xs"> ({purchase.location})</span>
+                        <span className="text-white/70 text-[10px] md:text-xs"> ({purchase.location})</span>
                       </p>
-                      <p className="text-xs text-white/80 mt-1">
+                      <p className="text-[10px] md:text-xs text-white/80 mt-0.5 md:mt-1">
                         <span className="font-semibold text-dr7-gold">{purchase.quantity} {bigliettiText}</span>
                       </p>
                     </div>
-                    <div className="ml-3 text-right">
-                      <p className="text-xs text-white/60 whitespace-nowrap">
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-[10px] md:text-xs text-white/60 whitespace-nowrap">
                         {formatTimeAgo(purchase.minutesAgo)}
                       </p>
                     </div>
@@ -178,8 +178,8 @@ const SalesPopTickets: React.FC = () => {
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2 bg-white/5 border-t border-white/10">
-          <p className="text-xs text-white/60 text-center">
+        <div className="px-3 py-1.5 md:px-4 md:py-2 bg-white/5 border-t border-white/10">
+          <p className="text-[10px] md:text-xs text-white/60 text-center">
             Acquisti in tempo reale
           </p>
         </div>
