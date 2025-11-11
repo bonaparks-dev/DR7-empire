@@ -7,7 +7,7 @@ interface TicketPurchase {
   name: string;
   location: string;
   quantity: number;
-  timeAgo: string;
+  minutesAgo: number;
 }
 
 const NAMES = [
@@ -26,43 +26,65 @@ const LOCATIONS = [
   "Arzachena", "La Maddalena", "Tempio Pausania", "Siniscola"
 ];
 
-const generateRandomPurchase = (): TicketPurchase => {
+const generateRandomPurchase = (minutesAgo: number): TicketPurchase => {
   const name = NAMES[Math.floor(Math.random() * NAMES.length)];
   const location = LOCATIONS[Math.floor(Math.random() * LOCATIONS.length)];
   const quantity = Math.floor(Math.random() * 4) + 1; // 1-4 tickets
-  const minutes = Math.floor(Math.random() * 15) + 1; // 1-15 minutes
-  const timeAgo = minutes === 1 ? "1 minuto fa" : `${minutes} minuti fa`;
 
   return {
     id: `${Date.now()}-${Math.random()}`,
     name,
     location,
     quantity,
-    timeAgo
+    minutesAgo
   };
 };
 
 const INITIAL_PURCHASES: TicketPurchase[] = [
-  { id: "1", name: "Alessandro", location: "Cagliari", quantity: 1, timeAgo: "2 minuti fa" },
-  { id: "2", name: "Giulia", location: "Olbia", quantity: 3, timeAgo: "4 minuti fa" },
-  { id: "3", name: "Francesco", location: "Quartucciu", quantity: 2, timeAgo: "5 minuti fa" },
-  { id: "4", name: "Valeria", location: "Villasimius", quantity: 1, timeAgo: "7 minuti fa" },
-  { id: "5", name: "Lorenzo", location: "Sassari", quantity: 4, timeAgo: "8 minuti fa" },
-  { id: "6", name: "Marta", location: "Oristano", quantity: 2, timeAgo: "10 minuti fa" },
-  { id: "7", name: "Nicola", location: "Carbonia", quantity: 1, timeAgo: "11 minuti fa" },
-  { id: "8", name: "Serena", location: "Pula", quantity: 3, timeAgo: "13 minuti fa" },
+  { id: "1", name: "Alessandro", location: "Cagliari", quantity: 1, minutesAgo: 2 },
+  { id: "2", name: "Giulia", location: "Olbia", quantity: 3, minutesAgo: 4 },
+  { id: "3", name: "Francesco", location: "Quartucciu", quantity: 2, minutesAgo: 5 },
+  { id: "4", name: "Valeria", location: "Villasimius", quantity: 1, minutesAgo: 7 },
+  { id: "5", name: "Lorenzo", location: "Sassari", quantity: 4, minutesAgo: 8 },
+  { id: "6", name: "Marta", location: "Oristano", quantity: 2, minutesAgo: 10 },
+  { id: "7", name: "Nicola", location: "Carbonia", quantity: 1, minutesAgo: 11 },
+  { id: "8", name: "Serena", location: "Pula", quantity: 3, minutesAgo: 13 },
 ];
 
 const SalesPopTickets: React.FC = () => {
   const [purchases, setPurchases] = useState<TicketPurchase[]>(INITIAL_PURCHASES);
   const [isClosed, setIsClosed] = useState(false);
+  const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
 
+  // Update all timestamps every minute
+  useEffect(() => {
+    if (isClosed) return;
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const minutesElapsed = Math.floor((now - lastUpdateTime) / 60000);
+
+      if (minutesElapsed >= 1) {
+        setPurchases(prev =>
+          prev.map(purchase => ({
+            ...purchase,
+            minutesAgo: purchase.minutesAgo + minutesElapsed
+          }))
+        );
+        setLastUpdateTime(now);
+      }
+    }, 10000); // Check every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [isClosed, lastUpdateTime]);
+
+  // Add new purchases
   useEffect(() => {
     if (isClosed) return;
 
     // Add a new purchase every 8-12 seconds
     const interval = setInterval(() => {
-      const newPurchase = generateRandomPurchase();
+      const newPurchase = generateRandomPurchase(0); // New purchase is "just now" (0 minutes ago)
       setPurchases(prev => {
         // Add new purchase at the beginning, keep only last 8
         return [newPurchase, ...prev].slice(0, 8);
@@ -77,6 +99,12 @@ const SalesPopTickets: React.FC = () => {
   };
 
   if (isClosed) return null;
+
+  const formatTimeAgo = (minutes: number): string => {
+    if (minutes === 0) return "adesso";
+    if (minutes === 1) return "1 minuto fa";
+    return `${minutes} minuti fa`;
+  };
 
   return (
     <motion.div
@@ -139,7 +167,7 @@ const SalesPopTickets: React.FC = () => {
                     </div>
                     <div className="ml-3 text-right">
                       <p className="text-xs text-white/60 whitespace-nowrap">
-                        {purchase.timeAgo}
+                        {formatTimeAgo(purchase.minutesAgo)}
                       </p>
                     </div>
                   </div>
