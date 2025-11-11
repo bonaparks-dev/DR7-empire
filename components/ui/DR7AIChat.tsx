@@ -16,11 +16,14 @@ const parseMessageContent = (content: string) => {
   const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
   let lastIndex = 0;
   let match;
+  let hasLinks = false;
 
   while ((match = linkRegex.exec(content)) !== null) {
+    hasLinks = true;
     // Add text before the link
     if (match.index > lastIndex) {
-      parts.push(content.substring(lastIndex, match.index));
+      const text = content.substring(lastIndex, match.index);
+      parts.push(<React.Fragment key={`text-${lastIndex}`}>{text}</React.Fragment>);
     }
 
     const linkText = match[1];
@@ -32,9 +35,9 @@ const parseMessageContent = (content: string) => {
       const path = linkUrl.replace('https://dr7empire.com', '').replace('http://dr7empire.com', '');
       parts.push(
         <Link
-          key={match.index}
+          key={`link-${match.index}`}
           to={path}
-          className="text-blue-400 hover:text-blue-300 underline font-semibold"
+          className="text-blue-400 hover:text-blue-300 underline font-semibold inline-block"
         >
           {linkText}
         </Link>
@@ -42,11 +45,11 @@ const parseMessageContent = (content: string) => {
     } else {
       parts.push(
         <a
-          key={match.index}
+          key={`link-${match.index}`}
           href={linkUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-400 hover:text-blue-300 underline font-semibold"
+          className="text-blue-400 hover:text-blue-300 underline font-semibold inline-block"
         >
           {linkText}
         </a>
@@ -58,10 +61,12 @@ const parseMessageContent = (content: string) => {
 
   // Add remaining text
   if (lastIndex < content.length) {
-    parts.push(content.substring(lastIndex));
+    const text = content.substring(lastIndex);
+    parts.push(<React.Fragment key={`text-${lastIndex}`}>{text}</React.Fragment>);
   }
 
-  return parts.length > 0 ? parts : content;
+  // If no links were found, return the original content
+  return hasLinks ? <>{parts}</> : content;
 };
 
 interface DR7AIChatProps {
@@ -188,8 +193,12 @@ const DR7AIChat: React.FC<DR7AIChatProps> = ({ isOpen, onClose }) => {
           {/* Header */}
           <div className="bg-gradient-to-r from-white to-gray-300 px-6 py-4 flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
-                <BotIcon className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-black">
+                <img
+                  src="/Valerio.jpg"
+                  alt="Valerio"
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div>
                 <h3 className="text-black font-bold text-lg">DR7 AI Assistant</h3>
@@ -304,10 +313,14 @@ export const DR7AIFloatingButton: React.FC = () => {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 bg-white text-black p-4 rounded-full shadow-2xl hover:shadow-white/20 transition-all border border-gray-300"
+        className="fixed bottom-6 right-6 z-40 w-16 h-16 rounded-full shadow-2xl hover:shadow-white/20 transition-all border-2 border-white overflow-hidden"
         title="Chatta con DR7 AI"
       >
-        <BotIcon className="w-6 h-6" />
+        <img
+          src="/Valerio.jpg"
+          alt="Chat with Valerio"
+          className="w-full h-full object-cover"
+        />
       </motion.button>
 
       <DR7AIChat isOpen={isOpen} onClose={() => setIsOpen(false)} />

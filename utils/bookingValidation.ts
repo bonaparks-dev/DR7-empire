@@ -22,7 +22,7 @@ export async function checkVehicleAvailability(
     const requestedPickup = new Date(pickupDate);
     const requestedDropoff = new Date(dropoffDate);
 
-    // Query all bookings for this vehicle
+    // Query all bookings for this vehicle from bookings table (main website)
     const { data: bookings, error } = await supabase
       .from('bookings')
       .select('pickup_date, dropoff_date, vehicle_name, status')
@@ -35,33 +35,71 @@ export async function checkVehicleAvailability(
       throw error;
     }
 
-    if (!bookings || bookings.length === 0) {
-      return []; // No conflicts, vehicle is available
+    // Query all reservations for this vehicle from reservations table (admin panel)
+    // We need to get the vehicle by matching display_name
+    const { data: vehicle } = await supabase
+      .from('vehicles')
+      .select('id')
+      .eq('display_name', vehicleName)
+      .single();
+
+    let reservations = [];
+    if (vehicle) {
+      const { data: reservationData, error: reservationError } = await supabase
+        .from('reservations')
+        .select('start_at, end_at, vehicle_id, status')
+        .eq('vehicle_id', vehicle.id)
+        .in('status', ['confirmed', 'pending', 'active'])
+        .order('start_at', { ascending: true });
+
+      if (reservationError) {
+        console.error('Error checking reservations:', reservationError);
+      } else {
+        reservations = reservationData || [];
+      }
     }
 
     // Check for date conflicts
     const conflicts: BookingConflict[] = [];
 
-    for (const booking of bookings) {
-      const existingPickup = new Date(booking.pickup_date);
-      const existingDropoff = new Date(booking.dropoff_date);
+    // Helper function to check if dates overlap
+    const hasConflict = (existingStart: Date, existingEnd: Date) => {
+      return (
+        (requestedPickup >= existingStart && requestedPickup < existingEnd) || // Starts during existing
+        (requestedDropoff > existingStart && requestedDropoff <= existingEnd) || // Ends during existing
+        (requestedPickup <= existingStart && requestedDropoff >= existingEnd) // Completely contains existing
+      );
+    };
 
-      // Check if dates overlap
-      // Conflict occurs if:
-      // 1. New booking starts during existing booking
-      // 2. New booking ends during existing booking
-      // 3. New booking completely contains existing booking
-      const hasConflict =
-        (requestedPickup >= existingPickup && requestedPickup < existingDropoff) || // Starts during existing
-        (requestedDropoff > existingPickup && requestedDropoff <= existingDropoff) || // Ends during existing
-        (requestedPickup <= existingPickup && requestedDropoff >= existingDropoff); // Completely contains existing
+    // Check bookings table conflicts
+    if (bookings && bookings.length > 0) {
+      for (const booking of bookings) {
+        const existingPickup = new Date(booking.pickup_date);
+        const existingDropoff = new Date(booking.dropoff_date);
 
-      if (hasConflict) {
-        conflicts.push({
-          pickup_date: booking.pickup_date,
-          dropoff_date: booking.dropoff_date,
-          vehicle_name: booking.vehicle_name,
-        });
+        if (hasConflict(existingPickup, existingDropoff)) {
+          conflicts.push({
+            pickup_date: booking.pickup_date,
+            dropoff_date: booking.dropoff_date,
+            vehicle_name: booking.vehicle_name,
+          });
+        }
+      }
+    }
+
+    // Check reservations table conflicts (from admin panel)
+    if (reservations.length > 0) {
+      for (const reservation of reservations) {
+        const existingStart = new Date(reservation.start_at);
+        const existingEnd = new Date(reservation.end_at);
+
+        if (hasConflict(existingStart, existingEnd)) {
+          conflicts.push({
+            pickup_date: reservation.start_at,
+            dropoff_date: reservation.end_at,
+            vehicle_name: vehicleName,
+          });
+        }
       }
     }
 
@@ -79,6 +117,7 @@ export async function checkVehicleAvailability(
  */
 export async function getUnavailableDateRanges(vehicleName: string): Promise<Array<{ start: Date; end: Date }>> {
   try {
+    // Get bookings from main website
     const { data: bookings, error } = await supabase
       .from('bookings')
       .select('pickup_date, dropoff_date')
@@ -91,14 +130,51 @@ export async function getUnavailableDateRanges(vehicleName: string): Promise<Arr
       throw error;
     }
 
-    if (!bookings || bookings.length === 0) {
-      return [];
+    // Get reservations from admin panel
+    const { data: vehicle } = await supabase
+      .from('vehicles')
+      .select('id')
+      .eq('display_name', vehicleName)
+      .single();
+
+    let reservations = [];
+    if (vehicle) {
+      const { data: reservationData, error: reservationError } = await supabase
+        .from('reservations')
+        .select('start_at, end_at')
+        .eq('vehicle_id', vehicle.id)
+        .in('status', ['confirmed', 'pending', 'active'])
+        .order('start_at', { ascending: true });
+
+      if (!reservationError && reservationData) {
+        reservations = reservationData;
+      }
     }
 
-    return bookings.map((booking) => ({
-      start: new Date(booking.pickup_date),
-      end: new Date(booking.dropoff_date),
-    }));
+    // Combine both bookings and reservations
+    const unavailableDates: Array<{ start: Date; end: Date }> = [];
+
+    // Add bookings
+    if (bookings && bookings.length > 0) {
+      bookings.forEach((booking) => {
+        unavailableDates.push({
+          start: new Date(booking.pickup_date),
+          end: new Date(booking.dropoff_date),
+        });
+      });
+    }
+
+    // Add reservations
+    if (reservations.length > 0) {
+      reservations.forEach((reservation) => {
+        unavailableDates.push({
+          start: new Date(reservation.start_at),
+          end: new Date(reservation.end_at),
+        });
+      });
+    }
+
+    return unavailableDates;
   } catch (error) {
     console.error('Error in getUnavailableDateRanges:', error);
     throw error;
