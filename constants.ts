@@ -214,7 +214,7 @@ const urbanCarsRawData = [
       "engine": "2.0L Diesel",
       "seats": "7 posti"
     },
-    "image": "/v-class.jpeg"
+    "image": "/vito.jpeg"
   },
   {
     "id": 206,
