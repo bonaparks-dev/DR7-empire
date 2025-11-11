@@ -14,9 +14,6 @@ const TokenPage: React.FC = () => {
           transition={{ duration: 0.8 }}
           className="relative max-w-6xl mx-auto text-center"
         >
-          <div className="mb-6 inline-block">
-            <span className="text-5xl">💠</span>
-          </div>
           <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-gray-300 to-white bg-clip-text text-transparent">
             DR7 TOKEN
           </h1>
@@ -40,7 +37,7 @@ const TokenPage: React.FC = () => {
           >
             <div className="mb-12">
               <h2 className="text-4xl md:text-5xl font-bold mb-4">
-                💠 DR7 Coin – La Moneta del Lusso Reale
+                DR7 Coin – La Moneta del Lusso Reale
               </h2>
               <p className="text-xl text-gray-400 leading-relaxed">
                 Dubai Rent 7.0 S.p.A. annuncia la nascita di <strong className="text-white">DR7 Coin</strong>,
@@ -62,7 +59,7 @@ const TokenPage: React.FC = () => {
 
               {/* Un nuovo paradigma economico */}
               <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 mt-12">
-                <h3 className="text-3xl font-bold mb-6 flex items-center gap-3">
+                <h3 className="text-3xl font-bold mb-6">
                   <span>🏛️</span>
                   Un nuovo paradigma economico
                 </h3>
@@ -108,8 +105,7 @@ const TokenPage: React.FC = () => {
 
               {/* Un modello duale */}
               <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 mt-12">
-                <h3 className="text-3xl font-bold mb-6 flex items-center gap-3">
-                  <span>💼</span>
+                <h3 className="text-3xl font-bold mb-6">
                   Un modello duale: reale e partecipativo
                 </h3>
                 <p className="text-gray-300 leading-relaxed mb-6">
@@ -142,8 +138,7 @@ const TokenPage: React.FC = () => {
 
               {/* Una rivoluzione nel mondo del lusso */}
               <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-2xl p-8 mt-12">
-                <h3 className="text-3xl font-bold mb-6 flex items-center gap-3">
-                  <span>🌍</span>
+                <h3 className="text-3xl font-bold mb-6">
                   Una rivoluzione nel mondo del lusso
                 </h3>
                 <p className="text-gray-300 leading-relaxed mb-6">
@@ -176,8 +171,7 @@ const TokenPage: React.FC = () => {
 
               {/* Stabilità, sicurezza e trasparenza */}
               <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 mt-12">
-                <h3 className="text-3xl font-bold mb-6 flex items-center gap-3">
-                  <span>💎</span>
+                <h3 className="text-3xl font-bold mb-6">
                   Stabilità, sicurezza e trasparenza
                 </h3>
                 <p className="text-gray-300 leading-relaxed mb-6">
@@ -218,8 +212,7 @@ const TokenPage: React.FC = () => {
 
               {/* La missione */}
               <div className="bg-gradient-to-r from-gray-900 via-black to-gray-900 border border-gray-800 rounded-2xl p-8 mt-12">
-                <h3 className="text-3xl font-bold mb-6 flex items-center gap-3">
-                  <span>💬</span>
+                <h3 className="text-3xl font-bold mb-6">
                   La missione
                 </h3>
                 <p className="text-gray-300 leading-relaxed mb-6">
@@ -239,8 +232,7 @@ const TokenPage: React.FC = () => {
 
               {/* La visione */}
               <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 mt-12">
-                <h3 className="text-3xl font-bold mb-6 flex items-center gap-3">
-                  <span>🚀</span>
+                <h3 className="text-3xl font-bold mb-6">
                   La visione
                 </h3>
                 <p className="text-gray-300 leading-relaxed mb-6">
@@ -258,7 +250,7 @@ const TokenPage: React.FC = () => {
 
               {/* Conclusione DR7 Coin */}
               <div className="bg-black border-2 border-white rounded-2xl p-10 mt-12 text-center">
-                <h3 className="text-3xl font-bold mb-4">🖤 In una frase</h3>
+                <h3 className="text-3xl font-bold mb-4">In una frase</h3>
                 <p className="text-2xl font-bold text-white leading-relaxed">
                   DR7 Coin è la moneta del lusso reale.<br/>
                   Cresce con DR7, cresce con te,<br/>
@@ -282,7 +274,7 @@ const TokenPage: React.FC = () => {
           >
             <div className="mb-12">
               <h2 className="text-4xl md:text-5xl font-bold mb-4">
-                🚗 DR7 Up – Il primo "Uber delle Supercar" al mondo
+                DR7 Up – Il primo "Uber delle Supercar" al mondo
               </h2>
               <p className="text-xl text-gray-400 leading-relaxed">
                 Dubai Rent 7.0 S.p.A. presenta <strong className="text-white">DR7 Up</strong>, un progetto esclusivo e rivoluzionario
@@ -294,7 +286,7 @@ const TokenPage: React.FC = () => {
               <p className="text-lg text-gray-300 leading-relaxed">
                 Un sistema digitale ispirato alla logica di Uber, ma con una differenza sostanziale e unica al mondo:<br/>
                 <strong className="text-white text-xl">
-                  👉 nessun taxi bianco, nessun NCC tradizionale, nessuna vettura comune.<br/>
+                  nessun taxi bianco, nessun NCC tradizionale, nessuna vettura comune.<br/>
                   Con DR7 Up si opera solo ed esclusivamente con Supercar.
                 </strong>
               </p>
@@ -308,8 +300,7 @@ const TokenPage: React.FC = () => {
 
               {/* Un concetto totalmente nuovo */}
               <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 mt-12">
-                <h3 className="text-3xl font-bold mb-6 flex items-center gap-3">
-                  <span>🌍</span>
+                <h3 className="text-3xl font-bold mb-6">
                   Un concetto totalmente nuovo
                 </h3>
                 <p className="text-gray-300 leading-relaxed mb-6">
@@ -333,8 +324,7 @@ const TokenPage: React.FC = () => {
 
               {/* Come funziona */}
               <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 mt-12">
-                <h3 className="text-3xl font-bold mb-6 flex items-center gap-3">
-                  <span>💼</span>
+                <h3 className="text-3xl font-bold mb-6">
                   Come funziona
                 </h3>
                 <div className="space-y-4">
@@ -357,8 +347,7 @@ const TokenPage: React.FC = () => {
 
               {/* Perché è diverso */}
               <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-2xl p-8 mt-12">
-                <h3 className="text-3xl font-bold mb-6 flex items-center gap-3">
-                  <span>🖤</span>
+                <h3 className="text-3xl font-bold mb-6">
                   Perché è diverso
                 </h3>
                 <p className="text-gray-300 leading-relaxed mb-6">
@@ -379,7 +368,7 @@ const TokenPage: React.FC = () => {
 
               {/* Missione DR7 UP */}
               <div className="bg-black border-2 border-white rounded-2xl p-10 mt-12 text-center">
-                <h3 className="text-3xl font-bold mb-4">💬 La missione</h3>
+                <h3 className="text-3xl font-bold mb-4">La missione</h3>
                 <p className="text-2xl font-bold text-white leading-relaxed">
                   Rendere il lusso immediato, digitale e accessibile in qualsiasi momento,<br/>
                   a chi vive la strada come espressione di sé.<br/><br/>
@@ -408,7 +397,7 @@ const TokenPage: React.FC = () => {
           >
             <div className="mb-12">
               <h2 className="text-4xl md:text-5xl font-bold mb-4">
-                📱 DR7 APP – La Prima Piattaforma Globale del Lusso Reale
+                DR7 APP – La Prima Piattaforma Globale del Lusso Reale
               </h2>
               <p className="text-xl text-gray-400 leading-relaxed">
                 Dubai Rent 7.0 S.p.A. presenta <strong className="text-white">DR7 APP</strong>, la prima piattaforma digitale
@@ -425,7 +414,7 @@ const TokenPage: React.FC = () => {
 
               {/* Un progetto rivoluzionario */}
               <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 mt-12">
-                <h3 className="text-3xl font-bold mb-6 flex items-center gap-3">
+                <h3 className="text-3xl font-bold mb-6">
                   <span>🏛️</span>
                   Un progetto rivoluzionario
                 </h3>
@@ -445,8 +434,7 @@ const TokenPage: React.FC = () => {
 
               {/* Il modello operativo */}
               <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-2xl p-8 mt-12">
-                <h3 className="text-3xl font-bold mb-6 flex items-center gap-3">
-                  <span>💼</span>
+                <h3 className="text-3xl font-bold mb-6">
                   Il modello operativo DR7
                 </h3>
                 <p className="text-gray-300 leading-relaxed mb-6">
@@ -486,8 +474,7 @@ const TokenPage: React.FC = () => {
 
               {/* Perché è diversa */}
               <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 mt-12">
-                <h3 className="text-3xl font-bold mb-6 flex items-center gap-3">
-                  <span>💎</span>
+                <h3 className="text-3xl font-bold mb-6">
                   Perché è diversa da tutto ciò che esiste oggi
                 </h3>
                 <p className="text-gray-300 leading-relaxed mb-6">
@@ -537,8 +524,7 @@ const TokenPage: React.FC = () => {
 
               {/* Un ecosistema meritocratico */}
               <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 mt-12">
-                <h3 className="text-3xl font-bold mb-6 flex items-center gap-3">
-                  <span>🖤</span>
+                <h3 className="text-3xl font-bold mb-6">
                   Un ecosistema meritocratico
                 </h3>
                 <p className="text-gray-300 leading-relaxed mb-6">
@@ -560,8 +546,7 @@ const TokenPage: React.FC = () => {
 
               {/* Espansione globale */}
               <div className="bg-gradient-to-r from-gray-900 via-black to-gray-900 border border-gray-800 rounded-2xl p-8 mt-12">
-                <h3 className="text-3xl font-bold mb-6 flex items-center gap-3">
-                  <span>🌍</span>
+                <h3 className="text-3xl font-bold mb-6">
                   Espansione e Visione Globale
                 </h3>
                 <p className="text-gray-300 leading-relaxed mb-6">
@@ -585,7 +570,7 @@ const TokenPage: React.FC = () => {
 
               {/* Missione DR7 APP */}
               <div className="bg-black border-2 border-white rounded-2xl p-10 mt-12 text-center">
-                <h3 className="text-3xl font-bold mb-6">💬 La missione</h3>
+                <h3 className="text-3xl font-bold mb-6">La missione</h3>
                 <p className="text-3xl font-bold text-white mb-8 leading-relaxed">
                   Restituire centralità e valore<br/>
                   a chi costruisce il lusso,<br/>
@@ -605,7 +590,7 @@ const TokenPage: React.FC = () => {
 
               {/* Conclusione DR7 APP */}
               <div className="bg-gradient-to-br from-gray-900 via-black to-gray-900 border-2 border-white rounded-2xl p-10 mt-12 text-center">
-                <h3 className="text-3xl font-bold mb-6">🏆 In una frase</h3>
+                <h3 className="text-3xl font-bold mb-6">In una frase</h3>
                 <p className="text-3xl font-bold text-white leading-relaxed mb-6">
                   DR7 APP è la nuova infrastruttura digitale<br/>
                   del lusso mondiale.
