@@ -11,7 +11,7 @@ interface Message {
 }
 
 // Function to parse markdown links and convert to React elements
-const parseMessageContent = (content: string) => {
+const parseMessageContent = (content: string, onLinkClick?: () => void) => {
   const parts: (string | JSX.Element)[] = [];
   const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
   let lastIndex = 0;
@@ -37,6 +37,7 @@ const parseMessageContent = (content: string) => {
         <Link
           key={`link-${match.index}`}
           to={path}
+          onClick={onLinkClick}
           className="text-blue-400 hover:text-blue-300 underline font-semibold inline-block"
         >
           {linkText}
@@ -230,7 +231,7 @@ const DR7AIChat: React.FC<DR7AIChatProps> = ({ isOpen, onClose }) => {
                   }`}
                 >
                   <div className="text-sm whitespace-pre-wrap leading-relaxed">
-                    {parseMessageContent(message.content)}
+                    {parseMessageContent(message.content, onClose)}
                   </div>
                   <p className={`text-xs mt-1 ${message.isUser ? 'text-black/60' : 'text-gray-500'}`}>
                     {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
