@@ -8,6 +8,7 @@ import type { CommercialOperation, Prize } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import type { Stripe, StripeElements, StripeCardElement } from '@stripe/stripe-js';
 import { ImageCarousel } from '../components/ui/ImageCarousel';
+import SalesPopTickets from '../components/ui/SalesPopTickets';
 
 // Safely access the Stripe publishable key from Vite's environment variables.
 // If it's not available (e.g., in a non-Vite environment), it falls back to a placeholder.
@@ -421,6 +422,9 @@ const CommercialOperationPage: React.FC = () => {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* Sales Pop Notifications */}
+            <SalesPopTickets />
         </motion.div>
     );
 };
