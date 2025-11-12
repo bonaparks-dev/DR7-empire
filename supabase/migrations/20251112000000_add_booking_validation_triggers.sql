@@ -10,8 +10,8 @@ DECLARE
   requested_end_minutes INTEGER;
   requested_duration_hours NUMERIC;
 BEGIN
-  -- Only validate car wash bookings with succeeded payment
-  IF NEW.service_type = 'car_wash' AND (NEW.payment_status = 'succeeded' OR TG_OP = 'INSERT') THEN
+  -- Only validate car wash bookings with succeeded/completed/paid payment
+  IF NEW.service_type = 'car_wash' AND (NEW.payment_status IN ('succeeded', 'completed', 'paid') OR TG_OP = 'INSERT') THEN
 
     -- Calculate service duration based on price (25€ = 1 hour)
     requested_duration_hours := CEIL((NEW.price_total / 100.0) / 25.0);
@@ -26,7 +26,7 @@ BEGIN
     FROM bookings
     WHERE
       service_type = 'car_wash'
-      AND payment_status = 'succeeded'
+      AND payment_status IN ('succeeded', 'completed', 'paid')
       AND DATE(appointment_date) = DATE(NEW.appointment_date)
       AND id != COALESCE(NEW.id, '00000000-0000-0000-0000-000000000000'::UUID)
       AND (
