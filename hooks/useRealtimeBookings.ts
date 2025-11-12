@@ -60,9 +60,7 @@ export function useRealtimeBookings(
 
       let query = supabase
         .from('bookings')
-        .select('*')
-        .in('status', ['confirmed', 'pending', 'held'])
-        .in('payment_status', ['succeeded', 'completed', 'paid', 'pending']);
+        .select('*');
 
       // Apply filters
       if (serviceType === 'car_rental') {
@@ -88,7 +86,15 @@ export function useRealtimeBookings(
 
       if (fetchError) throw fetchError;
 
-      setBookings(data || []);
+      // Filter in JavaScript to avoid PostgREST query issues
+      const filtered = (data || []).filter(booking => {
+        // Only include bookings with valid status and payment_status
+        const validStatus = ['confirmed', 'pending', 'held'].includes(booking.status);
+        const validPayment = ['succeeded', 'completed', 'paid', 'pending'].includes(booking.payment_status);
+        return validStatus && validPayment;
+      });
+
+      setBookings(filtered);
     } catch (err) {
       console.error('Error fetching bookings:', err);
       setError(err as Error);
