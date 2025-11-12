@@ -802,7 +802,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     return Object.keys(newErrors).length === 0;
   };
 
-  const finalizeBooking = async () => {
+  const finalizeBooking = async (paymentIntentId?: string) => {
     if (!user) {
       setErrors(prev => ({ ...prev, form: "You must be logged in to book." }));
       setIsProcessing(false);
@@ -868,8 +868,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   price_total: Math.round(total * 100),
   currency: currency.toUpperCase(),
   status: 'pending',
-  payment_status: 'pending',
+  payment_status: paymentIntentId ? 'succeeded' : 'pending',
   payment_method: formData.paymentMethod,
+  stripe_payment_intent_id: paymentIntentId || null,
   booked_at: new Date().toISOString(),
   booking_details: {
     customer: {
@@ -989,7 +990,7 @@ setIsProcessing(false);
       }
 
       if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
-        await finalizeBooking();
+        await finalizeBooking(paymentIntent.id);
       } else {
         setStripeError("Payment not completed. Status: " + paymentIntent?.status);
         setIsProcessing(false);
