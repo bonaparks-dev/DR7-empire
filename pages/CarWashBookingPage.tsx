@@ -75,7 +75,7 @@ const CarWashBookingPage: React.FC = () => {
         .from('bookings')
         .select('*')
         .eq('service_type', 'car_wash')
-        .in('payment_status', ['succeeded', 'completed', 'paid'])
+        .in('status', ['confirmed', 'pending', 'held'])
         .then(({ data, error }) => {
           if (error) {
             console.error('Error fetching existing bookings:', error);
