@@ -84,12 +84,16 @@ const CarWashBookingPage: React.FC = () => {
             return;
           }
           if (data) {
+            console.log('🔍 All car wash bookings fetched:', data);
             // Filter by date in code since appointment_date comparison needs special handling
             const filtered = data.filter(booking => {
               if (!booking.appointment_date) return false;
               const bookingDate = new Date(booking.appointment_date).toISOString().split('T')[0];
+              console.log(`Comparing booking date ${bookingDate} with selected date ${formData.appointmentDate}`);
               return bookingDate === formData.appointmentDate;
             });
+            console.log('✅ Filtered bookings for selected date:', filtered);
+            console.log('📅 Selected date:', formData.appointmentDate);
             setExistingBookings(filtered);
           }
         })
@@ -303,14 +307,23 @@ const CarWashBookingPage: React.FC = () => {
       const startMinutes = timeToMinutes(startTime);
       const endMinutes = startMinutes + (durationHours * 60);
 
-      return existingBookings.some(booking => {
+      const hasConflict = existingBookings.some(booking => {
+        if (!booking.appointment_time) {
+          console.warn('⚠️ Booking missing appointment_time:', booking);
+          return false;
+        }
         const bookingStart = timeToMinutes(booking.appointment_time);
         const bookingDuration = getServiceDurationInHours(booking.price_total / 100);
         const bookingEnd = bookingStart + (bookingDuration * 60);
 
-        // Check if there's any overlap
-        return (startMinutes < bookingEnd && endMinutes > bookingStart);
+        const overlap = (startMinutes < bookingEnd && endMinutes > bookingStart);
+        if (overlap) {
+          console.log(`❌ Time slot ${startTime} conflicts with existing booking at ${booking.appointment_time}`);
+        }
+        return overlap;
       });
+
+      return hasConflict;
     };
 
     // Helper to check if service can fit in time range
