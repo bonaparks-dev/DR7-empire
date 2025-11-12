@@ -277,7 +277,118 @@ const CarWashBookingPage: React.FC = () => {
     }
   };
 
+  const getAllTimeSlotsWithAvailability = () => {
+    if (!selectedService || !formData.appointmentDate) return [];
+
+    const serviceDuration = getServiceDurationInHours(selectedService.price);
+
+    // Define valid time slots based on time ranges
+    // Morning: 9:00-12:00, Afternoon: 15:00-18:00
+    const allTimeSlots = [
+      '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00',
+      '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00'
+    ];
+
+    // Parse selected date as local date to avoid timezone issues
+    const [year, month, day] = formData.appointmentDate.split('-').map(Number);
+    const selectedDate = new Date(year, month - 1, day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const isToday = selectedDate.toDateString() === today.toDateString();
+
+    // Helper to convert time string to minutes
+    const timeToMinutes = (time: string) => {
+      const [h, m] = time.split(':').map(Number);
+      return h * 60 + m;
+    };
+
+    // Helper to check if a time range overlaps with existing booking
+    const hasOverlap = (startTime: string, durationHours: number) => {
+      const startMinutes = timeToMinutes(startTime);
+      const endMinutes = startMinutes + (durationHours * 60);
+
+      const hasConflict = existingBookings.some(booking => {
+        if (!booking.appointment_time) {
+          console.warn('⚠️ Booking missing appointment_time:', booking);
+          return false;
+        }
+        const bookingStart = timeToMinutes(booking.appointment_time);
+        const bookingDuration = getServiceDurationInHours(booking.price_total / 100);
+        const bookingEnd = bookingStart + (bookingDuration * 60);
+
+        const overlap = (startMinutes < bookingEnd && endMinutes > bookingStart);
+        if (overlap) {
+          console.log(`❌ Time slot ${startTime} conflicts with existing booking at ${booking.appointment_time}`);
+        }
+        return overlap;
+      });
+
+      return hasConflict;
+    };
+
+    // Helper to check if service can fit in time range
+    const canFitInRange = (startTime: string, durationHours: number) => {
+      const startMinutes = timeToMinutes(startTime);
+      const endMinutes = startMinutes + (durationHours * 60);
+
+      if (durationHours >= 4) {
+        return startMinutes === 9 * 60 || startMinutes === 15 * 60;
+      }
+
+      if (durationHours === 1) {
+        if (startMinutes >= 9 * 60 && startMinutes <= 12 * 60) return true;
+        if (startMinutes >= 15 * 60 && startMinutes <= 18 * 60) return true;
+        return false;
+      }
+
+      if (durationHours === 2) {
+        if (startMinutes >= 9 * 60 && startMinutes <= 11 * 60) return true;
+        if (startMinutes >= 15 * 60 && startMinutes <= 17 * 60) return true;
+        return false;
+      }
+
+      if (durationHours === 3) {
+        if (startMinutes >= 9 * 60 && startMinutes <= 10 * 60) return endMinutes <= 13 * 60;
+        if (startMinutes >= 15 * 60 && startMinutes <= 16 * 60) return endMinutes <= 19 * 60;
+        return false;
+      }
+
+      return false;
+    };
+
+    return allTimeSlots.map(slot => {
+      let reason = '';
+      let available = true;
+
+      if (!canFitInRange(slot, serviceDuration)) {
+        reason = 'Service too long';
+        available = false;
+      } else if (isToday) {
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const slotMinutes = timeToMinutes(slot);
+        if (slotMinutes < currentMinutes + 120) {
+          reason = 'Too soon';
+          available = false;
+        }
+      }
+
+      if (available && hasOverlap(slot, serviceDuration)) {
+        reason = 'Already booked';
+        available = false;
+      }
+
+      return { time: slot, available, reason };
+    });
+  };
+
   const getAvailableTimeSlots = () => {
+    return getAllTimeSlotsWithAvailability()
+      .filter(slot => slot.available)
+      .map(slot => slot.time);
+  };
+
+  const getAvailableTimeSlots_OLD = () => {
     if (!selectedService || !formData.appointmentDate) return [];
 
     const serviceDuration = getServiceDurationInHours(selectedService.price);
@@ -794,17 +905,33 @@ const CarWashBookingPage: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     {lang === 'it' ? 'Ora' : 'Time'} *
                   </label>
-                  <select
-                    name="appointmentTime"
-                    value={formData.appointmentTime}
-                    onChange={handleChange}
-                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
-                  >
-                    <option value="">{lang === 'it' ? 'Seleziona orario' : 'Select time'}</option>
-                    {getAvailableTimeSlots().map(slot => (
-                      <option key={slot} value={slot}>{slot}</option>
+                  <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
+                    {getAllTimeSlotsWithAvailability().map(slot => (
+                      <button
+                        key={slot.time}
+                        type="button"
+                        disabled={!slot.available}
+                        onClick={() => setFormData(prev => ({ ...prev, appointmentTime: slot.time }))}
+                        className={`
+                          px-4 py-3 rounded-lg font-semibold text-sm transition-all
+                          ${formData.appointmentTime === slot.time
+                            ? 'bg-white text-black ring-2 ring-white'
+                            : slot.available
+                            ? 'bg-gray-700 text-white hover:bg-gray-600 border border-gray-600'
+                            : 'bg-gray-900 text-gray-500 border-2 border-red-500 cursor-not-allowed opacity-60'
+                          }
+                        `}
+                        title={!slot.available ? (lang === 'it' ? `Non disponibile: ${slot.reason}` : `Unavailable: ${slot.reason}`) : ''}
+                      >
+                        {slot.time}
+                        {!slot.available && slot.reason === 'Already booked' && (
+                          <span className="block text-xs mt-1 text-red-400">
+                            {lang === 'it' ? 'Occupato' : 'Booked'}
+                          </span>
+                        )}
+                      </button>
                     ))}
-                  </select>
+                  </div>
                   {errors.appointmentTime && <p className="text-xs text-red-400 mt-1">{errors.appointmentTime}</p>}
                 </div>
               </div>
