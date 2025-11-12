@@ -62,12 +62,13 @@ export function useRealtimeBookings(
         .from('bookings')
         .select('*');
 
-      // Apply filters
-      if (serviceType === 'car_rental') {
-        query = query.is('service_type', null).not('vehicle_name', 'is', null);
-      } else if (serviceType === 'car_wash') {
-        query = query.eq('service_type', 'car_wash');
-      }
+      // Apply filters - commenting out service_type filter due to PostgREST bug
+      // We'll filter in JavaScript instead
+      // if (serviceType === 'car_rental') {
+      //   query = query.is('service_type', null).not('vehicle_name', 'is', null);
+      // } else if (serviceType === 'car_wash') {
+      //   query = query.eq('service_type', 'car_wash');
+      // }
 
       if (vehicleName) {
         query = query.eq('vehicle_name', vehicleName);
@@ -88,10 +89,19 @@ export function useRealtimeBookings(
 
       // Filter in JavaScript to avoid PostgREST query issues
       const filtered = (data || []).filter(booking => {
+        // Filter by service type
+        let matchesService = true;
+        if (serviceType === 'car_rental') {
+          matchesService = !booking.service_type || booking.service_type !== 'car_wash';
+        } else if (serviceType === 'car_wash') {
+          matchesService = booking.service_type === 'car_wash';
+        }
+
         // Only include bookings with valid status and payment_status
         const validStatus = ['confirmed', 'pending', 'held'].includes(booking.status);
         const validPayment = ['succeeded', 'completed', 'paid', 'pending'].includes(booking.payment_status);
-        return validStatus && validPayment;
+
+        return matchesService && validStatus && validPayment;
       });
 
       setBookings(filtered);
