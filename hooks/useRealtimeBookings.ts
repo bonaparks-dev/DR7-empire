@@ -58,12 +58,12 @@ export function useRealtimeBookings(
       setLoading(true);
       setError(null);
 
-      // Use the view for car_wash to avoid PostgREST issues with bookings table
-      const tableName = serviceType === 'car_wash' ? 'car_wash_bookings_simple' : 'bookings';
+      // Select only specific columns to avoid PostgREST issues with the 79-column bookings table
+      const columns = 'id,service_type,service_name,appointment_date,appointment_time,price_total,status,payment_status,customer_name,customer_email,booking_source,created_at,vehicle_name,pickup_date,dropoff_date';
 
       let query = supabase
-        .from(tableName)
-        .select('*');
+        .from('bookings')
+        .select(columns);
 
       // Apply filters - commenting out service_type filter due to PostgREST bug
       // We'll filter in JavaScript instead
