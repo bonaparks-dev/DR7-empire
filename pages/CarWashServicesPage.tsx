@@ -20,7 +20,7 @@ const SERVICES: Service[] = [
     id: 'full-clean',
     name: 'LAVAGGIO COMPLETO',
     nameEn: 'FULL CLEAN',
-    price: 1,
+    price: 25,
     duration: '30-45 min',
     description: 'Rapido e completo, per un\'auto pulita ogni giorno.',
     descriptionEn: 'Quick and complete, for a clean car every day.',
