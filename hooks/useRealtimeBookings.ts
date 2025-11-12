@@ -1,0 +1,287 @@
+import { useEffect, useState, useCallback } from 'react';
+import { supabase } from '../supabaseClient';
+import type { RealtimeChannel } from '@supabase/supabase-js';
+
+export interface Booking {
+  id: string;
+  service_type?: string;
+  vehicle_name?: string;
+  pickup_date?: string;
+  dropoff_date?: string;
+  appointment_date?: string;
+  appointment_time?: string;
+  status: string;
+  payment_status?: string;
+  price_total: number;
+  hold_expires_at?: string;
+  held_by?: string;
+  booking_source?: string;
+  [key: string]: any;
+}
+
+interface UseRealtimeBookingsOptions {
+  serviceType?: 'car_rental' | 'car_wash' | 'all';
+  date?: string; // For filtering by specific date
+  vehicleName?: string; // For filtering by specific vehicle
+  autoRefresh?: boolean; // Auto-refresh on changes
+}
+
+interface UseRealtimeBookingsReturn {
+  bookings: Booking[];
+  loading: boolean;
+  error: Error | null;
+  refetch: () => Promise<void>;
+  isSlotAvailable: (params: {
+    serviceType: 'car_rental' | 'car_wash';
+    vehicleName?: string;
+    startTime?: string;
+    endTime?: string;
+    date?: string;
+    time?: string;
+    durationHours?: number;
+  }) => Promise<{ available: boolean; message?: string }>;
+}
+
+export function useRealtimeBookings(
+  options: UseRealtimeBookingsOptions = {}
+): UseRealtimeBookingsReturn {
+  const { serviceType = 'all', date, vehicleName, autoRefresh = true } = options;
+
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [channel, setChannel] = useState<RealtimeChannel | null>(null);
+
+  // Fetch bookings from database
+  const fetchBookings = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      let query = supabase
+        .from('bookings')
+        .select('*')
+        .in('status', ['confirmed', 'pending', 'held'])
+        .in('payment_status', ['succeeded', 'completed', 'paid', 'pending']);
+
+      // Apply filters
+      if (serviceType === 'car_rental') {
+        query = query.is('service_type', null).not('vehicle_name', 'is', null);
+      } else if (serviceType === 'car_wash') {
+        query = query.eq('service_type', 'car_wash');
+      }
+
+      if (vehicleName) {
+        query = query.eq('vehicle_name', vehicleName);
+      }
+
+      if (date && serviceType === 'car_wash') {
+        // For car wash, filter by appointment date
+        query = query.gte('appointment_date', `${date}T00:00:00`)
+                     .lte('appointment_date', `${date}T23:59:59`);
+      } else if (date && serviceType === 'car_rental') {
+        // For car rental, filter by pickup/dropoff date range
+        query = query.or(`pickup_date.lte.${date}T23:59:59,dropoff_date.gte.${date}T00:00:00`);
+      }
+
+      const { data, error: fetchError } = await query.order('created_at', { ascending: false });
+
+      if (fetchError) throw fetchError;
+
+      setBookings(data || []);
+    } catch (err) {
+      console.error('Error fetching bookings:', err);
+      setError(err as Error);
+    } finally {
+      setLoading(false);
+    }
+  }, [serviceType, date, vehicleName]);
+
+  // Check if a slot is available
+  const isSlotAvailable = useCallback(async (params: {
+    serviceType: 'car_rental' | 'car_wash';
+    vehicleName?: string;
+    startTime?: string;
+    endTime?: string;
+    date?: string;
+    time?: string;
+    durationHours?: number;
+  }): Promise<{ available: boolean; message?: string }> => {
+    try {
+      if (params.serviceType === 'car_rental') {
+        if (!params.vehicleName || !params.startTime || !params.endTime) {
+          throw new Error('Vehicle name, start time, and end time are required for car rental');
+        }
+
+        const { data, error } = await supabase.rpc('check_unified_vehicle_availability', {
+          p_vehicle_name: params.vehicleName,
+          p_start_time: params.startTime,
+          p_end_time: params.endTime,
+        });
+
+        if (error) throw error;
+
+        return {
+          available: data?.[0]?.is_available || false,
+          message: data?.[0]?.conflict_message,
+        };
+      } else {
+        // Car wash
+        if (!params.date || !params.time || !params.durationHours) {
+          throw new Error('Date, time, and duration are required for car wash');
+        }
+
+        const { data, error } = await supabase.rpc('check_unified_carwash_availability', {
+          p_date: params.date,
+          p_time: params.time,
+          p_duration_hours: params.durationHours,
+        });
+
+        if (error) throw error;
+
+        return {
+          available: data?.[0]?.is_available || false,
+          message: data?.[0]?.conflict_message,
+        };
+      }
+    } catch (err) {
+      console.error('Error checking availability:', err);
+      return {
+        available: false,
+        message: 'Error checking availability',
+      };
+    }
+  }, []);
+
+  // Set up real-time subscription
+  useEffect(() => {
+    // Initial fetch
+    fetchBookings();
+
+    if (!autoRefresh) return;
+
+    // Set up real-time channel
+    const realtimeChannel = supabase
+      .channel('bookings-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bookings',
+        },
+        (payload) => {
+          console.log('📡 Real-time booking change:', payload);
+
+          // Refetch all bookings to ensure consistency
+          fetchBookings();
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Real-time subscription status:', status);
+      });
+
+    setChannel(realtimeChannel);
+
+    // Cleanup
+    return () => {
+      if (realtimeChannel) {
+        supabase.removeChannel(realtimeChannel);
+      }
+    };
+  }, [fetchBookings, autoRefresh]);
+
+  return {
+    bookings,
+    loading,
+    error,
+    refetch: fetchBookings,
+    isSlotAvailable,
+  };
+}
+
+// Hook specifically for car wash availability
+export function useCarWashAvailability(date?: string) {
+  const { bookings, loading, isSlotAvailable, refetch } = useRealtimeBookings({
+    serviceType: 'car_wash',
+    date,
+    autoRefresh: true,
+  });
+
+  const getAvailableSlots = useCallback((
+    servicePriceEuros: number,
+    selectedDate: string
+  ): { time: string; available: boolean; reason?: string }[] => {
+    const allSlots = [
+      '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00',
+      '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00'
+    ];
+
+    const durationHours = Math.ceil(servicePriceEuros / 25);
+
+    return allSlots.map(time => {
+      // Check if this slot conflicts with existing bookings
+      const conflict = bookings.some(booking => {
+        if (!booking.appointment_time) return false;
+
+        const bookingStart = timeToMinutes(booking.appointment_time);
+        const bookingDuration = Math.ceil((booking.price_total / 100) / 25);
+        const bookingEnd = bookingStart + (bookingDuration * 60);
+
+        const slotStart = timeToMinutes(time);
+        const slotEnd = slotStart + (durationHours * 60);
+
+        return slotStart < bookingEnd && slotEnd > bookingStart;
+      });
+
+      return {
+        time,
+        available: !conflict,
+        reason: conflict ? 'Already booked' : undefined,
+      };
+    });
+  }, [bookings]);
+
+  return {
+    bookings,
+    loading,
+    getAvailableSlots,
+    isSlotAvailable,
+    refetch,
+  };
+}
+
+// Hook specifically for vehicle availability
+export function useVehicleAvailability(vehicleName?: string) {
+  const { bookings, loading, isSlotAvailable, refetch } = useRealtimeBookings({
+    serviceType: 'car_rental',
+    vehicleName,
+    autoRefresh: true,
+  });
+
+  const isVehicleAvailable = useCallback(async (
+    vehicle: string,
+    startDate: string,
+    endDate: string
+  ): Promise<{ available: boolean; message?: string }> => {
+    return isSlotAvailable({
+      serviceType: 'car_rental',
+      vehicleName: vehicle,
+      startTime: startDate,
+      endTime: endDate,
+    });
+  }, [isSlotAvailable]);
+
+  return {
+    bookings,
+    loading,
+    isVehicleAvailable,
+    refetch,
+  };
+}
+
+// Helper function
+function timeToMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+}
