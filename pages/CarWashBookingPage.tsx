@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
 import { SERVICES, ADDITIONAL_SERVICES, Service } from './CarWashServicesPage';
+import { useCarWashAvailability } from '../hooks/useRealtimeBookings';
 import type { Stripe, StripeElements } from '@stripe/stripe-js';
 
 const STRIPE_PUBLISHABLE_KEY = 'pk_live_51S3dDjQcprtTyo8tBfBy5mAZj8PQXkxfZ1RCnWskrWFZ2WEnm1u93ZnE2tBi316Gz2CCrvLV98IjSoiXb0vSDpOQ003fNG69Y2';
@@ -60,7 +61,9 @@ const CarWashBookingPage: React.FC = () => {
   const [stripeError, setStripeError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [pendingBookingData, setPendingBookingData] = useState<any>(null);
-  const [existingBookings, setExistingBookings] = useState<any[]>([]);
+
+  // Use the real-time hook for bookings
+  const { bookings: existingBookings, loading: bookingsLoading } = useCarWashAvailability(formData.appointmentDate);
 
   // Helper function to get service duration in hours based on price
   const getServiceDurationInHours = (price: number): number => {
@@ -68,42 +71,11 @@ const CarWashBookingPage: React.FC = () => {
     return Math.ceil(price / 25);
   };
 
-  // Fetch existing bookings for selected date
+  // Log bookings for debugging
   useEffect(() => {
-    if (formData.appointmentDate) {
-      supabase
-        .from('bookings')
-        .select('*')
-        .eq('service_type', 'car_wash')
-        .in('status', ['confirmed', 'pending', 'held'])
-        .in('payment_status', ['succeeded', 'completed', 'paid', 'pending'])
-        .then(({ data, error }) => {
-          if (error) {
-            console.error('Error fetching existing bookings:', error);
-            // Don't block the booking flow if we can't fetch existing bookings
-            setExistingBookings([]);
-            return;
-          }
-          if (data) {
-            console.log('🔍 All car wash bookings fetched:', data);
-            // Filter by date in code since appointment_date comparison needs special handling
-            const filtered = data.filter(booking => {
-              if (!booking.appointment_date) return false;
-              const bookingDate = new Date(booking.appointment_date).toISOString().split('T')[0];
-              console.log(`Comparing booking date ${bookingDate} with selected date ${formData.appointmentDate}`);
-              return bookingDate === formData.appointmentDate;
-            });
-            console.log('✅ Filtered bookings for selected date:', filtered);
-            console.log('📅 Selected date:', formData.appointmentDate);
-            setExistingBookings(filtered);
-          }
-        })
-        .catch(err => {
-          console.error('Failed to fetch existing bookings:', err);
-          setExistingBookings([]);
-        });
-    }
-  }, [formData.appointmentDate]);
+    console.log('🔍 Existing bookings from hook:', existingBookings);
+    console.log('📅 Selected date:', formData.appointmentDate);
+  }, [existingBookings, formData.appointmentDate]);
 
   // Enforce min date on mount and update for mobile browsers
   useEffect(() => {
