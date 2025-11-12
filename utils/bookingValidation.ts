@@ -192,3 +192,101 @@ export function calculateDays(startDate: Date, endDate: Date): number {
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   return diffDays;
 }
+
+/**
+ * Helper to get service duration in hours based on price
+ * Each 25€ = 1 hour (€25=1h, €49=2h, €75=3h, €99=4h)
+ * @param priceInEuros - Service price in euros
+ * @returns Duration in hours
+ */
+function getServiceDurationInHours(priceInEuros: number): number {
+  return Math.ceil(priceInEuros / 25);
+}
+
+/**
+ * Convert time string (HH:MM) to minutes since midnight
+ * @param time - Time string in HH:MM format
+ * @returns Minutes since midnight
+ */
+function timeToMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+}
+
+/**
+ * Check if a car wash time slot is available
+ * @param appointmentDate - Date of appointment (YYYY-MM-DD format)
+ * @param appointmentTime - Time of appointment (HH:MM format)
+ * @param servicePriceInEuros - Price of the service in euros
+ * @param excludeBookingId - Optional booking ID to exclude from check (for edits)
+ * @returns Object with isAvailable flag and conflict info
+ */
+export async function checkCarWashAvailability(
+  appointmentDate: string,
+  appointmentTime: string,
+  servicePriceInEuros: number,
+  excludeBookingId?: string
+): Promise<{ isAvailable: boolean; conflictingBooking?: any; message?: string }> {
+  try {
+    // Get the duration for the requested service
+    const requestedDuration = getServiceDurationInHours(servicePriceInEuros);
+    const requestedStartMinutes = timeToMinutes(appointmentTime);
+    const requestedEndMinutes = requestedStartMinutes + (requestedDuration * 60);
+
+    // Query all car wash bookings for the same date with succeeded payment
+    let query = supabase
+      .from('bookings')
+      .select('*')
+      .eq('service_type', 'car_wash')
+      .eq('payment_status', 'succeeded');
+
+    // Filter by date (appointment_date contains full timestamp, so we need to filter by date part)
+    const { data: allBookings, error } = await query;
+
+    if (error) {
+      console.error('Error checking car wash availability:', error);
+      throw error;
+    }
+
+    // Filter by date in code since appointment_date comparison needs special handling
+    const bookingsOnDate = (allBookings || []).filter(booking => {
+      // Exclude the booking being edited
+      if (excludeBookingId && booking.id === excludeBookingId) {
+        return false;
+      }
+
+      if (!booking.appointment_date) return false;
+      const bookingDate = new Date(booking.appointment_date).toISOString().split('T')[0];
+      return bookingDate === appointmentDate;
+    });
+
+    // Check for time conflicts
+    for (const booking of bookingsOnDate) {
+      if (!booking.appointment_time || !booking.price_total) continue;
+
+      const bookingStartMinutes = timeToMinutes(booking.appointment_time);
+      const bookingDuration = getServiceDurationInHours(booking.price_total / 100);
+      const bookingEndMinutes = bookingStartMinutes + (bookingDuration * 60);
+
+      // Check if there's any overlap
+      const hasOverlap = (
+        requestedStartMinutes < bookingEndMinutes &&
+        requestedEndMinutes > bookingStartMinutes
+      );
+
+      if (hasOverlap) {
+        const bookingDate = new Date(booking.appointment_date);
+        return {
+          isAvailable: false,
+          conflictingBooking: booking,
+          message: `❌ Questo orario non è disponibile. È già prenotato dalle ${booking.appointment_time} per ${bookingDuration} ora/e.`
+        };
+      }
+    }
+
+    return { isAvailable: true };
+  } catch (error) {
+    console.error('Error in checkCarWashAvailability:', error);
+    throw error;
+  }
+}
