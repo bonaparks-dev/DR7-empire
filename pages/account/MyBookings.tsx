@@ -14,6 +14,7 @@ interface Booking {
   customer_email: string;
   customer_phone: string;
   appointment_date?: string;
+  appointment_time?: string;
   pickup_date?: string;
   dropoff_date?: string;
   pickup_location?: string;
@@ -160,7 +161,14 @@ const MyBookings = () => {
                           <p className="text-gray-400">
                             {lang === 'it' ? 'Data Appuntamento' : 'Appointment'}:
                           </p>
-                          <p className="text-white">{formatDate(booking.appointment_date)}</p>
+                          <p className="text-white">
+                            {new Date(booking.appointment_date).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', {
+                              day: '2-digit',
+                              month: 'long',
+                              year: 'numeric'
+                            })}
+                            {booking.appointment_time && ` ${lang === 'it' ? 'alle' : 'at'} ${booking.appointment_time}`}
+                          </p>
                         </div>
                       )}
 
