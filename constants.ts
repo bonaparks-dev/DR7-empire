@@ -43,19 +43,20 @@ const newCarsRawData = [
     "image": "/audi-rs3.jpeg",
     "color": "Verde"
   },
-  {
-    "id": 3,
-    "name": "Audi RS3 Rossa",
-    "dailyPrice": 60,
-    "specs": {
-      "acceleration": "0–100 in 3.8s",
-      "power": "400Cv",
-      "torque": "500Nm",
-      "engine": "2.5L inline 5-cylinder"
-    },
-    "image": "/rs3.jpeg",
-    "color": "Rossa"
-  },
+  // REMOVED: Audi RS3 Rossa - Hidden per request
+  // {
+  //   "id": 3,
+  //   "name": "Audi RS3 Rossa",
+  //   "dailyPrice": 60,
+  //   "specs": {
+  //     "acceleration": "0–100 in 3.8s",
+  //     "power": "400Cv",
+  //     "torque": "500Nm",
+  //     "engine": "2.5L inline 5-cylinder"
+  //   },
+  //   "image": "/rs3.jpeg",
+  //   "color": "Rossa"
+  // },
   {
     "id": 4,
     "name": "Mercedes A45 S AMG",
@@ -118,18 +119,19 @@ const newCarsRawData = [
     },
     "image": "/c63.jpeg"
   },
-  {
-    "id": 9,
-    "name": "Porsche Macan GTS",
-    "dailyPrice": 80,
-    "specs": {
-      "acceleration": "0–100 in 4.5s",
-      "power": "440Cv",
-      "torque": "550Nm",
-      "engine": "2.9L Twin-Turbo V6"
-    },
-    "image": "/macan.jpeg"
-  },
+  // REMOVED: Porsche Macan GTS - Hidden per request
+  // {
+  //   "id": 9,
+  //   "name": "Porsche Macan GTS",
+  //   "dailyPrice": 80,
+  //   "specs": {
+  //     "acceleration": "0–100 in 4.5s",
+  //     "power": "440Cv",
+  //     "torque": "550Nm",
+  //     "engine": "2.9L Twin-Turbo V6"
+  //   },
+  //   "image": "/macan.jpeg"
+  // },
   {
     "id": 10,
     "name": "Mercedes GLE 63 AMG",
