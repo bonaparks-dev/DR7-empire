@@ -236,7 +236,12 @@ export function useCarWashAvailability(date?: string) {
       '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00'
     ];
 
-    const durationHours = Math.ceil(servicePriceEuros / 25);
+    // Calculate duration: €25=1h, €49=2h, €75=3h, €99=4h
+    let durationHours = 1;
+    if (servicePriceEuros <= 25) durationHours = 1;
+    else if (servicePriceEuros <= 49) durationHours = 2;
+    else if (servicePriceEuros <= 75) durationHours = 3;
+    else durationHours = 4;
 
     return allSlots.map(time => {
       // Check if this slot conflicts with existing bookings
@@ -244,7 +249,12 @@ export function useCarWashAvailability(date?: string) {
         if (!booking.appointment_time) return false;
 
         const bookingStart = timeToMinutes(booking.appointment_time);
-        const bookingDuration = Math.ceil((booking.price_total / 100) / 25);
+        const bookingPriceEuros = booking.price_total / 100;
+        let bookingDuration = 1;
+        if (bookingPriceEuros <= 25) bookingDuration = 1;
+        else if (bookingPriceEuros <= 49) bookingDuration = 2;
+        else if (bookingPriceEuros <= 75) bookingDuration = 3;
+        else bookingDuration = 4;
         const bookingEnd = bookingStart + (bookingDuration * 60);
 
         const slotStart = timeToMinutes(time);

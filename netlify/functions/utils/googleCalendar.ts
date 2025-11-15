@@ -151,8 +151,13 @@ export const formatCarWashEvent = (booking: any): CalendarEventDetails => {
   const additionalService = booking.booking_details?.additionalService;
   const notes = booking.booking_details?.notes;
 
-  // Calculate duration based on service price (€25 per hour formula)
-  const durationHours = Math.ceil(totalPrice / 25);
+  // Calculate duration based on service price:
+  // €25 = 1h, €49 = 2h, €75 = 3h, €99 = 4h
+  let durationHours = 1;
+  if (totalPrice <= 25) durationHours = 1;
+  else if (totalPrice <= 49) durationHours = 2;
+  else if (totalPrice <= 75) durationHours = 3;
+  else durationHours = 4;
 
   const endDate = new Date(appointmentDate);
   endDate.setHours(endDate.getHours() + durationHours);

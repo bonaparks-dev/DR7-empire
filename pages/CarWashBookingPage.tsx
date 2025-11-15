@@ -67,8 +67,15 @@ const CarWashBookingPage: React.FC = () => {
 
   // Helper function to get service duration in hours based on price
   const getServiceDurationInHours = (price: number): number => {
-    // Each 25€ = 1 hour
-    return Math.ceil(price / 25);
+    // Exact price to duration mapping:
+    // €25 = 1 hour (LAVAGGIO COMPLETO)
+    // €49 = 2 hours (LAVAGGIO TOP)
+    // €75 = 3 hours (LAVAGGIO VIP)
+    // €99 = 4 hours (LAVAGGIO DR7 LUXURY)
+    if (price <= 25) return 1;
+    if (price <= 49) return 2;
+    if (price <= 75) return 3;
+    return 4;
   };
 
   // Log bookings for debugging
