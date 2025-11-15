@@ -163,7 +163,7 @@ const urbanCarsRawData = [
   {
     "id": 201,
     "name": "Fiat Panda Benzina (Arancione)",
-    "dailyPrice": 29.90,
+    "dailyPrice": 19.90,
     "specs": {
       "power": "70Cv",
       "engine": "1.2L Benzina",
@@ -175,7 +175,7 @@ const urbanCarsRawData = [
   {
     "id": 202,
     "name": "Fiat Panda Benzina (Bianca)",
-    "dailyPrice": 29.90,
+    "dailyPrice": 19.90,
     "specs": {
       "power": "70Cv",
       "engine": "1.2L Benzina",
@@ -187,7 +187,7 @@ const urbanCarsRawData = [
   {
     "id": 203,
     "name": "Fiat Panda Diesel (Grigia)",
-    "dailyPrice": 34.90,
+    "dailyPrice": 24.90,
     "specs": {
       "power": "95Cv",
       "engine": "1.3L MultiJet Diesel",
@@ -210,7 +210,7 @@ const urbanCarsRawData = [
   {
     "id": 205,
     "name": "Mercedes V Class VIP DR7",
-    "dailyPrice": 249,
+    "dailyPrice": 199,
     "specs": {
       "power": "163Cv",
       "engine": "2.0L Diesel",
@@ -221,7 +221,7 @@ const urbanCarsRawData = [
   {
     "id": 206,
     "name": "Furgone DR7 (Fiat Ducato Maxi)",
-    "dailyPrice": 79,
+    "dailyPrice": 59,
     "specs": {
       "power": "140Cv",
       "engine": "2.3L MultiJet",
