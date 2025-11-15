@@ -48,11 +48,10 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     const additionalService = booking.booking_details?.additionalService;
     const notes = booking.booking_details?.notes;
 
-    // Format date in Europe/Rome timezone
+    // Format date in Europe/Rome timezone with dd/mm/yyyy format
     const formattedDate = appointmentDate.toLocaleDateString('it-IT', {
-      weekday: 'long',
       day: '2-digit',
-      month: 'long',
+      month: '2-digit',
       year: 'numeric',
       timeZone: 'Europe/Rome'
     });
@@ -60,6 +59,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     const formattedTime = booking.appointment_time || appointmentDate.toLocaleTimeString('it-IT', {
       hour: '2-digit',
       minute: '2-digit',
+      hour12: false,
       timeZone: 'Europe/Rome'
     });
 
@@ -103,11 +103,11 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     const customerPhone = booking.customer_phone || booking.booking_details?.customer?.phone || 'N/A';
     const insuranceOption = booking.insurance_option || booking.booking_details?.insuranceOption || 'Nessuna';
 
-    // Format dates and times in Europe/Rome timezone
-    const pickupDateFormatted = pickupDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' });
-    const pickupTimeFormatted = pickupDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
-    const dropoffDateFormatted = dropoffDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' });
-    const dropoffTimeFormatted = dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
+    // Format dates and times in Europe/Rome timezone with dd/mm/yyyy and 24-hour format
+    const pickupDateFormatted = pickupDate.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Rome' });
+    const pickupTimeFormatted = pickupDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Rome' });
+    const dropoffDateFormatted = dropoffDate.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Rome' });
+    const dropoffTimeFormatted = dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Rome' });
 
     emailSubject = `Conferma Prenotazione #${bookingId.substring(0, 8).toUpperCase()}`;
     emailHtml = `
