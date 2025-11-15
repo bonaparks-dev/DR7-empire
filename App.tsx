@@ -70,6 +70,7 @@ import CarWashServicesPage from './pages/CarWashServicesPage';
 import CarWashBookingPage from './pages/CarWashBookingPage';
 import InvestitoriPage from './pages/InvestitoriPage';
 import TokenPage from './pages/TokenPage';
+import AdminCalendarPage from './pages/AdminCalendarPage';
 
 const AuthRedirector: React.FC = () => {
   const { user, authEvent } = useAuth();
@@ -107,6 +108,7 @@ const AnimatedRoutes = () => {
         <Route path="/helicopters/quote" element={<AviationQuoteRequestPage />} />
         <Route path="/car-wash-services" element={<CarWashServicesPage />} />
         <Route path="/car-wash-booking" element={<CarWashBookingPage />} />
+        <Route path="/admin/calendar" element={<AdminCalendarPage />} />
         {RENTAL_CATEGORIES
           .filter(category => !['car-wash-services', 'membership'].includes(category.id))
           .map(category => (

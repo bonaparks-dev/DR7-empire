@@ -568,22 +568,21 @@ const CarWashBookingPage: React.FC = () => {
 
     // Create full appointment timestamp in Europe/Rome timezone
     // This ensures the time is always interpreted as Italy time, regardless of user's browser timezone
-    const [year, month, day] = formData.appointmentDate.split('-').map(Number);
-    const [hours, minutes] = formData.appointmentTime.split(':').map(Number);
+    // Determine DST by checking the UTC offset for the selected date in Europe/Rome
+    const testDate = new Date(`${formData.appointmentDate}T12:00:00`);
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Europe/Rome',
+      timeZoneName: 'short'
+    });
+    const parts = formatter.formatToParts(testDate);
+    const timeZoneName = parts.find(part => part.type === 'timeZoneName')?.value || 'GMT+1';
 
-    // Create date string in ISO format with explicit timezone offset for Europe/Rome
-    // Italy is UTC+1 in winter (standard time) and UTC+2 in summer (daylight saving time)
-    // We'll construct the date and let the server handle the timezone conversion properly
-    const dateString = `${formData.appointmentDate}T${formData.appointmentTime}:00`;
-    const appointmentDateTime = new Date(dateString);
+    // Europe/Rome is UTC+1 in winter (CET) and UTC+2 in summer (CEST)
+    const isDST = timeZoneName.includes('CEST') || timeZoneName.includes('+2');
+    const timezoneOffset = isDST ? '+02:00' : '+01:00';
 
-    // Adjust for timezone: interpret the selected time as Italy time
-    // Get the offset between UTC and Europe/Rome at this date
-    const italyTimeString = new Date(dateString).toLocaleString('en-US', { timeZone: 'Europe/Rome' });
-    const italyDate = new Date(italyTimeString);
-    const localDate = new Date(dateString);
-    const offset = localDate.getTime() - italyDate.getTime();
-    const adjustedDateTime = new Date(appointmentDateTime.getTime() - offset);
+    // Create ISO string with explicit Italy timezone offset
+    const adjustedDateTime = new Date(`${formData.appointmentDate}T${formData.appointmentTime}:00${timezoneOffset}`);
 
     const bookingData = {
       user_id: user?.id || null,
@@ -706,7 +705,7 @@ const CarWashBookingPage: React.FC = () => {
         const additionalService = data.booking_details?.additionalService || '';
         const notes = data.booking_details?.notes || '';
 
-        // Format date and time in Europe/Rome timezone
+        // Format date in Europe/Rome timezone
         const dateOptions: Intl.DateTimeFormatOptions = {
           weekday: 'long',
           day: '2-digit',
@@ -714,13 +713,9 @@ const CarWashBookingPage: React.FC = () => {
           year: 'numeric',
           timeZone: 'Europe/Rome'
         };
-        const timeOptions: Intl.DateTimeFormatOptions = {
-          hour: '2-digit',
-          minute: '2-digit',
-          timeZone: 'Europe/Rome'
-        };
         const formattedDate = appointmentDate.toLocaleDateString('it-IT', dateOptions);
-        const formattedTime = appointmentDate.toLocaleTimeString('it-IT', timeOptions);
+        // Use the appointment_time field directly (e.g., "16:30") as it's the source of truth
+        const formattedTime = data.appointment_time;
 
         let whatsappMessage = `Ciao! Ho appena completato una prenotazione autolavaggio sul vostro sito.\n\n` +
           `📋 *Dettagli Prenotazione*\n` +

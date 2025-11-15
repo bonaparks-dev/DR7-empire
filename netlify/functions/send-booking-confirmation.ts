@@ -48,7 +48,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     const additionalService = booking.booking_details?.additionalService;
     const notes = booking.booking_details?.notes;
 
-    // Format date and time in Europe/Rome timezone
+    // Format date in Europe/Rome timezone
     const formattedDate = appointmentDate.toLocaleDateString('it-IT', {
       weekday: 'long',
       day: '2-digit',
@@ -56,7 +56,8 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       year: 'numeric',
       timeZone: 'Europe/Rome'
     });
-    const formattedTime = appointmentDate.toLocaleTimeString('it-IT', {
+    // Use the appointment_time field directly (e.g., "16:30") as it's the source of truth
+    const formattedTime = booking.appointment_time || appointmentDate.toLocaleTimeString('it-IT', {
       hour: '2-digit',
       minute: '2-digit',
       timeZone: 'Europe/Rome'

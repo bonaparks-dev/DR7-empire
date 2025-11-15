@@ -165,7 +165,8 @@ const MyBookings = () => {
                             {new Date(booking.appointment_date).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', {
                               day: '2-digit',
                               month: 'long',
-                              year: 'numeric'
+                              year: 'numeric',
+                              timeZone: 'Europe/Rome'
                             })}
                             {booking.appointment_time && ` ${lang === 'it' ? 'alle' : 'at'} ${booking.appointment_time}`}
                           </p>
