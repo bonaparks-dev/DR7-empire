@@ -203,11 +203,20 @@ const BookingModal: React.FC = () => {
                           type="date"
                           id="returnDate"
                           value={returnDate}
-                          onChange={e => setReturnDate(e.target.value)}
+                          onChange={e => {
+                            // Check if selected date is Sunday (0 = Sunday)
+                            const selectedDate = new Date(e.target.value);
+                            if (selectedDate.getDay() === 0) {
+                              alert('⚠️ Non è possibile riconsegnare il veicolo di domenica. Siamo chiusi la domenica.\n\nPer favore seleziona un altro giorno.');
+                              return;
+                            }
+                            setReturnDate(e.target.value);
+                          }}
                           min={pickupDate || today}
                           required
                           className="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm text-white focus:ring-white focus:border-white"
                         />
+                        <p className="text-xs text-yellow-400 mt-1">ℹ️ Chiusi la domenica - non è possibile riconsegnare</p>
                       </div>
 
                       <div>

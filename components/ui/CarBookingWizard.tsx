@@ -740,8 +740,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
           newErrors.returnTime = "Per la riconsegna in aeroporto, la durata minima del noleggio è di 2 ore.";
         }
 
-        // Check Saturday drop-off time limits
+        // Check Sunday drop-off (CLOSED)
         const returnDayOfWeek = returnD.getDay();
+        if (returnDayOfWeek === 0) { // Sunday = 0
+          newErrors.returnDate = "⚠️ Non è possibile riconsegnare il veicolo di domenica. Siamo chiusi. Seleziona un altro giorno.";
+        }
+
+        // Check Saturday drop-off time limits
         if (returnDayOfWeek === 6) { // Saturday = 6
           const returnHour = parseInt(formData.returnTime.split(':')[0]);
           const returnMinutes = parseInt(formData.returnTime.split(':')[1]);
@@ -1154,7 +1159,15 @@ setIsProcessing(false);
                         type="date"
                         name="returnDate"
                         value={formData.returnDate}
-                        onChange={handleChange}
+                        onChange={(e) => {
+                          // Check if selected date is Sunday (0 = Sunday)
+                          const selectedDate = new Date(e.target.value);
+                          if (selectedDate.getDay() === 0) {
+                            alert('⚠️ Non è possibile riconsegnare il veicolo di domenica. Siamo chiusi la domenica.\n\nPer favore seleziona un altro giorno.');
+                            return;
+                          }
+                          handleChange(e);
+                        }}
                         min={formData.pickupDate || today}
                         required
                         disabled={!formData.pickupDate}
@@ -1180,6 +1193,9 @@ setIsProcessing(false);
                       {!formData.pickupDate && (
                         <p className="text-xs text-gray-400 mt-1">Seleziona prima la data di ritiro</p>
                       )}
+                      <p className="text-xs text-yellow-400 mt-1 flex items-center">
+                        <span className="mr-1">ℹ️</span> Chiusi la domenica - non è possibile riconsegnare
+                      </p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
