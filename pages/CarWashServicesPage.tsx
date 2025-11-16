@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabaseClient';
 
 interface Service {
   id: string;
@@ -15,7 +16,8 @@ interface Service {
   descriptionEn: string;
 }
 
-const SERVICES: Service[] = [
+// Fallback hardcoded services in case database is unavailable
+const FALLBACK_SERVICES: Service[] = [
   {
     id: 'full-clean',
     name: 'LAVAGGIO COMPLETO',
@@ -116,6 +118,9 @@ const SERVICES: Service[] = [
   }
 ];
 
+// Export for backward compatibility
+export const SERVICES = FALLBACK_SERVICES;
+
 const ADDITIONAL_SERVICES = [
   {
     id: 'courtesy-car',
@@ -155,22 +160,74 @@ const ADDITIONAL_SERVICES = [
   }
 ];
 
-export { SERVICES, ADDITIONAL_SERVICES };
+export { ADDITIONAL_SERVICES };
 export type { Service };
 
 const CarWashServicesPage: React.FC = () => {
   const { lang } = useTranslation();
   const navigate = useNavigate();
+  const [services, setServices] = useState<Service[]>(FALLBACK_SERVICES);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadServices();
+  }, []);
+
+  async function loadServices() {
+    try {
+      const { data, error } = await supabase
+        .from('car_wash_services')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (error) {
+        console.error('Failed to load car wash services from database:', error);
+        // Use fallback services
+        setServices(FALLBACK_SERVICES);
+      } else if (data && data.length > 0) {
+        // Map database format to component format
+        const mappedServices: Service[] = data.map((service: any) => ({
+          id: service.id,
+          name: service.name,
+          nameEn: service.name_en,
+          price: service.price,
+          duration: service.duration,
+          features: service.features,
+          featuresEn: service.features_en,
+          description: service.description,
+          descriptionEn: service.description_en
+        }));
+        setServices(mappedServices);
+      } else {
+        // No services in database, use fallback
+        setServices(FALLBACK_SERVICES);
+      }
+    } catch (err) {
+      console.error('Error loading services:', err);
+      setServices(FALLBACK_SERVICES);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const handleBookService = (serviceId: string) => {
     navigate('/car-wash-booking', { state: { serviceId } });
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black pt-32 pb-16 flex items-center justify-center">
+        <div className="text-white text-xl">Caricamento servizi...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-black pt-32 pb-16">
       <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {SERVICES.map((service, index) => (
+          {services.map((service, index) => (
             <motion.div
               key={service.id}
               initial={{ opacity: 0, y: 30 }}
