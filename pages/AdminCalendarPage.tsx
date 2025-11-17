@@ -22,6 +22,10 @@ interface Booking {
   payment_status: string;
 }
 
+interface EditingBooking extends Booking {
+  isEditing: true;
+}
+
 const AdminCalendarPage: React.FC = () => {
   const { lang } = useTranslation();
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -29,6 +33,8 @@ const AdminCalendarPage: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedVehicle, setSelectedVehicle] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
+  const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
+  const [showVehicleCalendar, setShowVehicleCalendar] = useState<string | null>(null);
 
   // Fetch all bookings
   useEffect(() => {
@@ -63,6 +69,58 @@ const AdminCalendarPage: React.FC = () => {
       console.error('Error fetching bookings:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEditBooking = (booking: Booking) => {
+    setEditingBooking(booking);
+  };
+
+  const handleSaveBooking = async (updatedBooking: Booking) => {
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({
+          customer_name: updatedBooking.customer_name,
+          customer_email: updatedBooking.customer_email,
+          customer_phone: updatedBooking.customer_phone,
+          appointment_date: updatedBooking.appointment_date,
+          appointment_time: updatedBooking.appointment_time,
+          pickup_date: updatedBooking.pickup_date,
+          dropoff_date: updatedBooking.dropoff_date,
+          status: updatedBooking.status,
+          payment_status: updatedBooking.payment_status,
+          price_total: updatedBooking.price_total,
+        })
+        .eq('id', updatedBooking.id);
+
+      if (error) throw error;
+
+      setEditingBooking(null);
+      fetchBookings();
+    } catch (error) {
+      console.error('Error updating booking:', error);
+      alert('Errore durante l\'aggiornamento della prenotazione');
+    }
+  };
+
+  const handleDeleteBooking = async (bookingId: string) => {
+    if (!confirm(lang === 'it' ? 'Sei sicuro di voler eliminare questa prenotazione?' : 'Are you sure you want to delete this booking?')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .delete()
+        .eq('id', bookingId);
+
+      if (error) throw error;
+
+      fetchBookings();
+    } catch (error) {
+      console.error('Error deleting booking:', error);
+      alert('Errore durante l\'eliminazione della prenotazione');
     }
   };
 
@@ -193,7 +251,7 @@ const AdminCalendarPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black pt-32 pb-16 px-6">
-      <div className="container mx-auto max-w-7xl">
+      <div className="container mx-auto w-full">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -353,16 +411,20 @@ const AdminCalendarPage: React.FC = () => {
                 .map(booking => (
                   <div
                     key={booking.id}
-                    className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:border-gray-600 transition-colors"
+                    className="bg-gray-800/50 rounded-lg p-4"
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
+                    <div className="flex flex-col lg:flex-row items-start gap-4">
+                      <div className="flex-1 w-full">
+                        <div className="flex items-center gap-3 mb-3">
                           <span className="text-2xl">
                             {booking.service_type === 'car_wash' ? '🚿' : '🚗'}
                           </span>
                           <div>
-                            <h4 className="text-lg font-bold text-white">
+                            <h4
+                              className="text-lg font-bold text-white cursor-pointer hover:text-gray-300 transition-colors"
+                              onClick={() => booking.service_type === 'car_rental' && setShowVehicleCalendar(booking.vehicle_name)}
+                              title={booking.service_type === 'car_rental' ? (lang === 'it' ? 'Clicca per vedere il calendario del veicolo' : 'Click to see vehicle calendar') : ''}
+                            >
                               {booking.vehicle_name}
                             </h4>
                             <p className="text-sm text-gray-400">
@@ -371,7 +433,7 @@ const AdminCalendarPage: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm mb-3">
                           <div>
                             <p className="text-gray-400">{lang === 'it' ? 'Cliente' : 'Customer'}</p>
                             <p className="text-white font-medium">{booking.customer_name}</p>
@@ -401,13 +463,27 @@ const AdminCalendarPage: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="flex flex-col gap-2 items-end">
-                        <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getStatusColor(booking.status)}`}>
+                      <div className="flex flex-row lg:flex-col gap-2 items-center lg:items-end w-full lg:w-auto">
+                        <span className={`px-3 py-1 text-xs font-semibold rounded-full border whitespace-nowrap ${getStatusColor(booking.status)}`}>
                           {booking.status}
                         </span>
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-gray-400 whitespace-nowrap">
                           ID: {booking.id.substring(0, 8)}
                         </span>
+                        <div className="flex gap-2 flex-wrap">
+                          <button
+                            onClick={() => handleEditBooking(booking)}
+                            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors whitespace-nowrap"
+                          >
+                            ✏️ {lang === 'it' ? 'Modifica' : 'Edit'}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteBooking(booking.id)}
+                            className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors whitespace-nowrap"
+                          >
+                            🗑️ {lang === 'it' ? 'Elimina' : 'Delete'}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -439,6 +515,257 @@ const AdminCalendarPage: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Edit Booking Modal */}
+          {editingBooking && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-gray-900 border border-gray-700 rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              >
+                <h3 className="text-2xl font-bold text-white mb-4">
+                  {lang === 'it' ? 'Modifica Prenotazione' : 'Edit Booking'}
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      {lang === 'it' ? 'Nome Cliente' : 'Customer Name'}
+                    </label>
+                    <input
+                      type="text"
+                      value={editingBooking.customer_name}
+                      onChange={(e) => setEditingBooking({ ...editingBooking, customer_name: e.target.value })}
+                      className="w-full bg-gray-800 border-gray-700 rounded-md p-2 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                    <input
+                      type="email"
+                      value={editingBooking.customer_email}
+                      onChange={(e) => setEditingBooking({ ...editingBooking, customer_email: e.target.value })}
+                      className="w-full bg-gray-800 border-gray-700 rounded-md p-2 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      {lang === 'it' ? 'Telefono' : 'Phone'}
+                    </label>
+                    <input
+                      type="tel"
+                      value={editingBooking.customer_phone}
+                      onChange={(e) => setEditingBooking({ ...editingBooking, customer_phone: e.target.value })}
+                      className="w-full bg-gray-800 border-gray-700 rounded-md p-2 text-white"
+                    />
+                  </div>
+                  {editingBooking.service_type === 'car_wash' ? (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          {lang === 'it' ? 'Data Appuntamento' : 'Appointment Date'}
+                        </label>
+                        <input
+                          type="date"
+                          value={editingBooking.appointment_date || ''}
+                          onChange={(e) => setEditingBooking({ ...editingBooking, appointment_date: e.target.value })}
+                          className="w-full bg-gray-800 border-gray-700 rounded-md p-2 text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          {lang === 'it' ? 'Ora Appuntamento' : 'Appointment Time'}
+                        </label>
+                        <input
+                          type="time"
+                          value={editingBooking.appointment_time || ''}
+                          onChange={(e) => setEditingBooking({ ...editingBooking, appointment_time: e.target.value })}
+                          className="w-full bg-gray-800 border-gray-700 rounded-md p-2 text-white"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          {lang === 'it' ? 'Data Ritiro' : 'Pickup Date'}
+                        </label>
+                        <input
+                          type="date"
+                          value={editingBooking.pickup_date || ''}
+                          onChange={(e) => setEditingBooking({ ...editingBooking, pickup_date: e.target.value })}
+                          className="w-full bg-gray-800 border-gray-700 rounded-md p-2 text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          {lang === 'it' ? 'Data Riconsegna' : 'Dropoff Date'}
+                        </label>
+                        <input
+                          type="date"
+                          value={editingBooking.dropoff_date || ''}
+                          onChange={(e) => setEditingBooking({ ...editingBooking, dropoff_date: e.target.value })}
+                          className="w-full bg-gray-800 border-gray-700 rounded-md p-2 text-white"
+                        />
+                      </div>
+                    </>
+                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
+                    <select
+                      value={editingBooking.status}
+                      onChange={(e) => setEditingBooking({ ...editingBooking, status: e.target.value })}
+                      className="w-full bg-gray-800 border-gray-700 rounded-md p-2 text-white"
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="confirmed">Confirmed</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      {lang === 'it' ? 'Stato Pagamento' : 'Payment Status'}
+                    </label>
+                    <select
+                      value={editingBooking.payment_status}
+                      onChange={(e) => setEditingBooking({ ...editingBooking, payment_status: e.target.value })}
+                      className="w-full bg-gray-800 border-gray-700 rounded-md p-2 text-white"
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="paid">Paid</option>
+                      <option value="failed">Failed</option>
+                      <option value="refunded">Refunded</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      {lang === 'it' ? 'Totale (centesimi)' : 'Total (cents)'}
+                    </label>
+                    <input
+                      type="number"
+                      value={editingBooking.price_total}
+                      onChange={(e) => setEditingBooking({ ...editingBooking, price_total: parseInt(e.target.value) })}
+                      className="w-full bg-gray-800 border-gray-700 rounded-md p-2 text-white"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-4 mt-6">
+                  <button
+                    onClick={() => handleSaveBooking(editingBooking)}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors"
+                  >
+                    {lang === 'it' ? 'Salva' : 'Save'}
+                  </button>
+                  <button
+                    onClick={() => setEditingBooking(null)}
+                    className="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded transition-colors"
+                  >
+                    {lang === 'it' ? 'Annulla' : 'Cancel'}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+
+          {/* Vehicle Calendar Modal */}
+          {showVehicleCalendar && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-gray-900 border border-gray-700 rounded-lg p-6 max-w-6xl w-full max-h-[90vh] overflow-y-auto"
+              >
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-2xl font-bold text-white">
+                    {lang === 'it' ? 'Calendario Disponibilità' : 'Availability Calendar'}: {showVehicleCalendar}
+                  </h3>
+                  <button
+                    onClick={() => setShowVehicleCalendar(null)}
+                    className="text-gray-400 hover:text-white transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="bg-gray-800/50 rounded-lg p-4">
+                  <div className="grid grid-cols-7 gap-2 mb-4">
+                    {['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'].map((day, idx) => (
+                      <div key={idx} className="text-center text-sm font-semibold text-gray-400 py-2">
+                        {day}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-7 gap-2">
+                    {calendarDays.map((day, idx) => {
+                      if (!day) {
+                        return <div key={`empty-${idx}`} className="aspect-square" />;
+                      }
+
+                      const vehicleBookings = bookings.filter(
+                        b => b.vehicle_name === showVehicleCalendar &&
+                        b.pickup_date && b.dropoff_date &&
+                        new Date(day) >= new Date(b.pickup_date) &&
+                        new Date(day) <= new Date(b.dropoff_date)
+                      );
+
+                      const isToday = day.toDateString() === new Date().toDateString();
+
+                      return (
+                        <div
+                          key={day.toISOString()}
+                          className={`
+                            aspect-square border rounded-lg p-2 transition-colors
+                            ${isToday ? 'border-white bg-white/10' : 'border-gray-700'}
+                            ${vehicleBookings.length > 0 ? 'bg-red-900/30' : 'bg-green-900/20'}
+                          `}
+                        >
+                          <div className="text-sm font-semibold text-white mb-1">
+                            {day.getDate()}
+                          </div>
+                          {vehicleBookings.length > 0 ? (
+                            <div className="text-xs text-red-400">
+                              {lang === 'it' ? 'Occupato' : 'Booked'}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-green-400">
+                              {lang === 'it' ? 'Libero' : 'Available'}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-6">
+                    <h4 className="text-lg font-semibold text-white mb-3">
+                      {lang === 'it' ? 'Prenotazioni per questo veicolo' : 'Bookings for this vehicle'}
+                    </h4>
+                    <div className="space-y-2">
+                      {bookings
+                        .filter(b => b.vehicle_name === showVehicleCalendar && b.service_type === 'car_rental')
+                        .sort((a, b) => new Date(a.pickup_date || '').getTime() - new Date(b.pickup_date || '').getTime())
+                        .map(booking => (
+                          <div key={booking.id} className="bg-gray-800/50 p-3 rounded border border-gray-700">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-white font-medium">{booking.customer_name}</p>
+                                <p className="text-sm text-gray-400">
+                                  {booking.pickup_date ? new Date(booking.pickup_date).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US') : ''}
+                                  {' → '}
+                                  {booking.dropoff_date ? new Date(booking.dropoff_date).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US') : ''}
+                                </p>
+                              </div>
+                              <span className={`px-2 py-1 text-xs rounded ${getStatusColor(booking.status)}`}>
+                                {booking.status}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
         </motion.div>
       </div>
     </div>
