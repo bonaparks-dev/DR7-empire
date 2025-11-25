@@ -20,7 +20,7 @@ const WinRulesPage = () => {
         { label: { it: 'Nome concorso:', en: 'Contest name:' }, value: { it: '7 MILIONI DI EURO', en: '7 MILIONI DI EURO' } },
         { label: { it: 'Data estrazione:', en: 'Drawing date:' }, value: { it: '24 dicembre 2025', en: 'December 24, 2025' } },
         { label: { it: 'Modalità estrazione:', en: 'Drawing method:' }, value: { it: 'alla presenza di un avvocato e di un incaricato della Camera di Commercio, per garantire trasparenza e legalità.', en: 'in the presence of a lawyer and a Chamber of Commerce representative to ensure transparency and legality.' } },
-        { label: { it: 'Costo partecipazione:', en: 'Participation cost:' }, value: { it: '20 €', en: '€20' } },
+        { label: { it: 'Costo partecipazione:', en: 'Participation cost:' }, value: { it: '25 €', en: '€25' } },
         { label: { it: 'Forma del biglietto:', en: 'Ticket format:' }, value: { it: 'ogni biglietto corrisponde a una Gift Card DR7 da 25 €, spendibile nei servizi DR7.', en: 'each ticket corresponds to a DR7 Gift Card worth €25, redeemable on DR7 services.' } },
         { value: { it: '👉 Non si acquista un semplice biglietto, ma un credito utilizzabile.', en: '👉 You\'re not buying a simple ticket, but usable credit.' } },
       ],
@@ -28,9 +28,9 @@ const WinRulesPage = () => {
     probability: {
       title: { it: 'Probabilità di vincita', en: 'Winning Odds' },
       items: [
-        { label: { it: 'Totale biglietti emessi:', en: 'Total tickets issued:' }, value: { it: '350.000', en: '350,000' } },
+        { label: { it: 'Totale biglietti emessi:', en: 'Total tickets issued:' }, value: { it: '2.000', en: '2,000' } },
         { label: { it: 'Totale premi:', en: 'Total prizes:' }, value: { it: '3.300', en: '3,300' } },
-        { label: { it: 'Probabilità vincita:', en: 'Chance of winning:' }, value: { it: '1 biglietto su 106 è vincente (1%)', en: '1 winning ticket out of 106 (~1%)' } },
+        { label: { it: 'Probabilità vincita:', en: 'Chance of winning:' }, value: { it: '1 biglietto su 0.6 è vincente (165%)', en: '1 winning ticket out of 0.6 (~165%)' } },
       ],
     },
     prizes: {
@@ -112,7 +112,7 @@ const WinRulesPage = () => {
       items: [
         { label: { it: 'Totale premi:', en: 'Total prizes:' }, value: { it: '3.300', en: '3,300' } },
         { label: { it: 'Probabilità vincita:', en: 'Winning odds:' }, value: { it: '1 biglietto vincente ogni 106', en: '1 winning ticket out of 106' } },
-        { label: { it: 'Costo ticket:', en: 'Ticket price:' }, value: { it: '20 € (e 5€ li vinci subito sotto forma di Gift Card DR7 spendibile da 25€)', en: '€20 (and you immediately receive value as a DR7 Gift Card worth €25)' } },
+        { label: { it: 'Costo ticket:', en: 'Ticket price:' }, value: { it: '25 €', en: '€25' } },
         { label: { it: 'Estrazione:', en: 'Drawing:' }, value: { it: '24 dicembre 2025', en: 'December 24, 2025' } },
       ],
     },

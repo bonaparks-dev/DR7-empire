@@ -482,40 +482,22 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
 
 export const COMMERCIAL_OPERATION_GIVEAWAY: CommercialOperation = {
   id: 'christmas-2024',
-  name: { en: '7 MILIONI DI EURO', it: '7 MILIONI DI EURO' },
-  subtitle: { en: 'Prize Pool Worth Over €7,000,000', it: 'Montepremi di Oltre €7.000.000' },
+  name: { en: 'Lotteria DR7 S.p.A.', it: 'Lotteria DR7 S.p.A.' },
+  subtitle: { en: 'Win a Luxury Car Worth €50,000', it: 'Vinci un\'Auto di Lusso del Valore di €50.000' },
   image: '/main.jpeg',
   ticketPriceUSD: 29.50,
   ticketPriceEUR: 25,
   drawDate: '2025-12-24T10:00:00Z',
   prizes: [
     {
-      tier: { en: 'Grand Prize', it: 'Primo Premio' },
-      name: { en: 'Lamborghini Revuelto', it: 'Lamborghini Revuelto' },
+      tier: { en: 'Grand Prize', it: 'Premio Unico' },
+      name: { en: 'Luxury Car (Minimum Value €50,000)', it: 'Autovettura di Lusso (Valore Minimo €50.000)' },
       icon: CarIcon,
-    },
-    {
-      tier: { en: 'Tier 2 Prizes', it: 'Premi di Livello 2' },
-      name: { en: 'Rolex Submariner', it: 'Rolex Submariner' },
-      icon: ClockIcon,
-      quantity: 5
-    },
-    {
-      tier: { en: 'Tier 3 Prizes', it: 'Premi di Livello 3' },
-      name: { en: 'iPhone 16 Pro Max', it: 'iPhone 16 Pro Max' },
-      icon: DevicePhoneMobileIcon,
-      quantity: 10,
-    },
-    {
-      tier: { en: 'Tier 4 Prizes', it: 'Premi di Livello 4' },
-      name: { en: '1 Year DR7 Gold Membership', it: '1 Anno di Abbonamento DR7 Gold' },
-      icon: CubeTransparentIcon,
-      quantity: 20,
     }
   ],
   bonus: {
-    en: 'Every ticket purchased also includes 100 entries into our flash giveaway for a luxury weekend in Sardinia!',
-    it: 'Ogni biglietto acquistato include anche 100 partecipazioni al nostro giveaway flash per un weekend di lusso in Sardegna!',
+    en: 'Only 2,000 tickets available. Drawing supervised by lawyer. Full transparency guaranteed.',
+    it: 'Solo 2.000 biglietti disponibili. Estrazione supervisionata da avvocato. Trasparenza totale garantita.',
   },
 };
 
