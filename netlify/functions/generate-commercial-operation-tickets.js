@@ -186,7 +186,7 @@ exports.handler = async (event) => {
     }
 
     const RANGE_MIN = 1;
-    const RANGE_MAX = 350000;
+    const RANGE_MAX = 2000;
     const seed = `${paymentIntentId}:${incomingEmail}:${qty}`;
 
     const numbers = generateDeterministicUniqueNumbers(qty, RANGE_MIN, RANGE_MAX, seed);
