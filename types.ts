@@ -184,7 +184,6 @@ export interface CommercialOperation {
   name: { en: string; it: string };
   subtitle: { en: string; it: string };
   image: string;
-  ticketPriceUSD: number;
   ticketPriceEUR: number;
   drawDate: string; // ISO string
   prizes: Prize[];

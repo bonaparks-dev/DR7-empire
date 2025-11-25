@@ -48,7 +48,6 @@ const PrizeCard: React.FC<{ prize: Prize }> = ({ prize }) => {
 
 const CommercialOperationPage: React.FC = () => {
     const { t, getTranslated } = useTranslation();
-    const { currency } = useCurrency();
     const { user } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
@@ -87,7 +86,7 @@ const CommercialOperationPage: React.FC = () => {
         return () => clearTimeout(timer);
     });
 
-    const ticketPrice = currency === 'usd' ? giveaway.ticketPriceUSD : giveaway.ticketPriceEUR;
+    const ticketPrice = giveaway.ticketPriceEUR;
     const totalPrice = useMemo(() => quantity * ticketPrice, [quantity, ticketPrice]);
 
     const handleQuantityChange = (amount: number) => setQuantity(prev => Math.max(1, prev + amount));
@@ -115,7 +114,7 @@ const CommercialOperationPage: React.FC = () => {
             fetch('/.netlify/functions/create-payment-intent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount: totalPrice, currency, email: user?.email })
+                body: JSON.stringify({ amount: totalPrice, currency: 'eur', email: user?.email })
             })
             .then(res => res.json())
             .then(data => {
@@ -133,7 +132,7 @@ const CommercialOperationPage: React.FC = () => {
                 setIsClientSecretLoading(false);
             });
         }
-    }, [showConfirmModal, totalPrice, currency, user]);
+    }, [showConfirmModal, totalPrice, user]);
 
     useEffect(() => {
         if (elements && clientSecret && cardElementRef.current) {
@@ -209,7 +208,7 @@ const CommercialOperationPage: React.FC = () => {
         }
     };
     
-    const formatPrice = (price: number) => new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', { style: 'currency', currency: currency.toUpperCase() }).format(price);
+    const formatPrice = (price: number) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(price);
     
     const groupedPrizes = useMemo(() => {
         return giveaway.prizes.reduce((acc, prize) => {

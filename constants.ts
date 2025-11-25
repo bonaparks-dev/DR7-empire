@@ -485,7 +485,6 @@ export const COMMERCIAL_OPERATION_GIVEAWAY: CommercialOperation = {
   name: { en: 'Lotteria DR7 S.p.A.', it: 'Lotteria DR7 S.p.A.' },
   subtitle: { en: 'Win a Luxury Car Worth €50,000', it: 'Vinci un\'Auto di Lusso del Valore di €50.000' },
   image: '/main.jpeg',
-  ticketPriceUSD: 29.50,
   ticketPriceEUR: 25,
   drawDate: '2025-12-24T10:00:00Z',
   prizes: [
