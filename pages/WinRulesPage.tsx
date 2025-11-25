@@ -7,188 +7,83 @@ import { Button } from '../components/ui/Button';
 
 const WinRulesPage = () => {
   const navigate = useNavigate();
-  const { t, setLanguage, language } = useTranslation();
+  const { t, language } = useTranslation();
 
   const rules = {
     title: {
-      it: 'Concorso a Premi - DR7 Million',
-      en: 'Prize Contest - DR7 Million',
+      it: 'Regolamento Lotteria DR7 S.p.A.',
+      en: 'DR7 S.p.A. Lottery Rules',
     },
     general: {
-      title: { it: 'Caratteristiche generali', en: 'General Features' },
+      title: { it: 'Informazioni Generali', en: 'General Information' },
       items: [
-        { label: { it: 'Nome concorso:', en: 'Contest name:' }, value: { it: '7 MILIONI DI EURO', en: '7 MILIONI DI EURO' } },
-        { label: { it: 'Data estrazione:', en: 'Drawing date:' }, value: { it: '24 dicembre 2025', en: 'December 24, 2025' } },
-        { label: { it: 'Modalità estrazione:', en: 'Drawing method:' }, value: { it: 'alla presenza di un avvocato e di un incaricato della Camera di Commercio, per garantire trasparenza e legalità.', en: 'in the presence of a lawyer and a Chamber of Commerce representative to ensure transparency and legality.' } },
-        { label: { it: 'Costo partecipazione:', en: 'Participation cost:' }, value: { it: '25 €', en: '€25' } },
-        { label: { it: 'Forma del biglietto:', en: 'Ticket format:' }, value: { it: 'ogni biglietto corrisponde a una Gift Card DR7 da 25 €, spendibile nei servizi DR7.', en: 'each ticket corresponds to a DR7 Gift Card worth €25, redeemable on DR7 services.' } },
-        { value: { it: '👉 Non si acquista un semplice biglietto, ma un credito utilizzabile.', en: '👉 You\'re not buying a simple ticket, but usable credit.' } },
+        { label: { it: 'Organizzatore:', en: 'Organizer:' }, value: { it: 'Dubai Rent 7.0 S.p.A. (DR7 S.p.A.)', en: 'Dubai Rent 7.0 S.p.A. (DR7 S.p.A.)' } },
+        { label: { it: 'Sede legale:', en: 'Legal address:' }, value: { it: 'Via del Fangario 25, Cagliari (CA)', en: 'Via del Fangario 25, Cagliari (CA)' } },
+        { label: { it: 'P.IVA:', en: 'VAT:' }, value: { it: '04104649927', en: '04104649927' } },
+        { label: { it: 'Tipologia:', en: 'Type:' }, value: { it: 'Lotteria a fini commerciali (DPR 430/2001)', en: 'Commercial lottery (DPR 430/2001)' } },
       ],
     },
-    probability: {
-      title: { it: 'Probabilità di vincita', en: 'Winning Odds' },
+    dates: {
+      title: { it: 'Date Importanti', en: 'Important Dates' },
+      items: [
+        { label: { it: 'Termine vendita biglietti:', en: 'Ticket sales end:' }, value: { it: '20 dicembre, ore 18:00', en: 'December 20, 6:00 PM' } },
+        { label: { it: 'Data estrazione:', en: 'Drawing date:' }, value: { it: '24 dicembre, ore 10:00', en: 'December 24, 10:00 AM' } },
+        { label: { it: 'Modalità estrazione:', en: 'Drawing method:' }, value: { it: 'Pubblica e trasparente, alla presenza di un avvocato', en: 'Public and transparent, in the presence of a lawyer' } },
+      ],
+    },
+    tickets: {
+      title: { it: 'Biglietti', en: 'Tickets' },
       items: [
         { label: { it: 'Totale biglietti emessi:', en: 'Total tickets issued:' }, value: { it: '2.000', en: '2,000' } },
-        { label: { it: 'Probabilità vincita:', en: 'Chance of winning:' }, value: { it: '1 biglietto su 2.000', en: '1 ticket out of 2,000' } },
+        { label: { it: 'Prezzo per biglietto:', en: 'Price per ticket:' }, value: { it: '25 €', en: '€25' } },
+        { label: { it: 'Numerazione:', en: 'Numbering:' }, value: { it: 'Progressiva e unica (non duplicabile)', en: 'Progressive and unique (not duplicable)' } },
+        { label: { it: 'Formato:', en: 'Format:' }, value: { it: 'Tagliando per il cliente + matrice per DR7', en: 'Stub for customer + matrix for DR7' } },
       ],
     },
-    prizes: {
-      title: { it: 'Premi in palio', en: 'Prizes Up for Grabs' },
-      sections: [
-        {
-          title: { it: 'Auto & Veicoli di Lusso', en: 'Luxury Cars & Vehicles' },
-          note: { it: '(tutti i veicoli vengono consegnati con: bollo e superbollo pagati, passaggio di proprietà incluso, assicurazione full casco, rca e spese di circolazione totalmente comprese – il vincitore non deve sostenere alcun costo aggiuntivo)', en: '(all vehicles are delivered with road tax and luxury tax paid, ownership transfer included, full comprehensive insurance, liability insurance, and all circulation expenses fully covered—the winner pays nothing extra)' },
-          items: [
-            { it: 'RS3 verde', en: 'RS3 (green)' },
-            { it: 'Classe A45s', en: 'Classe A45s' },
-            { it: 'BMW M3 competition', en: 'BMW M3 Competition' },
-            { it: 'RS3 rossa', en: 'RS3 (red)' },
-            { it: 'BMW M4 Competition', en: 'BMW M4 Competition' },
-            { it: 'Porsche macan GTS', en: 'Porsche Macan GTS' },
-            { it: 'Porsche Carrera 992 4s', en: 'Porsche Carrera 992 4S' },
-            { it: 'Mercedes GLE53', en: 'Mercedes GLE53' },
-            { it: 'Mercedes GLE63', en: 'Mercedes GLE63' },
-            { it: 'Mercedes C63 S E PERFORMANCE', en: 'Mercedes C63 S E PERFORMANCE' },
-            { it: 'Audi RSQ3', en: 'Audi RSQ3' },
-            { it: 'Porsche Cayenne S', en: 'Porsche Cayenne S' },
-            { it: 'Mercedes CLA 45S', en: 'Mercedes CLA 45S' },
-            { it: 'Toyota CH-R', en: 'Toyota CH-R' },
-            { it: 'Toyota RAV GR 360cv', en: 'Toyota RAV GR 360 hp' },
-            { it: 'Lexus 450', en: 'Lexus 450' },
-            { it: 'Lexus 350', en: 'Lexus 350' },
-            { it: 'Gle 350', en: 'GLE 350' },
-            { it: 'Hummer', en: 'Hummer' },
-            { it: 'Yacht', en: 'Yacht' },
-          ],
-        },
-        {
-          title: { it: 'Premi di Massa', en: 'Mass Prizes' },
-          note: { it: '(anche scooter, moto, Panda e 500 vengono consegnati con passaggio di proprietà incluso e tutte le spese di circolazione coperte)', en: '(scooters, motorbikes, Panda and 500 are also delivered with ownership transfer included and all circulation costs covered)' },
-          items: [
-            { it: '700 iPhone 17', en: '700 iPhone 17' },
-            { it: '100 borse donna louis vitton', en: '100 women\'s Louis Vuitton bags' },
-            { it: '50 Honda SH 125', en: '50 Honda SH 125' },
-            { it: '50 Yamaha TMAX 2025', en: '50 Yamaha TMAX 2025' },
-            { it: '10 crociere per 2 persone (7 giorni, Isole Greche)', en: '10 cruises for 2 people (7 days, Greek Islands)' },
-            { it: '10 Fiat Panda', en: '10 Fiat Panda' },
-            { it: '10 Fiat 500', en: '10 Fiat 500' },
-            { it: '20 Rolex', en: '20 Rolex watches' },
-          ],
-        },
-        {
-          title: { it: 'Gift & Bonus', en: 'Gift & Bonus' },
-          items: [
-            { it: '1.500 ticket DR7 da 500 €', en: '1,500 DR7 tickets worth €500 each' },
-            { it: '692 buoni benzina da 300 €', en: '692 fuel vouchers worth €300 each' },
-            { it: '110 gift card Amazon da 1.800 €', en: '110 Amazon gift cards worth €1,800 each' },
-          ],
-        },
-        {
-          title: { it: 'Esperienze Esclusive', en: 'Exclusive Experiences' },
-          items: [
-            { it: '10 giri in elicottero per 2 persone', en: '10 helicopter rides for 2 people' },
-            { it: '7 giorni in villa di lusso per 10 persone', en: '7 days in a luxury villa for 10 people' },
-            { it: '10 pacchetti "DR7 Ultimate Experience"', en: '10 "DR7 Ultimate Experience" packages' },
-          ],
-          experience: {
-            title: { it: 'Descrizione DR7 Ultimate Experience:', en: 'DR7 Ultimate Experience description:' },
-            subtitle: { it: 'Un weekend di lusso totale, riservato solo a pochi eletti:', en: 'A weekend of total luxury, reserved for a select few:' },
-            features: [
-              { it: 'Volo A/R in jet privato dal tuo Paese direttamente in Sardegna.', en: 'Round-trip private jet flight from your country directly to Sardinia.' },
-              { it: 'Villa con piscina di lusso a disposizione per 2 giorni.', en: 'Luxury villa with pool at your disposal for 2 days.' },
-              { it: 'Supercar di prestigio per vivere la strada da protagonista.', en: 'Prestige supercar to live the road like a star.' },
-              { it: 'Giro in elicottero panoramico sopra le coste più belle.', en: 'Panoramic helicopter tour over the most beautiful coasts.' },
-              { it: 'Yacht privato per una giornata in mare.', en: 'Private yacht for a full day at sea.' },
-              { it: 'Servizi esclusivi H24: NCC privato, chef dedicato, massaggiatori privati, staff di assistenza.', en: 'Exclusive 24/7 services: private chauffeur (NCC), dedicated chef, private masseurs, support staff.' },
-            ],
-            tagline: { it: 'Due giorni che valgono una vita: il lusso non si racconta, si vive.', en: 'Two days worth a lifetime: luxury isn\'t told, it\'s lived.' },
-          },
-        },
-      ],
-    },
-    summary: {
-      title: { it: 'Riepilogo finale', en: 'Final Summary' },
+    prize: {
+      title: { it: 'Premio', en: 'Prize' },
       items: [
-        { label: { it: 'Totale biglietti:', en: 'Total tickets:' }, value: { it: '2.000', en: '2,000' } },
         { label: { it: 'Premio:', en: 'Prize:' }, value: { it: 'Alfa Romeo Stelvio Quadrifoglio', en: 'Alfa Romeo Stelvio Quadrifoglio' } },
-        { label: { it: 'Costo ticket:', en: 'Ticket price:' }, value: { it: '25 €', en: '€25' } },
-        { label: { it: 'Estrazione:', en: 'Drawing:' }, value: { it: '24 dicembre 2025', en: 'December 24, 2025' } },
+        { label: { it: 'Valore minimo garantito:', en: 'Minimum guaranteed value:' }, value: { it: '50.000 €', en: '€50,000' } },
+        { label: { it: 'Potenza:', en: 'Power:' }, value: { it: '510 CV', en: '510 HP' } },
+        { label: { it: 'Motore:', en: 'Engine:' }, value: { it: 'Derivato Ferrari', en: 'Ferrari-derived' } },
+        { label: { it: 'Consegna:', en: 'Delivery:' }, value: { it: 'Il giorno stesso dell\'estrazione con passaggio di proprietà', en: 'Same day of drawing with ownership transfer' } },
+        { label: { it: 'Luogo visibilità:', en: 'Viewing location:' }, value: { it: 'Viale Marconi 229', en: 'Viale Marconi 229' } },
       ],
     },
-    distribution: {
-      title: { it: 'Distribuzione ufficiale Concorso DR7 (senza prezzi)', en: 'Official Distribution — DR7 Contest (without prices)' },
-      sections: [
-        {
-          title: { it: 'Top veicoli (singoli)', en: 'Top Vehicles (individual)' },
-          items: [
-            { it: '1. Porsche Carrera 992 4S', en: '1. Porsche Carrera 992 4S' },
-            { it: '2. Mercedes GLE63', en: '2. Mercedes GLE63' },
-            { it: '3. Yacht (veicolo)', en: '3. Yacht (vehicle)' },
-            { it: '4. Mercedes C63 S E PERFORMANCE', en: '4. Mercedes C63 S E PERFORMANCE' },
-            { it: '5. Porsche Macan GTS', en: '5. Porsche Macan GTS' },
-            { it: '6. BMW M4 Competition', en: '6. BMW M4 Competition' },
-            { it: '7. Porsche Cayenne S', en: '7. Porsche Cayenne S' },
-            { it: '8. Lexus 450', en: '8. Lexus 450' },
-            { it: '9. BMW M3 Competition', en: '9. BMW M3 Competition' },
-            { it: '10. Toyota RAV GR 360 cv', en: '10. Toyota RAV GR 360 hp' },
-            { it: '11. Mercedes CLA 45S', en: '11. Mercedes CLA 45S' },
-            { it: '12. Audi RSQ3', en: '12. Audi RSQ3' },
-            { it: '13. RS3 verde', en: '13. RS3 (green)' },
-            { it: '14. RS3 rossa', en: '14. RS3 (red)' },
-            { it: '15. Mercedes GLE53', en: '15. Mercedes GLE53' },
-            { it: '16. Classe A45S', en: '16. Classe A45S' },
-            { it: '17. Mercedes GLE 350', en: '17. Mercedes GLE 350' },
-            { it: '18. Lexus 350', en: '18. Lexus 350' },
-            { it: '19. Toyota CH-R', en: '19. Toyota CH-R' },
-          ],
-        },
-        {
-          title: { it: 'Esperienze premium', en: 'Premium Experiences' },
-          items: [
-            { it: '21–30. DR7 Ultimate Experience (10 premi)', en: '21–30. DR7 Ultimate Experience (10 prizes)' },
-          ],
-        },
-        {
-          title: { it: 'Veicolo fascia alta', en: 'High-Tier Vehicle' },
-          items: [
-            { it: '31. Hummer', en: '31. Hummer' },
-          ],
-        },
-        {
-          title: { it: 'Fascia intermedia', en: 'Mid Tier' },
-          items: [
-            { it: '32–81. Yamaha TMAX 2025 (50 premi)', en: '32–81. Yamaha TMAX 2025 (50 prizes)' },
-            { it: '82–101. Rolex (20 premi)', en: '82–101. Rolex (20 prizes)' },
-            { it: '102–111. Fiat Panda (10 premi)', en: '102–111. Fiat Panda (10 prizes)' },
-            { it: '112–121. Fiat 500 (10 premi)', en: '112–121. Fiat 500 (10 prizes)' },
-          ],
-        },
-        {
-          title: { it: 'Esperienze & fascia media', en: 'Experiences & Mid Tier' },
-          items: [
-            { it: '122. 7 giorni in villa di lusso per 10 persone (1 premio)', en: '122. 7 days in a luxury villa for 10 people (1 prize)' },
-            { it: '123–172. Honda SH 125 (50 premi)', en: '123–172. Honda SH 125 (50 prizes)' },
-            { it: '173–182. Crociere 7 gg per 2 persone (10 premi)', en: '173–182. 7-day cruises for 2 people (10 prizes)' },
-            { it: '183–282. Borse donna Louis Vuitton (100 premi)', en: '183–282. Louis Vuitton women\'s handbags (100 prizes)' },
-            { it: '283–292. Giri in elicottero per 2 persone (10 premi)', en: '283–292. Helicopter rides for 2 people (10 prizes)' },
-          ],
-        },
-        {
-          title: { it: 'Gift & Massa', en: 'Gift & Mass' },
-          items: [
-            { it: '293–402. Gift Card Amazon (110 premi)', en: '293–402. Amazon Gift Cards (110 prizes)' },
-            { it: '403–1102. iPhone 17 (700 premi)', en: '403–1102. iPhone 17 (700 prizes)' },
-            { it: '1103–2602. Ticket DR7 (1.500 premi)', en: '1103–2602. DR7 Tickets (1,500 prizes)' },
-            { it: '2603–3300. Buoni benzina (698 premi)', en: '2603–3300. Fuel vouchers (698 prizes)' },
-          ],
-        },
-        {
-          title: { it: 'Totale', en: 'Total' },
-          items: [
-            { it: 'Posizioni assegnate: 1–3300', en: 'Positions assigned: 1–3300' },
-            { it: 'Totale premi: 3.300', en: 'Total prizes: 3,300' },
-          ],
-        },
+    participants: {
+      title: { it: 'Partecipanti', en: 'Participants' },
+      items: [
+        { label: { it: 'Chi può partecipare:', en: 'Who can participate:' }, value: { it: 'Persone fisiche maggiorenni, cittadini italiani o stranieri residenti in Italia', en: 'Adult individuals, Italian citizens or foreigners residing in Italy' } },
+        { label: { it: 'Limite acquisto:', en: 'Purchase limit:' }, value: { it: 'Nessuno (ogni partecipante può acquistare più biglietti)', en: 'None (each participant can purchase multiple tickets)' } },
+        { label: { it: 'Esclusi:', en: 'Excluded:' }, value: { it: 'Dipendenti DR7, collaboratori della lotteria, avvocato verificatore', en: 'DR7 employees, lottery collaborators, verifying lawyer' } },
+      ],
+    },
+    drawing: {
+      title: { it: 'Modalità di Estrazione', en: 'Drawing Procedure' },
+      items: [
+        { value: { it: '1. Verifica tagliandi e matrici', en: '1. Verification of stubs and matrices' } },
+        { value: { it: '2. Pubblicazione lista numeri partecipanti', en: '2. Publication of participant numbers list' } },
+        { value: { it: '3. Inserimento matrici in urna trasparente', en: '3. Insertion of matrices in transparent urn' } },
+        { value: { it: '4. Mescolamento e sigillo urna', en: '4. Mixing and sealing of urn' } },
+        { value: { it: '5. Estrazione alla presenza di avvocato', en: '5. Drawing in the presence of lawyer' } },
+        { value: { it: '6. Certificazione regolarità (Art. 9 DPR 430/2001)', en: '6. Certification of regularity (Art. 9 DPR 430/2001)' } },
+      ],
+    },
+    transparency: {
+      title: { it: 'Trasparenza e Legalità', en: 'Transparency and Legality' },
+      items: [
+        { label: { it: 'Supervisione:', en: 'Supervision:' }, value: { it: 'Avvocato indipendente (Art. 9 DPR 430/2001)', en: 'Independent lawyer (Art. 9 DPR 430/2001)' } },
+        { label: { it: 'Verbalizzazione:', en: 'Documentation:' }, value: { it: 'Verbale ufficiale di assegnazione', en: 'Official assignment minutes' } },
+        { label: { it: 'Registrazione:', en: 'Recording:' }, value: { it: 'L\'estrazione può essere registrata per garantire trasparenza', en: 'Drawing may be recorded to ensure transparency' } },
+        { label: { it: 'Normative:', en: 'Regulations:' }, value: { it: 'DPR 430/2001, T.U.L.P.S., Codice Civile artt. 1987-1991', en: 'DPR 430/2001, T.U.L.P.S., Civil Code arts. 1987-1991' } },
+      ],
+    },
+    gdpr: {
+      title: { it: 'Trattamento Dati (GDPR)', en: 'Data Processing (GDPR)' },
+      items: [
+        { label: { it: 'Normativa:', en: 'Regulation:' }, value: { it: 'Regolamento UE 679/2016 (GDPR), D.Lgs. 196/2003', en: 'EU Regulation 679/2016 (GDPR), D.Lgs. 196/2003' } },
+        { label: { it: 'Finalità:', en: 'Purpose:' }, value: { it: 'Gestione lotteria, comunicazioni ufficiali, assegnazione premio', en: 'Lottery management, official communications, prize assignment' } },
       ],
     },
   };
@@ -221,112 +116,156 @@ const WinRulesPage = () => {
                 <BackButton />
             </div>
 
-            <h1 className="text-4xl md:text-5xl font-bold text-white text-center mb-12">
-                {t(rules.title)}
+            <h1 className="text-4xl md:text-5xl font-bold text-white text-center mb-4">
+                {language === 'it' ? rules.title.it : rules.title.en}
             </h1>
-            
+
+            <p className="text-center text-gray-400 mb-12">
+                {language === 'it' ? 'Informazioni sulla Lotteria' : 'Lottery Information'}
+            </p>
+
             <div className="text-center mb-12">
-                <Button 
+                <Button
                     onClick={() => navigate('/legal-terms')}
                     variant="outline"
                 >
-                    {t({ it: 'Termini Legali', en: 'Legal Terms' })}
+                    {language === 'it' ? 'Regolamento Completo (14 Articoli)' : 'Full Regulations (14 Articles)'}
                 </Button>
             </div>
 
-            <motion.div 
+            <motion.div
                 className="space-y-12"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
             >
+                {/* General Information */}
                 <motion.section variants={itemVariants} className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
                     <h2 className="text-3xl font-semibold mb-6 border-b border-gray-700 pb-3">
-                    {t(rules.general.title)}
+                        {language === 'it' ? rules.general.title.it : rules.general.title.en}
                     </h2>
                     <ul className="space-y-4 text-lg text-gray-300">
-                    {rules.general.items.map((item, index) => (
-                        <li key={index} className={!item.label ? 'pl-4 border-l-2 border-white' : ''}>
-                        {item.label && <strong className="text-white">{t(item.label)}</strong>} {item.value && t(item.value).replace('👉', '')}
-                        </li>
-                    ))}
+                        {rules.general.items.map((item, index) => (
+                            <li key={index}>
+                                <strong className="text-white">{language === 'it' ? item.label.it : item.label.en}</strong> {language === 'it' ? item.value.it : item.value.en}
+                            </li>
+                        ))}
                     </ul>
                 </motion.section>
 
+                {/* Important Dates */}
                 <motion.section variants={itemVariants} className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
                     <h2 className="text-3xl font-semibold mb-6 border-b border-gray-700 pb-3">
-                    {t(rules.probability.title)}
+                        {language === 'it' ? rules.dates.title.it : rules.dates.title.en}
                     </h2>
                     <ul className="space-y-4 text-lg text-gray-300">
-                    {rules.probability.items.map((item, index) => (
-                        <li key={index}>
-                        <strong className="text-white">{t(item.label)}</strong> {t(item.value)}
-                        </li>
-                    ))}
+                        {rules.dates.items.map((item, index) => (
+                            <li key={index}>
+                                <strong className="text-white">{language === 'it' ? item.label.it : item.label.en}</strong> {language === 'it' ? item.value.it : item.value.en}
+                            </li>
+                        ))}
                     </ul>
                 </motion.section>
 
+                {/* Tickets */}
                 <motion.section variants={itemVariants} className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
                     <h2 className="text-3xl font-semibold mb-6 border-b border-gray-700 pb-3">
-                    {t(rules.prizes.title)}
+                        {language === 'it' ? rules.tickets.title.it : rules.tickets.title.en}
                     </h2>
-                    <div className="space-y-8">
-                    {rules.prizes.sections.map((section, index) => (
-                        <div key={index}>
-                        <h3 className="text-2xl font-semibold text-white mb-4">{t(section.title)}</h3>
-                        {section.note && <p className="text-gray-400 italic mb-4">{t(section.note)}</p>}
-                        <ul className="list-disc list-inside space-y-2 text-lg text-gray-300">
-                            {section.items.map((item, i) => (
-                            <li key={i}>{t(item)}</li>
-                            ))}
-                        </ul>
-                        {section.experience && (
-                            <div className="mt-6 p-6 bg-gray-900 rounded-lg border border-gray-700">
-                            <h4 className="text-xl font-bold text-white mb-2">{t(section.experience.title)}</h4>
-                            <p className="text-gray-400 mb-4">{t(section.experience.subtitle)}</p>
-                            <ul className="list-disc list-inside space-y-2 text-lg text-gray-300">
-                                {section.experience.features.map((feature, i) => (
-                                <li key={i}>{t(feature)}</li>
-                                ))}
-                            </ul>
-                            <p className="mt-4 text-white font-semibold italic">{t(section.experience.tagline)}</p>
-                            </div>
-                        )}
-                        </div>
-                    ))}
+                    <ul className="space-y-4 text-lg text-gray-300">
+                        {rules.tickets.items.map((item, index) => (
+                            <li key={index}>
+                                <strong className="text-white">{language === 'it' ? item.label.it : item.label.en}</strong> {language === 'it' ? item.value.it : item.value.en}
+                            </li>
+                        ))}
+                    </ul>
+                </motion.section>
+
+                {/* Prize */}
+                <motion.section variants={itemVariants} className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
+                    <h2 className="text-3xl font-semibold mb-6 border-b border-gray-700 pb-3">
+                        {language === 'it' ? rules.prize.title.it : rules.prize.title.en}
+                    </h2>
+                    <ul className="space-y-4 text-lg text-gray-300">
+                        {rules.prize.items.map((item, index) => (
+                            <li key={index}>
+                                <strong className="text-white">{language === 'it' ? item.label.it : item.label.en}</strong> {language === 'it' ? item.value.it : item.value.en}
+                            </li>
+                        ))}
+                    </ul>
+                </motion.section>
+
+                {/* Participants */}
+                <motion.section variants={itemVariants} className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
+                    <h2 className="text-3xl font-semibold mb-6 border-b border-gray-700 pb-3">
+                        {language === 'it' ? rules.participants.title.it : rules.participants.title.en}
+                    </h2>
+                    <ul className="space-y-4 text-lg text-gray-300">
+                        {rules.participants.items.map((item, index) => (
+                            <li key={index}>
+                                <strong className="text-white">{language === 'it' ? item.label.it : item.label.en}</strong> {language === 'it' ? item.value.it : item.value.en}
+                            </li>
+                        ))}
+                    </ul>
+                </motion.section>
+
+                {/* Drawing Procedure */}
+                <motion.section variants={itemVariants} className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
+                    <h2 className="text-3xl font-semibold mb-6 border-b border-gray-700 pb-3">
+                        {language === 'it' ? rules.drawing.title.it : rules.drawing.title.en}
+                    </h2>
+                    <ul className="space-y-3 text-lg text-gray-300">
+                        {rules.drawing.items.map((item, index) => (
+                            <li key={index} className="pl-4 border-l-2 border-white/30">
+                                {language === 'it' ? item.value.it : item.value.en}
+                            </li>
+                        ))}
+                    </ul>
+                </motion.section>
+
+                {/* Transparency */}
+                <motion.section variants={itemVariants} className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
+                    <h2 className="text-3xl font-semibold mb-6 border-b border-gray-700 pb-3">
+                        {language === 'it' ? rules.transparency.title.it : rules.transparency.title.en}
+                    </h2>
+                    <ul className="space-y-4 text-lg text-gray-300">
+                        {rules.transparency.items.map((item, index) => (
+                            <li key={index}>
+                                <strong className="text-white">{language === 'it' ? item.label.it : item.label.en}</strong> {language === 'it' ? item.value.it : item.value.en}
+                            </li>
+                        ))}
+                    </ul>
+                </motion.section>
+
+                {/* GDPR */}
+                <motion.section variants={itemVariants} className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
+                    <h2 className="text-3xl font-semibold mb-6 border-b border-gray-700 pb-3">
+                        {language === 'it' ? rules.gdpr.title.it : rules.gdpr.title.en}
+                    </h2>
+                    <ul className="space-y-4 text-lg text-gray-300">
+                        {rules.gdpr.items.map((item, index) => (
+                            <li key={index}>
+                                <strong className="text-white">{language === 'it' ? item.label.it : item.label.en}</strong> {language === 'it' ? item.value.it : item.value.en}
+                            </li>
+                        ))}
+                    </ul>
+                </motion.section>
+
+                {/* Footer Notice */}
+                <div className="mt-12 text-center">
+                    <div className="inline-block p-6 bg-blue-900/20 border border-blue-700/50 rounded-lg">
+                        <p className="text-blue-300 text-base mb-2">
+                            {language === 'it' ? 'Per il regolamento completo in 14 articoli, consulta la pagina Termini Legali' : 'For the complete 14-article regulations, see the Legal Terms page'}
+                        </p>
+                        <Button
+                            onClick={() => navigate('/legal-terms')}
+                            variant="outline"
+                            className="mt-4"
+                        >
+                            {language === 'it' ? 'Vai ai Termini Legali' : 'Go to Legal Terms'}
+                        </Button>
                     </div>
-                </motion.section>
-
-                <motion.section variants={itemVariants} className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
-                    <h2 className="text-3xl font-semibold mb-6 border-b border-gray-700 pb-3">
-                    {t(rules.summary.title)}
-                    </h2>
-                    <ul className="space-y-4 text-lg text-gray-300">
-                    {rules.summary.items.map((item, index) => (
-                        <li key={index}>
-                        <strong className="text-white">{t(item.label)}</strong> {t(item.value)}
-                        </li>
-                    ))}
-                    </ul>
-                </motion.section>
-
-                <motion.section variants={itemVariants} className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
-                    <h2 className="text-3xl font-semibold mb-6 border-b border-gray-700 pb-3">
-                    {t(rules.distribution.title)}
-                    </h2>
-                    <div className="space-y-8 text-lg text-gray-300">
-                    {rules.distribution.sections.map((section, index) => (
-                        <div key={index}>
-                        <h3 className="text-2xl font-semibold text-white mb-4">{t(section.title)}</h3>
-                        <ul className={section.items.length > 1 && t(section.items[0]).includes('1.') ? 'list-decimal list-inside space-y-2' : 'list-none space-y-2'}>
-                            {section.items.map((item, i) => (
-                            <li key={i}>{t(item)}</li>
-                            ))}
-                        </ul>
-                        </div>
-                    ))}
-                    </div>
-                </motion.section>
+                </div>
             </motion.div>
         </div>
       </div>
