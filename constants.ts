@@ -483,14 +483,14 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
 export const COMMERCIAL_OPERATION_GIVEAWAY: CommercialOperation = {
   id: 'christmas-2024',
   name: { en: 'Lotteria DR7 S.p.A.', it: 'Lotteria DR7 S.p.A.' },
-  subtitle: { en: 'Win a Luxury Car Worth €50,000', it: 'Vinci un\'Auto di Lusso del Valore di €50.000' },
+  subtitle: { en: 'Win an Alfa Romeo Stelvio Quadrifoglio', it: 'Vinci un\'Alfa Romeo Stelvio Quadrifoglio' },
   image: '/main.jpeg',
   ticketPriceEUR: 25,
   drawDate: '2025-12-24T10:00:00Z',
   prizes: [
     {
       tier: { en: 'Grand Prize', it: 'Premio Unico' },
-      name: { en: 'Luxury Car (Minimum Value €50,000)', it: 'Autovettura di Lusso (Valore Minimo €50.000)' },
+      name: { en: 'Alfa Romeo Stelvio Quadrifoglio', it: 'Alfa Romeo Stelvio Quadrifoglio' },
       icon: CarIcon,
     }
   ],

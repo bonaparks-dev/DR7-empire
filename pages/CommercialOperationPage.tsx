@@ -209,25 +209,9 @@ const CommercialOperationPage: React.FC = () => {
     };
     
     const formatPrice = (price: number) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(price);
-    
-    const groupedPrizes = useMemo(() => {
-        return giveaway.prizes.reduce((acc, prize) => {
-            const tier = getTranslated(prize.tier);
-            if (!acc[tier]) acc[tier] = [];
-            acc[tier].push(prize);
-            return acc;
-        }, {} as Record<string, Prize[]>);
-    }, [giveaway.prizes, getTranslated]);
 
-    const carousel1Images = useMemo(() => {
-        return Array.from({ length: 24 }, (_, i) => i + 1)
-            .filter(num => num !== 4)
-            .map(num => `/${num}.jpeg`);
-    }, []);
-
-    const carousel2Images = useMemo(() => {
-        const letters = 'abcdefghijklm'.split('');
-        return letters.map(letter => `/${letter}.jpeg`);
+    const stelvioImages = useMemo(() => {
+        return Array.from({ length: 28 }, (_, i) => `/s${i + 1}.jpeg`);
     }, []);
 
     return (
@@ -264,35 +248,20 @@ const CommercialOperationPage: React.FC = () => {
                         className="mb-16 sm:mb-20 md:mb-24"
                     >
                         <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12 text-white">
-                            {t('Prize_Gallery')}
+                            Alfa Romeo Stelvio Quadrifoglio
                         </h2>
 
-                        {/* Side by Side Carousels on Desktop, Stacked on Mobile */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
-                            {/* First Carousel */}
+                        {/* Single Carousel for Stelvio */}
+                        <div className="max-w-4xl mx-auto">
                             <motion.div
-                                initial={{ opacity: 0, x: -30 }}
-                                whileInView={{ opacity: 1, x: 0 }}
+                                initial={{ opacity: 0, y: 30 }}
+                                whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ duration: 0.6 }}
                                 className="relative group"
                             >
-                                <div className="aspect-square overflow-hidden rounded-2xl shadow-2xl border-2 border-white/10 bg-black">
-                                    <ImageCarousel images={carousel1Images} autoplaySpeed={1500} />
-                                </div>
-                                <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-                            </motion.div>
-
-                            {/* Second Carousel */}
-                            <motion.div
-                                initial={{ opacity: 0, x: 30 }}
-                                whileInView={{ opacity: 1, x: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.6, delay: 0.2 }}
-                                className="relative group"
-                            >
-                                <div className="aspect-square overflow-hidden rounded-2xl shadow-2xl border-2 border-white/10 bg-black">
-                                    <ImageCarousel images={carousel2Images} autoplaySpeed={1800} />
+                                <div className="aspect-video overflow-hidden rounded-2xl shadow-2xl border-2 border-white/10 bg-black">
+                                    <ImageCarousel images={stelvioImages} autoplaySpeed={1200} />
                                 </div>
                                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
                             </motion.div>
