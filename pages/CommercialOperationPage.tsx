@@ -224,14 +224,14 @@ const CommercialOperationPage: React.FC = () => {
                 </div>
 
                 <div className="relative z-20 px-4 sm:px-6 container mx-auto">
-                    <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-exo2 uppercase tracking-wider" style={{ textShadow: '0 0 15px rgba(255,255,255,0.3)' }}>
-                        {getTranslated(giveaway.name)}
+                    <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-exo2 uppercase tracking-wider mb-4" style={{ textShadow: '0 0 15px rgba(255,255,255,0.3)' }}>
+                        Lotteria DR7 S.p.A.
                     </motion.h1>
-                    <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.4 }} className="mt-4 text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 font-semibold tracking-wide">
-                        {getTranslated(giveaway.subtitle)}
+                    <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.4 }} className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white/90 font-semibold tracking-wide mb-12">
+                        Vinci un'Alfa Romeo Stelvio Quadrifoglio
                     </motion.p>
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.6 }} className="mt-8 sm:mt-12">
-                        <h3 className="text-base sm:text-lg font-semibold uppercase tracking-widest text-white/90 mb-4">{t('Draw_Ends_In')}</h3>
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.6 }} className="mt-4">
+                        <h3 className="text-base sm:text-lg font-semibold uppercase tracking-widest text-white/90 mb-4">L'estrazione termina tra</h3>
                         <div className="grid grid-cols-4 gap-2 sm:gap-4 max-w-xs sm:max-w-sm mx-auto">
                             <TimerBox value={timeLeft.days} label={t('days')} />
                             <TimerBox value={timeLeft.hours} label={t('hours')} />
