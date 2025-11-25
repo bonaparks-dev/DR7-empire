@@ -72,9 +72,14 @@ const LotteriaPopup: React.FC = () => {
               </h2>
 
               {/* Subtitle */}
-              <p className="text-xl md:text-2xl font-semibold text-white/90 mb-8">
-                Vinci un'Alfa Romeo Stelvio Quadrifoglio
-              </p>
+              <div className="mb-8">
+                <p className="text-2xl md:text-3xl font-bold text-white mb-2 leading-tight">
+                  ALFA ROMEO STELVIO QUADRIFOGLIO
+                </p>
+                <p className="text-xl md:text-2xl font-semibold text-white/80">
+                  510 CV
+                </p>
+              </div>
 
               {/* Details */}
               <div className="space-y-4 mb-8 text-white/80">
@@ -95,7 +100,7 @@ const LotteriaPopup: React.FC = () => {
 
                 <div className="flex items-center justify-between px-4 py-3 bg-white/5 rounded-lg">
                   <span className="text-sm uppercase tracking-wider">Biglietti</span>
-                  <span className="text-lg font-bold">2.000</span>
+                  <span className="text-lg font-bold">Dal n. 0001 al 2500</span>
                 </div>
               </div>
 
