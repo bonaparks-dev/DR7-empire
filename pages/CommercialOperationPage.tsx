@@ -216,9 +216,7 @@ const CommercialOperationPage: React.FC = () => {
 
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="bg-black text-white font-exo2">
-            <div className="relative min-h-screen flex items-center justify-center text-center overflow-hidden pt-32 pb-24">
-                <img src="/main.jpeg" alt="Background" className="absolute inset-0 z-0 w-full h-full object-cover brightness-75" />
-                <div className="absolute inset-0 bg-black/20 z-10"></div>
+            <div className="relative min-h-screen flex items-center justify-center text-center overflow-hidden pt-32 pb-24 bg-black">
                 <div className="relative z-20 px-4 sm:px-6 container mx-auto">
                     <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-exo2 uppercase tracking-wider" style={{ textShadow: '0 0 15px rgba(255,255,255,0.3)' }}>
                         {getTranslated(giveaway.name)}
