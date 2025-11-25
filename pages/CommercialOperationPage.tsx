@@ -247,12 +247,29 @@ const CommercialOperationPage: React.FC = () => {
                         transition={{ duration: 0.8 }}
                         className="mb-16 sm:mb-20 md:mb-24"
                     >
-                        <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12 text-white">
-                            Alfa Romeo Stelvio Quadrifoglio
-                        </h2>
+                        {/* Top Section - Ticket Info */}
+                        <div className="text-center mb-12 space-y-6">
+                            <div className="space-y-2">
+                                <h3 className="text-2xl sm:text-3xl font-bold text-white">BIGLIETTO</h3>
+                                <p className="text-4xl sm:text-5xl font-bold text-white">25€</p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <h3 className="text-xl sm:text-2xl font-semibold text-white/90">In palio: 50.000€</h3>
+                            </div>
+
+                            <div className="space-y-3 max-w-3xl mx-auto">
+                                <h2 className="text-3xl sm:text-4xl font-bold text-white">
+                                    ALFA ROMEO STELVIO QUADRIFOGLIO 510 CV
+                                </h2>
+                                <p className="text-lg sm:text-xl text-white/80">
+                                    Motore Ferrari. Potenza pura. Un mostro da strada.
+                                </p>
+                            </div>
+                        </div>
 
                         {/* Single Carousel for Stelvio */}
-                        <div className="max-w-4xl mx-auto">
+                        <div className="max-w-4xl mx-auto mb-8">
                             <motion.div
                                 initial={{ opacity: 0, y: 30 }}
                                 whileInView={{ opacity: 1, y: 0 }}
@@ -265,6 +282,28 @@ const CommercialOperationPage: React.FC = () => {
                                 </div>
                                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
                             </motion.div>
+                        </div>
+
+                        {/* Bottom Section - Location & CTA */}
+                        <div className="text-center space-y-6 mb-12">
+                            <p className="text-lg sm:text-xl text-white/90 font-semibold">
+                                LA VETTURA È VISIBILE IN VIALE MARCONI 229
+                            </p>
+
+                            <div className="space-y-4 max-w-2xl mx-auto">
+                                <p className="text-2xl sm:text-3xl font-bold text-white">
+                                    UN BIGLIETTO. 25€.
+                                </p>
+                                <p className="text-lg sm:text-xl text-white/80">
+                                    Una chance reale di portarti a casa un'auto da sogno.
+                                </p>
+                                <p className="text-xl sm:text-2xl font-bold text-white">
+                                    GIOCA ORA.
+                                </p>
+                                <p className="text-lg text-white/70">
+                                    Prima che finiscano.
+                                </p>
+                            </div>
                         </div>
                     </motion.div>
 
