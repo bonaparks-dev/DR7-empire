@@ -78,7 +78,7 @@ const LotteriaPopup: React.FC = () => {
 
               {/* Title */}
               <h2 className="text-3xl md:text-4xl font-bold text-white mb-3 tracking-tight">
-                LOTTERIA DR7 S.p.A.
+                LOTTERIA
               </h2>
 
               {/* Subtitle */}
