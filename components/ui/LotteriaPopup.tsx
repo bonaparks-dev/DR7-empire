@@ -100,7 +100,7 @@ const LotteriaPopup: React.FC = () => {
 
                 <div className="flex items-center justify-between px-4 py-3 bg-white/5 rounded-lg">
                   <span className="text-sm uppercase tracking-wider">Biglietti</span>
-                  <span className="text-lg font-bold">Dal n. 0001 al 2500</span>
+                  <span className="text-lg font-bold">2.000</span>
                 </div>
               </div>
 
