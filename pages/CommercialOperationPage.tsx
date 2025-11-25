@@ -216,7 +216,13 @@ const CommercialOperationPage: React.FC = () => {
 
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="bg-black text-white font-exo2">
-            <div className="relative min-h-screen flex items-center justify-center text-center overflow-hidden pt-32 pb-24 bg-black">
+            <div className="relative min-h-screen flex items-center justify-center text-center overflow-hidden pt-32 pb-24">
+                {/* Background Carousel */}
+                <div className="absolute inset-0 z-0">
+                    <ImageCarousel images={stelvioImages} autoplaySpeed={1200} />
+                    <div className="absolute inset-0 bg-black/70" />
+                </div>
+
                 <div className="relative z-20 px-4 sm:px-6 container mx-auto">
                     <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-exo2 uppercase tracking-wider" style={{ textShadow: '0 0 15px rgba(255,255,255,0.3)' }}>
                         {getTranslated(giveaway.name)}
@@ -245,57 +251,42 @@ const CommercialOperationPage: React.FC = () => {
                         transition={{ duration: 0.8 }}
                         className="mb-16 sm:mb-20 md:mb-24"
                     >
-                        {/* Top Section - Ticket Info */}
-                        <div className="text-center mb-12 space-y-6">
-                            <div className="space-y-2">
-                                <h3 className="text-xl sm:text-2xl font-semibold text-white/90">In palio: 50.000€</h3>
-                            </div>
-
-                            <div className="space-y-3 max-w-3xl mx-auto">
-                                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">
-                                    ALFA ROMEO STELVIO QUADRIFOGLIO 510 CV
-                                </h2>
-                                <p className="text-lg sm:text-xl text-white/80">
-                                    Motore Ferrari. Potenza pura. Un mostro da strada.
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Single Carousel for Stelvio */}
-                        <div className="max-w-4xl mx-auto mb-8">
-                            <motion.div
-                                initial={{ opacity: 0, y: 30 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.6 }}
-                                className="relative group"
-                            >
-                                <div className="aspect-video overflow-hidden rounded-2xl shadow-2xl border-2 border-white/10 bg-black">
-                                    <ImageCarousel images={stelvioImages} autoplaySpeed={1200} />
+                        {/* Info Section */}
+                        <div className="text-center mb-12 space-y-8">
+                            <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <h3 className="text-xl sm:text-2xl font-semibold text-white/90">In palio: 50.000€</h3>
                                 </div>
-                                <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-                            </motion.div>
-                        </div>
 
-                        {/* Bottom Section - Location & CTA */}
-                        <div className="text-center space-y-6 mb-12">
-                            <p className="text-lg sm:text-xl text-white/90 font-semibold">
-                                LA VETTURA È VISIBILE IN VIALE MARCONI 229
-                            </p>
+                                <div className="space-y-3 max-w-3xl mx-auto">
+                                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">
+                                        ALFA ROMEO STELVIO QUADRIFOGLIO 510 CV
+                                    </h2>
+                                    <p className="text-lg sm:text-xl text-white/80">
+                                        Motore Ferrari. Potenza pura. Un mostro da strada.
+                                    </p>
+                                </div>
+                            </div>
 
-                            <div className="space-y-4 max-w-2xl mx-auto">
-                                <p className="text-2xl sm:text-3xl font-bold text-white">
-                                    UN BIGLIETTO. 25€.
+                            <div className="space-y-6">
+                                <p className="text-lg sm:text-xl text-white/90 font-semibold">
+                                    LA VETTURA È VISIBILE IN VIALE MARCONI 229
                                 </p>
-                                <p className="text-lg sm:text-xl text-white/80">
-                                    Una chance reale di portarti a casa un'auto da sogno.
-                                </p>
-                                <p className="text-xl sm:text-2xl font-bold text-white">
-                                    GIOCA ORA.
-                                </p>
-                                <p className="text-lg text-white/70">
-                                    Prima che finiscano.
-                                </p>
+
+                                <div className="space-y-4 max-w-2xl mx-auto">
+                                    <p className="text-2xl sm:text-3xl font-bold text-white">
+                                        UN BIGLIETTO. 25€.
+                                    </p>
+                                    <p className="text-lg sm:text-xl text-white/80">
+                                        Una chance reale di portarti a casa un'auto da sogno.
+                                    </p>
+                                    <p className="text-xl sm:text-2xl font-bold text-white">
+                                        GIOCA ORA.
+                                    </p>
+                                    <p className="text-lg text-white/70">
+                                        Prima che finiscano.
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </motion.div>
