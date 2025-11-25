@@ -29,8 +29,7 @@ const WinRulesPage = () => {
       title: { it: 'Probabilità di vincita', en: 'Winning Odds' },
       items: [
         { label: { it: 'Totale biglietti emessi:', en: 'Total tickets issued:' }, value: { it: '2.000', en: '2,000' } },
-        { label: { it: 'Totale premi:', en: 'Total prizes:' }, value: { it: '3.300', en: '3,300' } },
-        { label: { it: 'Probabilità vincita:', en: 'Chance of winning:' }, value: { it: '1 biglietto su 0.6 è vincente (165%)', en: '1 winning ticket out of 0.6 (~165%)' } },
+        { label: { it: 'Probabilità vincita:', en: 'Chance of winning:' }, value: { it: '1 biglietto su 2.000', en: '1 ticket out of 2,000' } },
       ],
     },
     prizes: {
@@ -110,8 +109,8 @@ const WinRulesPage = () => {
     summary: {
       title: { it: 'Riepilogo finale', en: 'Final Summary' },
       items: [
-        { label: { it: 'Totale premi:', en: 'Total prizes:' }, value: { it: '3.300', en: '3,300' } },
-        { label: { it: 'Probabilità vincita:', en: 'Winning odds:' }, value: { it: '1 biglietto vincente ogni 106', en: '1 winning ticket out of 106' } },
+        { label: { it: 'Totale biglietti:', en: 'Total tickets:' }, value: { it: '2.000', en: '2,000' } },
+        { label: { it: 'Premio:', en: 'Prize:' }, value: { it: 'Alfa Romeo Stelvio Quadrifoglio', en: 'Alfa Romeo Stelvio Quadrifoglio' } },
         { label: { it: 'Costo ticket:', en: 'Ticket price:' }, value: { it: '25 €', en: '€25' } },
         { label: { it: 'Estrazione:', en: 'Drawing:' }, value: { it: '24 dicembre 2025', en: 'December 24, 2025' } },
       ],
