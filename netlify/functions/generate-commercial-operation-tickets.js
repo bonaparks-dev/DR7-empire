@@ -75,8 +75,10 @@ const generateTicketPdf = (fullName, tickets, purchaseDate) => {
 
       // Top section with ticket info
       let yPos = 80;
-      doc.font('Helvetica-Bold').fontSize(22).text('BIGLIETTO UFFICIALE DR7 EMPIRE', 50, yPos, { align: 'center', width: doc.page.width - 100 });
-      yPos += 50;
+      doc.font('Helvetica-Bold').fontSize(24).text('LOTTERIA', 50, yPos, { align: 'center', width: doc.page.width - 100 });
+      yPos += 35;
+      doc.font('Helvetica').fontSize(14).text('BIGLIETTO UFFICIALE', 50, yPos, { align: 'center', width: doc.page.width - 100 });
+      yPos += 40;
 
       // Ticket details
       doc.font('Helvetica').fontSize(14).text('TITOLARE DEL BIGLIETTO', 50, yPos, { align: 'center', width: doc.page.width - 100, characterSpacing: 2 });
@@ -118,16 +120,18 @@ const generateTicketPdf = (fullName, tickets, purchaseDate) => {
       yPos += qrSize + 15;
 
       doc.font('Courier').fontSize(10).text(`ID: ${ticket.uuid}`, 50, yPos, { align: 'center', width: doc.page.width - 100 });
-      yPos += 25;
+      yPos += 30;
 
-      // Gift card info
-      doc.font('Helvetica').fontSize(10).text('Questo biglietto è valido come gift card da 25€', 50, yPos, { align: 'center', width: doc.page.width - 100 });
+      // Lottery info
+      doc.font('Helvetica-Bold').fontSize(12).text('Estrazione: 24 Dicembre 2025, ore 10:00', 50, yPos, { align: 'center', width: doc.page.width - 100 });
+      yPos += 20;
+      doc.font('Helvetica').fontSize(10).text('Solo 2.000 biglietti disponibili', 50, yPos, { align: 'center', width: doc.page.width - 100 });
       yPos += 15;
-      doc.font('Helvetica').fontSize(10).text('con validità dal 1.2.2026 al 1.3.2026', 50, yPos, { align: 'center', width: doc.page.width - 100 });
+      doc.font('Helvetica').fontSize(10).text('Supervisione legale garantita', 50, yPos, { align: 'center', width: doc.page.width - 100 });
 
       // Footer
       const footerY = doc.page.height - 80;
-      doc.font('Helvetica-Oblique').fontSize(10).text('Buona Fortuna!',
+      doc.font('Helvetica-Oblique').fontSize(10).text('In bocca al lupo!',
         50, footerY, { align: 'center', width: doc.page.width - 100 });
 
       if (tickets.indexOf(ticket) < tickets.length - 1) {
@@ -221,8 +225,8 @@ exports.handler = async (event) => {
       await transporter.sendMail({
         from: `"DR7 Empire" <${process.env.GMAIL_USER}>`,
         to: email,
-        subject: 'I Tuoi Biglietti DR7 - Lotteria DR7 S.p.A.',
-        text: `Ciao ${fullName || 'Cliente Stimato'},\n\nGrazie per il tuo acquisto! I tuoi ${qty} bigliett${qty > 1 ? 'i' : 'o'} dell'Operazione Commerciale sono allegat${qty > 1 ? 'i' : 'o'} a questa email in formato PDF.\n\nBuona fortuna! L'estrazione si terrà il giorno di Natale.\n\nIl Team DR7 Empire`,
+        subject: 'I Tuoi Biglietti - LOTTERIA',
+        text: `Ciao ${fullName || 'Cliente Stimato'},\n\nGrazie per il tuo acquisto! I tuoi ${qty} bigliett${qty > 1 ? 'i' : 'o'} della LOTTERIA sono allegat${qty > 1 ? 'i' : 'o'} a questa email in formato PDF.\n\nEstrazione: 24 Dicembre 2025, ore 10:00\nSolo 2.000 biglietti disponibili!\n\nIn bocca al lupo!\n\nIl Team DR7 Empire`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -244,14 +248,15 @@ exports.handler = async (event) => {
               </div>
               <div class="content">
                 <p><strong>Ciao ${fullName || 'Cliente Stimato'},</strong></p>
-                <p>Grazie per aver partecipato alla <strong>Lotteria DR7 S.p.A.</strong>!</p>
+                <p>Grazie per aver partecipato alla <strong>LOTTERIA</strong>!</p>
                 <div class="ticket-info">
                   <h2 style="margin: 0;">📋 Dettagli Acquisto</h2>
                   <p style="font-size: 24px; margin: 10px 0;"><strong>${qty} Bigliett${qty > 1 ? 'i' : 'o'}</strong></p>
                   <p>I tuoi biglietti sono allegati a questa email in formato PDF.</p>
                 </div>
                 <p><strong>🎄 Data Estrazione:</strong> 24 Dicembre 2025, ore 10:00</p>
-                <p style="margin-top: 30px;"><strong>Buona fortuna!</strong></p>
+                <p><strong>🎟️ Biglietti disponibili:</strong> Solo 2.000</p>
+                <p style="margin-top: 30px;"><strong>In bocca al lupo!</strong></p>
                 <div class="footer">
                   <p>DR7 Empire – Luxury Car Rental & Services</p>
                   <p>Per domande: <a href="https://dr7empire.com">dr7empire.com</a></p>
@@ -263,7 +268,7 @@ exports.handler = async (event) => {
         `,
         attachments: [
           {
-            filename: 'Biglietti-DR7-Operazione-Commerciale.pdf',
+            filename: 'Biglietti-LOTTERIA.pdf',
             content: pdfBuffer,
             contentType: 'application/pdf',
           },
