@@ -221,7 +221,7 @@ exports.handler = async (event) => {
       await transporter.sendMail({
         from: `"DR7 Empire" <${process.env.GMAIL_USER}>`,
         to: email,
-        subject: 'I Tuoi Biglietti DR7 - Operazione Commerciale 7 MILIONI DI EURO',
+        subject: 'I Tuoi Biglietti DR7 - Lotteria DR7 S.p.A.',
         text: `Ciao ${fullName || 'Cliente Stimato'},\n\nGrazie per il tuo acquisto! I tuoi ${qty} bigliett${qty > 1 ? 'i' : 'o'} dell'Operazione Commerciale sono allegat${qty > 1 ? 'i' : 'o'} a questa email in formato PDF.\n\nBuona fortuna! L'estrazione si terrà il giorno di Natale.\n\nIl Team DR7 Empire`,
         html: `
           <!DOCTYPE html>
@@ -244,7 +244,7 @@ exports.handler = async (event) => {
               </div>
               <div class="content">
                 <p><strong>Ciao ${fullName || 'Cliente Stimato'},</strong></p>
-                <p>Grazie per aver partecipato all'Operazione Commerciale <strong>"7 MILIONI DI EURO"</strong>!</p>
+                <p>Grazie per aver partecipato alla <strong>Lotteria DR7 S.p.A.</strong>!</p>
                 <div class="ticket-info">
                   <h2 style="margin: 0;">📋 Dettagli Acquisto</h2>
                   <p style="font-size: 24px; margin: 10px 0;"><strong>${qty} Bigliett${qty > 1 ? 'i' : 'o'}</strong></p>

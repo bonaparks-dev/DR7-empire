@@ -87,7 +87,7 @@ const Footer: React.FC = () => {
             <li><Link to="/membership" className="hover:text-white transition-colors">{t('Members')}</Link></li>
           </ul>
           <ul className="flex flex-wrap justify-center gap-x-8 gap-y-2">
-            <li><Link to="/commercial-operation" className="hover:text-white transition-colors">{t('7_MILIONI_DI_EURO')}</Link></li>
+            <li><Link to="/commercial-operation" className="hover:text-white transition-colors">{t('LOTTERIA')}</Link></li>
             <li><Link to="/franchising" className="hover:text-white transition-colors">{t('Franchising')}</Link></li>
             <li><Link to="/investitori" className="hover:text-white transition-colors">Investitori</Link></li>
             <li><Link to="/about" className="hover:text-white transition-colors">{t('About_Us')}</Link></li>

@@ -11,6 +11,7 @@ export const translations: Translations = {
   Car_Wash: { en: "Car Wash", it: "Autolavaggio" },
   Luxury_Wash: { en: "Luxury Wash", it: "Luxury Wash" },
   Commercial_Operation: { en: "Commercial Operation", it: "Operazione Commerciale" },
+  LOTTERIA: { en: "LOTTERY", it: "LOTTERIA" },
   Membership: { en: "Members", it: "Members" },
   My_Account: { en: "My Account", it: "Il Mio Account" },
   Partner_Dashboard: { en: "Partner Dashboard", it: "Dashboard Partner" },
@@ -232,7 +233,7 @@ export const translations: Translations = {
   View_Openings: { en: "View Openings", it: "Vedi Posizioni Aperte" },
 
   // Commercial Operation Page
-  DR7_Christmas_Giveaway: { en: "7 MILIONI DI EURO", it: "7 MILIONI DI EURO" },
+  DR7_Christmas_Giveaway: { en: "LOTTERY", it: "LOTTERIA" },
   Prizes_Pool_Worth_Over: { en: "Prize Pool Worth Over $7,000,000", it: "Montepremi di Oltre $7.000.000" },
   Draw_Ends_In: { en: "Draw Ends In", it: "L'estrazione termina tra" },
   Prize_Gallery: { en: "Prize Gallery", it: "Galleria Premi" },
