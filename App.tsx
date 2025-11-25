@@ -60,6 +60,7 @@ import CommercialOperationSuccessPage from './pages/CommercialOperationSuccessPa
 import WinRulesPage from './pages/WinRulesPage';
 import LegalTermsPage from './pages/LegalTermsPage';
 import CancellationPolicyPage from './pages/CancellationPolicyPage';
+import LotteriaPopup from './components/ui/LotteriaPopup';
 import MyTickets from './pages/account/MyTickets';
 import MyBookings from './pages/account/MyBookings';
 import ConfirmationSuccessPage from './pages/ConfirmationSuccessPage';
@@ -244,6 +245,7 @@ const MainContent = () => {
         <BookingModal />
         <VerificationModal />
         <CookieBanner />
+        <LotteriaPopup />
         <DR7AIFloatingButton />
         <AnimatePresence>
           {isCarWizardOpen && selectedCar && (
