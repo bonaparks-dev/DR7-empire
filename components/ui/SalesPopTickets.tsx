@@ -106,85 +106,55 @@ const SalesPopTickets: React.FC = () => {
     return `${minutes} min fa`;
   };
 
+  // Only show the most recent purchase on mobile
+  const displayPurchases = purchases.slice(0, 1);
+
   return (
-    <motion.div
-      initial={{ opacity: 0, x: -100, y: 20 }}
-      animate={{ opacity: 1, x: 0, y: 0 }}
-      transition={{ type: "spring", damping: 25, stiffness: 200 }}
-      className="fixed bottom-4 left-4 right-4 md:left-6 md:right-auto md:bottom-6 z-50 md:max-w-sm"
-    >
-      <div className="bg-black/95 backdrop-blur-md border border-white/30 rounded-2xl shadow-2xl relative overflow-hidden">
-        {/* Gold accent bar */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-dr7-gold via-yellow-400 to-dr7-gold" />
-
-        {/* Header */}
-        <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-white/20 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-dr7-gold to-yellow-600 flex items-center justify-center flex-shrink-0">
-              <svg className="w-3.5 h-3.5 md:w-4 md:h-4 text-black" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M2 6a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 100 4v2a2 2 0 01-2 2H4a2 2 0 01-2-2v-2a2 2 0 100-4V6z" />
-              </svg>
-            </div>
-            <h3 className="text-xs md:text-sm font-bold text-white">Acquisti Recenti</h3>
-          </div>
-          <button
-            onClick={handleClose}
-            className="text-white/70 hover:text-white transition-colors p-1"
-            aria-label="Close notification"
+    <AnimatePresence>
+      {displayPurchases.map((purchase) => {
+        const bigliettiText = purchase.quantity === 1 ? "biglietto" : "biglietti";
+        return (
+          <motion.div
+            key={purchase.id}
+            initial={{ opacity: 0, x: -100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            transition={{ type: "spring", damping: 20, stiffness: 150 }}
+            onAnimationComplete={() => {
+              // Auto-hide after 2 seconds
+              setTimeout(() => {
+                setPurchases(prev => prev.filter(p => p.id !== purchase.id));
+              }, 2000);
+            }}
+            className="fixed bottom-4 left-4 z-50 max-w-[220px] md:max-w-xs"
           >
-            <XIcon className="w-4 h-4" />
-          </button>
-        </div>
+            <div className="bg-black/95 backdrop-blur-md border border-white/30 rounded-xl shadow-2xl relative overflow-hidden">
+              {/* Gold accent bar */}
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-dr7-gold via-yellow-400 to-dr7-gold" />
 
-        {/* List of buyers */}
-        <div className="max-h-64 md:max-h-80 overflow-y-auto">
-          <AnimatePresence mode="popLayout">
-            {purchases.map((purchase) => {
-              const bigliettiText = purchase.quantity === 1 ? "biglietto" : "biglietti";
-              return (
-                <motion.div
-                  key={purchase.id}
-                  layout
-                  initial={{ opacity: 0, height: 0, x: -20 }}
-                  animate={{ opacity: 1, height: "auto", x: 0 }}
-                  exit={{ opacity: 0, height: 0, x: 20 }}
-                  transition={{
-                    opacity: { duration: 0.3 },
-                    height: { duration: 0.3 },
-                    layout: { duration: 0.3 }
-                  }}
-                  className="px-3 py-2 md:px-4 md:py-3 border-b border-white/10 hover:bg-white/5 transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs md:text-sm text-white font-medium leading-tight">
-                        <span className="font-bold">{purchase.name}</span>
-                        <span className="text-white/70 text-[10px] md:text-xs"> ({purchase.location})</span>
-                      </p>
-                      <p className="text-[10px] md:text-xs text-white/80 mt-0.5 md:mt-1">
-                        <span className="font-semibold text-dr7-gold">{purchase.quantity} {bigliettiText}</span>
-                      </p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-[10px] md:text-xs text-white/60 whitespace-nowrap">
-                        {formatTimeAgo(purchase.minutesAgo)}
-                      </p>
-                    </div>
+              {/* Content */}
+              <div className="px-2.5 py-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-dr7-gold to-yellow-600 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3 h-3 text-black" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M2 6a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 100 4v2a2 2 0 01-2 2H4a2 2 0 01-2-2v-2a2 2 0 100-4V6z" />
+                    </svg>
                   </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-        </div>
-
-        {/* Footer */}
-        <div className="px-3 py-1.5 md:px-4 md:py-2 bg-white/5 border-t border-white/10">
-          <p className="text-[10px] md:text-xs text-white/60 text-center">
-            Acquisti in tempo reale
-          </p>
-        </div>
-      </div>
-    </motion.div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] text-white font-semibold leading-tight truncate">
+                      {purchase.name}
+                    </p>
+                    <p className="text-[9px] text-dr7-gold font-medium">
+                      {purchase.quantity} {bigliettiText}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        );
+      })}
+    </AnimatePresence>
   );
 };
 
