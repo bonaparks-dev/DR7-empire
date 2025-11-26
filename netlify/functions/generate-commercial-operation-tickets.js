@@ -326,11 +326,12 @@ exports.handler = async (event) => {
         user_id: null, // Will be linked if user is authenticated
         email: email,
         full_name: fullName || 'Cliente Stimato',
+        customer_phone: pi.metadata?.phone || null,
         payment_intent_id: paymentIntentId,
-        amount_paid: pi.amount,
+        amount_paid: 2500, // 25€ per ticket
         currency: pi.currency,
         purchase_date: purchaseDate.toISOString(),
-        quantity: qty
+        quantity: 1
       }));
 
       const { data, error } = await supabase
