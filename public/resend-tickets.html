@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resend Updated Tickets - DR7 Empire Admin</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .container {
+            background: #2a2a2a;
+            padding: 30px;
+            border-radius: 10px;
+            border: 2px solid #FFD700;
+        }
+        h1 {
+            color: #FFD700;
+            margin-top: 0;
+        }
+        button {
+            background: #FFD700;
+            color: black;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background: #FFA500;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background: #004d00;
+            border: 2px solid #00ff00;
+        }
+        .error {
+            background: #4d0000;
+            border: 2px solid #ff0000;
+        }
+        .loading {
+            background: #4d4d00;
+            border: 2px solid #ffff00;
+        }
+        .customer-list {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .customer-list li {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎟️ Resend Updated Ticket PDFs</h1>
+
+        <p><strong>This will regenerate and resend PDFs to all customers with reassigned ticket numbers.</strong></p>
+
+        <div class="customer-list">
+            <h3>Affected Customers (9 total):</h3>
+            <ul>
+                <li>Cristiano Santi - Tickets: 0006, 0008</li>
+                <li>Dubai Rent 7 - Tickets: 0001, 0002, 0003, 0005</li>
+                <li>Fabri Liggi - Ticket: 0007</li>
+                <li>Francesco Laricchiuta - Ticket: 0012</li>
+                <li>Gianluca Andreolli - Tickets: 0009, 0010</li>
+                <li>Alessandro Magmanlac - Ticket: 0011</li>
+                <li>Matteo - Tickets: 0427, 0957</li>
+                <li>Nicola Figus - Ticket: 0004</li>
+                <li>Francesco pira - Tickets: 0681, 1545</li>
+            </ul>
+        </div>
+
+        <button id="sendBtn" onclick="resendTickets()">Send Updated PDFs Now</button>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function resendTickets() {
+            const btn = document.getElementById('sendBtn');
+            const result = document.getElementById('result');
+
+            btn.disabled = true;
+            result.style.display = 'block';
+            result.className = 'loading';
+            result.innerHTML = '<strong>⏳ Processing...</strong><br>This may take a few minutes. Generating PDFs and sending emails...';
+
+            try {
+                const response = await fetch('/.netlify/functions/resend-updated-tickets', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ secret: 'DR7Empire2025' })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    result.className = 'success';
+                    let html = '<strong>✅ Success!</strong><br><br>';
+                    html += '<strong>Results:</strong><ul>';
+                    data.results.forEach(r => {
+                        if (r.status === 'success') {
+                            html += `<li>✅ ${r.email} - Tickets: ${r.tickets.map(t => String(t).padStart(4, '0')).join(', ')}</li>`;
+                        } else {
+                            html += `<li>❌ ${r.email} - Error: ${r.message}</li>`;
+                        }
+                    });
+                    html += '</ul>';
+                    result.innerHTML = html;
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+
+            } catch (error) {
+                result.className = 'error';
+                result.innerHTML = `<strong>❌ Error:</strong><br>${error.message}<br><br>Please check the Netlify function logs or contact support.`;
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
