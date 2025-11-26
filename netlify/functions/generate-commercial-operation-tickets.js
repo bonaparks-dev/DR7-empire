@@ -348,6 +348,30 @@ exports.handler = async (event) => {
       // Don't fail the whole request if Supabase fails
     }
 
+    // Send WhatsApp notification
+    console.log(`[Tickets] Sending WhatsApp notification...`);
+    try {
+      const ticketNumbers = tickets.map(t => String(t.number).padStart(4, '0'));
+      await fetch(`${process.env.URL}/.netlify/functions/send-whatsapp-notification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'ticket',
+          ticket: {
+            customer_name: fullName || 'Cliente Stimato',
+            customer_email: email,
+            quantity: qty,
+            total_price: pi.amount,
+            ticket_numbers: ticketNumbers
+          }
+        })
+      });
+      console.log(`[Tickets] ✅ WhatsApp notification sent`);
+    } catch (whatsappError) {
+      console.error(`[Tickets] ❌ Failed to send WhatsApp notification:`, whatsappError);
+      // Don't fail the whole request if WhatsApp notification fails
+    }
+
     const alreadyFlagged = pi.metadata && pi.metadata.tickets_issued === 'true';
     if (!alreadyFlagged) {
       try {
