@@ -88,7 +88,7 @@ const generateTicketPdf = (fullName, tickets, purchaseDate) => {
 
       doc.font('Helvetica').fontSize(14).text('NUMERO BIGLIETTO', 50, yPos, { align: 'center', width: doc.page.width - 100, characterSpacing: 2 });
       yPos += 25;
-      doc.font('Helvetica-Bold').fontSize(36).text(ticket.number.toString().padStart(6, '0'), 50, yPos, { align: 'center', width: doc.page.width - 100 });
+      doc.font('Helvetica-Bold').fontSize(36).text(ticket.number.toString().padStart(4, '0'), 50, yPos, { align: 'center', width: doc.page.width - 100 });
       yPos += 55;
 
       // Purchase date and time
@@ -344,7 +344,7 @@ exports.handler = async (event) => {
             <hr>
             <h3>Numeri Biglietti:</h3>
             <ul>
-              ${tickets.map(t => `<li>Biglietto #${String(t.number).padStart(6, '0')} (ID: ${t.uuid})</li>`).join('')}
+              ${tickets.map(t => `<li>Biglietto #${String(t.number).padStart(4, '0')} (ID: ${t.uuid})</li>`).join('')}
             </ul>
           `
         });

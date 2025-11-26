@@ -22,7 +22,7 @@ const TicketDisplay: React.FC<{ ticket: CommercialOperationTicket }> = ({ ticket
             <div className="text-center my-4">
                 <p className="text-lg text-gray-300 tracking-widest">YOUR NUMBER</p>
                 <p className="text-5xl font-bold text-white tracking-wider my-2" style={{ textShadow: '0 0 10px rgba(255,255,255,0.3)' }}>
-                    {ticket.number.toString().padStart(6, '0')}
+                    {ticket.number.toString().padStart(4, '0')}
                 </p>
             </div>
             
