@@ -187,13 +187,63 @@ exports.handler = async (event) => {
 
     const RANGE_MIN = 1;
     const RANGE_MAX = 2000;
-    const seed = `${paymentIntentId}:${incomingEmail}:${qty}`;
 
-    const numbers = generateDeterministicUniqueNumbers(qty, RANGE_MIN, RANGE_MAX, seed);
-    const tickets = numbers.map((number, idx) => ({
+    // Get already assigned ticket numbers from the database
+    console.log(`[Tickets] Checking for already assigned ticket numbers...`);
+    const { data: existingTickets, error: fetchError } = await supabase
+      .from('commercial_operation_tickets')
+      .select('ticket_number');
+
+    if (fetchError) {
+      console.error(`[Tickets] ❌ Failed to fetch existing tickets:`, fetchError);
+      return createResponse(500, {
+        success: false,
+        error: 'Failed to check available ticket numbers. Please try again.'
+      });
+    }
+
+    const assignedNumbers = new Set(existingTickets.map(t => t.ticket_number));
+    console.log(`[Tickets] ${assignedNumbers.size} tickets already assigned`);
+
+    // Get available ticket numbers
+    const availableNumbers = [];
+    for (let i = RANGE_MIN; i <= RANGE_MAX; i++) {
+      if (!assignedNumbers.has(i)) {
+        availableNumbers.push(i);
+      }
+    }
+
+    console.log(`[Tickets] ${availableNumbers.length} tickets available`);
+
+    // Check if we have enough available tickets
+    if (availableNumbers.length < qty) {
+      return createResponse(400, {
+        success: false,
+        error: `Not enough tickets available. Only ${availableNumbers.length} tickets remaining.`
+      });
+    }
+
+    // Use deterministic random selection from available numbers
+    const seed = `${paymentIntentId}:${incomingEmail}:${qty}`;
+    const hex = createHash('sha256').update(seed).digest('hex').slice(0, 8);
+    const seedNum = parseInt(hex, 16) >>> 0;
+    const rand = mulberry32(seedNum);
+
+    // Select random tickets from available numbers
+    const selectedNumbers = [];
+    const tempAvailable = [...availableNumbers];
+    for (let i = 0; i < qty; i++) {
+      const randomIndex = Math.floor(rand() * tempAvailable.length);
+      selectedNumbers.push(tempAvailable[randomIndex]);
+      tempAvailable.splice(randomIndex, 1);
+    }
+
+    const tickets = selectedNumbers.map((number, idx) => ({
       number,
       uuid: hashId(paymentIntentId, incomingEmail, String(number), String(idx)),
     }));
+
+    console.log(`[Tickets] Assigned ticket numbers: ${selectedNumbers.join(', ')}`);
 
     // Get purchase date from Payment Intent creation timestamp
     const purchaseDate = pi.created ? new Date(pi.created * 1000) : new Date();
