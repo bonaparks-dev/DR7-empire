@@ -270,7 +270,7 @@ const CommercialOperationPage: React.FC = () => {
 
                             <div className="space-y-6">
                                 <p className="text-lg sm:text-xl text-white/90 font-semibold">
-                                    LA VETTURA È VISIBILE IN VIALE MARCONI 229
+                                    LA VETTURA È VISIBILE IN VIALE MARCONI 229, Cagliari
                                 </p>
 
                                 <div className="space-y-4 max-w-2xl mx-auto">
