@@ -22,12 +22,12 @@ export async function checkVehicleAvailability(
     const requestedPickup = new Date(pickupDate);
     const requestedDropoff = new Date(dropoffDate);
 
-    // Query all bookings for this vehicle from bookings table (main website)
+    // Query all bookings for this vehicle from bookings table (main website + admin)
     const { data: bookings, error } = await supabase
       .from('bookings')
       .select('pickup_date, dropoff_date, vehicle_name, status')
       .eq('vehicle_name', vehicleName)
-      .in('status', ['confirmed', 'pending']) // Only check active bookings
+      .in('status', ['confirmed', 'pending', 'active', 'completed']) // Include all active booking statuses
       .order('pickup_date', { ascending: true });
 
     if (error) {
@@ -117,12 +117,12 @@ export async function checkVehicleAvailability(
  */
 export async function getUnavailableDateRanges(vehicleName: string): Promise<Array<{ start: Date; end: Date }>> {
   try {
-    // Get bookings from main website
+    // Get bookings from main website + admin panel
     const { data: bookings, error } = await supabase
       .from('bookings')
       .select('pickup_date, dropoff_date')
       .eq('vehicle_name', vehicleName)
-      .in('status', ['confirmed', 'pending'])
+      .in('status', ['confirmed', 'pending', 'active', 'completed'])
       .order('pickup_date', { ascending: true });
 
     if (error) {
