@@ -211,7 +211,7 @@ exports.handler = async (event) => {
 
     console.log(`[Manual Ticket PDF] ✅ Email sent successfully to ${email}`);
 
-    // Send admin notification
+    // Send admin email notification
     try {
       await transporter.sendMail({
         from: `"DR7 Empire" <${process.env.GMAIL_USER}>`,
@@ -228,9 +228,39 @@ exports.handler = async (event) => {
           <p><em>Vendita effettuata tramite pannello admin</em></p>
         `
       });
-      console.log('[Manual Ticket PDF] ✅ Admin notification sent');
+      console.log('[Manual Ticket PDF] ✅ Admin email notification sent');
     } catch (adminError) {
-      console.error('[Manual Ticket PDF] ❌ Failed to send admin notification:', adminError);
+      console.error('[Manual Ticket PDF] ❌ Failed to send admin email notification:', adminError);
+    }
+
+    // Send WhatsApp notification
+    console.log('[Manual Ticket PDF] Sending WhatsApp notification...');
+    try {
+      const whatsappResponse = await fetch(`${process.env.URL}/.netlify/functions/send-whatsapp-notification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'ticket',
+          ticket: {
+            customer_name: fullName,
+            customer_email: email,
+            customer_phone: phone || 'N/A',
+            quantity: 1,
+            total_price: 2500, // €25 per ticket
+            ticket_numbers: [String(ticketNumber).padStart(4, '0')],
+            source: 'admin_manual_sale'
+          }
+        })
+      });
+
+      if (whatsappResponse.ok) {
+        console.log('[Manual Ticket PDF] ✅ WhatsApp notification sent');
+      } else {
+        console.error('[Manual Ticket PDF] ⚠️ WhatsApp notification failed:', await whatsappResponse.text());
+      }
+    } catch (whatsappError) {
+      console.error('[Manual Ticket PDF] ❌ Failed to send WhatsApp notification:', whatsappError);
+      // Don't fail the whole request if WhatsApp notification fails
     }
 
     return createResponse(200, { success: true, message: 'PDF generated and sent successfully' });
