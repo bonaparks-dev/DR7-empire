@@ -23,11 +23,12 @@ export async function checkVehicleAvailability(
     const requestedDropoff = new Date(dropoffDate);
 
     // Query all bookings for this vehicle from bookings table (main website + admin)
+    // Admin bookings should ALWAYS block slots regardless of payment/status
     const { data: bookings, error } = await supabase
       .from('bookings')
-      .select('pickup_date, dropoff_date, vehicle_name, status')
+      .select('pickup_date, dropoff_date, vehicle_name, status, booking_source')
       .eq('vehicle_name', vehicleName)
-      .in('status', ['confirmed', 'pending']) // Admin bookings are always 'confirmed'
+      .neq('status', 'cancelled') // Only exclude cancelled bookings
       .order('pickup_date', { ascending: true });
 
     if (error) {
@@ -118,11 +119,12 @@ export async function checkVehicleAvailability(
 export async function getUnavailableDateRanges(vehicleName: string): Promise<Array<{ start: Date; end: Date }>> {
   try {
     // Get bookings from main website + admin panel
+    // Admin bookings should ALWAYS block slots regardless of payment/status
     const { data: bookings, error } = await supabase
       .from('bookings')
       .select('pickup_date, dropoff_date')
       .eq('vehicle_name', vehicleName)
-      .in('status', ['confirmed', 'pending']) // Admin bookings are always 'confirmed'
+      .neq('status', 'cancelled') // Only exclude cancelled bookings
       .order('pickup_date', { ascending: true });
 
     if (error) {
@@ -234,13 +236,12 @@ export async function checkCarWashAvailability(
     const requestedEndMinutes = requestedStartMinutes + (requestedDuration * 60);
 
     // Query all car wash bookings for the same date
-    // Include bookings with confirmed status (from admin) OR successful payment
+    // Admin bookings should ALWAYS block slots regardless of payment/status
     let query = supabase
       .from('bookings')
       .select('*')
       .eq('service_type', 'car_wash')
-      .or('status.eq.confirmed,payment_status.in.(succeeded,completed,paid)')
-      .neq('status', 'cancelled');
+      .neq('status', 'cancelled'); // Only exclude cancelled bookings
 
     // Filter by date (appointment_date contains full timestamp, so we need to filter by date part)
     const { data: allBookings, error } = await query;
