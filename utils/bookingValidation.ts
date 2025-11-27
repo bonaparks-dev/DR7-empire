@@ -233,12 +233,14 @@ export async function checkCarWashAvailability(
     const requestedStartMinutes = timeToMinutes(appointmentTime);
     const requestedEndMinutes = requestedStartMinutes + (requestedDuration * 60);
 
-    // Query all car wash bookings for the same date with succeeded/completed/paid payment
+    // Query all car wash bookings for the same date
+    // Include bookings with confirmed status (from admin) OR successful payment
     let query = supabase
       .from('bookings')
       .select('*')
       .eq('service_type', 'car_wash')
-      .in('payment_status', ['succeeded', 'completed', 'paid']);
+      .or('status.eq.confirmed,payment_status.in.(succeeded,completed,paid)')
+      .neq('status', 'cancelled');
 
     // Filter by date (appointment_date contains full timestamp, so we need to filter by date part)
     const { data: allBookings, error } = await query;
