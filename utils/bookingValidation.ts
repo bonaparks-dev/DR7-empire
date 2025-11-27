@@ -27,7 +27,7 @@ export async function checkVehicleAvailability(
       .from('bookings')
       .select('pickup_date, dropoff_date, vehicle_name, status')
       .eq('vehicle_name', vehicleName)
-      .in('status', ['confirmed', 'pending', 'active', 'completed']) // Include all active booking statuses
+      .in('status', ['confirmed', 'pending']) // Admin bookings are always 'confirmed'
       .order('pickup_date', { ascending: true });
 
     if (error) {
@@ -122,7 +122,7 @@ export async function getUnavailableDateRanges(vehicleName: string): Promise<Arr
       .from('bookings')
       .select('pickup_date, dropoff_date')
       .eq('vehicle_name', vehicleName)
-      .in('status', ['confirmed', 'pending', 'active', 'completed'])
+      .in('status', ['confirmed', 'pending']) // Admin bookings are always 'confirmed'
       .order('pickup_date', { ascending: true });
 
     if (error) {
