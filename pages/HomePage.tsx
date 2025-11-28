@@ -211,7 +211,7 @@ const HomePage: React.FC = () => {
 
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                     <div className="absolute bottom-0 left-0 p-8">
-                      <h3 className="text-3xl font-bold text-white">
+                      <h3 className="text-xl md:text-3xl font-bold text-white">
                         {displayTitle}
                       </h3>
                     </div>
