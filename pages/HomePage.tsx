@@ -104,16 +104,16 @@ const HeroSection: React.FC = () => {
         ))}
       </AnimatePresence>
 
-      {/* Navigation dots */}
-      <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-20 flex space-x-3">
+      {/* Navigation dots - Ferrari style */}
+      <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-20 flex space-x-4">
         {HERO_SLIDES.map((slide, index) => (
           <button
             key={slide.id}
             onClick={() => setActiveSlide(index)}
-            className={`transition-all duration-300 rounded-full ${
+            className={`transition-all duration-500 ease-out ${
               index === activeSlide
-                ? 'w-12 h-3 bg-white'
-                : 'w-3 h-3 bg-white/40 hover:bg-white/60'
+                ? 'w-2 h-2 bg-white rounded-full scale-100 opacity-100'
+                : 'w-2 h-2 border border-white/50 rounded-full scale-75 opacity-60 hover:opacity-100 hover:scale-90'
             }`}
             aria-label={`Go to slide ${index + 1}`}
           />
