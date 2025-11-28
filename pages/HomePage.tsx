@@ -61,6 +61,11 @@ const HeroSection: React.FC = () => {
   const { t } = useTranslation();
   const [activeSlide, setActiveSlide] = useState(0);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  // Minimum swipe distance (in px)
+  const minSwipeDistance = 50;
 
   // Auto-advance slides every 8 seconds
   useEffect(() => {
@@ -84,8 +89,38 @@ const HeroSection: React.FC = () => {
     });
   }, [activeSlide]);
 
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      // Swipe left - go to next slide
+      setActiveSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+    } else if (isRightSwipe) {
+      // Swipe right - go to previous slide
+      setActiveSlide((prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length);
+    }
+  };
+
   return (
-    <div className="relative h-screen flex items-center justify-center text-center overflow-hidden">
+    <div
+      className="relative h-screen flex items-center justify-center text-center overflow-hidden"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
       {/* Video slides */}
       <AnimatePresence mode="wait">
         {HERO_SLIDES.map((slide, index) => (
