@@ -104,26 +104,6 @@ const HeroSection: React.FC = () => {
         ))}
       </AnimatePresence>
 
-      {/* Optional: Text overlay */}
-      <div className="relative z-10 text-white px-6">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeSlide}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.8 }}
-          >
-            <h1 className="text-5xl md:text-7xl font-bold mb-4 tracking-tight">
-              {HERO_SLIDES[activeSlide].title}
-            </h1>
-            <p className="text-xl md:text-2xl text-gray-200 font-light tracking-wide">
-              {HERO_SLIDES[activeSlide].subtitle}
-            </p>
-          </motion.div>
-        </AnimatePresence>
-      </div>
-
       {/* Navigation dots */}
       <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-20 flex space-x-3">
         {HERO_SLIDES.map((slide, index) => (
