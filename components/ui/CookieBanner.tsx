@@ -58,17 +58,21 @@ const CookieBanner: React.FC = () => {
 
               {/* Cookie message */}
               <div className="text-center mb-8">
-                <h2 className="text-base font-semibold text-white mb-3 uppercase tracking-wider">
-                  {t('cookie.title')}
+                <h2 className="text-base font-semibold text-white mb-4 uppercase tracking-wider">
+                  Privacy & Compliance Excellence
                 </h2>
-                <p className="text-sm text-white/70 leading-relaxed mb-4">
-                  {t('cookie.description')}{' '}
-                  <Link to="/cookie-policy" className="text-white underline hover:text-white/90 transition-colors">
-                    {t('Cookie_Policy')}
+                <p className="text-sm text-white/80 leading-relaxed mb-4">
+                  DR7 Empire adotta tecnologie avanzate per garantire un'esperienza di navigazione impeccabile, personalizzata e conforme ai più alti standard internazionali.
+                  Utilizziamo cookie per ottimizzare le performance del sito, migliorare i nostri servizi e analizzare il traffico in totale sicurezza.
+                </p>
+                <p className="text-sm text-white/80 leading-relaxed mb-4">
+                  Procedendo e cliccando "Accetta", confermi il tuo consenso all'utilizzo dei cookie come descritto nella nostra{' '}
+                  <Link to="/cookie-policy" className="text-white underline hover:text-white/90 transition-colors font-semibold">
+                    Cookie Policy
                   </Link>.
                 </p>
-                <p className="text-xs text-white/60 italic">
-                  Entrando, confermi di avere più di 18 anni.
+                <p className="text-xs text-white/70 italic">
+                  Accedendo al sito, dichiari inoltre di avere più di 18 anni.
                 </p>
               </div>
 
@@ -79,14 +83,14 @@ const CookieBanner: React.FC = () => {
                   className="px-8 py-3 border border-white text-white text-sm font-semibold uppercase tracking-widest transition-all duration-300 hover:bg-white hover:text-black"
                   style={{ backgroundColor: 'transparent' }}
                 >
-                  {t('cookie.decline')}
+                  RIFIUTA
                 </button>
                 <button
                   onClick={() => handleConsent(true)}
                   className="px-8 py-3 border border-white text-sm font-semibold uppercase tracking-widest transition-all duration-300 hover:bg-transparent hover:text-white"
                   style={{ backgroundColor: 'white', color: 'black' }}
                 >
-                  {t('cookie.accept')}
+                  ACCETTA
                 </button>
               </div>
             </div>
