@@ -202,7 +202,7 @@ const Header: React.FC = () => {
               onClick={() => setIsMenuOpen(true)}
               aria-label="Open menu"
               aria-expanded={isMenuOpen}
-              className="text-white hover:text-gray-300 font-normal text-lg tracking-wider transition-colors"
+              className="text-white hover:text-gray-300 font-normal text-sm tracking-wider transition-colors"
             >
               EXPLORE
             </button>
