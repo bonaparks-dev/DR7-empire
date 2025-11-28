@@ -311,6 +311,16 @@ export const DR7AIFloatingButton: React.FC = () => {
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+
+      // Hide when near footer (within 400px of bottom)
+      const distanceFromBottom = documentHeight - (currentScrollY + windowHeight);
+      if (distanceFromBottom < 400) {
+        setIsVisible(false);
+        setLastScrollY(currentScrollY);
+        return;
+      }
 
       // Show button when at top of page
       if (currentScrollY < 100) {
