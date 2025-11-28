@@ -4,15 +4,17 @@ import { useTranslation } from '../hooks/useTranslation';
 import { RENTAL_CATEGORIES, COMMERCIAL_OPERATION_GIVEAWAY } from '../constants';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Optional: if you want to map category ids to specific display titles
+// Display titles matching the menu division names
 const DISPLAY_TITLE: Record<string, string> = {
-  cars: 'Exotic Supercars',
-  yachts: 'Yachts',
-  villas: 'Villas',
-  helicopters: 'Helicopters',
-  jets: 'Private Jets',
-  'car-wash-services': 'Luxury Wash',
-  membership: 'Members',
+  cars: 'DR7 Supercar & Luxury Division',
+  'urban-cars': 'DR7 Urban Mobility Division',
+  'corporate-fleet': 'DR7 Corporate & Utility Fleet Division',
+  yachts: 'DR7 Yachting Division',
+  jets: 'DR7 Aviation Division',
+  helicopters: 'DR7 Aviation Division',
+  'car-wash-services': 'DR7 Luxury Care Services',
+  'mechanical-services': 'DR7 Rapid Response Services',
+  membership: 'DR7 Exclusive Members Club',
 };
 
 // Map category ids to image filenames in /public
