@@ -108,7 +108,10 @@ const Footer: React.FC = () => {
             <Link to="/" className="inline-block">
               <img src="/DR7logo1.png" alt="DR7 Empire Logo" className="h-12 w-auto mx-auto" />
             </Link>
-            <p className="text-sm order-last md:order-none">&copy; {new Date().getFullYear()} DR7 Empire. {t('All_Rights_Reserved')}</p>
+            <div className="text-sm order-last md:order-none text-center">
+              <p className="font-semibold text-white mb-1">DR7 Empire – Global Mobility & Luxury Lifestyle Group</p>
+              <p>&copy; 2025 DR7 Empire. All Rights Reserved.</p>
+            </div>
             <button
                 onClick={scrollToTop}
                 className="text-sm font-semibold hover:text-white transition-colors flex items-center gap-1"
