@@ -196,22 +196,22 @@ const Header: React.FC = () => {
         }`}
       >
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          {/* Menu burger on the left */}
+          {/* EXPLORE menu button on the left */}
           <div className="flex items-center">
             <button
               onClick={() => setIsMenuOpen(true)}
               aria-label="Open menu"
               aria-expanded={isMenuOpen}
-              className="text-gray-200 hover:text-white p-2 rounded-full hover:bg-gray-800"
+              className="text-white hover:text-gray-300 font-bold text-lg tracking-wider transition-colors"
             >
-              <MenuIcon className="w-7 h-7" />
+              EXPLORE
             </button>
           </div>
 
           {/* Logo centered */}
           <div className="absolute left-1/2 transform -translate-x-1/2">
             <NavLink to="/" className="flex items-center">
-              <img src="/DR7logo1.png" alt="DR7 Empire Logo" className="h-10 w-auto" />
+              <img src="/DR7logo1.png" alt="DR7 Empire Logo" className="h-14 md:h-16 w-auto" />
             </NavLink>
           </div>
 
