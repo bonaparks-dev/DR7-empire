@@ -305,17 +305,47 @@ const DR7AIChat: React.FC<DR7AIChatProps> = ({ isOpen, onClose }) => {
 // Floating Chat Button Component
 export const DR7AIFloatingButton: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      // Show button when at top of page
+      if (currentScrollY < 100) {
+        setIsVisible(true);
+      }
+      // Show button when scrolling up
+      else if (currentScrollY < lastScrollY) {
+        setIsVisible(true);
+      }
+      // Hide button when scrolling down
+      else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setIsVisible(false);
+      }
+
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
 
   return (
     <>
       <motion.button
         initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        whileHover={{ scale: 1.1 }}
+        animate={{
+          scale: isVisible ? 1 : 0,
+          opacity: isVisible ? 1 : 0
+        }}
+        whileHover={{ scale: isVisible ? 1.1 : 0 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(true)}
         className="fixed bottom-6 right-6 z-40 w-16 h-16 rounded-full shadow-2xl hover:shadow-white/20 transition-all border-2 border-white overflow-hidden"
         title="Chatta con DR7 AI"
+        style={{ pointerEvents: isVisible ? 'auto' : 'none' }}
       >
         <img
           src="/Valerio.jpg"
