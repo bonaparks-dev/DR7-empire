@@ -49,6 +49,24 @@ const HERO_SLIDES = [
     title: 'Premium Services',
     subtitle: 'Exclusive Experiences',
   },
+  {
+    id: 4,
+    videoSrc: '/video4.mp4',
+    title: 'Yachting Division',
+    subtitle: 'Luxury Maritime',
+  },
+  {
+    id: 5,
+    videoSrc: '/video5.mp4',
+    title: 'Aviation Division',
+    subtitle: 'Private Jets & Helicopters',
+  },
+  {
+    id: 6,
+    videoSrc: '/video6.mp4',
+    title: 'Members Club',
+    subtitle: 'Exclusive Lifestyle',
+  },
 ];
 
 const HeroSection: React.FC = () => {
