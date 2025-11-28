@@ -34,38 +34,26 @@ const HERO_SLIDES = [
   {
     id: 1,
     videoSrc: '/main.mp4',
-    title: 'DR7 Empire',
-    subtitle: 'Global Mobility & Luxury Lifestyle',
   },
   {
     id: 2,
     videoSrc: '/video2.mp4',
-    title: 'Exotic Fleet',
-    subtitle: 'Supercar & Luxury Division',
   },
   {
     id: 3,
     videoSrc: '/video3.mp4',
-    title: 'Premium Services',
-    subtitle: 'Exclusive Experiences',
   },
   {
     id: 4,
     videoSrc: '/video4.mp4',
-    title: 'Yachting Division',
-    subtitle: 'Luxury Maritime',
   },
   {
     id: 5,
     videoSrc: '/video5.mp4',
-    title: 'Aviation Division',
-    subtitle: 'Private Jets & Helicopters',
   },
   {
     id: 6,
     videoSrc: '/video6.mp4',
-    title: 'Members Club',
-    subtitle: 'Exclusive Lifestyle',
   },
 ];
 
