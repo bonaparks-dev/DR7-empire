@@ -73,7 +73,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                 <XIcon className="w-6 h-6" />
               </button>
               <NavLink to="/" onClick={onClose}>
-                <img src="/DR7logo.png" alt="DR7 Empire Logo" className="h-10 w-auto" />
+                <img src="/DR7logo1.png" alt="DR7 Empire Logo" className="h-10 w-auto" />
               </NavLink>
             </div>
 
@@ -183,7 +183,7 @@ const Header: React.FC = () => {
       >
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <NavLink to="/" className="flex items-center">
-            <img src="/DR7logo.png" alt="DR7 Empire Logo" className="h-10 w-auto" />
+            <img src="/DR7logo1.png" alt="DR7 Empire Logo" className="h-10 w-auto" />
           </NavLink>
 
           {/* Menu horizontal désactivé */}

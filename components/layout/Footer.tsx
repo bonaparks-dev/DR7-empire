@@ -91,14 +91,14 @@ const Footer: React.FC = () => {
             <li><Link to="/commercial-operation" className="hover:text-white transition-colors">{t('LOTTERIA')}</Link></li>
             <li><Link to="/franchising" className="hover:text-white transition-colors">{t('Franchising')}</Link></li>
             <li><Link to="/investitori" className="hover:text-white transition-colors">Investitori</Link></li>
-            <li><Link to="/about" className="hover:text-white transition-colors">{t('About_Us')}</Link></li>
-            <li><Link to="/press" className="hover:text-white transition-colors">{t('Press')}</Link></li>
-            <li><Link to="/careers" className="hover:text-white transition-colors">{t('Careers')}</Link></li>
+            <li><Link to="/about" className="hover:text-white transition-colors">Corporate Overview</Link></li>
+            <li><Link to="/press" className="hover:text-white transition-colors">Press & Media</Link></li>
+            <li><Link to="/careers" className="hover:text-white transition-colors">Careers & Opportunities</Link></li>
           </ul>
           <ul className="flex flex-wrap justify-center gap-x-8 gap-y-2">
-            <li><Link to="/cookie-policy" className="hover:text-white transition-colors">{t('Cookie_Policy')}</Link></li>
-            <li><Link to="/privacy" className="hover:text-white transition-colors">{t('Privacy_Policy')}</Link></li>
-            <li><Link to="/cancellation-policy" className="hover:text-white transition-colors">Politica di Cancellazione</Link></li>
+            <li><Link to="/cookie-policy" className="hover:text-white transition-colors">Cookie Policy</Link></li>
+            <li><Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+            <li><Link to="/cancellation-policy" className="hover:text-white transition-colors">Cancellation Policy</Link></li>
           </ul>
         </div>
 
@@ -106,7 +106,7 @@ const Footer: React.FC = () => {
         <div className="mt-12 pt-8 text-center border-t border-gray-900">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <Link to="/" className="inline-block">
-              <img src="/DR7logo.png" alt="DR7 Empire Logo" className="h-12 w-auto mx-auto" />
+              <img src="/DR7logo1.png" alt="DR7 Empire Logo" className="h-12 w-auto mx-auto" />
             </Link>
             <p className="text-sm order-last md:order-none">&copy; {new Date().getFullYear()} DR7 Empire. {t('All_Rights_Reserved')}</p>
             <button

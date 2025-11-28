@@ -315,19 +315,19 @@ const helicopterSpecs = [
 export const RENTAL_CATEGORIES: RentalCategory[] = [
   {
     id: 'cars',
-    label: { en: 'Exotic Supercars', it: 'Exotic Supercars' },
+    label: { en: 'DR7 Supercar & Luxury Division', it: 'DR7 Supercar & Luxury Division' },
     data: mappedCars,
     icon: CarIcon,
   },
   {
     id: 'urban-cars',
-    label: { en: 'Urban Cars', it: 'Urban Cars' },
+    label: { en: 'DR7 Urban Mobility Division', it: 'DR7 Urban Mobility Division' },
     data: mappedUrbanCars,
     icon: CarIcon,
   },
   {
     id: 'yachts',
-    label: { en: 'Yachts', it: 'Yacht' },
+    label: { en: 'DR7 Yachting Division', it: 'DR7 Yachting Division' },
     data: [
       { id: 'yacht-1', name: 'Luxury Yacht', image: '/yacht1.jpeg', images: ['/yacht1.jpeg'], pricePerDay: { usd: 12000, eur: 11000, crypto: 0 }, specs: yachtSpecs },
     ],
@@ -335,7 +335,7 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
   },
   {
     id: 'jets',
-    label: { en: 'Jets', it: 'Jet' },
+    label: { en: 'DR7 Aviation Division', it: 'DR7 Aviation Division' },
     data: [
       {
         id: 'jet-1',
@@ -368,7 +368,7 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
   },
   {
     id: 'helicopters',
-    label: { en: 'Helicopters', it: 'Elicotteri' },
+    label: { en: 'DR7 Aviation Division', it: 'DR7 Aviation Division' },
     data: [
         { id: 'heli-1', name: 'Airbus H125', image: '/heli1.jpeg', specs: helicopterSpecs },
         { id: 'heli-2', name: 'Bell 505 Jet Ranger X', image: '/heli2.jpeg', specs: helicopterSpecs },
@@ -377,19 +377,19 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
   },
   {
     id: 'car-wash-services',
-    label: { en: 'Luxury Wash', it: 'Luxury Wash' },
+    label: { en: 'DR7 Luxury Care Services', it: 'DR7 Luxury Care Services' },
     data: [],
     icon: SparklesIcon,
   },
   {
     id: 'mechanical-services',
-    label: { en: 'Rapid Service', it: 'Rapid Service' },
+    label: { en: 'DR7 Rapid Response Services', it: 'DR7 Rapid Response Services' },
     data: [],
     icon: CogIcon,
   },
   {
     id: 'membership',
-    label: { en: 'Members', it: 'Members' },
+    label: { en: 'DR7 Exclusive Members Club', it: 'DR7 Exclusive Members Club' },
     data: [],
     icon: CrownIcon,
   },
