@@ -22,7 +22,8 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
   }, [isOpen]);
 
   const navLinkClasses =
-    'block py-2.5 text-xl font-semibold text-gray-300 hover:text-white transition-colors duration-300';
+    'block py-2.5 text-xl font-semibold text-gray-300 hover:text-white transition-colors duration-300'
+    + ' rajdhani-font';
 
   const handleLogout = () => {
     logout();
