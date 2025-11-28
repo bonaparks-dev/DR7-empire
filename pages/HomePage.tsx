@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../hooks/useTranslation';
 import { RENTAL_CATEGORIES, COMMERCIAL_OPERATION_GIVEAWAY } from '../constants';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Optional: if you want to map category ids to specific display titles
 const DISPLAY_TITLE: Record<string, string> = {
@@ -27,27 +27,118 @@ const CATEGORY_IMAGE: Record<string, string> = {
   membership: '/members.jpeg',
 };
 
+// Hero video slides configuration
+const HERO_SLIDES = [
+  {
+    id: 1,
+    videoSrc: '/main.mp4',
+    title: 'DR7 Empire',
+    subtitle: 'Global Mobility & Luxury Lifestyle',
+  },
+  {
+    id: 2,
+    videoSrc: '/video2.mp4',
+    title: 'Exotic Fleet',
+    subtitle: 'Supercar & Luxury Division',
+  },
+  {
+    id: 3,
+    videoSrc: '/video3.mp4',
+    title: 'Premium Services',
+    subtitle: 'Exclusive Experiences',
+  },
+];
+
 const HeroSection: React.FC = () => {
   const { t } = useTranslation();
+  const [activeSlide, setActiveSlide] = useState(0);
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+
+  // Auto-advance slides every 8 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Pause/play videos based on active slide
+  useEffect(() => {
+    videoRefs.current.forEach((video, index) => {
+      if (video) {
+        if (index === activeSlide) {
+          video.play().catch(() => {});
+        } else {
+          video.pause();
+        }
+      }
+    });
+  }, [activeSlide]);
+
   return (
     <div className="relative h-screen flex items-center justify-center text-center overflow-hidden">
-      {/* Background video */}
-      <div className="absolute inset-0 z-0">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="w-full h-full object-cover brightness-[.65]"
-        >
-          <source src="/main.mp4" type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
-        {/* Lighter black overlay */}
-        <div className="absolute inset-0 bg-black/30" />
+      {/* Video slides */}
+      <AnimatePresence mode="wait">
+        {HERO_SLIDES.map((slide, index) => (
+          <motion.div
+            key={slide.id}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: index === activeSlide ? 1 : 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.5, ease: 'easeInOut' }}
+            className="absolute inset-0 z-0"
+            style={{ pointerEvents: index === activeSlide ? 'auto' : 'none' }}
+          >
+            <video
+              ref={(el) => (videoRefs.current[index] = el)}
+              loop
+              muted
+              playsInline
+              className="w-full h-full object-cover brightness-[.65]"
+            >
+              <source src={slide.videoSrc} type="video/mp4" />
+            </video>
+            <div className="absolute inset-0 bg-black/30" />
+          </motion.div>
+        ))}
+      </AnimatePresence>
+
+      {/* Optional: Text overlay */}
+      <div className="relative z-10 text-white px-6">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeSlide}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.8 }}
+          >
+            <h1 className="text-5xl md:text-7xl font-bold mb-4 tracking-tight">
+              {HERO_SLIDES[activeSlide].title}
+            </h1>
+            <p className="text-xl md:text-2xl text-gray-200 font-light tracking-wide">
+              {HERO_SLIDES[activeSlide].subtitle}
+            </p>
+          </motion.div>
+        </AnimatePresence>
       </div>
 
-      {/* Text Overlay has been removed as per user request. */}
+      {/* Navigation dots */}
+      <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-20 flex space-x-3">
+        {HERO_SLIDES.map((slide, index) => (
+          <button
+            key={slide.id}
+            onClick={() => setActiveSlide(index)}
+            className={`transition-all duration-300 rounded-full ${
+              index === activeSlide
+                ? 'w-12 h-3 bg-white'
+                : 'w-3 h-3 bg-white/40 hover:bg-white/60'
+            }`}
+            aria-label={`Go to slide ${index + 1}`}
+          />
+        ))}
+      </div>
     </div>
   );
 };
