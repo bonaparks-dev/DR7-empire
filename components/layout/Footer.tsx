@@ -62,17 +62,25 @@ const Footer: React.FC = () => {
 
         {/* Contact Section */}
         <div className="text-center mb-12 pb-12 border-b border-gray-900">
-          <h3 className="text-2xl font-bold text-white mb-4">{t('Contact')}</h3>
+          <h3 className="text-2xl font-bold text-white mb-6">{t('Contact')}</h3>
           <a
             href="https://wa.me/393457905205"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center space-x-3 text-lg text-gray-300 hover:text-white transition-colors group"
+            className="inline-flex items-center space-x-3 text-lg text-gray-300 hover:text-white transition-colors group mb-6"
             aria-label="Contact us on WhatsApp"
           >
             <WhatsAppIcon className="w-8 h-8" />
             <span className="font-semibold tracking-wider">+39 345 790 5205</span>
           </a>
+
+          <div className="mt-8 text-sm text-gray-400 max-w-2xl mx-auto space-y-1">
+            <p className="font-semibold text-white">Dubai Rent 7.0 S.p.A.</p>
+            <p>Sede Legale: Via del Fangario 25, 09122 Cagliari (CA) – Italia</p>
+            <p>Capitale Sociale: € 50.000 i.v. (in aumento)</p>
+            <p>P.IVA / C.F.: 04104640927</p>
+            <p className="text-xs mt-2">Società soggetta a direzione e coordinamento di DR7 Group S.p.A.</p>
+          </div>
         </div>
 
         {/* Middle Section: Links */}
