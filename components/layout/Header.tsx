@@ -34,7 +34,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
   const userFullName = user?.fullName || 'User';
 
   const menuVariants = {
-    hidden: { x: '100%' },
+    hidden: { x: '-100%' },
     visible: { x: 0 },
   };
 
@@ -62,7 +62,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
             animate="visible"
             exit="hidden"
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed top-0 right-0 bottom-0 w-full max-w-sm bg-black border-l border-gray-800 shadow-2xl flex flex-col p-6 overflow-y-auto"
+            className="fixed top-0 left-0 bottom-0 w-full max-w-sm bg-black border-r border-gray-800 shadow-2xl flex flex-col p-6 overflow-y-auto"
           >
             <div className="flex justify-between items-center mb-12">
               <button
