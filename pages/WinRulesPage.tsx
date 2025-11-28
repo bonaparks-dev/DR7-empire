@@ -11,8 +11,8 @@ const WinRulesPage = () => {
 
   const rules = {
     title: {
-      it: 'Regolamento Lotteria DR7 S.p.A.',
-      en: 'DR7 S.p.A. Lottery Rules',
+      it: 'Regolamento DR7 Official Lottery',
+      en: 'DR7 Official Lottery Rules',
     },
     general: {
       title: { it: 'Informazioni Generali', en: 'General Information' },

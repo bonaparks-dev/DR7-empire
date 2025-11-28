@@ -528,7 +528,7 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
 
 export const COMMERCIAL_OPERATION_GIVEAWAY: CommercialOperation = {
   id: 'christmas-2024',
-  name: { en: 'Lotteria DR7 S.p.A.', it: 'Lotteria DR7 S.p.A.' },
+  name: { en: 'DR7 Official Lottery', it: 'DR7 Official Lottery' },
   subtitle: { en: 'Win an Alfa Romeo Stelvio Quadrifoglio', it: 'Vinci un\'Alfa Romeo Stelvio Quadrifoglio' },
   image: '/main.jpeg',
   ticketPriceEUR: 25,
