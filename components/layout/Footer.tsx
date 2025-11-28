@@ -83,7 +83,10 @@ const Footer: React.FC = () => {
             <p className="break-words">Sede Legale: Via del Fangario 25, 09122 Cagliari (CA) – Italia</p>
             <p className="break-words">Capitale Sociale: € 50.000 i.v. (in aumento)</p>
             <p className="break-words">P.IVA / C.F.: 04104640927</p>
-            <p className="text-xs mt-2 break-words">Società soggetta a direzione e coordinamento di DR7 GROUP S.p.A.</p>
+            <p className="text-xs mt-2 break-words">
+              Società soggetta a direzione e coordinamento della<br />
+              DR7 Group S.p.A.
+            </p>
           </div>
         </div>
 
