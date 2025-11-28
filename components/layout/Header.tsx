@@ -181,21 +181,21 @@ const Header: React.FC = () => {
             : 'bg-transparent'
         }`}
       >
-        <div className="container mx-auto px-6 py-4 flex items-center">
+        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           {/* Menu burger on the left */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center">
             <button
               onClick={() => setIsMenuOpen(true)}
               aria-label="Open menu"
               aria-expanded={isMenuOpen}
-              className="text-gray-200 hover:text-white p-2 -ml-2 rounded-full hover:bg-gray-800"
+              className="text-gray-200 hover:text-white p-2 rounded-full hover:bg-gray-800"
             >
               <MenuIcon className="w-7 h-7" />
             </button>
           </div>
 
           {/* Logo centered */}
-          <div className="flex-1 flex justify-center">
+          <div className="absolute left-1/2 transform -translate-x-1/2">
             <NavLink to="/" className="flex items-center">
               <img src="/DR7logo1.png" alt="DR7 Empire Logo" className="h-10 w-auto" />
             </NavLink>
