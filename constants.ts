@@ -206,7 +206,10 @@ const urbanCarsRawData = [
       "seats": "5 posti"
     },
     "image": "/captur.jpeg"
-  },
+  }
+];
+
+const corporateFleetRawData = [
   {
     "id": 205,
     "name": "Mercedes V Class VIP DR7",
@@ -299,6 +302,37 @@ const mappedUrbanCars = urbanCarsRawData.map(car => {
     };
 });
 
+const mappedCorporateFleet = corporateFleetRawData.map(car => {
+    const specs: any[] = [];
+    if (car.specs) {
+        for (const [key, value] of Object.entries(car.specs)) {
+            const mapping = specMappings[key as keyof typeof specMappings];
+            if (mapping) {
+                specs.push({
+                    label: mapping.label,
+                    value: 'transform' in mapping && mapping.transform ? mapping.transform(value as string) : value,
+                    icon: mapping.icon
+                });
+            }
+        }
+    }
+
+    const isAvailable = car.available !== false;
+
+    return {
+        id: `corporate-fleet-${car.id}`,
+        name: car.name,
+        image: car.image,
+        available: isAvailable,
+        pricePerDay: isAvailable && car.dailyPrice ? {
+            usd: Math.round(car.dailyPrice * EUR_TO_USD_RATE),
+            eur: car.dailyPrice,
+            crypto: 0
+        } : undefined,
+        specs: specs
+    };
+});
+
 
 const yachtSpecs = [
     { label: { en: 'Guests', it: 'Ospiti' }, value: '12', icon: UsersIcon },
@@ -323,6 +357,12 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
     id: 'urban-cars',
     label: { en: 'DR7 Urban Mobility Division', it: 'DR7 Urban Mobility Division' },
     data: mappedUrbanCars,
+    icon: CarIcon,
+  },
+  {
+    id: 'corporate-fleet',
+    label: { en: 'DR7 Corporate & Utility Fleet Division', it: 'DR7 Corporate & Utility Fleet Division' },
+    data: mappedCorporateFleet,
     icon: CarIcon,
   },
   {
