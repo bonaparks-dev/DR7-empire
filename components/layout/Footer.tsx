@@ -74,12 +74,12 @@ const Footer: React.FC = () => {
             <span className="font-semibold tracking-wider">+39 345 790 5205</span>
           </a>
 
-          <div className="mt-8 text-sm text-gray-400 max-w-2xl mx-auto space-y-1">
+          <div className="mt-8 text-sm text-gray-400 max-w-2xl mx-auto space-y-1 px-4">
             <p className="font-semibold text-white">Dubai Rent 7.0 S.p.A.</p>
-            <p>Sede Legale: Via del Fangario 25, 09122 Cagliari (CA) – Italia</p>
-            <p>Capitale Sociale: € 50.000 i.v. (in aumento)</p>
-            <p>P.IVA / C.F.: 04104640927</p>
-            <p className="text-xs mt-2">Società soggetta a direzione e coordinamento di DR7 Group S.p.A.</p>
+            <p className="break-words">Sede Legale: Via del Fangario 25, 09122 Cagliari (CA) – Italia</p>
+            <p className="break-words">Capitale Sociale: € 50.000 i.v. (in aumento)</p>
+            <p className="break-words">P.IVA / C.F.: 04104640927</p>
+            <p className="text-xs mt-2 break-words">Società soggetta a direzione e coordinamento di DR7 Group S.p.A.</p>
           </div>
         </div>
 
