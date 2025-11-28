@@ -57,6 +57,10 @@ const Footer: React.FC = () => {
 
         {/* Reviews Section */}
         <div className="mb-12 pb-12 border-b border-gray-900">
+          <div className="text-center mb-8">
+            <h3 className="text-2xl font-bold text-white mb-2">A Global Standard of Excellence</h3>
+            <p className="text-sm text-gray-400">DR7 Empire mantiene un rating impeccabile di 5.0/5.0 su oltre 250 recensioni verificate, confermandosi un punto di riferimento nel settore della luxury mobility.</p>
+          </div>
           <ReviewsSection />
         </div>
 
