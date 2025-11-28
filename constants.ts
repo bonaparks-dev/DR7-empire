@@ -382,6 +382,12 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
     icon: SparklesIcon,
   },
   {
+    id: 'mechanical-services',
+    label: { en: 'Rapid Service', it: 'Rapid Service' },
+    data: [],
+    icon: CogIcon,
+  },
+  {
     id: 'membership',
     label: { en: 'Members', it: 'Members' },
     data: [],

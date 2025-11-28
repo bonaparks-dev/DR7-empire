@@ -69,6 +69,8 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import CheckEmailPage from './pages/CheckEmailPage';
 import CarWashServicesPage from './pages/CarWashServicesPage';
 import CarWashBookingPage from './pages/CarWashBookingPage';
+import MechanicalServicesPage from './pages/MechanicalServicesPage';
+import MechanicalBookingPage from './pages/MechanicalBookingPage';
 import InvestitoriPage from './pages/InvestitoriPage';
 import TokenPage from './pages/TokenPage';
 import AdminCalendarPage from './pages/AdminCalendarPage';
@@ -109,9 +111,11 @@ const AnimatedRoutes = () => {
         <Route path="/helicopters/quote" element={<AviationQuoteRequestPage />} />
         <Route path="/car-wash-services" element={<CarWashServicesPage />} />
         <Route path="/car-wash-booking" element={<CarWashBookingPage />} />
+        <Route path="/mechanical-services" element={<MechanicalServicesPage />} />
+        <Route path="/mechanical-booking" element={<MechanicalBookingPage />} />
         <Route path="/admin/calendar" element={<AdminCalendarPage />} />
         {RENTAL_CATEGORIES
-          .filter(category => !['car-wash-services', 'membership'].includes(category.id))
+          .filter(category => !['car-wash-services', 'mechanical-services', 'membership'].includes(category.id))
           .map(category => (
             <Route
                 key={category.id}

@@ -84,6 +84,7 @@ const Footer: React.FC = () => {
             <li><Link to="/jets" className="hover:text-white transition-colors">{t('Jets')}</Link></li>
             <li><Link to="/helicopters" className="hover:text-white transition-colors">{t('Helicopters')}</Link></li>
             <li><Link to="/car-wash-services" className="hover:text-white transition-colors">{t('Luxury_Wash')}</Link></li>
+            <li><Link to="/mechanical-services" className="hover:text-white transition-colors">{t('Rapid_Service')}</Link></li>
             <li><Link to="/membership" className="hover:text-white transition-colors">{t('Members')}</Link></li>
           </ul>
           <ul className="flex flex-wrap justify-center gap-x-8 gap-y-2">
