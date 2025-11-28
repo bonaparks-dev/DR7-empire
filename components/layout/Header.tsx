@@ -22,8 +22,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
   }, [isOpen]);
 
   const navLinkClasses =
-    'block py-2.5 text-xl font-semibold text-gray-300 hover:text-white transition-colors duration-300'
-    + ' rajdhani-font';
+    'block py-2.5 text-xl font-normal text-gray-300 hover:text-white transition-colors duration-300';
 
   const handleLogout = () => {
     logout();
@@ -203,8 +202,7 @@ const Header: React.FC = () => {
               onClick={() => setIsMenuOpen(true)}
               aria-label="Open menu"
               aria-expanded={isMenuOpen}
-              className="text-white hover:text-gray-300 font-bold text-lg tracking-widest transition-colors"
-              style={{ fontFamily: 'Rajdhani, sans-serif' }}
+              className="text-white hover:text-gray-300 font-normal text-lg tracking-wider transition-colors"
             >
               EXPLORE
             </button>
