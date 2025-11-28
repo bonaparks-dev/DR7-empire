@@ -64,17 +64,18 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             className="fixed top-0 left-0 bottom-0 w-full max-w-sm bg-black border-r border-gray-800 shadow-2xl flex flex-col p-6 overflow-y-auto"
           >
-            <div className="flex justify-between items-center mb-12">
+            {/* Logo centered at top */}
+            <div className="flex flex-col items-center mb-8">
+              <NavLink to="/" onClick={onClose} className="mb-6">
+                <img src="/DR7logo1.png" alt="DR7 Empire Logo" className="h-14 md:h-16 w-auto" />
+              </NavLink>
               <button
                 onClick={onClose}
                 aria-label="Close menu"
-                className="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-800"
+                className="absolute top-6 right-6 text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-800"
               >
                 <XIcon className="w-6 h-6" />
               </button>
-              <NavLink to="/" onClick={onClose}>
-                <img src="/DR7logo1.png" alt="DR7 Empire Logo" className="h-10 w-auto" />
-              </NavLink>
             </div>
 
             {/* Sign In/Sign Up Button at Top (when not logged in) */}
