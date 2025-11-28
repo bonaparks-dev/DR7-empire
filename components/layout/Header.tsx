@@ -94,27 +94,41 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
             )}
 
             <nav className="flex-grow flex flex-col space-y-1">
-              {RENTAL_CATEGORIES.map((cat) => (
-                <NavLink
-                  key={cat.id}
-                  to={`/${cat.id}`}
-                  onClick={onClose}
-                  className={navLinkClasses}
-                >
-                  <span>{t(cat.label.en.replace(/ /g, '_') as any)}</span>
-                </NavLink>
-              ))}
+              <NavLink to="/cars" onClick={onClose} className={navLinkClasses}>
+                <span>DR7 Supercar & Luxury Division</span>
+              </NavLink>
+              <NavLink to="/urban-cars" onClick={onClose} className={navLinkClasses}>
+                <span>DR7 Urban Mobility Division</span>
+              </NavLink>
+              <NavLink to="/corporate-fleet" onClick={onClose} className={navLinkClasses}>
+                <span>DR7 Corporate & Utility Fleet Division</span>
+              </NavLink>
+              <NavLink to="/yachts" onClick={onClose} className={navLinkClasses}>
+                <span>DR7 Yachting Division</span>
+              </NavLink>
+              <NavLink to="/jets" onClick={onClose} className={navLinkClasses}>
+                <span>DR7 Aviation Division</span>
+              </NavLink>
+              <NavLink to="/car-wash-services" onClick={onClose} className={navLinkClasses}>
+                <span>DR7 Luxury Care Services</span>
+              </NavLink>
+              <NavLink to="/mechanical-services" onClick={onClose} className={navLinkClasses}>
+                <span>DR7 Rapid Response Services</span>
+              </NavLink>
+              <NavLink to="/membership" onClick={onClose} className={navLinkClasses}>
+                <span>DR7 Exclusive Members Club</span>
+              </NavLink>
               <NavLink to="/commercial-operation" onClick={onClose} className={navLinkClasses}>
-                <span>{t('LOTTERIA')}</span>
+                <span>DR7 Official Lottery</span>
               </NavLink>
               <NavLink to="/franchising" onClick={onClose} className={navLinkClasses}>
-                <span>{t('Franchising')}</span>
+                <span>DR7 Global Franchising</span>
               </NavLink>
               <NavLink to="/investitori" onClick={onClose} className={navLinkClasses}>
-                <span className="notranslate">Investitori</span>
+                <span>DR7 Investor Relations Office</span>
               </NavLink>
               <NavLink to="/token" onClick={onClose} className={navLinkClasses}>
-                <span className="notranslate">Token</span>
+                <span>DR7 Digital Asset & Token Division</span>
               </NavLink>
             </nav>
 
