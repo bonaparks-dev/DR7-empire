@@ -6,10 +6,56 @@ const { createHash } = require('crypto');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
 const { createClient } = require('@supabase/supabase-js');
+const https = require('https');
+const http = require('http');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+
+// Helper function to make HTTP POST requests
+const makeHttpRequest = (url, data) => {
+  return new Promise((resolve, reject) => {
+    const urlObj = new URL(url);
+    const protocol = urlObj.protocol === 'https:' ? https : http;
+
+    const postData = JSON.stringify(data);
+
+    const options = {
+      hostname: urlObj.hostname,
+      port: urlObj.port,
+      path: urlObj.pathname + urlObj.search,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData)
+      }
+    };
+
+    const req = protocol.request(options, (res) => {
+      let responseBody = '';
+
+      res.on('data', (chunk) => {
+        responseBody += chunk;
+      });
+
+      res.on('end', () => {
+        resolve({
+          status: res.statusCode,
+          ok: res.statusCode >= 200 && res.statusCode < 300,
+          body: responseBody
+        });
+      });
+    });
+
+    req.on('error', (error) => {
+      reject(error);
+    });
+
+    req.write(postData);
+    req.end();
+  });
+};
 
 const CORS_HEADERS = {
   'Content-Type': 'application/json',
@@ -163,6 +209,14 @@ exports.handler = async (event) => {
     if (!email || !quantity || !paymentIntentId) {
       return createResponse(400, { success: false, error: 'Missing required fields: email, quantity, paymentIntentId.' });
     }
+
+    if (!fullName || fullName.trim() === '') {
+      return createResponse(400, { success: false, error: 'Il nome completo è obbligatorio.' });
+    }
+
+    if (!phone || phone.trim() === '') {
+      return createResponse(400, { success: false, error: 'Il numero di telefono è obbligatorio.' });
+    }
     const qty = Number(quantity);
     if (!Number.isInteger(qty) || qty < 1 || qty > 1000) {
       return createResponse(400, { success: false, error: 'Invalid quantity.' });
@@ -251,7 +305,7 @@ exports.handler = async (event) => {
     console.log(`[Tickets] Generating PDF for ${qty} tickets for ${email}`);
     let pdfBuffer;
     try {
-      pdfBuffer = await generateTicketPdf(fullName || 'Cliente Stimato', tickets, purchaseDate);
+      pdfBuffer = await generateTicketPdf(fullName, tickets, purchaseDate);
       console.log(`[Tickets] PDF generated successfully, size: ${pdfBuffer.length} bytes`);
     } catch (pdfError) {
       console.error(`[Tickets] PDF generation failed:`, pdfError);
@@ -276,7 +330,7 @@ exports.handler = async (event) => {
         from: `"DR7 Empire" <${process.env.GMAIL_USER}>`,
         to: email,
         subject: 'I Tuoi Biglietti - LOTTERIA',
-        text: `Ciao ${fullName || 'Cliente Stimato'},\n\nGrazie per il tuo acquisto! I tuoi ${qty} bigliett${qty > 1 ? 'i' : 'o'} della LOTTERIA sono allegat${qty > 1 ? 'i' : 'o'} a questa email in formato PDF.\n\nEstrazione: 24 Dicembre 2025, ore 10:00\nSolo 2.000 biglietti disponibili!\n\nIn bocca al lupo!\n\nIl Team DR7 Empire`,
+        text: `Ciao ${fullName},\n\nGrazie per il tuo acquisto! I tuoi ${qty} bigliett${qty > 1 ? 'i' : 'o'} della LOTTERIA sono allegat${qty > 1 ? 'i' : 'o'} a questa email in formato PDF.\n\nEstrazione: 24 Dicembre 2025, ore 10:00\nSolo 2.000 biglietti disponibili!\n\nIn bocca al lupo!\n\nIl Team DR7 Empire`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -288,6 +342,7 @@ exports.handler = async (event) => {
               .header { background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); color: #000; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
               .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
               .ticket-info { background: white; border: 2px solid #000; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center; }
+              .customer-info { background: white; border: 2px solid #FFD700; border-radius: 10px; padding: 15px; margin: 20px 0; text-align: left; }
               .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
             </style>
           </head>
@@ -297,8 +352,14 @@ exports.handler = async (event) => {
                 <h1>🎟️ I TUOI BIGLIETTI SONO PRONTI!</h1>
               </div>
               <div class="content">
-                <p><strong>Ciao ${fullName || 'Cliente Stimato'},</strong></p>
+                <p><strong>Ciao ${fullName},</strong></p>
                 <p>Grazie per aver partecipato alla <strong>LOTTERIA</strong>!</p>
+                <div class="customer-info">
+                  <h3 style="margin: 0 0 10px 0;">👤 Informazioni Acquirente</h3>
+                  <p style="margin: 5px 0;"><strong>Nome:</strong> ${fullName}</p>
+                  <p style="margin: 5px 0;"><strong>Telefono:</strong> ${phone}</p>
+                  <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
+                </div>
                 <div class="ticket-info">
                   <h2 style="margin: 0;">📋 Dettagli Acquisto</h2>
                   <p style="font-size: 24px; margin: 10px 0;"><strong>${qty} Bigliett${qty > 1 ? 'i' : 'o'}</strong></p>
@@ -334,15 +395,22 @@ exports.handler = async (event) => {
           to: 'dubai.rent7.0srl@gmail.com',
           subject: `Nuovo Acquisto Biglietti - ${qty} biglietto/i - ${fullName}`,
           html: `
-            <h2>Nuovo Acquisto Operazione Commerciale</h2>
-            <p><strong>Cliente:</strong> ${fullName}</p>
-            <p><strong>Email:</strong> ${email}</p>
-            <p><strong>Quantità:</strong> ${qty} biglietto/i</p>
-            <p><strong>Importo:</strong> €${(pi.amount / 100).toFixed(2)}</p>
-            <p><strong>Payment Intent:</strong> ${paymentIntentId}</p>
-            <p><strong>Data:</strong> ${purchaseDate.toLocaleString('it-IT', { timeZone: 'Europe/Rome' })}</p>
+            <h2>🎟️ Nuovo Acquisto Operazione Commerciale</h2>
+            <div style="background: #f5f5f5; padding: 20px; border-radius: 10px; margin: 20px 0;">
+              <h3 style="margin-top: 0;">👤 Informazioni Cliente</h3>
+              <p><strong>Nome:</strong> ${fullName || 'NON FORNITO'}</p>
+              <p><strong>Email:</strong> ${email}</p>
+              <p><strong>Telefono:</strong> ${phone || 'NON FORNITO'}</p>
+            </div>
+            <div style="background: #e8f5e9; padding: 20px; border-radius: 10px; margin: 20px 0;">
+              <h3 style="margin-top: 0;">💳 Dettagli Acquisto</h3>
+              <p><strong>Quantità:</strong> ${qty} biglietto/i</p>
+              <p><strong>Importo:</strong> €${(pi.amount / 100).toFixed(2)}</p>
+              <p><strong>Payment Intent:</strong> ${paymentIntentId}</p>
+              <p><strong>Data:</strong> ${purchaseDate.toLocaleString('it-IT', { timeZone: 'Europe/Rome' })}</p>
+            </div>
             <hr>
-            <h3>Numeri Biglietti:</h3>
+            <h3>🎫 Numeri Biglietti:</h3>
             <ul>
               ${tickets.map(t => `<li>Biglietto #${String(t.number).padStart(4, '0')} (ID: ${t.uuid})</li>`).join('')}
             </ul>
@@ -375,8 +443,8 @@ exports.handler = async (event) => {
         ticket_number: ticket.number,
         user_id: null, // Will be linked if user is authenticated
         email: email,
-        full_name: fullName || 'Cliente Stimato',
-        customer_phone: phone || pi.metadata?.phone || null,
+        full_name: fullName,
+        customer_phone: phone,
         payment_intent_id: paymentIntentId,
         amount_paid: 2500, // 25€ per ticket
         currency: pi.currency,
@@ -401,26 +469,55 @@ exports.handler = async (event) => {
 
     // Send WhatsApp notification
     console.log(`[Tickets] Sending WhatsApp notification...`);
+    console.log(`[Tickets] Customer: ${fullName}, Phone: ${phone}, Email: ${email}`);
+    console.log(`[Tickets] Environment URL: ${process.env.URL}`);
+
     try {
       const ticketNumbers = tickets.map(t => String(t.number).padStart(4, '0'));
-      await fetch(`${process.env.URL}/.netlify/functions/send-whatsapp-notification`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'ticket',
-          ticket: {
-            customer_name: fullName || 'Cliente Stimato',
-            customer_email: email,
-            customer_phone: phone || null,
-            quantity: qty,
-            total_price: pi.amount,
-            ticket_numbers: ticketNumbers
-          }
-        })
-      });
-      console.log(`[Tickets] ✅ WhatsApp notification sent`);
+      const whatsappPayload = {
+        type: 'ticket',
+        ticket: {
+          customer_name: fullName,
+          customer_email: email,
+          customer_phone: phone,
+          quantity: qty,
+          total_price: pi.amount,
+          ticket_numbers: ticketNumbers,
+          source: 'website_purchase'
+        }
+      };
+      console.log(`[Tickets] WhatsApp payload:`, JSON.stringify(whatsappPayload));
+
+      // Ensure we have a valid URL
+      let whatsappUrl;
+      if (process.env.URL) {
+        whatsappUrl = `${process.env.URL}/.netlify/functions/send-whatsapp-notification`;
+      } else if (process.env.DEPLOY_PRIME_URL) {
+        whatsappUrl = `${process.env.DEPLOY_PRIME_URL}/.netlify/functions/send-whatsapp-notification`;
+      } else {
+        // Fallback to production URL
+        whatsappUrl = 'https://dr7empire.com/.netlify/functions/send-whatsapp-notification';
+      }
+
+      console.log(`[Tickets] WhatsApp notification URL: ${whatsappUrl}`);
+
+      const response = await makeHttpRequest(whatsappUrl, whatsappPayload);
+
+      console.log(`[Tickets] WhatsApp API response status: ${response.status}`);
+      console.log(`[Tickets] WhatsApp API response:`, response.body);
+
+      if (response.ok) {
+        console.log(`[Tickets] ✅ WhatsApp notification sent successfully`);
+      } else {
+        console.error(`[Tickets] ⚠️ WhatsApp notification failed with status ${response.status}`);
+        console.error(`[Tickets] Response body:`, response.body);
+      }
     } catch (whatsappError) {
       console.error(`[Tickets] ❌ Failed to send WhatsApp notification:`, whatsappError);
+      console.error(`[Tickets] WhatsApp error details:`, {
+        message: whatsappError.message,
+        stack: whatsappError.stack
+      });
       // Don't fail the whole request if WhatsApp notification fails
     }
 

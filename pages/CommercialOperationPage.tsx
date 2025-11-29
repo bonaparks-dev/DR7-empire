@@ -57,6 +57,8 @@ const CommercialOperationPage: React.FC = () => {
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
+    const [fullName, setFullName] = useState('');
+    const [email, setEmail] = useState('');
 
     const [stripe, setStripe] = useState<Stripe | null>(null);
     const [elements, setElements] = useState<StripeElements | null>(null);
@@ -95,6 +97,10 @@ const CommercialOperationPage: React.FC = () => {
         if (!user) {
             navigate('/signin', { state: { from: location } });
             return;
+        }
+        // Pre-fill email with user's account email
+        if (user.email && !email) {
+            setEmail(user.email);
         }
         setShowConfirmModal(true);
     };
@@ -156,6 +162,16 @@ const CommercialOperationPage: React.FC = () => {
     const confirmPurchase = async () => {
         if (!stripe || !elements || !clientSecret || isProcessing || !user) return;
 
+        if (!fullName || fullName.trim() === '') {
+            setStripeError("Il nome completo è obbligatorio.");
+            return;
+        }
+
+        if (!email || email.trim() === '' || !email.includes('@')) {
+            setStripeError("Un indirizzo email valido è obbligatorio.");
+            return;
+        }
+
         if (!phoneNumber || phoneNumber.trim() === '') {
             setStripeError("Il numero di telefono è obbligatorio.");
             return;
@@ -174,8 +190,8 @@ const CommercialOperationPage: React.FC = () => {
             payment_method: {
                 card: cardElement,
                 billing_details: {
-                    name: user.fullName,
-                    email: user.email,
+                    name: fullName,
+                    email: email,
                     phone: phoneNumber,
                 },
             },
@@ -189,8 +205,8 @@ const CommercialOperationPage: React.FC = () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    email: user.email,
-                    fullName: user.fullName,
+                    email: email,
+                    fullName: fullName,
                     phone: phoneNumber,
                     quantity,
                     paymentIntentId: paymentIntent.id
@@ -199,7 +215,7 @@ const CommercialOperationPage: React.FC = () => {
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    navigate('/commercial-operation/success', { state: { tickets: data.tickets, ownerName: user.fullName } });
+                    navigate('/commercial-operation/success', { state: { tickets: data.tickets, ownerName: fullName } });
                 } else {
                     setStripeError(data.error || 'Failed to generate tickets after payment.');
                 }
@@ -395,9 +411,33 @@ const CommercialOperationPage: React.FC = () => {
                         <motion.div initial={{ opacity: 0, y: 50, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 50, scale: 0.9 }} className="relative bg-black border border-white/40 rounded-lg shadow-2xl w-full max-w-sm sm:max-w-md p-6 md:p-8 mx-4">
                             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6 text-center">{t('Confirm_Purchase')}</h2>
                             <p className="text-white/80 mb-4 sm:mb-6 text-center text-sm sm:text-base">{t('Are_you_sure_you_want_to_buy_tickets').replace('{count}', String(quantity)).replace('{price}', formatPrice(totalPrice))}</p>
-                            
+
                             <div className="my-4 sm:my-6">
-                                <label className="block text-sm sm:text-base font-medium text-white text-left mb-2">Numero di Telefono</label>
+                                <label className="block text-sm sm:text-base font-medium text-white text-left mb-2">Nome Completo *</label>
+                                <input
+                                    type="text"
+                                    value={fullName}
+                                    onChange={(e) => setFullName(e.target.value)}
+                                    placeholder="Mario Rossi"
+                                    className="w-full bg-white/10 border border-white/50 rounded-lg p-3 sm:p-4 text-white placeholder-white/50 focus:outline-none focus:border-white"
+                                    required
+                                />
+                            </div>
+
+                            <div className="my-4 sm:my-6">
+                                <label className="block text-sm sm:text-base font-medium text-white text-left mb-2">Email *</label>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="mario@example.com"
+                                    className="w-full bg-white/10 border border-white/50 rounded-lg p-3 sm:p-4 text-white placeholder-white/50 focus:outline-none focus:border-white"
+                                    required
+                                />
+                            </div>
+
+                            <div className="my-4 sm:my-6">
+                                <label className="block text-sm sm:text-base font-medium text-white text-left mb-2">Numero di Telefono *</label>
                                 <input
                                     type="tel"
                                     value={phoneNumber}
