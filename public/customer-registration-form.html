@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registrazione Cliente - DR7 Empire</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2.5rem;
+      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    .form-title {
+      color: #f4c430;
+      font-size: 2.5rem;
+      font-weight: bold;
+      margin-bottom: 2.5rem;
+      text-align: center;
+      text-shadow: 0 2px 8px rgba(244, 196, 48, 0.3);
+    }
+
+    .form-group {
+      margin-bottom: 1.75rem;
+      display: none;
+    }
+
+    .form-group.visible {
+      display: block;
+      animation: fadeIn 0.4s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-15px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .form-label {
+      display: block;
+      color: #fff;
+      font-weight: 600;
+      margin-bottom: 0.6rem;
+      font-size: 1rem;
+      letter-spacing: 0.3px;
+    }
+
+    .form-label.required::after {
+      content: ' *';
+      color: #ff4444;
+      font-weight: bold;
+    }
+
+    .form-input,
+    .form-select {
+      width: 100%;
+      padding: 0.9rem 1.2rem;
+      background: rgba(255, 255, 255, 0.08);
+      border: 2px solid rgba(244, 196, 48, 0.25);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 1rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-family: inherit;
+    }
+
+    .form-input:focus,
+    .form-select:focus {
+      outline: none;
+      border-color: #f4c430;
+      background: rgba(255, 255, 255, 0.12);
+      box-shadow: 0 0 0 4px rgba(244, 196, 48, 0.15);
+      transform: translateY(-1px);
+    }
+
+    .form-input::placeholder {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .form-select {
+      cursor: pointer;
+    }
+
+    .form-select option {
+      background: #2d2d2d;
+      color: #fff;
+    }
+
+    .input-with-button {
+      display: flex;
+      gap: 0.75rem;
+      align-items: stretch;
+    }
+
+    .input-with-button .form-input {
+      flex: 1;
+    }
+
+    .btn-search {
+      padding: 0.9rem 1.75rem;
+      background: linear-gradient(135deg, #f4c430 0%, #d4a420 100%);
+      color: #000;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      white-space: nowrap;
+      font-size: 0.95rem;
+      font-family: inherit;
+      box-shadow: 0 4px 12px rgba(244, 196, 48, 0.25);
+    }
+
+    .btn-search:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(244, 196, 48, 0.45);
+    }
+
+    .btn-search:active {
+      transform: translateY(-1px);
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 1.2rem 2rem;
+      background: linear-gradient(135deg, #f4c430 0%, #d4a420 100%);
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-top: 2.5rem;
+      font-family: inherit;
+      letter-spacing: 0.5px;
+      box-shadow: 0 6px 24px rgba(244, 196, 48, 0.3);
+      display: none;
+    }
+
+    .btn-submit.visible {
+      display: block;
+      animation: fadeIn 0.4s ease-in-out;
+    }
+
+    .btn-submit:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 32px rgba(244, 196, 48, 0.5);
+    }
+
+    .btn-submit:active {
+      transform: translateY(-1px);
+    }
+
+    .section-divider {
+      height: 2px;
+      background: linear-gradient(90deg, transparent 0%, #f4c430 50%, transparent 100%);
+      margin: 2.5rem 0;
+    }
+
+    .optional-section {
+      margin-top: 2rem;
+      padding: 1.75rem;
+      background: rgba(244, 196, 48, 0.06);
+      border: 2px dashed rgba(244, 196, 48, 0.3);
+      border-radius: 12px;
+      display: none;
+    }
+
+    .optional-section.visible {
+      display: block;
+      animation: fadeIn 0.4s ease-in-out;
+    }
+
+    .optional-section-title {
+      color: #f4c430;
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 1.25rem;
+      letter-spacing: 0.3px;
+    }
+
+    .optional-section-note {
+      color: #9ca3af;
+      font-size: 0.95rem;
+      font-style: italic;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 1rem 0.5rem;
+      }
+
+      .container {
+        padding: 1.75rem;
+        border-radius: 12px;
+      }
+
+      .form-title {
+        font-size: 1.75rem;
+      }
+
+      .input-with-button {
+        flex-direction: column;
+      }
+
+      .btn-search {
+        width: 100%;
+        padding: 1rem;
+      }
+
+      .form-input,
+      .form-select {
+        padding: 0.85rem 1rem;
+        font-size: 16px; /* Prevents zoom on iOS */
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="form-title">Registrazione Cliente</h1>
+
+    <form id="customerForm">
+      <!-- Client Type Selection - Always Visible -->
+      <div class="form-group visible">
+        <label class="form-label required" for="tipoCliente">
+          Tipo Cliente
+        </label>
+        <select id="tipoCliente" name="tipoCliente" class="form-select" required>
+          <option value="">Seleziona tipo cliente...</option>
+          <option value="azienda">Azienda</option>
+          <option value="persona_fisica">Persona Fisica</option>
+          <option value="pubblica_amministrazione">Pubblica Amministrazione</option>
+        </select>
+      </div>
+
+      <!-- AZIENDA FIELDS -->
+      <div id="azienda-fields" class="client-type-section">
+        <div class="section-divider"></div>
+
+        <div class="form-group">
+          <label class="form-label required" for="nazione_az">Nazione</label>
+          <input type="text" id="nazione_az" name="nazione" class="form-input" value="Italia">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="denominazione">Denominazione</label>
+          <div class="input-with-button">
+            <input type="text" id="denominazione" name="denominazione" class="form-input" placeholder="Nome azienda">
+            <button type="button" class="btn-search" onclick="cercaPerDenominazione()">🔍 Cerca</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="partitaIVA">Partita IVA</label>
+          <div class="input-with-button">
+            <input type="text" id="partitaIVA" name="partitaIVA" class="form-input" placeholder="IT12345678901">
+            <button type="button" class="btn-search" onclick="cercaPerPartitaIVA()">🔍 Cerca</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="codiceFiscale_az">Codice Fiscale</label>
+          <input type="text" id="codiceFiscale_az" name="codiceFiscale" class="form-input" placeholder="00000000000">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="indirizzo_az">Indirizzo</label>
+          <input type="text" id="indirizzo_az" name="indirizzo" class="form-input" placeholder="Via, Numero Civico, CAP, Città">
+        </div>
+
+        <div class="optional-section">
+          <h3 class="optional-section-title">Campi Facoltativi</h3>
+          <p class="optional-section-note">Sezione riservata per campi aggiuntivi futuri</p>
+        </div>
+      </div>
+
+      <!-- PERSONA FISICA FIELDS -->
+      <div id="persona-fisica-fields" class="client-type-section">
+        <div class="section-divider"></div>
+
+        <div class="form-group">
+          <label class="form-label required" for="nazione_pf">Nazione</label>
+          <input type="text" id="nazione_pf" name="nazione" class="form-input" value="Italia">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="nome">Nome</label>
+          <input type="text" id="nome" name="nome" class="form-input" placeholder="Mario">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="cognome">Cognome</label>
+          <input type="text" id="cognome" name="cognome" class="form-input" placeholder="Rossi">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="codiceFiscale_pf">Codice Fiscale</label>
+          <input type="text" id="codiceFiscale_pf" name="codiceFiscale" class="form-input" placeholder="RSSMRA80A01H501U">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="indirizzo_pf">Indirizzo</label>
+          <input type="text" id="indirizzo_pf" name="indirizzo" class="form-input" placeholder="Via, Numero Civico, CAP, Città">
+        </div>
+
+        <div class="optional-section">
+          <h3 class="optional-section-title">Campi Facoltativi</h3>
+
+          <div class="form-group visible">
+            <label class="form-label" for="telefono">Telefono</label>
+            <input type="tel" id="telefono" name="telefono" class="form-input" placeholder="+39 123 456 7890">
+          </div>
+
+          <div class="form-group visible">
+            <label class="form-label" for="email">Email</label>
+            <input type="email" id="email" name="email" class="form-input" placeholder="email@esempio.it">
+          </div>
+
+          <div class="form-group visible">
+            <label class="form-label" for="pec">PEC</label>
+            <input type="email" id="pec" name="pec" class="form-input" placeholder="pec@pec.it">
+          </div>
+        </div>
+      </div>
+
+      <!-- PUBBLICA AMMINISTRAZIONE FIELDS -->
+      <div id="pubblica-amministrazione-fields" class="client-type-section">
+        <div class="section-divider"></div>
+
+        <div class="form-group">
+          <label class="form-label required" for="codiceUnivoco">Codice Univoco</label>
+          <div class="input-with-button">
+            <input type="text" id="codiceUnivoco" name="codiceUnivoco" class="form-input" placeholder="XXXXXX">
+            <button type="button" class="btn-search" onclick="cercaPerCodiceUnivoco()">🔍 Cerca</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="codiceFiscale_pa">Codice Fiscale</label>
+          <div class="input-with-button">
+            <input type="text" id="codiceFiscale_pa" name="codiceFiscale" class="form-input" placeholder="00000000000">
+            <button type="button" class="btn-search" onclick="cercaPerCodiceFiscale()">🔍 Cerca</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="enteUfficio">Ente o Ufficio</label>
+          <div class="input-with-button">
+            <input type="text" id="enteUfficio" name="enteUfficio" class="form-input" placeholder="Nome dell'ente o ufficio">
+            <button type="button" class="btn-search" onclick="cercaPerEnteUfficio()">🔍 Cerca</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="citta">Città</label>
+          <div class="input-with-button">
+            <input type="text" id="citta" name="citta" class="form-input" placeholder="Cagliari">
+            <button type="button" class="btn-search" onclick="cercaPerCitta()">🔍 Cerca</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" id="submitBtn" class="btn-submit">Registrati</button>
+    </form>
+  </div>
+
+  <script>
+    // Get form elements
+    const tipoClienteSelect = document.getElementById('tipoCliente');
+    const aziendaFields = document.getElementById('azienda-fields');
+    const personaFisicaFields = document.getElementById('persona-fisica-fields');
+    const pubblicaAmministrazioneFields = document.getElementById('pubblica-amministrazione-fields');
+    const submitBtn = document.getElementById('submitBtn');
+    const customerForm = document.getElementById('customerForm');
+
+    // Show/Hide fields based on client type
+    tipoClienteSelect.addEventListener('change', function() {
+      const selectedType = this.value;
+
+      // Hide all sections first
+      hideAllSections();
+
+      // Show the selected section
+      if (selectedType === 'azienda') {
+        showSection(aziendaFields);
+      } else if (selectedType === 'persona_fisica') {
+        showSection(personaFisicaFields);
+      } else if (selectedType === 'pubblica_amministrazione') {
+        showSection(pubblicaAmministrazioneFields);
+      }
+
+      // Show submit button if a type is selected
+      if (selectedType) {
+        submitBtn.classList.add('visible');
+      } else {
+        submitBtn.classList.remove('visible');
+      }
+
+      // Update required fields
+      updateRequiredFields(selectedType);
+    });
+
+    function hideAllSections() {
+      const sections = [aziendaFields, personaFisicaFields, pubblicaAmministrazioneFields];
+      sections.forEach(section => {
+        const formGroups = section.querySelectorAll('.form-group');
+        const optionalSection = section.querySelector('.optional-section');
+
+        formGroups.forEach(group => {
+          group.classList.remove('visible');
+        });
+
+        if (optionalSection) {
+          optionalSection.classList.remove('visible');
+        }
+      });
+    }
+
+    function showSection(section) {
+      const formGroups = section.querySelectorAll('.form-group');
+      const optionalSection = section.querySelector('.optional-section');
+
+      formGroups.forEach(group => {
+        group.classList.add('visible');
+      });
+
+      if (optionalSection) {
+        optionalSection.classList.add('visible');
+      }
+    }
+
+    function updateRequiredFields(clientType) {
+      // Remove required from all fields first
+      document.querySelectorAll('.form-input').forEach(input => {
+        input.removeAttribute('required');
+      });
+
+      // Add required to active section fields
+      let activeSection;
+      if (clientType === 'azienda') {
+        activeSection = aziendaFields;
+      } else if (clientType === 'persona_fisica') {
+        activeSection = personaFisicaFields;
+      } else if (clientType === 'pubblica_amministrazione') {
+        activeSection = pubblicaAmministrazioneFields;
+      }
+
+      if (activeSection) {
+        // Get all inputs in active section except those in optional section
+        const requiredInputs = activeSection.querySelectorAll('.form-group:not(.optional-section .form-group) .form-input');
+        requiredInputs.forEach(input => {
+          const label = input.closest('.form-group').querySelector('.form-label');
+          if (label && label.classList.contains('required')) {
+            input.setAttribute('required', 'required');
+          }
+        });
+      }
+    }
+
+    // Search functions (to be implemented with actual API calls)
+    function cercaPerDenominazione() {
+      const denominazione = document.getElementById('denominazione').value;
+      console.log('Searching for denominazione:', denominazione);
+      alert('Funzione di ricerca per denominazione - da implementare\n\nValore cercato: ' + denominazione);
+      // TODO: Implement actual API call
+    }
+
+    function cercaPerPartitaIVA() {
+      const partitaIVA = document.getElementById('partitaIVA').value;
+      console.log('Searching for Partita IVA:', partitaIVA);
+      alert('Funzione di ricerca per Partita IVA - da implementare\n\nValore cercato: ' + partitaIVA);
+      // TODO: Implement actual API call
+    }
+
+    function cercaPerCodiceUnivoco() {
+      const codiceUnivoco = document.getElementById('codiceUnivoco').value;
+      console.log('Searching for Codice Univoco:', codiceUnivoco);
+      alert('Funzione di ricerca per Codice Univoco - da implementare\n\nValore cercato: ' + codiceUnivoco);
+      // TODO: Implement actual API call
+    }
+
+    function cercaPerCodiceFiscale() {
+      const tipoCliente = tipoClienteSelect.value;
+      let codiceFiscale;
+
+      if (tipoCliente === 'azienda') {
+        codiceFiscale = document.getElementById('codiceFiscale_az').value;
+      } else if (tipoCliente === 'persona_fisica') {
+        codiceFiscale = document.getElementById('codiceFiscale_pf').value;
+      } else if (tipoCliente === 'pubblica_amministrazione') {
+        codiceFiscale = document.getElementById('codiceFiscale_pa').value;
+      }
+
+      console.log('Searching for Codice Fiscale:', codiceFiscale);
+      alert('Funzione di ricerca per Codice Fiscale - da implementare\n\nValore cercato: ' + codiceFiscale);
+      // TODO: Implement actual API call
+    }
+
+    function cercaPerEnteUfficio() {
+      const enteUfficio = document.getElementById('enteUfficio').value;
+      console.log('Searching for Ente/Ufficio:', enteUfficio);
+      alert('Funzione di ricerca per Ente o Ufficio - da implementare\n\nValore cercato: ' + enteUfficio);
+      // TODO: Implement actual API call
+    }
+
+    function cercaPerCitta() {
+      const citta = document.getElementById('citta').value;
+      console.log('Searching for Città:', citta);
+      alert('Funzione di ricerca per Città - da implementare\n\nValore cercato: ' + citta);
+      // TODO: Implement actual API call
+    }
+
+    // Form submission
+    customerForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      // Collect form data
+      const formData = new FormData(customerForm);
+      const data = Object.fromEntries(formData.entries());
+
+      console.log('Form submitted with data:', data);
+
+      // TODO: Send data to your backend
+      alert('Form submitted successfully!\n\nDati inviati:\n' + JSON.stringify(data, null, 2));
+
+      // Example: Send to API
+      /*
+      fetch('/api/register-customer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      })
+      .then(response => response.json())
+      .then(result => {
+        console.log('Success:', result);
+        alert('Registrazione completata con successo!');
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Errore durante la registrazione. Riprova.');
+      });
+      */
+    });
+  </script>
+</body>
+</html>
