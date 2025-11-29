@@ -232,8 +232,118 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
     }
   };
 
-  if (categoryId === 'jets') {
-      return <JetSearchPage />;
+  if (categoryId === 'jets' || categoryId === 'helicopters') {
+      return (
+        <div className="pt-32 pb-24 bg-black">
+          <div className="container mx-auto px-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-center mb-12"
+            >
+              <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                ✈️ DR7 Aviation Division
+              </h1>
+              <p className="text-xl text-gray-400 mb-8">
+                Jet Privati ed Elicotteri su Misura
+              </p>
+            </motion.div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+              {/* Jet Booking */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="bg-gray-900 border border-gray-800 rounded-2xl p-8 hover:border-white transition-colors"
+              >
+                <div className="text-6xl mb-6 text-center">✈️</div>
+                <h2 className="text-3xl font-bold text-white mb-4 text-center">
+                  Jet Privati
+                </h2>
+                <p className="text-gray-400 mb-6 text-center">
+                  Voli a lungo raggio, business e viaggi intercontinentali
+                </p>
+                <div className="space-y-3 mb-8">
+                  <div className="flex items-center text-gray-300">
+                    <span className="mr-2">✓</span>
+                    <span>Voli nazionali ed internazionali</span>
+                  </div>
+                  <div className="flex items-center text-gray-300">
+                    <span className="mr-2">✓</span>
+                    <span>Capacità fino a 20 passeggeri</span>
+                  </div>
+                  <div className="flex items-center text-gray-300">
+                    <span className="mr-2">✓</span>
+                    <span>Massimo comfort e privacy</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigate('/jets/quote')}
+                  className="w-full bg-white text-black px-6 py-4 rounded-full font-bold uppercase tracking-wider text-sm hover:bg-gray-200 transition-all duration-300 transform hover:scale-105"
+                >
+                  Richiedi Preventivo Jet
+                </button>
+              </motion.div>
+
+              {/* Helicopter Booking */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+                className="bg-gray-900 border border-gray-800 rounded-2xl p-8 hover:border-white transition-colors"
+              >
+                <div className="text-6xl mb-6 text-center">🚁</div>
+                <h2 className="text-3xl font-bold text-white mb-4 text-center">
+                  Elicotteri
+                </h2>
+                <p className="text-gray-400 mb-6 text-center">
+                  Voli brevi, trasferimenti veloci e operazioni speciali
+                </p>
+                <div className="space-y-3 mb-8">
+                  <div className="flex items-center text-gray-300">
+                    <span className="mr-2">✓</span>
+                    <span>Accesso a luoghi difficili da raggiungere</span>
+                  </div>
+                  <div className="flex items-center text-gray-300">
+                    <span className="mr-2">✓</span>
+                    <span>Trasferimenti rapidi da/per aeroporti</span>
+                  </div>
+                  <div className="flex items-center text-gray-300">
+                    <span className="mr-2">✓</span>
+                    <span>Tour panoramici ed eventi speciali</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigate('/helicopters/quote')}
+                  className="w-full bg-white text-black px-6 py-4 rounded-full font-bold uppercase tracking-wider text-sm hover:bg-gray-200 transition-all duration-300 transform hover:scale-105"
+                >
+                  Richiedi Preventivo Elicottero
+                </button>
+              </motion.div>
+            </div>
+
+            {/* Additional Info */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.6 }}
+              className="mt-16 text-center"
+            >
+              <p className="text-gray-400 text-lg mb-4">
+                Non sei sicuro di quale servizio scegliere?
+              </p>
+              <button
+                onClick={() => navigate('/aviation-quote')}
+                className="bg-gray-800 text-white px-8 py-3 rounded-full font-semibold hover:bg-gray-700 transition-colors"
+              >
+                Contattaci per una Consulenza Gratuita
+              </button>
+            </motion.div>
+          </div>
+        </div>
+      );
   }
 
   if (!category) {

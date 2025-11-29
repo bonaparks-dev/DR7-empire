@@ -109,6 +109,7 @@ const AnimatedRoutes = () => {
         <Route path="/jets/search" element={<JetSearchResultsPage />} />
         <Route path="/jets/quote" element={<AviationQuoteRequestPage />} />
         <Route path="/helicopters/quote" element={<AviationQuoteRequestPage />} />
+        <Route path="/aviation-quote" element={<AviationQuoteRequestPage />} />
         <Route path="/car-wash-services" element={<CarWashServicesPage />} />
         <Route path="/car-wash-booking" element={<CarWashBookingPage />} />
         <Route path="/mechanical-services" element={<MechanicalServicesPage />} />
