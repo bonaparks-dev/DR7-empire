@@ -228,9 +228,9 @@ const SignUpPage: React.FC = () => {
                   required
                 >
                   <option value="">Seleziona tipo cliente...</option>
-                  <option value="azienda">🏢 Azienda</option>
-                  <option value="persona_fisica">👤 Persona Fisica</option>
-                  <option value="pubblica_amministrazione">🏛️ Pubblica Amministrazione</option>
+                  <option value="azienda">Azienda</option>
+                  <option value="persona_fisica">Persona Fisica</option>
+                  <option value="pubblica_amministrazione">Pubblica Amministrazione</option>
                 </select>
                 {errors.tipoCliente && <p className="text-xs text-red-400 mt-1">{errors.tipoCliente}</p>}
               </div>
