@@ -158,7 +158,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { email, fullName, quantity, paymentIntentId } = JSON.parse(event.body || '{}');
+    const { email, fullName, phone, quantity, paymentIntentId } = JSON.parse(event.body || '{}');
 
     if (!email || !quantity || !paymentIntentId) {
       return createResponse(400, { success: false, error: 'Missing required fields: email, quantity, paymentIntentId.' });
@@ -376,7 +376,7 @@ exports.handler = async (event) => {
         user_id: null, // Will be linked if user is authenticated
         email: email,
         full_name: fullName || 'Cliente Stimato',
-        customer_phone: pi.metadata?.phone || null,
+        customer_phone: phone || pi.metadata?.phone || null,
         payment_intent_id: paymentIntentId,
         amount_paid: 2500, // 25€ per ticket
         currency: pi.currency,
@@ -411,6 +411,7 @@ exports.handler = async (event) => {
           ticket: {
             customer_name: fullName || 'Cliente Stimato',
             customer_email: email,
+            customer_phone: phone || null,
             quantity: qty,
             total_price: pi.amount,
             ticket_numbers: ticketNumbers

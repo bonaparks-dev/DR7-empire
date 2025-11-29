@@ -40,6 +40,7 @@ const handler: Handler = async (event) => {
     const ticketData = ticket || {};
     const customerName = ticketData.customer_name || ticketData.name || 'Cliente';
     const customerEmail = ticketData.customer_email || ticketData.email;
+    const customerPhone = ticketData.customer_phone || ticketData.phone;
     const ticketQuantity = ticketData.quantity || 1;
     const totalPrice = ticketData.total_price ? (ticketData.total_price / 100).toFixed(2) : 'N/A';
     const ticketNumbers = ticketData.ticket_numbers || [];
@@ -47,6 +48,9 @@ const handler: Handler = async (event) => {
     message = `🎟️ *NUOVA VENDITA BIGLIETTI*\n\n`;
     message += `*Cliente:* ${customerName}\n`;
     message += `*Email:* ${customerEmail}\n`;
+    if (customerPhone) {
+      message += `*Telefono:* ${customerPhone}\n`;
+    }
     message += `*Quantità:* ${ticketQuantity} bigliett${ticketQuantity > 1 ? 'i' : 'o'}\n`;
     message += `*Totale:* €${totalPrice}\n`;
     if (ticketNumbers.length > 0) {

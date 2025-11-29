@@ -56,6 +56,7 @@ const CommercialOperationPage: React.FC = () => {
     const [quantity, setQuantity] = useState(1);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
 
     const [stripe, setStripe] = useState<Stripe | null>(null);
     const [elements, setElements] = useState<StripeElements | null>(null);
@@ -154,13 +155,18 @@ const CommercialOperationPage: React.FC = () => {
     
     const confirmPurchase = async () => {
         if (!stripe || !elements || !clientSecret || isProcessing || !user) return;
-        
+
+        if (!phoneNumber || phoneNumber.trim() === '') {
+            setStripeError("Il numero di telefono è obbligatorio.");
+            return;
+        }
+
         const cardElement = elements.getElement('card');
         if (!cardElement) {
             setStripeError("Card element not found. Please try again.");
             return;
         }
-        
+
         setIsProcessing(true);
         setStripeError(null);
 
@@ -170,6 +176,7 @@ const CommercialOperationPage: React.FC = () => {
                 billing_details: {
                     name: user.fullName,
                     email: user.email,
+                    phone: phoneNumber,
                 },
             },
         });
@@ -184,6 +191,7 @@ const CommercialOperationPage: React.FC = () => {
                 body: JSON.stringify({
                     email: user.email,
                     fullName: user.fullName,
+                    phone: phoneNumber,
                     quantity,
                     paymentIntentId: paymentIntent.id
                 })
@@ -389,13 +397,25 @@ const CommercialOperationPage: React.FC = () => {
                             <p className="text-white/80 mb-4 sm:mb-6 text-center text-sm sm:text-base">{t('Are_you_sure_you_want_to_buy_tickets').replace('{count}', String(quantity)).replace('{price}', formatPrice(totalPrice))}</p>
                             
                             <div className="my-4 sm:my-6">
+                                <label className="block text-sm sm:text-base font-medium text-white text-left mb-2">Numero di Telefono</label>
+                                <input
+                                    type="tel"
+                                    value={phoneNumber}
+                                    onChange={(e) => setPhoneNumber(e.target.value)}
+                                    placeholder="+39 123 456 7890"
+                                    className="w-full bg-white/10 border border-white/50 rounded-lg p-3 sm:p-4 text-white placeholder-white/50 focus:outline-none focus:border-white"
+                                    required
+                                />
+                            </div>
+
+                            <div className="my-4 sm:my-6">
                                 <label className="block text-sm sm:text-base font-medium text-white text-left mb-2">{t('Credit_Card')}</label>
                                 <div className="bg-white/10 border border-white/50 rounded-lg p-3 sm:p-4 min-h-[48px] sm:min-h-[56px] flex items-center">
-                                    {isClientSecretLoading ? 
+                                    {isClientSecretLoading ?
                                         <div className="flex items-center text-white/70 text-sm sm:text-base">
                                             <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-t-white border-white/30 rounded-full mr-2"/>
                                             <span>{t('Processing')}...</span>
-                                        </div> : 
+                                        </div> :
                                         <div ref={cardElementRef} className="w-full" />
                                     }
                                 </div>
