@@ -203,7 +203,7 @@ const AviationQuoteRequestPage: React.FC = () => {
       msg += `• Volo internazionale: ${formData.is_international === 'yes' ? 'Sì' : 'No'}\n`;
       msg += `• Assistenza bagagli: ${formData.needs_luggage_assistance === 'yes' ? 'Sì' : 'No'}\n\n`;
 
-      msg += `💳 6. CONDIZIONI ECONOMICHE E AMMINISTRATIVE\n`;
+      msg += `6. CONDIZIONI ECONOMICHE E AMMINISTRATIVE\n`;
       msg += `• Tipo fatturazione: ${formData.billing_type === 'company' ? 'Società' : 'Persona fisica'}\n`;
       if (formData.vat_number) {
         msg += `• P.IVA: ${formData.vat_number}\n`;
@@ -217,7 +217,7 @@ const AviationQuoteRequestPage: React.FC = () => {
       msg += `• IVA: ${formData.vat_included === 'yes' ? 'Inclusa' : 'Esclusa'}\n`;
       msg += `• Contratto sub-noleggio: ${formData.needs_contract === 'yes' ? 'Sì' : 'No'}\n\n`;
 
-      msg += `🔒 7. SERVIZI OPZIONALI O PREMIUM\n`;
+      msg += `7. SERVIZI OPZIONALI O PREMIUM\n`;
       msg += `• Assicurazione full risk: ${formData.needs_insurance === 'yes' ? 'Sì' : 'No'}\n`;
       msg += `• Sicurezza privata: ${formData.needs_security === 'yes' ? 'Sì' : 'No'}\n`;
       msg += `• Pernottamento equipaggio: ${formData.needs_crew_accommodation === 'yes' ? 'Sì' : 'No'}\n`;
@@ -917,7 +917,7 @@ const AviationQuoteRequestPage: React.FC = () => {
           {/* 6. Economic & Administrative */}
           <div className="bg-gray-800/50 p-6 rounded-lg border border-gray-700">
             <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-              💳 6. Condizioni Economiche e Amministrative
+              6. Condizioni Economiche e Amministrative
             </h3>
             <div className="space-y-4">
               <div>
@@ -1010,7 +1010,7 @@ const AviationQuoteRequestPage: React.FC = () => {
           {/* 7. Optional Services */}
           <div className="bg-gray-800/50 p-6 rounded-lg border border-gray-700">
             <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-              🔒 7. Servizi Opzionali o Premium
+              7. Servizi Opzionali o Premium
             </h3>
             <div className="space-y-4">
               <div>
@@ -1115,11 +1115,9 @@ const AviationQuoteRequestPage: React.FC = () => {
         {/* Trust Badges */}
         <div className="mt-8 grid grid-cols-3 gap-4 text-center">
           <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-            <div className="text-2xl mb-2">⚡</div>
             <div className="text-xs text-gray-400">Risposta in 24h</div>
           </div>
           <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-            <div className="text-2xl mb-2">🔒</div>
             <div className="text-xs text-gray-400">Preventivo Gratuito</div>
           </div>
           <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">

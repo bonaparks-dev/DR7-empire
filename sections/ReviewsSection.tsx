@@ -41,7 +41,7 @@ const fallbackReviews = [
     rating: 5,
     date: "2025-01-13",
     body:
-      "⭐⭐⭐⭐⭐ Un servizio impeccabile! Ho noleggiato un'auto con Dubai Rent 7.0 luxury empire e sono rimasto estremamente soddisfatto. Professionalità, cortesia e auto di altissimo livello. Consigliatissimo a chiunque voglia vivere un'esperienza di lusso su quattro ruote!",
+      " Un servizio impeccabile! Ho noleggiato un'auto con Dubai Rent 7.0 luxury empire e sono rimasto estremamente soddisfatto. Professionalità, cortesia e auto di altissimo livello. Consigliatissimo a chiunque voglia vivere un'esperienza di lusso su quattro ruote!",
     sourceUrl: "https://share.google/vSxG17ifqlzJNSrSz",
   },
   {
@@ -129,7 +129,7 @@ const fallbackReviews = [
     rating: 5,
     date: "2024-11-01",
     body:
-      "Ho noleggiato diverse volte il Carrera 4s da vero appassionato Porsche, che dire macchina fantastica e loro ancora di più. Servizio clienti incredibile, super professionali e sempre disponibili. Lavaggio impeccabile. Consigliatissimo, continuerò a noleggiare da loro ⭐⭐⭐⭐⭐",
+      "Ho noleggiato diverse volte il Carrera 4s da vero appassionato Porsche, che dire macchina fantastica e loro ancora di più. Servizio clienti incredibile, super professionali e sempre disponibili. Lavaggio impeccabile. Consigliatissimo, continuerò a noleggiare da loro ",
     sourceUrl: "https://share.google/vSxG17ifqlzJNSrSz",
   },
   {
@@ -233,7 +233,7 @@ const fallbackReviews = [
     rating: 5,
     date: "2025-06-20",
     body:
-      "I have rented the Carrera 4S several times. The car is fantastic and the team even more so. Incredible customer service, super professional and always available. Car wash impeccable. Highly recommended, I will continue to rent from them ⭐⭐⭐⭐⭐",
+      "I have rented the Carrera 4S several times. The car is fantastic and the team even more so. Incredible customer service, super professional and always available. Car wash impeccable. Highly recommended, I will continue to rent from them ",
     sourceUrl: "https://share.google/o5c8DO8nmk3XMn0hF",
   },
   {

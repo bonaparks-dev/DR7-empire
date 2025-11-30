@@ -99,7 +99,7 @@ const MyBookings = () => {
     };
     return (
       <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${colors[paymentStatus] || 'bg-gray-500/20 text-gray-400'}`}>
-        {paymentStatus === 'paid' ? '✓ Paid' : paymentStatus === 'pending' ? '⏳ Pending' : paymentStatus}
+        {paymentStatus === 'paid' ? 'Paid' : paymentStatus === 'pending' ? 'Pending' : paymentStatus}
       </span>
     );
   };
@@ -133,7 +133,7 @@ const MyBookings = () => {
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <h3 className="text-lg font-bold text-white mb-1">
-                          {booking.service_type === 'car_wash' ? '🚗 ' : '🚘 '}
+                          {booking.service_type === 'car_wash' ? '' : ''}
                           {booking.service_name}
                         </h3>
                         {booking.vehicle_name && booking.service_type === 'car_rental' && (

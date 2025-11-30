@@ -103,7 +103,7 @@ const MembershipPage: React.FC = () => {
                     className="text-center"
                 >
                     <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                        💎 DR7 MEMBERSHIP CLUB
+                        DR7 MEMBERSHIP CLUB
                     </h1>
                     <p className="text-xl text-gray-300 mb-2 max-w-2xl mx-auto font-semibold">
                         Non è un abbonamento. È uno status.
@@ -137,7 +137,7 @@ const MembershipPage: React.FC = () => {
                     </div>
                     {billingCycle === 'annually' && (
                         <p className="text-sm text-green-400 mt-2">
-                            🎉 Risparmia 2 mesi pagando annualmente
+                            Risparmia 2 mesi pagando annualmente
                         </p>
                     )}
                 </motion.div>
@@ -162,7 +162,7 @@ const MembershipPage: React.FC = () => {
                 >
                     <div className="bg-gradient-to-r from-gray-900/80 to-black border border-gray-800 rounded-lg p-8 text-center">
                         <h3 className="text-2xl font-bold text-white mb-4">
-                            📱 Add-on opzionale per tutti i piani
+                            Add-on opzionale per tutti i piani
                         </h3>
                         <div className="bg-black/40 border border-gray-700 rounded-lg p-6 inline-block">
                             <p className="text-gray-300 mb-2">

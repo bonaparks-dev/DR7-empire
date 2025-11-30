@@ -116,16 +116,16 @@ const DocumentsVerification = () => {
                         <div className="flex items-start justify-between mb-4">
                             <div>
                                 <h3 className="text-lg font-bold text-white mb-2">
-                                    ✨ {t('Instant_Verification')}
+                                    {t('Instant_Verification')}
                                 </h3>
                                 <p className="text-sm text-gray-300 mb-3">
                                     {t('Verify_instantly_with_Stripe_Identity')}
                                 </p>
                                 <ul className="text-sm text-gray-400 space-y-1">
-                                    <li>✓ {t('Instant_verification_in_minutes')}</li>
-                                    <li>✓ {t('Secure_and_encrypted')}</li>
-                                    <li>✓ {t('Take_photo_with_your_phone')}</li>
-                                    <li>✓ {t('Powered_by_Stripe')}</li>
+                                    <li>{t('Instant_verification_in_minutes')}</li>
+                                    <li>{t('Secure_and_encrypted')}</li>
+                                    <li>{t('Take_photo_with_your_phone')}</li>
+                                    <li>{t('Powered_by_Stripe')}</li>
                                 </ul>
                             </div>
                         </div>

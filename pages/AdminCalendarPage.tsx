@@ -379,7 +379,6 @@ const AdminCalendarPage: React.FC = () => {
                           `}
                           title={`${booking.vehicle_name} - ${booking.customer_name} - ${formatBookingTime(booking)}`}
                         >
-                          {booking.service_type === 'car_wash' ? '🚿' : '🚗'}{' '}
                           {booking.appointment_time || formatBookingTime(booking)}
                         </div>
                       ))}
@@ -416,9 +415,6 @@ const AdminCalendarPage: React.FC = () => {
                     <div className="flex flex-col lg:flex-row items-start gap-4">
                       <div className="flex-1 w-full">
                         <div className="flex items-center gap-3 mb-3">
-                          <span className="text-2xl">
-                            {booking.service_type === 'car_wash' ? '🚿' : '🚗'}
-                          </span>
                           <div>
                             <h4
                               className="text-lg font-bold text-white cursor-pointer hover:text-gray-300 transition-colors"
@@ -498,11 +494,9 @@ const AdminCalendarPage: React.FC = () => {
             </h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-xl">🚿</span>
                 <span className="text-sm text-gray-300">Car Wash</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xl">🚗</span>
                 <span className="text-sm text-gray-300">Car Rental</span>
               </div>
               <div className="flex items-center gap-2">

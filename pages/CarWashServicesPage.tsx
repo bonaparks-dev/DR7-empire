@@ -328,7 +328,7 @@ const CarWashServicesPage: React.FC = () => {
             </div>
 
             <div>
-              <h3 className="text-2xl font-bold text-white mb-4">💎 Tipologie di lavaggio</h3>
+              <h3 className="text-2xl font-bold text-white mb-4">Tipologie di lavaggio</h3>
               <div className="space-y-4">
                 <div className="bg-black/30 p-5 rounded-lg border border-gray-700">
                   <h4 className="text-white font-bold mb-2">• Lavaggio da 25 euro</h4>

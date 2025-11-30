@@ -177,7 +177,7 @@ const PartnerDashboardPage: React.FC = () => {
                                         <div className="flex justify-between items-start">
                                             <div>
                                                 <h4 className="font-bold text-white">
-                                                    {booking.service_type === 'car_wash' ? '🚗 ' : '🚘 '}
+                                                    {booking.service_type === 'car_wash' ? '' : ''}
                                                     {booking.service_name}
                                                 </h4>
                                                 <p className="text-xs text-gray-400 mt-1">
@@ -193,7 +193,7 @@ const PartnerDashboardPage: React.FC = () => {
                                                         ? 'bg-green-500/20 text-green-400'
                                                         : 'bg-yellow-500/20 text-yellow-400'
                                                 }`}>
-                                                    {booking.payment_status === 'paid' ? '✓ Paid' : 'Pending'}
+                                                    {booking.payment_status === 'paid' ? 'Paid' : 'Pending'}
                                                 </span>
                                             </div>
                                         </div>

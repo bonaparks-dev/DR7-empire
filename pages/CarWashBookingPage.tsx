@@ -298,7 +298,7 @@ const CarWashBookingPage: React.FC = () => {
 
         const overlap = (startMinutes < bookingEnd && endMinutes > bookingStart);
         if (overlap) {
-          console.log(`❌ Time slot ${startTime} conflicts with existing booking at ${booking.appointment_time}`);
+          console.log(`Time slot ${startTime} conflicts with existing booking at ${booking.appointment_time}`);
         }
         return overlap;
       });
@@ -409,7 +409,7 @@ const CarWashBookingPage: React.FC = () => {
 
         const overlap = (startMinutes < bookingEnd && endMinutes > bookingStart);
         if (overlap) {
-          console.log(`❌ Time slot ${startTime} conflicts with existing booking at ${booking.appointment_time}`);
+          console.log(`Time slot ${startTime} conflicts with existing booking at ${booking.appointment_time}`);
         }
         return overlap;
       });

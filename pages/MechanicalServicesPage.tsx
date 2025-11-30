@@ -330,7 +330,7 @@ const MechanicalServicesPage: React.FC = () => {
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
-              <div className="text-4xl mb-4">📱</div>
+              <div className="text-4xl mb-4"></div>
               <h4 className="text-lg font-bold text-white mb-2">
                 {lang === 'it' ? '1. Prenota Online' : '1. Book Online'}
               </h4>
@@ -341,7 +341,7 @@ const MechanicalServicesPage: React.FC = () => {
               </p>
             </div>
             <div className="text-center">
-              <div className="text-4xl mb-4">🚗</div>
+              <div className="text-4xl mb-4"></div>
               <h4 className="text-lg font-bold text-white mb-2">
                 {lang === 'it' ? '2. Vieni da Noi' : '2. Come to Us'}
               </h4>
@@ -352,7 +352,7 @@ const MechanicalServicesPage: React.FC = () => {
               </p>
             </div>
             <div className="text-center">
-              <div className="text-4xl mb-4">⚡</div>
+              <div className="text-4xl mb-4"></div>
               <h4 className="text-lg font-bold text-white mb-2">
                 {lang === 'it' ? '3. Lavoro Rapido' : '3. Quick Service'}
               </h4>

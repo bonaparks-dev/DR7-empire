@@ -337,7 +337,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
           const conflictStart = new Date(conflict.pickup_date).toLocaleDateString('it-IT');
           const conflictEnd = new Date(conflict.dropoff_date).toLocaleDateString('it-IT');
           setAvailabilityError(
-            `❌ Questo veicolo non è disponibile per le date selezionate. È già prenotato dal ${conflictStart} al ${conflictEnd}. Per favore scegli date diverse.`
+            `Questo veicolo non è disponibile per le date selezionate. È già prenotato dal ${conflictStart} al ${conflictEnd}. Per favore scegli date diverse.`
           );
         }
       } catch (error) {
@@ -1083,7 +1083,7 @@ setIsProcessing(false);
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         Data di ritiro *
                         {formData.pickupDate && (
-                          <span className="ml-2 text-xs text-green-400">✓ Selezionata</span>
+                          <span className="ml-2 text-xs text-green-400">Selezionata</span>
                         )}
                       </label>
                       <input
@@ -1115,7 +1115,7 @@ setIsProcessing(false);
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         Ora di ritiro *
                         {formData.pickupTime && (
-                          <span className="ml-2 text-xs text-green-400">✓ {formData.pickupTime}</span>
+                          <span className="ml-2 text-xs text-green-400">{formData.pickupTime}</span>
                         )}
                       </label>
                       <select
@@ -1152,7 +1152,7 @@ setIsProcessing(false);
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         Data di riconsegna *
                         {formData.returnDate && (
-                          <span className="ml-2 text-xs text-green-400">✓ Selezionata</span>
+                          <span className="ml-2 text-xs text-green-400">Selezionata</span>
                         )}
                       </label>
                       <input
@@ -1211,7 +1211,7 @@ setIsProcessing(false);
                           className="w-full bg-gray-700 border-2 border-gray-600 rounded-md px-3 py-2 text-white text-sm cursor-not-allowed opacity-75"
                         />
                         <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                          <span className="text-gray-400">🔒</span>
+                          <span className="text-gray-400"></span>
                         </div>
                       </div>
                       <p className="text-xs text-gray-400 mt-1">Ritiro - 1h30 (automatico)</p>
@@ -1289,9 +1289,9 @@ setIsProcessing(false);
             <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-4">C. AUTOMATIC VALIDATION AND CALCULATION</h3>
               <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 space-y-2">
-                <p>✓ Età conducente: {driverAgeLocal || '--'} anni</p>
-                <p>✓ Anzianità patente: {licenseYearsLocal || '--'} anni</p>
-                {licenseYearsLocal < 2 && formData.licenseIssueDate && <p className="text-red-500 font-bold">❌ ATTENZIONE: È richiesta una patente con almeno 2 anni di anzianità per noleggiare.</p>}
+                <p>Età conducente: {driverAgeLocal || '--'} anni</p>
+                <p>Anzianità patente: {licenseYearsLocal || '--'} anni</p>
+                {licenseYearsLocal < 2 && formData.licenseIssueDate && <p className="text-red-500 font-bold">ATTENZIONE: È richiesta una patente con almeno 2 anni di anzianità per noleggiare.</p>}
               </div>
             </section>
 
@@ -1405,7 +1405,7 @@ setIsProcessing(false);
                         </div>
                         <div className="ml-7 text-sm text-gray-400 mt-1">
                           <p>{getTranslated(opt.description)}</p>
-                          {!opt.eligible && <p className="text-red-400 text-xs mt-1">❌ Non disponibile.</p>}
+                          {!opt.eligible && <p className="text-red-400 text-xs mt-1">Non disponibile.</p>}
                         </div>
                         {!opt.eligible && opt.tooltip && (
                           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-2 py-1 bg-black text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
@@ -1470,7 +1470,7 @@ setIsProcessing(false);
               <div className="mb-4 p-4 bg-green-900/20 border border-green-600 rounded-lg">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-green-300 font-semibold">✓ Km inclusi GRATIS nel noleggio</p>
+                    <p className="text-green-300 font-semibold">Km inclusi GRATIS nel noleggio</p>
                     <p className="text-xs text-green-200 mt-1">Basato sulla durata del noleggio</p>
                   </div>
                   <div className="text-right">
@@ -1711,7 +1711,7 @@ setIsProcessing(false);
                   <p>Principale: {formData.firstName} {formData.lastName}</p>
                   <p className="text-xs text-gray-400">{formData.email} - {formData.phone}</p>
                   <p className="text-xs text-gray-400">{driverAge} anni - Patente: {licenseYears} anni</p>
-                  {(formData.licenseImage || formData.idImage) && <p className="text-xs text-green-400">✓ Documenti caricati</p>}
+                  {(formData.licenseImage || formData.idImage) && <p className="text-xs text-green-400">Documenti caricati</p>}
                   {formData.addSecondDriver && (
                     <div className="mt-2">
                       <p>Secondo: {formData.secondDriver.firstName} {formData.secondDriver.lastName}</p>
@@ -1723,8 +1723,8 @@ setIsProcessing(false);
                   <p className="font-bold text-base text-white mb-2">ASSICURAZIONE E SERVIZI</p>
                   <hr className="border-gray-600 mb-2"/>
                   <p>Assicurazione: {getTranslated(insuranceOptions.find(i => i.id === formData.insuranceOption)?.label)}</p>
-                  <p>✓ Lavaggio completo obbligatorio</p>
-                  {formData.addSecondDriver && <p>✓ Secondo guidatore</p>}
+                  <p>Lavaggio completo obbligatorio</p>
+                  {formData.addSecondDriver && <p>Secondo guidatore</p>}
                 </div>
 
                 <div>
@@ -1935,7 +1935,7 @@ setIsProcessing(false);
                   disabled={isProcessing || !formData.agreesToTerms || !formData.agreesToPrivacy || !formData.confirmsDocuments}
                   className="px-4 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed"
                 >
-                  {isProcessing ? 'Processing...' : '✓ CONFERMA PRENOTAZIONE'}
+                  {isProcessing ? 'Processing...' : 'CONFERMA PRENOTAZIONE'}
                 </button>
               )}
             </div>

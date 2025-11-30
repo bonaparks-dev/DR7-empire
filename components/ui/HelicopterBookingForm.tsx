@@ -183,7 +183,7 @@ const HelicopterBookingForm: React.FC = () => {
     }
     msg += `• Assistenza bagagli: ${formData.needsLuggageAssistance === 'yes' ? 'Sì' : 'No'}\n\n`;
 
-    msg += `💳 6. CONDIZIONI ECONOMICHE E AMMINISTRATIVE\n`;
+    msg += `6. CONDIZIONI ECONOMICHE E AMMINISTRATIVE\n`;
     msg += `• Tipo fatturazione: ${formData.billingType === 'company' ? 'Società' : 'Persona fisica'}\n`;
     if (formData.vatNumber) {
       msg += `• P.IVA: ${formData.vatNumber}\n`;
@@ -197,7 +197,7 @@ const HelicopterBookingForm: React.FC = () => {
     msg += `• IVA: ${formData.vatIncluded === 'yes' ? 'Inclusa' : 'Esclusa'}\n`;
     msg += `• Contratto sub-noleggio: ${formData.needsContract === 'yes' ? 'Sì' : 'No'}\n\n`;
 
-    msg += `🔒 7. SERVIZI OPZIONALI O PREMIUM\n`;
+    msg += `7. SERVIZI OPZIONALI O PREMIUM\n`;
     msg += `• Assicurazione full risk: ${formData.needsInsurance === 'yes' ? 'Sì' : 'No'}\n`;
     msg += `• Sicurezza privata: ${formData.needsSecurity === 'yes' ? 'Sì' : 'No'}\n`;
     msg += `• Pernottamento equipaggio: ${formData.needsCrewAccommodation === 'yes' ? 'Sì' : 'No'}\n`;
@@ -857,7 +857,7 @@ const HelicopterBookingForm: React.FC = () => {
         {/* 6. Economic & Administrative */}
         <div className="bg-zinc-900/50 p-6 rounded-lg border border-zinc-800">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            💳 6. Condizioni Economiche e Amministrative
+            6. Condizioni Economiche e Amministrative
           </h3>
           <div className="space-y-4">
             <div>
@@ -944,7 +944,7 @@ const HelicopterBookingForm: React.FC = () => {
         {/* 7. Optional Services */}
         <div className="bg-zinc-900/50 p-6 rounded-lg border border-zinc-800">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            🔒 7. Servizi Opzionali o Premium
+            7. Servizi Opzionali o Premium
           </h3>
           <div className="space-y-4">
             <div>
@@ -1036,7 +1036,7 @@ const HelicopterBookingForm: React.FC = () => {
           type="submit"
           className="w-full bg-white hover:bg-gray-200 text-black font-semibold py-3 rounded-md transition text-lg"
         >
-          Invia Richiesta via WhatsApp 📱
+          Invia Richiesta via WhatsApp
         </button>
 
         <p className="text-xs text-center text-zinc-400">
