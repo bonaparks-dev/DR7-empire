@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { XIcon } from '../icons/Icons';
 
 const LotteriaPopup: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -61,7 +60,7 @@ const LotteriaPopup: React.FC = () => {
               className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors z-10"
               aria-label="Close popup"
             >
-              <XIcon className="w-6 h-6" />
+              
             </button>
 
             {/* Content */}

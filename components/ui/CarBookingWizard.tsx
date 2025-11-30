@@ -7,7 +7,6 @@ import { supabase } from '../../supabaseClient';
 import { PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, INSURANCE_ELIGIBILITY, URBAN_INSURANCE_OPTIONS, URBAN_INSURANCE_ELIGIBILITY } from '../../constants';
 import type { Booking, RentalItem } from '../../types';
 import { Link } from 'react-router-dom';
-import { XIcon } from '../icons/Icons';
 import DocumentUploader from './DocumentUploader';
 import {
   getUnlimitedKmOptions,
@@ -1076,7 +1075,7 @@ setIsProcessing(false);
                 {/* Pickup Date & Time */}
                 <div className="p-4 rounded-lg border border-gray-700 bg-gray-800/30">
                   <h4 className="text-white font-semibold mb-3 flex items-center">
-                    <span className="mr-2">📅</span> Ritiro del veicolo
+                    <span className="mr-2"></span> Ritiro del veicolo
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -1145,7 +1144,7 @@ setIsProcessing(false);
                 {/* Return Date & Time */}
                 <div className="p-4 rounded-lg border border-gray-700 bg-gray-800/30">
                   <h4 className="text-white font-semibold mb-3 flex items-center">
-                    <span className="mr-2">📅</span> Riconsegna del veicolo
+                    <span className="mr-2"></span> Riconsegna del veicolo
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -1194,7 +1193,7 @@ setIsProcessing(false);
                         <p className="text-xs text-gray-400 mt-1">Seleziona prima la data di ritiro</p>
                       )}
                       <p className="text-xs text-yellow-400 mt-1 flex items-center">
-                        <span className="mr-1">ℹ️</span> Chiusi la domenica - non è possibile riconsegnare
+                        <span className="mr-1"></span> Chiusi la domenica - non è possibile riconsegnare
                       </p>
                     </div>
                     <div>
@@ -1748,7 +1747,7 @@ setIsProcessing(false);
                   <details className="group">
                     <summary className="cursor-pointer text-sm text-gray-300 hover:text-white flex items-center gap-2 font-semibold">
                       <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
-                      ℹ️ Maggiori informazioni
+                      Maggiori informazioni
                     </summary>
                     <div className="mt-3 pl-4 space-y-3 border-l-2 border-gray-600">
                       <div>
@@ -1804,7 +1803,7 @@ setIsProcessing(false);
           className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
           aria-label="Close"
         >
-          <XIcon className="w-6 h-6" />
+          
         </button>
         <h2 className="text-2xl font-bold text-white mb-4">Accesso Richiesto</h2>
         <p className="text-gray-300 mb-6">Devi effettuare l'accesso o registrarti per poter completare una prenotazione.</p>
@@ -1906,7 +1905,7 @@ setIsProcessing(false);
                   className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
                   aria-label="Close"
                 >
-                  <XIcon className="w-6 h-6" />
+                  
                 </button>
                 {renderStepContent()}
               </motion.div>

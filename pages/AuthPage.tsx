@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
-import { EyeIcon, EyeSlashIcon } from '../components/icons/Icons';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
@@ -76,7 +75,7 @@ const AuthPage: React.FC = () => {
               <input type="email" placeholder={t('Email_Address')} value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white placeholder-gray-400"/>
               <div className="relative">
                 <input type={showPassword ? 'text' : 'password'} placeholder={t('Password')} value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white placeholder-gray-400"/>
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400">{showPassword ? <EyeSlashIcon className="w-5 h-5"/> : <EyeIcon className="w-5 h-5"/>}</button>
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400">{showPassword ?  : }</button>
               </div>
               <div className="text-right text-sm">
                 <Link to="/forgot-password" className="font-medium text-white hover:text-gray-300">{t('Forgot_Password')}</Link>

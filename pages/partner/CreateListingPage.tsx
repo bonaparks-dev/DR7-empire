@@ -220,7 +220,7 @@ const Step3 = ({ images, onImageUpload, onRemoveImage }: any) => {
         <div>
             <label ref={dropRef} onDragEnter={handleDragIn} onDragLeave={handleDragOut} onDragOver={handleDrag} onDrop={handleDrop} className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${isDragging ? 'border-white bg-gray-700/50' : 'border-gray-600 bg-gray-800/50 hover:bg-gray-700/50'}`}>
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <UploadIcon className="w-8 h-8 mb-4 text-gray-400" />
+                    
                     <p className="mb-2 text-sm text-gray-400"><span className="font-semibold text-white">{t('Drag_and_drop_or_click')}</span></p>
                     <p className="text-xs text-gray-500">{t('Upload_up_to_10_photos')}</p>
                 </div>
@@ -233,7 +233,7 @@ const Step3 = ({ images, onImageUpload, onRemoveImage }: any) => {
                         <motion.div key={index} layout initial={{scale:0.5, opacity: 0}} animate={{scale:1, opacity:1}} exit={{scale:0.5, opacity: 0}} className="relative aspect-square">
                             <img src={img} alt={`preview ${index}`} className="w-full h-full object-cover rounded-md" />
                             <button type="button" onClick={() => onRemoveImage(index)} className="absolute -top-2 -right-2 bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold hover:bg-red-500">
-                                <XIcon className="w-4 h-4"/>
+                                
                             </button>
                         </motion.div>
                     ))}

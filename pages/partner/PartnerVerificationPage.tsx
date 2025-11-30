@@ -5,7 +5,6 @@ import { Button } from '../../components/ui/Button';
 // FIX: Import AnimatePresence from framer-motion
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircleIcon, ClockIcon } from '../../components/icons/Icons';
 
 const VerificationForm: React.FC = () => {
   const { user, updateUser } = useAuth();
@@ -111,7 +110,7 @@ const VerifiedView: React.FC = () => {
     return (
         <div className="bg-green-900/30 border border-green-400/40 rounded-lg p-8 text-center flex flex-col items-center">
             <div className="w-16 h-16 bg-green-500/20 text-green-300 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircleIcon className="w-10 h-10" />
+                
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">{t('Verification_Status_Verified')}</h2>
             <p className="text-green-200/80 max-w-md mx-auto">{t('Verification_Status_Verified_Desc')}</p>
@@ -134,7 +133,7 @@ const PendingView: React.FC = () => {
     return (
         <div className="bg-yellow-900/30 border border-yellow-400/40 rounded-lg p-8 text-center flex flex-col items-center">
             <div className="w-16 h-16 bg-yellow-500/20 text-yellow-300 rounded-full flex items-center justify-center mx-auto mb-6">
-                <ClockIcon className="w-9 h-9" />
+                
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">{t('Verification_Status_Pending')}</h2>
             <p className="text-yellow-200/80 max-w-md mx-auto mb-8">{t('Verification_Status_Pending_Desc')}</p>

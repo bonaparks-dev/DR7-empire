@@ -1,5 +1,4 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { StarIcon } from '../icons/Icons';
 import { useTranslation } from '../../hooks/useTranslation';
 
 type Review = {

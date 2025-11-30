@@ -6,7 +6,6 @@ import { useCurrency } from '../../contexts/CurrencyContext';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../supabaseClient';
 import type { Booking } from '../../types';
-import { XIcon } from '../icons/Icons';
 
 const BookingModal: React.FC = () => {
   const { isBookingOpen, closeBooking, bookingItem, bookingCategory } = useBooking();
@@ -169,7 +168,7 @@ const BookingModal: React.FC = () => {
               className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors z-10"
               aria-label={t('Close')}
             >
-              <XIcon className="w-6 h-6" />
+              
             </button>
 
             {!isConfirmed ? (
@@ -216,7 +215,7 @@ const BookingModal: React.FC = () => {
                           required
                           className="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm text-white focus:ring-white focus:border-white"
                         />
-                        <p className="text-xs text-yellow-400 mt-1">ℹ️ Chiusi la domenica - non è possibile riconsegnare</p>
+                        <p className="text-xs text-yellow-400 mt-1">Chiusi la domenica - non è possibile riconsegnare</p>
                       </div>
 
                       <div>

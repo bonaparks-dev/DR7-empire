@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XIcon, BotIcon, MessageCircleIcon, SendIcon } from '../icons/Icons';
 import { Link } from 'react-router-dom';
 
 interface Message {
@@ -210,7 +209,7 @@ const DR7AIChat: React.FC<DR7AIChatProps> = ({ isOpen, onClose }) => {
               onClick={onClose}
               className="text-black hover:text-gray-700 transition-colors p-2 rounded-full hover:bg-black/10"
             >
-              <XIcon className="w-5 h-5" />
+              
             </button>
           </div>
 
@@ -292,7 +291,7 @@ const DR7AIChat: React.FC<DR7AIChatProps> = ({ isOpen, onClose }) => {
                 disabled={!input.trim() || isLoading}
                 className="bg-white text-black p-3 rounded-full hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <SendIcon className="w-5 h-5" />
+                
               </button>
             </div>
           </div>

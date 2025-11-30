@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useVerification } from '../../hooks/useVerification';
 import { useTranslation } from '../../hooks/useTranslation';
-import { XIcon, UsersIcon, ShieldIcon } from '../icons/Icons';
 import { Button } from './Button';
 
 const VerificationModal: React.FC = () => {
@@ -64,12 +63,12 @@ const VerificationModal: React.FC = () => {
                         className="relative bg-gray-900/80 border border-gray-700 rounded-lg shadow-2xl shadow-black/50 w-full max-w-md text-center p-8"
                     >
                         <button onClick={closeModal} className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors z-10" aria-label={t('Close')}>
-                            <XIcon className="w-6 h-6" />
+                            
                         </button>
                         
                         {IconComponent && (
                             <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-700">
-                                <IconComponent className="w-8 h-8 text-white" />
+                                
                             </div>
                         )}
                         

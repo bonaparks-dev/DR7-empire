@@ -81,7 +81,7 @@ const CarWashBookingPage: React.FC = () => {
   // Log bookings for debugging
   useEffect(() => {
     console.log('🔍 Existing bookings from hook:', existingBookings);
-    console.log('📅 Selected date:', formData.appointmentDate);
+    console.log('Selected date:', formData.appointmentDate);
   }, [existingBookings, formData.appointmentDate]);
 
   // Enforce min date on mount and update for mobile browsers

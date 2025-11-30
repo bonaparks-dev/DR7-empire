@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Link } from 'react-router-dom';
-import { TicketIcon } from '../../components/icons/Icons';
 import type { CommercialOperationTicket } from '../../types';
 import TicketDisplay from '../../components/ui/TicketDisplay';
 import { Button } from '../../components/ui/Button';

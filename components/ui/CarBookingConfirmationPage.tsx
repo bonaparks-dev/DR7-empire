@@ -3,7 +3,6 @@ import { useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import { PICKUP_LOCATIONS } from '../../constants';
-import { CheckCircleIcon } from '../icons/Icons';
 
 const CarBookingConfirmationPage: React.FC = () => {
   const navigate = useNavigate();
@@ -37,7 +36,7 @@ const CarBookingConfirmationPage: React.FC = () => {
       <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800 text-white max-w-4xl mx-auto">
         <div className="text-center mb-8">
           <div className="w-20 h-20 bg-green-500/20 text-green-300 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircleIcon className="w-12 h-12" />
+            
           </div>
           <h1 className="text-4xl font-bold text-white">PRENOTAZIONE CONFERMATA!</h1>
           <p className="text-gray-300 mt-2">Grazie per la tua prenotazione!</p>

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../hooks/useTranslation';
 import { supabase } from '../../supabaseClient';
-import { CalendarIcon } from '../../components/icons/Icons';
 import { Link } from 'react-router-dom';
 
 interface Booking {
@@ -108,7 +107,7 @@ const MyBookings = () => {
     <div className="bg-gray-900/50 border border-gray-800 rounded-lg">
       <div className="p-6 border-b border-gray-800">
         <div className="flex items-center gap-3 mb-1">
-          <CalendarIcon className="w-6 h-6 text-white" />
+          
           <h2 className="text-xl font-bold text-white">{t('My_Bookings')}</h2>
         </div>
         <p className="text-sm text-gray-400 mt-1">
@@ -223,7 +222,7 @@ const MyBookings = () => {
           </div>
         ) : (
           <div className="text-center py-12 border-2 border-dashed border-gray-700 rounded-lg">
-            <CalendarIcon className="w-12 h-12 mx-auto text-gray-600 mb-4" />
+            
             <h3 className="text-lg font-semibold text-white">
               {lang === 'it'
                 ? 'Nessuna prenotazione ancora'

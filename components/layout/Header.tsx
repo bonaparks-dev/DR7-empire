@@ -3,7 +3,6 @@ import { NavLink, Link } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { RENTAL_CATEGORIES } from '../../constants';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MenuIcon, XIcon, UsersIcon, SignOutIcon, CogIcon } from '../icons/Icons';
 import { useAuth } from '../../hooks/useAuth';
 
 const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
@@ -74,7 +73,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                 aria-label="Close menu"
                 className="absolute top-6 right-6 text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-800"
               >
-                <XIcon className="w-6 h-6" />
+                
               </button>
             </div>
 
@@ -234,14 +233,14 @@ const Header: React.FC = () => {
                       user.role === 'business' ? t('Partner_Dashboard') : t('My_Account')
                     }
                   >
-                    <CogIcon className="w-5 h-5" />
+                    
                   </Link>
                   <button
                     onClick={logout}
                     className="hidden md:flex items-center justify-center w-9 h-9 bg-gray-800/70 border border-gray-700 rounded-full text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
                     title={t('Sign_Out')}
                   >
-                    <SignOutIcon className="w-5 h-5" />
+                    
                   </button>
                 </motion.div>
               ) : (

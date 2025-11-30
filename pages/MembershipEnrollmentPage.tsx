@@ -5,7 +5,6 @@ import { useTranslation } from '../hooks/useTranslation';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { useAuth } from '../hooks/useAuth';
 import { MEMBERSHIP_TIERS, CRYPTO_ADDRESSES } from '../constants';
-import { CreditCardIcon, CryptoIcon } from '../components/icons/Icons';
 import type { Stripe, StripeCardElement } from '@stripe/stripe-js';
 
 // Safely access the Stripe publishable key from Vite's environment variables.
@@ -182,8 +181,8 @@ const MembershipEnrollmentPage: React.FC = () => {
                     <form onSubmit={handleConfirm} className="bg-gray-900/50 p-6 rounded-lg border border-gray-800">
                         <h2 className="text-xl font-bold text-white mb-4">{t('Payment')}</h2>
                         <div className="flex border-b border-gray-700 mb-6">
-                            <button type="button" onClick={() => setPaymentMethod('stripe')} className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 ${paymentMethod === 'stripe' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}><CreditCardIcon className="w-5 h-5"/>{t('Credit_Card')}</button>
-                            <button type="button" onClick={() => setPaymentMethod('crypto')} className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 ${paymentMethod === 'crypto' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}><CryptoIcon className="w-5 h-5"/>{t('Cryptocurrency')}</button>
+                            <button type="button" onClick={() => setPaymentMethod('stripe')} className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 ${paymentMethod === 'stripe' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}>{t('Credit_Card')}</button>
+                            <button type="button" onClick={() => setPaymentMethod('crypto')} className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 ${paymentMethod === 'crypto' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}>{t('Cryptocurrency')}</button>
                         </div>
 
                         {paymentMethod === 'stripe' ? (

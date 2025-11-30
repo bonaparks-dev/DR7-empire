@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { CheckCircleIcon } from '../components/icons/Icons';
 import { Button } from '../components/ui/Button';
 import type { Booking } from '../types';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -137,7 +136,7 @@ const ConfirmationSuccessPage: React.FC = () => {
             className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg shadow-2xl shadow-black/50 p-8"
           >
             <div className="w-20 h-20 bg-green-500/20 text-green-300 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircleIcon className="w-12 h-12" />
+              
             </div>
             <h1 className="text-3xl font-bold mb-2">{t('Booking_Confirmed')}</h1>
             <p className="mb-6 text-gray-300">{t('Booking_Confirmation_Sent')}</p>
@@ -174,7 +173,7 @@ const ConfirmationSuccessPage: React.FC = () => {
           className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg shadow-2xl shadow-black/50 p-8"
         >
           <div className="w-20 h-20 bg-green-500/20 text-green-300 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircleIcon className="w-12 h-12" />
+            
           </div>
           <h1 className="text-3xl font-bold mb-4">{t('Email_Confirmed')}</h1>
           <p className="mb-8 text-gray-300">{message}</p>

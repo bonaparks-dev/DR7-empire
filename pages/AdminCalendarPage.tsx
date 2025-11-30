@@ -260,7 +260,7 @@ const AdminCalendarPage: React.FC = () => {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-4xl font-bold text-white mb-2">
-              📅 {lang === 'it' ? 'Calendario Prenotazioni' : 'Bookings Calendar'}
+              {lang === 'it' ? 'Calendario Prenotazioni' : 'Bookings Calendar'}
             </h1>
             <p className="text-gray-400">
               {lang === 'it'

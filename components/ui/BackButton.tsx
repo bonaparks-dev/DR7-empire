@@ -1,6 +1,5 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeftIcon } from '../icons/Icons';
 import { useTranslation } from '../../hooks/useTranslation';
 
 interface BackButtonProps {
@@ -27,7 +26,7 @@ const BackButton: React.FC<BackButtonProps> = ({ to }) => {
       onClick={handleBack}
       className="inline-flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors font-semibold"
     >
-      <ArrowLeftIcon className="w-4 h-4" />
+      
       <span>{t('Back')}</span>
     </button>
   );

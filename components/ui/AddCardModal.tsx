@@ -4,7 +4,6 @@ import { useStripe, useElements, CardElement } from '@stripe/react-stripe-js';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Button } from './Button';
-import { XIcon, CreditCardIcon } from '../icons/Icons';
 import type { StripeCardElementOptions } from '@stripe/stripe-js';
 
 interface AddCardModalProps {
@@ -151,11 +150,11 @@ const AddCardModal: React.FC<AddCardModalProps> = ({
           >
             <div className="flex items-center justify-between p-6 border-b border-gray-700">
                 <h2 className="text-xl font-bold text-white flex items-center">
-                    <CreditCardIcon className="w-6 h-6 mr-3" />
+                    
                     {t('Add_New_Card')}
                 </h2>
                 <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors" aria-label={t('Close')}>
-                    <XIcon className="w-6 h-6" />
+                    
                 </button>
             </div>
 

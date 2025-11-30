@@ -257,7 +257,7 @@ const AviationQuoteRequestPage: React.FC = () => {
       >
         <div className="text-center mb-10">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            ✈️ Richiedi un Preventivo Jet Privato
+            Richiedi un Preventivo Jet Privato
           </h1>
           <p className="text-xl text-gray-400">
             Voli Privati su Misura
@@ -1104,7 +1104,7 @@ const AviationQuoteRequestPage: React.FC = () => {
             disabled={loading}
             className="w-full bg-white text-black font-bold py-4 px-6 rounded-lg hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg"
           >
-            {loading ? 'Invio in corso...' : '✈️ Richiedi Preventivo Gratuito'}
+            {loading ? 'Invio in corso...' : 'Richiedi Preventivo Gratuito'}
           </button>
 
           <p className="text-xs text-center text-gray-500">
@@ -1121,7 +1121,6 @@ const AviationQuoteRequestPage: React.FC = () => {
             <div className="text-xs text-gray-400">Preventivo Gratuito</div>
           </div>
           <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-            <div className="text-2xl mb-2">✈️</div>
             <div className="text-xs text-gray-400">Voli Personalizzati</div>
           </div>
         </div>

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XIcon } from '../icons/Icons';
 
 interface TicketPurchase {
   id: string;

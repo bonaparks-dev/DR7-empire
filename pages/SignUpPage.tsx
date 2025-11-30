@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
-import { EyeIcon, EyeSlashIcon } from '../components/icons/Icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
@@ -595,7 +594,7 @@ const SignUpPage: React.FC = () => {
                       className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400"
                       style={{ top: '32px' }}
                     >
-                      {showPassword ? <EyeSlashIcon className="w-5 h-5"/> : <EyeIcon className="w-5 h-5"/>}
+                      {showPassword ?  : }
                     </button>
                   </div>
                   {errors.password ? (

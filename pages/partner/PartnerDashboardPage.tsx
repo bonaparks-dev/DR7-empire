@@ -81,7 +81,7 @@ const PartnerDashboardPage: React.FC = () => {
             <div className="absolute -top-4 -right-4 w-20 h-20 bg-gray-700/20 rounded-full blur-2xl"></div>
             <div className="relative z-10">
                 <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-700">
-                    <Icon className="w-6 h-6 text-white" />
+                    
                 </div>
                 <h3 className="text-lg font-bold text-white">{t(title as any)}</h3>
                 <p className="text-sm text-gray-400 mt-2">{t(description as any)}</p>
@@ -112,7 +112,7 @@ const PartnerDashboardPage: React.FC = () => {
                     {verificationStatus !== 'verified' && (
                         <motion.div initial={{opacity:0, y: -10}} animate={{opacity:1, y: 0}} className="bg-yellow-900/30 border border-yellow-400/40 rounded-lg p-6 mb-8 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
                            <div className="flex items-center gap-4">
-                                <ShieldIcon className="w-8 h-8 text-yellow-300 flex-shrink-0"/>
+                                
                                 <div>
                                     <h3 className="font-bold text-white">{t('Account_Status')}: <StatusBadge status={verificationStatus} /></h3>
                                     <p className="text-sm text-yellow-200/80">{t('Verification_Required_Partner')}</p>
@@ -128,13 +128,13 @@ const PartnerDashboardPage: React.FC = () => {
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                             <h2 className="text-2xl font-bold text-white">{t('Your_Listings')}</h2>
                             <Button as={Link} to="/partner/listings/new" size="sm" disabled={verificationStatus !== 'verified'} title={verificationStatus !== 'verified' ? t('Verification_Required_Partner') : ''}>
-                                <PlusIcon className="w-4 h-4 mr-2" />
+                                
                                 {t('Create_New_Listing')}
                             </Button>
                         </div>
                         {myListings.length === 0 ? (
                             <div className="text-center py-12 border-2 border-dashed border-gray-700 rounded-lg">
-                                <FileTextIcon className="w-12 h-12 mx-auto text-gray-600 mb-4" />
+                                
                                 <h3 className="text-lg font-semibold text-white">{t('No_listings_yet')}</h3>
                                 <p className="text-gray-400 mt-1">{t('Create_your_first_listing_to_get_started')}</p>
                             </div>
@@ -157,7 +157,7 @@ const PartnerDashboardPage: React.FC = () => {
                     <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 md:p-8 mb-12">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                             <div className="flex items-center gap-3">
-                                <CalendarIcon className="w-6 h-6 text-white" />
+                                
                                 <h2 className="text-2xl font-bold text-white">{t('My_Bookings')}</h2>
                             </div>
                             <Button as={Link} to="/account/bookings" size="sm" variant="outline">
@@ -166,7 +166,7 @@ const PartnerDashboardPage: React.FC = () => {
                         </div>
                         {bookings.length === 0 ? (
                             <div className="text-center py-12 border-2 border-dashed border-gray-700 rounded-lg">
-                                <CalendarIcon className="w-12 h-12 mx-auto text-gray-600 mb-4" />
+                                
                                 <h3 className="text-lg font-semibold text-white">{t('No_bookings_yet')}</h3>
                                 <p className="text-gray-400 mt-1">{t('Your_bookings_will_appear_here')}</p>
                             </div>
@@ -207,7 +207,7 @@ const PartnerDashboardPage: React.FC = () => {
                     <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 md:p-8 mb-12">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                             <div className="flex items-center gap-3">
-                                <TicketIcon className="w-6 h-6 text-white" />
+                                
                                 <h2 className="text-2xl font-bold text-white">{t('My_Tickets')}</h2>
                             </div>
                             <Button as={Link} to="/commercial-operation" size="sm" variant="outline">
@@ -216,7 +216,7 @@ const PartnerDashboardPage: React.FC = () => {
                         </div>
                         {tickets.length === 0 ? (
                             <div className="text-center py-12 border-2 border-dashed border-gray-700 rounded-lg">
-                                <TicketIcon className="w-12 h-12 mx-auto text-gray-600 mb-4" />
+                                
                                 <h3 className="text-lg font-semibold text-white">{t('You_have_not_purchased_any_tickets_yet')}</h3>
                                 <p className="text-gray-400 mt-1">{t('Purchase_tickets_to_participate_in_the_giveaway')}</p>
                                 <Button as={Link} to="/commercial-operation" size="sm" className="mt-4">

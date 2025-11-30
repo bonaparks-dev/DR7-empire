@@ -10,7 +10,6 @@ import type { Booking, Inquiry, RentalItem } from '../types';
 import CarBookingWizard from '../components/ui/CarBookingWizard';
 import HelicopterBookingForm from '../components/ui/HelicopterBookingForm';
 
-import { CreditCardIcon, XIcon } from '../components/icons/Icons';
 
 
 // Safely access the Stripe publishable key from Vite's environment variables.
@@ -380,7 +379,7 @@ const BookingPage: React.FC = () => {
     const paymentStepContent = (
       <div>
         <div className="flex border-b border-gray-700">
-          <button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'stripe'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors flex items-center justify-center gap-2 text-white border-b-2 border-white`}><CreditCardIcon className="w-5 h-5"/>{t('Credit_Card')}</button>
+          <button type="button" onClick={() => setFormData(p => ({...p, paymentMethod: 'stripe'}))} className={`flex-1 py-2 text-sm font-semibold transition-colors flex items-center justify-center gap-2 text-white border-b-2 border-white`}>{t('Credit_Card')}</button>
         </div>
         <div className="mt-6">
           <div className="space-y-4">

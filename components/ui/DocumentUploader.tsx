@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { XIcon, FileTextIcon } from '../icons/Icons';
 
 interface DocumentUploaderProps {
   onFileChange: (file: File | null) => void;
@@ -50,14 +49,14 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onFileChange, title
           {preview ? (
             <img src={preview} alt="Preview" className="h-12 w-12 object-cover rounded" />
           ) : (
-            <FileTextIcon className="h-10 w-10 text-gray-400" />
+            
           )}
           <div className="flex-grow text-sm text-gray-300">
             <p className="truncate">{file.name}</p>
             <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(2)} KB</p>
           </div>
           <button type="button" onClick={handleRemove} className="p-1 text-gray-400 hover:text-white">
-            <XIcon className="w-5 h-5" />
+            
           </button>
         </div>
       ) : (

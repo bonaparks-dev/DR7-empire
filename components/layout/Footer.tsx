@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
-import { InstagramIcon, FacebookIcon, TwitterIcon, YoutubeIcon, TiktokIcon, WhatsAppIcon } from '../icons/Icons';
 import ReviewsSection from '../../sections/ReviewsSection';
 
 const Footer: React.FC = () => {
@@ -33,10 +32,10 @@ const Footer: React.FC = () => {
             <p className="text-sm mb-4">Entra nel nostro ecosistema globale e ricevi contenuti esclusivi, priorità sulle novità e aggiornamenti riservati ai membri del DR7 Empire.</p>
             <div className="flex space-x-4">
               <a href="https://www.instagram.com/dubai_rent_7.0_s_p_a_" aria-label="Instagram" className="text-gray-400 hover:text-white transition-colors">
-                <InstagramIcon className="w-7 h-7" />
+                
               </a>
               <a href="https://www.tiktok.com/@dr7luxuryempire" aria-label="Tiktok" className="text-gray-400 hover:text-white transition-colors">
-                <TiktokIcon className="w-7 h-7" />
+                
               </a>
             </div>
           </div>
@@ -74,7 +73,7 @@ const Footer: React.FC = () => {
             className="inline-flex items-center space-x-3 text-lg text-gray-300 hover:text-white transition-colors group mb-6"
             aria-label="Contact us on WhatsApp"
           >
-            <WhatsAppIcon className="w-8 h-8" />
+            
             <span className="font-semibold tracking-wider">+39 345 790 5205</span>
           </a>
 

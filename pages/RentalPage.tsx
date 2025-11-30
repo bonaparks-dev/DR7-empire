@@ -6,7 +6,6 @@ import RentalCard from '../components/ui/RentalCard';
 import { useTranslation } from '../hooks/useTranslation';
 import { useBooking } from '../hooks/useBooking';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PaperAirplaneIcon } from '../components/icons/Icons';
 import { useVerification } from '../hooks/useVerification';
 
 interface RentalPageProps {
@@ -174,7 +173,6 @@ const JetSearchPage: React.FC = () => {
                             </div>
                             <div className="lg:col-span-1">
                                 <button onClick={handleSearch} className="w-full bg-white text-black font-bold py-3 px-4 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center">
-                                    <PaperAirplaneIcon className="w-5 h-5 mr-2 -rotate-45" />
                                     {t('Search')}
                                 </button>
                             </div>
@@ -243,7 +241,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
               className="text-center mb-12"
             >
               <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                ✈️ DR7 Aviation Division
+                DR7 Aviation Division
               </h1>
               <p className="text-xl text-gray-400 mb-8">
                 Jet Privati ed Elicotteri su Misura
@@ -258,7 +256,6 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className="bg-gray-900 border border-gray-800 rounded-2xl p-8 hover:border-white transition-colors"
               >
-                <div className="text-6xl mb-6 text-center">✈️</div>
                 <h2 className="text-3xl font-bold text-white mb-4 text-center">
                   Jet Privati
                 </h2>
