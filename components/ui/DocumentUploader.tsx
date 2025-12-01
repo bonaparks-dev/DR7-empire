@@ -46,17 +46,15 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onFileChange, title
       <label className="text-base font-semibold text-white">{title}</label>
       {file ? (
         <div className="p-2 bg-gray-800 rounded-lg flex items-center space-x-3">
-          {preview ? (
+          {preview && (
             <img src={preview} alt="Preview" className="h-12 w-12 object-cover rounded" />
-          ) : (
-            
           )}
           <div className="flex-grow text-sm text-gray-300">
             <p className="truncate">{file.name}</p>
             <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(2)} KB</p>
           </div>
           <button type="button" onClick={handleRemove} className="p-1 text-gray-400 hover:text-white">
-            
+            Remove
           </button>
         </div>
       ) : (
