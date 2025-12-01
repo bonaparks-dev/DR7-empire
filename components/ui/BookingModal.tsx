@@ -6,6 +6,7 @@ import { useCurrency } from '../../contexts/CurrencyContext';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../supabaseClient';
 import type { Booking } from '../../types';
+import NewClientModal from '../NewClientModal';
 
 const BookingModal: React.FC = () => {
   const { isBookingOpen, closeBooking, bookingItem, bookingCategory } = useBooking();
@@ -20,6 +21,9 @@ const BookingModal: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [completedBooking, setCompletedBooking] = useState<Booking | null>(null);
+  const [showClientModal, setShowClientModal] = useState(false);
+  const [hasClientRecord, setHasClientRecord] = useState(false);
+  const [clientId, setClientId] = useState<string | null>(null);
 
   const today = new Date().toISOString().split('T')[0];
   const isCar = bookingCategory === 'cars';
@@ -32,6 +36,39 @@ const BookingModal: React.FC = () => {
     } else {
       setFullName('');
       setEmail('');
+    }
+  }, [user, isBookingOpen]);
+
+  // Check if user has a client record in customers_extended
+  useEffect(() => {
+    const checkClientRecord = async () => {
+      if (!user) {
+        setHasClientRecord(false);
+        setClientId(null);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('customers_extended')
+        .select('id')
+        .eq('email', user.email)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error checking client record:', error);
+        setHasClientRecord(false);
+        setClientId(null);
+      } else if (data) {
+        setHasClientRecord(true);
+        setClientId(data.id);
+      } else {
+        setHasClientRecord(false);
+        setClientId(null);
+      }
+    };
+
+    if (isBookingOpen) {
+      checkClientRecord();
     }
   }, [user, isBookingOpen]);
 
@@ -70,11 +107,65 @@ const BookingModal: React.FC = () => {
       setPickupDate('');
       setReturnDate('');
       setPhone('');
+      setShowClientModal(false);
       if (!user) {
         setFullName('');
         setEmail('');
       }
     }, 300);
+  };
+
+  const handleClientCreated = async (newClientId: string) => {
+    setClientId(newClientId);
+    setHasClientRecord(true);
+    setShowClientModal(false);
+    // Automatically submit the booking after client creation
+    if (bookingItem && totalDays > 0 && bookingCategory) {
+      if (isYacht) {
+        handleYachtQuoteRequest();
+      } else {
+        // Proceed with booking
+        const unitLabel = isCar
+          ? (totalDays === 1 ? t('Day') : t('Days'))
+          : (totalDays === 1 ? t('Night') : t('Nights'));
+
+        const newBookingData: Omit<Booking, 'bookingId'> = {
+          userId: user ? user.id : 'guest-user',
+          itemId: bookingItem.id,
+          itemName: bookingItem.name,
+          image: bookingItem.image,
+          itemCategory: bookingCategory,
+          pickupDate,
+          pickupTime: isCar ? '10:00' : '15:00',
+          returnDate,
+          returnTime: isCar ? '10:00' : '11:00',
+          duration: `${totalDays} ${unitLabel}`,
+          totalPrice,
+          currency: currency.toUpperCase() as 'USD' | 'EUR',
+          customer: { fullName, email, phone, age: 0, countryOfResidency: '' },
+          driverLicenseImage: '',
+          paymentMethod: 'stripe',
+          bookedAt: new Date().toISOString(),
+          insuranceOption: 'none',
+          extras: [],
+          pickupLocation: (bookingItem as any).location ?? '',
+        };
+
+        const { data, error } = await supabase
+          .from('bookings')
+          .insert(newBookingData)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error creating booking in modal:', error);
+          return;
+        }
+
+        setCompletedBooking(data);
+        setIsConfirmed(true);
+      }
+    }
   };
 
   const handleYachtQuoteRequest = () => {
@@ -91,6 +182,12 @@ const BookingModal: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!bookingItem || totalDays <= 0 || !bookingCategory) return;
+
+    // Check if user has a client record, if not show NewClientModal
+    if (!hasClientRecord) {
+      setShowClientModal(true);
+      return;
+    }
 
     // For yachts, just open WhatsApp with quote request
     if (isYacht) {
@@ -337,6 +434,13 @@ const BookingModal: React.FC = () => {
           </motion.div>
         </div>
       )}
+
+      {/* New Client Modal - shown when user doesn't have a client record */}
+      <NewClientModal
+        isOpen={showClientModal}
+        onClose={() => setShowClientModal(false)}
+        onClientCreated={handleClientCreated}
+      />
     </AnimatePresence>
   );
 };

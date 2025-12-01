@@ -4,7 +4,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
-import { SERVICES, ADDITIONAL_SERVICES, Service } from './CarWashServicesPage';
+import { SERVICES, Service } from './CarWashServicesPage';
 import { useCarWashAvailability } from '../hooks/useRealtimeBookings';
 import type { Stripe, StripeElements } from '@stripe/stripe-js';
 
@@ -43,8 +43,6 @@ const CarWashBookingPage: React.FC = () => {
     phone: '',
     appointmentDate: '',
     appointmentTime: '',
-    additionalService: '',
-    additionalServiceHours: 0,
     notes: ''
   });
 
@@ -545,17 +543,7 @@ const CarWashBookingPage: React.FC = () => {
   };
 
   const calculateTotal = () => {
-    let total = selectedService?.price || 0;
-
-    if (formData.additionalService && formData.additionalServiceHours > 0) {
-      const addService = ADDITIONAL_SERVICES.find(s => s.id === formData.additionalService);
-      const priceOption = addService?.prices.find(p => p.hours === Number(formData.additionalServiceHours));
-      if (priceOption) {
-        total += priceOption.price;
-      }
-    }
-
-    return total;
+    return selectedService?.price || 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -606,8 +594,6 @@ const CarWashBookingPage: React.FC = () => {
       appointment_date: adjustedDateTime.toISOString(),
       appointment_time: formData.appointmentTime,
       booking_details: {
-        additionalService: formData.additionalService,
-        additionalServiceHours: formData.additionalServiceHours,
         notes: formData.notes
       },
       status: 'confirmed',
@@ -709,7 +695,6 @@ const CarWashBookingPage: React.FC = () => {
         const customerName = formData.fullName;
         const customerPhone = formData.phone;
         const totalPrice = (data.price_total / 100).toFixed(2);
-        const additionalService = data.booking_details?.additionalService || '';
         const notes = data.booking_details?.notes || '';
 
         // Format date in Europe/Rome timezone
@@ -732,9 +717,6 @@ const CarWashBookingPage: React.FC = () => {
           `*Servizio:* ${serviceName}\n` +
           `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n`;
 
-        if (additionalService) {
-          whatsappMessage += `*Servizio Aggiuntivo:* ${additionalService}\n`;
-        }
         if (notes) {
           whatsappMessage += `*Note:* ${notes}\n`;
         }
@@ -912,53 +894,6 @@ const CarWashBookingPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Additional Services */}
-            <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
-              <h2 className="text-2xl font-bold text-white mb-6">
-                {lang === 'it' ? 'Servizio Aggiuntivo (Opzionale)' : 'Additional Service (Optional)'}
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {lang === 'it' ? 'Tipo Servizio' : 'Service Type'}
-                  </label>
-                  <select
-                    name="additionalService"
-                    value={formData.additionalService}
-                    onChange={handleChange}
-                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
-                  >
-                    <option value="">{lang === 'it' ? 'Nessuno' : 'None'}</option>
-                    {ADDITIONAL_SERVICES.map(service => (
-                      <option key={service.id} value={service.id}>
-                        {lang === 'it' ? service.name : service.nameEn}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {formData.additionalService && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      {lang === 'it' ? 'Durata' : 'Duration'}
-                    </label>
-                    <select
-                      name="additionalServiceHours"
-                      value={formData.additionalServiceHours}
-                      onChange={handleChange}
-                      className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
-                    >
-                      <option value={0}>{lang === 'it' ? 'Seleziona durata' : 'Select duration'}</option>
-                      {ADDITIONAL_SERVICES.find(s => s.id === formData.additionalService)?.prices.map(price => (
-                        <option key={price.hours} value={price.hours}>
-                          {price.duration} - €{price.price}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* Notes */}
             <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
               <h2 className="text-2xl font-bold text-white mb-6">
@@ -1037,14 +972,6 @@ const CarWashBookingPage: React.FC = () => {
                     {lang === 'it' ? selectedService?.name : selectedService?.nameEn}
                   </span>
                 </div>
-                {formData.additionalService && (
-                  <div className="flex justify-between text-sm text-gray-300 mb-2">
-                    <span>{lang === 'it' ? 'Servizio Aggiuntivo' : 'Additional Service'}:</span>
-                    <span className="text-white">
-                      {ADDITIONAL_SERVICES.find(s => s.id === formData.additionalService)?.name}
-                    </span>
-                  </div>
-                )}
                 <div className="border-t border-gray-700 my-3"></div>
                 <div className="flex justify-between text-lg font-bold text-white">
                   <span>{lang === 'it' ? 'Totale' : 'Total'}:</span>

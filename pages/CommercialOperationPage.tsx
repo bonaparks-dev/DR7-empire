@@ -8,6 +8,8 @@ import type { CommercialOperation, Prize } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import type { Stripe, StripeElements, StripeCardElement } from '@stripe/stripe-js';
 import { ImageCarousel } from '../components/ui/ImageCarousel';
+import { supabase } from '../supabaseClient';
+import NewClientModal from '../components/NewClientModal';
 
 // Safely access the Stripe publishable key from Vite's environment variables.
 // If it's not available (e.g., in a non-Vite environment), it falls back to a placeholder.
@@ -67,6 +69,9 @@ const CommercialOperationPage: React.FC = () => {
     const [isClientSecretLoading, setIsClientSecretLoading] = useState(false);
     const [stripeError, setStripeError] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [showClientModal, setShowClientModal] = useState(false);
+    const [hasClientRecord, setHasClientRecord] = useState(false);
+    const [clientId, setClientId] = useState<string | null>(null);
 
     useEffect(() => {
         if ((window as any).Stripe) {
@@ -80,6 +85,39 @@ const CommercialOperationPage: React.FC = () => {
             setElements(stripeInstance.elements());
         }
     }, []);
+
+    // Check if user has a client record in customers_extended
+    useEffect(() => {
+        const checkClientRecord = async () => {
+            if (!user || !user.email) {
+                setHasClientRecord(false);
+                setClientId(null);
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from('customers_extended')
+                .select('id')
+                .eq('email', user.email)
+                .maybeSingle();
+
+            if (error) {
+                console.error('Error checking client record:', error);
+                setHasClientRecord(false);
+                setClientId(null);
+            } else if (data) {
+                setHasClientRecord(true);
+                setClientId(data.id);
+            } else {
+                setHasClientRecord(false);
+                setClientId(null);
+            }
+        };
+
+        if (user) {
+            checkClientRecord();
+        }
+    }, [user]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -98,6 +136,13 @@ const CommercialOperationPage: React.FC = () => {
             navigate('/signin', { state: { from: location } });
             return;
         }
+
+        // Check if user has a client record
+        if (!hasClientRecord) {
+            setShowClientModal(true);
+            return;
+        }
+
         // Pre-fill email with user's account email
         if (user.email && !email) {
             setEmail(user.email);
@@ -109,6 +154,18 @@ const CommercialOperationPage: React.FC = () => {
         setShowConfirmModal(false);
         setClientSecret(null);
         setStripeError(null);
+    };
+
+    const handleClientCreated = (newClientId: string) => {
+        setClientId(newClientId);
+        setHasClientRecord(true);
+        setShowClientModal(false);
+        // Pre-fill email with user's account email
+        if (user && user.email && !email) {
+            setEmail(user.email);
+        }
+        // Automatically show the payment modal after client creation
+        setShowConfirmModal(true);
     };
 
     useEffect(() => {
@@ -472,6 +529,13 @@ const CommercialOperationPage: React.FC = () => {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* New Client Modal - shown when user doesn't have a client record */}
+            <NewClientModal
+                isOpen={showClientModal}
+                onClose={() => setShowClientModal(false)}
+                onClientCreated={handleClientCreated}
+            />
         </motion.div>
     );
 };
