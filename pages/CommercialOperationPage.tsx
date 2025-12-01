@@ -124,8 +124,7 @@ const CommercialOperationPage: React.FC = () => {
             return;
         }
 
-        // ALWAYS show NewClientModal to collect complete customer data
-        // This ensures we have all necessary information for invoicing
+        // Show NewClientModal to collect complete customer data
         setShowClientModal(true);
     };
     
