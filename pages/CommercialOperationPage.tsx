@@ -70,7 +70,6 @@ const CommercialOperationPage: React.FC = () => {
     const [stripeError, setStripeError] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [showClientModal, setShowClientModal] = useState(false);
-    const [hasClientRecord, setHasClientRecord] = useState(false);
     const [clientId, setClientId] = useState<string | null>(null);
 
     useEffect(() => {
@@ -86,38 +85,8 @@ const CommercialOperationPage: React.FC = () => {
         }
     }, []);
 
-    // Check if user has a client record in customers_extended
-    useEffect(() => {
-        const checkClientRecord = async () => {
-            if (!user || !user.email) {
-                setHasClientRecord(false);
-                setClientId(null);
-                return;
-            }
-
-            const { data, error } = await supabase
-                .from('customers_extended')
-                .select('id')
-                .eq('email', user.email)
-                .maybeSingle();
-
-            if (error) {
-                console.error('Error checking client record:', error);
-                setHasClientRecord(false);
-                setClientId(null);
-            } else if (data) {
-                setHasClientRecord(true);
-                setClientId(data.id);
-            } else {
-                setHasClientRecord(false);
-                setClientId(null);
-            }
-        };
-
-        if (user) {
-            checkClientRecord();
-        }
-    }, [user]);
+    // We always show NewClientModal now, so no need to check for existing record
+    // This prevents unnecessary Supabase queries that could fail due to network issues
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -168,7 +137,6 @@ const CommercialOperationPage: React.FC = () => {
 
     const handleClientCreated = (newClientId: string) => {
         setClientId(newClientId);
-        setHasClientRecord(true);
         setShowClientModal(false);
         // Pre-fill email with user's account email
         if (user && user.email && !email) {
