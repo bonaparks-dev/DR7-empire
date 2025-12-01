@@ -286,11 +286,11 @@ export default function NewClientModal({ isOpen, onClose, onClientCreated }: New
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-xl max-w-2xl w-full my-8 shadow-2xl">
+      <div className="bg-black rounded-xl max-w-2xl w-full my-8 shadow-2xl">
         {/* Header */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-gray-900">Nuovo Cliente</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Modulo Cliente - Dati Completi</h2>
             <button
               onClick={handleClose}
               className="text-gray-400 hover:text-gray-600 transition-colors text-3xl leading-none"
