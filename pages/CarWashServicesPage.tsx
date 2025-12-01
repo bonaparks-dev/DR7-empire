@@ -312,7 +312,7 @@ const CarWashServicesPage: React.FC = () => {
       <div className="bg-gray-900/50 py-16">
         <div className="container mx-auto px-6 max-w-4xl">
           <h2 className="text-3xl font-bold text-white mb-8 text-center">
-            🧼 DR7 LUXURY WASH – ORARI E TIPOLOGIE DI LAVAGGIO
+             DR7 LUXURY WASH – ORARI E TIPOLOGIE DI LAVAGGIO
           </h2>
 
           <div className="space-y-6 text-gray-300">
