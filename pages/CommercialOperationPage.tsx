@@ -284,7 +284,8 @@ const CommercialOperationPage: React.FC = () => {
                     fullName: fullName,
                     phone: phoneNumber,
                     quantity,
-                    paymentIntentId: paymentIntent.id
+                    paymentIntentId: paymentIntent.id,
+                    clientId: clientId
                 })
             })
             .then(res => res.json())
