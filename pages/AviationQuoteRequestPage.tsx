@@ -195,7 +195,7 @@ const AviationQuoteRequestPage: React.FC = () => {
       msg += `• Catering: ${formData.needs_catering === 'yes' ? 'Sì' + (formData.catering_details ? ' - ' + formData.catering_details : '') : 'No'}\n`;
       msg += `• Transfer a terra: ${formData.needs_ground_transfer === 'yes' ? 'Sì' + (formData.transfer_details ? ' - ' + formData.transfer_details : '') : 'No'}\n\n`;
 
-      msg += `⚙️ 5. DETTAGLI TECNICI E LOGISTICI\n`;
+      msg += `5. DETTAGLI TECNICI E LOGISTICI\n`;
       msg += `• Aeroporto noto: ${formData.knows_airport === 'yes' ? 'Sì' : 'No'}\n`;
       if (formData.airport_details) {
         msg += `• Dettagli: ${formData.airport_details}\n`;
@@ -854,7 +854,7 @@ const AviationQuoteRequestPage: React.FC = () => {
           {/* 5. Technical & Logistics */}
           <div className="bg-gray-800/50 p-6 rounded-lg border border-gray-700">
             <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-              ⚙️ 5. Dettagli Tecnici e Logistici
+              5. Dettagli Tecnici e Logistici
             </h3>
             <div className="space-y-4">
               <div>

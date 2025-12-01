@@ -264,15 +264,15 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
                 </p>
                 <div className="space-y-3 mb-8">
                   <div className="flex items-center text-gray-300">
-                    <span className="mr-2">✓</span>
+                    
                     <span>Voli nazionali ed internazionali</span>
                   </div>
                   <div className="flex items-center text-gray-300">
-                    <span className="mr-2">✓</span>
+                    
                     <span>Capacità fino a 20 passeggeri</span>
                   </div>
                   <div className="flex items-center text-gray-300">
-                    <span className="mr-2">✓</span>
+                    
                     <span>Massimo comfort e privacy</span>
                   </div>
                 </div>
@@ -300,15 +300,15 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
                 </p>
                 <div className="space-y-3 mb-8">
                   <div className="flex items-center text-gray-300">
-                    <span className="mr-2">✓</span>
+                    
                     <span>Accesso a luoghi difficili da raggiungere</span>
                   </div>
                   <div className="flex items-center text-gray-300">
-                    <span className="mr-2">✓</span>
+                    
                     <span>Trasferimenti rapidi da/per aeroporti</span>
                   </div>
                   <div className="flex items-center text-gray-300">
-                    <span className="mr-2">✓</span>
+                    
                     <span>Tour panoramici ed eventi speciali</span>
                   </div>
                 </div>

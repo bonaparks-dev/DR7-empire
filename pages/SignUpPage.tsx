@@ -594,7 +594,7 @@ const SignUpPage: React.FC = () => {
                       className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400"
                       style={{ top: '32px' }}
                     >
-                      {showPassword ?  : }
+                      {showPassword ? 'Hide' : 'Show'}
                     </button>
                   </div>
                   {errors.password ? (
