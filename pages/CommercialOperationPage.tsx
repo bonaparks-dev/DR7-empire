@@ -127,7 +127,25 @@ const CommercialOperationPage: React.FC = () => {
     });
 
     const ticketPrice = giveaway.ticketPriceEUR;
-    const totalPrice = useMemo(() => quantity * ticketPrice, [quantity, ticketPrice]);
+
+    // Calculate discounted price based on quantity
+    const calculateTotalPrice = (qty: number): number => {
+        if (qty < 10) {
+            // No discount for less than 10 tickets
+            return qty * 25;
+        } else if (qty >= 10 && qty < 100) {
+            // 22€ per ticket for 10-99 tickets
+            return qty * 22;
+        } else if (qty === 100) {
+            // Special price for exactly 100 tickets
+            return 1999;
+        } else {
+            // 20€ per ticket for more than 100 tickets
+            return qty * 20;
+        }
+    };
+
+    const totalPrice = useMemo(() => calculateTotalPrice(quantity), [quantity]);
 
     const handleQuantityChange = (amount: number) => setQuantity(prev => Math.max(1, prev + amount));
     
@@ -395,13 +413,13 @@ const CommercialOperationPage: React.FC = () => {
                                             <button onClick={() => handleQuantityChange(1)} className="w-8 h-8 sm:w-10 sm:h-10 font-bold text-white rounded-full hover:bg-white/20 transition-colors">+</button>
                                         </div>
                                         <div className="flex space-x-2 w-full sm:w-auto justify-center flex-wrap gap-2">
-                                            {[5, 10, 25, 50].map(val => (
-                                                <button 
-                                                    key={val} 
-                                                    onClick={() => setQuantity(val)} 
+                                            {[10, 25, 50, 100].map(val => (
+                                                <button
+                                                    key={val}
+                                                    onClick={() => setQuantity(val)}
                                                     className={`px-3 py-1 text-xs sm:text-sm rounded-full border transition-colors ${
-                                                        quantity === val 
-                                                            ? 'bg-white text-black border-white font-bold' 
+                                                        quantity === val
+                                                            ? 'bg-white text-black border-white font-bold'
                                                             : 'bg-black/60 border-white/60 text-white hover:border-white hover:bg-black/80'
                                                     }`}
                                                 >
@@ -412,9 +430,25 @@ const CommercialOperationPage: React.FC = () => {
                                     </div>
                                 </div>
 
+                                {/* Show discount information */}
+                                {quantity >= 10 && (
+                                    <div className="mb-4 p-3 bg-dr7-gold/20 border border-dr7-gold rounded-lg">
+                                        <p className="text-sm text-dr7-gold font-semibold text-center">
+                                            {quantity >= 10 && quantity < 100 && `Sconto applicato: ${quantity * 25 - totalPrice}€ risparmiati! (${(22).toFixed(2)}€/biglietto)`}
+                                            {quantity === 100 && `Sconto speciale applicato: ${quantity * 25 - totalPrice}€ risparmiati! (${(1999/100).toFixed(2)}€/biglietto)`}
+                                            {quantity > 100 && `Sconto applicato: ${quantity * 25 - totalPrice}€ risparmiati! (20€/biglietto)`}
+                                        </p>
+                                    </div>
+                                )}
+
                                 <div className="flex justify-between items-center text-lg sm:text-xl font-bold mb-6">
                                     <span className="text-white/80">{t('Total_Price')}</span>
-                                    <span className="text-white">{formatPrice(totalPrice)}</span>
+                                    <div className="flex flex-col items-end">
+                                        {quantity >= 10 && (
+                                            <span className="text-sm text-white/50 line-through">€{(quantity * 25).toFixed(2)}</span>
+                                        )}
+                                        <span className="text-white">{formatPrice(totalPrice)}</span>
+                                    </div>
                                 </div>
                                 <button 
                                     onClick={handleBuyClick} 
