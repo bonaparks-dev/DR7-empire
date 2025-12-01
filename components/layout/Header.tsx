@@ -4,6 +4,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { RENTAL_CATEGORIES } from '../../constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
+import { CogIcon, SignOutIcon } from '../icons/Icons';
 
 const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { t } = useTranslation();
@@ -233,14 +234,14 @@ const Header: React.FC = () => {
                       user.role === 'business' ? t('Partner_Dashboard') : t('My_Account')
                     }
                   >
-                    
+                    <CogIcon className="w-5 h-5" />
                   </Link>
                   <button
                     onClick={logout}
                     className="hidden md:flex items-center justify-center w-9 h-9 bg-gray-800/70 border border-gray-700 rounded-full text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
                     title={t('Sign_Out')}
                   >
-                    
+                    <SignOutIcon className="w-5 h-5" />
                   </button>
                 </motion.div>
               ) : (
