@@ -73,10 +73,10 @@ const CarBookingConfirmationPage: React.FC = () => {
           <div className="bg-gray-800/50 p-6 rounded-lg border border-gray-700">
             <h3 className="text-xl font-bold mb-4">COSA PORTARE AL RITIRO:</h3>
             <ul className="space-y-2 text-gray-300">
-              <li>✓ Carta d'identità o passaporto valido</li>
-              <li>✓ Patente di guida valida</li>
-              <li>✓ Cauzione</li>
-              <li>✓ Codice prenotazione: <span className="font-mono">{`DR7-${booking.id.substring(0, 8).toUpperCase()}`}</span></li>
+              <li>Carta d'identità o passaporto valido</li>
+              <li>Patente di guida valida</li>
+              <li>Cauzione</li>
+              <li>Codice prenotazione: <span className="font-mono">{`DR7-${booking.id.substring(0, 8).toUpperCase()}`}</span></li>
             </ul>
           </div>
           <div className="bg-gray-800/50 p-6 rounded-lg border border-gray-700">

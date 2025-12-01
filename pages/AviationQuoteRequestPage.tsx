@@ -180,7 +180,7 @@ const AviationQuoteRequestPage: React.FC = () => {
       msg += `• Attrezzature speciali: ${formData.has_special_equipment === 'yes' ? 'Sì - ' + formData.special_equipment_details : 'No'}\n`;
       msg += `• Bagagli ingombranti: ${formData.needs_bulky_space === 'yes' ? 'Sì' : 'No'}\n\n`;
 
-      msg += `🛫 4. TIPOLOGIA VOLO E PREFERENZE\n`;
+      msg += `4. TIPOLOGIA VOLO E PREFERENZE\n`;
       if (formData.flight_purpose) {
         msg += `• Scopo volo: ${formData.flight_purpose}\n`;
       }
@@ -706,7 +706,7 @@ const AviationQuoteRequestPage: React.FC = () => {
           {/* 4. Flight Type & Preferences */}
           <div className="bg-gray-800/50 p-6 rounded-lg border border-gray-700">
             <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-              🛫 4. Tipologia di Volo e Preferenze
+              4. Tipologia di Volo e Preferenze
             </h3>
             <div className="space-y-4">
               <div>

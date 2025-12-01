@@ -303,7 +303,7 @@ const MechanicalServicesPage: React.FC = () => {
                   </p>
                   <div className="flex justify-between items-center">
                     <div className="text-gray-500 text-sm">
-                      ⏱️ {lang === 'it' ? service.duration : service.durationEn}
+                      {lang === 'it' ? service.duration : service.durationEn}
                     </div>
                     <div className="text-3xl font-bold text-white">
                       €{service.price}

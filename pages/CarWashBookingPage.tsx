@@ -289,7 +289,7 @@ const CarWashBookingPage: React.FC = () => {
 
       const hasConflict = existingBookings.some(booking => {
         if (!booking.appointment_time) {
-          console.warn('⚠️ Booking missing appointment_time:', booking);
+          console.warn('Booking missing appointment_time:', booking);
           return false;
         }
         const bookingStart = timeToMinutes(booking.appointment_time);
@@ -400,7 +400,7 @@ const CarWashBookingPage: React.FC = () => {
 
       const hasConflict = existingBookings.some(booking => {
         if (!booking.appointment_time) {
-          console.warn('⚠️ Booking missing appointment_time:', booking);
+          console.warn('Booking missing appointment_time:', booking);
           return false;
         }
         const bookingStart = timeToMinutes(booking.appointment_time);

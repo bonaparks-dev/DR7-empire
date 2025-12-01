@@ -157,7 +157,7 @@ const HelicopterBookingForm: React.FC = () => {
     msg += `• Attrezzature speciali: ${formData.hasSpecialEquipment === 'yes' ? 'Sì - ' + formData.specialEquipmentDetails : 'No'}\n`;
     msg += `• Bagagli ingombranti: ${formData.needsBulkySpace === 'yes' ? 'Sì' : 'No'}\n\n`;
 
-    msg += `🛫 4. TIPOLOGIA VOLO E PREFERENZE\n`;
+    msg += `4. TIPOLOGIA VOLO E PREFERENZE\n`;
     if (formData.flightPurpose) {
       msg += `• Scopo volo: ${formData.flightPurpose}\n`;
     }
@@ -172,7 +172,7 @@ const HelicopterBookingForm: React.FC = () => {
     msg += `• Catering: ${formData.needsCatering === 'yes' ? 'Sì' + (formData.cateringDetails ? ' - ' + formData.cateringDetails : '') : 'No'}\n`;
     msg += `• Transfer a terra: ${formData.needsGroundTransfer === 'yes' ? 'Sì' + (formData.transferDetails ? ' - ' + formData.transferDetails : '') : 'No'}\n\n`;
 
-    msg += `⚙️ 5. DETTAGLI TECNICI E LOGISTICI\n`;
+    msg += `5. DETTAGLI TECNICI E LOGISTICI\n`;
     msg += `• Aeroporto/eliporto noto: ${formData.knowsAirport === 'yes' ? 'Sì' : 'No'}\n`;
     if (formData.airportDetails) {
       msg += `• Dettagli: ${formData.airportDetails}\n`;
@@ -646,7 +646,7 @@ const HelicopterBookingForm: React.FC = () => {
         {/* 4. Flight Type & Preferences */}
         <div className="bg-zinc-900/50 p-6 rounded-lg border border-zinc-800">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            🛫 4. Tipologia di Volo e Preferenze
+            4. Tipologia di Volo e Preferenze
           </h3>
           <div className="space-y-4">
             <div>
@@ -784,7 +784,7 @@ const HelicopterBookingForm: React.FC = () => {
         {/* 5. Technical & Logistics */}
         <div className="bg-zinc-900/50 p-6 rounded-lg border border-zinc-800">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            ⚙️ 5. Dettagli Tecnici e Logistici
+            5. Dettagli Tecnici e Logistici
           </h3>
           <div className="space-y-4">
             <div>

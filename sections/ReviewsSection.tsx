@@ -97,7 +97,7 @@ const fallbackReviews = [
     rating: 5,
     date: "2025-01-01",
     body:
-      "Esperienza unica!!!! Lavaggio impeccabile. La macchina super profumata, igienizzata e pulitissima. Profumo, caffè ed acqua in omaggio 🤩. I ragazzi professionali, gentili e super simpatici 💪. Il noleggio? Un super wow. Macchine di lusso e impeccabili. Dubai Rent è il top ❤️",
+      "Esperienza unica!!!! Lavaggio impeccabile. La macchina super profumata, igienizzata e pulitissima. Profumo, caffè ed acqua in omaggio . I ragazzi professionali, gentili e super simpatici . Il noleggio? Un super wow. Macchine di lusso e impeccabili. Dubai Rent è il top ",
     sourceUrl: "https://share.google/vSxG17ifqlzJNSrSz",
   },
   {
@@ -113,7 +113,7 @@ const fallbackReviews = [
     rating: 5,
     date: "2025-01-01",
     body:
-      "Esperienza super positiva, abbiamo fatto il lavaggio da 49 euro e che dire? La macchina era super pulita nei minimi dettagli... Grazie ragazzi alla prossima... ❤️❤️",
+      "Esperienza super positiva, abbiamo fatto il lavaggio da 49 euro e che dire? La macchina era super pulita nei minimi dettagli... Grazie ragazzi alla prossima... ",
     sourceUrl: "https://share.google/vSxG17ifqlzJNSrSz",
   },
   {
@@ -137,7 +137,7 @@ const fallbackReviews = [
     rating: 5,
     date: "2024-12-01",
     body:
-      "È la prima volta che noleggio da loro e mi sono trovato benissimo, non avevo mai guidato un RS3 e sono rimasto veramente senza parole dalla bellezza dell'auto e dalla cura nella consegna. Provato anche il lavaggio completo: la macchina è uscita meglio di quando l'avevo comprata. Consiglio sia il lavaggio che il noleggio. Alla prossima 💪💪❤️",
+      "È la prima volta che noleggio da loro e mi sono trovato benissimo, non avevo mai guidato un RS3 e sono rimasto veramente senza parole dalla bellezza dell'auto e dalla cura nella consegna. Provato anche il lavaggio completo: la macchina è uscita meglio di quando l'avevo comprata. Consiglio sia il lavaggio che il noleggio. Alla prossima ",
     sourceUrl: "https://share.google/vSxG17ifqlzJNSrSz",
   },
   {
@@ -185,7 +185,7 @@ const fallbackReviews = [
     rating: 5,
     date: "2025-05-18",
     body:
-      "Sono un appassionato di auto di lusso, ho noleggiato più volte delle auto fantastiche, pulite e soprattutto affidabili. Lo staff cordiale e preciso nel loro lavoro, il titolare è una persona alla mano e difficilmente non si riesce a trovare un accordo sia per appuntamenti che per i loro prezzi competitivi e alla portata di tutti. Ci voleva proprio un autonoleggio che permette a chiunque di vivere esperienze da sogno. Spero di riuscire e continuare a provare la loro vasta scelta di parco auto che portano a divertimento e adrenalina pura. Grazie a tutto lo staff di Dubai Rent ❤️",
+      "Sono un appassionato di auto di lusso, ho noleggiato più volte delle auto fantastiche, pulite e soprattutto affidabili. Lo staff cordiale e preciso nel loro lavoro, il titolare è una persona alla mano e difficilmente non si riesce a trovare un accordo sia per appuntamenti che per i loro prezzi competitivi e alla portata di tutti. Ci voleva proprio un autonoleggio che permette a chiunque di vivere esperienze da sogno. Spero di riuscire e continuare a provare la loro vasta scelta di parco auto che portano a divertimento e adrenalina pura. Grazie a tutto lo staff di Dubai Rent ",
     sourceUrl: "https://share.google/vSxG17ifqlzJNSrSz",
   },
   {
@@ -201,7 +201,7 @@ const fallbackReviews = [
     rating: 5,
     date: "2025-08-25",
     body:
-      "Super positive experience, we had the €49 car wash and what can I say? The car was super clean down to the smallest detail... Thanks guys, see you next time... ❤️❤️",
+      "Super positive experience, we had the €49 car wash and what can I say? The car was super clean down to the smallest detail... Thanks guys, see you next time... ",
     sourceUrl: "https://share.google/o5c8DO8nmk3XMn0hF",
   },
   {
@@ -209,7 +209,7 @@ const fallbackReviews = [
     rating: 5,
     date: "2025-08-28",
     body:
-      "Unique experience!!!! Impeccable wash. The car smelled great, sanitized, and spotless. Complimentary perfume, coffee, and water 😅. The guys were professional, kind, and super nice 💪. The rental? A super wow. Luxurious and impeccable cars. Dubai Rent is the best ❤️",
+      "Unique experience!!!! Impeccable wash. The car smelled great, sanitized, and spotless. Complimentary perfume, coffee, and water . The guys were professional, kind, and super nice . The rental? A super wow. Luxurious and impeccable cars. Dubai Rent is the best ",
     sourceUrl: "https://share.google/o5c8DO8nmk3XMn0hF",
   },
   {
@@ -289,7 +289,7 @@ const fallbackReviews = [
     rating: 5,
     date: "2025-08-18",
     body:
-      "It's the first time I rent from them and I had a great time. I’d never driven an RS3 and was speechless at the beauty of the car and the care at delivery. Tried the complete wash: car came out better than when I bought it. I recommend both the wash and the rental. See you next time 💪💪❤️",
+      "It's the first time I rent from them and I had a great time. I’d never driven an RS3 and was speechless at the beauty of the car and the care at delivery. Tried the complete wash: car came out better than when I bought it. I recommend both the wash and the rental. See you next time ",
     sourceUrl: "https://share.google/o5c8DO8nmk3XMn0hF",
   }
 ];

@@ -471,13 +471,13 @@ const AdminCalendarPage: React.FC = () => {
                             onClick={() => handleEditBooking(booking)}
                             className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors whitespace-nowrap"
                           >
-                            ✏️ {lang === 'it' ? 'Modifica' : 'Edit'}
+                            {lang === 'it' ? 'Modifica' : 'Edit'}
                           </button>
                           <button
                             onClick={() => handleDeleteBooking(booking.id)}
                             className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors whitespace-nowrap"
                           >
-                            🗑️ {lang === 'it' ? 'Elimina' : 'Delete'}
+                            {lang === 'it' ? 'Elimina' : 'Delete'}
                           </button>
                         </div>
                       </div>

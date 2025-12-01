@@ -60,7 +60,7 @@ const TokenPage: React.FC = () => {
               {/* Un nuovo paradigma economico */}
               <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 mt-12">
                 <h3 className="text-3xl font-bold mb-6">
-                  <span>🏛️</span>
+                  <span></span>
                   Un nuovo paradigma economico
                 </h3>
                 <p className="text-gray-300 leading-relaxed mb-6">
@@ -415,7 +415,7 @@ const TokenPage: React.FC = () => {
               {/* Un progetto rivoluzionario */}
               <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 mt-12">
                 <h3 className="text-3xl font-bold mb-6">
-                  <span>🏛️</span>
+                  <span></span>
                   Un progetto rivoluzionario
                 </h3>
                 <p className="text-gray-300 leading-relaxed mb-6">

@@ -291,7 +291,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
                 transition={{ duration: 0.5, delay: 0.4 }}
                 className="bg-gray-900 border border-gray-800 rounded-2xl p-8 hover:border-white transition-colors"
               >
-                <div className="text-6xl mb-6 text-center">🚁</div>
+                <div className="text-6xl mb-6 text-center"></div>
                 <h2 className="text-3xl font-bold text-white mb-4 text-center">
                   Elicotteri
                 </h2>

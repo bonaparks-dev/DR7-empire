@@ -206,7 +206,7 @@ const BookingModal: React.FC = () => {
                             // Check if selected date is Sunday (0 = Sunday)
                             const selectedDate = new Date(e.target.value);
                             if (selectedDate.getDay() === 0) {
-                              alert('⚠️ Non è possibile riconsegnare il veicolo di domenica. Siamo chiusi la domenica.\n\nPer favore seleziona un altro giorno.');
+                              alert('Non è possibile riconsegnare il veicolo di domenica. Siamo chiusi la domenica.\n\nPer favore seleziona un altro giorno.');
                               return;
                             }
                             setReturnDate(e.target.value);

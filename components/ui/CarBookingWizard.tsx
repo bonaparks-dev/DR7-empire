@@ -742,7 +742,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         // Check Sunday drop-off (CLOSED)
         const returnDayOfWeek = returnD.getDay();
         if (returnDayOfWeek === 0) { // Sunday = 0
-          newErrors.returnDate = "⚠️ Non è possibile riconsegnare il veicolo di domenica. Siamo chiusi. Seleziona un altro giorno.";
+          newErrors.returnDate = "Non è possibile riconsegnare il veicolo di domenica. Siamo chiusi. Seleziona un altro giorno.";
         }
 
         // Check Saturday drop-off time limits
@@ -1106,7 +1106,7 @@ setIsProcessing(false);
                       />
                       {errors.pickupDate && (
                         <p className="text-xs text-red-400 mt-1 flex items-center">
-                          <span className="mr-1">⚠️</span> {errors.pickupDate}
+                          <span className="mr-1"></span> {errors.pickupDate}
                         </p>
                       )}
                     </div>
@@ -1162,7 +1162,7 @@ setIsProcessing(false);
                           // Check if selected date is Sunday (0 = Sunday)
                           const selectedDate = new Date(e.target.value);
                           if (selectedDate.getDay() === 0) {
-                            alert('⚠️ Non è possibile riconsegnare il veicolo di domenica. Siamo chiusi la domenica.\n\nPer favore seleziona un altro giorno.');
+                            alert('Non è possibile riconsegnare il veicolo di domenica. Siamo chiusi la domenica.\n\nPer favore seleziona un altro giorno.');
                             return;
                           }
                           handleChange(e);
@@ -1186,7 +1186,7 @@ setIsProcessing(false);
                       />
                       {(errors.returnDate || errors.date) && (
                         <p className="text-xs text-red-400 mt-1 flex items-center">
-                          <span className="mr-1">⚠️</span> {errors.returnDate || errors.date}
+                          <span className="mr-1"></span> {errors.returnDate || errors.date}
                         </p>
                       )}
                       {!formData.pickupDate && (
