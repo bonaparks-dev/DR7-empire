@@ -204,7 +204,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { email, fullName, phone, quantity, paymentIntentId } = JSON.parse(event.body || '{}');
+    const { email, fullName, phone, quantity, paymentIntentId, clientId } = JSON.parse(event.body || '{}');
 
     if (!email || !quantity || !paymentIntentId) {
       return createResponse(400, { success: false, error: 'Missing required fields: email, quantity, paymentIntentId.' });
@@ -217,6 +217,25 @@ exports.handler = async (event) => {
     if (!phone || phone.trim() === '') {
       return createResponse(400, { success: false, error: 'Il numero di telefono è obbligatorio.' });
     }
+
+    // Fetch customer extended data if clientId is provided
+    let customerData = null;
+    if (clientId) {
+      console.log(`[Tickets] Fetching customer extended data for clientId: ${clientId}`);
+      const { data, error } = await supabase
+        .from('customers_extended')
+        .select('*')
+        .eq('id', clientId)
+        .maybeSingle();
+
+      if (error) {
+        console.error(`[Tickets] Failed to fetch customer data:`, error);
+      } else if (data) {
+        customerData = data;
+        console.log(`[Tickets] Customer data fetched successfully`);
+      }
+    }
+
     const qty = Number(quantity);
     if (!Number.isInteger(qty) || qty < 1 || qty > 1000) {
       return createResponse(400, { success: false, error: 'Invalid quantity.' });
@@ -357,8 +376,32 @@ exports.handler = async (event) => {
                 <div class="customer-info">
                   <h3 style="margin: 0 0 10px 0;">👤 Informazioni Acquirente</h3>
                   <p style="margin: 5px 0;"><strong>Nome:</strong> ${fullName}</p>
-                  <p style="margin: 5px 0;"><strong>Telefono:</strong> ${phone}</p>
                   <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
+                  <p style="margin: 5px 0;"><strong>Telefono:</strong> ${phone}</p>
+                  ${customerData ? `
+                    ${customerData.tipo_cliente === 'persona_fisica' ? `
+                      ${customerData.codice_fiscale ? `<p style="margin: 5px 0;"><strong>Codice Fiscale:</strong> ${customerData.codice_fiscale}</p>` : ''}
+                      ${customerData.indirizzo ? `<p style="margin: 5px 0;"><strong>Indirizzo:</strong> ${customerData.indirizzo}</p>` : ''}
+                      ${customerData.nazione ? `<p style="margin: 5px 0;"><strong>Nazione:</strong> ${customerData.nazione}</p>` : ''}
+                      ${customerData.pec ? `<p style="margin: 5px 0;"><strong>PEC:</strong> ${customerData.pec}</p>` : ''}
+                    ` : ''}
+                    ${customerData.tipo_cliente === 'azienda' ? `
+                      ${customerData.ragione_sociale ? `<p style="margin: 5px 0;"><strong>Ragione Sociale:</strong> ${customerData.ragione_sociale}</p>` : ''}
+                      ${customerData.partita_iva ? `<p style="margin: 5px 0;"><strong>Partita IVA:</strong> ${customerData.partita_iva}</p>` : ''}
+                      ${customerData.codice_fiscale ? `<p style="margin: 5px 0;"><strong>Codice Fiscale:</strong> ${customerData.codice_fiscale}</p>` : ''}
+                      ${customerData.codice_destinatario ? `<p style="margin: 5px 0;"><strong>Codice Destinatario:</strong> ${customerData.codice_destinatario}</p>` : ''}
+                      ${customerData.indirizzo ? `<p style="margin: 5px 0;"><strong>Indirizzo:</strong> ${customerData.indirizzo}</p>` : ''}
+                      ${customerData.pec ? `<p style="margin: 5px 0;"><strong>PEC:</strong> ${customerData.pec}</p>` : ''}
+                    ` : ''}
+                    ${customerData.tipo_cliente === 'pubblica_amministrazione' ? `
+                      ${customerData.denominazione ? `<p style="margin: 5px 0;"><strong>Ente/Ufficio:</strong> ${customerData.denominazione}</p>` : ''}
+                      ${customerData.codice_univoco ? `<p style="margin: 5px 0;"><strong>Codice Univoco:</strong> ${customerData.codice_univoco}</p>` : ''}
+                      ${customerData.codice_fiscale ? `<p style="margin: 5px 0;"><strong>Codice Fiscale:</strong> ${customerData.codice_fiscale}</p>` : ''}
+                      ${customerData.partita_iva ? `<p style="margin: 5px 0;"><strong>Partita IVA:</strong> ${customerData.partita_iva}</p>` : ''}
+                      ${customerData.indirizzo ? `<p style="margin: 5px 0;"><strong>Città:</strong> ${customerData.indirizzo}</p>` : ''}
+                      ${customerData.pec ? `<p style="margin: 5px 0;"><strong>PEC:</strong> ${customerData.pec}</p>` : ''}
+                    ` : ''}
+                  ` : ''}
                 </div>
                 <div class="ticket-info">
                   <h2 style="margin: 0;">📋 Dettagli Acquisto</h2>
@@ -401,6 +444,33 @@ exports.handler = async (event) => {
               <p><strong>Nome:</strong> ${fullName || 'NON FORNITO'}</p>
               <p><strong>Email:</strong> ${email}</p>
               <p><strong>Telefono:</strong> ${phone || 'NON FORNITO'}</p>
+              ${customerData ? `
+                <hr style="margin: 15px 0; border: 0; border-top: 1px solid #ddd;">
+                <h4 style="margin: 10px 0;">📋 Dati Completi Cliente</h4>
+                <p><strong>Tipo Cliente:</strong> ${customerData.tipo_cliente === 'persona_fisica' ? 'Persona Fisica' : customerData.tipo_cliente === 'azienda' ? 'Azienda' : 'Pubblica Amministrazione'}</p>
+                ${customerData.tipo_cliente === 'persona_fisica' ? `
+                  ${customerData.codice_fiscale ? `<p><strong>Codice Fiscale:</strong> ${customerData.codice_fiscale}</p>` : ''}
+                  ${customerData.indirizzo ? `<p><strong>Indirizzo:</strong> ${customerData.indirizzo}</p>` : ''}
+                  ${customerData.nazione ? `<p><strong>Nazione:</strong> ${customerData.nazione}</p>` : ''}
+                  ${customerData.pec ? `<p><strong>PEC:</strong> ${customerData.pec}</p>` : ''}
+                ` : ''}
+                ${customerData.tipo_cliente === 'azienda' ? `
+                  ${customerData.ragione_sociale ? `<p><strong>Ragione Sociale:</strong> ${customerData.ragione_sociale}</p>` : ''}
+                  ${customerData.partita_iva ? `<p><strong>Partita IVA:</strong> ${customerData.partita_iva}</p>` : ''}
+                  ${customerData.codice_fiscale ? `<p><strong>Codice Fiscale:</strong> ${customerData.codice_fiscale}</p>` : ''}
+                  ${customerData.codice_destinatario ? `<p><strong>Codice Destinatario:</strong> ${customerData.codice_destinatario}</p>` : ''}
+                  ${customerData.indirizzo ? `<p><strong>Indirizzo:</strong> ${customerData.indirizzo}</p>` : ''}
+                  ${customerData.pec ? `<p><strong>PEC:</strong> ${customerData.pec}</p>` : ''}
+                ` : ''}
+                ${customerData.tipo_cliente === 'pubblica_amministrazione' ? `
+                  ${customerData.denominazione ? `<p><strong>Ente/Ufficio:</strong> ${customerData.denominazione}</p>` : ''}
+                  ${customerData.codice_univoco ? `<p><strong>Codice Univoco:</strong> ${customerData.codice_univoco}</p>` : ''}
+                  ${customerData.codice_fiscale ? `<p><strong>Codice Fiscale:</strong> ${customerData.codice_fiscale}</p>` : ''}
+                  ${customerData.partita_iva ? `<p><strong>Partita IVA:</strong> ${customerData.partita_iva}</p>` : ''}
+                  ${customerData.indirizzo ? `<p><strong>Città:</strong> ${customerData.indirizzo}</p>` : ''}
+                  ${customerData.pec ? `<p><strong>PEC:</strong> ${customerData.pec}</p>` : ''}
+                ` : ''}
+              ` : ''}
             </div>
             <div style="background: #e8f5e9; padding: 20px; border-radius: 10px; margin: 20px 0;">
               <h3 style="margin-top: 0;">💳 Dettagli Acquisto</h3>

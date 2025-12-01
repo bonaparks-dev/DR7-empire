@@ -155,17 +155,9 @@ const CommercialOperationPage: React.FC = () => {
             return;
         }
 
-        // Check if user has a client record
-        if (!hasClientRecord) {
-            setShowClientModal(true);
-            return;
-        }
-
-        // Pre-fill email with user's account email
-        if (user.email && !email) {
-            setEmail(user.email);
-        }
-        setShowConfirmModal(true);
+        // ALWAYS show NewClientModal to collect complete customer data
+        // This ensures we have all necessary information for invoicing
+        setShowClientModal(true);
     };
     
     const handleCloseModal = () => {
