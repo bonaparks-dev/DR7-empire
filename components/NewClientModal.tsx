@@ -684,7 +684,7 @@ export default function NewClientModal({ isOpen, onClose, onClientCreated }: New
                   : 'bg-white text-black hover:bg-gray-200'
               }`}
             >
-              {isSaving ? 'Salvataggio...' : 'Salva Cliente'}
+              {isSaving ? 'Salvataggio...' : 'Salva'}
             </button>
           </div>
         </div>
