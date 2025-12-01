@@ -18,7 +18,7 @@ const VerificationModal: React.FC = () => {
 
     const modalContent = {
         login: {
-            icon: UsersIcon,
+            
             title: t('Account_Required'),
             description: t('Account_Required_Desc'),
             actions: (
@@ -29,7 +29,7 @@ const VerificationModal: React.FC = () => {
             )
         },
         verify: {
-            icon: ShieldIcon,
+            
             title: t('Verification_Required'),
             description: t('Verification_Required_Desc'),
             actions: (

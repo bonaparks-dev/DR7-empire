@@ -70,7 +70,6 @@ const ReviewCard: React.FC<{ review: Review, dark?: boolean }> = ({ review, dark
             </div>
             <div className="flex mb-3 sm:mb-4">
                 {Array.from({ length: 5 }).map((_, i) => (
-                    <StarIcon
                         key={i}
                         className={`w-4 h-4 sm:w-5 sm:h-5 ${i < review.rating ? starColor : starEmptyColor}`}
                     />
@@ -188,7 +187,6 @@ export const ReviewsMarquee: React.FC<ReviewsMarqueeProps> = ({
                     >
                         <div className="flex items-center gap-1">
                             {Array.from({ length: 5 }).map((_, i) => (
-                                <StarIcon
                                     key={i}
                                     className={`w-6 h-6 ${starColor}`}
                                 />

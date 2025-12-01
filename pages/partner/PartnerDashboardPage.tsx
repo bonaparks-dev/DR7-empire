@@ -4,7 +4,6 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../hooks/useAuth';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  FileTextIcon, CalendarIcon, ZapIcon, PlusIcon, ShieldIcon, TicketIcon,
 } from '../../components/icons/Icons';
 import type { RentalItem, CommercialOperationTicket } from '../../types';
 import { Button } from '../../components/ui/Button';

@@ -5,7 +5,6 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { Button } from '../../components/ui/Button';
 import { RENTAL_CATEGORIES } from '../../constants';
 import {
-  AnchorIcon, BathIcon, BedIcon, CarIcon, CogIcon, HomeIcon, PaperAirplaneIcon, UploadIcon, UsersIcon, XIcon, ZapIcon,
 } from '../../components/icons/Icons';
 import type { RentalItem, RentalSpec } from '../../types';
 
@@ -66,15 +65,15 @@ const CreateListingPage = () => {
   const handlePublish = () => {
     const specs: RentalSpec[] = [];
     if (formData.category === 'cars') {
-        if (formData.specs.power) specs.push({ label: { en: 'Power', it: 'Potenza' }, value: `${formData.specs.power} HP`, icon: ZapIcon });
-        if (formData.specs.engine) specs.push({ label: { en: 'Engine', it: 'Motore' }, value: formData.specs.engine, icon: CogIcon });
+        if (formData.specs.power) specs.push({ label: { en: 'Power', it: 'Potenza' }, value: `${formData.specs.power} HP` });
+        if (formData.specs.engine) specs.push({ label: { en: 'Engine', it: 'Motore' }, value: formData.specs.engine });
     } else if (formData.category === 'yachts') {
-        if (formData.specs.guests) specs.push({ label: { en: 'Guests', it: 'Ospiti' }, value: formData.specs.guests, icon: UsersIcon });
-        if (formData.specs.length) specs.push({ label: { en: 'Length', it: 'Lunghezza' }, value: `${formData.specs.length}m`, icon: AnchorIcon });
+        if (formData.specs.guests) specs.push({ label: { en: 'Guests', it: 'Ospiti' }, value: formData.specs.guests });
+        if (formData.specs.length) specs.push({ label: { en: 'Length', it: 'Lunghezza' }, value: `${formData.specs.length}m` });
     } else if (formData.category === 'villas') {
-        if (formData.specs.guests) specs.push({ label: { en: 'Guests', it: 'Ospiti' }, value: formData.specs.guests, icon: UsersIcon });
-        if (formData.specs.bedrooms) specs.push({ label: { en: 'Bedrooms', it: 'Camere' }, value: formData.specs.bedrooms, icon: BedIcon });
-        if (formData.specs.bathrooms) specs.push({ label: { en: 'Bathrooms', it: 'Bagni' }, value: formData.specs.bathrooms, icon: BathIcon });
+        if (formData.specs.guests) specs.push({ label: { en: 'Guests', it: 'Ospiti' }, value: formData.specs.guests });
+        if (formData.specs.bedrooms) specs.push({ label: { en: 'Bedrooms', it: 'Camere' }, value: formData.specs.bedrooms });
+        if (formData.specs.bathrooms) specs.push({ label: { en: 'Bathrooms', it: 'Bagni' }, value: formData.specs.bathrooms });
     }
 
     const newListing: RentalItem = {
