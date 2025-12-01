@@ -69,11 +69,9 @@ const ReviewCard: React.FC<{ review: Review, dark?: boolean }> = ({ review, dark
                 </div>
             </div>
             <div className="flex mb-3 sm:mb-4">
-                {Array.from({ length: 5 }).map((_, i) => (
-                        key={i}
-                        className={`w-4 h-4 sm:w-5 sm:h-5 ${i < review.rating ? starColor : starEmptyColor}`}
-                    />
-                ))}
+                <span className={`text-sm font-semibold ${dark ? 'text-white' : 'text-gray-900'}`}>
+                    {review.rating}/5
+                </span>
             </div>
             <p className="text-xs sm:text-sm leading-relaxed flex-grow line-clamp-5 sm:line-clamp-6">{review.body}</p>
         </a>
@@ -186,11 +184,9 @@ export const ReviewsMarquee: React.FC<ReviewsMarqueeProps> = ({
                         }`}
                     >
                         <div className="flex items-center gap-1">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                                    key={i}
-                                    className={`w-6 h-6 ${starColor}`}
-                                />
-                            ))}
+                            <span className={`text-xl font-bold ${dark ? 'text-white' : 'text-gray-900'}`}>
+                                {ratingSummary.ratingValue.toFixed(1)}/5
+                            </span>
                         </div>
                         <div className={`text-left ${dark ? 'text-white' : 'text-gray-900'}`}>
                             <p className="text-2xl font-bold">{ratingSummary.ratingValue.toFixed(1)}/5.0</p>
