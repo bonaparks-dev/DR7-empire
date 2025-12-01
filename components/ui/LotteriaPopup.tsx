@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { XIcon } from '../icons/Icons';
 
 const LotteriaPopup: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -60,48 +61,52 @@ const LotteriaPopup: React.FC = () => {
               className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors z-10"
               aria-label="Close popup"
             >
-              
+              <XIcon className="w-6 h-6" />
             </button>
 
             {/* Content */}
             <div className="p-8 text-center">
               {/* Title */}
-              <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 uppercase tracking-wider">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 uppercase tracking-wider">
                 LOTTERIA
               </h2>
 
-              {/* Subtitle */}
-              <div className="mb-8">
-                <p className="text-2xl md:text-3xl font-bold text-white mb-2 leading-tight">
-                  ALFA ROMEO STELVIO QUADRIFOGLIO
+              {/* Main message */}
+              <div className="mb-6 text-white">
+                <p className="text-xl md:text-2xl font-bold mb-3">
+                  Ultimi biglietti disponibili.
                 </p>
-                <p className="text-xl md:text-2xl font-semibold text-white/80">
-                  510 CV
+                <p className="text-lg md:text-xl mb-2">
+                  Con 25€ puoi vincere un'auto da 50.000€.
+                </p>
+                <p className="text-base md:text-lg text-white/90 mb-6">
+                  Ne restano pochissimi: la fortuna adesso è questione di attimi.
                 </p>
               </div>
 
-              {/* Details */}
-              <div className="space-y-4 mb-8 text-white/80">
-                <div className="flex items-center justify-between px-4 py-3 bg-white/5 rounded-lg">
-                  <span className="text-sm uppercase tracking-wider">Valore</span>
-                  <span className="text-lg font-bold">€50.000</span>
-                </div>
-
-                <div className="flex items-center justify-between px-4 py-3 bg-white/5 rounded-lg">
-                  <span className="text-sm uppercase tracking-wider">Biglietto</span>
-                  <span className="text-lg font-bold">€25</span>
-                </div>
-
-                <div className="flex items-center justify-between px-4 py-3 bg-white/5 rounded-lg">
-                  <span className="text-sm uppercase tracking-wider">Estrazione</span>
-                  <span className="text-lg font-bold">24 Dicembre</span>
-                </div>
-
-                <div className="flex items-center justify-between px-4 py-3 bg-white/5 rounded-lg">
-                  <span className="text-sm uppercase tracking-wider">Biglietti</span>
-                  <span className="text-lg font-bold">2.000</span>
+              {/* Promo packages */}
+              <div className="mb-6 text-left">
+                <p className="text-lg font-bold text-white mb-3 text-center">Promo pacchetti:</p>
+                <div className="space-y-2 text-white/90">
+                  <div className="flex items-center justify-between px-4 py-2 bg-white/5 rounded-lg">
+                    <span className="text-sm md:text-base">10 biglietti → 250€</span>
+                    <span className="text-base md:text-lg font-bold text-dr7-gold">in promo 220€</span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-2 bg-white/5 rounded-lg">
+                    <span className="text-sm md:text-base">50 biglietti → 1250€</span>
+                    <span className="text-base md:text-lg font-bold text-dr7-gold">in promo 1100€</span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-2 bg-white/5 rounded-lg">
+                    <span className="text-sm md:text-base">100 biglietti → 2500€</span>
+                    <span className="text-base md:text-lg font-bold text-dr7-gold">in promo 1999€</span>
+                  </div>
                 </div>
               </div>
+
+              {/* Urgency message */}
+              <p className="text-base md:text-lg font-semibold text-white/90 mb-6">
+                Affrettati prima che finiscano.
+              </p>
 
               {/* CTA Button */}
               <button
@@ -110,11 +115,6 @@ const LotteriaPopup: React.FC = () => {
               >
                 PARTECIPA ORA
               </button>
-
-              {/* Footer text */}
-              <p className="text-xs text-white/60 mt-6">
-                Estrazione supervisionata da avvocato • Trasparenza totale garantita
-              </p>
             </div>
           </motion.div>
         </div>
