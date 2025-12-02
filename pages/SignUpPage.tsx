@@ -51,6 +51,12 @@ const SignUpPage: React.FC = () => {
     telefono: '',
     email: '',
     pec: '',
+    dataNascita: '',
+    luogoNascita: '',
+    numeroCivico: '',
+    codicePostale: '',
+    cittaResidenza: '',
+    provinciaResidenza: '',
     // Pubblica Amministrazione fields
     codiceUnivoco: '',
     enteUfficio: '',
@@ -72,9 +78,31 @@ const SignUpPage: React.FC = () => {
     }
   }, [user, navigate]);
 
+  const validateCodiceFiscale = (cf: string): boolean => {
+    const cfRegex = /^[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]$/i;
+    return cf.length === 16 && cfRegex.test(cf.toUpperCase());
+  };
+
+  const validateItalianPhone = (phone: string): boolean => {
+    const phoneRegex = /^(\+39|0039)?[\s]?[0-9]{9,13}$/;
+    return phoneRegex.test(phone.replace(/\s/g, ''));
+  };
+
+  const validatePartitaIVA = (piva: string): boolean => {
+    const pivaRegex = /^[0-9]{11}$/;
+    return pivaRegex.test(piva);
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    let newValue = value;
+
+    // Auto-uppercase for specific fields
+    if (name === 'codiceFiscale' || name === 'provinciaResidenza') {
+      newValue = value.toUpperCase();
+    }
+
+    setFormData(prev => ({ ...prev, [name]: newValue }));
   };
 
   const validate = () => {
@@ -86,21 +114,42 @@ const SignUpPage: React.FC = () => {
     } else {
       // Common validations
       if (!formData.nazione) newErrors.nazione = 'Nazione è obbligatorio';
-      if (!formData.codiceFiscale) newErrors.codiceFiscale = 'Codice Fiscale è obbligatorio';
-      if (!formData.indirizzo) newErrors.indirizzo = 'Indirizzo è obbligatorio';
+      if (!formData.email) {
+        newErrors.email = 'Email è obbligatorio';
+      } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+        newErrors.email = t('Please_enter_a_valid_email_address');
+      }
 
       // Azienda specific
       if (tipoCliente === 'azienda') {
         if (!formData.denominazione) newErrors.denominazione = 'Denominazione è obbligatorio';
-        if (!formData.partitaIVA) newErrors.partitaIVA = 'Partita IVA è obbligatorio';
-        if (!formData.email) newErrors.email = 'Email è obbligatorio';
+        if (!formData.partitaIVA) {
+          newErrors.partitaIVA = 'Partita IVA è obbligatorio';
+        } else if (!validatePartitaIVA(formData.partitaIVA)) {
+          newErrors.partitaIVA = 'Partita IVA non valida (11 cifre)';
+        }
+        if (!formData.codiceFiscale) newErrors.codiceFiscale = 'Codice Fiscale è obbligatorio';
+        if (!formData.indirizzo) newErrors.indirizzo = 'Indirizzo è obbligatorio';
       }
 
       // Persona Fisica specific
       if (tipoCliente === 'persona_fisica') {
         if (!formData.nome) newErrors.nome = 'Nome è obbligatorio';
         if (!formData.cognome) newErrors.cognome = 'Cognome è obbligatorio';
-        if (!formData.email) newErrors.email = 'Email è obbligatorio';
+        if (!formData.codiceFiscale) {
+          newErrors.codiceFiscale = 'Codice Fiscale è obbligatorio';
+        } else if (!validateCodiceFiscale(formData.codiceFiscale)) {
+          newErrors.codiceFiscale = 'Codice Fiscale non valido (16 caratteri)';
+        }
+        if (!formData.telefono) {
+          newErrors.telefono = 'Telefono è obbligatorio';
+        } else if (!validateItalianPhone(formData.telefono)) {
+          newErrors.telefono = 'Formato telefono non valido';
+        }
+        if (!formData.indirizzo) newErrors.indirizzo = 'Indirizzo è obbligatorio';
+        if (!formData.cittaResidenza) newErrors.cittaResidenza = 'Città è obbligatoria';
+        if (!formData.codicePostale) newErrors.codicePostale = 'CAP è obbligatorio';
+        if (!formData.provinciaResidenza) newErrors.provinciaResidenza = 'Provincia è obbligatoria';
       }
 
       // Pubblica Amministrazione specific
@@ -108,13 +157,9 @@ const SignUpPage: React.FC = () => {
         if (!formData.codiceUnivoco) newErrors.codiceUnivoco = 'Codice Univoco è obbligatorio';
         if (!formData.enteUfficio) newErrors.enteUfficio = 'Ente o Ufficio è obbligatorio';
         if (!formData.citta) newErrors.citta = 'Città è obbligatorio';
-        if (!formData.email) newErrors.email = 'Email è obbligatorio';
+        if (!formData.codiceFiscale) newErrors.codiceFiscale = 'Codice Fiscale è obbligatorio';
+        if (!formData.indirizzo) newErrors.indirizzo = 'Indirizzo è obbligatorio';
       }
-    }
-
-    // Email validation
-    if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = t('Please_enter_a_valid_email_address');
     }
 
     // Password validation
@@ -162,17 +207,25 @@ const SignUpPage: React.FC = () => {
         customerData.denominazione = formData.denominazione;
         customerData.partita_iva = formData.partitaIVA;
         customerData.email = formData.email;
+        customerData.telefono = formData.telefono;
       } else if (tipoCliente === 'persona_fisica') {
         customerData.nome = formData.nome;
         customerData.cognome = formData.cognome;
         customerData.telefono = formData.telefono;
         customerData.email = formData.email;
-        customerData.pec = formData.pec;
+        if (formData.pec) customerData.pec = formData.pec;
+        if (formData.dataNascita) customerData.data_nascita = formData.dataNascita;
+        if (formData.luogoNascita) customerData.luogo_nascita = formData.luogoNascita;
+        if (formData.numeroCivico) customerData.numero_civico = formData.numeroCivico;
+        customerData.codice_postale = formData.codicePostale;
+        customerData.citta_residenza = formData.cittaResidenza;
+        customerData.provincia_residenza = formData.provinciaResidenza;
       } else if (tipoCliente === 'pubblica_amministrazione') {
         customerData.codice_univoco = formData.codiceUnivoco;
         customerData.ente_ufficio = formData.enteUfficio;
         customerData.citta = formData.citta;
         customerData.email = formData.email;
+        customerData.telefono = formData.telefono;
       }
 
       const { error: customerError } = await supabase
@@ -345,47 +398,54 @@ const SignUpPage: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-300 mb-2">
                       Nazione <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="text"
+                    <select
                       name="nazione"
                       value={formData.nazione}
                       onChange={handleChange}
                       className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
                       required
-                    />
+                    >
+                      <option value="Italia">Italia</option>
+                      <option value="Francia">Francia</option>
+                      <option value="Germania">Germania</option>
+                      <option value="Spagna">Spagna</option>
+                      <option value="Altro">Altro</option>
+                    </select>
                     {errors.nazione && <p className="text-xs text-red-400 mt-1">{errors.nazione}</p>}
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Nome <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="nome"
-                      value={formData.nome}
-                      onChange={handleChange}
-                      placeholder="Mario"
-                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                      required
-                    />
-                    {errors.nome && <p className="text-xs text-red-400 mt-1">{errors.nome}</p>}
-                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Nome <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="nome"
+                        value={formData.nome}
+                        onChange={handleChange}
+                        placeholder="Mario"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                        required
+                      />
+                      {errors.nome && <p className="text-xs text-red-400 mt-1">{errors.nome}</p>}
+                    </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Cognome <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="cognome"
-                      value={formData.cognome}
-                      onChange={handleChange}
-                      placeholder="Rossi"
-                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                      required
-                    />
-                    {errors.cognome && <p className="text-xs text-red-400 mt-1">{errors.cognome}</p>}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Cognome <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="cognome"
+                        value={formData.cognome}
+                        onChange={handleChange}
+                        placeholder="Rossi"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                        required
+                      />
+                      {errors.cognome && <p className="text-xs text-red-400 mt-1">{errors.cognome}</p>}
+                    </div>
                   </div>
 
                   <div>
@@ -398,70 +458,172 @@ const SignUpPage: React.FC = () => {
                       value={formData.codiceFiscale}
                       onChange={handleChange}
                       placeholder="RSSMRA80A01H501U"
-                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                      maxLength={16}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
                       required
                     />
                     {errors.codiceFiscale && <p className="text-xs text-red-400 mt-1">{errors.codiceFiscale}</p>}
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Indirizzo <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="indirizzo"
-                      value={formData.indirizzo}
-                      onChange={handleChange}
-                      placeholder="Via, Numero Civico, CAP, Città"
-                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                      required
-                    />
-                    {errors.indirizzo && <p className="text-xs text-red-400 mt-1">{errors.indirizzo}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Email <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      placeholder="email@esempio.it"
-                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                      required
-                    />
-                    {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
-                  </div>
-
-                  <div className="bg-gray-800/50 rounded-lg p-4 space-y-4">
-                    <h4 className="text-sm font-semibold text-yellow-500">Campi Facoltativi</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Data di Nascita
+                      </label>
+                      <input
+                        type="date"
+                        name="dataNascita"
+                        value={formData.dataNascita}
+                        onChange={handleChange}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                      />
+                    </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Telefono</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Luogo di Nascita
+                      </label>
+                      <input
+                        type="text"
+                        name="luogoNascita"
+                        value={formData.luogoNascita}
+                        onChange={handleChange}
+                        placeholder="Roma"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Indirizzo <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="indirizzo"
+                        value={formData.indirizzo}
+                        onChange={handleChange}
+                        placeholder="Via Roma"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                        required
+                      />
+                      {errors.indirizzo && <p className="text-xs text-red-400 mt-1">{errors.indirizzo}</p>}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Numero Civico
+                      </label>
+                      <input
+                        type="text"
+                        name="numeroCivico"
+                        value={formData.numeroCivico}
+                        onChange={handleChange}
+                        placeholder="123"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Città di Residenza <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="cittaResidenza"
+                        value={formData.cittaResidenza}
+                        onChange={handleChange}
+                        placeholder="Milano"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                        required
+                      />
+                      {errors.cittaResidenza && <p className="text-xs text-red-400 mt-1">{errors.cittaResidenza}</p>}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        CAP <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="codicePostale"
+                        value={formData.codicePostale}
+                        onChange={handleChange}
+                        placeholder="20100"
+                        maxLength={5}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                        required
+                      />
+                      {errors.codicePostale && <p className="text-xs text-red-400 mt-1">{errors.codicePostale}</p>}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Provincia <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="provinciaResidenza"
+                        value={formData.provinciaResidenza}
+                        onChange={handleChange}
+                        placeholder="MI"
+                        maxLength={2}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
+                        required
+                      />
+                      {errors.provinciaResidenza && <p className="text-xs text-red-400 mt-1">{errors.provinciaResidenza}</p>}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Email <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="email@esempio.it"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                        required
+                      />
+                      {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Telefono <span className="text-red-500">*</span>
+                      </label>
                       <input
                         type="tel"
                         name="telefono"
                         value={formData.telefono}
                         onChange={handleChange}
-                        placeholder="+39 123 456 7890"
+                        placeholder="+39 320 1234567"
                         className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                        required
                       />
+                      {errors.telefono && <p className="text-xs text-red-400 mt-1">{errors.telefono}</p>}
                     </div>
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">PEC</label>
-                      <input
-                        type="email"
-                        name="pec"
-                        value={formData.pec}
-                        onChange={handleChange}
-                        placeholder="pec@pec.it"
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      PEC
+                    </label>
+                    <input
+                      type="email"
+                      name="pec"
+                      value={formData.pec}
+                      onChange={handleChange}
+                      placeholder="pec@pec.it"
+                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                    />
                   </div>
                 </div>
               )}
