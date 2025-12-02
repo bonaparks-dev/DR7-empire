@@ -71,6 +71,7 @@ const CommercialOperationPage: React.FC = () => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [showClientModal, setShowClientModal] = useState(false);
     const [clientId, setClientId] = useState<string | null>(null);
+    const [customerExtendedData, setCustomerExtendedData] = useState<any>(null);
 
     useEffect(() => {
         if ((window as any).Stripe) {
@@ -134,13 +135,26 @@ const CommercialOperationPage: React.FC = () => {
         setStripeError(null);
     };
 
-    const handleClientCreated = (newClientId: string) => {
+    const handleClientCreated = (newClientId: string, customerData: any) => {
         setClientId(newClientId);
+        setCustomerExtendedData(customerData); // Store the complete customer data
         setShowClientModal(false);
-        // Pre-fill email with user's account email
-        if (user && user.email && !email) {
-            setEmail(user.email);
+
+        // Pre-fill payment form with customer data
+        if (customerData) {
+            // Extract name based on customer type
+            if (customerData.tipo_cliente === 'persona_fisica') {
+                setFullName(`${customerData.nome || ''} ${customerData.cognome || ''}`.trim());
+            } else if (customerData.tipo_cliente === 'azienda') {
+                setFullName(customerData.ragione_sociale || customerData.denominazione || '');
+            } else if (customerData.tipo_cliente === 'pubblica_amministrazione') {
+                setFullName(customerData.denominazione || customerData.ente_ufficio || '');
+            }
+
+            setEmail(customerData.email || '');
+            setPhoneNumber(customerData.telefono || '');
         }
+
         // Automatically show the payment modal after client creation
         setShowConfirmModal(true);
     };
@@ -244,7 +258,8 @@ const CommercialOperationPage: React.FC = () => {
                     phone: phoneNumber,
                     quantity,
                     paymentIntentId: paymentIntent.id,
-                    clientId: clientId
+                    clientId: clientId,
+                    customerData: customerExtendedData // Pass complete customer data for email
                 })
             })
             .then(res => res.json())
@@ -468,10 +483,8 @@ const CommercialOperationPage: React.FC = () => {
                                 <input
                                     type="text"
                                     value={fullName}
-                                    onChange={(e) => setFullName(e.target.value)}
-                                    placeholder="Mario Rossi"
-                                    className="w-full bg-white/10 border border-white/50 rounded-lg p-3 sm:p-4 text-white placeholder-white/50 focus:outline-none focus:border-white"
-                                    required
+                                    readOnly
+                                    className="w-full bg-white/5 border border-white/30 rounded-lg p-3 sm:p-4 text-white/70 cursor-not-allowed"
                                 />
                             </div>
 
@@ -480,10 +493,8 @@ const CommercialOperationPage: React.FC = () => {
                                 <input
                                     type="email"
                                     value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="mario@example.com"
-                                    className="w-full bg-white/10 border border-white/50 rounded-lg p-3 sm:p-4 text-white placeholder-white/50 focus:outline-none focus:border-white"
-                                    required
+                                    readOnly
+                                    className="w-full bg-white/5 border border-white/30 rounded-lg p-3 sm:p-4 text-white/70 cursor-not-allowed"
                                 />
                             </div>
 
@@ -492,10 +503,8 @@ const CommercialOperationPage: React.FC = () => {
                                 <input
                                     type="tel"
                                     value={phoneNumber}
-                                    onChange={(e) => setPhoneNumber(e.target.value)}
-                                    placeholder="+39 123 456 7890"
-                                    className="w-full bg-white/10 border border-white/50 rounded-lg p-3 sm:p-4 text-white placeholder-white/50 focus:outline-none focus:border-white"
-                                    required
+                                    readOnly
+                                    className="w-full bg-white/5 border border-white/30 rounded-lg p-3 sm:p-4 text-white/70 cursor-not-allowed"
                                 />
                             </div>
 

@@ -4,7 +4,7 @@ import { supabase } from '../supabaseClient'
 interface NewClientModalProps {
   isOpen: boolean
   onClose: () => void
-  onClientCreated?: (clientId: string) => void
+  onClientCreated?: (clientId: string, customerData: any) => void
 }
 
 type ClientType = 'persona_fisica' | 'azienda' | 'pubblica_amministrazione'
@@ -233,8 +233,9 @@ export default function NewClientModal({ isOpen, onClose, onClientCreated }: New
       }
 
       // Always proceed to payment, regardless of database save result
+      // Pass both clientId and the complete customerData
       if (onClientCreated) {
-        onClientCreated(clientCreatedId || 'temp-id')
+        onClientCreated(clientCreatedId || 'temp-id', customerData)
       }
 
       handleClose()

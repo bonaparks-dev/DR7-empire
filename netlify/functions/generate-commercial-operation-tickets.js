@@ -204,7 +204,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { email, fullName, phone, quantity, paymentIntentId, clientId } = JSON.parse(event.body || '{}');
+    const { email, fullName, phone, quantity, paymentIntentId, clientId, customerData: passedCustomerData } = JSON.parse(event.body || '{}');
 
     if (!email || !quantity || !paymentIntentId) {
       return createResponse(400, { success: false, error: 'Missing required fields: email, quantity, paymentIntentId.' });
@@ -218,9 +218,11 @@ exports.handler = async (event) => {
       return createResponse(400, { success: false, error: 'Il numero di telefono è obbligatorio.' });
     }
 
-    // Fetch customer extended data if clientId is provided
-    let customerData = null;
-    if (clientId) {
+    // Use passed customer data first, then try to fetch from database
+    let customerData = passedCustomerData || null;
+
+    // If no customer data was passed, try fetching from database
+    if (!customerData && clientId && clientId !== 'temp-id') {
       console.log(`[Tickets] Fetching customer extended data for clientId: ${clientId}`);
       const { data, error } = await supabase
         .from('customers_extended')
@@ -234,6 +236,8 @@ exports.handler = async (event) => {
         customerData = data;
         console.log(`[Tickets] Customer data fetched successfully`);
       }
+    } else if (passedCustomerData) {
+      console.log(`[Tickets] Using customer data passed from frontend`);
     }
 
     const qty = Number(quantity);
