@@ -450,7 +450,7 @@ const BookingPage: React.FC = () => {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} className="pt-32 pb-24 bg-black min-h-screen">
       <div className="container mx-auto px-6">
-        <h1 className="text-4xl md:text-5xl font-bold text-white text-center mb-4">{t('Book_Your')} <span className="text-white">{item.name}</span></h1>
+        <h1 className="text-5xl md:text-6xl font-bold text-white text-center mb-4">{t('Book_Your')} <span className="text-white">{item.name}</span></h1>
         {renderContent()}
       </div>
     </motion.div>

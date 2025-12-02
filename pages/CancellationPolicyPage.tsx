@@ -83,7 +83,7 @@ const CancellationPolicyPage = () => {
             <BackButton to="/" />
           </div>
 
-          <h1 className="text-4xl md:text-5xl font-bold text-white text-center mb-12">
+          <h1 className="text-5xl md:text-6xl font-bold text-white text-center mb-12">
             {lang === 'it' ? policy.title.it : policy.title.en}
           </h1>
 

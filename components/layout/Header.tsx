@@ -97,7 +97,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
             <nav className="flex-grow flex flex-col space-y-6">
               {/* ESPERIENZE & ACCESSO ESCLUSIVO */}
               <div>
-                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
                   Esperienze & Accesso Esclusivo
                 </h3>
                 <div className="space-y-1">
@@ -112,7 +112,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 
               {/* OPERAZIONI UFFICIALI */}
               <div>
-                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
                   Operazioni Ufficiali
                 </h3>
                 <div className="space-y-1">
@@ -124,7 +124,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 
               {/* BUSINESS & CORPORATE */}
               <div>
-                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
                   Business & Corporate
                 </h3>
                 <div className="space-y-1">
@@ -139,7 +139,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 
               {/* SERVIZI & MOBILITÀ DI LUSSO */}
               <div>
-                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
                   Servizi & Mobilità di Lusso
                 </h3>
                 <div className="space-y-1">
@@ -169,7 +169,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 
               {/* DIGITAL INNOVATION */}
               <div>
-                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
                   Digital Innovation
                 </h3>
                 <div className="space-y-1">
@@ -274,6 +274,12 @@ const Header: React.FC = () => {
                   exit={{ opacity: 0, x: 10 }}
                   className="flex items-center space-x-3"
                 >
+                  <Link
+                    to="/credit-wallet"
+                    className="hidden md:block bg-white text-black px-4 py-2 rounded-full font-bold text-xs hover:bg-gray-200 transition-colors"
+                  >
+                    Credit Wallet
+                  </Link>
                   <Link
                     to={user.role === 'business' ? '/partner/dashboard' : '/account'}
                     className="hidden md:flex items-center justify-center w-9 h-9 bg-gray-800/70 border border-gray-700 rounded-full text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"

@@ -258,7 +258,7 @@ const MechanicalServicesPage: React.FC = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h1 className="text-5xl md:text-7xl font-bold text-white mb-6">
+          <h1 className="text-6xl md:text-8xl font-bold text-white mb-6">
             🔧 DR7 RAPID SERVICE
           </h1>
           <p className="text-xl md:text-2xl text-gray-400 mb-4">

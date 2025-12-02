@@ -256,7 +256,7 @@ const AviationQuoteRequestPage: React.FC = () => {
         className="max-w-5xl mx-auto"
       >
         <div className="text-center mb-10">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+          <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
             Richiedi un Preventivo Jet Privato
           </h1>
           <p className="text-xl text-gray-400">

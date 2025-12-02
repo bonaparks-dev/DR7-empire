@@ -83,7 +83,7 @@ const JetSearchResultsPage: React.FC = () => {
                     className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4"
                 >
                     <div>
-                        <h1 className="text-3xl md:text-4xl font-bold text-white">{t('Search_Results')}</h1>
+                        <h1 className="text-4xl md:text-5xl font-bold text-white">{t('Search_Results')}</h1>
                         <p className="text-gray-400 mt-1">
                             {getAirportName(searchCriteria.departure)} to {getAirportName(searchCriteria.arrival)} &middot; {searchCriteria.passengers} Passengers
                         </p>

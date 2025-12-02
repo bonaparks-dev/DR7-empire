@@ -35,7 +35,7 @@ const AccountPage = () => {
         >
             <div className="container mx-auto px-6">
                 <div className="text-center mb-12">
-                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">{t('Account_Settings')}</h1>
+                    <h1 className="text-5xl md:text-6xl font-bold text-white mb-2">{t('Account_Settings')}</h1>
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-8 lg:gap-12">

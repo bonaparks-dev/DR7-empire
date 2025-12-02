@@ -156,7 +156,7 @@ const MembershipEnrollmentPage: React.FC = () => {
         return (
             <div className="pt-32 pb-24 bg-black min-h-screen flex items-center justify-center">
                 <motion.div initial={{opacity: 0, scale: 0.9}} animate={{opacity: 1, scale: 1}} className="text-center text-white p-8">
-                    <h1 className="text-4xl font-bold mb-4">{t('Welcome_to_the_Club')}</h1>
+                    <h1 className="text-5xl font-bold mb-4">{t('Welcome_to_the_Club')}</h1>
                     <p className="text-lg text-gray-300 mb-8">{t('Your_membership_is_now_active')}</p>
                     <button onClick={() => navigate('/account/membership')} className="bg-white text-black font-bold py-3 px-8 rounded-full">{t('Go_to_Dashboard')}</button>
                 </motion.div>

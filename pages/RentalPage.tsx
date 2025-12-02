@@ -147,7 +147,7 @@ const JetSearchPage: React.FC = () => {
                         transition={{ duration: 0.5 }}
                         className="text-center"
                     >
-                        <h1 className="text-4xl md:text-5xl font-bold text-white">
+                        <h1 className="text-5xl md:text-6xl font-bold text-white">
                             {t('Find_your_private_jet')}
                         </h1>
                     </motion.div>
@@ -240,7 +240,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
               transition={{ duration: 0.5 }}
               className="text-center mb-12"
             >
-              <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
                 DR7 Aviation Division
               </h1>
               <p className="text-xl text-gray-400 mb-8">

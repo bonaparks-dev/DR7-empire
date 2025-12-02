@@ -116,7 +116,7 @@ const WinRulesPage = () => {
                 <BackButton />
             </div>
 
-            <h1 className="text-4xl md:text-5xl font-bold text-white text-center mb-4">
+            <h1 className="text-5xl md:text-6xl font-bold text-white text-center mb-4">
                 {language === 'it' ? rules.title.it : rules.title.en}
             </h1>
 

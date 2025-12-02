@@ -103,7 +103,7 @@ const PartnerDashboardPage: React.FC = () => {
         >
             <div className="container mx-auto px-6">
                 <div className="text-center mb-12">
-                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">{t('Welcome_to_your_Partner_Dashboard')}</h1>
+                    <h1 className="text-5xl md:text-6xl font-bold text-white mb-2">{t('Welcome_to_your_Partner_Dashboard')}</h1>
                     <p className="text-lg text-gray-400">Welcome, {user?.companyName || user?.fullName}</p>
                 </div>
                 

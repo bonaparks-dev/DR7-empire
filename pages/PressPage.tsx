@@ -68,7 +68,7 @@ const PressPage: React.FC = () => {
                     transition={{ duration: 0.6 }}
                     className="text-center mb-16"
                 >
-                    <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
+                    <h1 className="text-6xl md:text-7xl font-bold text-white mb-6">
                         {t('Press')}
                     </h1>
                     <p className="text-xl text-gray-400 max-w-3xl mx-auto">

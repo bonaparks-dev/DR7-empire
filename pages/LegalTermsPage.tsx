@@ -34,7 +34,7 @@ const LegalTermsPage = () => {
             <BackButton to="/commercial-operation" />
           </div>
 
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white text-center mb-4">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white text-center mb-4">
             REGOLAMENTO UFFICIALE LOTTERIA DR7 S.p.A.
           </h1>
 

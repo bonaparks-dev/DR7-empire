@@ -102,7 +102,7 @@ const MembershipPage: React.FC = () => {
                     transition={{ duration: 0.5 }}
                     className="text-center"
                 >
-                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                    <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
                         DR7 MEMBERSHIP CLUB
                     </h1>
                     <p className="text-xl text-gray-300 mb-2 max-w-2xl mx-auto font-semibold">

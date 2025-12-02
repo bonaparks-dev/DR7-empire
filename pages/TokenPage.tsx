@@ -14,7 +14,7 @@ const TokenPage: React.FC = () => {
           transition={{ duration: 0.8 }}
           className="relative max-w-6xl mx-auto text-center"
         >
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-gray-300 to-white bg-clip-text text-transparent">
+          <h1 className="text-6xl md:text-8xl font-bold mb-6 bg-gradient-to-r from-white via-gray-300 to-white bg-clip-text text-transparent">
             DR7 TOKEN
           </h1>
           <p className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto mb-4">

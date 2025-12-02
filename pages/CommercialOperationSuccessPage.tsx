@@ -88,7 +88,7 @@ const CommercialOperationSuccessPage: React.FC = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                     </motion.svg>
                 </motion.div>
-                <h1 className="text-4xl font-bold text-white mb-4">
+                <h1 className="text-5xl font-bold text-white mb-4">
                     {t('Purchase_Success').replace('{count}', String(tickets.length))}
                 </h1>
                 <p className="text-lg text-gray-300 mb-10 max-w-2xl mx-auto">

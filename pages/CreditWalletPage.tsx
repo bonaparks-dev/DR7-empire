@@ -499,7 +499,7 @@ const CreditWalletPage: React.FC = () => {
             transition={{ duration: 0.6 }}
             className="text-center mb-16"
           >
-            <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-4">
+            <h1 className="text-6xl md:text-7xl font-extrabold text-white mb-4">
               DR7 CREDIT WALLET
             </h1>
             <p className="text-2xl text-white font-semibold mb-6">
