@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, Variants } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Wallet, Zap, Shield, Clock, TrendingUp, Gift } from 'lucide-react';
+import { WalletIcon, ZapIcon, ShieldIcon, ClockIcon, TrendingUpIcon, GiftIcon } from '../components/icons/Icons';
 
 interface CreditPackage {
   id: string;
@@ -207,7 +207,7 @@ const CreditWalletPage: React.FC = () => {
             className="text-center mb-16"
           >
             <div className="flex items-center justify-center gap-3 mb-4">
-              <Wallet className="w-12 h-12 text-[#D4AF37]" />
+              <WalletIcon className="w-12 h-12 text-[#D4AF37]" />
               <h1 className="text-5xl md:text-6xl font-extrabold text-white">
                 DR7 CREDIT WALLET
               </h1>
@@ -229,17 +229,17 @@ const CreditWalletPage: React.FC = () => {
             className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16"
           >
             <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg p-6 text-center">
-              <TrendingUp className="w-12 h-12 text-[#D4AF37] mx-auto mb-4" />
+              <TrendingUpIcon className="w-12 h-12 text-[#D4AF37] mx-auto mb-4" />
               <h3 className="text-xl font-bold text-white mb-2">Fino all'80% Extra</h3>
               <p className="text-gray-400">Credito bonus a seconda del pacchetto scelto</p>
             </div>
             <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg p-6 text-center">
-              <Clock className="w-12 h-12 text-[#D4AF37] mx-auto mb-4" />
+              <ClockIcon className="w-12 h-12 text-[#D4AF37] mx-auto mb-4" />
               <h3 className="text-xl font-bold text-white mb-2">Nessuna Scadenza</h3>
               <p className="text-gray-400">Il credito rimane sempre disponibile nel tuo profilo</p>
             </div>
             <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg p-6 text-center">
-              <Shield className="w-12 h-12 text-[#D4AF37] mx-auto mb-4" />
+              <ShieldIcon className="w-12 h-12 text-[#D4AF37] mx-auto mb-4" />
               <h3 className="text-xl font-bold text-white mb-2">100% Sicuro</h3>
               <p className="text-gray-400">Pagamenti certificati e controllati</p>
             </div>
@@ -253,7 +253,7 @@ const CreditWalletPage: React.FC = () => {
             className="bg-gradient-to-r from-[#D4AF37]/10 to-transparent border border-[#D4AF37]/30 rounded-lg p-8 mb-16"
           >
             <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
-              <Zap className="w-6 h-6 text-[#D4AF37]" />
+              <ZapIcon className="w-6 h-6 text-[#D4AF37]" />
               Il credito può essere utilizzato per:
             </h2>
             <p className="text-gray-300 text-lg leading-relaxed">
@@ -318,28 +318,28 @@ const CreditWalletPage: React.FC = () => {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="flex items-start gap-4">
-                <Gift className="w-6 h-6 text-[#D4AF37] flex-shrink-0 mt-1" />
+                <GiftIcon className="w-6 h-6 text-[#D4AF37] flex-shrink-0 mt-1" />
                 <div>
                   <h3 className="text-lg font-bold text-white mb-2">Fino all'80% di credito extra</h3>
                   <p className="text-gray-400">A seconda del pacchetto scelto</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
-                <Zap className="w-6 h-6 text-[#D4AF37] flex-shrink-0 mt-1" />
+                <ZapIcon className="w-6 h-6 text-[#D4AF37] flex-shrink-0 mt-1" />
                 <div>
                   <h3 className="text-lg font-bold text-white mb-2">Pagamenti più rapidi</h3>
                   <p className="text-gray-400">Senza pensieri e completamente automatici</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
-                <Clock className="w-6 h-6 text-[#D4AF37] flex-shrink-0 mt-1" />
+                <ClockIcon className="w-6 h-6 text-[#D4AF37] flex-shrink-0 mt-1" />
                 <div>
                   <h3 className="text-lg font-bold text-white mb-2">Nessuna scadenza del credito</h3>
                   <p className="text-gray-400">Usa il credito quando vuoi</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
-                <TrendingUp className="w-6 h-6 text-[#D4AF37] flex-shrink-0 mt-1" />
+                <TrendingUpIcon className="w-6 h-6 text-[#D4AF37] flex-shrink-0 mt-1" />
                 <div>
                   <h3 className="text-lg font-bold text-white mb-2">Maggior convenienza</h3>
                   <p className="text-gray-400">Per chi utilizza spesso i nostri servizi</p>
@@ -356,7 +356,7 @@ const CreditWalletPage: React.FC = () => {
             className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-lg p-8 mb-12"
           >
             <h2 className="text-3xl font-bold text-white mb-6 text-center flex items-center justify-center gap-3">
-              <Shield className="w-8 h-8 text-[#D4AF37]" />
+              <ShieldIcon className="w-8 h-8 text-[#D4AF37]" />
               TRASPARENZA E SICUREZZA
             </h2>
             <div className="space-y-4 text-gray-300 max-w-3xl mx-auto">
