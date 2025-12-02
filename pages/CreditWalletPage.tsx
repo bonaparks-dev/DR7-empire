@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
 import type { Stripe, StripeElements } from '@stripe/stripe-js';
+import { addCredits } from '../utils/creditWallet';
 
 interface CreditPackage {
   id: string;
@@ -428,6 +429,23 @@ const CreditWalletPage: React.FC = () => {
 
       if (dbError) {
         console.error('Database error:', dbError);
+        throw new Error('Failed to save purchase record');
+      }
+
+      // Add credits to user's balance
+      if (user?.id) {
+        const creditResult = await addCredits(
+          user.id,
+          selectedPackage.receivedAmount,
+          `Ricarica ${selectedPackage.name}`,
+          data?.id,
+          'credit_purchase'
+        );
+
+        if (!creditResult.success) {
+          console.error('Failed to add credits:', creditResult.error);
+          throw new Error('Failed to add credits to balance');
+        }
       }
 
       // Show success message

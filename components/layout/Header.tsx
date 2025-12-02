@@ -94,46 +94,90 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               </div>
             )}
 
-            <nav className="flex-grow flex flex-col space-y-1">
-              <NavLink to="/cars" onClick={onClose} className={navLinkClasses}>
-                <span>DR7 Supercar & Luxury Division</span>
-              </NavLink>
-              <NavLink to="/urban-cars" onClick={onClose} className={navLinkClasses}>
-                <span>DR7 Urban Mobility Division</span>
-              </NavLink>
-              <NavLink to="/corporate-fleet" onClick={onClose} className={navLinkClasses}>
-                <span>DR7 Corporate & Utility Fleet Division</span>
-              </NavLink>
-              <NavLink to="/yachts" onClick={onClose} className={navLinkClasses}>
-                <span>DR7 Yachting Division</span>
-              </NavLink>
-              <NavLink to="/jets" onClick={onClose} className={navLinkClasses}>
-                <span>DR7 Aviation Division</span>
-              </NavLink>
-              <NavLink to="/car-wash-services" onClick={onClose} className={navLinkClasses}>
-                <span>DR7 Luxury Care Services</span>
-              </NavLink>
-              <NavLink to="/mechanical-services" onClick={onClose} className={navLinkClasses}>
-                <span>DR7 Rapid Response Services</span>
-              </NavLink>
-              <NavLink to="/membership" onClick={onClose} className={navLinkClasses}>
-                <span>DR7 Exclusive Members Club</span>
-              </NavLink>
-              <NavLink to="/credit-wallet" onClick={onClose} className={navLinkClasses}>
-                <span>DR7 Credit Wallet</span>
-              </NavLink>
-              <NavLink to="/commercial-operation" onClick={onClose} className={navLinkClasses}>
-                <span>DR7 Official Lottery</span>
-              </NavLink>
-              <NavLink to="/franchising" onClick={onClose} className={navLinkClasses}>
-                <span>DR7 Global Franchising</span>
-              </NavLink>
-              <NavLink to="/investitori" onClick={onClose} className={navLinkClasses}>
-                <span>DR7 Investor Relations Office</span>
-              </NavLink>
-              <NavLink to="/token" onClick={onClose} className={navLinkClasses}>
-                <span>DR7 Digital Asset & Token Division</span>
-              </NavLink>
+            <nav className="flex-grow flex flex-col space-y-6">
+              {/* ESPERIENZE & ACCESSO ESCLUSIVO */}
+              <div>
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">
+                  Esperienze & Accesso Esclusivo
+                </h3>
+                <div className="space-y-1">
+                  <NavLink to="/membership" onClick={onClose} className={navLinkClasses}>
+                    <span>Exclusive Members Club</span>
+                  </NavLink>
+                  <NavLink to="/credit-wallet" onClick={onClose} className={navLinkClasses}>
+                    <span>DR7 Credit Wallet</span>
+                  </NavLink>
+                </div>
+              </div>
+
+              {/* OPERAZIONI UFFICIALI */}
+              <div>
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">
+                  Operazioni Ufficiali
+                </h3>
+                <div className="space-y-1">
+                  <NavLink to="/commercial-operation" onClick={onClose} className={navLinkClasses}>
+                    <span>DR7 Official Lottery</span>
+                  </NavLink>
+                </div>
+              </div>
+
+              {/* BUSINESS & CORPORATE */}
+              <div>
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">
+                  Business & Corporate
+                </h3>
+                <div className="space-y-1">
+                  <NavLink to="/franchising" onClick={onClose} className={navLinkClasses}>
+                    <span>Global Franchising</span>
+                  </NavLink>
+                  <NavLink to="/investitori" onClick={onClose} className={navLinkClasses}>
+                    <span>Investor Relations</span>
+                  </NavLink>
+                </div>
+              </div>
+
+              {/* SERVIZI & MOBILITÀ DI LUSSO */}
+              <div>
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">
+                  Servizi & Mobilità di Lusso
+                </h3>
+                <div className="space-y-1">
+                  <NavLink to="/cars" onClick={onClose} className={navLinkClasses}>
+                    <span>Supercar & Luxury Division</span>
+                  </NavLink>
+                  <NavLink to="/urban-cars" onClick={onClose} className={navLinkClasses}>
+                    <span>Urban Mobility Division</span>
+                  </NavLink>
+                  <NavLink to="/corporate-fleet" onClick={onClose} className={navLinkClasses}>
+                    <span>Corporate & Utility Fleet</span>
+                  </NavLink>
+                  <NavLink to="/yachts" onClick={onClose} className={navLinkClasses}>
+                    <span>Yachting Division</span>
+                  </NavLink>
+                  <NavLink to="/jets" onClick={onClose} className={navLinkClasses}>
+                    <span>Aviation Division</span>
+                  </NavLink>
+                  <NavLink to="/car-wash-services" onClick={onClose} className={navLinkClasses}>
+                    <span>Luxury Care Services</span>
+                  </NavLink>
+                  <NavLink to="/mechanical-services" onClick={onClose} className={navLinkClasses}>
+                    <span>Rapid Response Services</span>
+                  </NavLink>
+                </div>
+              </div>
+
+              {/* DIGITAL INNOVATION */}
+              <div>
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">
+                  Digital Innovation
+                </h3>
+                <div className="space-y-1">
+                  <NavLink to="/token" onClick={onClose} className={navLinkClasses}>
+                    <span>Digital Asset & Token Division</span>
+                  </NavLink>
+                </div>
+              </div>
             </nav>
 
             <div className="mt-auto pt-8 border-t border-gray-800">

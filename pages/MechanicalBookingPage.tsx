@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
 import { MECHANICAL_SERVICES } from './MechanicalServicesPage';
 import type { Stripe, StripeElements } from '@stripe/stripe-js';
+import { getUserCreditBalance, deductCredits, hasSufficientBalance } from '../utils/creditWallet';
 
 const STRIPE_PUBLISHABLE_KEY = 'pk_live_51S3dDjQcprtTyo8tBfBy5mAZj8PQXkxfZ1RCnWskrWFZ2WEnm1u93ZnE2tBi316Gz2CCrvLV98IjSoiXb0vSDpOQ003fNG69Y2';
 
@@ -64,6 +65,11 @@ const MechanicalBookingPage: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [pendingBookingData, setPendingBookingData] = useState<any>(null);
 
+  // Credit wallet state
+  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'credit'>('stripe');
+  const [creditBalance, setCreditBalance] = useState<number>(0);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(true);
+
   // Load existing bookings when date changes
   useEffect(() => {
     if (formData.appointmentDate) {
@@ -121,9 +127,28 @@ const MechanicalBookingPage: React.FC = () => {
     }
   }, [user]);
 
-  // Create payment intent when modal opens
+  // Fetch credit balance
   useEffect(() => {
-    if (showPaymentModal && selectedService) {
+    const fetchBalance = async () => {
+      if (user?.id) {
+        setIsLoadingBalance(true);
+        try {
+          const balance = await getUserCreditBalance(user.id);
+          setCreditBalance(balance);
+        } catch (error) {
+          console.error('Error fetching credit balance:', error);
+        } finally {
+          setIsLoadingBalance(false);
+        }
+      }
+    };
+
+    fetchBalance();
+  }, [user]);
+
+  // Create payment intent when modal opens (only for Stripe payment)
+  useEffect(() => {
+    if (showPaymentModal && paymentMethod === 'stripe' && selectedService && selectedService.price > 0) {
       setIsClientSecretLoading(true);
       setStripeError(null);
       setClientSecret(null);
@@ -159,7 +184,7 @@ const MechanicalBookingPage: React.FC = () => {
         setIsClientSecretLoading(false);
       });
     }
-  }, [showPaymentModal, user, selectedService, formData.appointmentDate, formData.appointmentTime, lang]);
+  }, [showPaymentModal, paymentMethod, user, selectedService, formData.appointmentDate, formData.appointmentTime, lang]);
 
   // Mount Stripe card element
   useEffect(() => {
@@ -385,7 +410,7 @@ const MechanicalBookingPage: React.FC = () => {
   };
 
   const handlePayment = async () => {
-    if (!stripe || !elements || !clientSecret || !pendingBookingData) {
+    if (!pendingBookingData) {
       return;
     }
 
@@ -393,134 +418,187 @@ const MechanicalBookingPage: React.FC = () => {
     setStripeError(null);
 
     try {
-      const cardElement = elements.getElement('card');
-      if (!cardElement) {
-        throw new Error('Card element not found');
-      }
+      let bookingDataWithPayment;
 
-      const { error: paymentError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: cardElement,
-          billing_details: {
-            name: formData.fullName,
-            email: formData.email,
-            phone: formData.phone
-          }
+      if (paymentMethod === 'credit') {
+        // Credit wallet payment
+        if (!user?.id) {
+          throw new Error('User not logged in');
         }
-      });
 
-      if (paymentError) {
-        setStripeError(paymentError.message || 'Payment failed');
-        return;
-      }
+        const totalAmount = selectedService?.price || 0;
 
-      if (paymentIntent.status === 'succeeded') {
-        const bookingDataWithPayment = {
+        // Check sufficient balance
+        const hasBalance = await hasSufficientBalance(user.id, totalAmount);
+        if (!hasBalance) {
+          setStripeError(lang === 'it' ? 'Credito insufficiente' : 'Insufficient credit');
+          setIsProcessing(false);
+          return;
+        }
+
+        // Deduct credits
+        const deductResult = await deductCredits(
+          user.id,
+          totalAmount,
+          `Servizio Meccanico ${lang === 'it' ? selectedService?.name : selectedService?.nameEn}`,
+          undefined,
+          'mechanical_service_booking'
+        );
+
+        if (!deductResult.success) {
+          setStripeError(deductResult.error || 'Failed to deduct credits');
+          setIsProcessing(false);
+          return;
+        }
+
+        // Create booking data for credit payment
+        bookingDataWithPayment = {
           ...pendingBookingData,
           payment_status: 'paid',
-          stripe_payment_intent_id: paymentIntent.id
+          payment_method: 'credit_wallet'
         };
 
-        const { data, error } = await supabase
-          .from('bookings')
-          .insert(bookingDataWithPayment)
-          .select()
-          .single();
-
-        if (error) {
-          console.error('Database error:', error);
-          throw error;
+      } else {
+        // Stripe card payment
+        if (!stripe || !elements || !clientSecret) {
+          return;
         }
 
-        // Create Google Calendar event
-        try {
-          const [hours, minutes] = formData.appointmentTime.split(':').map(Number);
-          const endHours = hours;
-          const endMinutes = minutes + 30;
-          const endTime = `${String(endHours + Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
-
-          await fetch('/.netlify/functions/create-calendar-event', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              vehicleName: `🔧 ${pendingBookingData.service_name}`,
-              customerName: formData.fullName,
-              customerEmail: formData.email,
-              customerPhone: formData.phone,
-              pickupDate: formData.appointmentDate,
-              pickupTime: formData.appointmentTime,
-              returnDate: formData.appointmentDate,
-              returnTime: endTime,
-              pickupLocation: `DR7 Rapid Service - ${pendingBookingData.vehicle_name}`,
-              returnLocation: 'DR7 Rapid Service',
-              totalPrice: selectedService?.price || 0,
-              bookingId: data.id.substring(0, 8)
-            })
-          });
-        } catch (calendarError) {
-          console.error('Calendar error (non-blocking):', calendarError);
+        const cardElement = elements.getElement('card');
+        if (!cardElement) {
+          throw new Error('Card element not found');
         }
 
-        // Send notifications
-        try {
-          await fetch('/.netlify/functions/send-booking-confirmation', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ booking: data })
-          });
-        } catch (emailError) {
-          console.error('Email error (non-blocking):', emailError);
+        const { error: paymentError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+          payment_method: {
+            card: cardElement,
+            billing_details: {
+              name: formData.fullName,
+              email: formData.email,
+              phone: formData.phone
+            }
+          }
+        });
+
+        if (paymentError) {
+          setStripeError(paymentError.message || 'Payment failed');
+          setIsProcessing(false);
+          return;
         }
 
-        try {
-          await fetch('/.netlify/functions/send-whatsapp-notification', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ booking: data })
-          });
-        } catch (whatsappError) {
-          console.error('WhatsApp error (non-blocking):', whatsappError);
+        if (paymentIntent.status !== 'succeeded') {
+          throw new Error('Payment not completed');
         }
 
-        // Generate WhatsApp prefilled message for customer
-        const bookingId = data.id.substring(0, 8).toUpperCase();
-        const serviceName = data.service_name;
-        const appointmentDate = new Date(data.appointment_date);
-        const dateOptions: Intl.DateTimeFormatOptions = {
-          weekday: 'long',
-          day: '2-digit',
-          month: 'long',
-          year: 'numeric',
-          timeZone: 'Europe/Rome'
+        // Create booking data for Stripe payment
+        bookingDataWithPayment = {
+          ...pendingBookingData,
+          payment_status: 'paid',
+          stripe_payment_intent_id: paymentIntent.id,
+          payment_method: 'online'
         };
-        const formattedDate = appointmentDate.toLocaleDateString('it-IT', dateOptions);
-        const totalPrice = (data.price_total / 100).toFixed(2);
-
-        let whatsappMessage = `Ciao! Ho appena prenotato un servizio meccanico sul vostro sito.\n\n` +
-          `📋 *Dettagli Prenotazione*\n` +
-          `*ID:* DR7-${bookingId}\n` +
-          `*Nome:* ${formData.fullName}\n` +
-          `*Telefono:* ${formData.phone}\n` +
-          `*Servizio:* ${serviceName}\n` +
-          `*Veicolo:* ${pendingBookingData.vehicle_name}\n` +
-          `*Data e Ora:* ${formattedDate} alle ${formData.appointmentTime}\n`;
-
-        if (formData.notes) {
-          whatsappMessage += `*Note:* ${formData.notes}\n`;
-        }
-
-        whatsappMessage += `*Totale:* €${totalPrice}\n\n` +
-          `Grazie!`;
-
-        const officeWhatsAppNumber = '393457905205';
-        const whatsappUrl = `https://wa.me/${officeWhatsAppNumber}?text=${encodeURIComponent(whatsappMessage)}`;
-
-        setTimeout(() => {
-          window.open(whatsappUrl, '_blank');
-        }, 1000);
-
-        navigate('/booking-success', { state: { booking: data } });
       }
+
+      // Create booking in database (common for both payment methods)
+      const { data, error } = await supabase
+        .from('bookings')
+        .insert(bookingDataWithPayment)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+
+      // Create Google Calendar event
+      try {
+        const [hours, minutes] = formData.appointmentTime.split(':').map(Number);
+        const endHours = hours;
+        const endMinutes = minutes + 30;
+        const endTime = `${String(endHours + Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
+
+        await fetch('/.netlify/functions/create-calendar-event', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            vehicleName: `🔧 ${pendingBookingData.service_name}`,
+            customerName: formData.fullName,
+            customerEmail: formData.email,
+            customerPhone: formData.phone,
+            pickupDate: formData.appointmentDate,
+            pickupTime: formData.appointmentTime,
+            returnDate: formData.appointmentDate,
+            returnTime: endTime,
+            pickupLocation: `DR7 Rapid Service - ${pendingBookingData.vehicle_name}`,
+            returnLocation: 'DR7 Rapid Service',
+            totalPrice: selectedService?.price || 0,
+            bookingId: data.id.substring(0, 8)
+          })
+        });
+      } catch (calendarError) {
+        console.error('Calendar error (non-blocking):', calendarError);
+      }
+
+      // Send notifications
+      try {
+        await fetch('/.netlify/functions/send-booking-confirmation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ booking: data })
+        });
+      } catch (emailError) {
+        console.error('Email error (non-blocking):', emailError);
+      }
+
+      try {
+        await fetch('/.netlify/functions/send-whatsapp-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ booking: data })
+        });
+      } catch (whatsappError) {
+        console.error('WhatsApp error (non-blocking):', whatsappError);
+      }
+
+      // Generate WhatsApp prefilled message for customer
+      const bookingId = data.id.substring(0, 8).toUpperCase();
+      const serviceName = data.service_name;
+      const appointmentDate = new Date(data.appointment_date);
+      const dateOptions: Intl.DateTimeFormatOptions = {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'Europe/Rome'
+      };
+      const formattedDate = appointmentDate.toLocaleDateString('it-IT', dateOptions);
+      const totalPrice = (data.price_total / 100).toFixed(2);
+
+      let whatsappMessage = `Ciao! Ho appena prenotato un servizio meccanico sul vostro sito.\n\n` +
+        `📋 *Dettagli Prenotazione*\n` +
+        `*ID:* DR7-${bookingId}\n` +
+        `*Nome:* ${formData.fullName}\n` +
+        `*Telefono:* ${formData.phone}\n` +
+        `*Servizio:* ${serviceName}\n` +
+        `*Veicolo:* ${pendingBookingData.vehicle_name}\n` +
+        `*Data e Ora:* ${formattedDate} alle ${formData.appointmentTime}\n`;
+
+      if (formData.notes) {
+        whatsappMessage += `*Note:* ${formData.notes}\n`;
+      }
+
+      whatsappMessage += `*Totale:* €${totalPrice}\n\n` +
+        `Grazie!`;
+
+      const officeWhatsAppNumber = '393457905205';
+      const whatsappUrl = `https://wa.me/${officeWhatsAppNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+
+      setTimeout(() => {
+        window.open(whatsappUrl, '_blank');
+      }, 1000);
+
+      navigate('/booking-success', { state: { booking: data } });
     } catch (error: any) {
       console.error('Payment error:', error);
       setStripeError(error.message || 'Payment processing failed');
@@ -903,11 +981,56 @@ const MechanicalBookingPage: React.FC = () => {
                 </div>
               </div>
 
-              {isClientSecretLoading ? (
+              {/* Payment Method Selector */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-300 mb-3">
+                  {lang === 'it' ? 'Metodo di Pagamento' : 'Payment Method'}
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('credit')}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      paymentMethod === 'credit'
+                        ? 'border-white bg-white/10'
+                        : 'border-gray-700 bg-gray-800 hover:border-gray-600'
+                    }`}
+                  >
+                    <div className="text-center">
+                      <div className="text-sm font-semibold text-white mb-1">
+                        {lang === 'it' ? 'Credit Wallet' : 'Credit Wallet'}
+                      </div>
+                      {!isLoadingBalance && (
+                        <div className="text-xs text-gray-400">
+                          {lang === 'it' ? 'Saldo: ' : 'Balance: '}€{creditBalance.toFixed(2)}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('stripe')}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      paymentMethod === 'stripe'
+                        ? 'border-white bg-white/10'
+                        : 'border-gray-700 bg-gray-800 hover:border-gray-600'
+                    }`}
+                  >
+                    <div className="text-center">
+                      <div className="text-sm font-semibold text-white mb-1">
+                        {lang === 'it' ? 'Carta di Credito' : 'Credit Card'}
+                      </div>
+                      <div className="text-xs text-gray-400">Visa, Mastercard</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {paymentMethod === 'stripe' && isClientSecretLoading ? (
                 <div className="text-center py-8 text-gray-400">
                   {lang === 'it' ? 'Caricamento...' : 'Loading...'}
                 </div>
-              ) : clientSecret ? (
+              ) : paymentMethod === 'stripe' && clientSecret ? (
                 <>
                   <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -918,6 +1041,11 @@ const MechanicalBookingPage: React.FC = () => {
                       className="bg-gray-800 border border-gray-700 rounded-md p-3 min-h-[44px]"
                       style={{ position: 'relative', zIndex: 1 }}
                     />
+                    <p className="text-xs text-gray-400 mt-2">
+                      {lang === 'it'
+                        ? 'Inserisci i dettagli della tua carta qui sopra'
+                        : 'Enter your card details above'}
+                    </p>
                   </div>
 
                   {stripeError && (
@@ -942,7 +1070,61 @@ const MechanicalBookingPage: React.FC = () => {
                       : 'Secure payment processed by Stripe'}
                   </p>
                 </>
-              ) : stripeError ? (
+              ) : paymentMethod === 'credit' ? (
+                <>
+                  <div className="mb-6 p-4 bg-gray-800 rounded-lg">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-sm text-gray-300">
+                        {lang === 'it' ? 'Saldo Disponibile' : 'Available Balance'}:
+                      </span>
+                      <span className="text-lg font-bold text-white">€{creditBalance.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-300">
+                        {lang === 'it' ? 'Costo Servizio' : 'Service Cost'}:
+                      </span>
+                      <span className="text-lg font-bold text-white">€{selectedService?.price.toFixed(2)}</span>
+                    </div>
+                    <div className="border-t border-gray-700 my-3"></div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-white font-semibold">
+                        {lang === 'it' ? 'Saldo Dopo' : 'Balance After'}:
+                      </span>
+                      <span className={`text-lg font-bold ${
+                        creditBalance >= (selectedService?.price || 0) ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        €{(creditBalance - (selectedService?.price || 0)).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {stripeError && (
+                    <div className="mb-4 p-3 bg-red-900/20 border border-red-800 rounded text-sm text-red-400">
+                      {stripeError}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handlePayment}
+                    disabled={isProcessing || creditBalance < (selectedService?.price || 0)}
+                    className="w-full bg-white text-black font-bold py-3 px-6 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {isProcessing
+                      ? (lang === 'it' ? 'Elaborazione...' : 'Processing...')
+                      : creditBalance < (selectedService?.price || 0)
+                      ? (lang === 'it' ? 'Credito Insufficiente' : 'Insufficient Credit')
+                      : (lang === 'it' ? `Paga con Credit Wallet` : `Pay with Credit Wallet`)}
+                  </button>
+
+                  {creditBalance < (selectedService?.price || 0) && (
+                    <p className="text-xs text-gray-400 text-center mt-4">
+                      {lang === 'it'
+                        ? 'Ricarica il tuo Credit Wallet per completare questa prenotazione'
+                        : 'Recharge your Credit Wallet to complete this booking'}
+                    </p>
+                  )}
+                </>
+              ) : paymentMethod === 'stripe' && stripeError ? (
                 <div className="p-4 bg-red-900/20 border border-red-800 rounded text-sm text-red-400">
                   {stripeError}
                 </div>
