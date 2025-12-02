@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { motion, Variants } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, Variants, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../supabaseClient';
+import type { Stripe, StripeElements } from '@stripe/stripe-js';
 
 interface CreditPackage {
   id: string;
@@ -159,18 +161,292 @@ const PackageCard: React.FC<{ pkg: CreditPackage; onSelect: () => void }> = ({ p
   );
 };
 
+const STRIPE_PUBLISHABLE_KEY = 'pk_live_51S3dDjQcprtTyo8tBfBy5mAZj8PQXkxfZ1RCnWskrWFZ2WEnm1u93ZnE2tBi316Gz2CCrvLV98IjSoiXb0vSDpOQ003fNG69Y2';
+
 const CreditWalletPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [selectedSeries, setSelectedSeries] = useState<string>('all');
+  const [selectedPackage, setSelectedPackage] = useState<CreditPackage | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [stripe, setStripe] = useState<Stripe | null>(null);
+  const [elements, setElements] = useState<StripeElements | null>(null);
+  const cardElementRef = useRef<HTMLDivElement>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [isClientSecretLoading, setIsClientSecretLoading] = useState(false);
+  const [stripeError, setStripeError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Customer info
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    codiceFiscale: '',
+    indirizzo: '',
+    numeroCivico: '',
+    cittaResidenza: '',
+    codicePostale: '',
+    provinciaResidenza: ''
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Initialize Stripe
+  useEffect(() => {
+    if ((window as any).Stripe) {
+      if (!STRIPE_PUBLISHABLE_KEY || STRIPE_PUBLISHABLE_KEY.startsWith('YOUR_')) {
+        console.error("Stripe.js has loaded, but the publishable key is not set.");
+        setStripeError("Payment service is not configured correctly. Please contact support.");
+        return;
+      }
+      const stripeInstance = (window as any).Stripe(STRIPE_PUBLISHABLE_KEY);
+      setStripe(stripeInstance);
+      setElements(stripeInstance.elements());
+    }
+  }, []);
+
+  // Pre-fill user data
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        fullName: user.fullName || '',
+        email: user.email || '',
+        phone: user.phone || ''
+      }));
+    }
+  }, [user]);
+
+  // Create payment intent when modal opens
+  useEffect(() => {
+    if (showPaymentModal && selectedPackage) {
+      setIsClientSecretLoading(true);
+      setStripeError(null);
+      setClientSecret(null);
+
+      fetch('/.netlify/functions/create-payment-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: selectedPackage.rechargeAmount,
+          currency: 'eur',
+          email: user?.email,
+          purchaseType: 'credit-wallet',
+          metadata: {
+            packageId: selectedPackage.id,
+            packageName: selectedPackage.name,
+            receivedAmount: selectedPackage.receivedAmount,
+            bonus: selectedPackage.bonus
+          }
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          setStripeError(data.error);
+        } else {
+          setClientSecret(data.clientSecret);
+        }
+      })
+      .catch(error => {
+        console.error('Failed to fetch client secret:', error);
+        setStripeError('Could not connect to payment server.');
+      })
+      .finally(() => {
+        setIsClientSecretLoading(false);
+      });
+    }
+  }, [showPaymentModal, selectedPackage, user]);
+
+  // Mount Stripe card element
+  useEffect(() => {
+    if (elements && clientSecret && cardElementRef.current && showPaymentModal) {
+      const existingCard = elements.getElement('card');
+      if (existingCard) {
+        existingCard.unmount();
+      }
+
+      const timer = setTimeout(() => {
+        if (cardElementRef.current) {
+          const card = elements.create('card', {
+            style: {
+              base: {
+                color: '#ffffff',
+                fontFamily: '"Exo 2", sans-serif',
+                fontSize: '16px',
+                '::placeholder': { color: '#a0aec0' }
+              },
+              invalid: { color: '#ef4444', iconColor: '#ef4444' }
+            }
+          });
+
+          try {
+            card.mount(cardElementRef.current);
+            card.on('change', (event) => {
+              setStripeError(event.error ? event.error.message : null);
+            });
+          } catch (error) {
+            console.error('Error mounting Stripe card element:', error);
+            setStripeError('Failed to load payment form. Please refresh the page.');
+          }
+        }
+      }, 100);
+
+      return () => {
+        clearTimeout(timer);
+        const card = elements.getElement('card');
+        if (card) {
+          card.unmount();
+        }
+      };
+    }
+  }, [elements, clientSecret, showPaymentModal]);
+
+  // Validation functions
+  const validateCodiceFiscale = (cf: string): boolean => {
+    const cfRegex = /^[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]$/i;
+    return cf.length === 16 && cfRegex.test(cf.toUpperCase());
+  };
+
+  const validateItalianPhone = (phone: string): boolean => {
+    const phoneRegex = /^(\+39|0039)?[\s]?[0-9]{9,13}$/;
+    return phoneRegex.test(phone.replace(/\s/g, ''));
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    let newValue = value;
+
+    if (name === 'codiceFiscale' || name === 'provinciaResidenza') {
+      newValue = value.toUpperCase();
+    }
+
+    setFormData(prev => ({ ...prev, [name]: newValue }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.fullName) newErrors.fullName = 'Il nome è obbligatorio';
+    if (!formData.email) newErrors.email = 'L\'email è obbligatoria';
+    if (!formData.phone) {
+      newErrors.phone = 'Il telefono è obbligatorio';
+    } else if (!validateItalianPhone(formData.phone)) {
+      newErrors.phone = 'Formato telefono non valido';
+    }
+    if (!formData.codiceFiscale) {
+      newErrors.codiceFiscale = 'Codice Fiscale è obbligatorio';
+    } else if (!validateCodiceFiscale(formData.codiceFiscale)) {
+      newErrors.codiceFiscale = 'Codice Fiscale non valido (16 caratteri)';
+    }
+    if (!formData.indirizzo) newErrors.indirizzo = 'Indirizzo è obbligatorio';
+    if (!formData.cittaResidenza) newErrors.cittaResidenza = 'Città è obbligatoria';
+    if (!formData.codicePostale) newErrors.codicePostale = 'CAP è obbligatorio';
+    if (!formData.provinciaResidenza) newErrors.provinciaResidenza = 'Provincia è obbligatoria';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSelectPackage = (packageId: string) => {
     if (user) {
-      // TODO: Navigate to payment page or open payment modal
-      console.log('Selected package:', packageId);
-      alert('Funzionalità di pagamento in fase di implementazione');
+      const pkg = CREDIT_PACKAGES.find(p => p.id === packageId);
+      if (pkg) {
+        setSelectedPackage(pkg);
+        setShowPaymentModal(true);
+      }
     } else {
       navigate('/signin', { state: { from: { pathname: '/credit-wallet' } } });
+    }
+  };
+
+  const handlePayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validate()) return;
+    if (!stripe || !elements || !clientSecret || !selectedPackage) {
+      setStripeError("Payment system is not ready.");
+      return;
+    }
+
+    setIsProcessing(true);
+    setStripeError(null);
+
+    try {
+      const cardElement = elements.getElement('card');
+      if (!cardElement) {
+        throw new Error('Card element not found');
+      }
+
+      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: cardElement,
+          billing_details: {
+            name: formData.fullName,
+            email: formData.email,
+            phone: formData.phone
+          }
+        }
+      });
+
+      if (error) {
+        setStripeError(error.message || 'Payment failed');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Save credit wallet purchase to database
+      const { data, error: dbError } = await supabase
+        .from('credit_wallet_purchases')
+        .insert([{
+          user_id: user?.id || null,
+          package_id: selectedPackage.id,
+          package_name: selectedPackage.name,
+          package_series: selectedPackage.series,
+          recharge_amount: selectedPackage.rechargeAmount,
+          received_amount: selectedPackage.receivedAmount,
+          bonus_amount: selectedPackage.bonus,
+          bonus_percentage: selectedPackage.bonusPercentage,
+          payment_intent_id: paymentIntent?.id,
+          payment_status: 'paid',
+          currency: 'EUR',
+          customer_name: formData.fullName,
+          customer_email: formData.email,
+          customer_phone: formData.phone,
+          customer_codice_fiscale: formData.codiceFiscale,
+          customer_indirizzo: formData.indirizzo,
+          customer_numero_civico: formData.numeroCivico,
+          customer_citta: formData.cittaResidenza,
+          customer_cap: formData.codicePostale,
+          customer_provincia: formData.provinciaResidenza,
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
+
+      if (dbError) {
+        console.error('Database error:', dbError);
+      }
+
+      // Show success message
+      alert(`Ricarica completata con successo!\n\nHai ricaricato: €${selectedPackage.rechargeAmount}\nRiceverai: €${selectedPackage.receivedAmount}\nBonus: €${selectedPackage.bonus} (+${selectedPackage.bonusPercentage}%)`);
+
+      setShowPaymentModal(false);
+      setSelectedPackage(null);
+      setIsProcessing(false);
+
+      // Redirect to account page
+      if (user?.role === 'business') {
+        navigate('/partner/dashboard');
+      } else {
+        navigate('/account');
+      }
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      setStripeError(error.message || 'Payment processing failed');
+      setIsProcessing(false);
     }
   };
 
@@ -369,6 +645,222 @@ const CreditWalletPage: React.FC = () => {
           </motion.div>
         </div>
       </div>
+
+      {/* Payment Modal */}
+      <AnimatePresence>
+        {showPaymentModal && selectedPackage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-gray-900 border border-gray-800 rounded-lg max-w-2xl w-full my-8"
+            >
+              {/* Modal Header */}
+              <div className="p-6 border-b border-gray-800">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className="text-2xl font-bold text-white mb-2">
+                      Completa la Ricarica
+                    </h2>
+                    <p className="text-gray-400">
+                      {selectedPackage.name} - {selectedPackage.series}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowPaymentModal(false)}
+                    className="text-gray-400 hover:text-white transition-colors"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <form onSubmit={handlePayment} className="p-6 space-y-6">
+                {/* Package Summary */}
+                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-gray-400">Ricarichi</span>
+                    <span className="text-white font-bold">€{selectedPackage.rechargeAmount}</span>
+                  </div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-gray-400">Bonus (+{selectedPackage.bonusPercentage}%)</span>
+                    <span className="text-white font-bold">€{selectedPackage.bonus}</span>
+                  </div>
+                  <div className="border-t border-gray-700 my-2"></div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-white font-semibold">Ricevi</span>
+                    <span className="text-white font-bold text-xl">€{selectedPackage.receivedAmount}</span>
+                  </div>
+                </div>
+
+                {/* Customer Information */}
+                <div>
+                  <h3 className="text-lg font-bold text-white mb-4">Informazioni Cliente</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Nome Completo *
+                      </label>
+                      <input
+                        type="text"
+                        name="fullName"
+                        value={formData.fullName}
+                        onChange={handleChange}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                      />
+                      {errors.fullName && <p className="text-xs text-red-400 mt-1">{errors.fullName}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Email *</label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                      />
+                      {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Telefono *</label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        placeholder="+39 320 1234567"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                      />
+                      {errors.phone && <p className="text-xs text-red-400 mt-1">{errors.phone}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Codice Fiscale *</label>
+                      <input
+                        type="text"
+                        name="codiceFiscale"
+                        value={formData.codiceFiscale}
+                        onChange={handleChange}
+                        placeholder="RSSMRA80A01H501U"
+                        maxLength={16}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
+                      />
+                      {errors.codiceFiscale && <p className="text-xs text-red-400 mt-1">{errors.codiceFiscale}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Indirizzo *</label>
+                      <input
+                        type="text"
+                        name="indirizzo"
+                        value={formData.indirizzo}
+                        onChange={handleChange}
+                        placeholder="Via Roma"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                      />
+                      {errors.indirizzo && <p className="text-xs text-red-400 mt-1">{errors.indirizzo}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Numero Civico</label>
+                      <input
+                        type="text"
+                        name="numeroCivico"
+                        value={formData.numeroCivico}
+                        onChange={handleChange}
+                        placeholder="123"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Città *</label>
+                      <input
+                        type="text"
+                        name="cittaResidenza"
+                        value={formData.cittaResidenza}
+                        onChange={handleChange}
+                        placeholder="Milano"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                      />
+                      {errors.cittaResidenza && <p className="text-xs text-red-400 mt-1">{errors.cittaResidenza}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">CAP *</label>
+                      <input
+                        type="text"
+                        name="codicePostale"
+                        value={formData.codicePostale}
+                        onChange={handleChange}
+                        placeholder="20100"
+                        maxLength={5}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                      />
+                      {errors.codicePostale && <p className="text-xs text-red-400 mt-1">{errors.codicePostale}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Provincia *</label>
+                      <input
+                        type="text"
+                        name="provinciaResidenza"
+                        value={formData.provinciaResidenza}
+                        onChange={handleChange}
+                        placeholder="MI"
+                        maxLength={2}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
+                      />
+                      {errors.provinciaResidenza && <p className="text-xs text-red-400 mt-1">{errors.provinciaResidenza}</p>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payment Information */}
+                <div>
+                  <h3 className="text-lg font-bold text-white mb-4">Informazioni di Pagamento</h3>
+                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 min-h-[56px] flex items-center">
+                    {isClientSecretLoading ? (
+                      <div className="flex items-center text-gray-400 text-sm">
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          className="w-4 h-4 border-2 border-t-white border-gray-600 rounded-full mr-2"
+                        />
+                        <span>Inizializzazione pagamento...</span>
+                      </div>
+                    ) : (
+                      <div ref={cardElementRef} className="w-full" />
+                    )}
+                  </div>
+                  {stripeError && <p className="text-xs text-red-400 mt-2">{stripeError}</p>}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowPaymentModal(false)}
+                    className="flex-1 px-6 py-3 bg-gray-800 text-white rounded-full font-bold hover:bg-gray-700 transition-colors"
+                  >
+                    Annulla
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isProcessing || isClientSecretLoading}
+                    className="flex-1 px-6 py-3 bg-white text-black rounded-full font-bold hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isProcessing ? 'Elaborazione...' : `Paga €${selectedPackage.rechargeAmount}`}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
