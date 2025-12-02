@@ -119,6 +119,9 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               <NavLink to="/membership" onClick={onClose} className={navLinkClasses}>
                 <span>DR7 Exclusive Members Club</span>
               </NavLink>
+              <NavLink to="/credit-wallet" onClick={onClose} className={navLinkClasses}>
+                <span>DR7 Credit Wallet</span>
+              </NavLink>
               <NavLink to="/commercial-operation" onClick={onClose} className={navLinkClasses}>
                 <span>DR7 Official Lottery</span>
               </NavLink>

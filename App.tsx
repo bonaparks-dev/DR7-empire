@@ -74,6 +74,7 @@ import MechanicalBookingPage from './pages/MechanicalBookingPage';
 import InvestitoriPage from './pages/InvestitoriPage';
 import TokenPage from './pages/TokenPage';
 import AdminCalendarPage from './pages/AdminCalendarPage';
+import CreditWalletPage from './pages/CreditWalletPage';
 
 const AuthRedirector: React.FC = () => {
   const { user, authEvent } = useAuth();
@@ -134,7 +135,8 @@ const AnimatedRoutes = () => {
             <MembershipEnrollmentPage />
           </ProtectedRoute>
         } />
-        <Route 
+        <Route path="/credit-wallet" element={<CreditWalletPage />} />
+        <Route
             path="/commercial-operation"
             element={<CommercialOperationPage />}
         />
