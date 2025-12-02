@@ -114,11 +114,11 @@ const PackageCard: React.FC<{ pkg: CreditPackage; onSelect: () => void }> = ({ p
     <motion.div
       variants={cardVariants}
       className={`relative bg-gray-900/50 backdrop-blur-sm border ${
-        pkg.popular ? 'border-[#D4AF37]' : 'border-gray-800'
-      } rounded-lg p-6 flex flex-col transition-all duration-300 hover:border-[#D4AF37] hover:shadow-xl hover:shadow-[#D4AF37]/20`}
+        pkg.popular ? 'border-white' : 'border-gray-800'
+      } rounded-lg p-6 flex flex-col transition-all duration-300 hover:border-white hover:shadow-xl hover:shadow-white/20`}
     >
       {pkg.popular && (
-        <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-[#D4AF37] text-black px-4 py-1 rounded-full text-sm font-semibold">
+        <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-white text-black px-4 py-1 rounded-full text-sm font-semibold">
           PIÙ SCELTO
         </div>
       )}
@@ -132,15 +132,15 @@ const PackageCard: React.FC<{ pkg: CreditPackage; onSelect: () => void }> = ({ p
       </div>
 
       <div className="flex items-center justify-center py-2">
-        <svg className="w-6 h-6 text-[#D4AF37]" fill="currentColor" viewBox="0 0 20 20">
+        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
         </svg>
       </div>
 
       <div className="mb-4 pb-4 border-b border-gray-700">
         <div className="text-sm text-gray-400 mb-1">Ricevi</div>
-        <div className="text-4xl font-extrabold text-[#D4AF37]">€{pkg.receivedAmount.toLocaleString()}</div>
-        <div className="text-sm text-green-400 mt-2 font-semibold">
+        <div className="text-4xl font-extrabold text-white">€{pkg.receivedAmount.toLocaleString()}</div>
+        <div className="text-sm text-white mt-2 font-semibold">
           +{pkg.bonusPercentage}% Bonus (€{pkg.bonus})
         </div>
       </div>
@@ -149,7 +149,7 @@ const PackageCard: React.FC<{ pkg: CreditPackage; onSelect: () => void }> = ({ p
         onClick={onSelect}
         className={`w-full mt-auto py-3 px-6 font-bold rounded-full transition-all duration-300 transform hover:scale-105 ${
           pkg.popular
-            ? 'bg-[#D4AF37] text-black hover:bg-[#C19B2B]'
+            ? 'bg-white text-black hover:bg-gray-200'
             : 'bg-gray-700 text-white hover:bg-gray-600'
         }`}
       >
@@ -208,7 +208,7 @@ const CreditWalletPage: React.FC = () => {
             <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-4">
               DR7 CREDIT WALLET
             </h1>
-            <p className="text-2xl text-[#D4AF37] font-semibold mb-6">
+            <p className="text-2xl text-white font-semibold mb-6">
               Ricarica. Guadagna. Vivi l'esperienza DR7.
             </p>
             <p className="text-gray-300 text-lg max-w-4xl mx-auto leading-relaxed">
@@ -243,7 +243,7 @@ const CreditWalletPage: React.FC = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="bg-gradient-to-r from-[#D4AF37]/10 to-transparent border border-[#D4AF37]/30 rounded-lg p-8 mb-16"
+            className="bg-gradient-to-r from-white/10 to-transparent border border-white/30 rounded-lg p-8 mb-16"
           >
             <h2 className="text-2xl font-bold text-white mb-4">
               Il credito può essere utilizzato per:
@@ -251,7 +251,7 @@ const CreditWalletPage: React.FC = () => {
             <p className="text-gray-300 text-lg leading-relaxed">
               Noleggio auto, lavaggi, meccanica, carrozzeria, diagnostica, ricambi e tutti i nostri servizi premium.
               <br />
-              <span className="text-[#D4AF37] font-semibold">Il credito non ha scadenza</span> e rimane sempre disponibile nel proprio profilo personale.
+              <span className="text-white font-semibold">Il credito non ha scadenza</span> e rimane sempre disponibile nel proprio profilo personale.
             </p>
           </motion.div>
 
@@ -272,7 +272,7 @@ const CreditWalletPage: React.FC = () => {
                   onClick={() => setSelectedSeries(s)}
                   className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 ${
                     selectedSeries === s
-                      ? 'bg-[#D4AF37] text-black'
+                      ? 'bg-white text-black'
                       : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                   }`}
                 >
@@ -362,7 +362,7 @@ const CreditWalletPage: React.FC = () => {
               onClick={() => {
                 window.scrollTo({ top: 400, behavior: 'smooth' });
               }}
-              className="bg-[#D4AF37] text-black px-12 py-4 rounded-full text-xl font-bold hover:bg-[#C19B2B] transition-all duration-300 transform hover:scale-105 shadow-lg shadow-[#D4AF37]/50"
+              className="bg-white text-black px-12 py-4 rounded-full text-xl font-bold hover:bg-gray-200 transition-all duration-300 transform hover:scale-105 shadow-lg shadow-white/50"
             >
               Scegli il Tuo Pacchetto
             </button>
