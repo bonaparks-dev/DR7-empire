@@ -41,6 +41,12 @@ const CarWashBookingPage: React.FC = () => {
     fullName: '',
     email: '',
     phone: '',
+    codiceFiscale: '',
+    indirizzo: '',
+    numeroCivico: '',
+    cittaResidenza: '',
+    codicePostale: '',
+    provinciaResidenza: '',
     appointmentDate: '',
     appointmentTime: '',
     notes: ''
@@ -219,8 +225,25 @@ const CarWashBookingPage: React.FC = () => {
     }
   }, [elements, clientSecret, showPaymentModal]);
 
+  // Validation functions
+  const validateCodiceFiscale = (cf: string): boolean => {
+    const cfRegex = /^[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]$/i;
+    return cf.length === 16 && cfRegex.test(cf.toUpperCase());
+  };
+
+  const validateItalianPhone = (phone: string): boolean => {
+    const phoneRegex = /^(\+39|0039)?[\s]?[0-9]{9,13}$/;
+    return phoneRegex.test(phone.replace(/\s/g, ''));
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    let newValue = value;
+
+    // Auto-uppercase for specific fields
+    if (name === 'codiceFiscale' || name === 'provinciaResidenza') {
+      newValue = value.toUpperCase();
+    }
 
     // Block past dates immediately when date field changes
     if (name === 'appointmentDate' && value && value < minDate) {
@@ -235,7 +258,7 @@ const CarWashBookingPage: React.FC = () => {
       return;
     }
 
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: newValue }));
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -513,7 +536,20 @@ const CarWashBookingPage: React.FC = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.fullName) newErrors.fullName = lang === 'it' ? 'Il nome è obbligatorio' : 'Name is required';
     if (!formData.email) newErrors.email = lang === 'it' ? 'L\'email è obbligatoria' : 'Email is required';
-    if (!formData.phone) newErrors.phone = lang === 'it' ? 'Il telefono è obbligatorio' : 'Phone is required';
+    if (!formData.phone) {
+      newErrors.phone = lang === 'it' ? 'Il telefono è obbligatorio' : 'Phone is required';
+    } else if (!validateItalianPhone(formData.phone)) {
+      newErrors.phone = lang === 'it' ? 'Formato telefono non valido' : 'Invalid phone format';
+    }
+    if (!formData.codiceFiscale) {
+      newErrors.codiceFiscale = lang === 'it' ? 'Codice Fiscale è obbligatorio' : 'Tax code is required';
+    } else if (!validateCodiceFiscale(formData.codiceFiscale)) {
+      newErrors.codiceFiscale = lang === 'it' ? 'Codice Fiscale non valido (16 caratteri)' : 'Invalid tax code (16 characters)';
+    }
+    if (!formData.indirizzo) newErrors.indirizzo = lang === 'it' ? 'Indirizzo è obbligatorio' : 'Address is required';
+    if (!formData.cittaResidenza) newErrors.cittaResidenza = lang === 'it' ? 'Città è obbligatoria' : 'City is required';
+    if (!formData.codicePostale) newErrors.codicePostale = lang === 'it' ? 'CAP è obbligatorio' : 'Postal code is required';
+    if (!formData.provinciaResidenza) newErrors.provinciaResidenza = lang === 'it' ? 'Provincia è obbligatoria' : 'Province is required';
     if (!formData.appointmentDate) newErrors.appointmentDate = lang === 'it' ? 'La data è obbligatoria' : 'Date is required';
     if (!formData.appointmentTime) newErrors.appointmentTime = lang === 'it' ? 'L\'ora è obbligatoria' : 'Time is required';
 
@@ -591,6 +627,12 @@ const CarWashBookingPage: React.FC = () => {
       customer_name: formData.fullName,
       customer_email: formData.email,
       customer_phone: formData.phone,
+      customer_codice_fiscale: formData.codiceFiscale,
+      customer_indirizzo: formData.indirizzo,
+      customer_numero_civico: formData.numeroCivico,
+      customer_citta: formData.cittaResidenza,
+      customer_cap: formData.codicePostale,
+      customer_provincia: formData.provinciaResidenza,
       appointment_date: adjustedDateTime.toISOString(),
       appointment_time: formData.appointmentTime,
       booking_details: {
@@ -816,9 +858,96 @@ const CarWashBookingPage: React.FC = () => {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
+                    placeholder="+39 320 1234567"
                     className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
                   />
                   {errors.phone && <p className="text-xs text-red-400 mt-1">{errors.phone}</p>}
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    {lang === 'it' ? 'Codice Fiscale' : 'Tax Code'} *
+                  </label>
+                  <input
+                    type="text"
+                    name="codiceFiscale"
+                    value={formData.codiceFiscale}
+                    onChange={handleChange}
+                    placeholder="RSSMRA80A01H501U"
+                    maxLength={16}
+                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white uppercase"
+                  />
+                  {errors.codiceFiscale && <p className="text-xs text-red-400 mt-1">{errors.codiceFiscale}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    {lang === 'it' ? 'Indirizzo' : 'Address'} *
+                  </label>
+                  <input
+                    type="text"
+                    name="indirizzo"
+                    value={formData.indirizzo}
+                    onChange={handleChange}
+                    placeholder={lang === 'it' ? 'Via Roma' : 'Main Street'}
+                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
+                  />
+                  {errors.indirizzo && <p className="text-xs text-red-400 mt-1">{errors.indirizzo}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    {lang === 'it' ? 'Numero Civico' : 'Civic Number'}
+                  </label>
+                  <input
+                    type="text"
+                    name="numeroCivico"
+                    value={formData.numeroCivico}
+                    onChange={handleChange}
+                    placeholder="123"
+                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    {lang === 'it' ? 'Città di Residenza' : 'City'} *
+                  </label>
+                  <input
+                    type="text"
+                    name="cittaResidenza"
+                    value={formData.cittaResidenza}
+                    onChange={handleChange}
+                    placeholder={lang === 'it' ? 'Milano' : 'Milan'}
+                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
+                  />
+                  {errors.cittaResidenza && <p className="text-xs text-red-400 mt-1">{errors.cittaResidenza}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    {lang === 'it' ? 'CAP' : 'Postal Code'} *
+                  </label>
+                  <input
+                    type="text"
+                    name="codicePostale"
+                    value={formData.codicePostale}
+                    onChange={handleChange}
+                    placeholder="20100"
+                    maxLength={5}
+                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
+                  />
+                  {errors.codicePostale && <p className="text-xs text-red-400 mt-1">{errors.codicePostale}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    {lang === 'it' ? 'Provincia' : 'Province'} *
+                  </label>
+                  <input
+                    type="text"
+                    name="provinciaResidenza"
+                    value={formData.provinciaResidenza}
+                    onChange={handleChange}
+                    placeholder="MI"
+                    maxLength={2}
+                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white uppercase"
+                  />
+                  {errors.provinciaResidenza && <p className="text-xs text-red-400 mt-1">{errors.provinciaResidenza}</p>}
                 </div>
               </div>
             </div>
