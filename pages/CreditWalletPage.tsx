@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion, Variants } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { WalletIcon, ZapIcon, ShieldIcon, ClockIcon, TrendingUpIcon, GiftIcon } from '../components/icons/Icons';
 
 interface CreditPackage {
   id: string;
@@ -206,12 +205,9 @@ const CreditWalletPage: React.FC = () => {
             transition={{ duration: 0.6 }}
             className="text-center mb-16"
           >
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <WalletIcon className="w-12 h-12 text-[#D4AF37]" />
-              <h1 className="text-5xl md:text-6xl font-extrabold text-white">
-                DR7 CREDIT WALLET
-              </h1>
-            </div>
+            <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-4">
+              DR7 CREDIT WALLET
+            </h1>
             <p className="text-2xl text-[#D4AF37] font-semibold mb-6">
               Ricarica. Guadagna. Vivi l'esperienza DR7.
             </p>
@@ -229,17 +225,14 @@ const CreditWalletPage: React.FC = () => {
             className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16"
           >
             <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg p-6 text-center">
-              <TrendingUpIcon className="w-12 h-12 text-[#D4AF37] mx-auto mb-4" />
               <h3 className="text-xl font-bold text-white mb-2">Fino all'80% Extra</h3>
               <p className="text-gray-400">Credito bonus a seconda del pacchetto scelto</p>
             </div>
             <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg p-6 text-center">
-              <ClockIcon className="w-12 h-12 text-[#D4AF37] mx-auto mb-4" />
               <h3 className="text-xl font-bold text-white mb-2">Nessuna Scadenza</h3>
               <p className="text-gray-400">Il credito rimane sempre disponibile nel tuo profilo</p>
             </div>
             <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg p-6 text-center">
-              <ShieldIcon className="w-12 h-12 text-[#D4AF37] mx-auto mb-4" />
               <h3 className="text-xl font-bold text-white mb-2">100% Sicuro</h3>
               <p className="text-gray-400">Pagamenti certificati e controllati</p>
             </div>
@@ -252,8 +245,7 @@ const CreditWalletPage: React.FC = () => {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="bg-gradient-to-r from-[#D4AF37]/10 to-transparent border border-[#D4AF37]/30 rounded-lg p-8 mb-16"
           >
-            <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
-              <ZapIcon className="w-6 h-6 text-[#D4AF37]" />
+            <h2 className="text-2xl font-bold text-white mb-4">
               Il credito può essere utilizzato per:
             </h2>
             <p className="text-gray-300 text-lg leading-relaxed">
@@ -317,33 +309,21 @@ const CreditWalletPage: React.FC = () => {
               VANTAGGI DEL DR7 CREDIT WALLET
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex items-start gap-4">
-                <GiftIcon className="w-6 h-6 text-[#D4AF37] flex-shrink-0 mt-1" />
-                <div>
-                  <h3 className="text-lg font-bold text-white mb-2">Fino all'80% di credito extra</h3>
-                  <p className="text-gray-400">A seconda del pacchetto scelto</p>
-                </div>
+              <div>
+                <h3 className="text-lg font-bold text-white mb-2">Fino all'80% di credito extra</h3>
+                <p className="text-gray-400">A seconda del pacchetto scelto</p>
               </div>
-              <div className="flex items-start gap-4">
-                <ZapIcon className="w-6 h-6 text-[#D4AF37] flex-shrink-0 mt-1" />
-                <div>
-                  <h3 className="text-lg font-bold text-white mb-2">Pagamenti più rapidi</h3>
-                  <p className="text-gray-400">Senza pensieri e completamente automatici</p>
-                </div>
+              <div>
+                <h3 className="text-lg font-bold text-white mb-2">Pagamenti più rapidi</h3>
+                <p className="text-gray-400">Senza pensieri e completamente automatici</p>
               </div>
-              <div className="flex items-start gap-4">
-                <ClockIcon className="w-6 h-6 text-[#D4AF37] flex-shrink-0 mt-1" />
-                <div>
-                  <h3 className="text-lg font-bold text-white mb-2">Nessuna scadenza del credito</h3>
-                  <p className="text-gray-400">Usa il credito quando vuoi</p>
-                </div>
+              <div>
+                <h3 className="text-lg font-bold text-white mb-2">Nessuna scadenza del credito</h3>
+                <p className="text-gray-400">Usa il credito quando vuoi</p>
               </div>
-              <div className="flex items-start gap-4">
-                <TrendingUpIcon className="w-6 h-6 text-[#D4AF37] flex-shrink-0 mt-1" />
-                <div>
-                  <h3 className="text-lg font-bold text-white mb-2">Maggior convenienza</h3>
-                  <p className="text-gray-400">Per chi utilizza spesso i nostri servizi</p>
-                </div>
+              <div>
+                <h3 className="text-lg font-bold text-white mb-2">Maggior convenienza</h3>
+                <p className="text-gray-400">Per chi utilizza spesso i nostri servizi</p>
               </div>
             </div>
           </motion.div>
@@ -355,29 +335,13 @@ const CreditWalletPage: React.FC = () => {
             transition={{ duration: 0.6, delay: 0.6 }}
             className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-lg p-8 mb-12"
           >
-            <h2 className="text-3xl font-bold text-white mb-6 text-center flex items-center justify-center gap-3">
-              <ShieldIcon className="w-8 h-8 text-[#D4AF37]" />
+            <h2 className="text-3xl font-bold text-white mb-6 text-center">
               TRASPARENZA E SICUREZZA
             </h2>
             <div className="space-y-4 text-gray-300 max-w-3xl mx-auto">
-              <p className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-[#D4AF37] flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                Tutti i pagamenti vengono gestiti tramite sistemi certificati e controllati.
-              </p>
-              <p className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-[#D4AF37] flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                Ogni ricarica viene registrata, accreditata in tempo reale e visibile nel proprio profilo cliente.
-              </p>
-              <p className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-[#D4AF37] flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                Il credito non scade e può essere utilizzato in qualsiasi momento presso tutte le sedi DR7 S.p.A.
-              </p>
+              <p>• Tutti i pagamenti vengono gestiti tramite sistemi certificati e controllati.</p>
+              <p>• Ogni ricarica viene registrata, accreditata in tempo reale e visibile nel proprio profilo cliente.</p>
+              <p>• Il credito non scade e può essere utilizzato in qualsiasi momento presso tutte le sedi DR7 S.p.A.</p>
             </div>
           </motion.div>
 
