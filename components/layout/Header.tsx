@@ -324,7 +324,7 @@ const Header: React.FC = () => {
                 >
                   <Link
                     to="/credit-wallet"
-                    className="hidden md:flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full font-bold text-xs hover:bg-gray-200 transition-colors"
+                    className="hidden md:flex items-center gap-2 bg-black text-white px-4 py-2 rounded-full font-bold text-xs hover:bg-gray-900 transition-colors border border-gray-700"
                   >
                     <span>Credit Wallet</span>
                     <span className="bg-black text-white px-2 py-0.5 rounded-full text-xs">
