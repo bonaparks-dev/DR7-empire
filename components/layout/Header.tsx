@@ -22,7 +22,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
   }, [isOpen]);
 
   const navLinkClasses =
-    'block py-2.5 text-xl font-normal text-gray-300 hover:text-white transition-colors duration-300';
+    'block py-2.5 text-base font-normal text-gray-300 hover:text-white transition-colors duration-300';
 
   const handleLogout = () => {
     logout();
@@ -97,7 +97,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
             <nav className="flex-grow flex flex-col space-y-6">
               {/* ESPERIENZE & ACCESSO ESCLUSIVO */}
               <div>
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
+                <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-3 px-1">
                   Esperienze & Accesso Esclusivo
                 </h3>
                 <div className="space-y-1">
@@ -112,7 +112,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 
               {/* OPERAZIONI UFFICIALI */}
               <div>
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
+                <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-3 px-1">
                   Operazioni Ufficiali
                 </h3>
                 <div className="space-y-1">
@@ -124,7 +124,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 
               {/* BUSINESS & CORPORATE */}
               <div>
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
+                <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-3 px-1">
                   Business & Corporate
                 </h3>
                 <div className="space-y-1">
@@ -139,7 +139,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 
               {/* SERVIZI & MOBILITÀ DI LUSSO */}
               <div>
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
+                <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-3 px-1">
                   Servizi & Mobilità di Lusso
                 </h3>
                 <div className="space-y-1">
@@ -169,7 +169,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 
               {/* DIGITAL INNOVATION */}
               <div>
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
+                <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-3 px-1">
                   Digital Innovation
                 </h3>
                 <div className="space-y-1">
