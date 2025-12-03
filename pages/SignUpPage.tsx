@@ -977,11 +977,11 @@ const SignUpPage: React.FC = () => {
                   <ul className="space-y-2">
                     <li className="flex items-center">
                       <span className="text-green-400 mr-2">✓</span>
-                      <span><strong className="text-white">+10€</strong> di Credit Wallet immediato utilizzabile per i lavaggi</span>
+                      <span><strong className="text-white">+10€</strong> immediati utilizzabili per i lavaggi</span>
                     </li>
                     <li className="flex items-center">
                       <span className="text-green-400 mr-2">✓</span>
-                      <span>fino a <strong className="text-white">+50€</strong> di Buono Regalo come incentivo fedeltà sulla piattaforma DR7</span>
+                      <span>fino a <strong className="text-white">+50€</strong> extra come incentivo fedeltà sulla piattaforma DR7</span>
                     </li>
                   </ul>
                 </div>
@@ -1138,7 +1138,7 @@ const SignUpPage: React.FC = () => {
                 </p>
 
                 <p className="text-base">
-                  Caricandoli ora <strong className="text-white">(CI, CF, Patente)</strong> attivi subito <strong className="text-green-400">10€ di Credit Wallet</strong> e ricevi <strong className="text-yellow-400">fino a 50€ di Buono Regalo</strong> sulla piattaforma DR7.
+                  Caricandoli ora <strong className="text-white">(CI, CF, Patente)</strong> ricevi subito <strong className="text-green-400">10€ immediati per i lavaggi</strong> e <strong className="text-yellow-400">fino a 50€ extra</strong> come incentivo fedeltà sulla piattaforma DR7.
                 </p>
 
                 <p className="text-lg font-bold text-yellow-400">
