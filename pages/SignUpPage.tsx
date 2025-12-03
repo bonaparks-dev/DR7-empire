@@ -1057,16 +1057,16 @@ const SignUpPage: React.FC = () => {
 
                 <div className="bg-gradient-to-r from-green-900/30 to-blue-900/30 border border-green-700/50 rounded-lg p-4">
                   <h3 className="font-bold text-white mb-3">
-                    Una volta caricati i documenti, il tuo account verrà verificato e riceverai immediatamente il tuo Credito Benvenuto DR7:
+                    Una volta caricati i documenti, il tuo account verrà verificato e riceverai immediatamente:
                   </h3>
                   <ul className="space-y-2">
                     <li className="flex items-center">
                       <span className="text-green-400 mr-2">✓</span>
-                      <span><strong className="text-white">+10€</strong> immediati utilizzabili per i lavaggi</span>
+                      <span><strong className="text-white">+10€</strong> di Credit Wallet immediato utilizzabile per i lavaggi</span>
                     </li>
                     <li className="flex items-center">
                       <span className="text-green-400 mr-2">✓</span>
-                      <span>fino a <strong className="text-white">+50€</strong> extra come incentivo fedeltà sulla piattaforma DR7</span>
+                      <span>fino a <strong className="text-white">+50€</strong> di Buono Regalo come incentivo fedeltà sulla piattaforma DR7</span>
                     </li>
                   </ul>
                 </div>
@@ -1138,7 +1138,7 @@ const SignUpPage: React.FC = () => {
                 </p>
 
                 <p className="text-base">
-                  Caricandoli ora <strong className="text-white">(CI, CF, Patente)</strong> attivi subito il <strong className="text-green-400">Credito DR7 fino a 50€</strong> e ottieni l'accesso completo ai nostri servizi premium.
+                  Caricandoli ora <strong className="text-white">(CI, CF, Patente)</strong> attivi subito <strong className="text-green-400">10€ di Credit Wallet</strong> e ricevi <strong className="text-yellow-400">fino a 50€ di Buono Regalo</strong> sulla piattaforma DR7.
                 </p>
 
                 <p className="text-lg font-bold text-yellow-400">
