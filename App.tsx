@@ -74,6 +74,7 @@ import MechanicalBookingPage from './pages/MechanicalBookingPage';
 import InvestitoriPage from './pages/InvestitoriPage';
 import TokenPage from './pages/TokenPage';
 import AdminCalendarPage from './pages/AdminCalendarPage';
+import AdminDocumentsPage from './pages/AdminDocumentsPage';
 import CreditWalletPage from './pages/CreditWalletPage';
 
 const AuthRedirector: React.FC = () => {
@@ -116,6 +117,7 @@ const AnimatedRoutes = () => {
         <Route path="/mechanical-services" element={<MechanicalServicesPage />} />
         <Route path="/mechanical-booking" element={<MechanicalBookingPage />} />
         <Route path="/admin/calendar" element={<AdminCalendarPage />} />
+        <Route path="/admin/documents" element={<AdminDocumentsPage />} />
         {RENTAL_CATEGORIES
           .filter(category => !['car-wash-services', 'mechanical-services', 'membership'].includes(category.id))
           .map(category => (
