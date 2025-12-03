@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -71,6 +71,7 @@ const SignUpPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState('');
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -237,7 +238,8 @@ const SignUpPage: React.FC = () => {
         // Don't throw - user is created, just log the error
       }
 
-      navigate('/check-email');
+      // Show welcome modal instead of navigating immediately
+      setShowWelcomeModal(true);
     } catch (err: any) {
       setGeneralError(err.message || t('Something_went_wrong'));
     } finally {
@@ -838,6 +840,109 @@ const SignUpPage: React.FC = () => {
           animation: fadeIn 0.3s ease-in-out;
         }
       `}</style>
+
+      {/* Welcome Modal */}
+      <AnimatePresence>
+        {showWelcomeModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => {
+              setShowWelcomeModal(false);
+              navigate('/check-email');
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-gray-900 border border-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-gray-800">
+                <h2 className="text-2xl font-bold text-white text-center">
+                  Benvenuto in DR7 S.p.A.! 🎉
+                </h2>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 space-y-4 text-gray-300">
+                <p className="text-center text-lg text-white font-semibold">
+                  Grazie per esserti iscritto al sito ufficiale DR7 S.p.A.
+                </p>
+
+                <p>
+                  Per completare il tuo profilo ed accedere ai vantaggi esclusivi riservati ai membri registrati,
+                  ti chiediamo di caricare i tuoi documenti nell'area personale:
+                </p>
+
+                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                  <h3 className="font-bold text-white mb-3">Documenti necessari (fronte e retro):</h3>
+                  <ul className="space-y-2">
+                    <li className="flex items-center">
+                      <span className="text-white mr-2">•</span>
+                      <span>Carta d'Identità</span>
+                    </li>
+                    <li className="flex items-center">
+                      <span className="text-white mr-2">•</span>
+                      <span>Codice Fiscale</span>
+                    </li>
+                    <li className="flex items-center">
+                      <span className="text-white mr-2">•</span>
+                      <span>Patente di guida (se disponibile)</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="bg-gradient-to-r from-green-900/30 to-blue-900/30 border border-green-700/50 rounded-lg p-4">
+                  <h3 className="font-bold text-white mb-3">
+                    Una volta caricati i documenti, il tuo account verrà verificato e riceverai immediatamente il tuo Credito Benvenuto DR7:
+                  </h3>
+                  <ul className="space-y-2">
+                    <li className="flex items-center">
+                      <span className="text-green-400 mr-2">✓</span>
+                      <span><strong className="text-white">+10€</strong> immediati utilizzabili per i lavaggi</span>
+                    </li>
+                    <li className="flex items-center">
+                      <span className="text-green-400 mr-2">✓</span>
+                      <span>fino a <strong className="text-white">+50€</strong> extra come incentivo fedeltà sulla piattaforma DR7</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                  <h3 className="font-bold text-white mb-2">Inoltre:</h3>
+                  <p>
+                    7 giorni prima del tuo compleanno riceverai un nostro messaggio dedicato con un <strong className="text-white">Buono Auguri DR7</strong>,
+                    utilizzabile su qualunque servizio.
+                  </p>
+                </div>
+
+                <p className="text-center text-sm italic mt-6">
+                  Grazie per aver scelto DR7 S.p.A.<br />
+                  <strong className="text-white">La nuova esperienza della mobilità di lusso in Italia.</strong>
+                </p>
+              </div>
+
+              {/* Footer */}
+              <div className="p-6 border-t border-gray-800 flex justify-center">
+                <button
+                  onClick={() => {
+                    setShowWelcomeModal(false);
+                    navigate('/check-email');
+                  }}
+                  className="bg-white text-black px-8 py-3 rounded-full font-bold hover:bg-gray-200 transition-colors"
+                >
+                  Ho Capito, Procedi
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
