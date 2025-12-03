@@ -43,20 +43,19 @@ const newCarsRawData = [
     "image": "/audi-rs3.jpeg",
     "color": "Verde"
   },
-  // REMOVED: Audi RS3 Rossa - Hidden per request
-  // {
-  //   "id": 3,
-  //   "name": "Audi RS3 Rossa",
-  //   "dailyPrice": 60,
-  //   "specs": {
-  //     "acceleration": "0–100 in 3.8s",
-  //     "power": "400Cv",
-  //     "torque": "500Nm",
-  //     "engine": "2.5L inline 5-cylinder"
-  //   },
-  //   "image": "/rs3.jpeg",
-  //   "color": "Rossa"
-  // },
+  {
+    "id": 3,
+    "name": "Audi RS3 Rossa",
+    "dailyPrice": 70,
+    "specs": {
+      "acceleration": "0–100 in 3.8s",
+      "power": "400Cv",
+      "torque": "500Nm",
+      "engine": "2.5L inline 5-cylinder"
+    },
+    "image": "/rs3.jpeg",
+    "color": "Rossa"
+  },
   {
     "id": 4,
     "name": "Mercedes A45 S AMG",
@@ -72,7 +71,7 @@ const newCarsRawData = [
   {
     "id": 5,
     "name": "BMW M3 Competition",
-    "dailyPrice": 70,
+    "dailyPrice": 120,
     "specs": {
       "acceleration": "0–100 in 3.9s",
       "maxSpeed": "Max speed: 250km/h",
@@ -97,7 +96,7 @@ const newCarsRawData = [
   {
     "id": 7,
     "name": "Porsche 992 Carrera 4S",
-    "dailyPrice": 150,
+    "dailyPrice": 250,
     "specs": {
       "acceleration": "0–100 in 3.6s",
       "maxSpeed": "Max speed: 306km/h",
@@ -110,7 +109,7 @@ const newCarsRawData = [
   {
     "id": 8,
     "name": "Mercedes C63 S AMG",
-    "dailyPrice": 100,
+    "dailyPrice": 200,
     "specs": {
       "acceleration": "0–100 in 3.9s",
       "power": "510Cv",
