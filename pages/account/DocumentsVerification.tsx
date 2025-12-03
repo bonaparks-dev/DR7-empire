@@ -42,8 +42,12 @@ const DocumentsVerification = () => {
 
     // Fetch uploaded documents from storage buckets
     useEffect(() => {
+        let isMounted = true;
+        let retryCount = 0;
+        const MAX_RETRIES = 1;
+
         const fetchDocuments = async () => {
-            if (!user) return;
+            if (!user || !isMounted) return;
 
             setLoadingDocuments(true);
             try {
@@ -51,6 +55,8 @@ const DocumentsVerification = () => {
                 const buckets = ['carta-identita', 'codice-fiscale', 'driver-licenses'];
 
                 for (const bucket of buckets) {
+                    if (!isMounted) break;
+
                     try {
                         const { data: files, error } = await supabase.storage
                             .from(bucket)
@@ -61,7 +67,7 @@ const DocumentsVerification = () => {
                             continue;
                         }
 
-                        if (files) {
+                        if (files && isMounted) {
                             files.forEach(file => {
                                 allDocs.push({
                                     id: file.id,
@@ -75,21 +81,33 @@ const DocumentsVerification = () => {
                         }
                     } catch (bucketError) {
                         console.error(`Failed to list ${bucket}:`, bucketError);
+                        // Stop retrying on network errors
+                        if (retryCount >= MAX_RETRIES) {
+                            break;
+                        }
                         continue;
                     }
                 }
 
-                // Sort by upload date
-                allDocs.sort((a, b) => new Date(b.upload_date).getTime() - new Date(a.upload_date).getTime());
-                setUploadedDocuments(allDocs);
+                if (isMounted) {
+                    // Sort by upload date
+                    allDocs.sort((a, b) => new Date(b.upload_date).getTime() - new Date(a.upload_date).getTime());
+                    setUploadedDocuments(allDocs);
+                }
             } catch (error) {
                 console.error('Failed to fetch documents:', error);
             } finally {
-                setLoadingDocuments(false);
+                if (isMounted) {
+                    setLoadingDocuments(false);
+                }
             }
         };
 
         fetchDocuments();
+
+        return () => {
+            isMounted = false;
+        };
     }, [user]);
 
     const handleFileChange = (documentType: keyof typeof documents) => (e: React.ChangeEvent<HTMLInputElement>) => {
