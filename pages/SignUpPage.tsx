@@ -210,51 +210,43 @@ const SignUpPage: React.FC = () => {
 
     setUploadingDocuments(true);
     try {
-      const uploads = [];
+      let uploadedCount = 0;
       const uploadErrors = [];
+
+      // Helper function to determine bucket based on document type
+      const getBucket = (docType: string): string => {
+        if (docType.includes('cartaIdentita')) return 'driver-ids';
+        if (docType.includes('codiceFiscale')) return 'codice-fiscale';
+        if (docType.includes('patente')) return 'driver-licenses';
+        return 'driver-ids'; // default
+      };
 
       // Upload each document if selected
       for (const [key, file] of Object.entries(documents)) {
         if (file) {
+          const bucket = getBucket(key);
           const fileExt = file.name.split('.').pop();
           const fileName = `${newUserId}/${key}_${Date.now()}.${fileExt}`;
 
           const { error: uploadError } = await supabase.storage
-            .from('user-documents')
+            .from(bucket)
             .upload(fileName, file);
 
           if (uploadError) {
-            console.error(`Error uploading ${key}:`, uploadError);
+            console.error(`Error uploading ${key} to ${bucket}:`, uploadError);
             uploadErrors.push(`${key}: ${uploadError.message}`);
           } else {
-            uploads.push({
-              user_id: newUserId,
-              document_type: key,
-              file_path: fileName,
-              upload_date: new Date().toISOString(),
-              status: 'pending_verification'
-            });
+            uploadedCount++;
           }
         }
       }
 
-      // Save document records to database
-      if (uploads.length > 0) {
-        const { error: dbError } = await supabase
-          .from('user_documents')
-          .insert(uploads);
-
-        if (dbError) {
-          console.error('Error saving document records:', dbError);
-          alert(`Errore nel salvare i documenti nel database: ${dbError.message}\n\nDettagli: ${JSON.stringify(dbError)}`);
-          return;
-        }
-
-        // Success message
+      // Show results
+      if (uploadedCount > 0) {
         if (uploadErrors.length > 0) {
-          alert(`Alcuni documenti non sono stati caricati:\n${uploadErrors.join('\n')}\n\nDocumenti caricati con successo: ${uploads.length}`);
+          alert(`Alcuni documenti non sono stati caricati:\n${uploadErrors.join('\n')}\n\nDocumenti caricati con successo: ${uploadedCount}`);
         } else {
-          alert(`✅ ${uploads.length} documenti caricati con successo!`);
+          alert(`✅ ${uploadedCount} documenti caricati con successo!`);
         }
       } else if (uploadErrors.length > 0) {
         alert(`Errore nel caricamento dei documenti:\n${uploadErrors.join('\n')}`);
