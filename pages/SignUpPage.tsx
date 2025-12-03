@@ -970,6 +970,22 @@ const SignUpPage: React.FC = () => {
                   Grazie per esserti iscritto al sito ufficiale DR7 S.p.A.
                 </p>
 
+                <div className="bg-gradient-to-r from-green-900/30 to-blue-900/30 border border-green-700/50 rounded-lg p-4">
+                  <h3 className="font-bold text-white mb-3">
+                    Una volta caricati i documenti, il tuo account verrà verificato e riceverai immediatamente:
+                  </h3>
+                  <ul className="space-y-2">
+                    <li className="flex items-center">
+                      <span className="text-green-400 mr-2">✓</span>
+                      <span><strong className="text-white">+10€</strong> di Credit Wallet immediato utilizzabile per i lavaggi</span>
+                    </li>
+                    <li className="flex items-center">
+                      <span className="text-green-400 mr-2">✓</span>
+                      <span>fino a <strong className="text-white">+50€</strong> di Buono Regalo come incentivo fedeltà sulla piattaforma DR7</span>
+                    </li>
+                  </ul>
+                </div>
+
                 <p>
                   Per completare il tuo profilo ed accedere ai vantaggi esclusivi riservati ai membri registrati,
                   ti chiediamo di caricare i tuoi documenti:
@@ -1053,22 +1069,6 @@ const SignUpPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                </div>
-
-                <div className="bg-gradient-to-r from-green-900/30 to-blue-900/30 border border-green-700/50 rounded-lg p-4">
-                  <h3 className="font-bold text-white mb-3">
-                    Una volta caricati i documenti, il tuo account verrà verificato e riceverai immediatamente:
-                  </h3>
-                  <ul className="space-y-2">
-                    <li className="flex items-center">
-                      <span className="text-green-400 mr-2">✓</span>
-                      <span><strong className="text-white">+10€</strong> di Credit Wallet immediato utilizzabile per i lavaggi</span>
-                    </li>
-                    <li className="flex items-center">
-                      <span className="text-green-400 mr-2">✓</span>
-                      <span>fino a <strong className="text-white">+50€</strong> di Buono Regalo come incentivo fedeltà sulla piattaforma DR7</span>
-                    </li>
-                  </ul>
                 </div>
 
                 <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
