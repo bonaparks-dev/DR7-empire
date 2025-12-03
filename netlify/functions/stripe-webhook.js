@@ -85,8 +85,8 @@ const generateVoucherPDF = async (voucherData) => {
   doc.image(qrCodeImage, { fit: [150, 150], align: 'center' });
 
   doc.moveDown(2);
-  doc.fontSize(8).text(`Valid from: ${new Date(voucherData.valid_from).toLocaleDateString()}`, { align: 'left' });
-  doc.fontSize(8).text(`Expires: ${new Date(voucherData.expiry).toLocaleDateString()}`, { align: 'left' });
+  doc.fontSize(8).text(`Valid from: ${new Date(voucherData.valid_from).toLocaleDateString('it-IT')}`, { align: 'left' });
+  doc.fontSize(8).text(`Expires: ${new Date(voucherData.expiry).toLocaleDateString('it-IT')}`, { align: 'left' });
   doc.fontSize(8).text(`Email: ${voucherData.email}`, { align: 'left' });
 
   return new Promise((resolve) => {

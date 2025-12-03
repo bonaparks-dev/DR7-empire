@@ -3,18 +3,11 @@ import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../hooks/useTranslation';
 import { supabase } from '../../supabaseClient';
 
-const FUNCTIONS_BASE =
-  import.meta.env.VITE_FUNCTIONS_BASE ??
-  (location.hostname === 'localhost' || location.hostname === '127.0.0.1'
-    ? 'http://localhost:8888'
-    : window.location.origin);
-
-const StatusBadge: React.FC<{ status: 'unverified' | 'pending' | 'verified' }> = ({ status }) => {
-    const { t } = useTranslation();
+const StatusBadge: React.FC<{ status: 'pending_verification' | 'verified' | 'rejected' }> = ({ status }) => {
     const statusMap = {
-        unverified: { text: t('Unverified'), color: 'bg-red-500/20 text-red-400' },
-        pending: { text: t('Pending'), color: 'bg-yellow-500/20 text-yellow-400' },
-        verified: { text: t('Verified'), color: 'bg-green-500/20 text-green-400' },
+        pending_verification: { text: 'In Revisione', color: 'bg-yellow-500/20 text-yellow-400' },
+        verified: { text: 'Verificato', color: 'bg-green-500/20 text-green-400' },
+        rejected: { text: 'Rifiutato', color: 'bg-red-500/20 text-red-400' },
     };
     return <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusMap[status].color}`}>{statusMap[status].text}</span>;
 }
@@ -23,221 +16,335 @@ const DocumentsVerification = () => {
     const { user } = useAuth();
     const { t } = useTranslation();
 
-    const [uploading, setUploading] = useState<{ [key: string]: boolean }>({});
-    const [cartaIdentita, setCartaIdentita] = useState<File | null>(null);
-    const [codiceFiscale, setCodiceFiscale] = useState<File | null>(null);
-    const [uploadedDocs, setUploadedDocs] = useState<{ carta: boolean; codice: boolean }>({ carta: false, codice: false });
+    const [uploadedDocuments, setUploadedDocuments] = useState<any[]>([]);
+    const [loadingDocuments, setLoadingDocuments] = useState(true);
+    const [uploading, setUploading] = useState(false);
+    const [documents, setDocuments] = useState({
+        cartaIdentitaFront: null as File | null,
+        cartaIdentitaBack: null as File | null,
+        codiceFiscaleFront: null as File | null,
+        codiceFiscaleBack: null as File | null,
+        patenteFront: null as File | null,
+        patenteBack: null as File | null
+    });
 
+    // Refresh user session on component mount
     useEffect(() => {
-        checkUploadedDocuments();
+        const refreshSession = async () => {
+            const { data: { session }, error } = await supabase.auth.refreshSession();
+            if (error) {
+                console.error('Failed to refresh session:', error);
+            }
+        };
+
+        refreshSession();
+    }, []);
+
+    // Fetch uploaded documents from storage buckets
+    useEffect(() => {
+        const fetchDocuments = async () => {
+            if (!user) return;
+
+            setLoadingDocuments(true);
+            try {
+                const allDocs: any[] = [];
+                const buckets = ['driver-ids', 'codice-fiscale', 'driver-licenses'];
+
+                for (const bucket of buckets) {
+                    const { data: files } = await supabase.storage
+                        .from(bucket)
+                        .list(user.id);
+
+                    if (files) {
+                        files.forEach(file => {
+                            allDocs.push({
+                                id: file.id,
+                                document_type: file.name.split('_')[0],
+                                file_path: `${user.id}/${file.name}`,
+                                upload_date: file.created_at,
+                                status: 'pending_verification',
+                                bucket: bucket
+                            });
+                        });
+                    }
+                }
+
+                // Sort by upload date
+                allDocs.sort((a, b) => new Date(b.upload_date).getTime() - new Date(a.upload_date).getTime());
+                setUploadedDocuments(allDocs);
+            } catch (error) {
+                console.error('Failed to fetch documents:', error);
+            } finally {
+                setLoadingDocuments(false);
+            }
+        };
+
+        fetchDocuments();
     }, [user]);
 
-    const checkUploadedDocuments = async () => {
-        if (!user) return;
-
-        try {
-            // Check if documents exist in storage
-            const { data: cartaFiles } = await supabase.storage
-                .from('carta-identita')
-                .list(`${user.id}/`);
-
-            const { data: codiceFiles } = await supabase.storage
-                .from('codice-fiscale')
-                .list(`${user.id}/`);
-
-            setUploadedDocs({
-                carta: (cartaFiles && cartaFiles.length > 0) || false,
-                codice: (codiceFiles && codiceFiles.length > 0) || false
-            });
-        } catch (error) {
-            console.error('Error checking documents:', error);
+    const handleFileChange = (documentType: keyof typeof documents) => (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setDocuments(prev => ({ ...prev, [documentType]: file }));
         }
     };
 
-    const uploadToBucket = async (bucket: string, userId: string, file: File, prefix: string): Promise<boolean> => {
-        try {
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('bucket', bucket);
-            formData.append('userId', userId);
-            formData.append('prefix', prefix);
-
-            const response = await fetch(`${FUNCTIONS_BASE}/.netlify/functions/upload-file`, {
-                method: 'POST',
-                body: formData,
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Upload failed');
-            }
-
-            return true;
-        } catch (error: any) {
-            console.error('Upload error:', error);
-            alert(`Errore nel caricamento: ${error.message}`);
-            return false;
-        }
-    };
-
-    const handleUpload = async (docType: 'carta' | 'codice') => {
+    const handleUploadDocuments = async () => {
         if (!user) return;
 
-        const file = docType === 'carta' ? cartaIdentita : codiceFiscale;
-        if (!file) {
-            alert('Seleziona un file da caricare');
+        // Check if at least CI or CF is uploaded
+        const hasCI = documents.cartaIdentitaFront || documents.cartaIdentitaBack;
+        const hasCF = documents.codiceFiscaleFront || documents.codiceFiscaleBack;
+
+        if (!hasCI && !hasCF) {
+            alert('Per favore carica almeno un documento (Carta d\'Identità o Codice Fiscale)');
             return;
         }
 
-        setUploading({ ...uploading, [docType]: true });
+        setUploading(true);
 
         try {
-            const bucket = docType === 'carta' ? 'carta-identita' : 'codice-fiscale';
-            const prefix = docType === 'carta' ? 'carta' : 'codice';
+            let uploadedCount = 0;
+            const uploadErrors = [];
 
-            const success = await uploadToBucket(bucket, user.id, file, prefix);
+            // Helper function to determine bucket based on document type
+            const getBucket = (docType: string): string => {
+                if (docType.includes('cartaIdentita')) return 'driver-ids';
+                if (docType.includes('codiceFiscale')) return 'codice-fiscale';
+                if (docType.includes('patente')) return 'driver-licenses';
+                return 'driver-ids'; // default
+            };
 
-            if (success) {
-                alert('Documento caricato con successo! Il nostro team lo verificherà a breve.');
-                if (docType === 'carta') setCartaIdentita(null);
-                else setCodiceFiscale(null);
-                await checkUploadedDocuments();
+            for (const [key, file] of Object.entries(documents)) {
+                if (file) {
+                    const bucket = getBucket(key);
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${user.id}/${key}_${Date.now()}.${fileExt}`;
+
+                    const { error: uploadError } = await supabase.storage
+                        .from(bucket)
+                        .upload(fileName, file);
+
+                    if (uploadError) {
+                        console.error(`Failed to upload ${key} to ${bucket}:`, uploadError);
+                        uploadErrors.push(`${key}: ${uploadError.message}`);
+                    } else {
+                        uploadedCount++;
+                    }
+                }
+            }
+
+            if (uploadedCount > 0) {
+                if (uploadErrors.length > 0) {
+                    alert(`Alcuni documenti non sono stati caricati:\n${uploadErrors.join('\n')}\n\nDocumenti caricati con successo: ${uploadedCount}`);
+                } else {
+                    alert('✅ Documenti caricati con successo! Saranno verificati a breve.');
+                }
+
+                // Reset form
+                setDocuments({
+                    cartaIdentitaFront: null,
+                    cartaIdentitaBack: null,
+                    codiceFiscaleFront: null,
+                    codiceFiscaleBack: null,
+                    patenteFront: null,
+                    patenteBack: null
+                });
+
+                // Refresh the page to show new documents
+                window.location.reload();
+            } else if (uploadErrors.length > 0) {
+                alert(`Errore nel caricamento dei documenti:\n${uploadErrors.join('\n')}`);
             }
         } catch (error: any) {
-            console.error('Error uploading document:', error);
-            alert(`Errore: ${error.message}`);
+            console.error('Error uploading documents:', error);
+            alert('Errore durante il caricamento dei documenti');
         } finally {
-            setUploading({ ...uploading, [docType]: false });
+            setUploading(false);
         }
+    };
+
+    const getDocumentUrl = async (doc: any) => {
+        const { data } = await supabase.storage
+            .from(doc.bucket)
+            .createSignedUrl(doc.file_path, 3600);
+
+        if (data?.signedUrl) {
+            window.open(data.signedUrl, '_blank');
+        }
+    };
+
+    const getDocumentLabel = (docType: string) => {
+        const labels: { [key: string]: string } = {
+            cartaIdentitaFront: 'Carta d\'Identità (Fronte)',
+            cartaIdentitaBack: 'Carta d\'Identità (Retro)',
+            codiceFiscaleFront: 'Codice Fiscale (Fronte)',
+            codiceFiscaleBack: 'Codice Fiscale (Retro)',
+            patenteFront: 'Patente (Fronte)',
+            patenteBack: 'Patente (Retro)'
+        };
+        return labels[docType] || docType;
     };
 
     if (!user) return null;
 
-    const { idStatus } = user.verification;
-    const allDocsUploaded = uploadedDocs.carta && uploadedDocs.codice;
+    const hasUploadedDocs = uploadedDocuments.length > 0;
 
     return (
-         <div className="bg-gray-900/50 border border-gray-800 rounded-lg">
-            <div className="p-6 border-b border-gray-800 flex justify-between items-center">
-                <div>
-                    <h2 className="text-xl font-bold text-white">Verifica Documenti</h2>
-                    <p className="text-sm text-gray-400 mt-1">Carica i tuoi documenti per la verifica</p>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-400">Stato:</span>
-                    <StatusBadge status={allDocsUploaded ? 'pending' : 'unverified'} />
-                </div>
-            </div>
+        <div className="space-y-6">
+            {/* Uploaded Documents Section */}
+            {hasUploadedDocs && (
+                <div className="bg-gray-900/50 border border-gray-800 rounded-lg">
+                    <div className="p-6 border-b border-gray-800">
+                        <h2 className="text-xl font-bold text-white">I Tuoi Documenti</h2>
+                        <p className="text-sm text-gray-400 mt-1">Documenti caricati e il loro stato di verifica</p>
+                    </div>
 
-            {allDocsUploaded && (
-                <div className="p-6 text-center bg-yellow-900/20">
-                    <h3 className="font-bold text-yellow-300">Documenti Inviati</h3>
-                    <p className="text-sm text-yellow-400 mt-1">I tuoi documenti sono in fase di verifica da parte del nostro team.</p>
+                    <div className="p-6">
+                        {loadingDocuments ? (
+                            <div className="text-center py-8">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+                                <p className="text-gray-400">Caricamento documenti...</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {uploadedDocuments.map((doc) => (
+                                    <div key={doc.id} className="flex items-center justify-between bg-gray-800/50 p-4 rounded-lg">
+                                        <div className="flex-1">
+                                            <p className="text-white font-medium">{getDocumentLabel(doc.document_type)}</p>
+                                            <p className="text-xs text-gray-400 mt-1">
+                                                Caricato il {new Date(doc.upload_date).toLocaleDateString('it-IT')}
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center space-x-3">
+                                            <StatusBadge status={doc.status} />
+                                            <button
+                                                onClick={() => getDocumentUrl(doc)}
+                                                className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded transition-colors"
+                                            >
+                                                Visualizza
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
 
-            {idStatus === 'verified' && (
-                <div className="p-6 text-center bg-green-900/20">
-                    <h3 className="font-bold text-green-300">Account Verificato</h3>
-                    <p className="text-sm text-green-400 mt-1">La tua identità è stata verificata con successo.</p>
+            {/* Upload New Documents Section */}
+            <div className="bg-gray-900/50 border border-gray-800 rounded-lg">
+                <div className="p-6 border-b border-gray-800">
+                    <h2 className="text-xl font-bold text-white">Carica Documenti</h2>
+                    <p className="text-sm text-gray-400 mt-1">Carica i tuoi documenti per la verifica dell'account</p>
                 </div>
-            )}
 
-            <div className="p-6 space-y-6">
-                {/* Info Box */}
-                <div className="bg-blue-900/30 border-2 border-blue-500 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                        <div className="text-blue-400 text-2xl">ℹ️</div>
-                        <div className="flex-1">
-                            <h4 className="text-blue-300 font-semibold mb-2">Carica i Tuoi Documenti</h4>
-                            <div className="space-y-1 text-sm text-blue-200">
-                                <p>Per completare la verifica del tuo account, carica i seguenti documenti:</p>
-                                <ul className="list-disc list-inside mt-2">
-                                    <li>Carta d'Identità (fronte e retro)</li>
-                                    <li>Codice Fiscale</li>
-                                </ul>
-                                <p className="text-xs mt-2 text-blue-300">Formati supportati: JPG, PNG, PDF • Massimo 5MB per file</p>
+                <div className="p-6 space-y-6">
+                    {/* Carta d'Identità */}
+                    <div className="space-y-3">
+                        <h3 className="text-white font-semibold">Carta d'Identità *</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm text-gray-400 mb-2">Fronte</label>
+                                <input
+                                    type="file"
+                                    accept="image/*,.pdf"
+                                    onChange={handleFileChange('cartaIdentitaFront')}
+                                    className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
+                                />
+                                {documents.cartaIdentitaFront && (
+                                    <p className="text-xs text-green-400 mt-1">✓ {documents.cartaIdentitaFront.name}</p>
+                                )}
+                            </div>
+                            <div>
+                                <label className="block text-sm text-gray-400 mb-2">Retro</label>
+                                <input
+                                    type="file"
+                                    accept="image/*,.pdf"
+                                    onChange={handleFileChange('cartaIdentitaBack')}
+                                    className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
+                                />
+                                {documents.cartaIdentitaBack && (
+                                    <p className="text-xs text-green-400 mt-1">✓ {documents.cartaIdentitaBack.name}</p>
+                                )}
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Carta d'Identità */}
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                    <div className="flex items-start justify-between mb-4">
-                        <div>
-                            <h4 className="text-lg font-semibold text-yellow-500">Carta d'Identità</h4>
-                            <p className="text-sm text-gray-400 mt-1">Carica fronte e retro della tua carta d'identità</p>
-                        </div>
-                        {uploadedDocs.carta && (
-                            <span className="px-3 py-1 bg-green-900/50 text-green-400 text-xs font-medium rounded">
-                                Caricato
-                            </span>
-                        )}
-                    </div>
+                    {/* Codice Fiscale */}
                     <div className="space-y-3">
-                        <input
-                            type="file"
-                            onChange={(e) => setCartaIdentita(e.target.files?.[0] || null)}
-                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm
-                                file:mr-4 file:py-2 file:px-4 file:rounded file:border-0
-                                file:text-sm file:font-semibold file:bg-yellow-500 file:text-black
-                                hover:file:bg-yellow-600 file:cursor-pointer"
-                            accept="image/*,.pdf"
-                            disabled={uploading.carta}
-                        />
-                        {cartaIdentita && (
-                            <p className="text-xs text-gray-400">
-                                File selezionato: {cartaIdentita.name} ({(cartaIdentita.size / 1024).toFixed(2)} KB)
-                            </p>
-                        )}
-                        <button
-                            onClick={() => handleUpload('carta')}
-                            disabled={!cartaIdentita || uploading.carta}
-                            className="w-full px-6 py-3 bg-yellow-500 text-black font-bold rounded-lg hover:bg-yellow-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                            {uploading.carta ? 'Caricamento...' : 'Carica Carta d\'Identità'}
-                        </button>
+                        <h3 className="text-white font-semibold">Codice Fiscale *</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm text-gray-400 mb-2">Fronte</label>
+                                <input
+                                    type="file"
+                                    accept="image/*,.pdf"
+                                    onChange={handleFileChange('codiceFiscaleFront')}
+                                    className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
+                                />
+                                {documents.codiceFiscaleFront && (
+                                    <p className="text-xs text-green-400 mt-1">✓ {documents.codiceFiscaleFront.name}</p>
+                                )}
+                            </div>
+                            <div>
+                                <label className="block text-sm text-gray-400 mb-2">Retro</label>
+                                <input
+                                    type="file"
+                                    accept="image/*,.pdf"
+                                    onChange={handleFileChange('codiceFiscaleBack')}
+                                    className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
+                                />
+                                {documents.codiceFiscaleBack && (
+                                    <p className="text-xs text-green-400 mt-1">✓ {documents.codiceFiscaleBack.name}</p>
+                                )}
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                {/* Codice Fiscale */}
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                    <div className="flex items-start justify-between mb-4">
-                        <div>
-                            <h4 className="text-lg font-semibold text-yellow-500">Codice Fiscale</h4>
-                            <p className="text-sm text-gray-400 mt-1">Carica il tuo codice fiscale</p>
-                        </div>
-                        {uploadedDocs.codice && (
-                            <span className="px-3 py-1 bg-green-900/50 text-green-400 text-xs font-medium rounded">
-                                Caricato
-                            </span>
-                        )}
-                    </div>
+                    {/* Patente (Optional) */}
                     <div className="space-y-3">
-                        <input
-                            type="file"
-                            onChange={(e) => setCodiceFiscale(e.target.files?.[0] || null)}
-                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm
-                                file:mr-4 file:py-2 file:px-4 file:rounded file:border-0
-                                file:text-sm file:font-semibold file:bg-yellow-500 file:text-black
-                                hover:file:bg-yellow-600 file:cursor-pointer"
-                            accept="image/*,.pdf"
-                            disabled={uploading.codice}
-                        />
-                        {codiceFiscale && (
-                            <p className="text-xs text-gray-400">
-                                File selezionato: {codiceFiscale.name} ({(codiceFiscale.size / 1024).toFixed(2)} KB)
-                            </p>
-                        )}
-                        <button
-                            onClick={() => handleUpload('codice')}
-                            disabled={!codiceFiscale || uploading.codice}
-                            className="w-full px-6 py-3 bg-yellow-500 text-black font-bold rounded-lg hover:bg-yellow-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                            {uploading.codice ? 'Caricamento...' : 'Carica Codice Fiscale'}
-                        </button>
+                        <h3 className="text-white font-semibold">Patente (Opzionale)</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm text-gray-400 mb-2">Fronte</label>
+                                <input
+                                    type="file"
+                                    accept="image/*,.pdf"
+                                    onChange={handleFileChange('patenteFront')}
+                                    className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
+                                />
+                                {documents.patenteFront && (
+                                    <p className="text-xs text-green-400 mt-1">✓ {documents.patenteFront.name}</p>
+                                )}
+                            </div>
+                            <div>
+                                <label className="block text-sm text-gray-400 mb-2">Retro</label>
+                                <input
+                                    type="file"
+                                    accept="image/*,.pdf"
+                                    onChange={handleFileChange('patenteBack')}
+                                    className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
+                                />
+                                {documents.patenteBack && (
+                                    <p className="text-xs text-green-400 mt-1">✓ {documents.patenteBack.name}</p>
+                                )}
+                            </div>
+                        </div>
                     </div>
+
+                    <button
+                        onClick={handleUploadDocuments}
+                        disabled={uploading}
+                        className="w-full md:w-auto px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60"
+                    >
+                        {uploading ? 'Caricamento...' : 'Carica Documenti'}
+                    </button>
+
+                    <p className="text-xs text-gray-400 mt-2">
+                        * È necessario caricare almeno un documento tra Carta d'Identità o Codice Fiscale
+                    </p>
                 </div>
             </div>
         </div>

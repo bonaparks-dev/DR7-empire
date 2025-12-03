@@ -5,10 +5,13 @@ import { RENTAL_CATEGORIES } from '../../constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
 import { CogIcon, SignOutIcon } from '../icons/Icons';
+import { getUserCreditBalance } from '../../utils/creditWallet';
 
 const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
+  const [creditBalance, setCreditBalance] = useState<number>(0);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -21,8 +24,26 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
     };
   }, [isOpen]);
 
+  // Fetch credit balance when menu opens
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (isOpen && user?.id) {
+        setIsLoadingBalance(true);
+        try {
+          const balance = await getUserCreditBalance(user.id);
+          setCreditBalance(balance);
+        } catch (error) {
+          console.error('Error fetching credit balance:', error);
+        } finally {
+          setIsLoadingBalance(false);
+        }
+      }
+    };
+    fetchBalance();
+  }, [isOpen, user]);
+
   const navLinkClasses =
-    'block py-2.5 text-xl font-normal text-gray-300 hover:text-white transition-colors duration-300';
+    'block py-2.5 text-base font-normal text-gray-300 hover:text-white transition-colors duration-300';
 
   const handleLogout = () => {
     logout();
@@ -97,7 +118,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
             <nav className="flex-grow flex flex-col space-y-6">
               {/* ESPERIENZE & ACCESSO ESCLUSIVO */}
               <div>
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
+                <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-3 px-1">
                   Esperienze & Accesso Esclusivo
                 </h3>
                 <div className="space-y-1">
@@ -105,14 +126,21 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                     <span>Exclusive Members Club</span>
                   </NavLink>
                   <NavLink to="/credit-wallet" onClick={onClose} className={navLinkClasses}>
-                    <span>DR7 Credit Wallet</span>
+                    <span className="flex items-center justify-between w-full">
+                      <span>DR7 Credit Wallet</span>
+                      {user && (
+                        <span className="text-white font-bold ml-2">
+                          {isLoadingBalance ? '...' : `€${creditBalance.toFixed(2)}`}
+                        </span>
+                      )}
+                    </span>
                   </NavLink>
                 </div>
               </div>
 
               {/* OPERAZIONI UFFICIALI */}
               <div>
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
+                <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-3 px-1">
                   Operazioni Ufficiali
                 </h3>
                 <div className="space-y-1">
@@ -124,7 +152,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 
               {/* BUSINESS & CORPORATE */}
               <div>
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
+                <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-3 px-1">
                   Business & Corporate
                 </h3>
                 <div className="space-y-1">
@@ -139,7 +167,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 
               {/* SERVIZI & MOBILITÀ DI LUSSO */}
               <div>
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
+                <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-3 px-1">
                   Servizi & Mobilità di Lusso
                 </h3>
                 <div className="space-y-1">
@@ -169,7 +197,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 
               {/* DIGITAL INNOVATION */}
               <div>
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
+                <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-3 px-1">
                   Digital Innovation
                 </h3>
                 <div className="space-y-1">
@@ -222,6 +250,8 @@ const Header: React.FC = () => {
   const { user, logout } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [creditBalance, setCreditBalance] = useState<number>(0);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -230,6 +260,24 @@ const Header: React.FC = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Fetch credit balance when user is logged in
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (user?.id) {
+        setIsLoadingBalance(true);
+        try {
+          const balance = await getUserCreditBalance(user.id);
+          setCreditBalance(balance);
+        } catch (error) {
+          console.error('Error fetching credit balance:', error);
+        } finally {
+          setIsLoadingBalance(false);
+        }
+      }
+    };
+    fetchBalance();
+  }, [user]);
 
   return (
     <>
@@ -276,9 +324,12 @@ const Header: React.FC = () => {
                 >
                   <Link
                     to="/credit-wallet"
-                    className="hidden md:block bg-white text-black px-4 py-2 rounded-full font-bold text-xs hover:bg-gray-200 transition-colors"
+                    className="hidden md:flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full font-bold text-xs hover:bg-gray-200 transition-colors"
                   >
-                    Credit Wallet
+                    <span>Credit Wallet</span>
+                    <span className="bg-black text-white px-2 py-0.5 rounded-full text-xs">
+                      {isLoadingBalance ? '...' : `€${creditBalance.toFixed(2)}`}
+                    </span>
                   </Link>
                   <Link
                     to={user.role === 'business' ? '/partner/dashboard' : '/account'}

@@ -7,9 +7,10 @@ import { useTranslation } from '../hooks/useTranslation';
 import { useBooking } from '../hooks/useBooking';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVerification } from '../hooks/useVerification';
+import { useVehicles } from '../hooks/useVehicles';
 
 interface RentalPageProps {
-  categoryId: 'cars' | 'urban-cars' | 'yachts' | 'villas' | 'jets' | 'helicopters';
+  categoryId: 'cars' | 'urban-cars' | 'corporate-fleet' | 'yachts' | 'villas' | 'jets' | 'helicopters';
 }
 
 const JetSearchPage: React.FC = () => {
@@ -217,11 +218,24 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   const navigate = useNavigate();
   const { openBooking, openCarWizard } = useBooking();
   const { checkVerificationAndProceed } = useVerification();
-  
+
+  // Determine if this is a vehicle category and map to database category
+  const vehicleCategory = categoryId === 'cars' ? 'exotic'
+    : categoryId === 'urban-cars' ? 'urban'
+    : categoryId === 'corporate-fleet' ? 'aziendali'
+    : undefined;
+
+  // Fetch vehicles from database if it's a vehicle category
+  const { vehicles: fetchedVehicles, loading: vehiclesLoading } = useVehicles(vehicleCategory);
+
+  // Get the category from static data
   const category = RENTAL_CATEGORIES.find(cat => cat.id === categoryId);
 
+  // Use fetched vehicles for car categories, otherwise use static data
+  const categoryData = vehicleCategory ? fetchedVehicles : (category?.data || []);
+
   const handleBook = (item: RentalItem) => {
-    if (categoryId === 'cars' || categoryId === 'urban-cars') {
+    if (categoryId === 'cars' || categoryId === 'urban-cars' || categoryId === 'corporate-fleet') {
       openCarWizard(item);
     } else if (['jets', 'helicopters'].includes(categoryId)) {
       navigate(`/book/${categoryId}/${item.id}`);
@@ -364,13 +378,20 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
                    
                 </motion.div>
 
-                <div 
-                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12"
-                >
-                    {category.data.map(item => (
-                        <RentalCard key={item.id} item={item} onBook={handleBook} />
-                    ))}
-                </div>
+                {vehiclesLoading ? (
+                    <div className="text-center text-white mt-12">
+                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+                        <p className="mt-4">Loading vehicles...</p>
+                    </div>
+                ) : (
+                    <div
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12"
+                    >
+                        {categoryData.map(item => (
+                            <RentalCard key={item.id} item={item} onBook={handleBook} />
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     </motion.div>
