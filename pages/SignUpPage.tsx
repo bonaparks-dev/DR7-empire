@@ -4,6 +4,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
+import DocumentUploadModal from '../components/ui/DocumentUploadModal';
 
 const PasswordStrengthMeter: React.FC<{ password?: string }> = ({ password = '' }) => {
     const { t } = useTranslation();
@@ -71,6 +72,8 @@ const SignUpPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState('');
+  const [showDocumentModal, setShowDocumentModal] = useState(false);
+  const [newUserId, setNewUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -130,6 +133,11 @@ const SignUpPage: React.FC = () => {
         }
         if (!formData.codiceFiscale) newErrors.codiceFiscale = 'Codice Fiscale è obbligatorio';
         if (!formData.indirizzo) newErrors.indirizzo = 'Indirizzo è obbligatorio';
+        if (!formData.telefono) {
+          newErrors.telefono = 'Telefono è obbligatorio';
+        } else if (!validateItalianPhone(formData.telefono)) {
+          newErrors.telefono = 'Formato telefono non valido';
+        }
       }
 
       // Persona Fisica specific
@@ -237,7 +245,13 @@ const SignUpPage: React.FC = () => {
         // Don't throw - user is created, just log the error
       }
 
-      navigate('/check-email');
+      // Show document upload modal
+      if (authData?.user?.id) {
+        setNewUserId(authData.user.id);
+        setShowDocumentModal(true);
+      } else {
+        navigate('/check-email');
+      }
     } catch (err: any) {
       setGeneralError(err.message || t('Something_went_wrong'));
     } finally {
@@ -385,6 +399,22 @@ const SignUpPage: React.FC = () => {
                       required
                     />
                     {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Telefono <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      name="telefono"
+                      value={formData.telefono}
+                      onChange={handleChange}
+                      placeholder="+39 123 456 7890"
+                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                      required
+                    />
+                    {errors.telefono && <p className="text-xs text-red-400 mt-1">{errors.telefono}</p>}
                   </div>
                 </div>
               )}
@@ -838,6 +868,18 @@ const SignUpPage: React.FC = () => {
           animation: fadeIn 0.3s ease-in-out;
         }
       `}</style>
+
+      {/* Document Upload Modal */}
+      {showDocumentModal && newUserId && (
+        <DocumentUploadModal
+          isOpen={showDocumentModal}
+          onClose={() => {
+            setShowDocumentModal(false);
+            navigate('/check-email');
+          }}
+          userId={newUserId}
+        />
+      )}
     </motion.div>
   );
 };
