@@ -29,20 +29,21 @@ import {
 } from './components/icons/Icons';
 
 const newCarsRawData = [
-  {
-    "id": 2,
-    "name": "Audi RS3 Verde",
-    "dailyPrice": 40,
-    "specs": {
-      "acceleration": "0–100 in 3.8s",
-      "maxSpeed": "Max speed: 250km/h",
-      "power": "400Cv",
-      "torque": "500Nm",
-      "engine": "2.5L inline 5-cylinder"
-    },
-    "image": "/audi-rs3.jpeg",
-    "color": "Verde"
-  },
+  // REMOVED: RS3 Verde - Hidden per request
+  // {
+  //   "id": 2,
+  //   "name": "Audi RS3 Verde",
+  //   "dailyPrice": 40,
+  //   "specs": {
+  //     "acceleration": "0–100 in 3.8s",
+  //     "maxSpeed": "Max speed: 250km/h",
+  //     "power": "400Cv",
+  //     "torque": "500Nm",
+  //     "engine": "2.5L inline 5-cylinder"
+  //   },
+  //   "image": "/audi-rs3.jpeg",
+  //   "color": "Verde"
+  // },
   {
     "id": 3,
     "name": "Audi RS3 Rossa",
