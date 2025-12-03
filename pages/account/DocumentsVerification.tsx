@@ -51,21 +51,31 @@ const DocumentsVerification = () => {
                 const buckets = ['carta-identita', 'codice-fiscale', 'driver-licenses'];
 
                 for (const bucket of buckets) {
-                    const { data: files } = await supabase.storage
-                        .from(bucket)
-                        .list(user.id);
+                    try {
+                        const { data: files, error } = await supabase.storage
+                            .from(bucket)
+                            .list(user.id);
 
-                    if (files) {
-                        files.forEach(file => {
-                            allDocs.push({
-                                id: file.id,
-                                document_type: file.name.split('_')[0],
-                                file_path: `${user.id}/${file.name}`,
-                                upload_date: file.created_at,
-                                status: 'pending_verification',
-                                bucket: bucket
+                        if (error) {
+                            console.error(`Error listing ${bucket}:`, error);
+                            continue;
+                        }
+
+                        if (files) {
+                            files.forEach(file => {
+                                allDocs.push({
+                                    id: file.id,
+                                    document_type: file.name.split('_')[0],
+                                    file_path: `${user.id}/${file.name}`,
+                                    upload_date: file.created_at,
+                                    status: 'pending_verification',
+                                    bucket: bucket
+                                });
                             });
-                        });
+                        }
+                    } catch (bucketError) {
+                        console.error(`Failed to list ${bucket}:`, bucketError);
+                        continue;
                     }
                 }
 
