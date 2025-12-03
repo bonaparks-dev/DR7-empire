@@ -40,21 +40,38 @@ const DocumentsVerification = () => {
         refreshSession();
     }, []);
 
-    // Fetch uploaded documents
+    // Fetch uploaded documents from storage buckets
     useEffect(() => {
         const fetchDocuments = async () => {
             if (!user) return;
 
             setLoadingDocuments(true);
             try {
-                const { data, error } = await supabase
-                    .from('user_documents')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .order('upload_date', { ascending: false });
+                const allDocs: any[] = [];
+                const buckets = ['driver-ids', 'codice-fiscale', 'driver-licenses'];
 
-                if (error) throw error;
-                setUploadedDocuments(data || []);
+                for (const bucket of buckets) {
+                    const { data: files } = await supabase.storage
+                        .from(bucket)
+                        .list(user.id);
+
+                    if (files) {
+                        files.forEach(file => {
+                            allDocs.push({
+                                id: file.id,
+                                document_type: file.name.split('_')[0],
+                                file_path: `${user.id}/${file.name}`,
+                                upload_date: file.created_at,
+                                status: 'pending_verification',
+                                bucket: bucket
+                            });
+                        });
+                    }
+                }
+
+                // Sort by upload date
+                allDocs.sort((a, b) => new Date(b.upload_date).getTime() - new Date(a.upload_date).getTime());
+                setUploadedDocuments(allDocs);
             } catch (error) {
                 console.error('Failed to fetch documents:', error);
             } finally {
@@ -87,42 +104,44 @@ const DocumentsVerification = () => {
         setUploading(true);
 
         try {
-            const uploads = [];
+            let uploadedCount = 0;
+            const uploadErrors = [];
+
+            // Helper function to determine bucket based on document type
+            const getBucket = (docType: string): string => {
+                if (docType.includes('cartaIdentita')) return 'driver-ids';
+                if (docType.includes('codiceFiscale')) return 'codice-fiscale';
+                if (docType.includes('patente')) return 'driver-licenses';
+                return 'driver-ids'; // default
+            };
 
             for (const [key, file] of Object.entries(documents)) {
                 if (file) {
+                    const bucket = getBucket(key);
                     const fileExt = file.name.split('.').pop();
                     const fileName = `${user.id}/${key}_${Date.now()}.${fileExt}`;
 
                     const { error: uploadError } = await supabase.storage
-                        .from('user-documents')
+                        .from(bucket)
                         .upload(fileName, file);
 
                     if (uploadError) {
-                        console.error(`Failed to upload ${key}:`, uploadError);
-                        continue;
+                        console.error(`Failed to upload ${key} to ${bucket}:`, uploadError);
+                        uploadErrors.push(`${key}: ${uploadError.message}`);
+                    } else {
+                        uploadedCount++;
                     }
-
-                    uploads.push({
-                        user_id: user.id,
-                        document_type: key,
-                        file_path: fileName,
-                        upload_date: new Date().toISOString(),
-                        status: 'pending_verification'
-                    });
                 }
             }
 
-            if (uploads.length > 0) {
-                const { error: dbError } = await supabase
-                    .from('user_documents')
-                    .insert(uploads);
+            if (uploadedCount > 0) {
+                if (uploadErrors.length > 0) {
+                    alert(`Alcuni documenti non sono stati caricati:\n${uploadErrors.join('\n')}\n\nDocumenti caricati con successo: ${uploadedCount}`);
+                } else {
+                    alert('✅ Documenti caricati con successo! Saranno verificati a breve.');
+                }
 
-                if (dbError) throw dbError;
-
-                alert('Documenti caricati con successo! Saranno verificati a breve.');
-
-                // Reset form and reload documents
+                // Reset form
                 setDocuments({
                     cartaIdentitaFront: null,
                     cartaIdentitaBack: null,
@@ -132,14 +151,10 @@ const DocumentsVerification = () => {
                     patenteBack: null
                 });
 
-                // Refetch documents
-                const { data } = await supabase
-                    .from('user_documents')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .order('upload_date', { ascending: false });
-
-                setUploadedDocuments(data || []);
+                // Refresh the page to show new documents
+                window.location.reload();
+            } else if (uploadErrors.length > 0) {
+                alert(`Errore nel caricamento dei documenti:\n${uploadErrors.join('\n')}`);
             }
         } catch (error: any) {
             console.error('Error uploading documents:', error);
@@ -149,10 +164,10 @@ const DocumentsVerification = () => {
         }
     };
 
-    const getDocumentUrl = async (filePath: string) => {
+    const getDocumentUrl = async (doc: any) => {
         const { data } = await supabase.storage
-            .from('user-documents')
-            .createSignedUrl(filePath, 3600);
+            .from(doc.bucket)
+            .createSignedUrl(doc.file_path, 3600);
 
         if (data?.signedUrl) {
             window.open(data.signedUrl, '_blank');
@@ -204,7 +219,7 @@ const DocumentsVerification = () => {
                                         <div className="flex items-center space-x-3">
                                             <StatusBadge status={doc.status} />
                                             <button
-                                                onClick={() => getDocumentUrl(doc.file_path)}
+                                                onClick={() => getDocumentUrl(doc)}
                                                 className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded transition-colors"
                                             >
                                                 Visualizza
