@@ -972,7 +972,7 @@ const SignUpPage: React.FC = () => {
 
                 <div className="bg-gradient-to-r from-green-900/30 to-blue-900/30 border border-green-700/50 rounded-lg p-4">
                   <h3 className="font-bold text-white mb-3">
-                    Una volta caricati i documenti, il tuo account verrà verificato e riceverai immediatamente:
+                    Una volta caricati i documenti, il tuo account verrà verificato e riceverai immediatamente il tuo Credito Benvenuto DR7:
                   </h3>
                   <ul className="space-y-2">
                     <li className="flex items-center">
@@ -981,7 +981,7 @@ const SignUpPage: React.FC = () => {
                     </li>
                     <li className="flex items-center">
                       <span className="text-green-400 mr-2">✓</span>
-                      <span>fino a <strong className="text-white">+50€</strong> extra come incentivo fedeltà sulla piattaforma DR7</span>
+                      <span>fino a <strong className="text-white">+50€</strong> extra come incentivo fedeltà utilizzabili per i noleggio Supercars</span>
                     </li>
                   </ul>
                 </div>
@@ -1138,7 +1138,7 @@ const SignUpPage: React.FC = () => {
                 </p>
 
                 <p className="text-base">
-                  Caricandoli ora <strong className="text-white">(CI, CF, Patente)</strong> ricevi subito <strong className="text-green-400">10€ immediati per i lavaggi</strong> e <strong className="text-yellow-400">fino a 50€ extra</strong> come incentivo fedeltà sulla piattaforma DR7.
+                  Caricandoli ora <strong className="text-white">(CI, CF, Patente)</strong> ricevi il tuo <strong className="text-green-400">Credito Benvenuto DR7</strong>: <strong className="text-white">10€ immediati per i lavaggi</strong> e <strong className="text-yellow-400">fino a 50€ extra per i noleggio Supercars</strong>.
                 </p>
 
                 <p className="text-lg font-bold text-yellow-400">
