@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../supabaseClient';
+import { supabase } from '../supabaseClient';
 import { CarIcon } from '../components/icons/Icons';
 
 const EUR_TO_USD_RATE = 1.09;
