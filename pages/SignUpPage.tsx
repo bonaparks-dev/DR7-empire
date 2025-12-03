@@ -140,7 +140,10 @@ const SignUpPage: React.FC = () => {
         } else if (!validatePartitaIVA(formData.partitaIVA)) {
           newErrors.partitaIVA = 'Partita IVA non valida (11 cifre)';
         }
-        if (!formData.codiceFiscale) newErrors.codiceFiscale = 'Codice Fiscale è obbligatorio';
+        // Codice Fiscale required only for Italy
+        if (formData.nazione === 'Italia') {
+          if (!formData.codiceFiscale) newErrors.codiceFiscale = 'Codice Fiscale è obbligatorio';
+        }
         if (!formData.indirizzo) newErrors.indirizzo = 'Indirizzo è obbligatorio';
       }
 
@@ -148,10 +151,13 @@ const SignUpPage: React.FC = () => {
       if (tipoCliente === 'persona_fisica') {
         if (!formData.nome) newErrors.nome = 'Nome è obbligatorio';
         if (!formData.cognome) newErrors.cognome = 'Cognome è obbligatorio';
-        if (!formData.codiceFiscale) {
-          newErrors.codiceFiscale = 'Codice Fiscale è obbligatorio';
-        } else if (!validateCodiceFiscale(formData.codiceFiscale)) {
-          newErrors.codiceFiscale = 'Codice Fiscale non valido (16 caratteri)';
+        // Codice Fiscale required only for Italy
+        if (formData.nazione === 'Italia') {
+          if (!formData.codiceFiscale) {
+            newErrors.codiceFiscale = 'Codice Fiscale è obbligatorio';
+          } else if (!validateCodiceFiscale(formData.codiceFiscale)) {
+            newErrors.codiceFiscale = 'Codice Fiscale non valido (16 caratteri)';
+          }
         }
         if (!formData.telefono) {
           newErrors.telefono = 'Telefono è obbligatorio';
@@ -169,7 +175,10 @@ const SignUpPage: React.FC = () => {
         if (!formData.codiceUnivoco) newErrors.codiceUnivoco = 'Codice Univoco è obbligatorio';
         if (!formData.enteUfficio) newErrors.enteUfficio = 'Ente o Ufficio è obbligatorio';
         if (!formData.citta) newErrors.citta = 'Città è obbligatorio';
-        if (!formData.codiceFiscale) newErrors.codiceFiscale = 'Codice Fiscale è obbligatorio';
+        // Codice Fiscale required only for Italy
+        if (formData.nazione === 'Italia') {
+          if (!formData.codiceFiscale) newErrors.codiceFiscale = 'Codice Fiscale è obbligatorio';
+        }
         if (!formData.indirizzo) newErrors.indirizzo = 'Indirizzo è obbligatorio';
       }
     }
@@ -261,11 +270,20 @@ const SignUpPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // Step 1: Create auth user
+      // Step 1: Create auth user with full name
+      const fullName = tipoCliente === 'persona_fisica'
+        ? `${formData.nome} ${formData.cognome}`
+        : tipoCliente === 'azienda'
+        ? formData.denominazione
+        : formData.enteUfficio;
+
       const { data: authData, error: authError } = await signup(
         formData.email,
         formData.password,
-        {}
+        {
+          full_name: fullName,
+          role: 'personal'
+        }
       );
 
       if (authError) throw authError;
@@ -421,7 +439,7 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Codice Fiscale <span className="text-red-500">*</span>
+                      Codice Fiscale {formData.nazione === 'Italia' && <span className="text-red-500">*</span>}
                     </label>
                     <input
                       type="text"
@@ -430,7 +448,7 @@ const SignUpPage: React.FC = () => {
                       onChange={handleChange}
                       placeholder="00000000000"
                       className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                      required
+                      required={formData.nazione === 'Italia'}
                     />
                     {errors.codiceFiscale && <p className="text-xs text-red-400 mt-1">{errors.codiceFiscale}</p>}
                   </div>
@@ -530,7 +548,7 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Codice Fiscale <span className="text-red-500">*</span>
+                      Codice Fiscale {formData.nazione === 'Italia' && <span className="text-red-500">*</span>}
                     </label>
                     <input
                       type="text"
@@ -540,7 +558,7 @@ const SignUpPage: React.FC = () => {
                       placeholder="RSSMRA80A01H501U"
                       maxLength={16}
                       className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
-                      required
+                      required={formData.nazione === 'Italia'}
                     />
                     {errors.codiceFiscale && <p className="text-xs text-red-400 mt-1">{errors.codiceFiscale}</p>}
                   </div>
@@ -731,7 +749,7 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Codice Fiscale <span className="text-red-500">*</span>
+                      Codice Fiscale {formData.nazione === 'Italia' && <span className="text-red-500">*</span>}
                     </label>
                     <input
                       type="text"
@@ -740,7 +758,7 @@ const SignUpPage: React.FC = () => {
                       onChange={handleChange}
                       placeholder="00000000000"
                       className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                      required
+                      required={formData.nazione === 'Italia'}
                     />
                     {errors.codiceFiscale && <p className="text-xs text-red-400 mt-1">{errors.codiceFiscale}</p>}
                   </div>
