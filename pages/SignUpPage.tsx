@@ -203,11 +203,15 @@ const SignUpPage: React.FC = () => {
   };
 
   const handleUploadDocuments = async () => {
-    if (!newUserId) return;
+    if (!newUserId) {
+      alert('Errore: ID utente non disponibile');
+      return;
+    }
 
     setUploadingDocuments(true);
     try {
       const uploads = [];
+      const uploadErrors = [];
 
       // Upload each document if selected
       for (const [key, file] of Object.entries(documents)) {
@@ -221,6 +225,7 @@ const SignUpPage: React.FC = () => {
 
           if (uploadError) {
             console.error(`Error uploading ${key}:`, uploadError);
+            uploadErrors.push(`${key}: ${uploadError.message}`);
           } else {
             uploads.push({
               user_id: newUserId,
@@ -241,13 +246,28 @@ const SignUpPage: React.FC = () => {
 
         if (dbError) {
           console.error('Error saving document records:', dbError);
+          alert(`Errore nel salvare i documenti nel database: ${dbError.message}\n\nDettagli: ${JSON.stringify(dbError)}`);
+          return;
         }
+
+        // Success message
+        if (uploadErrors.length > 0) {
+          alert(`Alcuni documenti non sono stati caricati:\n${uploadErrors.join('\n')}\n\nDocumenti caricati con successo: ${uploads.length}`);
+        } else {
+          alert(`✅ ${uploads.length} documenti caricati con successo!`);
+        }
+      } else if (uploadErrors.length > 0) {
+        alert(`Errore nel caricamento dei documenti:\n${uploadErrors.join('\n')}`);
+        return;
+      } else {
+        alert('Nessun documento selezionato');
       }
 
       setShowWelcomeModal(false);
       navigate('/check-email');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading documents:', error);
+      alert(`Errore imprevisto: ${error.message || JSON.stringify(error)}`);
     } finally {
       setUploadingDocuments(false);
     }
