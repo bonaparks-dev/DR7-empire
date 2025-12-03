@@ -250,6 +250,8 @@ const Header: React.FC = () => {
   const { user, logout } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [creditBalance, setCreditBalance] = useState<number>(0);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -258,6 +260,24 @@ const Header: React.FC = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Fetch credit balance when user is logged in
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (user?.id) {
+        setIsLoadingBalance(true);
+        try {
+          const balance = await getUserCreditBalance(user.id);
+          setCreditBalance(balance);
+        } catch (error) {
+          console.error('Error fetching credit balance:', error);
+        } finally {
+          setIsLoadingBalance(false);
+        }
+      }
+    };
+    fetchBalance();
+  }, [user]);
 
   return (
     <>
@@ -304,9 +324,12 @@ const Header: React.FC = () => {
                 >
                   <Link
                     to="/credit-wallet"
-                    className="hidden md:block bg-white text-black px-4 py-2 rounded-full font-bold text-xs hover:bg-gray-200 transition-colors"
+                    className="hidden md:flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full font-bold text-xs hover:bg-gray-200 transition-colors"
                   >
-                    Credit Wallet
+                    <span>Credit Wallet</span>
+                    <span className="bg-black text-white px-2 py-0.5 rounded-full text-xs">
+                      {isLoadingBalance ? '...' : `€${creditBalance.toFixed(2)}`}
+                    </span>
                   </Link>
                   <Link
                     to={user.role === 'business' ? '/partner/dashboard' : '/account'}
