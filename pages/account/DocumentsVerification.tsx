@@ -48,7 +48,7 @@ const DocumentsVerification = () => {
             setLoadingDocuments(true);
             try {
                 const allDocs: any[] = [];
-                const buckets = ['driver-ids', 'codice-fiscale', 'driver-licenses'];
+                const buckets = ['carta-identita', 'codice-fiscale', 'driver-licenses'];
 
                 for (const bucket of buckets) {
                     const { data: files } = await supabase.storage
@@ -109,10 +109,10 @@ const DocumentsVerification = () => {
 
             // Helper function to determine bucket based on document type
             const getBucket = (docType: string): string => {
-                if (docType.includes('cartaIdentita')) return 'driver-ids';
+                if (docType.includes('cartaIdentita')) return 'carta-identita';
                 if (docType.includes('codiceFiscale')) return 'codice-fiscale';
                 if (docType.includes('patente')) return 'driver-licenses';
-                return 'driver-ids'; // default
+                return 'carta-identita'; // default
             };
 
             for (const [key, file] of Object.entries(documents)) {
@@ -138,7 +138,7 @@ const DocumentsVerification = () => {
                 if (uploadErrors.length > 0) {
                     alert(`Alcuni documenti non sono stati caricati:\n${uploadErrors.join('\n')}\n\nDocumenti caricati con successo: ${uploadedCount}`);
                 } else {
-                    alert('✅ Documenti caricati con successo! Saranno verificati a breve.');
+                    alert('Documenti caricati con successo! Saranno verificati a breve.');
                 }
 
                 // Reset form
