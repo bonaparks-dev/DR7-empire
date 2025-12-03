@@ -5,10 +5,13 @@ import { RENTAL_CATEGORIES } from '../../constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
 import { CogIcon, SignOutIcon } from '../icons/Icons';
+import { getUserCreditBalance } from '../../utils/creditWallet';
 
 const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
+  const [creditBalance, setCreditBalance] = useState<number>(0);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -20,6 +23,24 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
       document.body.style.overflow = 'auto';
     };
   }, [isOpen]);
+
+  // Fetch credit balance when menu opens
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (isOpen && user?.id) {
+        setIsLoadingBalance(true);
+        try {
+          const balance = await getUserCreditBalance(user.id);
+          setCreditBalance(balance);
+        } catch (error) {
+          console.error('Error fetching credit balance:', error);
+        } finally {
+          setIsLoadingBalance(false);
+        }
+      }
+    };
+    fetchBalance();
+  }, [isOpen, user]);
 
   const navLinkClasses =
     'block py-2.5 text-base font-normal text-gray-300 hover:text-white transition-colors duration-300';
@@ -105,7 +126,14 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                     <span>Exclusive Members Club</span>
                   </NavLink>
                   <NavLink to="/credit-wallet" onClick={onClose} className={navLinkClasses}>
-                    <span>DR7 Credit Wallet</span>
+                    <span className="flex items-center justify-between w-full">
+                      <span>DR7 Credit Wallet</span>
+                      {user && (
+                        <span className="text-white font-bold ml-2">
+                          {isLoadingBalance ? '...' : `€${creditBalance.toFixed(2)}`}
+                        </span>
+                      )}
+                    </span>
                   </NavLink>
                 </div>
               </div>
