@@ -235,9 +235,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Helper function to get day of week without timezone issues
+  const getDayOfWeek = (dateString: string): number => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.getDay();
+  };
+
   // === Horaires de retrait admissibles (pas de dimanche) ===
   const getValidPickupTimes = (date: string): string[] => {
-    const dayOfWeek = new Date(date).getDay();
+    const dayOfWeek = getDayOfWeek(date);
     if (dayOfWeek === 0) return [];
 
     const times: string[] = [];
@@ -588,7 +595,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         setErrors(prev => ({ ...prev, pickupDate: "Non puoi selezionare una data passata." }));
         return; // Don't update the form data
       }
-      const dayOfWeek = new Date(value).getDay();
+      const dayOfWeek = getDayOfWeek(value);
       if (dayOfWeek === 0) {
         setErrors(prev => ({ ...prev, pickupDate: "Le prenotazioni non sono disponibili la domenica." }));
       } else {
@@ -740,7 +747,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         }
 
         // Check Sunday drop-off (CLOSED)
-        const returnDayOfWeek = returnD.getDay();
+        const returnDayOfWeek = getDayOfWeek(formData.returnDate);
         if (returnDayOfWeek === 0) { // Sunday = 0
           newErrors.returnDate = "Non è possibile riconsegnare il veicolo di domenica. Siamo chiusi. Seleziona un altro giorno.";
         }
@@ -764,7 +771,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
           }
         }
       }
-      if (formData.pickupDate && new Date(formData.pickupDate).getDay() === 0) {
+      if (formData.pickupDate && getDayOfWeek(formData.pickupDate) === 0) {
         newErrors.pickupDate = "Le prenotazioni non sono disponibili la domenica.";
       }
 
@@ -1160,8 +1167,7 @@ setIsProcessing(false);
                         value={formData.returnDate}
                         onChange={(e) => {
                           // Check if selected date is Sunday (0 = Sunday)
-                          const selectedDate = new Date(e.target.value);
-                          if (selectedDate.getDay() === 0) {
+                          if (getDayOfWeek(e.target.value) === 0) {
                             alert('Non è possibile riconsegnare il veicolo di domenica. Siamo chiusi la domenica.\n\nPer favore seleziona un altro giorno.');
                             return;
                           }
@@ -1192,9 +1198,6 @@ setIsProcessing(false);
                       {!formData.pickupDate && (
                         <p className="text-xs text-gray-400 mt-1">Seleziona prima la data di ritiro</p>
                       )}
-                      <p className="text-xs text-yellow-400 mt-1 flex items-center">
-                        <span className="mr-1"></span> Chiusi la domenica - non è possibile riconsegnare
-                      </p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
