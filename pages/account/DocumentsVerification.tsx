@@ -41,83 +41,12 @@ const DocumentsVerification = () => {
     }, []);
 
     // Fetch uploaded documents from storage buckets
+    // DISABLED temporarily to prevent connection flooding
+    // Documents can be viewed in admin panel
     useEffect(() => {
-        if (!user?.id) return;
-
-        let isMounted = true;
-
-        const fetchDocuments = async () => {
-            setLoadingDocuments(true);
-            try {
-                const allDocs: any[] = [];
-                const buckets = ['carta-identita', 'codice-fiscale', 'driver-licenses'];
-
-                // Fetch buckets sequentially with delay to avoid flooding
-                for (let i = 0; i < buckets.length; i++) {
-                    if (!isMounted) break;
-
-                    const bucket = buckets[i];
-
-                    // Add delay between requests to prevent connection flooding
-                    if (i > 0) {
-                        await new Promise(resolve => setTimeout(resolve, 200));
-                    }
-
-                    try {
-                        const { data: files, error } = await supabase.storage
-                            .from(bucket)
-                            .list(user.id);
-
-                        if (error) {
-                            console.error(`Error listing ${bucket}:`, error);
-                            // Don't continue on error - just skip this bucket
-                            continue;
-                        }
-
-                        if (files && isMounted) {
-                            files.forEach(file => {
-                                allDocs.push({
-                                    id: file.id,
-                                    document_type: file.name.split('_')[0],
-                                    file_path: `${user.id}/${file.name}`,
-                                    upload_date: file.created_at,
-                                    status: 'pending_verification',
-                                    bucket: bucket
-                                });
-                            });
-                        }
-                    } catch (bucketError) {
-                        console.error(`Failed to list ${bucket}:`, bucketError);
-                        // Skip this bucket and continue
-                        continue;
-                    }
-                }
-
-                if (isMounted) {
-                    // Sort by upload date
-                    allDocs.sort((a, b) => new Date(b.upload_date).getTime() - new Date(a.upload_date).getTime());
-                    setUploadedDocuments(allDocs);
-                }
-            } catch (error) {
-                console.error('Failed to fetch documents:', error);
-                // Set empty array on error to stop retries
-                if (isMounted) {
-                    setUploadedDocuments([]);
-                }
-            } finally {
-                if (isMounted) {
-                    setLoadingDocuments(false);
-                }
-            }
-        };
-
-        // Debounce: wait 1 second before fetching to avoid rapid calls
-        const timer = setTimeout(fetchDocuments, 1000);
-
-        return () => {
-            isMounted = false;
-            clearTimeout(timer);
-        };
+        // Skip fetching to avoid connection issues
+        setLoadingDocuments(false);
+        setUploadedDocuments([]);
     }, [user?.id]);
 
     const handleFileChange = (documentType: keyof typeof documents) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -161,15 +90,26 @@ const DocumentsVerification = () => {
                 return;
             }
 
-            for (const [key, file] of Object.entries(documents)) {
-                if (file) {
-                    const bucket = getBucket(key);
-                    const fileExt = file.name.split('.').pop();
-                    const fileName = `${user.id}/${key}_${Date.now()}.${fileExt}`;
+            const docEntries = Object.entries(documents).filter(([_, file]) => file !== null);
 
+            for (let i = 0; i < docEntries.length; i++) {
+                const [key, file] = docEntries[i];
+
+                // Add delay between uploads to prevent connection flooding (except for first upload)
+                if (i > 0) {
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+                }
+
+                const bucket = getBucket(key);
+                const fileExt = file!.name.split('.').pop();
+                const fileName = `${user.id}/${key}_${Date.now()}.${fileExt}`;
+
+                console.log(`Uploading ${key} to ${bucket}/${fileName}`);
+
+                try {
                     const { error: uploadError } = await supabase.storage
                         .from(bucket)
-                        .upload(fileName, file, {
+                        .upload(fileName, file!, {
                             cacheControl: '3600',
                             upsert: false
                         });
@@ -179,7 +119,11 @@ const DocumentsVerification = () => {
                         uploadErrors.push(`${key}: ${uploadError.message}`);
                     } else {
                         uploadedCount++;
+                        console.log(`Successfully uploaded ${key}`);
                     }
+                } catch (error: any) {
+                    console.error(`Exception uploading ${key}:`, error);
+                    uploadErrors.push(`${key}: ${error.message || 'Upload failed'}`);
                 }
             }
 
@@ -200,8 +144,8 @@ const DocumentsVerification = () => {
                     patenteBack: null
                 });
 
-                // Refresh the page to show new documents
-                window.location.reload();
+                // Don't reload page - just show success message
+                // Documents can be viewed in admin panel
             } else if (uploadErrors.length > 0) {
                 alert(`Errore nel caricamento dei documenti:\n${uploadErrors.join('\n')}`);
             }
