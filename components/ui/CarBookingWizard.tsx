@@ -8,6 +8,7 @@ import { PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, INSURANCE_ELIGIBILI
 import type { Booking, RentalItem } from '../../types';
 import { Link } from 'react-router-dom';
 import DocumentUploader from './DocumentUploader';
+import EuropeanDateInput from './EuropeanDateInput';
 import {
   getUnlimitedKmOptions,
   calculateUnlimitedKmPrice,
@@ -1092,17 +1093,18 @@ setIsProcessing(false);
                           <span className="ml-2 text-xs text-green-400">Selezionata</span>
                         )}
                       </label>
-                      <input
-                        type="date"
+                      <EuropeanDateInput
                         name="pickupDate"
                         value={formData.pickupDate}
-                        onChange={handleChange}
+                        onChange={(value) => {
+                          const syntheticEvent = {
+                            target: { name: 'pickupDate', value }
+                          } as React.ChangeEvent<HTMLInputElement>;
+                          handleChange(syntheticEvent);
+                        }}
                         min={today}
                         required
-                        style={{
-                          colorScheme: 'dark',
-                          cursor: 'pointer'
-                        }}
+                        error={!!errors.pickupDate}
                         className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors cursor-pointer ${
                           errors.pickupDate
                             ? 'border-red-500 focus:border-red-400'
@@ -1161,25 +1163,23 @@ setIsProcessing(false);
                           <span className="ml-2 text-xs text-green-400">Selezionata</span>
                         )}
                       </label>
-                      <input
-                        type="date"
+                      <EuropeanDateInput
                         name="returnDate"
                         value={formData.returnDate}
-                        onChange={(e) => {
+                        onChange={(value) => {
                           // Check if selected date is Sunday (0 = Sunday)
-                          if (getDayOfWeek(e.target.value) === 0) {
+                          if (getDayOfWeek(value) === 0) {
                             alert('Non è possibile riconsegnare il veicolo di domenica. Siamo chiusi la domenica.\n\nPer favore seleziona un altro giorno.');
                             return;
                           }
-                          handleChange(e);
+                          const syntheticEvent = {
+                            target: { name: 'returnDate', value }
+                          } as React.ChangeEvent<HTMLInputElement>;
+                          handleChange(syntheticEvent);
                         }}
                         min={formData.pickupDate || today}
                         required
-                        disabled={!formData.pickupDate}
-                        style={{
-                          colorScheme: 'dark',
-                          cursor: formData.pickupDate ? 'pointer' : 'not-allowed'
-                        }}
+                        error={!!(errors.returnDate || errors.date)}
                         className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors ${
                           !formData.pickupDate
                             ? 'border-gray-700 opacity-50 cursor-not-allowed'
@@ -1249,9 +1249,9 @@ setIsProcessing(false);
               <div><label className="text-sm text-gray-400">Cognome *</label><input type="text" name={`${prefix}lastName`} value={(driverData as any).lastName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}lastName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}lastName`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Email *</label><input type="email" name={`${prefix}email`} value={(driverData as any).email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}email`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}email`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Telefono *</label><input type="tel" name={`${prefix}phone`} value={(driverData as any).phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}phone`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}phone`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Data di nascita *</label><input type="date" name={`${prefix}birthDate`} value={(driverData as any).birthDate} onChange={handleChange} max={new Date().toISOString().split('T')[0]} style={{ colorScheme: 'dark', cursor: 'pointer' }} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm cursor-pointer"/>{errors[`${prefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}birthDate`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Data di nascita *</label><EuropeanDateInput name={`${prefix}birthDate`} value={(driverData as any).birthDate} onChange={(value) => { const syntheticEvent = { target: { name: `${prefix}birthDate`, value } } as React.ChangeEvent<HTMLInputElement>; handleChange(syntheticEvent); }} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm cursor-pointer"/>{errors[`${prefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}birthDate`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Numero patente *</label><input type="text" name={`${prefix}licenseNumber`} value={(driverData as any).licenseNumber} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}licenseNumber`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseNumber`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Data rilascio patente *</label><input type="date" name={`${prefix}licenseIssueDate`} value={(driverData as any).licenseIssueDate} onChange={handleChange} style={{ colorScheme: 'dark', cursor: 'pointer' }} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm cursor-pointer"/>{errors[`${prefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseIssueDate`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Data rilascio patente *</label><EuropeanDateInput name={`${prefix}licenseIssueDate`} value={(driverData as any).licenseIssueDate} onChange={(value) => { const syntheticEvent = { target: { name: `${prefix}licenseIssueDate`, value } } as React.ChangeEvent<HTMLInputElement>; handleChange(syntheticEvent); }} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm cursor-pointer"/>{errors[`${prefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseIssueDate`]}</p>}</div>
             </div>
           );
         };
