@@ -242,7 +242,9 @@ const SignUpPage: React.FC = () => {
 
       if (customerError) {
         console.error('Error saving customer data:', customerError);
-        // Don't throw - user is created, just log the error
+        console.error('Customer data attempted:', customerData);
+        // Alert user but don't fail the signup - they can update profile later
+        alert(`Account creato con successo! Nota: alcuni dati del profilo potrebbero richiedere aggiornamento. Errore: ${customerError.message}`);
       }
 
       // Show document upload modal
