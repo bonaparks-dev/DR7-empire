@@ -42,7 +42,8 @@ const getVehicleImage = (name: string): string => {
   if (lowerName.includes('m340')) return '/bmw-m340i.jpeg';
   if (lowerName.includes('911') || lowerName.includes('carrera')) return '/porsche-911.jpeg';
   if (lowerName.includes('c63')) return '/c63.jpeg';
-  if (lowerName.includes('a45')) return '/a45.jpeg';
+  if (lowerName.includes('a45')) return '/mercedes_amg.jpeg';
+  if (lowerName.includes('gle')) return '/mercedes-gle.jpeg';
   if (lowerName.includes('m4')) return '/bmw-m4.jpeg';
   if (lowerName.includes('ducato')) return '/ducato.jpeg';
 
@@ -111,6 +112,16 @@ const getVehicleSpecs = (name: string) => {
       power: '421Cv',
       torque: '500Nm',
       engine: '2.0L Turbo Inline-4'
+    };
+  }
+
+  // GLE specs
+  if (lowerName.includes('gle')) {
+    return {
+      acceleration: '0–100 in 5.3s',
+      power: '367Cv',
+      torque: '500Nm',
+      engine: '3.0L Turbo Inline-6'
     };
   }
 
