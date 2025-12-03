@@ -72,6 +72,17 @@ const SignUpPage: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState('');
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [showSkipConfirmation, setShowSkipConfirmation] = useState(false);
+  const [uploadingDocuments, setUploadingDocuments] = useState(false);
+  const [newUserId, setNewUserId] = useState<string | null>(null);
+  const [documents, setDocuments] = useState({
+    cartaIdentitaFront: null as File | null,
+    cartaIdentitaBack: null as File | null,
+    codiceFiscaleFront: null as File | null,
+    codiceFiscaleBack: null as File | null,
+    patenteFront: null as File | null,
+    patenteBack: null as File | null
+  });
 
   useEffect(() => {
     if (user) {
@@ -177,6 +188,72 @@ const SignUpPage: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleFileChange = (field: keyof typeof documents) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setDocuments(prev => ({ ...prev, [field]: file }));
+  };
+
+  const handleUploadDocuments = async () => {
+    if (!newUserId) return;
+
+    setUploadingDocuments(true);
+    try {
+      const uploads = [];
+
+      // Upload each document if selected
+      for (const [key, file] of Object.entries(documents)) {
+        if (file) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${newUserId}/${key}_${Date.now()}.${fileExt}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('user-documents')
+            .upload(fileName, file);
+
+          if (uploadError) {
+            console.error(`Error uploading ${key}:`, uploadError);
+          } else {
+            uploads.push({
+              user_id: newUserId,
+              document_type: key,
+              file_path: fileName,
+              upload_date: new Date().toISOString(),
+              status: 'pending_verification'
+            });
+          }
+        }
+      }
+
+      // Save document records to database
+      if (uploads.length > 0) {
+        const { error: dbError } = await supabase
+          .from('user_documents')
+          .insert(uploads);
+
+        if (dbError) {
+          console.error('Error saving document records:', dbError);
+        }
+      }
+
+      setShowWelcomeModal(false);
+      navigate('/check-email');
+    } catch (error) {
+      console.error('Error uploading documents:', error);
+    } finally {
+      setUploadingDocuments(false);
+    }
+  };
+
+  const handleSkipDocuments = () => {
+    setShowSkipConfirmation(true);
+  };
+
+  const confirmSkip = () => {
+    setShowWelcomeModal(false);
+    setShowSkipConfirmation(false);
+    navigate('/check-email');
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setGeneralError('');
@@ -238,7 +315,8 @@ const SignUpPage: React.FC = () => {
         // Don't throw - user is created, just log the error
       }
 
-      // Show welcome modal instead of navigating immediately
+      // Save user ID and show welcome modal
+      setNewUserId(authData?.user?.id || null);
       setShowWelcomeModal(true);
     } catch (err: any) {
       setGeneralError(err.message || t('Something_went_wrong'));
@@ -876,25 +954,87 @@ const SignUpPage: React.FC = () => {
 
                 <p>
                   Per completare il tuo profilo ed accedere ai vantaggi esclusivi riservati ai membri registrati,
-                  ti chiediamo di caricare i tuoi documenti nell'area personale:
+                  ti chiediamo di caricare i tuoi documenti:
                 </p>
 
-                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-                  <h3 className="font-bold text-white mb-3">Documenti necessari (fronte e retro):</h3>
-                  <ul className="space-y-2">
-                    <li className="flex items-center">
-                      <span className="text-white mr-2">•</span>
-                      <span>Carta d'Identità</span>
-                    </li>
-                    <li className="flex items-center">
-                      <span className="text-white mr-2">•</span>
-                      <span>Codice Fiscale</span>
-                    </li>
-                    <li className="flex items-center">
-                      <span className="text-white mr-2">•</span>
-                      <span>Patente di guida (se disponibile)</span>
-                    </li>
-                  </ul>
+                {/* Document Upload Section */}
+                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 space-y-4">
+                  <h3 className="font-bold text-white mb-3">Carica i tuoi documenti:</h3>
+
+                  {/* Carta d'Identità */}
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">Carta d'Identità *</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Fronte</label>
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={handleFileChange('cartaIdentitaFront')}
+                          className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Retro</label>
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={handleFileChange('cartaIdentitaBack')}
+                          className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Codice Fiscale */}
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">Codice Fiscale *</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Fronte</label>
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={handleFileChange('codiceFiscaleFront')}
+                          className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Retro</label>
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={handleFileChange('codiceFiscaleBack')}
+                          className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Patente */}
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">Patente di guida (opzionale)</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Fronte</label>
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={handleFileChange('patenteFront')}
+                          className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Retro</label>
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={handleFileChange('patenteBack')}
+                          className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="bg-gradient-to-r from-green-900/30 to-blue-900/30 border border-green-700/50 rounded-lg p-4">
@@ -928,15 +1068,79 @@ const SignUpPage: React.FC = () => {
               </div>
 
               {/* Footer */}
-              <div className="p-6 border-t border-gray-800 flex justify-center">
+              <div className="p-6 border-t border-gray-800 flex gap-4">
                 <button
-                  onClick={() => {
-                    setShowWelcomeModal(false);
-                    navigate('/check-email');
-                  }}
-                  className="bg-white text-black px-8 py-3 rounded-full font-bold hover:bg-gray-200 transition-colors"
+                  onClick={handleSkipDocuments}
+                  disabled={uploadingDocuments}
+                  className="flex-1 px-6 py-3 bg-gray-700 text-white rounded-full font-bold hover:bg-gray-600 transition-colors disabled:opacity-50"
                 >
-                  Ho Capito, Procedi
+                  Salta per Ora
+                </button>
+                <button
+                  onClick={handleUploadDocuments}
+                  disabled={uploadingDocuments}
+                  className="flex-1 px-6 py-3 bg-white text-black rounded-full font-bold hover:bg-gray-200 transition-colors disabled:opacity-50"
+                >
+                  {uploadingDocuments ? 'Caricamento...' : 'Carica Documenti'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Skip Confirmation Modal */}
+      <AnimatePresence>
+        {showSkipConfirmation && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowSkipConfirmation(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-gray-900 border-2 border-red-800 rounded-lg max-w-lg w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-red-800/50 bg-red-900/20">
+                <h2 className="text-2xl font-bold text-white text-center">
+                  ⚠️ Sei sicuro?
+                </h2>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 space-y-4 text-gray-300 text-center">
+                <p className="text-lg text-white font-semibold">
+                  Sei sicuro di voler continuare senza caricare i tuoi documenti?
+                </p>
+
+                <p className="text-base">
+                  Caricandoli ora <strong className="text-white">(CI, CF, Patente)</strong> attivi subito il <strong className="text-green-400">Credito DR7 fino a 50€</strong> e ottieni l'accesso completo ai nostri servizi premium.
+                </p>
+
+                <p className="text-lg font-bold text-yellow-400">
+                  Non perdere il tuo vantaggio esclusivo.
+                </p>
+              </div>
+
+              {/* Footer */}
+              <div className="p-6 border-t border-gray-800 flex gap-4">
+                <button
+                  onClick={() => setShowSkipConfirmation(false)}
+                  className="flex-1 px-6 py-3 bg-white text-black rounded-full font-bold hover:bg-gray-200 transition-colors"
+                >
+                  Torna Indietro
+                </button>
+                <button
+                  onClick={confirmSkip}
+                  className="flex-1 px-6 py-3 bg-gray-700 text-white rounded-full font-bold hover:bg-gray-600 transition-colors"
+                >
+                  Salta Comunque
                 </button>
               </div>
             </motion.div>
