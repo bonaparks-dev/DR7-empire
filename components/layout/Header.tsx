@@ -24,23 +24,27 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
     };
   }, [isOpen]);
 
-  // Fetch credit balance when menu opens
+  // Fetch credit balance when menu opens (with debounce to prevent rapid calls)
   useEffect(() => {
+    if (!isOpen || !user?.id) return;
+
     const fetchBalance = async () => {
-      if (isOpen && user?.id) {
-        setIsLoadingBalance(true);
-        try {
-          const balance = await getUserCreditBalance(user.id);
-          setCreditBalance(balance);
-        } catch (error) {
-          console.error('Error fetching credit balance:', error);
-        } finally {
-          setIsLoadingBalance(false);
-        }
+      setIsLoadingBalance(true);
+      try {
+        const balance = await getUserCreditBalance(user.id);
+        setCreditBalance(balance);
+      } catch (error) {
+        console.error('Error fetching credit balance:', error);
+        setCreditBalance(0); // Set to 0 on error to stop retries
+      } finally {
+        setIsLoadingBalance(false);
       }
     };
-    fetchBalance();
-  }, [isOpen, user]);
+
+    // Debounce: only fetch after 300ms of menu being open
+    const timer = setTimeout(fetchBalance, 300);
+    return () => clearTimeout(timer);
+  }, [isOpen, user?.id]);
 
   const navLinkClasses =
     'block py-2.5 text-base font-normal text-gray-300 hover:text-white transition-colors duration-300';
@@ -261,23 +265,30 @@ const Header: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Fetch credit balance when user is logged in
+  // Fetch credit balance when user is logged in (with debounce)
   useEffect(() => {
+    if (!user?.id) {
+      setCreditBalance(0);
+      return;
+    }
+
     const fetchBalance = async () => {
-      if (user?.id) {
-        setIsLoadingBalance(true);
-        try {
-          const balance = await getUserCreditBalance(user.id);
-          setCreditBalance(balance);
-        } catch (error) {
-          console.error('Error fetching credit balance:', error);
-        } finally {
-          setIsLoadingBalance(false);
-        }
+      setIsLoadingBalance(true);
+      try {
+        const balance = await getUserCreditBalance(user.id);
+        setCreditBalance(balance);
+      } catch (error) {
+        console.error('Error fetching credit balance:', error);
+        setCreditBalance(0); // Set to 0 on error to stop retries
+      } finally {
+        setIsLoadingBalance(false);
       }
     };
-    fetchBalance();
-  }, [user]);
+
+    // Debounce: wait 500ms before fetching to avoid rapid calls
+    const timer = setTimeout(fetchBalance, 500);
+    return () => clearTimeout(timer);
+  }, [user?.id]);
 
   return (
     <>

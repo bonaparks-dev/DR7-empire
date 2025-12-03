@@ -42,20 +42,26 @@ const DocumentsVerification = () => {
 
     // Fetch uploaded documents from storage buckets
     useEffect(() => {
+        if (!user?.id) return;
+
         let isMounted = true;
-        let retryCount = 0;
-        const MAX_RETRIES = 1;
 
         const fetchDocuments = async () => {
-            if (!user || !isMounted) return;
-
             setLoadingDocuments(true);
             try {
                 const allDocs: any[] = [];
                 const buckets = ['carta-identita', 'codice-fiscale', 'driver-licenses'];
 
-                for (const bucket of buckets) {
+                // Fetch buckets sequentially with delay to avoid flooding
+                for (let i = 0; i < buckets.length; i++) {
                     if (!isMounted) break;
+
+                    const bucket = buckets[i];
+
+                    // Add delay between requests to prevent connection flooding
+                    if (i > 0) {
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                    }
 
                     try {
                         const { data: files, error } = await supabase.storage
@@ -64,6 +70,7 @@ const DocumentsVerification = () => {
 
                         if (error) {
                             console.error(`Error listing ${bucket}:`, error);
+                            // Don't continue on error - just skip this bucket
                             continue;
                         }
 
@@ -81,10 +88,7 @@ const DocumentsVerification = () => {
                         }
                     } catch (bucketError) {
                         console.error(`Failed to list ${bucket}:`, bucketError);
-                        // Stop retrying on network errors
-                        if (retryCount >= MAX_RETRIES) {
-                            break;
-                        }
+                        // Skip this bucket and continue
                         continue;
                     }
                 }
@@ -96,6 +100,10 @@ const DocumentsVerification = () => {
                 }
             } catch (error) {
                 console.error('Failed to fetch documents:', error);
+                // Set empty array on error to stop retries
+                if (isMounted) {
+                    setUploadedDocuments([]);
+                }
             } finally {
                 if (isMounted) {
                     setLoadingDocuments(false);
@@ -103,12 +111,14 @@ const DocumentsVerification = () => {
             }
         };
 
-        fetchDocuments();
+        // Debounce: wait 1 second before fetching to avoid rapid calls
+        const timer = setTimeout(fetchDocuments, 1000);
 
         return () => {
             isMounted = false;
+            clearTimeout(timer);
         };
-    }, [user]);
+    }, [user?.id]);
 
     const handleFileChange = (documentType: keyof typeof documents) => (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
