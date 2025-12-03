@@ -143,6 +143,14 @@ const DocumentsVerification = () => {
                 return 'carta-identita'; // default
             };
 
+            // Get current session to ensure auth token is fresh
+            const { data: { session } } = await supabase.auth.getSession();
+
+            if (!session) {
+                alert('Sessione scaduta. Effettua nuovamente il login.');
+                return;
+            }
+
             for (const [key, file] of Object.entries(documents)) {
                 if (file) {
                     const bucket = getBucket(key);
@@ -151,7 +159,10 @@ const DocumentsVerification = () => {
 
                     const { error: uploadError } = await supabase.storage
                         .from(bucket)
-                        .upload(fileName, file);
+                        .upload(fileName, file, {
+                            cacheControl: '3600',
+                            upsert: false
+                        });
 
                     if (uploadError) {
                         console.error(`Failed to upload ${key} to ${bucket}:`, uploadError);
