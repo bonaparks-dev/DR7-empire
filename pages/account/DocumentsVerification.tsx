@@ -82,14 +82,6 @@ const DocumentsVerification = () => {
                 return 'carta-identita'; // default
             };
 
-            // Get current session to ensure auth token is fresh
-            const { data: { session } } = await supabase.auth.getSession();
-
-            if (!session) {
-                alert('Sessione scaduta. Effettua nuovamente il login.');
-                return;
-            }
-
             const docEntries = Object.entries(documents).filter(([_, file]) => file !== null);
 
             for (let i = 0; i < docEntries.length; i++) {
@@ -97,29 +89,38 @@ const DocumentsVerification = () => {
 
                 // Add delay between uploads to prevent connection flooding (except for first upload)
                 if (i > 0) {
-                    await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+                    await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5 second delay
                 }
 
                 const bucket = getBucket(key);
-                const fileExt = file!.name.split('.').pop();
-                const fileName = `${user.id}/${key}_${Date.now()}.${fileExt}`;
 
-                console.log(`Uploading ${key} to ${bucket}/${fileName}`);
+                console.log(`Uploading ${key} to ${bucket} via Netlify function`);
 
                 try {
-                    const { error: uploadError } = await supabase.storage
-                        .from(bucket)
-                        .upload(fileName, file!, {
-                            cacheControl: '3600',
-                            upsert: false
-                        });
+                    // Use Netlify function instead of direct Supabase call
+                    const formData = new FormData();
+                    formData.append('file', file!);
+                    formData.append('bucket', bucket);
+                    formData.append('userId', user.id);
+                    formData.append('prefix', key);
 
-                    if (uploadError) {
-                        console.error(`Failed to upload ${key} to ${bucket}:`, uploadError);
-                        uploadErrors.push(`${key}: ${uploadError.message}`);
-                    } else {
+                    const response = await fetch('/.netlify/functions/upload-file', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
+                        throw new Error(errorData.error || `HTTP ${response.status}`);
+                    }
+
+                    const result = await response.json();
+
+                    if (result.ok) {
                         uploadedCount++;
-                        console.log(`Successfully uploaded ${key}`);
+                        console.log(`Successfully uploaded ${key} to ${result.path}`);
+                    } else {
+                        throw new Error('Upload response not OK');
                     }
                 } catch (error: any) {
                     console.error(`Exception uploading ${key}:`, error);

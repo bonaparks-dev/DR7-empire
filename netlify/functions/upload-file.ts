@@ -1,7 +1,7 @@
 // netlify/functions/upload-file.ts
 import type { Handler } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
-import Busboy from 'busboy';
+import * as busboy from 'busboy';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -45,7 +45,7 @@ export const handler: Handler = async (event) => {
     }
 
     // --- Parse multipart avec Busboy ---
-    const bb = Busboy({
+    const bb = busboy.default({
       headers: { 'content-type': contentType },
       limits: { fileSize: MAX_FILE_SIZE, files: 1, fields: 10 },
     });
