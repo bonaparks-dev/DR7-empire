@@ -53,6 +53,8 @@ export const handler: Handler = async (event) => {
     let bucket = '';
     let userId = '';
     let prefix = '';
+    let userEmail = '';
+    let userFullName = '';
 
     let fileBuffer: Buffer | null = null;
     let filename = '';
@@ -63,6 +65,8 @@ export const handler: Handler = async (event) => {
         if (name === 'bucket') bucket = val.trim();
         if (name === 'userId') userId = val.trim();
         if (name === 'prefix') prefix = val.trim();
+        if (name === 'userEmail') userEmail = val.trim();
+        if (name === 'userFullName') userFullName = val.trim();
       });
 
       bb.on('file', (_name, stream, info) => {
@@ -144,6 +148,8 @@ export const handler: Handler = async (event) => {
       .from('user_documents')
       .insert({
         user_id: userId,
+        user_email: userEmail || null,
+        user_full_name: userFullName || null,
         document_type: prefix,
         file_path: path,
         bucket: bucket,

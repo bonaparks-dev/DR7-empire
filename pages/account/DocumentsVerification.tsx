@@ -74,6 +74,8 @@ const DocumentsVerification = () => {
             formData.append('bucket', step.bucket);
             formData.append('userId', user.id);
             formData.append('prefix', step.key);
+            formData.append('userEmail', user.email || '');
+            formData.append('userFullName', user.fullName || '');
 
             const response = await fetch('/.netlify/functions/upload-file', {
                 method: 'POST',
