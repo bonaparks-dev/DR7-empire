@@ -206,15 +206,55 @@ const CreditWalletPage: React.FC = () => {
     }
   }, []);
 
-  // Pre-fill user data
+  // Pre-fill user data from customers_extended table
   useEffect(() => {
     if (user) {
-      setFormData(prev => ({
-        ...prev,
-        fullName: user.fullName || '',
-        email: user.email || '',
-        phone: user.phone || ''
-      }));
+      const fetchCustomerData = async () => {
+        try {
+          // Try to get customer data from customers_extended table
+          const { data: customerData, error } = await supabase
+            .from('customers_extended')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+          if (!error && customerData) {
+            // Pre-fill all fields from database
+            setFormData({
+              fullName: customerData.tipo_cliente === 'azienda'
+                ? customerData.denominazione || ''
+                : `${customerData.nome || ''} ${customerData.cognome || ''}`.trim(),
+              email: customerData.email || user.email || '',
+              phone: customerData.telefono || user.phone || '',
+              codiceFiscale: customerData.codice_fiscale || customerData.codice_fiscale_pa || customerData.partita_iva || '',
+              indirizzo: customerData.indirizzo || customerData.indirizzo_azienda || '',
+              numeroCivico: '',
+              cittaResidenza: customerData.citta || '',
+              codicePostale: '',
+              provinciaResidenza: ''
+            });
+          } else {
+            // Fallback to basic user data
+            setFormData(prev => ({
+              ...prev,
+              fullName: user.fullName || '',
+              email: user.email || '',
+              phone: user.phone || ''
+            }));
+          }
+        } catch (err) {
+          console.error('Error fetching customer data:', err);
+          // Fallback to basic user data
+          setFormData(prev => ({
+            ...prev,
+            fullName: user.fullName || '',
+            email: user.email || '',
+            phone: user.phone || ''
+          }));
+        }
+      };
+
+      fetchCustomerData();
     }
   }, [user]);
 
