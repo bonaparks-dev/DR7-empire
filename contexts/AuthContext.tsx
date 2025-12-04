@@ -128,20 +128,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await supabase.auth.signOut();
+      // Sign out from Supabase
+      await supabase.auth.signOut();
 
-      // Clear local state immediately
+      // Clear local state
       setUser(null);
-      setLoading(false);
 
-      // Force redirect to home page
-      window.location.href = '/';
+      // Clear any local storage
+      localStorage.clear();
+      sessionStorage.clear();
 
-      return result;
+      // Force hard redirect to home page
+      window.location.replace('/');
+
+      return { error: null };
     } catch (error) {
       console.error('Logout error:', error);
-      setLoading(false);
+
+      // Even if Supabase fails, clear local data and redirect
+      setUser(null);
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.replace('/');
+
       return { error: error as AuthError };
+    } finally {
+      setLoading(false);
     }
   }, []);
   
