@@ -19,14 +19,18 @@ const DocumentsVerification = () => {
     const [uploadedDocuments, setUploadedDocuments] = useState<any[]>([]);
     const [loadingDocuments, setLoadingDocuments] = useState(true);
     const [uploading, setUploading] = useState(false);
-    const [documents, setDocuments] = useState({
-        cartaIdentitaFront: null as File | null,
-        cartaIdentitaBack: null as File | null,
-        codiceFiscaleFront: null as File | null,
-        codiceFiscaleBack: null as File | null,
-        patenteFront: null as File | null,
-        patenteBack: null as File | null
-    });
+    const [currentStep, setCurrentStep] = useState(0);
+    const [currentFile, setCurrentFile] = useState<File | null>(null);
+
+    // Define upload steps
+    const uploadSteps = [
+        { key: 'cartaIdentitaFront', label: 'Carta d\'Identità (Fronte)', bucket: 'carta-identita', required: true },
+        { key: 'cartaIdentitaBack', label: 'Carta d\'Identità (Retro)', bucket: 'carta-identita', required: true },
+        { key: 'codiceFiscaleFront', label: 'Codice Fiscale (Fronte)', bucket: 'codice-fiscale', required: true },
+        { key: 'codiceFiscaleBack', label: 'Codice Fiscale (Retro)', bucket: 'codice-fiscale', required: true },
+        { key: 'patenteFront', label: 'Patente (Fronte) - Opzionale', bucket: 'driver-licenses', required: false },
+        { key: 'patenteBack', label: 'Patente (Retro) - Opzionale', bucket: 'driver-licenses', required: false }
+    ];
 
     // Refresh user session on component mount
     useEffect(() => {
@@ -49,112 +53,81 @@ const DocumentsVerification = () => {
         setUploadedDocuments([]);
     }, [user?.id]);
 
-    const handleFileChange = (documentType: keyof typeof documents) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            setDocuments(prev => ({ ...prev, [documentType]: file }));
+            setCurrentFile(file);
         }
     };
 
-    const handleUploadDocuments = async () => {
-        if (!user) return;
+    const handleUploadCurrentStep = async () => {
+        if (!user || !currentFile) return;
 
-        // Check if at least CI or CF is uploaded
-        const hasCI = documents.cartaIdentitaFront || documents.cartaIdentitaBack;
-        const hasCF = documents.codiceFiscaleFront || documents.codiceFiscaleBack;
-
-        if (!hasCI && !hasCF) {
-            alert('Per favore carica almeno un documento (Carta d\'Identità o Codice Fiscale)');
-            return;
-        }
-
+        const step = uploadSteps[currentStep];
         setUploading(true);
 
         try {
-            let uploadedCount = 0;
-            const uploadErrors = [];
+            console.log(`Uploading ${step.key} to ${step.bucket} via Netlify function`);
 
-            // Helper function to determine bucket based on document type
-            const getBucket = (docType: string): string => {
-                if (docType.includes('cartaIdentita')) return 'carta-identita';
-                if (docType.includes('codiceFiscale')) return 'codice-fiscale';
-                if (docType.includes('patente')) return 'driver-licenses';
-                return 'carta-identita'; // default
-            };
+            const formData = new FormData();
+            formData.append('file', currentFile);
+            formData.append('bucket', step.bucket);
+            formData.append('userId', user.id);
+            formData.append('prefix', step.key);
 
-            const docEntries = Object.entries(documents).filter(([_, file]) => file !== null);
+            const response = await fetch('/.netlify/functions/upload-file', {
+                method: 'POST',
+                body: formData
+            });
 
-            for (let i = 0; i < docEntries.length; i++) {
-                const [key, file] = docEntries[i];
-
-                // Add delay between uploads to prevent connection flooding (except for first upload)
-                if (i > 0) {
-                    await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5 second delay
-                }
-
-                const bucket = getBucket(key);
-
-                console.log(`Uploading ${key} to ${bucket} via Netlify function`);
-
-                try {
-                    // Use Netlify function instead of direct Supabase call
-                    const formData = new FormData();
-                    formData.append('file', file!);
-                    formData.append('bucket', bucket);
-                    formData.append('userId', user.id);
-                    formData.append('prefix', key);
-
-                    const response = await fetch('/.netlify/functions/upload-file', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (!response.ok) {
-                        const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
-                        throw new Error(errorData.error || `HTTP ${response.status}`);
-                    }
-
-                    const result = await response.json();
-
-                    if (result.ok) {
-                        uploadedCount++;
-                        console.log(`Successfully uploaded ${key} to ${result.path}`);
-                    } else {
-                        throw new Error('Upload response not OK');
-                    }
-                } catch (error: any) {
-                    console.error(`Exception uploading ${key}:`, error);
-                    uploadErrors.push(`${key}: ${error.message || 'Upload failed'}`);
-                }
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
+                throw new Error(errorData.error || `HTTP ${response.status}`);
             }
 
-            if (uploadedCount > 0) {
-                if (uploadErrors.length > 0) {
-                    alert(`Alcuni documenti non sono stati caricati:\n${uploadErrors.join('\n')}\n\nDocumenti caricati con successo: ${uploadedCount}`);
+            const result = await response.json();
+
+            if (result.ok) {
+                console.log(`Successfully uploaded ${step.key} to ${result.path}`);
+
+                // Clear current file and move to next step
+                setCurrentFile(null);
+
+                // Move to next step or finish
+                if (currentStep < uploadSteps.length - 1) {
+                    setCurrentStep(currentStep + 1);
                 } else {
-                    alert('Documenti caricati con successo! Saranno verificati a breve.');
+                    alert('Tutti i documenti sono stati caricati con successo! Saranno verificati a breve.');
+                    setCurrentStep(0); // Reset to beginning
                 }
-
-                // Reset form
-                setDocuments({
-                    cartaIdentitaFront: null,
-                    cartaIdentitaBack: null,
-                    codiceFiscaleFront: null,
-                    codiceFiscaleBack: null,
-                    patenteFront: null,
-                    patenteBack: null
-                });
-
-                // Don't reload page - just show success message
-                // Documents can be viewed in admin panel
-            } else if (uploadErrors.length > 0) {
-                alert(`Errore nel caricamento dei documenti:\n${uploadErrors.join('\n')}`);
+            } else {
+                throw new Error('Upload response not OK');
             }
         } catch (error: any) {
-            console.error('Error uploading documents:', error);
-            alert('Errore durante il caricamento dei documenti');
+            console.error(`Exception uploading ${step.key}:`, error);
+            alert(`Errore nel caricamento: ${error.message || 'Upload failed'}`);
         } finally {
             setUploading(false);
+        }
+    };
+
+    const handleSkipStep = () => {
+        const step = uploadSteps[currentStep];
+        if (!step.required) {
+            setCurrentFile(null);
+            if (currentStep < uploadSteps.length - 1) {
+                setCurrentStep(currentStep + 1);
+            } else {
+                alert('Processo completato!');
+                setCurrentStep(0);
+            }
+        }
+    };
+
+    const handlePreviousStep = () => {
+        if (currentStep > 0) {
+            setCurrentStep(currentStep - 1);
+            setCurrentFile(null);
         }
     };
 
@@ -227,117 +200,90 @@ const DocumentsVerification = () => {
                 </div>
             )}
 
-            {/* Upload New Documents Section */}
+            {/* Upload New Documents Section - Step by Step */}
             <div className="bg-gray-900/50 border border-gray-800 rounded-lg">
                 <div className="p-6 border-b border-gray-800">
                     <h2 className="text-xl font-bold text-white">Carica Documenti</h2>
-                    <p className="text-sm text-gray-400 mt-1">Carica i tuoi documenti per la verifica dell'account</p>
+                    <p className="text-sm text-gray-400 mt-1">Carica i tuoi documenti uno alla volta</p>
                 </div>
 
-                <div className="p-6 space-y-6">
-                    {/* Carta d'Identità */}
-                    <div className="space-y-3">
-                        <h3 className="text-white font-semibold">Carta d'Identità *</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm text-gray-400 mb-2">Fronte</label>
-                                <input
-                                    type="file"
-                                    accept="image/*,.pdf"
-                                    onChange={handleFileChange('cartaIdentitaFront')}
-                                    className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
-                                />
-                                {documents.cartaIdentitaFront && (
-                                    <p className="text-xs text-green-400 mt-1">✓ {documents.cartaIdentitaFront.name}</p>
-                                )}
-                            </div>
-                            <div>
-                                <label className="block text-sm text-gray-400 mb-2">Retro</label>
-                                <input
-                                    type="file"
-                                    accept="image/*,.pdf"
-                                    onChange={handleFileChange('cartaIdentitaBack')}
-                                    className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
-                                />
-                                {documents.cartaIdentitaBack && (
-                                    <p className="text-xs text-green-400 mt-1">✓ {documents.cartaIdentitaBack.name}</p>
-                                )}
-                            </div>
+                <div className="p-6">
+                    {/* Progress Bar */}
+                    <div className="mb-6">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm text-gray-400">Passo {currentStep + 1} di {uploadSteps.length}</span>
+                            <span className="text-sm text-gray-400">{Math.round(((currentStep) / uploadSteps.length) * 100)}% completato</span>
+                        </div>
+                        <div className="w-full bg-gray-700 rounded-full h-2">
+                            <div
+                                className="bg-white h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${((currentStep) / uploadSteps.length) * 100}%` }}
+                            ></div>
                         </div>
                     </div>
 
-                    {/* Codice Fiscale */}
-                    <div className="space-y-3">
-                        <h3 className="text-white font-semibold">Codice Fiscale *</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm text-gray-400 mb-2">Fronte</label>
-                                <input
-                                    type="file"
-                                    accept="image/*,.pdf"
-                                    onChange={handleFileChange('codiceFiscaleFront')}
-                                    className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
-                                />
-                                {documents.codiceFiscaleFront && (
-                                    <p className="text-xs text-green-400 mt-1">✓ {documents.codiceFiscaleFront.name}</p>
-                                )}
-                            </div>
-                            <div>
-                                <label className="block text-sm text-gray-400 mb-2">Retro</label>
-                                <input
-                                    type="file"
-                                    accept="image/*,.pdf"
-                                    onChange={handleFileChange('codiceFiscaleBack')}
-                                    className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
-                                />
-                                {documents.codiceFiscaleBack && (
-                                    <p className="text-xs text-green-400 mt-1">✓ {documents.codiceFiscaleBack.name}</p>
-                                )}
-                            </div>
+                    {/* Current Step */}
+                    <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6 mb-6">
+                        <h3 className="text-lg font-bold text-white mb-2">
+                            {uploadSteps[currentStep].label}
+                        </h3>
+                        <p className="text-sm text-gray-400 mb-4">
+                            {uploadSteps[currentStep].required
+                                ? 'Questo documento è obbligatorio'
+                                : 'Questo documento è opzionale - puoi saltare'}
+                        </p>
+
+                        <div className="space-y-4">
+                            <input
+                                type="file"
+                                accept="image/*,.pdf"
+                                onChange={handleFileChange}
+                                className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
+                            />
+                            {currentFile && (
+                                <div className="flex items-center gap-2 text-green-400 text-sm">
+                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                    </svg>
+                                    <span>File selezionato: {currentFile.name}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    {/* Patente (Optional) */}
-                    <div className="space-y-3">
-                        <h3 className="text-white font-semibold">Patente (Opzionale)</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm text-gray-400 mb-2">Fronte</label>
-                                <input
-                                    type="file"
-                                    accept="image/*,.pdf"
-                                    onChange={handleFileChange('patenteFront')}
-                                    className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
-                                />
-                                {documents.patenteFront && (
-                                    <p className="text-xs text-green-400 mt-1">✓ {documents.patenteFront.name}</p>
-                                )}
-                            </div>
-                            <div>
-                                <label className="block text-sm text-gray-400 mb-2">Retro</label>
-                                <input
-                                    type="file"
-                                    accept="image/*,.pdf"
-                                    onChange={handleFileChange('patenteBack')}
-                                    className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
-                                />
-                                {documents.patenteBack && (
-                                    <p className="text-xs text-green-400 mt-1">✓ {documents.patenteBack.name}</p>
-                                )}
-                            </div>
-                        </div>
+                    {/* Navigation Buttons */}
+                    <div className="flex gap-3 flex-wrap">
+                        {currentStep > 0 && (
+                            <button
+                                onClick={handlePreviousStep}
+                                disabled={uploading}
+                                className="px-6 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors disabled:opacity-60"
+                            >
+                                ← Indietro
+                            </button>
+                        )}
+
+                        <button
+                            onClick={handleUploadCurrentStep}
+                            disabled={uploading || !currentFile}
+                            className="flex-1 px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                            {uploading ? 'Caricamento...' : 'Carica e Continua'}
+                        </button>
+
+                        {!uploadSteps[currentStep].required && (
+                            <button
+                                onClick={handleSkipStep}
+                                disabled={uploading}
+                                className="px-6 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors disabled:opacity-60"
+                            >
+                                Salta →
+                            </button>
+                        )}
                     </div>
 
-                    <button
-                        onClick={handleUploadDocuments}
-                        disabled={uploading}
-                        className="w-full md:w-auto px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60"
-                    >
-                        {uploading ? 'Caricamento...' : 'Carica Documenti'}
-                    </button>
-
-                    <p className="text-xs text-gray-400 mt-2">
-                        * È necessario caricare almeno un documento tra Carta d'Identità o Codice Fiscale
+                    <p className="text-xs text-gray-400 mt-4">
+                        Carica un documento alla volta. I file saranno verificati dal nostro team.
                     </p>
                 </div>
             </div>
