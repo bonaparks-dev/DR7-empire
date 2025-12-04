@@ -19,8 +19,8 @@ const DocumentsVerification = () => {
     const [uploadedDocuments, setUploadedDocuments] = useState<any[]>([]);
     const [loadingDocuments, setLoadingDocuments] = useState(true);
     const [uploading, setUploading] = useState(false);
-    const [currentStep, setCurrentStep] = useState(0);
-    const [currentFile, setCurrentFile] = useState<File | null>(null);
+    const [uploadedSteps, setUploadedSteps] = useState<Set<number>>(new Set());
+    const [files, setFiles] = useState<{ [key: number]: File | null }>({});
 
     // Define upload steps
     const uploadSteps = [
@@ -53,24 +53,24 @@ const DocumentsVerification = () => {
         setUploadedDocuments([]);
     }, [user?.id]);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = (stepIndex: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            setCurrentFile(file);
+            setFiles(prev => ({ ...prev, [stepIndex]: file }));
         }
     };
 
-    const handleUploadCurrentStep = async () => {
-        if (!user || !currentFile) return;
+    const handleUploadStep = async (stepIndex: number) => {
+        if (!user || !files[stepIndex]) return;
 
-        const step = uploadSteps[currentStep];
+        const step = uploadSteps[stepIndex];
         setUploading(true);
 
         try {
             console.log(`Uploading ${step.key} to ${step.bucket} via Netlify function`);
 
             const formData = new FormData();
-            formData.append('file', currentFile);
+            formData.append('file', files[stepIndex]!);
             formData.append('bucket', step.bucket);
             formData.append('userId', user.id);
             formData.append('prefix', step.key);
@@ -92,16 +92,13 @@ const DocumentsVerification = () => {
             if (result.ok) {
                 console.log(`Successfully uploaded ${step.key} to ${result.path}`);
 
-                // Clear current file and move to next step
-                setCurrentFile(null);
+                // Mark step as uploaded
+                setUploadedSteps(prev => new Set(prev).add(stepIndex));
 
-                // Move to next step or finish
-                if (currentStep < uploadSteps.length - 1) {
-                    setCurrentStep(currentStep + 1);
-                } else {
-                    alert('Tutti i documenti sono stati caricati con successo! Saranno verificati a breve.');
-                    setCurrentStep(0); // Reset to beginning
-                }
+                // Clear file
+                setFiles(prev => ({ ...prev, [stepIndex]: null }));
+
+                alert(`${step.label} caricato con successo!`);
             } else {
                 throw new Error('Upload response not OK');
             }
@@ -110,26 +107,6 @@ const DocumentsVerification = () => {
             alert(`Errore nel caricamento: ${error.message || 'Upload failed'}`);
         } finally {
             setUploading(false);
-        }
-    };
-
-    const handleSkipStep = () => {
-        const step = uploadSteps[currentStep];
-        if (!step.required) {
-            setCurrentFile(null);
-            if (currentStep < uploadSteps.length - 1) {
-                setCurrentStep(currentStep + 1);
-            } else {
-                alert('Processo completato!');
-                setCurrentStep(0);
-            }
-        }
-    };
-
-    const handlePreviousStep = () => {
-        if (currentStep > 0) {
-            setCurrentStep(currentStep - 1);
-            setCurrentFile(null);
         }
     };
 
@@ -202,91 +179,80 @@ const DocumentsVerification = () => {
                 </div>
             )}
 
-            {/* Upload New Documents Section - Step by Step */}
+            {/* Upload New Documents Section - All at Once */}
             <div className="bg-gray-900/50 border border-gray-800 rounded-lg">
                 <div className="p-6 border-b border-gray-800">
                     <h2 className="text-xl font-bold text-white">Carica Documenti</h2>
-                    <p className="text-sm text-gray-400 mt-1">Carica i tuoi documenti uno alla volta</p>
+                    <p className="text-sm text-gray-400 mt-1">Seleziona e carica i tuoi documenti per la verifica</p>
                 </div>
 
-                <div className="p-6">
-                    {/* Progress Bar */}
-                    <div className="mb-6">
-                        <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm text-gray-400">Passo {currentStep + 1} di {uploadSteps.length}</span>
-                            <span className="text-sm text-gray-400">{Math.round(((currentStep) / uploadSteps.length) * 100)}% completato</span>
-                        </div>
-                        <div className="w-full bg-gray-700 rounded-full h-2">
+                <div className="p-6 space-y-4">
+                    {uploadSteps.map((step, index) => {
+                        const isUploaded = uploadedSteps.has(index);
+                        const hasFile = files[index] !== null && files[index] !== undefined;
+
+                        return (
                             <div
-                                className="bg-white h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${((currentStep) / uploadSteps.length) * 100}%` }}
-                            ></div>
-                        </div>
-                    </div>
+                                key={index}
+                                className={`bg-gray-800/50 border ${isUploaded ? 'border-green-500/50' : 'border-gray-700'} rounded-lg p-4`}
+                            >
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <h3 className="text-base font-semibold text-white">
+                                                {step.label}
+                                            </h3>
+                                            {!step.required && (
+                                                <span className="text-xs text-gray-400 bg-gray-700 px-2 py-0.5 rounded">
+                                                    Opzionale
+                                                </span>
+                                            )}
+                                            {isUploaded && (
+                                                <span className="text-xs text-green-400 flex items-center gap-1">
+                                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                    </svg>
+                                                    Caricato
+                                                </span>
+                                            )}
+                                        </div>
 
-                    {/* Current Step */}
-                    <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6 mb-6">
-                        <h3 className="text-lg font-bold text-white mb-2">
-                            {uploadSteps[currentStep].label}
-                        </h3>
-                        <p className="text-sm text-gray-400 mb-4">
-                            {uploadSteps[currentStep].required
-                                ? 'Questo documento è obbligatorio'
-                                : 'Questo documento è opzionale - puoi saltare'}
-                        </p>
+                                        <div className="space-y-2">
+                                            <input
+                                                type="file"
+                                                accept="image/*,.pdf"
+                                                onChange={handleFileChange(index)}
+                                                disabled={isUploaded}
+                                                className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            />
+                                            {hasFile && !isUploaded && (
+                                                <p className="text-xs text-gray-400">
+                                                    Selezionato: {files[index]?.name}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
 
-                        <div className="space-y-4">
-                            <input
-                                type="file"
-                                accept="image/*,.pdf"
-                                onChange={handleFileChange}
-                                className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
-                            />
-                            {currentFile && (
-                                <div className="flex items-center gap-2 text-green-400 text-sm">
-                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                    </svg>
-                                    <span>File selezionato: {currentFile.name}</span>
+                                    <button
+                                        onClick={() => handleUploadStep(index)}
+                                        disabled={uploading || !hasFile || isUploaded}
+                                        className="px-6 py-2 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+                                    >
+                                        {isUploaded ? 'Caricato ✓' : uploading ? 'Caricamento...' : 'Carica'}
+                                    </button>
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        );
+                    })}
+
+                    <div className="pt-4 border-t border-gray-700">
+                        <p className="text-xs text-gray-400">
+                            * Carica almeno Carta d'Identità e Codice Fiscale (fronte e retro). La Patente è opzionale.
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                            I documenti saranno verificati dal nostro team entro 24-48 ore.
+                        </p>
                     </div>
-
-                    {/* Navigation Buttons */}
-                    <div className="flex gap-3 flex-wrap">
-                        {currentStep > 0 && (
-                            <button
-                                onClick={handlePreviousStep}
-                                disabled={uploading}
-                                className="px-6 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors disabled:opacity-60"
-                            >
-                                ← Indietro
-                            </button>
-                        )}
-
-                        <button
-                            onClick={handleUploadCurrentStep}
-                            disabled={uploading || !currentFile}
-                            className="flex-1 px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                            {uploading ? 'Caricamento...' : 'Carica e Continua'}
-                        </button>
-
-                        {!uploadSteps[currentStep].required && (
-                            <button
-                                onClick={handleSkipStep}
-                                disabled={uploading}
-                                className="px-6 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors disabled:opacity-60"
-                            >
-                                Salta →
-                            </button>
-                        )}
-                    </div>
-
-                    <p className="text-xs text-gray-400 mt-4">
-                        Carica un documento alla volta. I file saranno verificati dal nostro team.
-                    </p>
                 </div>
             </div>
         </div>
