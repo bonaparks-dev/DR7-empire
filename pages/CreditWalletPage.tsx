@@ -130,8 +130,8 @@ const PackageCard: React.FC<{ pkg: CreditPackage; onSelect: () => void }> = ({ p
       <h3 className="text-2xl font-bold text-white mb-4">{pkg.name}</h3>
 
       <div className="mb-4">
-        <div className="text-sm text-gray-400 mb-1">Ricarichi</div>
-        <div className="text-3xl font-bold text-white">€{pkg.rechargeAmount.toLocaleString()}</div>
+        <div className="text-xs text-gray-500 mb-1">Ricarichi</div>
+        <div className="text-xl font-semibold text-gray-300">{pkg.rechargeAmount.toLocaleString()}</div>
       </div>
 
       <div className="flex items-center justify-center py-2">
@@ -142,9 +142,9 @@ const PackageCard: React.FC<{ pkg: CreditPackage; onSelect: () => void }> = ({ p
 
       <div className="mb-4 pb-4 border-b border-gray-700">
         <div className="text-sm text-gray-400 mb-1">Ricevi</div>
-        <div className="text-4xl font-extrabold text-white">€{pkg.receivedAmount.toLocaleString()}</div>
-        <div className="text-sm text-white mt-2 font-semibold">
-          +{pkg.bonusPercentage}% Bonus (€{pkg.bonus})
+        <div className="text-5xl font-extrabold text-white">{pkg.receivedAmount.toLocaleString()}</div>
+        <div className="text-lg text-white mt-3 font-bold">
+          +{pkg.bonusPercentage}% Bonus ({pkg.bonus})
         </div>
       </div>
 
@@ -706,17 +706,17 @@ const CreditWalletPage: React.FC = () => {
                 {/* Package Summary */}
                 <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-400">Ricarichi</span>
-                    <span className="text-white font-bold">€{selectedPackage.rechargeAmount}</span>
+                    <span className="text-gray-400 text-xs">Ricarichi</span>
+                    <span className="text-gray-300 font-semibold">{selectedPackage.rechargeAmount}</span>
                   </div>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-gray-400">Bonus (+{selectedPackage.bonusPercentage}%)</span>
-                    <span className="text-white font-bold">€{selectedPackage.bonus}</span>
+                    <span className="text-white font-bold text-xl">{selectedPackage.bonus}</span>
                   </div>
                   <div className="border-t border-gray-700 my-2"></div>
                   <div className="flex justify-between items-center">
-                    <span className="text-white font-semibold">Ricevi</span>
-                    <span className="text-white font-bold text-xl">€{selectedPackage.receivedAmount}</span>
+                    <span className="text-white font-semibold text-lg">Ricevi</span>
+                    <span className="text-white font-bold text-3xl">{selectedPackage.receivedAmount}</span>
                   </div>
                 </div>
 
