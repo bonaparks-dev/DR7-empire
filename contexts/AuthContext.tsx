@@ -127,12 +127,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = useCallback(async () => {
     setLoading(true);
-    const result = await supabase.auth.signOut();
-    // If sign-out fails, we must stop loading. Otherwise, onAuthStateChange will handle it.
-    if (result.error) {
+    try {
+      const result = await supabase.auth.signOut();
+
+      // Clear local state immediately
+      setUser(null);
       setLoading(false);
+
+      // Force redirect to home page
+      window.location.href = '/';
+
+      return result;
+    } catch (error) {
+      console.error('Logout error:', error);
+      setLoading(false);
+      return { error: error as AuthError };
     }
-    return result;
   }, []);
   
   // ✅ SIMPLE GOOGLE SIGN-IN: Let Supabase use your Dashboard "Site URL"
