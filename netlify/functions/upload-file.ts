@@ -139,6 +139,23 @@ export const handler: Handler = async (event) => {
       };
     }
 
+    // Create database record in user_documents table for admin panel
+    const { error: dbErr } = await supabase
+      .from('user_documents')
+      .insert({
+        user_id: userId,
+        document_type: prefix,
+        file_path: path,
+        bucket: bucket,
+        upload_date: new Date().toISOString(),
+        status: 'pending_verification'
+      });
+
+    if (dbErr) {
+      console.error('Failed to create user_documents record:', dbErr);
+      // Don't fail the upload, just log the error
+    }
+
     const { data: pub } = supabase.storage.from(bucket).getPublicUrl(path);
 
     return {
