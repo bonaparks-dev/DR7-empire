@@ -1262,7 +1262,7 @@ setIsProcessing(false);
                   {/* Vehicle Availability Check */}
                   {isCheckingAvailability && (
                     <div className="mt-4 p-3 bg-blue-900/20 border border-blue-600 rounded-lg">
-                      <p className="text-blue-300 text-sm">🔍 Verifica disponibilità veicolo...</p>
+                      <p className="text-blue-300 text-sm">Verifica disponibilità veicolo...</p>
                     </div>
                   )}
                   {availabilityError && (
