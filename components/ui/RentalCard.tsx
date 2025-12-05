@@ -77,7 +77,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
       <div className="p-6 flex-grow flex flex-col">
         <div className="flex justify-between items-center mt-auto pt-4">
           <div>
-            {item.available !== false && item.pricePerDay && !isYacht && (
+            {item.pricePerDay && !isYacht && (
               <>
                 <span className="text-xl font-bold text-white">{formatPrice(item.pricePerDay[currency])}</span>
                 <span className="text-sm text-gray-400 ml-1">/{t('per_day')}</span>
