@@ -16,7 +16,7 @@ import {
   isPremiumVehicle,
   isDucatoVehicle
 } from '../../data/kmPricingData';
-import { checkVehicleAvailability } from '../../utils/bookingValidation';
+import { checkVehicleAvailability, checkVehiclePartialUnavailability } from '../../utils/bookingValidation';
 
 const FUNCTIONS_BASE =
   import.meta.env.VITE_FUNCTIONS_BASE ??
@@ -186,6 +186,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   const [expandedInsurance, setExpandedInsurance] = useState<string | null>(null);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
+  const [partialUnavailabilityWarning, setPartialUnavailabilityWarning] = useState<string | null>(null);
 
   // Stripe
   const cardElementRef = useRef<HTMLDivElement>(null);
@@ -327,11 +328,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     const checkAvailability = async () => {
       if (!item || !formData.pickupDate || !formData.returnDate || !formData.pickupTime || !formData.returnTime) {
         setAvailabilityError(null);
+        setPartialUnavailabilityWarning(null);
         return;
       }
 
       setIsCheckingAvailability(true);
       setAvailabilityError(null);
+      setPartialUnavailabilityWarning(null);
 
       try {
         const pickupDateTime = `${formData.pickupDate}T${formData.pickupTime}:00`;
@@ -341,11 +344,47 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
         if (conflicts.length > 0) {
           const conflict = conflicts[0];
-          const conflictStart = new Date(conflict.pickup_date).toLocaleDateString('it-IT');
-          const conflictEnd = new Date(conflict.dropoff_date).toLocaleDateString('it-IT');
-          setAvailabilityError(
-            `Questo veicolo non è disponibile per le date selezionate. È già prenotato dal ${conflictStart} al ${conflictEnd}. Per favore scegli date diverse.`
+          const conflictStartDate = new Date(conflict.pickup_date);
+          const conflictEndDate = new Date(conflict.dropoff_date);
+
+          // Calculate when vehicle becomes available (end time + 1h30 buffer)
+          const availableTime = new Date(conflictEndDate.getTime() + (90 * 60 * 1000));
+
+          // Check if the conflict is on the same day as requested pickup
+          const requestedPickupDate = new Date(formData.pickupDate);
+          requestedPickupDate.setHours(0, 0, 0, 0);
+          const conflictEndDateOnly = new Date(conflictEndDate);
+          conflictEndDateOnly.setHours(0, 0, 0, 0);
+
+          if (requestedPickupDate.getTime() === conflictEndDateOnly.getTime()) {
+            // Same day - show available time
+            const availableTimeStr = availableTime.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+            setAvailabilityError(
+              `Questo veicolo sara disponibile dopo le ${availableTimeStr} (tempo di preparazione 1h30). Per favore scegli un orario successivo.`
+            );
+          } else {
+            // Different days - show date range
+            const conflictStart = conflictStartDate.toLocaleDateString('it-IT');
+            const conflictEnd = conflictEndDate.toLocaleDateString('it-IT');
+            const availableDateStr = availableTime.toLocaleDateString('it-IT');
+            const availableTimeStr = availableTime.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+            setAvailabilityError(
+              `Questo veicolo non e disponibile per le date selezionate. E gia prenotato dal ${conflictStart} al ${conflictEnd}. Disponibile dal ${availableDateStr} alle ${availableTimeStr}.`
+            );
+          }
+        } else {
+          // Check for partial-day unavailability (e.g., at mechanic for a few hours)
+          const partialInfo = await checkVehiclePartialUnavailability(
+            item.name,
+            formData.pickupDate,
+            formData.pickupTime
           );
+
+          if (partialInfo.isPartiallyUnavailable && partialInfo.availableAfter) {
+            setPartialUnavailabilityWarning(
+              `Attenzione: questo veicolo sara disponibile dopo le ${partialInfo.availableAfter}.`
+            );
+          }
         }
       } catch (error) {
         console.error('Error checking availability:', error);
@@ -1229,6 +1268,11 @@ setIsProcessing(false);
                   {availabilityError && (
                     <div className="mt-4 p-4 bg-red-900/30 border-2 border-red-500 rounded-lg">
                       <p className="text-red-300 font-semibold">{availabilityError}</p>
+                    </div>
+                  )}
+                  {partialUnavailabilityWarning && !availabilityError && (
+                    <div className="mt-4 p-4 bg-yellow-900/30 border-2 border-yellow-500 rounded-lg">
+                      <p className="text-yellow-200 font-semibold">{partialUnavailabilityWarning}</p>
                     </div>
                   )}
                 </div>

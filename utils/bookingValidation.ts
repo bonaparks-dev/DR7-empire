@@ -6,8 +6,19 @@ export interface BookingConflict {
   vehicle_name: string;
 }
 
+export interface VehicleUnavailabilityInfo {
+  isPartiallyUnavailable: boolean;
+  unavailableFrom?: string;
+  unavailableUntil?: string;
+  unavailableFromTime?: string;
+  unavailableUntilTime?: string;
+  reason?: string;
+  availableAfter?: string;
+}
+
 /**
  * Check if a vehicle is available for the requested dates
+ * Also enforces 1h30 buffer between bookings
  * @param vehicleName - Name of the vehicle to check
  * @param pickupDate - Requested pickup date (ISO string)
  * @param dropoffDate - Requested dropoff date (ISO string)
@@ -21,6 +32,9 @@ export async function checkVehicleAvailability(
   try {
     const requestedPickup = new Date(pickupDate);
     const requestedDropoff = new Date(dropoffDate);
+
+    // Buffer time in milliseconds (1h30 = 90 minutes)
+    const BUFFER_TIME_MS = 90 * 60 * 1000;
 
     // Query all bookings for this vehicle from bookings table (main website + admin)
     // Admin bookings should ALWAYS block slots regardless of payment/status
@@ -63,12 +77,15 @@ export async function checkVehicleAvailability(
     // Check for date conflicts
     const conflicts: BookingConflict[] = [];
 
-    // Helper function to check if dates overlap
+    // Helper function to check if dates overlap (including 1h30 buffer)
     const hasConflict = (existingStart: Date, existingEnd: Date) => {
+      // Add 1h30 buffer after the existing booking ends
+      const existingEndWithBuffer = new Date(existingEnd.getTime() + BUFFER_TIME_MS);
+
       return (
-        (requestedPickup >= existingStart && requestedPickup < existingEnd) || // Starts during existing
-        (requestedDropoff > existingStart && requestedDropoff <= existingEnd) || // Ends during existing
-        (requestedPickup <= existingStart && requestedDropoff >= existingEnd) // Completely contains existing
+        (requestedPickup >= existingStart && requestedPickup < existingEndWithBuffer) || // Starts during existing + buffer
+        (requestedDropoff > existingStart && requestedDropoff <= existingEndWithBuffer) || // Ends during existing + buffer
+        (requestedPickup <= existingStart && requestedDropoff >= existingEndWithBuffer) // Completely contains existing + buffer
       );
     };
 
@@ -181,6 +198,115 @@ export async function getUnavailableDateRanges(vehicleName: string): Promise<Arr
     console.error('Error in getUnavailableDateRanges:', error);
     throw error;
   }
+}
+
+/**
+ * Check if a vehicle has partial-day unavailability (e.g., at mechanic for a few hours)
+ * @param vehicleName - Name of the vehicle
+ * @param requestedDate - Date to check (YYYY-MM-DD format)
+ * @param requestedPickupTime - Optional pickup time to check (HH:MM format)
+ * @returns Unavailability info if vehicle is partially unavailable
+ */
+export async function checkVehiclePartialUnavailability(
+  vehicleName: string,
+  requestedDate: string,
+  requestedPickupTime?: string
+): Promise<VehicleUnavailabilityInfo> {
+  try {
+    // Get vehicle data with metadata
+    const { data: vehicle, error } = await supabase
+      .from('vehicles')
+      .select('*')
+      .eq('display_name', vehicleName)
+      .single();
+
+    if (error || !vehicle) {
+      return { isPartiallyUnavailable: false };
+    }
+
+    // Check if vehicle is marked as unavailable
+    if (vehicle.status !== 'unavailable') {
+      return { isPartiallyUnavailable: false };
+    }
+
+    const metadata = vehicle.metadata as any;
+    const unavailableFrom = metadata?.unavailable_from;
+    const unavailableUntil = metadata?.unavailable_until;
+    const unavailableFromTime = metadata?.unavailable_from_time;
+    const unavailableUntilTime = metadata?.unavailable_until_time;
+    const reason = metadata?.unavailable_reason;
+
+    // If no date range specified, vehicle is fully unavailable
+    if (!unavailableFrom || !unavailableUntil) {
+      return { isPartiallyUnavailable: false };
+    }
+
+    // Check if requested date falls within unavailability range
+    const requested = new Date(requestedDate);
+    const fromDate = new Date(unavailableFrom);
+    const untilDate = new Date(unavailableUntil);
+
+    // Normalize dates to midnight for comparison
+    requested.setHours(0, 0, 0, 0);
+    fromDate.setHours(0, 0, 0, 0);
+    untilDate.setHours(0, 0, 0, 0);
+
+    const isInRange = requested >= fromDate && requested <= untilDate;
+
+    if (!isInRange) {
+      return { isPartiallyUnavailable: false };
+    }
+
+    // If times are specified, it's partial-day unavailability
+    if (unavailableFromTime && unavailableUntilTime) {
+      // If pickup time is provided, check if it conflicts with unavailability
+      if (requestedPickupTime) {
+        // Convert times to minutes for comparison
+        const pickupMinutes = timeStringToMinutes(requestedPickupTime);
+        const availableAfterMinutes = timeStringToMinutes(unavailableUntilTime);
+
+        // If pickup time is before the vehicle becomes available, show warning
+        if (pickupMinutes < availableAfterMinutes) {
+          return {
+            isPartiallyUnavailable: true,
+            unavailableFrom,
+            unavailableUntil,
+            unavailableFromTime,
+            unavailableUntilTime,
+            reason,
+            availableAfter: unavailableUntilTime
+          };
+        }
+        // Pickup time is after vehicle becomes available - no warning needed
+        return { isPartiallyUnavailable: false };
+      }
+
+      // No pickup time provided - just indicate partial unavailability
+      return {
+        isPartiallyUnavailable: true,
+        unavailableFrom,
+        unavailableUntil,
+        unavailableFromTime,
+        unavailableUntilTime,
+        reason,
+        availableAfter: unavailableUntilTime
+      };
+    }
+
+    // Full-day unavailability (no times specified)
+    return { isPartiallyUnavailable: false };
+  } catch (error) {
+    console.error('Error checking vehicle partial unavailability:', error);
+    return { isPartiallyUnavailable: false };
+  }
+}
+
+/**
+ * Helper function to convert time string (HH:MM) to minutes
+ */
+function timeStringToMinutes(timeStr: string): number {
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  return hours * 60 + minutes;
 }
 
 /**

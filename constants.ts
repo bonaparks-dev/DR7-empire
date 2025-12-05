@@ -525,7 +525,7 @@ export const COMMERCIAL_OPERATION_GIVEAWAY: CommercialOperation = {
   subtitle: { en: 'Win an Alfa Romeo Stelvio Quadrifoglio', it: 'Vinci un\'Alfa Romeo Stelvio Quadrifoglio' },
   image: '/main.jpeg',
   ticketPriceEUR: 25,
-  drawDate: '2025-12-24T10:00:00Z',
+  drawDate: '2025-12-22T18:00:00Z',
   prizes: [
     {
       tier: { en: 'Grand Prize', it: 'Premio Unico' },
