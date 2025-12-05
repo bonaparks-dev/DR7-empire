@@ -94,8 +94,12 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
           ) : (
             <button
               onClick={() => {
+                console.log('RentalCard button clicked for:', item.name, 'ID:', item.id, 'isJet:', isJet);
                 if (isJet) handleJetQuote();
-                else onBook(item);
+                else {
+                  console.log('Calling onBook with item:', item);
+                  onBook(item);
+                }
               }}
               className="bg-transparent border-2 border-white text-white px-6 py-2 rounded-full font-semibold text-sm transform transition-all duration-300 group-hover:bg-white group-hover:text-black group-hover:scale-105"
             >

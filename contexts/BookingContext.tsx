@@ -53,8 +53,10 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   const openCarWizard = useCallback((item: RentalItem) => {
+    console.log('BookingContext openCarWizard called with:', item);
     setSelectedCar(item);
     setCarWizardOpen(true);
+    console.log('BookingContext state should now be: isCarWizardOpen=true, selectedCar=', item.name);
   }, []);
 
   const closeCarWizard = useCallback(() => {

@@ -235,11 +235,15 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   const categoryData = vehicleCategory ? fetchedVehicles : (category?.data || []);
 
   const handleBook = (item: RentalItem) => {
+    console.log('RentalPage handleBook called:', { item, categoryId });
     if (categoryId === 'cars' || categoryId === 'urban-cars' || categoryId === 'corporate-fleet') {
+      console.log('Opening car wizard for:', item.name);
       openCarWizard(item);
     } else if (['jets', 'helicopters'].includes(categoryId)) {
+      console.log('Navigating to booking page for jet/helicopter');
       navigate(`/book/${categoryId}/${item.id}`);
     } else {
+      console.log('Opening booking modal for yacht/villa');
       openBooking(item, categoryId as 'yachts' | 'villas');
     }
   };

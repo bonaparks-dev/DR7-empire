@@ -235,6 +235,8 @@ const MainContent = () => {
   const { isCarWizardOpen, closeCarWizard, selectedCar } = useBooking();
   const navigate = useNavigate();
 
+  console.log('MainContent render - isCarWizardOpen:', isCarWizardOpen, 'selectedCar:', selectedCar?.name);
+
   const handleBookingComplete = (booking: any) => {
     closeCarWizard();
     navigate('/car-booking-success', { state: { booking } });
