@@ -262,8 +262,8 @@ export async function checkVehiclePartialUnavailability(
       // If pickup time is provided, check if it conflicts with unavailability
       if (requestedPickupTime) {
         // Convert times to minutes for comparison
-        const pickupMinutes = timeStringToMinutes(requestedPickupTime);
-        const availableAfterMinutes = timeStringToMinutes(unavailableUntilTime);
+        const pickupMinutes = timeToMinutes(requestedPickupTime);
+        const availableAfterMinutes = timeToMinutes(unavailableUntilTime);
 
         // If pickup time is before the vehicle becomes available, show warning
         if (pickupMinutes < availableAfterMinutes) {
@@ -299,14 +299,6 @@ export async function checkVehiclePartialUnavailability(
     console.error('Error checking vehicle partial unavailability:', error);
     return { isPartiallyUnavailable: false };
   }
-}
-
-/**
- * Helper function to convert time string (HH:MM) to minutes
- */
-function timeStringToMinutes(timeStr: string): number {
-  const [hours, minutes] = timeStr.split(':').map(Number);
-  return hours * 60 + minutes;
 }
 
 /**
