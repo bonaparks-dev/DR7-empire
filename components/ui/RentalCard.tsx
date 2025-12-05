@@ -97,10 +97,9 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
                 if (isJet) handleJetQuote();
                 else onBook(item);
               }}
-              disabled={item.available === false}
-              className="bg-transparent border-2 border-white text-white px-6 py-2 rounded-full font-semibold text-sm transform transition-all duration-300 group-hover:bg-white group-hover:text-black group-hover:scale-105 disabled:bg-gray-700 disabled:border-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed disabled:scale-100"
+              className="bg-transparent border-2 border-white text-white px-6 py-2 rounded-full font-semibold text-sm transform transition-all duration-300 group-hover:bg-white group-hover:text-black group-hover:scale-105"
             >
-              {item.available === false ? t('Back_Soon') : t('Book_Now')}
+              {t('Book_Now')}
             </button>
           )}
         </div>
