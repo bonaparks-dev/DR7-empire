@@ -267,13 +267,21 @@ export async function checkVehiclePartialUnavailability(
                           unavailableUntilTime.trim() !== '';
 
     if (hasValidTimes) {
-      // If pickup time is provided, check if it conflicts with unavailability
-      if (requestedPickupTime && typeof requestedPickupTime === 'string') {
-        // Convert times to minutes for comparison
-        const pickupMinutes = timeToMinutes(requestedPickupTime);
-        const availableAfterMinutes = timeToMinutes(unavailableUntilTime);
+      // Add 1h30 buffer to unavailability end time (same as booking buffer)
+      const BUFFER_MINUTES = 90;
+      const unavailableEndMinutes = timeToMinutes(unavailableUntilTime);
+      const availableAfterMinutes = unavailableEndMinutes + BUFFER_MINUTES;
 
-        // If pickup time is before the vehicle becomes available, show warning
+      // Convert back to HH:MM format
+      const hours = Math.floor(availableAfterMinutes / 60);
+      const minutes = availableAfterMinutes % 60;
+      const availableAfterTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+
+      // If pickup time is provided, check if it conflicts with unavailability + buffer
+      if (requestedPickupTime && typeof requestedPickupTime === 'string') {
+        const pickupMinutes = timeToMinutes(requestedPickupTime);
+
+        // If pickup time is before the vehicle becomes available (including buffer), show warning
         if (pickupMinutes < availableAfterMinutes) {
           return {
             isPartiallyUnavailable: true,
@@ -282,14 +290,14 @@ export async function checkVehiclePartialUnavailability(
             unavailableFromTime,
             unavailableUntilTime,
             reason,
-            availableAfter: unavailableUntilTime
+            availableAfter: availableAfterTime
           };
         }
-        // Pickup time is after vehicle becomes available - no warning needed
+        // Pickup time is after vehicle becomes available (with buffer) - no warning needed
         return { isPartiallyUnavailable: false };
       }
 
-      // No pickup time provided - just indicate partial unavailability
+      // No pickup time provided - just indicate partial unavailability with buffer
       return {
         isPartiallyUnavailable: true,
         unavailableFrom,
@@ -297,7 +305,7 @@ export async function checkVehiclePartialUnavailability(
         unavailableFromTime,
         unavailableUntilTime,
         reason,
-        availableAfter: unavailableUntilTime
+        availableAfter: availableAfterTime
       };
     }
 
