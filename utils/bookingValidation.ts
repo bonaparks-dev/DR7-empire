@@ -258,9 +258,17 @@ export async function checkVehiclePartialUnavailability(
     }
 
     // If times are specified, it's partial-day unavailability
-    if (unavailableFromTime && unavailableUntilTime) {
+    // Check that times are valid strings with content
+    const hasValidTimes = unavailableFromTime &&
+                          unavailableUntilTime &&
+                          typeof unavailableFromTime === 'string' &&
+                          typeof unavailableUntilTime === 'string' &&
+                          unavailableFromTime.trim() !== '' &&
+                          unavailableUntilTime.trim() !== '';
+
+    if (hasValidTimes) {
       // If pickup time is provided, check if it conflicts with unavailability
-      if (requestedPickupTime) {
+      if (requestedPickupTime && typeof requestedPickupTime === 'string') {
         // Convert times to minutes for comparison
         const pickupMinutes = timeToMinutes(requestedPickupTime);
         const availableAfterMinutes = timeToMinutes(unavailableUntilTime);
@@ -329,7 +337,23 @@ function getServiceDurationInHours(priceInEuros: number): number {
  * @returns Minutes since midnight
  */
 function timeToMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number);
+  if (!time || typeof time !== 'string') {
+    console.error('Invalid time format:', time);
+    return 0;
+  }
+
+  const parts = time.split(':');
+  if (parts.length !== 2) {
+    console.error('Invalid time format (expected HH:MM):', time);
+    return 0;
+  }
+
+  const [h, m] = parts.map(Number);
+  if (isNaN(h) || isNaN(m)) {
+    console.error('Invalid time values:', time);
+    return 0;
+  }
+
   return h * 60 + m;
 }
 
