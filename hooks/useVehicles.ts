@@ -204,7 +204,7 @@ const transformVehicle = (vehicle: Vehicle): TransformedVehicle => {
     name: vehicle.display_name,
     image: getVehicleImage(vehicle.display_name),
     available: isAvailable,
-    pricePerDay: isAvailable ? {
+    pricePerDay: vehicle.daily_rate ? {
       usd: Math.round(vehicle.daily_rate * EUR_TO_USD_RATE),
       eur: vehicle.daily_rate,
       crypto: 0
