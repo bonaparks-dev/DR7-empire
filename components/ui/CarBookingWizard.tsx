@@ -1085,7 +1085,9 @@ setIsProcessing(false);
                 className="w-full h-48 object-contain rounded-lg border border-gray-700 bg-gray-800/30"
               />
               <h2 className="text-2xl font-bold text-white mt-3">{item.name}</h2>
-              <p className="text-gray-400 text-sm">Prezzo base: {formatPrice(item.pricePerDay[currency])}/giorno</p>
+              {item.pricePerDay && (
+                <p className="text-gray-400 text-sm">Prezzo base: {formatPrice(item.pricePerDay[currency])}/giorno</p>
+              )}
             </div>
 
             <div>
@@ -1776,7 +1778,7 @@ setIsProcessing(false);
                 <div>
                   <p className="font-bold text-base text-white mb-2">DETTAGLIO COSTI</p>
                   <hr className="border-gray-600 mb-2"/>
-                  <div className="flex justify-between"><span>Noleggio ({duration.days} gg × {formatPrice(item.pricePerDay[currency])})</span> <span>{formatPrice(rentalCost)}</span></div>
+                  <div className="flex justify-between"><span>Noleggio ({duration.days} gg × {item.pricePerDay ? formatPrice(item.pricePerDay[currency]) : '€0'})</span> <span>{formatPrice(rentalCost)}</span></div>
                   <div className="flex justify-between"><span>Pacchetto km ({formData.kmPackageType === 'unlimited' ? 'illimitati' : `${includedKm} km`})</span> <span>{formatPrice(kmPackageCost)}</span></div>
                   <div className="flex justify-between"><span className="notranslate">Assicurazione KASKO</span> <span>{formatPrice(insuranceCost)}</span></div>
                   <div className="flex justify-between"><span>Lavaggio obbligatorio</span> <span>{formatPrice(30)}</span></div>
