@@ -20,6 +20,7 @@ interface Booking {
   price_total: number;
   status: string;
   payment_status: string;
+  google_event_id?: string;
 }
 
 interface EditingBooking extends Booking {
@@ -110,6 +111,31 @@ const AdminCalendarPage: React.FC = () => {
     }
 
     try {
+      // First, get the booking to check if it has a Google Calendar event ID
+      const booking = bookings.find(b => b.id === bookingId);
+
+      // Try to delete from Google Calendar if event ID exists
+      if (booking?.google_event_id) {
+        try {
+          console.log('Deleting Google Calendar event:', booking.google_event_id);
+          const response = await fetch('/.netlify/functions/delete-calendar-event', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ eventId: booking.google_event_id }),
+          });
+
+          if (!response.ok) {
+            console.warn('Failed to delete from Google Calendar, but continuing...');
+          } else {
+            console.log('✅ Successfully deleted from Google Calendar');
+          }
+        } catch (calendarError) {
+          console.warn('Error deleting from Google Calendar:', calendarError);
+          // Continue with database deletion even if calendar deletion fails
+        }
+      }
+
+      // Delete from database
       const { error } = await supabase
         .from('bookings')
         .delete()
@@ -117,6 +143,7 @@ const AdminCalendarPage: React.FC = () => {
 
       if (error) throw error;
 
+      console.log('✅ Successfully deleted from database');
       fetchBookings();
     } catch (error) {
       console.error('Error deleting booking:', error);

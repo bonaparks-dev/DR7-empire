@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Vehicles Query</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Testing Vehicle Query</h1>
+    <div id="results"></div>
+
+    <script>
+        const supabaseUrl = 'https://ahpmzjgkfxrrgxyirasa.supabase.co';
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFocG16amdrZnhycmd4eWlyYXNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4Mjc3OTgsImV4cCI6MjA2OTQwMzc5OH0.XkjoVheKCqmgL0Ce-OqNAbItnW7L3GlXIxb8_R7f_FU';
+
+        const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
+
+        async function testQuery() {
+            const results = document.getElementById('results');
+            results.innerHTML = 'Loading...';
+
+            try {
+                const { data, error } = await supabase
+                    .from('vehicles')
+                    .select('*')
+                    .neq('status', 'retired')
+                    .order('display_name');
+
+                if (error) {
+                    results.innerHTML = '<pre>Error: ' + JSON.stringify(error, null, 2) + '</pre>';
+                } else {
+                    results.innerHTML = '<pre>Found ' + data.length + ' vehicles:\n\n' +
+                        JSON.stringify(data, null, 2) + '</pre>';
+                }
+            } catch (err) {
+                results.innerHTML = '<pre>Exception: ' + err.message + '</pre>';
+            }
+        }
+
+        testQuery();
+    </script>
+</body>
+</html>

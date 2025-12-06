@@ -139,6 +139,35 @@ export const formatCarRentalEvent = (booking: any): CalendarEventDetails => {
   };
 };
 
+export const deleteCalendarEvent = async (eventId: string) => {
+  try {
+    const calendar = getCalendarClient();
+    const calendarId = process.env.GOOGLE_CALENDAR_ID || 'dubai.rent7.0srl@gmail.com';
+
+    console.log(`🗑️ Deleting calendar event: ${eventId}`);
+    console.log(`📍 Calendar ID: ${calendarId}`);
+
+    await calendar.events.delete({
+      calendarId: calendarId,
+      eventId: eventId,
+      sendUpdates: 'all', // Notify attendees about cancellation
+    });
+
+    console.log('✅ Calendar event deleted successfully!');
+    return { success: true };
+  } catch (error: any) {
+    console.error('❌ Error deleting calendar event:', error.message);
+
+    // If event is already deleted or not found, consider it successful
+    if (error.code === 404 || error.code === 410) {
+      console.log('ℹ️ Event already deleted or not found, continuing...');
+      return { success: true, alreadyDeleted: true };
+    }
+
+    throw error;
+  }
+};
+
 export const formatCarWashEvent = (booking: any): CalendarEventDetails => {
   // appointment_date is now stored as a full ISO timestamp
   const appointmentDate = new Date(booking.appointment_date);
