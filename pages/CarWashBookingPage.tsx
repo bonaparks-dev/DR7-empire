@@ -17,6 +17,11 @@ const CarWashBookingPage: React.FC = () => {
   const location = useLocation();
   const { user } = useAuth();
 
+  // Existing clients state
+  const [existingClients, setExistingClients] = useState<any[]>([]);
+  const [clientSearchQuery, setClientSearchQuery] = useState('');
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+
   const serviceId = (location.state as any)?.serviceId;
   const selectedService = SERVICES.find(s => s.id === serviceId);
 
@@ -132,6 +137,78 @@ const CarWashBookingPage: React.FC = () => {
       }));
     }
   }, [user]);
+
+  // Fetch existing clients for selection
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('customers_extended')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(100);
+
+        if (error) throw error;
+        setExistingClients(data || []);
+      } catch (error) {
+        console.error('Error fetching clients:', error);
+      }
+    };
+
+    fetchClients();
+  }, []);
+
+  // Filter clients based on search query
+  const filteredClients = useMemo(() => {
+    if (!clientSearchQuery) return [];
+
+    const query = clientSearchQuery.toLowerCase();
+    return existingClients.filter(client => {
+      const searchText = [
+        client.nome,
+        client.cognome,
+        client.denominazione,
+        client.ragione_sociale,
+        client.email,
+        client.codice_fiscale,
+        client.telefono
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      return searchText.includes(query);
+    }).slice(0, 10); // Limit to 10 results
+  }, [clientSearchQuery, existingClients]);
+
+  // Handle client selection
+  const handleClientSelect = (client: any) => {
+    console.log('Selected client:', client);
+
+    // Build full name based on client type
+    let fullName = '';
+    if (client.tipo_cliente === 'persona_fisica') {
+      fullName = `${client.nome || ''} ${client.cognome || ''}`.trim();
+    } else if (client.tipo_cliente === 'azienda') {
+      fullName = client.denominazione || client.ragione_sociale || '';
+    } else if (client.tipo_cliente === 'pubblica_amministrazione') {
+      fullName = client.denominazione || client.ente_ufficio || '';
+    }
+
+    // Auto-fill form with client data
+    setFormData(prev => ({
+      ...prev,
+      fullName: fullName,
+      email: client.email || '',
+      phone: client.telefono || '',
+      codiceFiscale: client.codice_fiscale || '',
+      indirizzo: client.indirizzo || '',
+      cittaResidenza: client.citta || '',
+      codicePostale: client.codice_postale || '',
+      provinciaResidenza: client.provincia || '',
+    }));
+
+    // Close dropdown and clear search
+    setClientSearchQuery('');
+    setShowClientDropdown(false);
+  };
 
   // Fetch credit balance
   useEffect(() => {
@@ -902,6 +979,67 @@ const CarWashBookingPage: React.FC = () => {
               <h2 className="text-2xl font-bold text-white mb-6">
                 {lang === 'it' ? 'Informazioni Cliente' : 'Customer Information'}
               </h2>
+
+              {/* Existing Client Search - Admin Only */}
+              <div className="mb-6 p-4 bg-gray-800/50 border border-gray-700 rounded-lg">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  {lang === 'it' ? '🔍 Cerca Cliente Esistente' : '🔍 Search Existing Client'}
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={clientSearchQuery}
+                    onChange={(e) => {
+                      setClientSearchQuery(e.target.value);
+                      setShowClientDropdown(e.target.value.length > 0);
+                    }}
+                    onFocus={() => setShowClientDropdown(clientSearchQuery.length > 0)}
+                    placeholder={lang === 'it' ? 'Cerca per nome, email, codice fiscale...' : 'Search by name, email, tax code...'}
+                    className="w-full bg-gray-800 border-gray-600 rounded-md p-3 text-white placeholder-gray-500"
+                  />
+
+                  {/* Dropdown with filtered clients */}
+                  {showClientDropdown && filteredClients.length > 0 && (
+                    <div className="absolute z-10 w-full mt-2 bg-gray-800 border border-gray-600 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+                      {filteredClients.map((client) => {
+                        const displayName = client.tipo_cliente === 'persona_fisica'
+                          ? `${client.nome || ''} ${client.cognome || ''}`.trim()
+                          : (client.denominazione || client.ragione_sociale || client.ente_ufficio || '');
+
+                        return (
+                          <button
+                            key={client.id}
+                            type="button"
+                            onClick={() => handleClientSelect(client)}
+                            className="w-full text-left px-4 py-3 hover:bg-gray-700 border-b border-gray-700 last:border-b-0 transition-colors"
+                          >
+                            <div className="text-white font-medium">{displayName}</div>
+                            <div className="text-sm text-gray-400">
+                              {client.email} • {client.codice_fiscale || client.partita_iva || 'N/A'}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {client.tipo_cliente === 'persona_fisica' ? '👤 Persona Fisica' :
+                               client.tipo_cliente === 'azienda' ? '🏢 Azienda' : '🏛️ PA'}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {showClientDropdown && clientSearchQuery && filteredClients.length === 0 && (
+                    <div className="absolute z-10 w-full mt-2 bg-gray-800 border border-gray-600 rounded-lg shadow-xl p-4 text-center text-gray-400">
+                      {lang === 'it' ? 'Nessun cliente trovato' : 'No clients found'}
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  {lang === 'it'
+                    ? 'Seleziona un cliente esistente per compilare automaticamente i campi'
+                    : 'Select an existing client to auto-fill the fields'}
+                </p>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
