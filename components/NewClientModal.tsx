@@ -189,6 +189,7 @@ export default function NewClientModal({ isOpen, onClose, onClientCreated }: New
         customerData.indirizzo = formData.indirizzo
         if (formData.pec_persona) customerData.pec = formData.pec_persona
       } else if (formData.tipo_cliente === 'azienda') {
+        customerData.denominazione = formData.denominazione
         customerData.ragione_sociale = formData.denominazione
         customerData.partita_iva = formData.partita_iva
         customerData.indirizzo = formData.indirizzo_azienda
@@ -374,7 +375,7 @@ export default function NewClientModal({ isOpen, onClose, onClientCreated }: New
                     type="text"
                     value={formData.nome}
                     onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-white focus:border-white text-white"
                   />
                   {errors.nome && <p className="text-red-500 text-xs mt-1">{errors.nome}</p>}
                 </div>
