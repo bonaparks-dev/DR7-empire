@@ -27,17 +27,6 @@ interface EditingBooking extends Booking {
   isEditing: true;
 }
 
-interface VehicleUnavailability {
-  id: string;
-  vehicle_id: string;
-  vehicle_name: string;
-  unavailable_from: string;
-  unavailable_until: string;
-  unavailable_from_time: string;
-  unavailable_until_time: string;
-  unavailable_reason: string;
-}
-
 const AdminCalendarPage: React.FC = () => {
   const { lang } = useTranslation();
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -47,17 +36,13 @@ const AdminCalendarPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [showVehicleCalendar, setShowVehicleCalendar] = useState<string | null>(null);
-  const [selectedBookings, setSelectedBookings] = useState<Set<string>>(new Set());
-  const [vehicleUnavailabilities, setVehicleUnavailabilities] = useState<VehicleUnavailability[]>([]);
-  const [selectedUnavailability, setSelectedUnavailability] = useState<VehicleUnavailability | null>(null);
 
-  // Fetch all bookings and vehicle unavailabilities
+  // Fetch all bookings
   useEffect(() => {
     fetchBookings();
-    fetchVehicleUnavailabilities();
 
-    // Set up real-time subscription for bookings
-    const bookingsSubscription = supabase
+    // Set up real-time subscription
+    const subscription = supabase
       .channel('admin-bookings')
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'bookings' },
@@ -67,20 +52,8 @@ const AdminCalendarPage: React.FC = () => {
       )
       .subscribe();
 
-    // Set up real-time subscription for vehicles
-    const vehiclesSubscription = supabase
-      .channel('admin-vehicles')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'vehicles' },
-        () => {
-          fetchVehicleUnavailabilities();
-        }
-      )
-      .subscribe();
-
     return () => {
-      bookingsSubscription.unsubscribe();
-      vehiclesSubscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
@@ -97,42 +70,6 @@ const AdminCalendarPage: React.FC = () => {
       console.error('Error fetching bookings:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchVehicleUnavailabilities = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('vehicles')
-        .select('id, display_name, status, metadata')
-        .eq('status', 'unavailable')
-        .not('metadata', 'is', null);
-
-      if (error) throw error;
-
-      const unavailabilities: VehicleUnavailability[] = [];
-
-      (data || []).forEach(vehicle => {
-        if (vehicle.metadata) {
-          const metadata = vehicle.metadata as any;
-          if (metadata.unavailable_from && metadata.unavailable_until) {
-            unavailabilities.push({
-              id: vehicle.id,
-              vehicle_id: vehicle.id,
-              vehicle_name: vehicle.display_name,
-              unavailable_from: metadata.unavailable_from,
-              unavailable_until: metadata.unavailable_until,
-              unavailable_from_time: metadata.unavailable_from_time || '00:00',
-              unavailable_until_time: metadata.unavailable_until_time || '23:59',
-              unavailable_reason: metadata.unavailable_reason || 'Non disponibile',
-            });
-          }
-        }
-      });
-
-      setVehicleUnavailabilities(unavailabilities);
-    } catch (error) {
-      console.error('Error fetching vehicle unavailabilities:', error);
     }
   };
 
@@ -214,66 +151,6 @@ const AdminCalendarPage: React.FC = () => {
     }
   };
 
-  // Multi-select handlers
-  const handleToggleBooking = (bookingId: string) => {
-    setSelectedBookings(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(bookingId)) {
-        newSet.delete(bookingId);
-      } else {
-        newSet.add(bookingId);
-      }
-      return newSet;
-    });
-  };
-
-  const handleToggleAll = () => {
-    if (selectedBookings.size === filteredBookings.length) {
-      setSelectedBookings(new Set());
-    } else {
-      setSelectedBookings(new Set(filteredBookings.map(b => b.id)));
-    }
-  };
-
-  const handleBulkMarkAsPaid = async () => {
-    if (selectedBookings.size === 0) {
-      alert(lang === 'it' ? 'Seleziona almeno una prenotazione' : 'Select at least one booking');
-      return;
-    }
-
-    if (!confirm(lang === 'it'
-      ? `Segnare ${selectedBookings.size} prenotazioni come pagate?`
-      : `Mark ${selectedBookings.size} bookings as paid?`)) {
-      return;
-    }
-
-    try {
-      const bookingIds = Array.from(selectedBookings);
-
-      // Update all selected bookings
-      const { error } = await supabase
-        .from('bookings')
-        .update({
-          payment_status: 'paid',
-          status: 'confirmed'
-        })
-        .in('id', bookingIds);
-
-      if (error) throw error;
-
-      console.log(`✅ ${selectedBookings.size} bookings marked as paid`);
-      setSelectedBookings(new Set());
-      fetchBookings();
-
-      alert(lang === 'it'
-        ? `${selectedBookings.size} prenotazioni segnate come pagate!`
-        : `${selectedBookings.size} bookings marked as paid!`);
-    } catch (error) {
-      console.error('Error marking bookings as paid:', error);
-      alert('Errore durante l\'aggiornamento dello stato di pagamento');
-    }
-  };
-
   // Get all unique vehicles from bookings
   const vehicles = useMemo(() => {
     const uniqueVehicles = new Set<string>();
@@ -290,11 +167,6 @@ const AdminCalendarPage: React.FC = () => {
     if (selectedVehicle === 'all') return bookings;
     return bookings.filter(b => b.vehicle_name === selectedVehicle);
   }, [bookings, selectedVehicle]);
-
-  const filteredUnavailabilities = useMemo(() => {
-    if (selectedVehicle === 'all') return vehicleUnavailabilities;
-    return vehicleUnavailabilities.filter(u => u.vehicle_name === selectedVehicle);
-  }, [vehicleUnavailabilities, selectedVehicle]);
 
   // Get calendar days for current month
   const getCalendarDays = () => {
@@ -343,21 +215,6 @@ const AdminCalendarPage: React.FC = () => {
       }
 
       return false;
-    });
-  };
-
-  // Get unavailabilities for a specific date
-  const getUnavailabilitiesForDate = (date: Date) => {
-    const checkDate = new Date(date);
-    checkDate.setHours(0, 0, 0, 0);
-
-    return filteredUnavailabilities.filter(unavailability => {
-      const fromDate = new Date(unavailability.unavailable_from);
-      const untilDate = new Date(unavailability.unavailable_until);
-      fromDate.setHours(0, 0, 0, 0);
-      untilDate.setHours(0, 0, 0, 0);
-
-      return checkDate >= fromDate && checkDate <= untilDate;
     });
   };
 
@@ -519,7 +376,6 @@ const AdminCalendarPage: React.FC = () => {
                 }
 
                 const dayBookings = getBookingsForDate(day);
-                const dayUnavailabilities = getUnavailabilitiesForDate(day);
                 const isToday = day.toDateString() === new Date().toDateString();
                 const isCurrentMonth = day.getMonth() === currentDate.getMonth();
 
@@ -531,7 +387,7 @@ const AdminCalendarPage: React.FC = () => {
                       aspect-square border rounded-lg p-2 transition-colors
                       ${isToday ? 'border-white bg-white/10' : 'border-gray-700'}
                       ${!isCurrentMonth ? 'opacity-50' : ''}
-                      ${(dayBookings.length > 0 || dayUnavailabilities.length > 0) ? 'bg-gray-800/50' : 'bg-gray-900/30'}
+                      ${dayBookings.length > 0 ? 'bg-gray-800/50' : 'bg-gray-900/30'}
                       hover:bg-gray-800 cursor-pointer
                     `}
                   >
@@ -539,22 +395,9 @@ const AdminCalendarPage: React.FC = () => {
                       {day.getDate()}
                     </div>
 
-                    {/* Booking and unavailability indicators */}
+                    {/* Booking indicators */}
                     <div className="space-y-1">
-                      {/* Show unavailabilities in orange */}
-                      {dayUnavailabilities.slice(0, 2).map(unavailability => (
-                        <div
-                          key={unavailability.id}
-                          onClick={() => setSelectedUnavailability(unavailability)}
-                          className="text-xs px-1 py-0.5 rounded truncate border bg-orange-500/20 text-orange-400 border-orange-500/30 cursor-pointer hover:bg-orange-500/30"
-                          title={`${unavailability.vehicle_name} - ${unavailability.unavailable_reason}`}
-                        >
-                          {unavailability.unavailable_from_time} - {unavailability.vehicle_name}
-                        </div>
-                      ))}
-
-                      {/* Show bookings */}
-                      {dayBookings.slice(0, 3 - dayUnavailabilities.slice(0, 2).length).map(booking => (
+                      {dayBookings.slice(0, 3).map(booking => (
                         <div
                           key={booking.id}
                           className={`
@@ -566,10 +409,9 @@ const AdminCalendarPage: React.FC = () => {
                           {booking.appointment_time || formatBookingTime(booking)}
                         </div>
                       ))}
-
-                      {(dayBookings.length + dayUnavailabilities.length) > 3 && (
+                      {dayBookings.length > 3 && (
                         <div className="text-xs text-gray-400">
-                          +{(dayBookings.length + dayUnavailabilities.length) - 3} {lang === 'it' ? 'altro' : 'more'}
+                          +{dayBookings.length - 3} {lang === 'it' ? 'altro' : 'more'}
                         </div>
                       )}
                     </div>
@@ -677,7 +519,7 @@ const AdminCalendarPage: React.FC = () => {
             <h4 className="text-sm font-semibold text-white mb-4">
               {lang === 'it' ? 'Legenda' : 'Legend'}
             </h4>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-300">Car Wash</span>
               </div>
@@ -691,12 +533,6 @@ const AdminCalendarPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded bg-yellow-500/20 border border-yellow-500/30"></div>
                 <span className="text-sm text-gray-300">Pending</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-orange-500/20 border border-orange-500/30"></div>
-                <span className="text-sm text-gray-300">
-                  {lang === 'it' ? 'Non disponibile' : 'Unavailable'}
-                </span>
               </div>
             </div>
           </div>
@@ -948,118 +784,6 @@ const AdminCalendarPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              </motion.div>
-            </div>
-          )}
-
-          {/* Vehicle Unavailability Details Modal */}
-          {selectedUnavailability && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-gray-900 border border-gray-700 rounded-lg p-6 max-w-lg w-full"
-              >
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-2xl font-bold text-white">
-                    {lang === 'it' ? 'Dettagli Indisponibilità' : 'Unavailability Details'}
-                  </h3>
-                  <button
-                    onClick={() => setSelectedUnavailability(null)}
-                    className="text-gray-400 hover:text-white transition-colors text-2xl"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  {/* Vehicle Name */}
-                  <div className="bg-gray-800/50 rounded-lg p-4">
-                    <p className="text-sm text-gray-400 mb-1">
-                      {lang === 'it' ? 'Veicolo' : 'Vehicle'}
-                    </p>
-                    <p className="text-lg font-semibold text-white">
-                      {selectedUnavailability.vehicle_name}
-                    </p>
-                  </div>
-
-                  {/* Reason */}
-                  <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
-                    <p className="text-sm text-orange-400 mb-1">
-                      {lang === 'it' ? 'Motivo' : 'Reason'}
-                    </p>
-                    <p className="text-lg font-medium text-orange-300">
-                      {selectedUnavailability.unavailable_reason}
-                    </p>
-                  </div>
-
-                  {/* Date Range */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gray-800/50 rounded-lg p-4">
-                      <p className="text-sm text-gray-400 mb-1">
-                        {lang === 'it' ? 'Dal' : 'From'}
-                      </p>
-                      <p className="text-white font-medium">
-                        {new Date(selectedUnavailability.unavailable_from).toLocaleDateString(
-                          lang === 'it' ? 'it-IT' : 'en-US',
-                          {
-                            day: '2-digit',
-                            month: 'long',
-                            year: 'numeric',
-                            timeZone: 'Europe/Rome'
-                          }
-                        )}
-                      </p>
-                      <p className="text-sm text-gray-400 mt-1">
-                        {selectedUnavailability.unavailable_from_time}
-                      </p>
-                    </div>
-
-                    <div className="bg-gray-800/50 rounded-lg p-4">
-                      <p className="text-sm text-gray-400 mb-1">
-                        {lang === 'it' ? 'Al' : 'Until'}
-                      </p>
-                      <p className="text-white font-medium">
-                        {new Date(selectedUnavailability.unavailable_until).toLocaleDateString(
-                          lang === 'it' ? 'it-IT' : 'en-US',
-                          {
-                            day: '2-digit',
-                            month: 'long',
-                            year: 'numeric',
-                            timeZone: 'Europe/Rome'
-                          }
-                        )}
-                      </p>
-                      <p className="text-sm text-gray-400 mt-1">
-                        {selectedUnavailability.unavailable_until_time}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Duration */}
-                  <div className="bg-gray-800/50 rounded-lg p-4">
-                    <p className="text-sm text-gray-400 mb-1">
-                      {lang === 'it' ? 'Durata' : 'Duration'}
-                    </p>
-                    <p className="text-white font-medium">
-                      {(() => {
-                        const from = new Date(selectedUnavailability.unavailable_from);
-                        const until = new Date(selectedUnavailability.unavailable_until);
-                        const days = Math.ceil((until.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-                        return lang === 'it'
-                          ? `${days} ${days === 1 ? 'giorno' : 'giorni'}`
-                          : `${days} ${days === 1 ? 'day' : 'days'}`;
-                      })()}
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setSelectedUnavailability(null)}
-                  className="w-full mt-6 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded transition-colors"
-                >
-                  {lang === 'it' ? 'Chiudi' : 'Close'}
-                </button>
               </motion.div>
             </div>
           )}
