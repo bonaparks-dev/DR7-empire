@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { motion } from 'framer-motion';
+import { useAuth } from '../hooks/useAuth';
+import { useTranslation } from '../hooks/useTranslation';
 
 const AviationQuoteRequestPage: React.FC = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const location = useLocation();
+  const { user, loading: authLoading } = useAuth();
+  const { lang } = useTranslation();
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     // Customer info
     customer_name: '',
@@ -81,7 +86,7 @@ const AviationQuoteRequestPage: React.FC = () => {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
 
     try {
       // Save to database
@@ -244,8 +249,61 @@ const AviationQuoteRequestPage: React.FC = () => {
       console.error('Failed to submit quote request:', error);
       alert('Errore durante l\'invio della richiesta. Riprova.');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
+  }
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black py-20 px-4">
+        <div className="max-w-5xl mx-auto flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-dr7-gold mx-auto mb-4"></div>
+            <p className="text-white text-lg">{lang === 'it' ? 'Caricamento...' : 'Loading...'}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Require authentication for quote request
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black py-20 px-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-gray-900 border border-gray-700 rounded-lg p-8 text-center">
+            <div className="mb-6">
+              <svg className="w-20 h-20 mx-auto text-dr7-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-4">
+              {lang === 'it' ? 'Accesso Richiesto' : 'Login Required'}
+            </h2>
+            <p className="text-gray-400 mb-8">
+              {lang === 'it'
+                ? 'Devi essere registrato e aver effettuato l\'accesso per richiedere un preventivo.'
+                : 'You must be registered and logged in to request a quote.'}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={() => navigate('/login', { state: { from: location.pathname } })}
+                className="px-8 py-3 bg-dr7-gold text-black font-bold rounded hover:bg-dr7-gold/90 transition-colors"
+              >
+                {lang === 'it' ? 'Accedi' : 'Login'}
+              </button>
+              <button
+                onClick={() => navigate('/signup', { state: { from: location.pathname } })}
+                className="px-8 py-3 bg-gray-700 text-white font-bold rounded hover:bg-gray-600 transition-colors"
+              >
+                {lang === 'it' ? 'Registrati' : 'Sign Up'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -1101,7 +1159,7 @@ const AviationQuoteRequestPage: React.FC = () => {
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={loading}
+            disabled={submitting}
             className="w-full bg-white text-black font-bold py-4 px-6 rounded-lg hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg"
           >
             {loading ? 'Invio in corso...' : 'Richiedi Preventivo Gratuito'}
