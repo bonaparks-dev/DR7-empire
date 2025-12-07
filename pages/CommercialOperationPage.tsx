@@ -101,14 +101,52 @@ const CommercialOperationPage: React.FC = () => {
 
     const handleQuantityChange = (amount: number) => setQuantity(prev => Math.max(1, prev + amount));
 
-    const handleBuyClick = () => {
+    const handleBuyClick = async () => {
         if (!user) {
             navigate('/signin', { state: { from: location } });
             return;
         }
 
-        // Show NewClientModal to collect complete customer data
-        setShowClientModal(true);
+        // Check if user already has client data
+        try {
+            const { data: existingClient, error } = await supabase
+                .from('clienti_estesi')
+                .select('*')
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            if (error) {
+                console.error('Error checking client data:', error);
+            }
+
+            if (existingClient) {
+                // User has existing client data - skip modal and go directly to payment
+                setClientId(existingClient.id);
+                setCustomerExtendedData(existingClient);
+
+                // Pre-fill payment form with existing customer data
+                if (existingClient.tipo_cliente === 'persona_fisica') {
+                    setFullName(`${existingClient.nome || ''} ${existingClient.cognome || ''}`.trim());
+                } else if (existingClient.tipo_cliente === 'azienda') {
+                    setFullName(existingClient.ragione_sociale || existingClient.denominazione || '');
+                } else if (existingClient.tipo_cliente === 'pubblica_amministrazione') {
+                    setFullName(existingClient.denominazione || existingClient.ente_ufficio || '');
+                }
+
+                setEmail(existingClient.email || user.email || '');
+                setPhoneNumber(existingClient.telefono || '');
+
+                // Go directly to payment
+                setShowConfirmModal(true);
+            } else {
+                // No existing client data - show NewClientModal to collect information
+                setShowClientModal(true);
+            }
+        } catch (err) {
+            console.error('Error in handleBuyClick:', err);
+            // On error, show modal to be safe
+            setShowClientModal(true);
+        }
     };
 
     const handleCloseModal = () => {
