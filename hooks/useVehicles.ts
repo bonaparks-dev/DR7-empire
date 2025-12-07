@@ -31,6 +31,8 @@ interface TransformedVehicle {
     value: string;
     icon: any;
   }>;
+  vehicleIds?: string[]; // For grouped vehicles, stores all actual vehicle IDs
+  displayNames?: string[]; // For grouped vehicles, stores all actual vehicle display names
 }
 
 // Helper function to get vehicle image based on name
@@ -46,6 +48,7 @@ const getVehicleImage = (name: string): string => {
   if (lowerName.includes('gle')) return '/mercedes-gle.jpeg';
   if (lowerName.includes('m4')) return '/bmw-m4.jpeg';
   if (lowerName.includes('ducato')) return '/ducato.jpeg';
+  if (lowerName.includes('208')) return '/208.jpeg';
 
   // Default image
   return '/default-car.jpeg';
@@ -245,7 +248,47 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
         // Transform vehicles to expected format
         const transformedVehicles = (data || []).map(transformVehicle);
 
-        setVehicles(transformedVehicles);
+        // Group vehicles by display_group if they have one in metadata
+        const groupedVehicles: TransformedVehicle[] = [];
+        const processedGroups = new Set<string>();
+        const ungroupedVehicles: TransformedVehicle[] = [];
+
+        transformedVehicles.forEach((vehicle, index) => {
+          const originalVehicle = data?.[index];
+          const displayGroup = originalVehicle?.metadata?.display_group;
+
+          if (displayGroup && !processedGroups.has(displayGroup)) {
+            // Find all vehicles in this group
+            const groupMembers = transformedVehicles.filter((v, i) => {
+              return data?.[i]?.metadata?.display_group === displayGroup;
+            });
+
+            // Get original vehicle data for all group members
+            const groupOriginalVehicles = (data || []).filter(v => v.metadata?.display_group === displayGroup);
+
+            // Create a merged vehicle representing the group
+            // Use the first vehicle's data but track all vehicle IDs
+            const mergedVehicle: TransformedVehicle = {
+              ...groupMembers[0],
+              vehicleIds: groupOriginalVehicles.map(v => v.id),
+              displayNames: groupOriginalVehicles.map(v => v.display_name),
+              // A group is available if ANY member is available
+              available: groupMembers.some(v => v.available)
+            };
+
+            groupedVehicles.push(mergedVehicle);
+            processedGroups.add(displayGroup);
+          } else if (!displayGroup) {
+            // Vehicle is not part of a group
+            ungroupedVehicles.push(vehicle);
+          }
+          // Skip vehicles that are part of an already processed group
+        });
+
+        // Combine grouped and ungrouped vehicles
+        const finalVehicles = [...groupedVehicles, ...ungroupedVehicles];
+
+        setVehicles(finalVehicles);
         setError(null);
       } catch (err) {
         console.error('Error fetching vehicles:', err);
