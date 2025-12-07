@@ -6,14 +6,9 @@ import { COMMERCIAL_OPERATION_GIVEAWAY } from '../constants';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import type { CommercialOperation, Prize } from '../types';
 import { useAuth } from '../hooks/useAuth';
-import type { Stripe, StripeElements, StripeCardElement } from '@stripe/stripe-js';
 import { ImageCarousel } from '../components/ui/ImageCarousel';
 import { supabase } from '../supabaseClient';
 import NewClientModal from '../components/NewClientModal';
-
-// Safely access the Stripe publishable key from Vite's environment variables.
-// If it's not available (e.g., in a non-Vite environment), it falls back to a placeholder.
-const STRIPE_PUBLISHABLE_KEY = 'pk_live_51S3dDjQcprtTyo8tBfBy5mAZj8PQXkxfZ1RCnWskrWFZ2WEnm1u93ZnE2tBi316Gz2CCrvLV98IjSoiXb0vSDpOQ003fNG69Y2';
 
 const calculateTimeLeft = (drawDate: string) => {
     const difference = +new Date(drawDate) - +new Date();
@@ -62,29 +57,16 @@ const CommercialOperationPage: React.FC = () => {
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
 
-    const [stripe, setStripe] = useState<Stripe | null>(null);
-    const [elements, setElements] = useState<StripeElements | null>(null);
-    const cardElementRef = useRef<HTMLDivElement>(null);
-    const [clientSecret, setClientSecret] = useState<string | null>(null);
-    const [isClientSecretLoading, setIsClientSecretLoading] = useState(false);
-    const [stripeError, setStripeError] = useState<string | null>(null);
+    const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+    const [orderId, setOrderId] = useState<string | null>(null);
+    const [isPaymentLoading, setIsPaymentLoading] = useState(false);
+    const [paymentError, setPaymentError] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [showClientModal, setShowClientModal] = useState(false);
     const [clientId, setClientId] = useState<string | null>(null);
     const [customerExtendedData, setCustomerExtendedData] = useState<any>(null);
 
-    useEffect(() => {
-        if ((window as any).Stripe) {
-            if (!STRIPE_PUBLISHABLE_KEY || STRIPE_PUBLISHABLE_KEY.startsWith('YOUR_')) {
-                console.error("Stripe.js has loaded, but the publishable key is not set.");
-                setStripeError("Payment service is not configured correctly. Please contact support.");
-                return;
-            }
-            const stripeInstance = (window as any).Stripe(STRIPE_PUBLISHABLE_KEY);
-            setStripe(stripeInstance);
-            setElements(stripeInstance.elements());
-        }
-    }, []);
+    // Nexi payment initialization - no frontend SDK needed for iframe integration
 
     // We always show NewClientModal now, so no need to check for existing record
     // This prevents unnecessary Supabase queries that could fail due to network issues
@@ -118,7 +100,7 @@ const CommercialOperationPage: React.FC = () => {
     const totalPrice = useMemo(() => calculateTotalPrice(quantity), [quantity]);
 
     const handleQuantityChange = (amount: number) => setQuantity(prev => Math.max(1, prev + amount));
-    
+
     const handleBuyClick = () => {
         if (!user) {
             navigate('/signin', { state: { from: location } });
@@ -128,11 +110,11 @@ const CommercialOperationPage: React.FC = () => {
         // Show NewClientModal to collect complete customer data
         setShowClientModal(true);
     };
-    
+
     const handleCloseModal = () => {
         setShowConfirmModal(false);
-        setClientSecret(null);
-        setStripeError(null);
+        setPaymentUrl(null);
+        setPaymentError(null);
     };
 
     const handleClientCreated = (newClientId: string, customerData: any) => {
@@ -161,126 +143,57 @@ const CommercialOperationPage: React.FC = () => {
 
     useEffect(() => {
         if (showConfirmModal && totalPrice > 0) {
-            setIsClientSecretLoading(true);
-            setStripeError(null);
-            setClientSecret(null);
+            setIsPaymentLoading(true);
+            setPaymentError(null);
+            setPaymentUrl(null);
 
-            fetch('/.netlify/functions/create-payment-intent', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount: totalPrice, currency: 'eur', email: user?.email })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.error) {
-                    setStripeError(data.error);
-                } else {
-                    setClientSecret(data.clientSecret);
-                }
-            })
-            .catch(error => {
-                console.error('Failed to fetch client secret:', error);
-                setStripeError('Could not connect to payment server.');
-            })
-            .finally(() => {
-                setIsClientSecretLoading(false);
-            });
-        }
-    }, [showConfirmModal, totalPrice, user]);
+            // Generate unique order ID
+            const newOrderId = `DR7-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            setOrderId(newOrderId);
 
-    useEffect(() => {
-        if (elements && clientSecret && cardElementRef.current) {
-            const card = elements.create('card', {
-                style: {
-                    base: { color: '#ffffff', fontFamily: '"Exo 2", sans-serif', fontSize: '16px', '::placeholder': { color: '#a0aec0' } },
-                    invalid: { color: '#ef4444', iconColor: '#ef4444' }
-                }
-            });
-            card.mount(cardElementRef.current);
-            card.on('change', (event) => {
-                setStripeError(event.error ? event.error.message : null);
-            });
-
-            return () => {
-                card.destroy();
-            };
-        }
-    }, [elements, clientSecret]);
-    
-    const confirmPurchase = async () => {
-        if (!stripe || !elements || !clientSecret || isProcessing || !user) return;
-
-        if (!fullName || fullName.trim() === '') {
-            setStripeError("Il nome completo è obbligatorio.");
-            return;
-        }
-
-        if (!email || email.trim() === '' || !email.includes('@')) {
-            setStripeError("Un indirizzo email valido è obbligatorio.");
-            return;
-        }
-
-        if (!phoneNumber || phoneNumber.trim() === '') {
-            setStripeError("Il numero di telefono è obbligatorio.");
-            return;
-        }
-
-        const cardElement = elements.getElement('card');
-        if (!cardElement) {
-            setStripeError("Card element not found. Please try again.");
-            return;
-        }
-
-        setIsProcessing(true);
-        setStripeError(null);
-
-        const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-            payment_method: {
-                card: cardElement,
-                billing_details: {
-                    name: fullName,
-                    email: email,
-                    phone: phoneNumber,
-                },
-            },
-        });
-
-        if (error) {
-            setStripeError(error.message || "An unexpected error occurred.");
-            setIsProcessing(false);
-        } else {
-            fetch('/.netlify/functions/generate-commercial-operation-tickets', {
+            fetch('/.netlify/functions/create-nexi-payment', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    email: email,
-                    fullName: fullName,
-                    phone: phoneNumber,
-                    quantity,
-                    paymentIntentId: paymentIntent.id,
-                    clientId: clientId,
-                    customerData: customerExtendedData // Pass complete customer data for email
+                    amount: totalPrice,
+                    currency: 'EUR',
+                    orderId: newOrderId,
+                    customerEmail: email,
+                    customerName: fullName,
+                    description: `Biglietti Lotteria x${quantity}`,
+                    metadata: {
+                        purchaseType: 'commercial-operation-ticket',
+                        quantity: quantity,
+                        customerName: fullName,
+                    }
                 })
             })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    navigate('/commercial-operation/success', { state: { tickets: data.tickets, ownerName: fullName } });
-                } else {
-                    setStripeError(data.error || 'Failed to generate tickets after payment.');
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                setStripeError('An error occurred while finalizing your purchase.');
-            })
-            .finally(() => {
-                setIsProcessing(false);
-                setShowConfirmModal(false);
-            });
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        setPaymentError(data.error);
+                    } else {
+                        setPaymentUrl(data.paymentUrl);
+                    }
+                })
+                .catch(error => {
+                    console.error('Failed to create payment:', error);
+                    setPaymentError('Could not connect to payment server.');
+                })
+                .finally(() => {
+                    setIsPaymentLoading(false);
+                });
         }
+    }, [showConfirmModal, totalPrice, user, email, fullName, quantity]);
+
+    // No need to mount card element for Nexi iframe integration
+
+    const confirmPurchase = async () => {
+        // For Nexi, payment is handled in iframe
+        // This function is not needed as payment happens directly in Nexi's iframe
+        // User will be redirected back after payment completion
     };
-    
+
     const formatPrice = (price: number) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(price);
 
     const stelvioImages = useMemo(() => {
@@ -366,13 +279,13 @@ const CommercialOperationPage: React.FC = () => {
 
                     <div className="grid lg:grid-cols-1 gap-8 lg:gap-12 items-start">
                         <div className="lg:mx-auto max-w-2xl w-full">
-                             <div className="bg-black/80 border border-white/40 rounded-xl p-6 md:p-8 backdrop-blur-sm">
+                            <div className="bg-black/80 border border-white/40 rounded-xl p-6 md:p-8 backdrop-blur-sm">
                                 <AnimatePresence>
                                     {successMessage && (
-                                        <motion.div 
-                                            initial={{ opacity: 0, y: -10 }} 
-                                            animate={{ opacity: 1, y: 0 }} 
-                                            exit={{ opacity: 0, y: -10 }} 
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
                                             className="bg-green-600/30 text-green-200 p-3 rounded-md mb-4 text-center text-sm font-medium border border-green-500/50"
                                         >
                                             {successMessage}
@@ -392,11 +305,10 @@ const CommercialOperationPage: React.FC = () => {
                                                 <button
                                                     key={val}
                                                     onClick={() => setQuantity(val)}
-                                                    className={`px-3 py-1 text-xs sm:text-sm rounded-full border transition-colors ${
-                                                        quantity === val
-                                                            ? 'bg-white text-black border-white font-bold'
-                                                            : 'bg-black/60 border-white/60 text-white hover:border-white hover:bg-black/80'
-                                                    }`}
+                                                    className={`px-3 py-1 text-xs sm:text-sm rounded-full border transition-colors ${quantity === val
+                                                        ? 'bg-white text-black border-white font-bold'
+                                                        : 'bg-black/60 border-white/60 text-white hover:border-white hover:bg-black/80'
+                                                        }`}
                                                 >
                                                     {val}
                                                 </button>
@@ -410,7 +322,7 @@ const CommercialOperationPage: React.FC = () => {
                                     <div className="mb-4 p-3 bg-dr7-gold/20 border border-dr7-gold rounded-lg">
                                         <p className="text-sm text-dr7-gold font-semibold text-center">
                                             {quantity >= 10 && quantity < 100 && `Sconto applicato: ${quantity * 25 - totalPrice}€ risparmiati! (${(22).toFixed(2)}€/biglietto)`}
-                                            {quantity === 100 && `Sconto speciale applicato: ${quantity * 25 - totalPrice}€ risparmiati! (${(1999/100).toFixed(2)}€/biglietto)`}
+                                            {quantity === 100 && `Sconto speciale applicato: ${quantity * 25 - totalPrice}€ risparmiati! (${(1999 / 100).toFixed(2)}€/biglietto)`}
                                             {quantity > 100 && `Sconto applicato: ${quantity * 25 - totalPrice}€ risparmiati! (20€/biglietto)`}
                                         </p>
                                     </div>
@@ -425,8 +337,8 @@ const CommercialOperationPage: React.FC = () => {
                                         <span className="text-white">{formatPrice(totalPrice)}</span>
                                     </div>
                                 </div>
-                                <button 
-                                    onClick={handleBuyClick} 
+                                <button
+                                    onClick={handleBuyClick}
                                     className="w-full py-3 sm:py-4 px-6 bg-white text-black rounded-full font-bold uppercase tracking-wider text-sm sm:text-base hover:bg-gray-200 transition-all duration-300 transform hover:scale-105"
                                 >
                                     {t('Buy_Tickets')}
@@ -462,14 +374,14 @@ const CommercialOperationPage: React.FC = () => {
                         </div>
                         <div className="text-center mt-12">
                             <Link to="/win-rules" className="inline-block py-3 sm:py-4 px-8 bg-white text-black rounded-full font-bold uppercase tracking-wider text-sm sm:text-base hover:bg-gray-200 transition-all duration-300 transform hover:scale-105">
-                               Regolamento
+                                Regolamento
                             </Link>
                         </div>
                     </div>
-                    
+
                 </div>
             </div>
-            
+
             <AnimatePresence>
                 {showConfirmModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" aria-modal="true">
@@ -509,24 +421,32 @@ const CommercialOperationPage: React.FC = () => {
                             </div>
 
                             <div className="my-4 sm:my-6">
-                                <label className="block text-sm sm:text-base font-medium text-white text-left mb-2">{t('Credit_Card')}</label>
-                                <div className="bg-white/10 border border-white/50 rounded-lg p-3 sm:p-4 min-h-[48px] sm:min-h-[56px] flex items-center">
-                                    {isClientSecretLoading ?
-                                        <div className="flex items-center text-white/70 text-sm sm:text-base">
-                                            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-t-white border-white/30 rounded-full mr-2"/>
-                                            <span>{t('Processing')}...</span>
+                                <label className="block text-sm sm:text-base font-medium text-white text-left mb-2">Pagamento</label>
+                                <div className="bg-white/10 border border-white/50 rounded-lg overflow-hidden" style={{ minHeight: '400px' }}>
+                                    {isPaymentLoading ?
+                                        <div className="flex items-center justify-center h-full p-8 text-white/70 text-sm sm:text-base">
+                                            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-6 h-6 border-2 border-t-white border-white/30 rounded-full mr-3" />
+                                            <span>Caricamento pagamento...</span>
                                         </div> :
-                                        <div ref={cardElementRef} className="w-full" />
+                                        paymentUrl ? (
+                                            <iframe
+                                                src={paymentUrl}
+                                                className="w-full"
+                                                style={{ height: '500px', border: 'none' }}
+                                                title="Nexi Payment"
+                                            />
+                                        ) : (
+                                            <div className="flex items-center justify-center h-full p-8 text-white/70">
+                                                Preparazione pagamento...
+                                            </div>
+                                        )
                                     }
                                 </div>
-                                {stripeError && <p className="text-xs sm:text-sm text-red-400 mt-2 text-left">{stripeError}</p>}
+                                {paymentError && <p className="text-xs sm:text-sm text-red-400 mt-2 text-left">{paymentError}</p>}
                             </div>
 
                             <div className="flex justify-center space-x-3 sm:space-x-4">
                                 <button onClick={handleCloseModal} className="px-4 sm:px-6 py-2 sm:py-3 bg-white/20 text-white font-bold rounded-full hover:bg-white/30 text-sm sm:text-base transition-colors">{t('Cancel')}</button>
-                                <button onClick={confirmPurchase} disabled={isProcessing || !clientSecret || isClientSecretLoading} className="px-4 sm:px-6 py-2 sm:py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-opacity disabled:opacity-60 text-sm sm:text-base">
-                                    {isProcessing ? t('Processing') : `${t('Confirm_Purchase')} (${formatPrice(totalPrice)})`}
-                                </button>
                             </div>
                         </motion.div>
                     </div>
