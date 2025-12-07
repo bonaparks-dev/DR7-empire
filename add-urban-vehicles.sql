@@ -23,9 +23,9 @@ ON CONFLICT (display_name, plate) DO NOTHING;
 INSERT INTO vehicles (display_name, plate, status, daily_rate, category, metadata)
 VALUES
   ('Renault Clio 4 (Blu)', 'TARGA_CLIO_BLU_1', 'available', 29.90, 'urban',
-   '{"pricing": {"daily": 29.90, "weekly": 149, "monthly": 599}, "color": "Blu", "image": "/clio.jpeg", "display_group": "clio-4-blu", "specs": {"power": "90Cv", "seats": "5 posti", "engine": "1.5L Diesel"}}'::jsonb),
+   '{"pricing": {"daily": 29.90, "weekly": 149, "monthly": 599}, "color": "Blu", "image": "/clio4b.jpeg", "display_group": "clio-4-blu", "specs": {"power": "90Cv", "seats": "5 posti", "engine": "1.5L Diesel"}}'::jsonb),
   ('Renault Clio 4 (Blu)', 'TARGA_CLIO_BLU_2', 'available', 29.90, 'urban',
-   '{"pricing": {"daily": 29.90, "weekly": 149, "monthly": 599}, "color": "Blu", "image": "/clio.jpeg", "display_group": "clio-4-blu", "specs": {"power": "90Cv", "seats": "5 posti", "engine": "1.5L Diesel"}}'::jsonb)
+   '{"pricing": {"daily": 29.90, "weekly": 149, "monthly": 599}, "color": "Blu", "image": "/clio4b.jpeg", "display_group": "clio-4-blu", "specs": {"power": "90Cv", "seats": "5 posti", "engine": "1.5L Diesel"}}'::jsonb)
 ON CONFLICT (display_name, plate) DO NOTHING;
 
 -- 4. Peugeot 208 Bianca (2x)
