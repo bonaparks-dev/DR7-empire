@@ -14,9 +14,9 @@ ON CONFLICT (display_name, plate) DO NOTHING;
 INSERT INTO vehicles (display_name, plate, status, daily_rate, category, metadata)
 VALUES
   ('Renault Clio 4 (Arancione)', 'TARGA_CLIO_ARANCIONE_1', 'available', 29.90, 'urban',
-   '{"pricing": {"daily": 29.90, "weekly": 149, "monthly": 599}, "color": "Arancione", "image": "/clio.jpeg", "display_group": "clio-4-arancione", "specs": {"power": "90Cv", "seats": "5 posti", "engine": "1.5L Diesel"}}'::jsonb),
+   '{"pricing": {"daily": 29.90, "weekly": 149, "monthly": 599}, "color": "Arancione", "image": "/clio4a.jpeg", "display_group": "clio-4-arancione", "specs": {"power": "90Cv", "seats": "5 posti", "engine": "1.5L Diesel"}}'::jsonb),
   ('Renault Clio 4 (Arancione)', 'TARGA_CLIO_ARANCIONE_2', 'available', 29.90, 'urban',
-   '{"pricing": {"daily": 29.90, "weekly": 149, "monthly": 599}, "color": "Arancione", "image": "/clio.jpeg", "display_group": "clio-4-arancione", "specs": {"power": "90Cv", "seats": "5 posti", "engine": "1.5L Diesel"}}'::jsonb)
+   '{"pricing": {"daily": 29.90, "weekly": 149, "monthly": 599}, "color": "Arancione", "image": "/clio4a.jpeg", "display_group": "clio-4-arancione", "specs": {"power": "90Cv", "seats": "5 posti", "engine": "1.5L Diesel"}}'::jsonb)
 ON CONFLICT (display_name, plate) DO NOTHING;
 
 -- 3. Renault Clio 4 Blu (2x)

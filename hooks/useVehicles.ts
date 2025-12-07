@@ -49,6 +49,7 @@ const getVehicleImage = (name: string): string => {
   if (lowerName.includes('m4')) return '/bmw-m4.jpeg';
   if (lowerName.includes('ducato')) return '/ducato.jpeg';
   if (lowerName.includes('208')) return '/208.jpeg';
+  if (lowerName.includes('clio') && lowerName.includes('arancio')) return '/clio4a.jpeg';
 
   // Default image
   return '/default-car.jpeg';
