@@ -16,7 +16,7 @@ import {
   isPremiumVehicle,
   isDucatoVehicle
 } from '../../data/kmPricingData';
-import { checkVehicleAvailability, checkVehiclePartialUnavailability } from '../../utils/bookingValidation';
+import { checkVehicleAvailability, checkVehiclePartialUnavailability, checkGroupedVehicleAvailability } from '../../utils/bookingValidation';
 
 const FUNCTIONS_BASE =
   import.meta.env.VITE_FUNCTIONS_BASE ??
@@ -187,6 +187,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
   const [partialUnavailabilityWarning, setPartialUnavailabilityWarning] = useState<string | null>(null);
+  const [availableVehicleName, setAvailableVehicleName] = useState<string | null>(null);
 
   // Stripe
   const cardElementRef = useRef<HTMLDivElement>(null);
@@ -340,7 +341,32 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         const pickupDateTime = `${formData.pickupDate}T${formData.pickupTime}:00`;
         const dropoffDateTime = `${formData.returnDate}T${formData.returnTime}:00`;
 
-        const conflicts = await checkVehicleAvailability(item.name, pickupDateTime, dropoffDateTime);
+        // Check if this is a grouped vehicle (multiple vehicles displayed as one)
+        const isGroupedVehicle = item.displayNames && item.displayNames.length > 1;
+        let conflicts: any[] = [];
+        let availableVehicle: string | undefined;
+
+        if (isGroupedVehicle) {
+          // Check availability for all vehicles in the group
+          const groupResult = await checkGroupedVehicleAvailability(
+            item.displayNames!,
+            pickupDateTime,
+            dropoffDateTime
+          );
+
+          if (groupResult.isAvailable) {
+            // Store the available vehicle name for booking creation
+            availableVehicle = groupResult.availableVehicleName;
+            setAvailableVehicleName(availableVehicle || null);
+            conflicts = [];
+          } else {
+            conflicts = groupResult.conflicts || [];
+          }
+        } else {
+          // Regular single vehicle check
+          conflicts = await checkVehicleAvailability(item.name, pickupDateTime, dropoffDateTime);
+          setAvailableVehicleName(null); // Clear any previous grouped vehicle selection
+        }
 
         if (conflicts.length > 0) {
           const conflict = conflicts[0];
@@ -374,8 +400,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
           }
         } else {
           // Check for partial-day unavailability (e.g., at mechanic for a few hours)
+          const vehicleNameToCheck = availableVehicle || item.name;
           const partialInfo = await checkVehiclePartialUnavailability(
-            item.name,
+            vehicleNameToCheck,
             formData.pickupDate,
             formData.pickupTime
           );
@@ -910,7 +937,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   const bookingData = {
   user_id: user.id,
   vehicle_type: item.type || 'car',
-  vehicle_name: item.name,
+  vehicle_name: availableVehicleName || item.name, // Use specific vehicle from group if available
   vehicle_image_url: item.image,
   pickup_date: pickupDateTime.toISOString(),
   dropoff_date: dropoffDateTime.toISOString(),

@@ -17,6 +17,38 @@ export interface VehicleUnavailabilityInfo {
 }
 
 /**
+ * Check if any vehicle in a group is available for the requested dates
+ * @param vehicleNames - Array of vehicle names to check (for grouped vehicles)
+ * @param pickupDate - Requested pickup date (ISO string)
+ * @param dropoffDate - Requested dropoff date (ISO string)
+ * @returns Object with availability info and first available vehicle name
+ */
+export async function checkGroupedVehicleAvailability(
+  vehicleNames: string[],
+  pickupDate: string,
+  dropoffDate: string
+): Promise<{ isAvailable: boolean; availableVehicleName?: string; conflicts?: BookingConflict[] }> {
+  try {
+    // Check availability for each vehicle in the group
+    for (const vehicleName of vehicleNames) {
+      const conflicts = await checkVehicleAvailability(vehicleName, pickupDate, dropoffDate);
+      if (conflicts.length === 0) {
+        // This vehicle is available
+        return { isAvailable: true, availableVehicleName: vehicleName };
+      }
+    }
+
+    // No vehicles in the group are available
+    // Return conflicts from the first vehicle as reference
+    const firstVehicleConflicts = await checkVehicleAvailability(vehicleNames[0], pickupDate, dropoffDate);
+    return { isAvailable: false, conflicts: firstVehicleConflicts };
+  } catch (error) {
+    console.error('Error checking grouped vehicle availability:', error);
+    throw error;
+  }
+}
+
+/**
  * Check if a vehicle is available for the requested dates
  * Also enforces 1h30 buffer between bookings
  * @param vehicleName - Name of the vehicle to check
