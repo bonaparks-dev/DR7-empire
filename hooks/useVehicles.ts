@@ -154,7 +154,8 @@ const getVehicleSpecs = (name: string) => {
 // Transform database vehicle to expected format
 const transformVehicle = (vehicle: Vehicle): TransformedVehicle => {
   const isAvailable = vehicle.status === 'available';
-  const specs = getVehicleSpecs(vehicle.display_name);
+  // Use metadata.specs if available, otherwise use getVehicleSpecs
+  const specs = vehicle.metadata?.specs || getVehicleSpecs(vehicle.display_name);
 
   // Convert specs object to array format expected by the UI
   const specsArray: any[] = [];
@@ -199,10 +200,13 @@ const transformVehicle = (vehicle: Vehicle): TransformedVehicle => {
     });
   }
 
+  // Use metadata.image if available, otherwise fallback to getVehicleImage
+  const vehicleImage = vehicle.metadata?.image || getVehicleImage(vehicle.display_name);
+
   return {
     id: `car-${vehicle.id}`,
     name: vehicle.display_name,
-    image: getVehicleImage(vehicle.display_name),
+    image: vehicleImage,
     available: isAvailable,
     pricePerDay: vehicle.daily_rate ? {
       usd: Math.round(vehicle.daily_rate * EUR_TO_USD_RATE),
