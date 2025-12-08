@@ -153,23 +153,18 @@ const CommercialOperationPage: React.FC = () => {
 
                 setEmail(existingClient.email || user.email || '');
                 setPhoneNumber(existingClient.telefono || '');
-            } else {
-                // No existing client data - still go directly to payment modal, but let them fill it in
-                // Pre-fill email from auth if available
-                setEmail(user.email || '');
-                setFullName('');
-                setPhoneNumber('');
-                setClientId(null); // No client ID yet
-                setCustomerExtendedData(null);
-            }
 
-            // ALWAYS go directly to payment modal for logged in users
-            setShowConfirmModal(true);
+                // Go directly to payment
+                setShowConfirmModal(true);
+            } else {
+                // No existing client data - show NewClientModal to collect detailed information
+                setShowClientModal(true);
+            }
 
         } catch (err) {
             console.error('Error in handleBuyClick:', err);
-            // On error, still try to let them pay
-            setShowConfirmModal(true);
+            // On error, show client modal to be safe/fallback
+            setShowClientModal(true);
         }
     };
 

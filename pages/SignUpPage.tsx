@@ -7,29 +7,29 @@ import { supabase } from '../supabaseClient';
 import DocumentUploadModal from '../components/ui/DocumentUploadModal';
 
 const PasswordStrengthMeter: React.FC<{ password?: string }> = ({ password = '' }) => {
-    const { t } = useTranslation();
-    const getStrength = () => {
-        let score = 0;
-        if (password.length > 7) score++;
-        if (password.match(/[a-z]/)) score++;
-        if (password.match(/[A-Z]/)) score++;
-        if (password.match(/[0-9]/)) score++;
-        if (password.match(/[^a-zA-Z0-9]/)) score++;
-        return score;
-    };
+  const { t } = useTranslation();
+  const getStrength = () => {
+    let score = 0;
+    if (password.length > 7) score++;
+    if (password.match(/[a-z]/)) score++;
+    if (password.match(/[A-Z]/)) score++;
+    if (password.match(/[0-9]/)) score++;
+    if (password.match(/[^a-zA-Z0-9]/)) score++;
+    return score;
+  };
 
-    const strength = getStrength();
-    const strengthText = [t('Password_is_too_weak'), t('Password_Strength_Weak'), t('Password_Strength_Medium'), t('Password_Strength_Good'), t('Password_Strength_Strong')];
-    const strengthColor = ['bg-red-500', 'bg-red-500', 'bg-yellow-500', 'bg-blue-500', 'bg-green-500'];
+  const strength = getStrength();
+  const strengthText = [t('Password_is_too_weak'), t('Password_Strength_Weak'), t('Password_Strength_Medium'), t('Password_Strength_Good'), t('Password_Strength_Strong')];
+  const strengthColor = ['bg-red-500', 'bg-red-500', 'bg-yellow-500', 'bg-blue-500', 'bg-green-500'];
 
-    return (
-        <div className="flex items-center mt-2">
-            <div className="w-full bg-gray-700 rounded-full h-2 mr-3">
-                <div className={`h-2 rounded-full ${strengthColor[strength]}`} style={{ width: `${(strength / 5) * 100}%` }}></div>
-            </div>
-            <span className="text-xs text-gray-400">{strengthText[strength]}</span>
-        </div>
-    );
+  return (
+    <div className="flex items-center mt-2">
+      <div className="w-full bg-gray-700 rounded-full h-2 mr-3">
+        <div className={`h-2 rounded-full ${strengthColor[strength]}`} style={{ width: `${(strength / 5) * 100}%` }}></div>
+      </div>
+      <span className="text-xs text-gray-400">{strengthText[strength]}</span>
+    </div>
+  );
 };
 
 const SignUpPage: React.FC = () => {
@@ -46,18 +46,36 @@ const SignUpPage: React.FC = () => {
     // Azienda fields
     denominazione: '',
     partitaIVA: '',
+    sedeOperativa: '',
+    codiceSDI: '',
+    rappresentanteNome: '',
+    rappresentanteCognome: '',
+    rappresentanteCF: '',
+    rappresentanteRuolo: '',
+    documentoTipo: '',
+    documentoNumero: '',
+    documentoDataRilascio: '',
+    documentoLuogoRilascio: '',
     // Persona Fisica fields
     nome: '',
     cognome: '',
     telefono: '',
     email: '',
     pec: '',
+    sesso: '',
     dataNascita: '',
-    luogoNascita: '',
+    cittaNascita: '',
+    provinciaNascita: '',
+    luogoNascita: '', // keeping for backward compat if needed, but cittaNascita is preferred
     numeroCivico: '',
     codicePostale: '',
     cittaResidenza: '',
     provinciaResidenza: '',
+    tipoPatente: '',
+    numeroPatente: '',
+    patenteEmessaDa: '',
+    patenteDataRilascio: '',
+    patenteScadenza: '',
     // Pubblica Amministrazione fields
     codiceUnivoco: '',
     enteUfficio: '',
@@ -138,6 +156,18 @@ const SignUpPage: React.FC = () => {
         } else if (!validateItalianPhone(formData.telefono)) {
           newErrors.telefono = 'Formato telefono non valido';
         }
+
+        // Legal Representative Validations
+        if (!formData.rappresentanteNome) newErrors.rappresentanteNome = 'Nome rappresentante è obbligatorio';
+        if (!formData.rappresentanteCognome) newErrors.rappresentanteCognome = 'Cognome rappresentante è obbligatorio';
+        if (!formData.rappresentanteCF) newErrors.rappresentanteCF = 'CF rappresentante è obbligatorio';
+        if (!formData.rappresentanteRuolo) newErrors.rappresentanteRuolo = 'Ruolo rappresentante è obbligatorio';
+
+        // Document Validations
+        if (!formData.documentoTipo) newErrors.documentoTipo = 'Tipo documento è obbligatorio';
+        if (!formData.documentoNumero) newErrors.documentoNumero = 'Numero documento è obbligatorio';
+        if (!formData.documentoDataRilascio) newErrors.documentoDataRilascio = 'Data rilascio documento è obbligatoria';
+        if (!formData.documentoLuogoRilascio) newErrors.documentoLuogoRilascio = 'Luogo rilascio documento è obbligatorio';
       }
 
       // Persona Fisica specific
@@ -158,6 +188,17 @@ const SignUpPage: React.FC = () => {
         if (!formData.cittaResidenza) newErrors.cittaResidenza = 'Città è obbligatoria';
         if (!formData.codicePostale) newErrors.codicePostale = 'CAP è obbligatorio';
         if (!formData.provinciaResidenza) newErrors.provinciaResidenza = 'Provincia è obbligatoria';
+
+        if (!formData.sesso) newErrors.sesso = 'Sesso è obbligatorio';
+        if (!formData.dataNascita) newErrors.dataNascita = 'Data di nascita è obbligatoria';
+        if (!formData.cittaNascita) newErrors.cittaNascita = 'Città di nascita è obbligatoria';
+
+        // License Validations
+        if (!formData.tipoPatente) newErrors.tipoPatente = 'Tipo patente è obbligatorio';
+        if (!formData.numeroPatente) newErrors.numeroPatente = 'Numero patente è obbligatorio';
+        if (!formData.patenteEmessaDa) newErrors.patenteEmessaDa = 'Ente emissione patente è obbligatorio';
+        if (!formData.patenteDataRilascio) newErrors.patenteDataRilascio = 'Data rilascio patente è obbligatoria';
+        if (!formData.patenteScadenza) newErrors.patenteScadenza = 'Scadenza patente è obbligatoria';
       }
 
       // Pubblica Amministrazione specific
@@ -216,18 +257,47 @@ const SignUpPage: React.FC = () => {
         customerData.partita_iva = formData.partitaIVA;
         customerData.email = formData.email;
         customerData.telefono = formData.telefono;
+        if (formData.sedeOperativa) customerData.sede_operativa = formData.sedeOperativa;
+        if (formData.codiceSDI) customerData.codice_destinatario = formData.codiceSDI;
+
+        // Legal Rep & Doc Metadata
+        customerData.rappresentante_nome = formData.rappresentanteNome;
+        customerData.rappresentante_cognome = formData.rappresentanteCognome;
+        customerData.rappresentante_cf = formData.rappresentanteCF;
+        customerData.rappresentante_ruolo = formData.rappresentanteRuolo;
+
+        customerData.metadata = {
+          documento_tipo: formData.documentoTipo,
+          documento_numero: formData.documentoNumero,
+          documento_data_rilascio: formData.documentoDataRilascio,
+          documento_luogo_rilascio: formData.documentoLuogoRilascio
+        };
+
       } else if (tipoCliente === 'persona_fisica') {
         customerData.nome = formData.nome;
         customerData.cognome = formData.cognome;
         customerData.telefono = formData.telefono;
         customerData.email = formData.email;
         if (formData.pec) customerData.pec = formData.pec;
-        if (formData.dataNascita) customerData.data_nascita = formData.dataNascita;
-        if (formData.luogoNascita) customerData.luogo_nascita = formData.luogoNascita;
+
+        customerData.sesso = formData.sesso;
+        customerData.data_nascita = formData.dataNascita;
+        customerData.citta_nascita = formData.cittaNascita;
+        if (formData.provinciaNascita) customerData.provincia_nascita = formData.provinciaNascita;
+
         if (formData.numeroCivico) customerData.numero_civico = formData.numeroCivico;
         customerData.codice_postale = formData.codicePostale;
         customerData.citta_residenza = formData.cittaResidenza;
         customerData.provincia_residenza = formData.provinciaResidenza;
+
+        // License Metadata
+        customerData.metadata = {
+          tipo_patente: formData.tipoPatente,
+          numero_patente: formData.numeroPatente,
+          patente_emessa_da: formData.patenteEmessaDa,
+          patente_data_rilascio: formData.patenteDataRilascio,
+          patente_scadenza: formData.patenteScadenza
+        };
       } else if (tipoCliente === 'pubblica_amministrazione') {
         customerData.codice_univoco = formData.codiceUnivoco;
         customerData.ente_ufficio = formData.enteUfficio;
@@ -373,7 +443,7 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Indirizzo <span className="text-red-500">*</span>
+                      Sede Legale <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -389,7 +459,36 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Email <span className="text-red-500">*</span>
+                      Sede Operativa (se diversa)
+                    </label>
+                    <input
+                      type="text"
+                      name="sedeOperativa"
+                      value={formData.sedeOperativa}
+                      onChange={handleChange}
+                      placeholder="Via, Numero Civico, CAP, Città"
+                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Codice SDI / Destinatario
+                    </label>
+                    <input
+                      type="text"
+                      name="codiceSDI"
+                      value={formData.codiceSDI}
+                      onChange={handleChange}
+                      placeholder="XXXXXXX"
+                      maxLength={7}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Email Aziendale <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="email"
@@ -405,7 +504,7 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Telefono <span className="text-red-500">*</span>
+                      Telefono Aziendale <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="tel"
@@ -417,6 +516,68 @@ const SignUpPage: React.FC = () => {
                       required
                     />
                     {errors.telefono && <p className="text-xs text-red-400 mt-1">{errors.telefono}</p>}
+                  </div>
+
+                  {/* Rappresentante Legale */}
+                  <div className="border-t border-gray-700 pt-4 mt-4">
+                    <h3 className="text-lg font-semibold text-white mb-3">Rappresentante Legale</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Nome <span className="text-red-500">*</span></label>
+                        <input type="text" name="rappresentanteNome" value={formData.rappresentanteNome} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" required />
+                        {errors.rappresentanteNome && <p className="text-xs text-red-400 mt-1">{errors.rappresentanteNome}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Cognome <span className="text-red-500">*</span></label>
+                        <input type="text" name="rappresentanteCognome" value={formData.rappresentanteCognome} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" required />
+                        {errors.rappresentanteCognome && <p className="text-xs text-red-400 mt-1">{errors.rappresentanteCognome}</p>}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Codice Fiscale <span className="text-red-500">*</span></label>
+                        <input type="text" name="rappresentanteCF" value={formData.rappresentanteCF} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase" maxLength={16} required />
+                        {errors.rappresentanteCF && <p className="text-xs text-red-400 mt-1">{errors.rappresentanteCF}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Ruolo <span className="text-red-500">*</span></label>
+                        <input type="text" name="rappresentanteRuolo" value={formData.rappresentanteRuolo} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" placeholder="Es. Amministratore" required />
+                        {errors.rappresentanteRuolo && <p className="text-xs text-red-400 mt-1">{errors.rappresentanteRuolo}</p>}
+                      </div>
+                    </div>
+
+                    {/* Documento Rappresentante */}
+                    <h4 className="text-md font-medium text-gray-300 mt-4 mb-2">Documento di Identità</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Tipo <span className="text-red-500">*</span></label>
+                        <select name="documentoTipo" value={formData.documentoTipo} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" required>
+                          <option value="">Seleziona...</option>
+                          <option value="Carta d'Identità">Carta d'Identità</option>
+                          <option value="Passaporto">Passaporto</option>
+                          <option value="Patente">Patente</option>
+                        </select>
+                        {errors.documentoTipo && <p className="text-xs text-red-400 mt-1">{errors.documentoTipo}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Numero <span className="text-red-500">*</span></label>
+                        <input type="text" name="documentoNumero" value={formData.documentoNumero} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" required />
+                        {errors.documentoNumero && <p className="text-xs text-red-400 mt-1">{errors.documentoNumero}</p>}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Data Rilascio <span className="text-red-500">*</span></label>
+                        <input type="date" name="documentoDataRilascio" value={formData.documentoDataRilascio} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" required />
+                        {errors.documentoDataRilascio && <p className="text-xs text-red-400 mt-1">{errors.documentoDataRilascio}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Luogo Rilascio <span className="text-red-500">*</span></label>
+                        <input type="text" name="documentoLuogoRilascio" value={formData.documentoLuogoRilascio} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" required />
+                        {errors.documentoLuogoRilascio && <p className="text-xs text-red-400 mt-1">{errors.documentoLuogoRilascio}</p>}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -500,7 +661,18 @@ const SignUpPage: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Data di Nascita
+                        Sesso <span className="text-red-500">*</span>
+                      </label>
+                      <select name="sesso" value={formData.sesso} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white">
+                        <option value="">Seleziona...</option>
+                        <option value="M">Maschio</option>
+                        <option value="F">Femmina</option>
+                      </select>
+                      {errors.sesso && <p className="text-xs text-red-400 mt-1">{errors.sesso}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Data di Nascita <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="date"
@@ -508,20 +680,38 @@ const SignUpPage: React.FC = () => {
                         value={formData.dataNascita}
                         onChange={handleChange}
                         className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                        required
                       />
+                      {errors.dataNascita && <p className="text-xs text-red-400 mt-1">{errors.dataNascita}</p>}
                     </div>
+                  </div>
 
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Luogo di Nascita
+                        Città di Nascita <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
-                        name="luogoNascita"
-                        value={formData.luogoNascita}
+                        name="cittaNascita"
+                        value={formData.cittaNascita}
                         onChange={handleChange}
-                        placeholder="Roma"
                         className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                        required
+                      />
+                      {errors.cittaNascita && <p className="text-xs text-red-400 mt-1">{errors.cittaNascita}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Provincia di Nascita
+                      </label>
+                      <input
+                        type="text"
+                        name="provinciaNascita"
+                        value={formData.provinciaNascita}
+                        onChange={handleChange}
+                        maxLength={2}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
                       />
                     </div>
                   </div>
@@ -610,7 +800,49 @@ const SignUpPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Patente Section */}
+                  <div className="border-t border-gray-700 pt-4 mt-4">
+                    <h3 className="text-lg font-semibold text-white mb-3">Patente di Guida</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Tipo <span className="text-red-500">*</span></label>
+                        <select name="tipoPatente" value={formData.tipoPatente} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" required>
+                          <option value="">Seleziona...</option>
+                          <option value="A">A - Motocicli</option>
+                          <option value="B">B - Autoveicoli</option>
+                          <option value="C">C - Autocarri</option>
+                          <option value="D">D - Autobus</option>
+                        </select>
+                        {errors.tipoPatente && <p className="text-xs text-red-400 mt-1">{errors.tipoPatente}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Numero <span className="text-red-500">*</span></label>
+                        <input type="text" name="numeroPatente" value={formData.numeroPatente} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase" required />
+                        {errors.numeroPatente && <p className="text-xs text-red-400 mt-1">{errors.numeroPatente}</p>}
+                      </div>
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Emessa da <span className="text-red-500">*</span></label>
+                      <input type="text" name="patenteEmessaDa" value={formData.patenteEmessaDa} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" placeholder="MIT UCO" required />
+                      {errors.patenteEmessaDa && <p className="text-xs text-red-400 mt-1">{errors.patenteEmessaDa}</p>}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Data Rilascio <span className="text-red-500">*</span></label>
+                        <input type="date" name="patenteDataRilascio" value={formData.patenteDataRilascio} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" required />
+                        {errors.patenteDataRilascio && <p className="text-xs text-red-400 mt-1">{errors.patenteDataRilascio}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Scadenza <span className="text-red-500">*</span></label>
+                        <input type="date" name="patenteScadenza" value={formData.patenteScadenza} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" required />
+                        {errors.patenteScadenza && <p className="text-xs text-red-400 mt-1">{errors.patenteScadenza}</p>}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mt-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         Email <span className="text-red-500">*</span>
