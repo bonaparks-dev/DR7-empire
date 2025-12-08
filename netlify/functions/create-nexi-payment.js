@@ -28,27 +28,10 @@ function generateMAC(params, macKey) {
  * Netlify Function to create Nexi XPay payment
  */
 exports.handler = async (event) => {
-  // Handle CORS preflight
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 204,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-      body: '',
-    };
-  }
-
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({ error: 'Method not allowed' }),
     };
   }
@@ -61,10 +44,6 @@ exports.handler = async (event) => {
     if (!amount || !currency || !orderId) {
       return {
         statusCode: 400,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ error: 'Missing required fields' }),
       };
     }
@@ -75,7 +54,10 @@ exports.handler = async (event) => {
       macKey: process.env.NEXI_MAC_KEY,
       merchantId: process.env.NEXI_MERCHANT_ID,
       environment: process.env.NEXI_ENVIRONMENT || 'sandbox',
-      apiKey: process.env.NEXI_API_KEY || '16681422', // Use NEXI_API_KEY from env
+      apiKey:
+        process.env.NEXI_ENVIRONMENT === 'production'
+          ? process.env.NEXI_API_KEY_PRODUCTION
+          : process.env.NEXI_API_KEY_SANDBOX,
     };
 
     // Validate configuration
@@ -83,10 +65,6 @@ exports.handler = async (event) => {
       console.error('Missing Nexi configuration');
       return {
         statusCode: 500,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ error: 'Nexi configuration error' }),
       };
     }
@@ -109,9 +87,9 @@ exports.handler = async (event) => {
       descrizione: description || 'Payment',
       mail: customerEmail || '',
       languageId: 'ITA',
-      urlpost: `${siteUrl}/.netlify/functions/nexi-webhook`,
-      url: `${siteUrl}/commercial-operation/success`,
-      urlback: `${siteUrl}/commercial-operation`,
+      urlpost: `${siteUrl}/.netlify/functions/nexi-callback`,
+      url: `${siteUrl}/payment-success`,
+      urlback: `${siteUrl}/payment-cancel`,
     };
 
     // Generate MAC
@@ -129,7 +107,6 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       headers: {
-        'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -142,10 +119,6 @@ exports.handler = async (event) => {
     console.error('Nexi payment creation error:', error);
     return {
       statusCode: 500,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({
         error: 'Failed to create payment',
         message: error.message,
