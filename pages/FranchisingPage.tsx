@@ -39,7 +39,7 @@ const FranchisingPage: React.FC = () => {
 
                 {/* Main Stats - First Row */}
                 <div className="text-center mb-4">
-                    <h3 className="text-xl md:text-2xl font-bold text-white mb-2">🚀 In soli 18 mesi di attività</h3>
+                    <h3 className="text-xl md:text-2xl font-bold text-white mb-2">In soli 18 mesi di attività</h3>
                 </div>
 
                 <div className="space-y-3 text-gray-300 px-4">
@@ -54,7 +54,7 @@ const FranchisingPage: React.FC = () => {
                 </div>
 
                 <div className="text-center py-4">
-                    <p className="text-lg md:text-xl font-bold text-white mb-2">🔱</p>
+                    <p className="text-lg md:text-xl font-bold text-white mb-2"></p>
                     <p className="text-base md:text-lg text-gray-300">Il brand di lusso più riconosciuto d'Italia.</p>
                     <p className="text-sm text-gray-400 mt-2">Italia • Dubai Rent 7.0 S.p.A.</p>
                 </div>
@@ -144,7 +144,7 @@ const FranchisingPage: React.FC = () => {
 
                 {/* Contact Section */}
                 <div className="bg-gradient-to-br from-gray-900/80 to-black/80 border-2 border-gray-800 rounded-2xl p-6 md:p-8 text-center">
-                    <h3 className="text-xl md:text-2xl font-bold text-white mb-4">💼 Invia la tua candidatura</h3>
+                    <h3 className="text-xl md:text-2xl font-bold text-white mb-4">Invia la tua candidatura</h3>
                     <p className="text-sm md:text-base text-gray-300 mb-6">
                         e scopri come aprire la tua sede ufficiale DR7.
                     </p>
@@ -162,7 +162,7 @@ const FranchisingPage: React.FC = () => {
                 <div className="text-center py-8 border-t border-gray-800">
                     <p className="text-sm text-gray-300 mb-4">
                         -<br />
-                        &gt; "📩 Solo per veri imprenditori. Posti limitati per le nuove aperture 2025."
+                        &gt; "Solo per veri imprenditori. Posti limitati per le nuove aperture 2025."
                     </p>
                 </div>
             </div>
