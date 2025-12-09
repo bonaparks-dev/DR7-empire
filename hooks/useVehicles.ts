@@ -52,6 +52,9 @@ const getVehicleImage = (name: string): string => {
   if (lowerName.includes('clio') && lowerName.includes('arancio')) return '/clioa4.jpeg';
   if (lowerName.includes('clio') && lowerName.includes('blu')) return '/clio4b.jpeg';
   if (lowerName.includes('c3')) return '/c3.jpeg';
+  if (lowerName.includes('panda') && (lowerName.includes('bianca') || lowerName.includes('white'))) return '/panda2.jpeg';
+  if (lowerName.includes('panda') && (lowerName.includes('aranci') || lowerName.includes('orange'))) return '/panda3.jpeg';
+  if (lowerName.includes('panda')) return '/panda1.jpeg';
 
   // Default image
   return '/default-car.jpeg';
@@ -259,8 +262,12 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
 
         transformedVehicles.forEach((vehicle, index) => {
           const originalVehicle = data?.[index];
-          // Key priority: Valid display_group -> display_name (trimmed)
-          const key = originalVehicle?.metadata?.display_group || vehicle.name.trim();
+
+          // Helper to normalize strings for grouping
+          const normalizeKey = (str: string) => str.toLowerCase().replace(/\s+/g, ' ').trim();
+
+          // Key priority: Valid display_group -> display_name (normalized)
+          const key = originalVehicle?.metadata?.display_group || normalizeKey(vehicle.name);
 
           if (!vehicleGroups.has(key)) {
             vehicleGroups.set(key, { members: [], originals: [] });
