@@ -251,45 +251,50 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
         // Transform vehicles to expected format
         const transformedVehicles = (data || []).map(transformVehicle);
 
-        // Group vehicles by display_group if they have one in metadata
-        const groupedVehicles: TransformedVehicle[] = [];
-        const processedGroups = new Set<string>();
-        const ungroupedVehicles: TransformedVehicle[] = [];
+        // Group vehicles by display_group if they have one, or display_name otherwise
+        const vehicleGroups = new Map<string, {
+          members: TransformedVehicle[];
+          originals: any[];
+        }>();
 
         transformedVehicles.forEach((vehicle, index) => {
           const originalVehicle = data?.[index];
-          const displayGroup = originalVehicle?.metadata?.display_group;
+          // Key priority: Valid display_group -> display_name (trimmed)
+          const key = originalVehicle?.metadata?.display_group || vehicle.name.trim();
 
-          if (displayGroup && !processedGroups.has(displayGroup)) {
-            // Find all vehicles in this group
-            const groupMembers = transformedVehicles.filter((v, i) => {
-              return data?.[i]?.metadata?.display_group === displayGroup;
-            });
-
-            // Get original vehicle data for all group members
-            const groupOriginalVehicles = (data || []).filter(v => v.metadata?.display_group === displayGroup);
-
-            // Create a merged vehicle representing the group
-            // Use the first vehicle's data but track all vehicle IDs
-            const mergedVehicle: TransformedVehicle = {
-              ...groupMembers[0],
-              vehicleIds: groupOriginalVehicles.map(v => v.id),
-              displayNames: groupOriginalVehicles.map(v => v.display_name),
-              // A group is available if ANY member is available
-              available: groupMembers.some(v => v.available)
-            };
-
-            groupedVehicles.push(mergedVehicle);
-            processedGroups.add(displayGroup);
-          } else if (!displayGroup) {
-            // Vehicle is not part of a group
-            ungroupedVehicles.push(vehicle);
+          if (!vehicleGroups.has(key)) {
+            vehicleGroups.set(key, { members: [], originals: [] });
           }
-          // Skip vehicles that are part of an already processed group
+          const group = vehicleGroups.get(key)!;
+          group.members.push(vehicle);
+          group.originals.push(originalVehicle);
         });
 
-        // Combine grouped and ungrouped vehicles
-        const finalVehicles = [...groupedVehicles, ...ungroupedVehicles];
+        const finalVehicles: TransformedVehicle[] = [];
+
+        vehicleGroups.forEach((group) => {
+          if (group.members.length === 1 && !group.originals[0]?.metadata?.display_group) {
+            // Single vehicle, no explicit group intent -> Render as is
+            finalVehicles.push(group.members[0]);
+          } else {
+            // Multiple vehicles OR explicit group -> Merge
+
+            // Find the first available member to serve as the "representative"
+            // This ensures that when the user books, they are booking an available car ID
+            const firstAvailable = group.members.find(m => m.available) || group.members[0];
+
+            // Create a merged vehicle representing the group
+            const mergedVehicle: TransformedVehicle = {
+              ...firstAvailable, // Use the available one's ID and details (image, name, etc)
+              vehicleIds: group.originals.map(v => v.id),
+              displayNames: group.originals.map(v => v.display_name),
+              // A group is available if ANY member is available
+              available: group.members.some(v => v.available)
+            };
+
+            finalVehicles.push(mergedVehicle);
+          }
+        });
 
         setVehicles(finalVehicles);
         setError(null);
