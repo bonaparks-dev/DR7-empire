@@ -14,6 +14,7 @@ const DISPLAY_TITLE: Record<string, string> = {
   'car-wash-services': 'DR7 Luxury Care Services',
   'mechanical-services': 'DR7 Rapid Response Services',
   membership: 'DR7 Exclusive Members Club',
+  'credit-wallet': 'DR7 Credit Wallet',
 };
 
 // Map category ids to image filenames in /public
@@ -27,6 +28,7 @@ const CATEGORY_IMAGE: Record<string, string> = {
   'car-wash-services': '/luxurywash.jpeg',
   'mechanical-services': '/rapids.jpeg',
   membership: '/exclusivemc.jpeg',
+  'credit-wallet': '/cwallet.jpeg',
 };
 
 // Hero video slides configuration

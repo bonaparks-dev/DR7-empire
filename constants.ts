@@ -147,14 +147,14 @@ const newCarsRawData = [
 ];
 
 const specMappings: Record<string, { label: { en: string; it: string }; icon: React.FC<{ className?: string }>; transform?: (val: string) => string }> = {
-    acceleration: { label: { en: '0-100km/h', it: '0-100km/h' }, icon: ZapIcon, transform: (val: string) => val.split(' in ')[1] || val },
-    power: { label: { en: 'Power', it: 'Potenza' }, icon: ZapIcon },
-    torque: { label: { en: 'Torque', it: 'Coppia' }, icon: CogIcon },
-    engine: { label: { en: 'Engine', it: 'Motore' }, icon: CogIcon },
-    maxSpeed: { label: { en: 'Max Speed', it: 'Velocità Max' }, icon: ZapIcon, transform: (val: string) => val.split(': ')[1] || val },
-    special: { label: { en: 'Special', it: 'Speciale' }, icon: StarIcon },
-    extras: { label: { en: 'Extras', it: 'Extra' }, icon: PlusIcon },
-    color: { label: { en: 'Color', it: 'Colore' }, icon: CarIcon }
+  acceleration: { label: { en: '0-100km/h', it: '0-100km/h' }, icon: ZapIcon, transform: (val: string) => val.split(' in ')[1] || val },
+  power: { label: { en: 'Power', it: 'Potenza' }, icon: ZapIcon },
+  torque: { label: { en: 'Torque', it: 'Coppia' }, icon: CogIcon },
+  engine: { label: { en: 'Engine', it: 'Motore' }, icon: CogIcon },
+  maxSpeed: { label: { en: 'Max Speed', it: 'Velocità Max' }, icon: ZapIcon, transform: (val: string) => val.split(': ')[1] || val },
+  special: { label: { en: 'Special', it: 'Speciale' }, icon: StarIcon },
+  extras: { label: { en: 'Extras', it: 'Extra' }, icon: PlusIcon },
+  color: { label: { en: 'Color', it: 'Colore' }, icon: CarIcon }
 };
 
 const EUR_TO_USD_RATE = 1.1;
@@ -235,115 +235,115 @@ const corporateFleetRawData = [
 ];
 
 const mappedCars = newCarsRawData.map(car => {
-    const specs: any[] = [];
-    if (car.specs) {
-        for (const [key, value] of Object.entries(car.specs)) {
-            const mapping = specMappings[key as keyof typeof specMappings];
-            if (mapping) {
-                specs.push({
-                    label: mapping.label,
-                    value: 'transform' in mapping && mapping.transform ? mapping.transform(value as string) : value,
-                    icon: mapping.icon
-                });
-            }
-        }
-    }
-    if ('color' in car && car.color) {
+  const specs: any[] = [];
+  if (car.specs) {
+    for (const [key, value] of Object.entries(car.specs)) {
+      const mapping = specMappings[key as keyof typeof specMappings];
+      if (mapping) {
         specs.push({
-            label: specMappings.color.label,
-            value: car.color,
-            icon: specMappings.color.icon
+          label: mapping.label,
+          value: 'transform' in mapping && mapping.transform ? mapping.transform(value as string) : value,
+          icon: mapping.icon
         });
+      }
     }
+  }
+  if ('color' in car && car.color) {
+    specs.push({
+      label: specMappings.color.label,
+      value: car.color,
+      icon: specMappings.color.icon
+    });
+  }
 
-    const isAvailable = car.available !== false;
-    return {
-        id: `car-${car.id}`,
-        name: car.name,
-        image: car.image,
-        available: isAvailable,
-        pricePerDay: isAvailable && car.dailyPrice ? {
-            usd: Math.round(car.dailyPrice * EUR_TO_USD_RATE),
-            eur: car.dailyPrice,
-            crypto: 0
-        } : undefined,
-        specs: specs
-    };
+  const isAvailable = car.available !== false;
+  return {
+    id: `car-${car.id}`,
+    name: car.name,
+    image: car.image,
+    available: isAvailable,
+    pricePerDay: isAvailable && car.dailyPrice ? {
+      usd: Math.round(car.dailyPrice * EUR_TO_USD_RATE),
+      eur: car.dailyPrice,
+      crypto: 0
+    } : undefined,
+    specs: specs
+  };
 });
 
 const mappedUrbanCars = urbanCarsRawData.map(car => {
-    const specs: any[] = [];
-    if (car.specs) {
-        for (const [key, value] of Object.entries(car.specs)) {
-            const mapping = specMappings[key as keyof typeof specMappings];
-            if (mapping) {
-                specs.push({
-                    label: mapping.label,
-                    value: 'transform' in mapping && mapping.transform ? mapping.transform(value as string) : value,
-                    icon: mapping.icon
-                });
-            }
-        }
+  const specs: any[] = [];
+  if (car.specs) {
+    for (const [key, value] of Object.entries(car.specs)) {
+      const mapping = specMappings[key as keyof typeof specMappings];
+      if (mapping) {
+        specs.push({
+          label: mapping.label,
+          value: 'transform' in mapping && mapping.transform ? mapping.transform(value as string) : value,
+          icon: mapping.icon
+        });
+      }
     }
+  }
 
-    const isAvailable = car.available !== false;
+  const isAvailable = car.available !== false;
 
-    return {
-        id: `urban-car-${car.id}`,
-        name: car.name,
-        image: car.image,
-        available: isAvailable,
-        pricePerDay: isAvailable && car.dailyPrice ? {
-            usd: Math.round(car.dailyPrice * EUR_TO_USD_RATE),
-            eur: car.dailyPrice,
-            crypto: 0
-        } : undefined,
-        specs: specs
-    };
+  return {
+    id: `urban-car-${car.id}`,
+    name: car.name,
+    image: car.image,
+    available: isAvailable,
+    pricePerDay: isAvailable && car.dailyPrice ? {
+      usd: Math.round(car.dailyPrice * EUR_TO_USD_RATE),
+      eur: car.dailyPrice,
+      crypto: 0
+    } : undefined,
+    specs: specs
+  };
 });
 
 const mappedCorporateFleet = corporateFleetRawData.map(car => {
-    const specs: any[] = [];
-    if (car.specs) {
-        for (const [key, value] of Object.entries(car.specs)) {
-            const mapping = specMappings[key as keyof typeof specMappings];
-            if (mapping) {
-                specs.push({
-                    label: mapping.label,
-                    value: 'transform' in mapping && mapping.transform ? mapping.transform(value as string) : value,
-                    icon: mapping.icon
-                });
-            }
-        }
+  const specs: any[] = [];
+  if (car.specs) {
+    for (const [key, value] of Object.entries(car.specs)) {
+      const mapping = specMappings[key as keyof typeof specMappings];
+      if (mapping) {
+        specs.push({
+          label: mapping.label,
+          value: 'transform' in mapping && mapping.transform ? mapping.transform(value as string) : value,
+          icon: mapping.icon
+        });
+      }
     }
+  }
 
-    const isAvailable = car.available !== false;
+  const isAvailable = car.available !== false;
 
-    return {
-        id: `corporate-fleet-${car.id}`,
-        name: car.name,
-        image: car.image,
-        available: isAvailable,
-        pricePerDay: isAvailable && car.dailyPrice ? {
-            usd: Math.round(car.dailyPrice * EUR_TO_USD_RATE),
-            eur: car.dailyPrice,
-            crypto: 0
-        } : undefined,
-        specs: specs
-    };
+  return {
+    id: `corporate-fleet-${car.id}`,
+    name: car.name,
+    image: car.image,
+    available: isAvailable,
+    pricePerDay: isAvailable && car.dailyPrice ? {
+      usd: Math.round(car.dailyPrice * EUR_TO_USD_RATE),
+      eur: car.dailyPrice,
+      crypto: 0
+    } : undefined,
+    specs: specs
+  };
 });
 
 
 const yachtSpecs = [
-    { label: { en: 'Guests', it: 'Ospiti' }, value: '12', icon: UsersIcon },
-    { label: { en: 'Length', it: 'Lunghezza' }, value: '70m', icon: AnchorIcon },
-    { label: { en: 'Cabins', it: 'Cabine' }, value: '6', icon: BedIcon },
+  { label: { en: 'Guests', it: 'Ospiti' }, value: '12', icon: UsersIcon },
+  { label: { en: 'Length', it: 'Lunghezza' }, value: '70m', icon: AnchorIcon },
+  { label: { en: 'Cabins', it: 'Cabine' }, value: '6', icon: BedIcon },
 ];
 
 const helicopterSpecs = [
-    { label: { en: 'Passengers', it: 'Passeggeri' }, value: '5', icon: UsersIcon },
-    { label: { en: 'Range', it: 'Autonomia' }, value: '300 nm', icon: PaperAirplaneIcon },
-    { label: { en: 'Speed', it: 'Velocità' }, value: '150 kt', icon: ZapIcon },
+  { label: { en: 'Passengers', it: 'Passeggeri' }, value: '5', icon: UsersIcon },
+  { label: { en: 'Range', it: 'Autonomia' }, value: '300 nm', icon: PaperAirplaneIcon },
+  { label: { en: 'Speed', it: 'Velocità' }, value: '150 kt', icon: ZapIcon },
 ];
 
 export const RENTAL_CATEGORIES: RentalCategory[] = [
@@ -425,6 +425,12 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
     label: { en: 'DR7 Exclusive Members Club', it: 'DR7 Exclusive Members Club' },
     data: [],
     icon: CrownIcon,
+  },
+  {
+    id: 'credit-wallet',
+    label: { en: 'DR7 Credit Wallet', it: 'DR7 Credit Wallet' },
+    data: [],
+    icon: CreditCardIcon,
   },
 ];
 
@@ -540,52 +546,52 @@ export const COMMERCIAL_OPERATION_GIVEAWAY: CommercialOperation = {
 };
 
 export const PICKUP_LOCATIONS = [
-    { id: 'cagliari_airport', label: { en: 'Cagliari Elmas Airport', it: 'Aeroporto di Cagliari Elmas' } },
-    { id: 'dr7_office', label: { en: 'DR7 Office Cagliari', it: 'Ufficio DR7 Cagliari' } },
+  { id: 'cagliari_airport', label: { en: 'Cagliari Elmas Airport', it: 'Aeroporto di Cagliari Elmas' } },
+  { id: 'dr7_office', label: { en: 'DR7 Office Cagliari', it: 'Ufficio DR7 Cagliari' } },
 ];
 
 export const INSURANCE_OPTIONS = [
-    { id: 'KASKO_BASE', label: { en: 'KASKO BASE', it: 'KASKO BASE' }, description: { en: 'Standard liability coverage.', it: 'Copertura di responsabilità standard.' }, pricePerDay: { usd: 110, eur: 100, crypto: 0 } },
-    { id: 'KASKO_BLACK', label: { en: 'KASKO BLACK', it: 'KASKO BLACK' }, description: { en: 'Reduced excess and windscreen cover.', it: 'Franchigia ridotta e copertura parabrezza.' }, pricePerDay: { usd: 165, eur: 150, crypto: 0 } },
-    { id: 'KASKO_SIGNATURE', label: { en: 'KASKO SIGNATURE', it: 'KASKO SIGNATURE' }, description: { en: 'Zero excess. Complete peace of mind.', it: 'Zero franchigia. Massima tranquillità.' }, pricePerDay: { usd: 220, eur: 200, crypto: 0 } },
+  { id: 'KASKO_BASE', label: { en: 'KASKO BASE', it: 'KASKO BASE' }, description: { en: 'Standard liability coverage.', it: 'Copertura di responsabilità standard.' }, pricePerDay: { usd: 110, eur: 100, crypto: 0 } },
+  { id: 'KASKO_BLACK', label: { en: 'KASKO BLACK', it: 'KASKO BLACK' }, description: { en: 'Reduced excess and windscreen cover.', it: 'Franchigia ridotta e copertura parabrezza.' }, pricePerDay: { usd: 165, eur: 150, crypto: 0 } },
+  { id: 'KASKO_SIGNATURE', label: { en: 'KASKO SIGNATURE', it: 'KASKO SIGNATURE' }, description: { en: 'Zero excess. Complete peace of mind.', it: 'Zero franchigia. Massima tranquillità.' }, pricePerDay: { usd: 220, eur: 200, crypto: 0 } },
 ];
 
 export const URBAN_INSURANCE_OPTIONS = [
-    { id: 'KASKO_BASE', label: { en: 'KASKO BASE', it: 'KASKO BASE' }, description: { en: 'Base coverage with deductible and damage percentage.', it: 'Copertura base con franchigia e percentuale sul danno.' }, pricePerDay: { usd: 0, eur: 0, crypto: 0 } },
-    { id: 'KASKO_BLACK', label: { en: 'KASKO BLACK', it: 'KASKO BLACK' }, description: { en: 'Intermediate coverage with fixed deductible.', it: 'Copertura intermedia con franchigia fissa.' }, pricePerDay: { usd: 6, eur: 5, crypto: 0 } },
-    { id: 'KASKO_SIGNATURE', label: { en: 'KASKO SIGNATURE', it: 'KASKO SIGNATURE' }, description: { en: 'Top-tier coverage with reduced deductible.', it: 'Copertura top di gamma con franchigia ridotta.' }, pricePerDay: { usd: 28, eur: 25, crypto: 0 } },
+  { id: 'KASKO_BASE', label: { en: 'KASKO BASE', it: 'KASKO BASE' }, description: { en: 'Base coverage with deductible and damage percentage.', it: 'Copertura base con franchigia e percentuale sul danno.' }, pricePerDay: { usd: 0, eur: 0, crypto: 0 } },
+  { id: 'KASKO_BLACK', label: { en: 'KASKO BLACK', it: 'KASKO BLACK' }, description: { en: 'Intermediate coverage with fixed deductible.', it: 'Copertura intermedia con franchigia fissa.' }, pricePerDay: { usd: 6, eur: 5, crypto: 0 } },
+  { id: 'KASKO_SIGNATURE', label: { en: 'KASKO SIGNATURE', it: 'KASKO SIGNATURE' }, description: { en: 'Top-tier coverage with reduced deductible.', it: 'Copertura top di gamma con franchigia ridotta.' }, pricePerDay: { usd: 28, eur: 25, crypto: 0 } },
 ];
 
 export const RENTAL_EXTRAS = [
-    { id: 'additional_driver', label: { en: 'Additional Driver', it: 'Guidatore Aggiuntivo' }, pricePerDay: { usd: 13, eur: 10, crypto: 0 } },
-    { id: 'young_driver_fee', label: { en: 'Young Driver Fee (Under 25)', it: 'Supplemento Giovane Conducente (Sotto 25)' }, pricePerDay: { usd: 11, eur: 10, crypto: 0 }, autoApply: true },
-    { id: 'mobility_service', label: { en: 'Mobility Service', it: 'Servizio Mobilità' }, pricePerDay: { usd: 7.14, eur: 7.00, crypto: 0 }, description: { en: 'Assistance in case of user-caused errors preventing the trip (empty tank, dead battery, lost or locked key)', it: 'Assistenza in caso di errori causati dall\'utente che impediscono il viaggio (serbatoio vuoto, batteria scarica, chiave persa o bloccata)' } },
-    { id: 'accident_insurance', label: { en: 'Driver & Passenger Accident Insurance', it: 'Assicurazione Infortuni Conducente e Passeggeri' }, pricePerDay: { usd: 10.42, eur: 9.00, crypto: 0 }, description: { en: 'Financial coverage in case of disability, injury, or death for the driver and passengers', it: 'Copertura finanziaria in caso di invalidità, infortunio o decesso per conducente e passeggeri' } },
-    { id: 'refueling_service', label: { en: 'Refueling Service', it: 'Servizio Rifornimento' }, pricePerDay: { usd: 24.20, eur: 22.00, crypto: 0 }, oneTime: true, description: { en: 'DR7 handles refueling or electric charging upon return (charged at current rates)', it: 'DR7 gestisce il rifornimento o la ricarica elettrica al ritorno (addebitato alle tariffe correnti)' } },
-    { id: 'infant_seat', label: { en: 'Infant Seat', it: 'Seggiolino Neonato' }, pricePerDay: { usd: 27.23, eur: 24.00, crypto: 0 }, description: { en: 'Suitable for infants and small children up to 4 years old (40–105 cm), rear-facing only', it: 'Adatto per neonati e bambini piccoli fino a 4 anni (40-105 cm), solo rivolto all\'indietro' } },
-    { id: 'child_seat', label: { en: 'Child Seat', it: 'Seggiolino Bambino' }, pricePerDay: { usd: 27.23, eur: 24.00, crypto: 0 }, description: { en: 'For children aged 15 months – 12 years (67–150 cm)', it: 'Per bambini dai 15 mesi ai 12 anni (67-150 cm)' } },
-    { id: 'booster_seat', label: { en: 'Booster Seat', it: 'Rialzo' }, pricePerDay: { usd: 10.18, eur: 9.00, crypto: 0 }, description: { en: 'For children aged 8 – 12 years (135–150 cm)', it: 'Per bambini dagli 8 ai 12 anni (135-150 cm)' } },
+  { id: 'additional_driver', label: { en: 'Additional Driver', it: 'Guidatore Aggiuntivo' }, pricePerDay: { usd: 13, eur: 10, crypto: 0 } },
+  { id: 'young_driver_fee', label: { en: 'Young Driver Fee (Under 25)', it: 'Supplemento Giovane Conducente (Sotto 25)' }, pricePerDay: { usd: 11, eur: 10, crypto: 0 }, autoApply: true },
+  { id: 'mobility_service', label: { en: 'Mobility Service', it: 'Servizio Mobilità' }, pricePerDay: { usd: 7.14, eur: 7.00, crypto: 0 }, description: { en: 'Assistance in case of user-caused errors preventing the trip (empty tank, dead battery, lost or locked key)', it: 'Assistenza in caso di errori causati dall\'utente che impediscono il viaggio (serbatoio vuoto, batteria scarica, chiave persa o bloccata)' } },
+  { id: 'accident_insurance', label: { en: 'Driver & Passenger Accident Insurance', it: 'Assicurazione Infortuni Conducente e Passeggeri' }, pricePerDay: { usd: 10.42, eur: 9.00, crypto: 0 }, description: { en: 'Financial coverage in case of disability, injury, or death for the driver and passengers', it: 'Copertura finanziaria in caso di invalidità, infortunio o decesso per conducente e passeggeri' } },
+  { id: 'refueling_service', label: { en: 'Refueling Service', it: 'Servizio Rifornimento' }, pricePerDay: { usd: 24.20, eur: 22.00, crypto: 0 }, oneTime: true, description: { en: 'DR7 handles refueling or electric charging upon return (charged at current rates)', it: 'DR7 gestisce il rifornimento o la ricarica elettrica al ritorno (addebitato alle tariffe correnti)' } },
+  { id: 'infant_seat', label: { en: 'Infant Seat', it: 'Seggiolino Neonato' }, pricePerDay: { usd: 27.23, eur: 24.00, crypto: 0 }, description: { en: 'Suitable for infants and small children up to 4 years old (40–105 cm), rear-facing only', it: 'Adatto per neonati e bambini piccoli fino a 4 anni (40-105 cm), solo rivolto all\'indietro' } },
+  { id: 'child_seat', label: { en: 'Child Seat', it: 'Seggiolino Bambino' }, pricePerDay: { usd: 27.23, eur: 24.00, crypto: 0 }, description: { en: 'For children aged 15 months – 12 years (67–150 cm)', it: 'Per bambini dai 15 mesi ai 12 anni (67-150 cm)' } },
+  { id: 'booster_seat', label: { en: 'Booster Seat', it: 'Rialzo' }, pricePerDay: { usd: 10.18, eur: 9.00, crypto: 0 }, description: { en: 'For children aged 8 – 12 years (135–150 cm)', it: 'Per bambini dagli 8 ai 12 anni (135-150 cm)' } },
 ];
 
 export const COUNTRIES = [
-    { code: 'IT', name: 'Italy' }, { code: 'US', name: 'United States' }, { code: 'GB', name: 'United Kingdom' }, { code: 'DE', name: 'Germany' }, { code: 'FR', name: 'France' },  { code: 'FR', name: 'Altri' },
+  { code: 'IT', name: 'Italy' }, { code: 'US', name: 'United States' }, { code: 'GB', name: 'United Kingdom' }, { code: 'DE', name: 'Germany' }, { code: 'FR', name: 'France' }, { code: 'FR', name: 'Altri' },
 ];
 
 export const INSURANCE_ELIGIBILITY = {
-    KASKO_BASE: { minAge: 20, minLicenseYears: 2 },
-    KASKO_BLACK: { minAge: 25, minLicenseYears: 5 },
-    KASKO_SIGNATURE: { minAge: 30, minLicenseYears: 10 },
+  KASKO_BASE: { minAge: 20, minLicenseYears: 2 },
+  KASKO_BLACK: { minAge: 25, minLicenseYears: 5 },
+  KASKO_SIGNATURE: { minAge: 30, minLicenseYears: 10 },
 };
 
 export const URBAN_INSURANCE_ELIGIBILITY = {
-    KASKO_BASE: { minAge: 18, minLicenseYears: 3 },
-    KASKO_BLACK: { minAge: 25, minLicenseYears: 5 },
-    KASKO_SIGNATURE: { minAge: 30, minLicenseYears: 10 },
+  KASKO_BASE: { minAge: 18, minLicenseYears: 3 },
+  KASKO_BLACK: { minAge: 25, minLicenseYears: 5 },
+  KASKO_SIGNATURE: { minAge: 30, minLicenseYears: 10 },
 };
 
 export const VALIDATION_MESSAGES = {
-    en: { base: 'Based on your age and license history, only Basic Cover is available.' },
-    it: { base: 'In base alla tua età e anzianità di patente, è disponibile solo la Copertura Base.' }
+  en: { base: 'Based on your age and license history, only Basic Cover is available.' },
+  it: { base: 'In base alla tua età e anzianità di patente, è disponibile solo la Copertura Base.' }
 };
 
 export const AGE_BUCKETS = [
@@ -599,8 +605,8 @@ export const AGE_BUCKETS = [
 export const LICENSE_OBTENTION_YEAR_OPTIONS = Array.from({ length: 70 }, (_, i) => new Date().getFullYear() - i);
 
 export const YACHT_PICKUP_MARINAS = [
-    { id: 'marina_di_cagliari', label: { en: 'Marina di Cagliari', it: 'Marina di Cagliari' } },
-    { id: 'porto_cervo', label: { en: 'Marina di Porto Cervo', it: 'Marina di Porto Cervo' } },
+  { id: 'marina_di_cagliari', label: { en: 'Marina di Cagliari', it: 'Marina di Cagliari' } },
+  { id: 'porto_cervo', label: { en: 'Marina di Porto Cervo', it: 'Marina di Porto Cervo' } },
 ];
 
 export const AIRPORTS = [
@@ -616,19 +622,19 @@ export const AIRPORTS = [
 ];
 
 export const HELI_DEPARTURE_POINTS = [
-    { id: 'cagliari', name: 'Cagliari Heliport' },
-    { id: 'porto_cervo', name: 'Porto Cervo Heliport' },
-    { id: 'forte_village', name: 'Forte Village Resort' },
+  { id: 'cagliari', name: 'Cagliari Heliport' },
+  { id: 'porto_cervo', name: 'Porto Cervo Heliport' },
+  { id: 'forte_village', name: 'Forte Village Resort' },
 ];
 
 export const HELI_ARRIVAL_POINTS = [
-    ...HELI_DEPARTURE_POINTS,
-    { id: 'cala_di_volpe', name: 'Hotel Cala di Volpe' },
-    { id: 'villasimius', name: 'Villasimius Private Pad' },
+  ...HELI_DEPARTURE_POINTS,
+  { id: 'cala_di_volpe', name: 'Hotel Cala di Volpe' },
+  { id: 'villasimius', name: 'Villasimius Private Pad' },
 ];
 
 export const CRYPTO_ADDRESSES: Record<string, string> = {
-    btc: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
-    eth: '0x1234567890123456789012345678901234567890',
-    usdt: '0xabcdef1234567890abcdef1234567890abcdef12',
+  btc: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+  eth: '0x1234567890123456789012345678901234567890',
+  usdt: '0xabcdef1234567890abcdef1234567890abcdef12',
 };

@@ -49,10 +49,10 @@ export interface RentalItem {
 }
 
 export interface RentalCategory {
-    id: 'cars' | 'yachts' | 'villas' | 'jets' | 'helicopters';
-    label: { en: string, it: string };
-    data: RentalItem[];
-    icon: React.FC<{ className?: string }>;
+  id: 'cars' | 'yachts' | 'villas' | 'jets' | 'helicopters' | 'urban-cars' | 'corporate-fleet' | 'car-wash-services' | 'mechanical-services' | 'membership' | 'credit-wallet';
+  label: { en: string, it: string };
+  data: RentalItem[];
+  icon: React.FC<{ className?: string }>;
 }
 
 export interface MembershipTier {
@@ -62,9 +62,9 @@ export interface MembershipTier {
     monthly: { usd: number; eur: number; crypto: number };
     annually: { usd: number; eur: number; crypto: number };
   };
-  features: { 
-    en: (string | { icon: React.FC<{className?: string}>; text: string })[]; 
-    it: (string | { icon: React.FC<{className?: string}>; text: string })[]; 
+  features: {
+    en: (string | { icon: React.FC<{ className?: string }>; text: string })[];
+    it: (string | { icon: React.FC<{ className?: string }>; text: string })[];
   };
   isPopular?: boolean;
 }

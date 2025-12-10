@@ -119,17 +119,17 @@ const AnimatedRoutes = () => {
         <Route path="/admin/calendar" element={<AdminCalendarPage />} />
         <Route path="/admin/documents" element={<AdminDocumentsPage />} />
         {RENTAL_CATEGORIES
-          .filter(category => !['car-wash-services', 'mechanical-services', 'membership'].includes(category.id))
+          .filter(category => !['car-wash-services', 'mechanical-services', 'membership', 'credit-wallet'].includes(category.id))
           .map(category => (
             <Route
-                key={category.id}
-                path={`/${category.id}`}
-                element={<RentalPage categoryId={category.id} />}
+              key={category.id}
+              path={`/${category.id}`}
+              element={<RentalPage categoryId={category.id} />}
             />
-        ))}
-        <Route 
-            path="/book/:category/:itemId"
-            element={<ProtectedRoute><BookingPage /></ProtectedRoute>}
+          ))}
+        <Route
+          path="/book/:category/:itemId"
+          element={<ProtectedRoute><BookingPage /></ProtectedRoute>}
         />
         <Route path="/membership" element={<MembershipPage />} />
         <Route path="/membership/enroll/:tierId" element={
@@ -139,24 +139,24 @@ const AnimatedRoutes = () => {
         } />
         <Route path="/credit-wallet" element={<CreditWalletPage />} />
         <Route
-            path="/commercial-operation"
-            element={<CommercialOperationPage />}
-        />
-        <Route 
-            path="/win-rules"
-            element={<WinRulesPage />}
+          path="/commercial-operation"
+          element={<CommercialOperationPage />}
         />
         <Route
-            path="/legal-terms"
-            element={<LegalTermsPage />}
+          path="/win-rules"
+          element={<WinRulesPage />}
         />
         <Route
-            path="/cancellation-policy"
-            element={<CancellationPolicyPage />}
+          path="/legal-terms"
+          element={<LegalTermsPage />}
         />
         <Route
-            path="/commercial-operation/success"
-            element={<CommercialOperationSuccessPage />}
+          path="/cancellation-policy"
+          element={<CancellationPolicyPage />}
+        />
+        <Route
+          path="/commercial-operation/success"
+          element={<CommercialOperationSuccessPage />}
         />
         <Route path="/account" element={
           <ProtectedRoute role="personal">
@@ -216,17 +216,17 @@ const AnimatedRoutes = () => {
 };
 
 const PageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.5, ease: 'easeInOut' }}
-            className="min-h-screen"
-        >
-            {children}
-        </motion.div>
-    );
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.5, ease: 'easeInOut' }}
+      className="min-h-screen"
+    >
+      {children}
+    </motion.div>
+  );
 };
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
