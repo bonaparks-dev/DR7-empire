@@ -20,6 +20,7 @@ const DISPLAY_TITLE: Record<string, string> = {
 const CATEGORY_IMAGE: Record<string, string> = {
   cars: '/car.jpeg',
   'urban-cars': '/urbanc.jpeg',
+  'corporate-fleet': '/utili.jpeg',
   yachts: '/yacht.jpeg',
   villas: '/villa.jpeg',
   jets: '/privatejet.jpeg',
@@ -153,8 +154,8 @@ const HeroSection: React.FC = () => {
             key={slide.id}
             onClick={() => setActiveSlide(index)}
             className={`transition-all duration-500 ease-out ${index === activeSlide
-                ? 'w-2 h-2 bg-white rounded-full scale-100 opacity-100'
-                : 'w-2 h-2 border border-white/50 rounded-full scale-75 opacity-60 hover:opacity-100 hover:scale-90'
+              ? 'w-2 h-2 bg-white rounded-full scale-100 opacity-100'
+              : 'w-2 h-2 border border-white/50 rounded-full scale-75 opacity-60 hover:opacity-100 hover:scale-90'
               }`}
             aria-label={`Go to slide ${index + 1}`}
           />
