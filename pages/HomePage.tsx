@@ -19,12 +19,13 @@ const DISPLAY_TITLE: Record<string, string> = {
 // Map category ids to image filenames in /public
 const CATEGORY_IMAGE: Record<string, string> = {
   cars: '/car.jpeg',
-  'urban-cars': '/urbancars.jpeg',
+  'urban-cars': '/urbanc.jpeg',
   yachts: '/yacht.jpeg',
   villas: '/villa.jpeg',
   jets: '/privatejet.jpeg',
   'car-wash-services': '/luxurywash.jpeg',
-  membership: '/members.jpeg',
+  'mechanical-services': '/rapids.jpeg',
+  membership: '/exclusivemc.jpeg',
 };
 
 // Hero video slides configuration
@@ -79,7 +80,7 @@ const HeroSection: React.FC = () => {
     videoRefs.current.forEach((video, index) => {
       if (video) {
         if (index === activeSlide) {
-          video.play().catch(() => {});
+          video.play().catch(() => { });
         } else {
           video.pause();
         }
@@ -151,11 +152,10 @@ const HeroSection: React.FC = () => {
           <button
             key={slide.id}
             onClick={() => setActiveSlide(index)}
-            className={`transition-all duration-500 ease-out ${
-              index === activeSlide
+            className={`transition-all duration-500 ease-out ${index === activeSlide
                 ? 'w-2 h-2 bg-white rounded-full scale-100 opacity-100'
                 : 'w-2 h-2 border border-white/50 rounded-full scale-75 opacity-60 hover:opacity-100 hover:scale-90'
-            }`}
+              }`}
             aria-label={`Go to slide ${index + 1}`}
           />
         ))}
