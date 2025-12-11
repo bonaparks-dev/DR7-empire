@@ -467,12 +467,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
       const ret = new Date(`${formData.returnDate}T${formData.returnTime}`);
       if (pickup < ret) {
-        // Calculate calendar days for display (how many different days the car is being used)
-        const pickupDateOnly = new Date(formData.pickupDate);
-        const returnDateOnly = new Date(formData.returnDate);
-        const timeDiff = returnDateOnly.getTime() - pickupDateOnly.getTime();
-        const calendarDays = Math.round(timeDiff / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end days
-
         // Calculate billing based on hours for pricing (22.5 hour days)
         const diffMs = ret.getTime() - pickup.getTime();
         const totalHours = diffMs / (1000 * 60 * 60);
@@ -480,8 +474,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         billingDays = Math.ceil(totalHours / dayLength);
         hours = 0; // Reset hours since we're using 22.5h day system
 
-        // Use calendar days for display (shows how many days customer has the car)
-        days = calendarDays;
+        // Use billing days for display to ensure consistency with pricing and km
+        days = billingDays;
 
         // Ensure at least 1 day
         if (days < 1) days = 1;
