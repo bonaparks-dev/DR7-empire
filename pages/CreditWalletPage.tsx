@@ -207,83 +207,85 @@ const CreditWalletPage: React.FC = () => {
 
   // Pre-fill user data from customers_extended table
   useEffect(() => {
-    if (user) const fetchCustomerData = async () => {
-      try {
-        // 1. Try to get customer data from customers_extended table
-        let { data: customerData, error } = await supabase
-          .from('customers_extended')
-          .select('*')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        // 2. If not found, try 'clienti_estesi' (legacy/alternative table)
-        if (!customerData) {
-          const { data: legacyData } = await supabase
-            .from('clienti_estesi')
+    if (user) {
+      const fetchCustomerData = async () => {
+        try {
+          // 1. Try to get customer data from customers_extended table
+          let { data: customerData, error } = await supabase
+            .from('customers_extended')
             .select('*')
-            .eq('user_id', user.id)
+            .eq('id', user.id)
             .maybeSingle();
 
-          if (legacyData) {
-            customerData = legacyData;
+          // 2. If not found, try 'clienti_estesi' (legacy/alternative table)
+          if (!customerData) {
+            const { data: legacyData } = await supabase
+              .from('clienti_estesi')
+              .select('*')
+              .eq('user_id', user.id)
+              .maybeSingle();
+
+            if (legacyData) {
+              customerData = legacyData;
+            }
           }
-        }
 
-        if (customerData) {
-          // Pre-fill all fields from database
-          setFormData({
-            fullName: customerData.tipo_cliente === 'azienda'
-              ? customerData.denominazione || customerData.ragione_sociale || ''
-              : `${customerData.nome || ''} ${customerData.cognome || ''}`.trim(),
-            email: customerData.email || user.email || '',
-            phone: customerData.telefono || user.phone || '',
-            codiceFiscale: customerData.codice_fiscale || customerData.codice_fiscale_pa || customerData.partita_iva || '',
-            indirizzo: customerData.indirizzo || customerData.indirizzo_azienda || '',
-            numeroCivico: customerData.numero_civico || '',
-            cittaResidenza: customerData.citta || customerData.citta_residenza || '',
-            codicePostale: customerData.cap || customerData.codice_postale || '',
-            provinciaResidenza: customerData.provincia || customerData.provincia_residenza || ''
-          });
+          if (customerData) {
+            // Pre-fill all fields from database
+            setFormData({
+              fullName: customerData.tipo_cliente === 'azienda'
+                ? customerData.denominazione || customerData.ragione_sociale || ''
+                : `${customerData.nome || ''} ${customerData.cognome || ''}`.trim(),
+              email: customerData.email || user.email || '',
+              phone: customerData.telefono || user.phone || '',
+              codiceFiscale: customerData.codice_fiscale || customerData.codice_fiscale_pa || customerData.partita_iva || '',
+              indirizzo: customerData.indirizzo || customerData.indirizzo_azienda || '',
+              numeroCivico: customerData.numero_civico || '',
+              cittaResidenza: customerData.citta || customerData.citta_residenza || '',
+              codicePostale: customerData.cap || customerData.codice_postale || '',
+              provinciaResidenza: customerData.provincia || customerData.provincia_residenza || ''
+            });
 
-          // Check if essential data is present (Relaxed: Just Name, Email, Phone required for fast checkout)
-          const isComplete =
-            (formData.fullName || customerData.nome || customerData.denominazione) &&
-            (formData.email || customerData.email || user.email);
+            // Check if essential data is present (Relaxed: Just Name, Email, Phone required for fast checkout)
+            const isComplete =
+              (formData.fullName || customerData.nome || customerData.denominazione) &&
+              (formData.email || customerData.email || user.email);
 
-          // Always default to summary view if we have at least name and email
-          if (isComplete) {
-            setIsEditing(false);
+            // Always default to summary view if we have at least name and email
+            if (isComplete) {
+              setIsEditing(false);
+            }
+          } else {
+            // Fallback to basic user data from Auth
+            setFormData(prev => ({
+              ...prev,
+              fullName: user.fullName || '',
+              email: user.email || '',
+              phone: user.phone || ''
+            }));
+
+            // Even with just Auth data, if we have name and email, show summary mode
+            if (user.email) {
+              setIsEditing(false);
+            }
           }
-        } else {
-          // Fallback to basic user data from Auth
+        } catch (err) {
+          console.error('Error fetching customer data:', err);
+          // Fallback to basic user data
           setFormData(prev => ({
             ...prev,
             fullName: user.fullName || '',
             email: user.email || '',
             phone: user.phone || ''
           }));
-
-          // Even with just Auth data, if we have name and email, show summary mode
-          if (user.email) {
-            setIsEditing(false);
-          }
+          if (user.email) setIsEditing(false);
         }
-      } catch (err) {
-        console.error('Error fetching customer data:', err);
-        // Fallback to basic user data
-        setFormData(prev => ({
-          ...prev,
-          fullName: user.fullName || '',
-          email: user.email || '',
-          phone: user.phone || ''
-        }));
-        if (user.email) setIsEditing(false);
-      }
-    };
+      };
 
-    fetchCustomerData();
-  }
+      fetchCustomerData();
+    }
   }, [user]);
+}, [user]);
 
 // Create payment intent when modal opens
 useEffect(() => {
