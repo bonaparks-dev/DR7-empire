@@ -6,6 +6,7 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { useAuth } from '../hooks/useAuth';
 import { MEMBERSHIP_TIERS, CRYPTO_ADDRESSES } from '../constants';
 import type { Stripe, StripeCardElement } from '@stripe/stripe-js';
+import { getUserCreditBalance, deductCredits, hasSufficientBalance } from '../utils/creditWallet';
 
 // Safely access the Stripe publishable key from Vite's environment variables.
 // If it's not available (e.g., in a non-Vite environment), it falls back to a placeholder.
@@ -20,9 +21,9 @@ const MembershipEnrollmentPage: React.FC = () => {
     const { t, lang } = useTranslation();
     const { currency } = useCurrency();
     const { user, updateUser } = useAuth();
-    
+
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>(searchParams.get('billing') === 'monthly' ? 'monthly' : 'annually');
-    const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'crypto'>('stripe');
+    const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'crypto' | 'credit'>('stripe');
     const [isProcessing, setIsProcessing] = useState(false);
     const [isConfirmed, setIsConfirmed] = useState(false);
 
@@ -33,7 +34,11 @@ const MembershipEnrollmentPage: React.FC = () => {
     const [clientSecret, setClientSecret] = useState<string | null>(null);
     const [isClientSecretLoading, setIsClientSecretLoading] = useState(false);
     const [selectedCrypto, setSelectedCrypto] = useState('btc');
-    
+
+    // Credit wallet state
+    const [creditBalance, setCreditBalance] = useState<number>(0);
+    const [isLoadingBalance, setIsLoadingBalance] = useState(true);
+
     const tier = useMemo(() => MEMBERSHIP_TIERS.find(t => t.id === tierId), [tierId]);
     const price = useMemo(() => tier?.price[billingCycle][currency] || 0, [tier, billingCycle, currency]);
 
@@ -48,6 +53,25 @@ const MembershipEnrollmentPage: React.FC = () => {
         }
     }, []);
 
+    // Fetch credit balance
+    useEffect(() => {
+        const fetchBalance = async () => {
+            if (user?.id) {
+                setIsLoadingBalance(true);
+                try {
+                    const balance = await getUserCreditBalance(user.id);
+                    setCreditBalance(balance);
+                } catch (error) {
+                    console.error('Error fetching credit balance:', error);
+                } finally {
+                    setIsLoadingBalance(false);
+                }
+            }
+        };
+
+        fetchBalance();
+    }, [user]);
+
     useEffect(() => {
         if (price > 0) {
             setIsClientSecretLoading(true);
@@ -56,10 +80,10 @@ const MembershipEnrollmentPage: React.FC = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ amount: price, currency })
             }).then(res => res.json()).then(data => {
-                if(data.error) setStripeError(data.error);
+                if (data.error) setStripeError(data.error);
                 else setClientSecret(data.clientSecret);
             }).catch(() => setStripeError('Could not connect to payment server.'))
-            .finally(() => setIsClientSecretLoading(false));
+                .finally(() => setIsClientSecretLoading(false));
         }
     }, [price, currency]);
 
@@ -85,7 +109,40 @@ const MembershipEnrollmentPage: React.FC = () => {
     const handleConfirm = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsProcessing(true);
-        if (paymentMethod === 'stripe') {
+
+        if (paymentMethod === 'credit') {
+            // Credit wallet payment
+            if (!user?.id) {
+                setStripeError('User not logged in');
+                setIsProcessing(false);
+                return;
+            }
+
+            // Check sufficient balance
+            const hasBalance = await hasSufficientBalance(user.id, price);
+            if (!hasBalance) {
+                setStripeError(`Credito insufficiente. Saldo attuale: €${creditBalance.toFixed(2)}, Richiesto: €${price.toFixed(2)}`);
+                setIsProcessing(false);
+                return;
+            }
+
+            // Deduct credits
+            const deductResult = await deductCredits(
+                user.id,
+                price,
+                `Membership ${tier?.name[lang]} - ${billingCycle === 'monthly' ? 'Mensile' : 'Annuale'}`,
+                undefined,
+                'membership_purchase'
+            );
+
+            if (!deductResult.success) {
+                setStripeError(deductResult.error || 'Failed to deduct credits');
+                setIsProcessing(false);
+                return;
+            }
+
+            await finalizeEnrollment();
+        } else if (paymentMethod === 'stripe') {
             if (!stripe || !cardElement || !clientSecret) {
                 setStripeError("Payment system is not ready.");
                 setIsProcessing(false);
@@ -155,7 +212,7 @@ const MembershipEnrollmentPage: React.FC = () => {
     if (isConfirmed) {
         return (
             <div className="pt-32 pb-24 bg-black min-h-screen flex items-center justify-center">
-                <motion.div initial={{opacity: 0, scale: 0.9}} animate={{opacity: 1, scale: 1}} className="text-center text-white p-8">
+                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center text-white p-8">
                     <h1 className="text-5xl font-bold mb-4">{t('Welcome_to_the_Club')}</h1>
                     <p className="text-lg text-gray-300 mb-8">{t('Your_membership_is_now_active')}</p>
                     <button onClick={() => navigate('/account/membership')} className="bg-white text-black font-bold py-3 px-8 rounded-full">{t('Go_to_Dashboard')}</button>
@@ -181,11 +238,32 @@ const MembershipEnrollmentPage: React.FC = () => {
                     <form onSubmit={handleConfirm} className="bg-gray-900/50 p-6 rounded-lg border border-gray-800">
                         <h2 className="text-xl font-bold text-white mb-4">{t('Payment')}</h2>
                         <div className="flex border-b border-gray-700 mb-6">
+                            <button type="button" onClick={() => setPaymentMethod('credit')} className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 ${paymentMethod === 'credit' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}>
+                                Credit Wallet
+                            </button>
                             <button type="button" onClick={() => setPaymentMethod('stripe')} className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 ${paymentMethod === 'stripe' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}>{t('Credit_Card')}</button>
                             <button type="button" onClick={() => setPaymentMethod('crypto')} className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 ${paymentMethod === 'crypto' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}>{t('Cryptocurrency')}</button>
                         </div>
 
-                        {paymentMethod === 'stripe' ? (
+                        {paymentMethod === 'credit' ? (
+                            <div className="text-center py-6">
+                                {isLoadingBalance ? (
+                                    <div className="flex items-center justify-center">
+                                        <div className="w-8 h-8 border-2 border-t-white border-gray-600 rounded-full animate-spin"></div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <p className="text-sm text-gray-400 mb-2">Saldo Disponibile</p>
+                                        <p className="text-4xl font-bold text-white mb-4">€{creditBalance.toFixed(2)}</p>
+                                        {creditBalance < price ? (
+                                            <p className="text-sm text-red-400">Credito insufficiente. Richiesto: €{price.toFixed(2)}</p>
+                                        ) : (
+                                            <p className="text-sm text-green-400">✓ Saldo sufficiente</p>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        ) : paymentMethod === 'stripe' ? (
                             <div>
                                 <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
                                     {isClientSecretLoading ? <p className="text-gray-400 text-sm">Initializing payment...</p> : <div ref={cardElementRef} />}
@@ -197,11 +275,11 @@ const MembershipEnrollmentPage: React.FC = () => {
                                 <label className="text-sm text-gray-300 block mb-2">{t('Select_your_crypto')}</label>
                                 <div className="flex border border-gray-700 rounded-full p-1 max-w-sm mx-auto mb-4">
                                     {Object.keys(CRYPTO_ADDRESSES).map(c => (
-                                    <button type="button" key={c} onClick={() => setSelectedCrypto(c)} className={`flex-1 py-1 text-sm rounded-full transition-colors ${selectedCrypto === c ? 'bg-white text-black font-bold' : 'text-gray-300'}`}>{c.toUpperCase()}</button>
+                                        <button type="button" key={c} onClick={() => setSelectedCrypto(c)} className={`flex-1 py-1 text-sm rounded-full transition-colors ${selectedCrypto === c ? 'bg-white text-black font-bold' : 'text-gray-300'}`}>{c.toUpperCase()}</button>
                                     ))}
                                 </div>
                                 <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${CRYPTO_ADDRESSES[selectedCrypto]}`} alt={`${selectedCrypto.toUpperCase()} QR Code`} className="w-32 h-32 mx-auto bg-white p-1 rounded-md" />
-                                <input type="text" readOnly value={CRYPTO_ADDRESSES[selectedCrypto]} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-4 text-white text-center text-xs tracking-tight"/>
+                                <input type="text" readOnly value={CRYPTO_ADDRESSES[selectedCrypto]} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-4 text-white text-center text-xs tracking-tight" />
                             </div>
                         )}
 
