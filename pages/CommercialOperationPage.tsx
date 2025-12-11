@@ -125,46 +125,82 @@ const CommercialOperationPage: React.FC = () => {
             return;
         }
 
-        // Check if user already has client data
         try {
-            const { data: existingClient, error } = await supabase
-                .from('clienti_estesi')
+            // 1. Check customers_extended first
+            let clientData = null;
+            let source = '';
+
+            const { data: extData } = await supabase
+                .from('customers_extended')
                 .select('*')
-                .eq('user_id', user.id)
+                .eq('id', user.id)
                 .maybeSingle();
 
-            if (error) {
-                console.error('Error checking client data:', error);
+            if (extData) {
+                clientData = extData;
+                source = 'extended';
+            } else {
+                // 2. Check clienti_estesi (legacy)
+                const { data: legacyData } = await supabase
+                    .from('clienti_estesi')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .maybeSingle();
+
+                if (legacyData) {
+                    clientData = legacyData;
+                    source = 'legacy';
+                }
             }
 
-            if (existingClient) {
-                // User has existing client data - skip modal and go directly to payment
-                setClientId(existingClient.id);
-                setCustomerExtendedData(existingClient);
+            if (clientData) {
+                // User has existing client data matching our records
+                setClientId(clientData.id);
+                setCustomerExtendedData(clientData);
 
                 // Pre-fill payment form with existing customer data
-                if (existingClient.tipo_cliente === 'persona_fisica') {
-                    setFullName(`${existingClient.nome || ''} ${existingClient.cognome || ''}`.trim());
-                } else if (existingClient.tipo_cliente === 'azienda') {
-                    setFullName(existingClient.ragione_sociale || existingClient.denominazione || '');
-                } else if (existingClient.tipo_cliente === 'pubblica_amministrazione') {
-                    setFullName(existingClient.denominazione || existingClient.ente_ufficio || '');
+                if (source === 'extended') {
+                    setFullName(
+                        clientData.tipo_cliente === 'azienda'
+                            ? clientData.denominazione || clientData.ragione_sociale || ''
+                            : `${clientData.nome || ''} ${clientData.cognome || ''}`.trim()
+                    );
+                    setEmail(clientData.email || user.email || '');
+                    setPhoneNumber(clientData.telefono || '');
+                } else {
+                    // Legacy mapping
+                    if (clientData.tipo_cliente === 'persona_fisica') {
+                        setFullName(`${clientData.nome || ''} ${clientData.cognome || ''}`.trim());
+                    } else if (clientData.tipo_cliente === 'azienda') {
+                        setFullName(clientData.ragione_sociale || clientData.denominazione || '');
+                    } else if (clientData.tipo_cliente === 'pubblica_amministrazione') {
+                        setFullName(clientData.denominazione || clientData.ente_ufficio || '');
+                    }
+                    setEmail(clientData.email || user.email || '');
+                    setPhoneNumber(clientData.telefono || '');
                 }
 
-                setEmail(existingClient.email || user.email || '');
-                setPhoneNumber(existingClient.telefono || '');
-
-                // Go directly to payment
                 setShowConfirmModal(true);
             } else {
-                // No existing client data - show NewClientModal to collect detailed information
-                setShowClientModal(true);
+                // No existing detailed client data found
+                // BYPASS NewClientModal -> Go directly to payment with Auth data
+                setClientId(null);
+                setCustomerExtendedData(null);
+
+                setFullName(user.fullName || '');
+                setEmail(user.email || '');
+                setPhoneNumber(user.phone || '');
+
+                setShowConfirmModal(true);
             }
 
         } catch (err) {
             console.error('Error in handleBuyClick:', err);
-            // On error, show client modal to be safe/fallback
-            setShowClientModal(true);
+            // On error, fallback to direct payment modal with basic auth info
+            setClientId(null);
+            setFullName(user.fullName || '');
+            setEmail(user.email || '');
+            setShowConfirmModal(true);
         }
     };
 
