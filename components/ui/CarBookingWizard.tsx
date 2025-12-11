@@ -17,6 +17,7 @@ import {
   isDucatoVehicle
 } from '../../data/kmPricingData';
 import { checkVehicleAvailability, checkVehiclePartialUnavailability, checkGroupedVehicleAvailability } from '../../utils/bookingValidation';
+import { getUserCreditBalance, deductCredits, hasSufficientBalance } from '../../utils/creditWallet';
 
 const FUNCTIONS_BASE =
   import.meta.env.VITE_FUNCTIONS_BASE ??
@@ -39,8 +40,8 @@ function isKaskoEligibleByBuckets(
   ageMin?: number,
   licenseYears?: number,
   isUrban: boolean = false
-): { eligible: boolean; reasonKey?: 'AGE_MISSING'|'LIC_MISSING'|'BASE_REQ'|'BLACK_REQ'|'SIGNATURE_REQ' } {
-  if (!ageMin)  return { eligible: false, reasonKey: 'AGE_MISSING' };
+): { eligible: boolean; reasonKey?: 'AGE_MISSING' | 'LIC_MISSING' | 'BASE_REQ' | 'BLACK_REQ' | 'SIGNATURE_REQ' } {
+  if (!ageMin) return { eligible: false, reasonKey: 'AGE_MISSING' };
   if (licenseYears === undefined || licenseYears === null) return { eligible: false, reasonKey: 'LIC_MISSING' };
 
   const eligibility = isUrban ? URBAN_INSURANCE_ELIGIBILITY : INSURANCE_ELIGIBILITY;
@@ -176,7 +177,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     expectedKm: 0, // user's expected distance for recommendation
 
     // Step 4
-    paymentMethod: 'stripe' as 'stripe',
+    paymentMethod: 'stripe' as 'stripe' | 'credit',
     agreesToTerms: false,
     agreesToPrivacy: false,
     confirmsDocuments: false,
@@ -188,6 +189,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
   const [partialUnavailabilityWarning, setPartialUnavailabilityWarning] = useState<string | null>(null);
   const [availableVehicleName, setAvailableVehicleName] = useState<string | null>(null);
+
+  // Credit wallet state
+  const [creditBalance, setCreditBalance] = useState<number>(0);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(true);
 
   // Stripe
   const cardElementRef = useRef<HTMLDivElement>(null);
@@ -914,122 +919,122 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       }
 
       console.log('DEBUG - Form data before booking:', {
-  pickupDate: formData.pickupDate,
-  pickupTime: formData.pickupTime,
-  returnDate: formData.returnDate,
-  returnTime: formData.returnTime
-});
-      
-  // Create pickup and dropoff dates in Europe/Rome timezone
-  // This ensures times are always interpreted as Italy time, regardless of user's browser timezone
-  const createItalyDateTime = (dateStr: string, timeStr: string) => {
-    const dateTimeString = `${dateStr}T${timeStr}:00`;
-    const localDate = new Date(dateTimeString);
-    const italyTimeString = new Date(dateTimeString).toLocaleString('en-US', { timeZone: 'Europe/Rome' });
-    const italyDate = new Date(italyTimeString);
-    const offset = localDate.getTime() - italyDate.getTime();
-    return new Date(localDate.getTime() - offset);
-  };
+        pickupDate: formData.pickupDate,
+        pickupTime: formData.pickupTime,
+        returnDate: formData.returnDate,
+        returnTime: formData.returnTime
+      });
 
-  const pickupDateTime = createItalyDateTime(formData.pickupDate, formData.pickupTime);
-  const dropoffDateTime = createItalyDateTime(formData.returnDate, formData.returnTime);
+      // Create pickup and dropoff dates in Europe/Rome timezone
+      // This ensures times are always interpreted as Italy time, regardless of user's browser timezone
+      const createItalyDateTime = (dateStr: string, timeStr: string) => {
+        const dateTimeString = `${dateStr}T${timeStr}:00`;
+        const localDate = new Date(dateTimeString);
+        const italyTimeString = new Date(dateTimeString).toLocaleString('en-US', { timeZone: 'Europe/Rome' });
+        const italyDate = new Date(italyTimeString);
+        const offset = localDate.getTime() - italyDate.getTime();
+        return new Date(localDate.getTime() - offset);
+      };
 
-  const bookingData = {
-  user_id: user.id,
-  vehicle_type: item.type || 'car',
-  vehicle_name: availableVehicleName || item.name, // Use specific vehicle from group if available
-  vehicle_image_url: item.image,
-  pickup_date: pickupDateTime.toISOString(),
-  dropoff_date: dropoffDateTime.toISOString(),
-  pickup_location: formData.pickupLocation,
-  dropoff_location: formData.returnLocation,
-  price_total: Math.round(total * 100),
-  currency: currency.toUpperCase(),
-  status: 'pending',
-  payment_status: paymentIntentId ? 'succeeded' : 'pending',
-  payment_method: formData.paymentMethod,
-  stripe_payment_intent_id: paymentIntentId || null,
-  booked_at: new Date().toISOString(),
-  booking_details: {
-    customer: {
-      fullName: `${formData.firstName} ${formData.lastName}`,
-      email: formData.email,
-      phone: formData.phone,
-      age: driverAge,
-    },
-    duration: `${days} days`,
-    insuranceOption: formData.insuranceOption,
-    extras: formData.extras,
-    kmPackage: {
-      type: formData.kmPackageType,
-      distance: formData.kmPackageType === 'unlimited' ? 'unlimited' : formData.kmPackageDistance,
-      cost: kmPackageCost,
-      includedKm: includedKm,
-      isPremium: isPremiumVehicle(item.name)
-    },
-    driverLicenseImage: licenseImageUrl,
-    driverIdImage: idImageUrl,
-  }
-};
+      const pickupDateTime = createItalyDateTime(formData.pickupDate, formData.pickupTime);
+      const dropoffDateTime = createItalyDateTime(formData.returnDate, formData.returnTime);
 
-const { data, error } = await supabase.from('bookings').insert(bookingData).select().single();
+      const bookingData = {
+        user_id: user.id,
+        vehicle_type: item.type || 'car',
+        vehicle_name: availableVehicleName || item.name, // Use specific vehicle from group if available
+        vehicle_image_url: item.image,
+        pickup_date: pickupDateTime.toISOString(),
+        dropoff_date: dropoffDateTime.toISOString(),
+        pickup_location: formData.pickupLocation,
+        dropoff_location: formData.returnLocation,
+        price_total: Math.round(total * 100),
+        currency: currency.toUpperCase(),
+        status: 'pending',
+        payment_status: paymentIntentId ? 'succeeded' : 'pending',
+        payment_method: formData.paymentMethod,
+        stripe_payment_intent_id: paymentIntentId || null,
+        booked_at: new Date().toISOString(),
+        booking_details: {
+          customer: {
+            fullName: `${formData.firstName} ${formData.lastName}`,
+            email: formData.email,
+            phone: formData.phone,
+            age: driverAge,
+          },
+          duration: `${days} days`,
+          insuranceOption: formData.insuranceOption,
+          extras: formData.extras,
+          kmPackage: {
+            type: formData.kmPackageType,
+            distance: formData.kmPackageType === 'unlimited' ? 'unlimited' : formData.kmPackageDistance,
+            cost: kmPackageCost,
+            includedKm: includedKm,
+            isPremium: isPremiumVehicle(item.name)
+          },
+          driverLicenseImage: licenseImageUrl,
+          driverIdImage: idImageUrl,
+        }
+      };
 
-if (error) {
-  console.error('DB insert error details:', error);
-  throw new Error(`DB insert failed: ${error.message}`);
-}
+      const { data, error } = await supabase.from('bookings').insert(bookingData).select().single();
 
-if (data) {
-  // Send email confirmation
-  fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ booking: data }),
-  }).catch(emailError => console.error('Failed to send confirmation email:', emailError));
+      if (error) {
+        console.error('DB insert error details:', error);
+        throw new Error(`DB insert failed: ${error.message}`);
+      }
 
-  // Send WhatsApp notification to admin
-  fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ booking: data }),
-  }).catch(whatsappError => console.error('Failed to send WhatsApp notification:', whatsappError));
+      if (data) {
+        // Send email confirmation
+        fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ booking: data }),
+        }).catch(emailError => console.error('Failed to send confirmation email:', emailError));
 
-  // Note: Google Calendar event is created automatically by send-booking-confirmation function
+        // Send WhatsApp notification to admin
+        fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ booking: data }),
+        }).catch(whatsappError => console.error('Failed to send WhatsApp notification:', whatsappError));
 
-  // Generate WhatsApp prefilled message for customer
-  const bookingId = data.id.substring(0, 8).toUpperCase();
-  const vehicleName = data.vehicle_name;
-  const pickupDate = new Date(data.pickup_date);
-  const dropoffDate = new Date(data.dropoff_date);
-  const customerName = formData.customer.fullName;
-  const customerPhone = formData.customer.phone;
-  const totalPrice = (data.price_total / 100).toFixed(2);
-  const insuranceOption = data.insurance_option || data.booking_details?.insuranceOption || 'Nessuna';
+        // Note: Google Calendar event is created automatically by send-booking-confirmation function
 
-  const whatsappMessage = `Ciao! Ho appena completato una prenotazione sul vostro sito.\n\n` +
-    `📋 *Dettagli Prenotazione*\n` +
-    `*ID:* DR7-${bookingId}\n` +
-    `*Nome:* ${customerName}\n` +
-    `*Telefono:* ${customerPhone}\n` +
-    `*Veicolo:* ${vehicleName}\n` +
-    `*Data Ritiro:* ${pickupDate.toLocaleDateString('it-IT')} alle ${pickupDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n` +
-    `*Data Riconsegna:* ${dropoffDate.toLocaleDateString('it-IT')} alle ${dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n` +
-    `*Luogo Ritiro:* ${data.pickup_location}\n` +
-    `*Assicurazione:* ${insuranceOption}\n` +
-    `*Totale:* €${totalPrice}\n\n` +
-    `Grazie!`;
+        // Generate WhatsApp prefilled message for customer
+        const bookingId = data.id.substring(0, 8).toUpperCase();
+        const vehicleName = data.vehicle_name;
+        const pickupDate = new Date(data.pickup_date);
+        const dropoffDate = new Date(data.dropoff_date);
+        const customerName = formData.customer.fullName;
+        const customerPhone = formData.customer.phone;
+        const totalPrice = (data.price_total / 100).toFixed(2);
+        const insuranceOption = data.insurance_option || data.booking_details?.insuranceOption || 'Nessuna';
 
-  const officeWhatsAppNumber = '393457905205';
-  const whatsappUrl = `https://wa.me/${officeWhatsAppNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+        const whatsappMessage = `Ciao! Ho appena completato una prenotazione sul vostro sito.\n\n` +
+          `📋 *Dettagli Prenotazione*\n` +
+          `*ID:* DR7-${bookingId}\n` +
+          `*Nome:* ${customerName}\n` +
+          `*Telefono:* ${customerPhone}\n` +
+          `*Veicolo:* ${vehicleName}\n` +
+          `*Data Ritiro:* ${pickupDate.toLocaleDateString('it-IT')} alle ${pickupDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n` +
+          `*Data Riconsegna:* ${dropoffDate.toLocaleDateString('it-IT')} alle ${dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n` +
+          `*Luogo Ritiro:* ${data.pickup_location}\n` +
+          `*Assicurazione:* ${insuranceOption}\n` +
+          `*Totale:* €${totalPrice}\n\n` +
+          `Grazie!`;
 
-  // Open WhatsApp in a new tab after a short delay
-  setTimeout(() => {
-    window.open(whatsappUrl, '_blank');
-  }, 1000);
-}
+        const officeWhatsAppNumber = '393457905205';
+        const whatsappUrl = `https://wa.me/${officeWhatsAppNumber}?text=${encodeURIComponent(whatsappMessage)}`;
 
-onBookingComplete(data);
-setIsProcessing(false);
+        // Open WhatsApp in a new tab after a short delay
+        setTimeout(() => {
+          window.open(whatsappUrl, '_blank');
+        }, 1000);
+      }
+
+      onBookingComplete(data);
+      setIsProcessing(false);
 
     } catch (e: any) {
       setErrors(prev => ({ ...prev, form: `Booking failed: ${e.message}` }));
@@ -1173,13 +1178,12 @@ setIsProcessing(false);
                         min={today}
                         required
                         error={!!errors.pickupDate}
-                        className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors cursor-pointer ${
-                          errors.pickupDate
+                        className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors cursor-pointer ${errors.pickupDate
                             ? 'border-red-500 focus:border-red-400'
                             : formData.pickupDate
-                            ? 'border-green-500 focus:border-green-400'
-                            : 'border-gray-700 focus:border-white'
-                        }`}
+                              ? 'border-green-500 focus:border-green-400'
+                              : 'border-gray-700 focus:border-white'
+                          }`}
                       />
                       {errors.pickupDate && (
                         <p className="text-xs text-red-400 mt-1 flex items-center">
@@ -1200,13 +1204,12 @@ setIsProcessing(false);
                         onChange={handleChange}
                         required
                         disabled={!formData.pickupDate || getValidPickupTimes(formData.pickupDate).length === 0}
-                        className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors ${
-                          !formData.pickupDate || getValidPickupTimes(formData.pickupDate).length === 0
+                        className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors ${!formData.pickupDate || getValidPickupTimes(formData.pickupDate).length === 0
                             ? 'border-gray-700 opacity-50 cursor-not-allowed'
                             : formData.pickupTime
-                            ? 'border-green-500 focus:border-green-400'
-                            : 'border-gray-700 focus:border-white'
-                        }`}
+                              ? 'border-green-500 focus:border-green-400'
+                              : 'border-gray-700 focus:border-white'
+                          }`}
                       >
                         {getValidPickupTimes(formData.pickupDate).length > 0 ? (
                           getValidPickupTimes(formData.pickupDate).map(time => <option key={time} value={time}>{time}</option>)
@@ -1248,15 +1251,14 @@ setIsProcessing(false);
                         min={formData.pickupDate || today}
                         required
                         error={!!(errors.returnDate || errors.date)}
-                        className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors ${
-                          !formData.pickupDate
+                        className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors ${!formData.pickupDate
                             ? 'border-gray-700 opacity-50 cursor-not-allowed'
                             : errors.returnDate || errors.date
-                            ? 'border-red-500 focus:border-red-400 cursor-pointer'
-                            : formData.returnDate
-                            ? 'border-green-500 focus:border-green-400 cursor-pointer'
-                            : 'border-gray-700 focus:border-white cursor-pointer'
-                        }`}
+                              ? 'border-red-500 focus:border-red-400 cursor-pointer'
+                              : formData.returnDate
+                                ? 'border-green-500 focus:border-green-400 cursor-pointer'
+                                : 'border-gray-700 focus:border-white cursor-pointer'
+                          }`}
                       />
                       {(errors.returnDate || errors.date) && (
                         <p className="text-xs text-red-400 mt-1 flex items-center">
@@ -1318,13 +1320,13 @@ setIsProcessing(false);
 
           return (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><label className="text-sm text-gray-400">Nome *</label><input type="text" name={`${prefix}firstName`} value={(driverData as any).firstName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}firstName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}firstName`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Cognome *</label><input type="text" name={`${prefix}lastName`} value={(driverData as any).lastName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}lastName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}lastName`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Email *</label><input type="email" name={`${prefix}email`} value={(driverData as any).email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}email`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}email`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Telefono *</label><input type="tel" name={`${prefix}phone`} value={(driverData as any).phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}phone`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}phone`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Data di nascita *</label><CalendarPicker name={`${prefix}birthDate`} value={(driverData as any).birthDate} onChange={(value) => { const syntheticEvent = { target: { name: `${prefix}birthDate`, value } } as React.ChangeEvent<HTMLInputElement>; handleChange(syntheticEvent); }} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm cursor-pointer"/>{errors[`${prefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}birthDate`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Numero patente *</label><input type="text" name={`${prefix}licenseNumber`} value={(driverData as any).licenseNumber} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"/>{errors[`${prefix}licenseNumber`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseNumber`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Data rilascio patente *</label><CalendarPicker name={`${prefix}licenseIssueDate`} value={(driverData as any).licenseIssueDate} onChange={(value) => { const syntheticEvent = { target: { name: `${prefix}licenseIssueDate`, value } } as React.ChangeEvent<HTMLInputElement>; handleChange(syntheticEvent); }} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm cursor-pointer"/>{errors[`${prefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseIssueDate`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Nome *</label><input type="text" name={`${prefix}firstName`} value={(driverData as any).firstName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}firstName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}firstName`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Cognome *</label><input type="text" name={`${prefix}lastName`} value={(driverData as any).lastName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}lastName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}lastName`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Email *</label><input type="email" name={`${prefix}email`} value={(driverData as any).email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}email`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}email`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Telefono *</label><input type="tel" name={`${prefix}phone`} value={(driverData as any).phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}phone`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}phone`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Data di nascita *</label><CalendarPicker name={`${prefix}birthDate`} value={(driverData as any).birthDate} onChange={(value) => { const syntheticEvent = { target: { name: `${prefix}birthDate`, value } } as React.ChangeEvent<HTMLInputElement>; handleChange(syntheticEvent); }} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm cursor-pointer" />{errors[`${prefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}birthDate`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Numero patente *</label><input type="text" name={`${prefix}licenseNumber`} value={(driverData as any).licenseNumber} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}licenseNumber`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseNumber`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Data rilascio patente *</label><CalendarPicker name={`${prefix}licenseIssueDate`} value={(driverData as any).licenseIssueDate} onChange={(value) => { const syntheticEvent = { target: { name: `${prefix}licenseIssueDate`, value } } as React.ChangeEvent<HTMLInputElement>; handleChange(syntheticEvent); }} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm cursor-pointer" />{errors[`${prefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseIssueDate`]}</p>}</div>
             </div>
           );
         };
@@ -1347,14 +1349,14 @@ setIsProcessing(false);
                 <DocumentUploader
                   title="1. PATENTE DI GUIDA"
                   details={["Solo fronte/retro", "Foto chiara e leggibile", "Formati: JPG, PNG, PDF (max 5MB)"]}
-                  onFileChange={(file) => setFormData(prev => ({...prev, licenseImage: file}))}
+                  onFileChange={(file) => setFormData(prev => ({ ...prev, licenseImage: file }))}
                 />
                 {errors.licenseImage && <p className="text-xs text-red-400 mt-1">{errors.licenseImage}</p>}
 
                 <DocumentUploader
                   title="2. CARTA D'IDENTITÀ / PASSAPORTO"
                   details={["Documento valido", "Foto chiara e leggibile", "Formati: JPG, PNG, PDF (max 5MB)"]}
-                  onFileChange={(file) => setFormData(prev => ({...prev, idImage: file}))}
+                  onFileChange={(file) => setFormData(prev => ({ ...prev, idImage: file }))}
                 />
                 {errors.idImage && <p className="text-xs text-red-400 mt-1">{errors.idImage}</p>}
               </div>
@@ -1374,7 +1376,7 @@ setIsProcessing(false);
             <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-4">D. SECOND DRIVER (OPTIONAL)</h3>
               <div className="flex items-center">
-                <input type="checkbox" name="addSecondDriver" checked={formData.addSecondDriver} onChange={handleChange} id="add-second-driver" className="h-4 w-4 text-white bg-gray-700 border-gray-600 rounded focus:ring-white"/>
+                <input type="checkbox" name="addSecondDriver" checked={formData.addSecondDriver} onChange={handleChange} id="add-second-driver" className="h-4 w-4 text-white bg-gray-700 border-gray-600 rounded focus:ring-white" />
                 <label htmlFor="add-second-driver" className="ml-2 text-white">Aggiungi secondo guidatore (+€10/giorno)</label>
               </div>
               <AnimatePresence>
@@ -1392,11 +1394,11 @@ setIsProcessing(false);
                 <p className="text-base font-semibold text-white mb-3">Sei residente in Sardegna? *</p>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center">
-                    <input type="radio" id="resident-yes" name="isSardinianResident" checked={formData.isSardinianResident} onChange={() => setFormData(p => ({...p, isSardinianResident: true}))} className="w-4 h-4 text-white"/>
+                    <input type="radio" id="resident-yes" name="isSardinianResident" checked={formData.isSardinianResident} onChange={() => setFormData(p => ({ ...p, isSardinianResident: true }))} className="w-4 h-4 text-white" />
                     <label htmlFor="resident-yes" className="ml-2 text-white">Sì - Residente in Sardegna</label>
                   </div>
                   <div className="flex items-center">
-                    <input type="radio" id="resident-no" name="isSardinianResident" checked={!formData.isSardinianResident} onChange={() => setFormData(p => ({...p, isSardinianResident: false}))} className="w-4 h-4 text-white"/>
+                    <input type="radio" id="resident-no" name="isSardinianResident" checked={!formData.isSardinianResident} onChange={() => setFormData(p => ({ ...p, isSardinianResident: false }))} className="w-4 h-4 text-white" />
                     <label htmlFor="resident-no" className="ml-2 text-white">No - Non residente</label>
                   </div>
                 </div>
@@ -1406,7 +1408,7 @@ setIsProcessing(false);
             {/* Final Checkbox */}
             <section className="border-t border-gray-700 pt-6">
               <div className="flex items-start">
-                <input type="checkbox" name="confirmsInformation" checked={formData.confirmsInformation} onChange={handleChange} id="confirms-information" className="h-4 w-4 mt-1 text-white bg-gray-700 border-gray-600 rounded focus:ring-white"/>
+                <input type="checkbox" name="confirmsInformation" checked={formData.confirmsInformation} onChange={handleChange} id="confirms-information" className="h-4 w-4 mt-1 text-white bg-gray-700 border-gray-600 rounded focus:ring-white" />
                 <label htmlFor="confirms-information" className="ml-2 text-white">Dichiaro che i dati inseriti sono veritieri e conformi ai requisiti richiesti.</label>
               </div>
               {errors.confirmsInformation && <p className="text-xs text-red-400 mt-1">{errors.confirmsInformation}</p>}
@@ -1472,9 +1474,9 @@ setIsProcessing(false);
 
                   return (
                     <div key={opt.id} className={`relative group rounded-md border ${formData.insuranceOption === opt.id ? 'border-white' : 'border-gray-700'} ${!opt.eligible ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                      <div className={`p-4 ${!opt.eligible ? '' : 'cursor-pointer'}`} onClick={() => opt.eligible && setFormData(p => ({...p, insuranceOption: opt.id}))}>
+                      <div className={`p-4 ${!opt.eligible ? '' : 'cursor-pointer'}`} onClick={() => opt.eligible && setFormData(p => ({ ...p, insuranceOption: opt.id }))}>
                         <div className="flex items-center">
-                          <input type="radio" name="insuranceOption" value={opt.id} checked={formData.insuranceOption === opt.id} disabled={!opt.eligible} className="w-4 h-4 text-white"/>
+                          <input type="radio" name="insuranceOption" value={opt.id} checked={formData.insuranceOption === opt.id} disabled={!opt.eligible} className="w-4 h-4 text-white" />
                           <label className="ml-3 text-white font-semibold notranslate">{getTranslated(opt.label)}</label>
                           {opt.pricePerDay.eur > 0 && <span className="ml-auto text-white">+€{opt.pricePerDay.eur}/giorno</span>}
                         </div>
@@ -1563,12 +1565,11 @@ setIsProcessing(false);
               {/* No Extra KM Option (Default) */}
               <div className="space-y-3 mb-4">
                 <div
-                  className={`p-4 rounded-md border cursor-pointer transition-all ${
-                    formData.kmPackageType === 'none'
+                  className={`p-4 rounded-md border cursor-pointer transition-all ${formData.kmPackageType === 'none'
                       ? 'border-white bg-white/5'
                       : 'border-gray-700 hover:border-gray-500'
-                  }`}
-                  onClick={() => setFormData(p => ({...p, kmPackageType: 'none'}))}
+                    }`}
+                  onClick={() => setFormData(p => ({ ...p, kmPackageType: 'none' }))}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
@@ -1576,7 +1577,7 @@ setIsProcessing(false);
                         type="radio"
                         name="kmPackage"
                         checked={formData.kmPackageType === 'none'}
-                        onChange={() => setFormData(p => ({...p, kmPackageType: 'none'}))}
+                        onChange={() => setFormData(p => ({ ...p, kmPackageType: 'none' }))}
                         className="w-4 h-4 text-white"
                       />
                       <label className="ml-3 text-white font-semibold">Solo km inclusi ({calculateIncludedKm(duration.days)} km)</label>
@@ -1592,12 +1593,11 @@ setIsProcessing(false);
               <div className="space-y-3">
                 <h4 className="text-sm font-semibold text-gray-300 mb-2">KM ILLIMITATI:</h4>
                 <div
-                  className={`p-4 rounded-md border cursor-pointer transition-all ${
-                    formData.kmPackageType === 'unlimited'
+                  className={`p-4 rounded-md border cursor-pointer transition-all ${formData.kmPackageType === 'unlimited'
                       ? 'border-white bg-white/5'
                       : 'border-gray-700 hover:border-gray-500'
-                  }`}
-                  onClick={() => setFormData(p => ({...p, kmPackageType: 'unlimited'}))}
+                    }`}
+                  onClick={() => setFormData(p => ({ ...p, kmPackageType: 'unlimited' }))}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center">
@@ -1605,7 +1605,7 @@ setIsProcessing(false);
                         type="radio"
                         name="kmPackage"
                         checked={formData.kmPackageType === 'unlimited'}
-                        onChange={() => setFormData(p => ({...p, kmPackageType: 'unlimited'}))}
+                        onChange={() => setFormData(p => ({ ...p, kmPackageType: 'unlimited' }))}
                         className="w-4 h-4 text-white"
                       />
                       <label className="ml-3 text-white font-semibold">KM ILLIMITATI</label>
@@ -1665,7 +1665,7 @@ setIsProcessing(false);
               <div className="space-y-3">
                 {/* Mandatory car wash */}
                 <div className="flex items-center p-3 bg-gray-800/50 rounded-md border border-gray-700">
-                  <input type="checkbox" checked disabled className="h-4 w-4"/>
+                  <input type="checkbox" checked disabled className="h-4 w-4" />
                   <span className="ml-3 text-white">LAVAGGIO COMPLETO [OBBLIGATORIO]</span>
                   <span className="ml-auto font-semibold text-white">€30</span>
                 </div>
@@ -1680,11 +1680,10 @@ setIsProcessing(false);
                   return (
                     <div
                       key={extra.id}
-                      className={`p-3 rounded-md border cursor-pointer transition-all ${
-                        isSelected
+                      className={`p-3 rounded-md border cursor-pointer transition-all ${isSelected
                           ? 'border-white bg-white/5'
                           : 'border-gray-700 hover:border-gray-500'
-                      }`}
+                        }`}
                       onClick={() => {
                         setFormData(prev => ({
                           ...prev,
@@ -1698,7 +1697,7 @@ setIsProcessing(false);
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={() => {}}
+                          onChange={() => { }}
                           className="h-4 w-4 mt-1 text-white"
                         />
                         <div className="ml-3 flex-1">
@@ -1724,7 +1723,7 @@ setIsProcessing(false);
             <section>
               <h3 className="text-lg font-bold text-white mb-4">DATI CARTA DI CREDITO/DEBITO</h3>
               <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 min-h-[56px] flex items-center">
-                {isClientSecretLoading ? <div className="text-gray-400 text-sm">Initializing Payment...</div> : <div ref={cardElementRef} className="w-full"/>}
+                {isClientSecretLoading ? <div className="text-gray-400 text-sm">Initializing Payment...</div> : <div ref={cardElementRef} className="w-full" />}
               </div>
               {stripeError && <p className="text-xs text-red-400 mt-1">{stripeError}</p>}
             </section>
@@ -1734,7 +1733,7 @@ setIsProcessing(false);
               <div className="space-y-4">
                 <div>
                   <div className="flex items-start">
-                    <input id="confirms-documents" name="confirmsDocuments" type="checkbox" checked={formData.confirmsDocuments} onChange={handleChange} className="h-4 w-4 mt-1 rounded border-gray-600 bg-gray-700 text-white focus:ring-white"/>
+                    <input id="confirms-documents" name="confirmsDocuments" type="checkbox" checked={formData.confirmsDocuments} onChange={handleChange} className="h-4 w-4 mt-1 rounded border-gray-600 bg-gray-700 text-white focus:ring-white" />
                     <label htmlFor="confirms-documents" className="ml-3 block text-sm font-medium text-white">
                       Confermo che i documenti caricati sono corretti e appartengono al conducente principale.
                     </label>
@@ -1743,7 +1742,7 @@ setIsProcessing(false);
                 </div>
                 <div>
                   <div className="flex items-start">
-                    <input id="agrees-to-terms" name="agreesToTerms" type="checkbox" checked={formData.agreesToTerms} onChange={handleChange} className="h-4 w-4 mt-1 rounded border-gray-600 bg-gray-700 text-white focus:ring-white"/>
+                    <input id="agrees-to-terms" name="agreesToTerms" type="checkbox" checked={formData.agreesToTerms} onChange={handleChange} className="h-4 w-4 mt-1 rounded border-gray-600 bg-gray-700 text-white focus:ring-white" />
                     <label htmlFor="agrees-to-terms" className="ml-3 block text-sm font-medium text-white">
                       Ho letto e accetto i <Link to="/rental-agreement" target="_blank" className="underline hover:text-white">termini e le condizioni di noleggio</Link>.
                     </label>
@@ -1752,7 +1751,7 @@ setIsProcessing(false);
                 </div>
                 <div>
                   <div className="flex items-start">
-                    <input id="agrees-to-privacy" name="agreesToPrivacy" type="checkbox" checked={formData.agreesToPrivacy} onChange={handleChange} className="h-4 w-4 mt-1 rounded border-gray-600 bg-gray-700 text-white focus:ring-white"/>
+                    <input id="agrees-to-privacy" name="agreesToPrivacy" type="checkbox" checked={formData.agreesToPrivacy} onChange={handleChange} className="h-4 w-4 mt-1 rounded border-gray-600 bg-gray-700 text-white focus:ring-white" />
                     <label htmlFor="agrees-to-privacy" className="ml-3 block text-sm font-medium text-white">
                       Ho letto e accetto l'<Link to="/privacy-policy" target="_blank" className="underline hover:text-white">informativa sulla privacy</Link>.
                     </label>
@@ -1767,13 +1766,13 @@ setIsProcessing(false);
               <div className="p-6 bg-gray-800/50 rounded-lg border border-gray-700 space-y-6 text-sm">
                 <div>
                   <p className="font-bold text-base text-white mb-2">VEICOLO SELEZIONATO</p>
-                  <hr className="border-gray-600 mb-2"/>
+                  <hr className="border-gray-600 mb-2" />
                   <p>{item.name}</p>
                 </div>
 
                 <div>
                   <p className="font-bold text-base text-white mb-2">DATE E LOCALITÀ</p>
-                  <hr className="border-gray-600 mb-2"/>
+                  <hr className="border-gray-600 mb-2" />
                   <p>Ritiro: {formData.pickupDate} alle {formData.pickupTime} - {getTranslated(PICKUP_LOCATIONS.find(l => l.id === formData.pickupLocation)?.label)}</p>
                   <p>Riconsegna: {formData.returnDate} alle {formData.returnTime} - {getTranslated(PICKUP_LOCATIONS.find(l => l.id === formData.returnLocation)?.label)}</p>
                   <p>Durata: {duration.days} giorni</p>
@@ -1782,7 +1781,7 @@ setIsProcessing(false);
 
                 <div>
                   <p className="font-bold text-base text-white mb-2">CONDUCENTE/I</p>
-                  <hr className="border-gray-600 mb-2"/>
+                  <hr className="border-gray-600 mb-2" />
                   <p>Principale: {formData.firstName} {formData.lastName}</p>
                   <p className="text-xs text-gray-400">{formData.email} - {formData.phone}</p>
                   <p className="text-xs text-gray-400">{driverAge} anni - Patente: {licenseYears} anni</p>
@@ -1796,7 +1795,7 @@ setIsProcessing(false);
 
                 <div>
                   <p className="font-bold text-base text-white mb-2">ASSICURAZIONE E SERVIZI</p>
-                  <hr className="border-gray-600 mb-2"/>
+                  <hr className="border-gray-600 mb-2" />
                   <p>Assicurazione: {getTranslated(insuranceOptions.find(i => i.id === formData.insuranceOption)?.label)}</p>
                   <p>Lavaggio completo obbligatorio</p>
                   {formData.addSecondDriver && <p>Secondo guidatore</p>}
@@ -1804,7 +1803,7 @@ setIsProcessing(false);
 
                 <div>
                   <p className="font-bold text-base text-white mb-2">DETTAGLIO COSTI</p>
-                  <hr className="border-gray-600 mb-2"/>
+                  <hr className="border-gray-600 mb-2" />
                   <div className="flex justify-between"><span>Noleggio ({duration.days} gg × {item.pricePerDay ? formatPrice(item.pricePerDay[currency]) : '€0'})</span> <span>{formatPrice(rentalCost)}</span></div>
                   <div className="flex justify-between"><span>Pacchetto km ({formData.kmPackageType === 'unlimited' ? 'illimitati' : `${includedKm} km`})</span> <span>{formatPrice(kmPackageCost)}</span></div>
                   <div className="flex justify-between"><span className="notranslate">Assicurazione KASKO</span> <span>{formatPrice(insuranceCost)}</span></div>
@@ -1814,7 +1813,7 @@ setIsProcessing(false);
                   {secondDriverFee > 0 && <div className="flex justify-between"><span>Secondo guidatore ({duration.days} gg × €10)</span> <span>{formatPrice(secondDriverFee)}</span></div>}
                   {youngDriverFee > 0 && <div className="flex justify-between"><span>Supplemento under 25 ({duration.days} gg × €10)</span> <span>{formatPrice(youngDriverFee)}</span></div>}
                   {recentLicenseFee > 0 && <div className="flex justify-between"><span>Supplemento patente recente ({duration.days} gg × €20)</span> <span>{formatPrice(recentLicenseFee)}</span></div>}
-                  <hr className="border-gray-500 my-2"/>
+                  <hr className="border-gray-500 my-2" />
                   <div className="flex justify-between font-bold text-lg"><span>TOTALE</span> <span>{formatPrice(total)}</span></div>
                 </div>
 
@@ -1879,7 +1878,7 @@ setIsProcessing(false);
           className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
           aria-label="Close"
         >
-          
+
         </button>
         <h2 className="text-2xl font-bold text-white mb-4">Accesso Richiesto</h2>
         <p className="text-gray-300 mb-6">Devi effettuare l'accesso o registrarti per poter completare una prenotazione.</p>
@@ -1934,7 +1933,7 @@ setIsProcessing(false);
           <aside className="lg:col-span-1 lg:sticky lg:top-32 self-start mb-8 lg:mb-0">
             <div className="bg-gray-900/50 p-6 rounded-lg border border-gray-800">
               <h2 className="text-2xl font-bold text-white mb-4">RIEPILOGO COSTI</h2>
-              <img src={item.image} alt={item.name} className="w-full h-40 object-contain rounded-md mb-4 bg-gray-800/30"/>
+              <img src={item.image} alt={item.name} className="w-full h-40 object-contain rounded-md mb-4 bg-gray-800/30" />
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-gray-400">Durata noleggio:</span><span className="text-white font-medium">{duration.days} giorni</span></div>
                 <div className="flex justify-between">
@@ -1981,7 +1980,7 @@ setIsProcessing(false);
                   className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
                   aria-label="Close"
                 >
-                  
+
                 </button>
                 {renderStepContent()}
               </motion.div>
