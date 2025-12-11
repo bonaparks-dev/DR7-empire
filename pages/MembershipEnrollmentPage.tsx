@@ -7,6 +7,7 @@ import { useAuth } from '../hooks/useAuth';
 import { MEMBERSHIP_TIERS, CRYPTO_ADDRESSES } from '../constants';
 import type { Stripe, StripeCardElement } from '@stripe/stripe-js';
 import { getUserCreditBalance, deductCredits, hasSufficientBalance } from '../utils/creditWallet';
+import { supabase } from '../supabaseClient';
 
 // Safely access the Stripe publishable key from Vite's environment variables.
 // If it's not available (e.g., in a non-Vite environment), it falls back to a placeholder.
@@ -165,11 +166,12 @@ const MembershipEnrollmentPage: React.FC = () => {
     };
 
     const finalizeEnrollment = async () => {
-        if (!tier) return;
+        if (!tier || !user?.id) return;
         const renewalDate = new Date();
         if (billingCycle === 'monthly') renewalDate.setMonth(renewalDate.getMonth() + 1);
         else renewalDate.setFullYear(renewalDate.getFullYear() + 1);
 
+        // Update user's membership status
         await updateUser({
             membership: {
                 tierId: tier.id,
@@ -177,6 +179,26 @@ const MembershipEnrollmentPage: React.FC = () => {
                 renewalDate: renewalDate.toISOString()
             }
         });
+
+        // Save purchase record to database
+        const { error: purchaseError } = await supabase
+            .from('membership_purchases')
+            .insert({
+                user_id: user.id,
+                tier_id: tier.id,
+                tier_name: tier.name[lang],
+                billing_cycle: billingCycle,
+                price: price,
+                currency: currency.toUpperCase(),
+                payment_method: paymentMethod,
+                payment_status: 'completed',
+                renewal_date: renewalDate.toISOString()
+            });
+
+        if (purchaseError) {
+            console.error('Error saving membership purchase:', purchaseError);
+            // Don't block the user, just log the error
+        }
 
         // Generate WhatsApp message for membership enrollment
         const tierName = tier.name[lang];
