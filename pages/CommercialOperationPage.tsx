@@ -10,6 +10,7 @@ import type { Stripe, StripeElements, StripeCardElement } from '@stripe/stripe-j
 import { ImageCarousel } from '../components/ui/ImageCarousel';
 import { supabase } from '../supabaseClient';
 import NewClientModal from '../components/NewClientModal';
+import { getUserCreditBalance, deductCredits, hasSufficientBalance } from '../utils/creditWallet';
 
 // Safely access the Stripe publishable key from Vite's environment variables.
 // If it's not available (e.g., in a non-Vite environment), it falls back to a placeholder.
@@ -72,6 +73,11 @@ const CommercialOperationPage: React.FC = () => {
     const [showClientModal, setShowClientModal] = useState(false);
     const [clientId, setClientId] = useState<string | null>(null);
     const [customerExtendedData, setCustomerExtendedData] = useState<any>(null);
+
+    // Credit wallet state
+    const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'credit'>('stripe');
+    const [creditBalance, setCreditBalance] = useState<number>(0);
+    const [isLoadingBalance, setIsLoadingBalance] = useState(true);
 
     useEffect(() => {
         if ((window as any).Stripe) {
@@ -233,6 +239,25 @@ const CommercialOperationPage: React.FC = () => {
         // Automatically show the payment modal after client creation
         setShowConfirmModal(true);
     };
+
+    // Fetch credit balance
+    useEffect(() => {
+        const fetchBalance = async () => {
+            if (user?.id) {
+                setIsLoadingBalance(true);
+                try {
+                    const balance = await getUserCreditBalance(user.id);
+                    setCreditBalance(balance);
+                } catch (error) {
+                    console.error('Error fetching credit balance:', error);
+                } finally {
+                    setIsLoadingBalance(false);
+                }
+            }
+        };
+
+        fetchBalance();
+    }, [user]);
 
     useEffect(() => {
         if (showConfirmModal && totalPrice > 0) {
