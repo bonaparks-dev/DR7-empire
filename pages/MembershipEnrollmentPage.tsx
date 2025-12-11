@@ -263,7 +263,7 @@ const MembershipEnrollmentPage: React.FC = () => {
                             <button type="button" onClick={() => setPaymentMethod('credit')} className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 ${paymentMethod === 'credit' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}>
                                 Credit Wallet
                             </button>
-                            <button type="button" onClick={() => setPaymentMethod('stripe')} className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 ${paymentMethod === 'stripe' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}>{t('Credit_Card')}</button>
+                            <button type="button" onClick={() => setPaymentMethod('stripe')} className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 ${paymentMethod === 'stripe' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}>Carta</button>
                         </div>
 
                         {paymentMethod === 'credit' ? (
