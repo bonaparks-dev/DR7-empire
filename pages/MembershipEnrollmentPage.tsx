@@ -264,7 +264,6 @@ const MembershipEnrollmentPage: React.FC = () => {
                                 Credit Wallet
                             </button>
                             <button type="button" onClick={() => setPaymentMethod('stripe')} className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 ${paymentMethod === 'stripe' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}>{t('Credit_Card')}</button>
-                            <button type="button" onClick={() => setPaymentMethod('crypto')} className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 ${paymentMethod === 'crypto' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}>{t('Cryptocurrency')}</button>
                         </div>
 
                         {paymentMethod === 'credit' ? (
@@ -285,23 +284,12 @@ const MembershipEnrollmentPage: React.FC = () => {
                                     </>
                                 )}
                             </div>
-                        ) : paymentMethod === 'stripe' ? (
+                        ) : (
                             <div>
                                 <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
                                     {isClientSecretLoading ? <p className="text-gray-400 text-sm">Initializing payment...</p> : <div ref={cardElementRef} />}
                                 </div>
                                 {stripeError && <p className="text-xs text-red-400 mt-2">{stripeError}</p>}
-                            </div>
-                        ) : (
-                            <div className="text-center">
-                                <label className="text-sm text-gray-300 block mb-2">{t('Select_your_crypto')}</label>
-                                <div className="flex border border-gray-700 rounded-full p-1 max-w-sm mx-auto mb-4">
-                                    {Object.keys(CRYPTO_ADDRESSES).map(c => (
-                                        <button type="button" key={c} onClick={() => setSelectedCrypto(c)} className={`flex-1 py-1 text-sm rounded-full transition-colors ${selectedCrypto === c ? 'bg-white text-black font-bold' : 'text-gray-300'}`}>{c.toUpperCase()}</button>
-                                    ))}
-                                </div>
-                                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${CRYPTO_ADDRESSES[selectedCrypto]}`} alt={`${selectedCrypto.toUpperCase()} QR Code`} className="w-32 h-32 mx-auto bg-white p-1 rounded-md" />
-                                <input type="text" readOnly value={CRYPTO_ADDRESSES[selectedCrypto]} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-4 text-white text-center text-xs tracking-tight" />
                             </div>
                         )}
 
