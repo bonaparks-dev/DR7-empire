@@ -59,26 +59,34 @@ ALTER TABLE credit_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE credit_wallet_purchases ENABLE ROW LEVEL SECURITY;
 
 -- 6. Create RLS Policies
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view own balance" ON user_credit_balance;
+DROP POLICY IF EXISTS "Users can view own transactions" ON credit_transactions;
+DROP POLICY IF EXISTS "Users can view own purchases" ON credit_wallet_purchases;
+DROP POLICY IF EXISTS "Service role full access balance" ON user_credit_balance;
+DROP POLICY IF EXISTS "Service role full access transactions" ON credit_transactions;
+DROP POLICY IF EXISTS "Service role full access purchases" ON credit_wallet_purchases;
+
 -- User can view their own balance
-CREATE POLICY IF NOT EXISTS "Users can view own balance" ON user_credit_balance
+CREATE POLICY "Users can view own balance" ON user_credit_balance
   FOR SELECT USING (auth.uid() = user_id);
 
 -- User can view their own transactions
-CREATE POLICY IF NOT EXISTS "Users can view own transactions" ON credit_transactions
+CREATE POLICY "Users can view own transactions" ON credit_transactions
   FOR SELECT USING (auth.uid() = user_id);
 
 -- User can view their own purchases
-CREATE POLICY IF NOT EXISTS "Users can view own purchases" ON credit_wallet_purchases
+CREATE POLICY "Users can view own purchases" ON credit_wallet_purchases
   FOR SELECT USING (auth.uid() = user_id);
 
 -- Service role can do everything (for backend operations)
-CREATE POLICY IF NOT EXISTS "Service role full access balance" ON user_credit_balance
+CREATE POLICY "Service role full access balance" ON user_credit_balance
   FOR ALL USING (auth.jwt()->>'role' = 'service_role');
 
-CREATE POLICY IF NOT EXISTS "Service role full access transactions" ON credit_transactions
+CREATE POLICY "Service role full access transactions" ON credit_transactions
   FOR ALL USING (auth.jwt()->>'role' = 'service_role');
 
-CREATE POLICY IF NOT EXISTS "Service role full access purchases" ON credit_wallet_purchases
+CREATE POLICY "Service role full access purchases" ON credit_wallet_purchases
   FOR ALL USING (auth.jwt()->>'role' = 'service_role');
 
 -- Grant necessary permissions
