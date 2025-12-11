@@ -840,114 +840,114 @@ const CreditWalletPage: React.FC = () => {
                       )}
                     </div>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Nome Completo *
-                      </label>
-                      <input
-                        type="text"
-                        name="fullName"
-                        value={formData.fullName}
-                        onChange={handleChange}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                      />
-                      {errors.fullName && <p className="text-xs text-red-400 mt-1">{errors.fullName}</p>}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Email *</label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                      />
-                      {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Telefono *</label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        placeholder="+39 320 1234567"
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                      />
-                      {errors.phone && <p className="text-xs text-red-400 mt-1">{errors.phone}</p>}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Codice Fiscale *</label>
-                      <input
-                        type="text"
-                        name="codiceFiscale"
-                        value={formData.codiceFiscale}
-                        onChange={handleChange}
-                        maxLength={16}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
-                      />
-                      {errors.codiceFiscale && <p className="text-xs text-red-400 mt-1">{errors.codiceFiscale}</p>}
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Indirizzo *</label>
-                      <input
-                        type="text"
-                        name="indirizzo"
-                        value={formData.indirizzo}
-                        onChange={handleChange}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                      />
-                      {errors.indirizzo && <p className="text-xs text-red-400 mt-1">{errors.indirizzo}</p>}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">N. Civico</label>
-                      <input
-                        type="text"
-                        name="numeroCivico"
-                        value={formData.numeroCivico}
-                        onChange={handleChange}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Città *</label>
-                      <input
-                        type="text"
-                        name="cittaResidenza"
-                        value={formData.cittaResidenza}
-                        onChange={handleChange}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                      />
-                      {errors.cittaResidenza && <p className="text-xs text-red-400 mt-1">{errors.cittaResidenza}</p>}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">CAP *</label>
-                      <input
-                        type="text"
-                        name="codicePostale"
-                        value={formData.codicePostale}
-                        onChange={handleChange}
-                        maxLength={5}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                      />
-                      {errors.codicePostale && <p className="text-xs text-red-400 mt-1">{errors.codicePostale}</p>}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Provincia *</label>
-                      <input
-                        type="text"
-                        name="provinciaResidenza"
-                        value={formData.provinciaResidenza}
-                        onChange={handleChange}
-                        maxLength={2}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
-                      />
-                      {errors.provinciaResidenza && <p className="text-xs text-red-400 mt-1">{errors.provinciaResidenza}</p>}
-                    </div>
-                  </div>
-                )}
+                    : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">
+                            Nome Completo *
+                          </label>
+                          <input
+                            type="text"
+                            name="fullName"
+                            value={formData.fullName}
+                            onChange={handleChange}
+                            className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                          />
+                          {errors.fullName && <p className="text-xs text-red-400 mt-1">{errors.fullName}</p>}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">Email *</label>
+                          <input
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                          />
+                          {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">Telefono *</label>
+                          <input
+                            type="tel"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleChange}
+                            placeholder="+39 320 1234567"
+                            className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                          />
+                          {errors.phone && <p className="text-xs text-red-400 mt-1">{errors.phone}</p>}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">Codice Fiscale *</label>
+                          <input
+                            type="text"
+                            name="codiceFiscale"
+                            value={formData.codiceFiscale}
+                            onChange={handleChange}
+                            maxLength={16}
+                            className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
+                          />
+                          {errors.codiceFiscale && <p className="text-xs text-red-400 mt-1">{errors.codiceFiscale}</p>}
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-300 mb-2">Indirizzo *</label>
+                          <input
+                            type="text"
+                            name="indirizzo"
+                            value={formData.indirizzo}
+                            onChange={handleChange}
+                            className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                          />
+                          {errors.indirizzo && <p className="text-xs text-red-400 mt-1">{errors.indirizzo}</p>}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">N. Civico</label>
+                          <input
+                            type="text"
+                            name="numeroCivico"
+                            value={formData.numeroCivico}
+                            onChange={handleChange}
+                            className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">Città *</label>
+                          <input
+                            type="text"
+                            name="cittaResidenza"
+                            value={formData.cittaResidenza}
+                            onChange={handleChange}
+                            className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                          />
+                          {errors.cittaResidenza && <p className="text-xs text-red-400 mt-1">{errors.cittaResidenza}</p>}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">CAP *</label>
+                          <input
+                            type="text"
+                            name="codicePostale"
+                            value={formData.codicePostale}
+                            onChange={handleChange}
+                            maxLength={5}
+                            className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                          />
+                          {errors.codicePostale && <p className="text-xs text-red-400 mt-1">{errors.codicePostale}</p>}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">Provincia *</label>
+                          <input
+                            type="text"
+                            name="provinciaResidenza"
+                            value={formData.provinciaResidenza}
+                            onChange={handleChange}
+                            maxLength={2}
+                            className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
+                          />
+                          {errors.provinciaResidenza && <p className="text-xs text-red-400 mt-1">{errors.provinciaResidenza}</p>}
+                        </div>
+                      </div>
+                    )}
                 </div>
 
                 {/* Payment Information */}
