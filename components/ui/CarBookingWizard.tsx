@@ -18,6 +18,7 @@ import {
 } from '../../data/kmPricingData';
 import { checkVehicleAvailability, checkVehiclePartialUnavailability, checkGroupedVehicleAvailability } from '../../utils/bookingValidation';
 import { getUserCreditBalance, deductCredits, hasSufficientBalance } from '../../utils/creditWallet';
+import { calculateDiscountedPrice, getMembershipTierName } from '../../utils/membershipDiscounts';
 
 const FUNCTIONS_BASE =
   import.meta.env.VITE_FUNCTIONS_BASE ??
@@ -453,9 +454,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   // === Calculs tarifaires / durée / km inclus ===
   const {
     duration, rentalCost, insuranceCost, extrasCost, kmPackageCost, pickupFee, dropoffFee, subtotal, taxes, total, includedKm,
-    driverAge, licenseYears, youngDriverFee, recentLicenseFee, secondDriverFee, recommendedKm
+    driverAge, licenseYears, youngDriverFee, recentLicenseFee, secondDriverFee, recommendedKm,
+    membershipDiscount, membershipTier, originalTotal, finalTotal
   } = useMemo(() => {
-    const zero = { duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, kmPackageCost: 0, pickupFee: 0, dropoffFee: 0, subtotal: 0, taxes: 0, total: 0, includedKm: 0, driverAge: 0, licenseYears: 0, youngDriverFee: 0, recentLicenseFee: 0, secondDriverFee: 0, recommendedKm: null };
+    const zero = { duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, kmPackageCost: 0, pickupFee: 0, dropoffFee: 0, subtotal: 0, taxes: 0, total: 0, includedKm: 0, driverAge: 0, licenseYears: 0, youngDriverFee: 0, recentLicenseFee: 0, secondDriverFee: 0, recommendedKm: null, membershipDiscount: 0, membershipTier: null, originalTotal: 0, finalTotal: 0 };
     if (!item || !item.pricePerDay) return zero;
 
     const pricePerDay = item.pricePerDay[currency];
@@ -532,6 +534,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     const calculatedTaxes = calculatedSubtotal * 0.10;
     const calculatedTotal = calculatedSubtotal + calculatedTaxes;
 
+    // Apply membership discount
+    const discountInfo = calculateDiscountedPrice(calculatedTotal, user, 'car_rental');
+    const membershipTierName = getMembershipTierName(user);
+
     return {
       duration: { days, hours },
       rentalCost: calculatedRentalCost,
@@ -549,13 +555,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       youngDriverFee: calculatedYoungDriverFee,
       recentLicenseFee: calculatedRecentLicenseFee,
       secondDriverFee: calculatedSecondDriverFee,
-      recommendedKm: calculatedRecommendedKm
+      recommendedKm: calculatedRecommendedKm,
+      membershipDiscount: discountInfo.discountAmount,
+      membershipTier: membershipTierName,
+      originalTotal: discountInfo.originalPrice,
+      finalTotal: discountInfo.finalPrice
     };
   }, [
     formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime,
     formData.insuranceOption, formData.extras, formData.birthDate, formData.licenseIssueDate, formData.addSecondDriver,
     formData.kmPackageType, formData.kmPackageDistance, formData.expectedKm,
-    item, currency
+    item, currency, user
   ]);
 
   // Forcer horaires valides et pas de dimanche
@@ -570,7 +580,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
   // Client secret (inclut userId/email pour réconciliation)
   useEffect(() => {
-    if (step === 4 && total > 0) {
+    if (step === 4 && finalTotal > 0) {
       setIsClientSecretLoading(true);
       setClientSecret(null);
       setStripeError(null);
@@ -579,7 +589,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: total,
+          amount: finalTotal,
           currency,
           userId: user?.id,
           email: formData.email
@@ -602,7 +612,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         })
         .finally(() => setIsClientSecretLoading(false));
     }
-  }, [step, total, currency, user?.id, formData.email]);
+  }, [step, finalTotal, currency, user?.id, formData.email]);
 
   // Mount Stripe Card Element (no return_url; 3DS in-page)
   useEffect(() => {
@@ -1069,9 +1079,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       }
 
       // Check sufficient balance
-      const hasBalance = await hasSufficientBalance(user.id, total);
+      const hasBalance = await hasSufficientBalance(user.id, finalTotal);
       if (!hasBalance) {
-        setStripeError(`Credito insufficiente. Saldo attuale: €${creditBalance.toFixed(2)}, Richiesto: €${total.toFixed(2)}`);
+        setStripeError(`Credito insufficiente. Saldo attuale: €${creditBalance.toFixed(2)}, Richiesto: €${finalTotal.toFixed(2)}`);
         setIsProcessing(false);
         return;
       }
@@ -1079,7 +1089,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       // Deduct credits
       const deductResult = await deductCredits(
         user.id,
-        total,
+        finalTotal,
         `Noleggio ${item.name} - ${formData.pickupDate} to ${formData.returnDate}`,
         undefined,
         'car_rental'
@@ -1900,7 +1910,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
                   {youngDriverFee > 0 && <div className="flex justify-between"><span>Supplemento under 25 ({duration.days} gg × €10)</span> <span>{formatPrice(youngDriverFee)}</span></div>}
                   {recentLicenseFee > 0 && <div className="flex justify-between"><span>Supplemento patente recente ({duration.days} gg × €20)</span> <span>{formatPrice(recentLicenseFee)}</span></div>}
                   <hr className="border-gray-500 my-2" />
-                  <div className="flex justify-between font-bold text-lg"><span>TOTALE</span> <span>{formatPrice(total)}</span></div>
+                  {membershipDiscount > 0 ? (
+                    <>
+                      <div className="flex justify-between text-gray-400 line-through"><span>Totale</span> <span>{formatPrice(originalTotal)}</span></div>
+                      <div className="flex justify-between text-green-400 text-sm">
+                        <span>Sconto {membershipTier} ({(membershipDiscount / originalTotal * 100).toFixed(0)}%)</span>
+                        <span>-{formatPrice(membershipDiscount)}</span>
+                      </div>
+                      <div className="flex justify-between font-bold text-lg text-white"><span>TOTALE</span> <span>{formatPrice(finalTotal)}</span></div>
+                    </>
+                  ) : (
+                    <div className="flex justify-between font-bold text-lg"><span>TOTALE</span> <span>{formatPrice(total)}</span></div>
+                  )}
                 </div>
 
                 {/* Maggiori informazioni */}
@@ -2043,7 +2064,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
                 <div className="border-t border-white/20 my-2"></div>
 
-                <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(total)}</span></div>
+                {membershipDiscount > 0 ? (
+                  <>
+                    <div className="flex justify-between text-gray-400 line-through text-sm"><span>Totale</span><span>{formatPrice(originalTotal)}</span></div>
+                    <div className="flex justify-between text-green-400 text-sm">
+                      <span>Sconto {membershipTier}</span>
+                      <span>-{formatPrice(membershipDiscount)}</span>
+                    </div>
+                    <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(finalTotal)}</span></div>
+                  </>
+                ) : (
+                  <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(total)}</span></div>
+                )}
               </div>
             </div>
           </aside>
