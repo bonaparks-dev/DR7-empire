@@ -285,716 +285,715 @@ const CreditWalletPage: React.FC = () => {
       fetchCustomerData();
     }
   }, [user]);
-}, [user]);
 
-// Create payment intent when modal opens
-useEffect(() => {
-  if (showPaymentModal && selectedPackage) {
-    setIsClientSecretLoading(true);
-    setStripeError(null);
-    setClientSecret(null);
+  // Create payment intent when modal opens
+  useEffect(() => {
+    if (showPaymentModal && selectedPackage) {
+      setIsClientSecretLoading(true);
+      setStripeError(null);
+      setClientSecret(null);
 
-    fetch('/.netlify/functions/create-payment-intent', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        amount: selectedPackage.rechargeAmount,
-        currency: 'eur',
-        email: user?.email,
-        purchaseType: 'credit-wallet',
-        metadata: {
-          packageId: selectedPackage.id,
-          packageName: selectedPackage.name,
-          receivedAmount: selectedPackage.receivedAmount,
-          bonus: selectedPackage.bonus
-        }
-      })
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) {
-          setStripeError(data.error);
-        } else {
-          setClientSecret(data.clientSecret);
-        }
-      })
-      .catch(error => {
-        console.error('Failed to fetch client secret:', error);
-        setStripeError('Could not connect to payment server.');
-      })
-      .finally(() => {
-        setIsClientSecretLoading(false);
-      });
-  }
-}, [showPaymentModal, selectedPackage, user]);
-
-// Mount Stripe card element
-useEffect(() => {
-  if (elements && clientSecret && cardElementRef.current && showPaymentModal) {
-    const existingCard = elements.getElement('card');
-    if (existingCard) {
-      existingCard.unmount();
-    }
-
-    const timer = setTimeout(() => {
-      if (cardElementRef.current) {
-        const card = elements.create('card', {
-          style: {
-            base: {
-              color: '#ffffff',
-              fontFamily: '"Exo 2", sans-serif',
-              fontSize: '16px',
-              '::placeholder': { color: '#a0aec0' }
-            },
-            invalid: { color: '#ef4444', iconColor: '#ef4444' }
+      fetch('/.netlify/functions/create-payment-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: selectedPackage.rechargeAmount,
+          currency: 'eur',
+          email: user?.email,
+          purchaseType: 'credit-wallet',
+          metadata: {
+            packageId: selectedPackage.id,
+            packageName: selectedPackage.name,
+            receivedAmount: selectedPackage.receivedAmount,
+            bonus: selectedPackage.bonus
           }
+        })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            setStripeError(data.error);
+          } else {
+            setClientSecret(data.clientSecret);
+          }
+        })
+        .catch(error => {
+          console.error('Failed to fetch client secret:', error);
+          setStripeError('Could not connect to payment server.');
+        })
+        .finally(() => {
+          setIsClientSecretLoading(false);
         });
+    }
+  }, [showPaymentModal, selectedPackage, user]);
 
-        try {
-          card.mount(cardElementRef.current);
-          card.on('change', (event) => {
-            setStripeError(event.error ? event.error.message : null);
+  // Mount Stripe card element
+  useEffect(() => {
+    if (elements && clientSecret && cardElementRef.current && showPaymentModal) {
+      const existingCard = elements.getElement('card');
+      if (existingCard) {
+        existingCard.unmount();
+      }
+
+      const timer = setTimeout(() => {
+        if (cardElementRef.current) {
+          const card = elements.create('card', {
+            style: {
+              base: {
+                color: '#ffffff',
+                fontFamily: '"Exo 2", sans-serif',
+                fontSize: '16px',
+                '::placeholder': { color: '#a0aec0' }
+              },
+              invalid: { color: '#ef4444', iconColor: '#ef4444' }
+            }
           });
-        } catch (error) {
-          console.error('Error mounting Stripe card element:', error);
-          setStripeError('Failed to load payment form. Please refresh the page.');
+
+          try {
+            card.mount(cardElementRef.current);
+            card.on('change', (event) => {
+              setStripeError(event.error ? event.error.message : null);
+            });
+          } catch (error) {
+            console.error('Error mounting Stripe card element:', error);
+            setStripeError('Failed to load payment form. Please refresh the page.');
+          }
         }
-      }
-    }, 100);
+      }, 100);
 
-    return () => {
-      clearTimeout(timer);
-      const card = elements.getElement('card');
-      if (card) {
-        card.unmount();
-      }
-    };
-  }
-}, [elements, clientSecret, showPaymentModal]);
-
-// Validation functions
-const validateCodiceFiscale = (cf: string): boolean => {
-  const cfRegex = /^[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]$/i;
-  return cf.length === 16 && cfRegex.test(cf.toUpperCase());
-};
-
-const validateItalianPhone = (phone: string): boolean => {
-  const phoneRegex = /^(\+39|0039)?[\s]?[0-9]{9,13}$/;
-  return phoneRegex.test(phone.replace(/\s/g, ''));
-};
-
-const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const { name, value } = e.target;
-  let newValue = value;
-
-  if (name === 'codiceFiscale' || name === 'provinciaResidenza') {
-    newValue = value.toUpperCase();
-  }
-
-  setFormData(prev => ({ ...prev, [name]: newValue }));
-  if (errors[name]) {
-    setErrors(prev => ({ ...prev, [name]: '' }));
-  }
-};
-
-const validate = () => {
-  const newErrors: Record<string, string> = {};
-  if (!formData.fullName) newErrors.fullName = 'Il nome è obbligatorio';
-  if (!formData.email) newErrors.email = 'L\'email è obbligatoria';
-
-  // Phone validation (optional but validated if present)
-  if (formData.phone && !validateItalianPhone(formData.phone)) {
-    newErrors.phone = 'Formato telefono non valido';
-  }
-
-  // Codice Fiscale (Optional for quickcheckout, validated if present)
-  if (formData.codiceFiscale && !validateCodiceFiscale(formData.codiceFiscale)) {
-    newErrors.codiceFiscale = 'Codice Fiscale non valido (16 caratteri)';
-  }
-
-  // Address fields are now optional for credit wallet easy-checkout
-  // They will be empty string if not provided
-
-  setErrors(newErrors);
-  return Object.keys(newErrors).length === 0;
-};
-
-const handleSelectPackage = (packageId: string) => {
-  if (user) {
-    const pkg = CREDIT_PACKAGES.find(p => p.id === packageId);
-    if (pkg) {
-      setSelectedPackage(pkg);
-      setShowPaymentModal(true);
+      return () => {
+        clearTimeout(timer);
+        const card = elements.getElement('card');
+        if (card) {
+          card.unmount();
+        }
+      };
     }
-  } else {
-    navigate('/signin', { state: { from: { pathname: '/credit-wallet' } } });
-  }
-};
+  }, [elements, clientSecret, showPaymentModal]);
 
-const handlePayment = async (e: React.FormEvent) => {
-  e.preventDefault();
+  // Validation functions
+  const validateCodiceFiscale = (cf: string): boolean => {
+    const cfRegex = /^[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]$/i;
+    return cf.length === 16 && cfRegex.test(cf.toUpperCase());
+  };
 
-  if (!validate()) return;
-  if (!stripe || !elements || !clientSecret || !selectedPackage) {
-    setStripeError("Payment system is not ready.");
-    return;
-  }
+  const validateItalianPhone = (phone: string): boolean => {
+    const phoneRegex = /^(\+39|0039)?[\s]?[0-9]{9,13}$/;
+    return phoneRegex.test(phone.replace(/\s/g, ''));
+  };
 
-  setIsProcessing(true);
-  setStripeError(null);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    let newValue = value;
 
-  try {
-    const cardElement = elements.getElement('card');
-    if (!cardElement) {
-      throw new Error('Card element not found');
+    if (name === 'codiceFiscale' || name === 'provinciaResidenza') {
+      newValue = value.toUpperCase();
     }
 
-    const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-      payment_method: {
-        card: cardElement,
-        billing_details: {
-          name: formData.fullName,
-          email: formData.email,
-          phone: formData.phone
-        }
-      }
-    });
+    setFormData(prev => ({ ...prev, [name]: newValue }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
 
-    if (error) {
-      setStripeError(error.message || 'Payment failed');
-      setIsProcessing(false);
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.fullName) newErrors.fullName = 'Il nome è obbligatorio';
+    if (!formData.email) newErrors.email = 'L\'email è obbligatoria';
+
+    // Phone validation (optional but validated if present)
+    if (formData.phone && !validateItalianPhone(formData.phone)) {
+      newErrors.phone = 'Formato telefono non valido';
+    }
+
+    // Codice Fiscale (Optional for quickcheckout, validated if present)
+    if (formData.codiceFiscale && !validateCodiceFiscale(formData.codiceFiscale)) {
+      newErrors.codiceFiscale = 'Codice Fiscale non valido (16 caratteri)';
+    }
+
+    // Address fields are now optional for credit wallet easy-checkout
+    // They will be empty string if not provided
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSelectPackage = (packageId: string) => {
+    if (user) {
+      const pkg = CREDIT_PACKAGES.find(p => p.id === packageId);
+      if (pkg) {
+        setSelectedPackage(pkg);
+        setShowPaymentModal(true);
+      }
+    } else {
+      navigate('/signin', { state: { from: { pathname: '/credit-wallet' } } });
+    }
+  };
+
+  const handlePayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validate()) return;
+    if (!stripe || !elements || !clientSecret || !selectedPackage) {
+      setStripeError("Payment system is not ready.");
       return;
     }
 
-    // Save credit wallet purchase to database
-    const { data, error: dbError } = await supabase
-      .from('credit_wallet_purchases')
-      .insert([{
-        user_id: user?.id || null,
-        package_id: selectedPackage.id,
-        package_name: selectedPackage.name,
-        package_series: selectedPackage.series,
-        recharge_amount: selectedPackage.rechargeAmount,
-        received_amount: selectedPackage.receivedAmount,
-        bonus_amount: selectedPackage.bonus,
-        bonus_percentage: selectedPackage.bonusPercentage,
-        payment_intent_id: paymentIntent?.id,
-        payment_status: 'paid',
-        currency: 'EUR',
-        customer_name: formData.fullName,
-        customer_email: formData.email,
-        customer_phone: formData.phone,
-        customer_codice_fiscale: formData.codiceFiscale,
-        customer_indirizzo: formData.indirizzo,
-        customer_numero_civico: formData.numeroCivico,
-        customer_citta: formData.cittaResidenza,
-        customer_cap: formData.codicePostale,
-        customer_provincia: formData.provinciaResidenza,
-        created_at: new Date().toISOString()
-      }])
-      .select()
-      .single();
+    setIsProcessing(true);
+    setStripeError(null);
 
-    if (dbError) {
-      console.error('Database error:', dbError);
-      throw new Error('Failed to save purchase record');
+    try {
+      const cardElement = elements.getElement('card');
+      if (!cardElement) {
+        throw new Error('Card element not found');
+      }
+
+      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: cardElement,
+          billing_details: {
+            name: formData.fullName,
+            email: formData.email,
+            phone: formData.phone
+          }
+        }
+      });
+
+      if (error) {
+        setStripeError(error.message || 'Payment failed');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Save credit wallet purchase to database
+      const { data, error: dbError } = await supabase
+        .from('credit_wallet_purchases')
+        .insert([{
+          user_id: user?.id || null,
+          package_id: selectedPackage.id,
+          package_name: selectedPackage.name,
+          package_series: selectedPackage.series,
+          recharge_amount: selectedPackage.rechargeAmount,
+          received_amount: selectedPackage.receivedAmount,
+          bonus_amount: selectedPackage.bonus,
+          bonus_percentage: selectedPackage.bonusPercentage,
+          payment_intent_id: paymentIntent?.id,
+          payment_status: 'paid',
+          currency: 'EUR',
+          customer_name: formData.fullName,
+          customer_email: formData.email,
+          customer_phone: formData.phone,
+          customer_codice_fiscale: formData.codiceFiscale,
+          customer_indirizzo: formData.indirizzo,
+          customer_numero_civico: formData.numeroCivico,
+          customer_citta: formData.cittaResidenza,
+          customer_cap: formData.codicePostale,
+          customer_provincia: formData.provinciaResidenza,
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
+
+      if (dbError) {
+        console.error('Database error:', dbError);
+        throw new Error('Failed to save purchase record');
+      }
+
+      // Add credits to user's balance
+      if (user?.id) {
+        const creditResult = await addCredits(
+          user.id,
+          selectedPackage.receivedAmount,
+          `Ricarica ${selectedPackage.name}`,
+          data?.id,
+          'credit_purchase'
+        );
+
+        if (!creditResult.success) {
+          console.error('Failed to add credits:', creditResult.error);
+          throw new Error('Failed to add credits to balance');
+        }
+      }
+
+      // Show success message
+      alert(`Ricarica completata con successo!\n\nHai ricaricato: €${selectedPackage.rechargeAmount}\nRiceverai: €${selectedPackage.receivedAmount}\nBonus: €${selectedPackage.bonus} (+${selectedPackage.bonusPercentage}%)`);
+
+      setShowPaymentModal(false);
+      setSelectedPackage(null);
+      setIsProcessing(false);
+
+      // Redirect to account page
+      if (user?.role === 'business') {
+        navigate('/partner/dashboard');
+      } else {
+        navigate('/account');
+      }
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      setStripeError(error.message || 'Payment processing failed');
+      setIsProcessing(false);
     }
+  };
 
-    // Add credits to user's balance
-    if (user?.id) {
-      const creditResult = await addCredits(
-        user.id,
-        selectedPackage.receivedAmount,
-        `Ricarica ${selectedPackage.name}`,
-        data?.id,
-        'credit_purchase'
-      );
-
-      if (!creditResult.success) {
-        console.error('Failed to add credits:', creditResult.error);
-        throw new Error('Failed to add credits to balance');
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
       }
     }
+  };
 
-    // Show success message
-    alert(`Ricarica completata con successo!\n\nHai ricaricato: €${selectedPackage.rechargeAmount}\nRiceverai: €${selectedPackage.receivedAmount}\nBonus: €${selectedPackage.bonus} (+${selectedPackage.bonusPercentage}%)`);
+  const series = ['all', 'STARTER SERIES', 'BOOSTER SERIES', 'POWER SERIES', 'PREMIUM SERIES', 'ELITE SERIES'];
+  const filteredPackages = selectedSeries === 'all'
+    ? CREDIT_PACKAGES
+    : CREDIT_PACKAGES.filter(pkg => pkg.series === selectedSeries);
 
-    setShowPaymentModal(false);
-    setSelectedPackage(null);
-    setIsProcessing(false);
-
-    // Redirect to account page
-    if (user?.role === 'business') {
-      navigate('/partner/dashboard');
-    } else {
-      navigate('/account');
-    }
-  } catch (error: any) {
-    console.error('Payment error:', error);
-    setStripeError(error.message || 'Payment processing failed');
-    setIsProcessing(false);
-  }
-};
-
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
-};
-
-const series = ['all', 'STARTER SERIES', 'BOOSTER SERIES', 'POWER SERIES', 'PREMIUM SERIES', 'ELITE SERIES'];
-const filteredPackages = selectedSeries === 'all'
-  ? CREDIT_PACKAGES
-  : CREDIT_PACKAGES.filter(pkg => pkg.series === selectedSeries);
-
-return (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    transition={{ duration: 0.5 }}
-  >
-    <div className="pt-32 pb-24 bg-black min-h-screen">
-      <div className="container mx-auto px-6">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <h1 className="text-6xl md:text-7xl font-extrabold text-white mb-4">
-            DR7 CREDIT WALLET
-          </h1>
-          <p className="text-2xl text-white font-semibold mb-6">
-            Ricarica. Guadagna. Vivi l'esperienza DR7.
-          </p>
-          <p className="text-gray-300 text-lg max-w-4xl mx-auto leading-relaxed">
-            Il DR7 Credit Wallet è il sistema esclusivo che permette ai nostri clienti di ricaricare il proprio credito e ottenere immediatamente un valore aggiuntivo significativo.
-            Una soluzione innovativa, sicura e trasparente, pensata per offrire vantaggi concreti a chi utilizza con frequenza i servizi DR7.
-          </p>
-        </motion.div>
-
-        {/* Benefits Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16"
-        >
-          <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg p-6 text-center">
-            <h3 className="text-xl font-bold text-white mb-2">Fino all'80% Extra</h3>
-            <p className="text-gray-400">Credito bonus a seconda del pacchetto scelto</p>
-          </div>
-          <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg p-6 text-center">
-            <h3 className="text-xl font-bold text-white mb-2">Nessuna Scadenza</h3>
-            <p className="text-gray-400">Il credito rimane sempre disponibile nel tuo profilo</p>
-          </div>
-          <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg p-6 text-center">
-            <h3 className="text-xl font-bold text-white mb-2">100% Sicuro</h3>
-            <p className="text-gray-400">Pagamenti certificati e controllati</p>
-          </div>
-        </motion.div>
-
-        {/* Services Info */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="bg-gradient-to-r from-white/10 to-transparent border border-white/30 rounded-lg p-8 mb-16"
-        >
-          <h2 className="text-2xl font-bold text-white mb-4">
-            Il credito può essere utilizzato per:
-          </h2>
-          <p className="text-gray-300 text-lg leading-relaxed">
-            Noleggio auto, lavaggi, meccanica, carrozzeria, diagnostica, ricambi e tutti i nostri servizi premium.
-            <br />
-            <span className="text-white font-semibold">Il credito non ha scadenza</span> e rimane sempre disponibile nel proprio profilo personale.
-          </p>
-        </motion.div>
-
-        {/* Series Filter */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="mb-12"
-        >
-          <h2 className="text-3xl font-bold text-white text-center mb-6">
-            PACCHETTI DI RICARICA LINEA UFFICIALE DR7
-          </h2>
-          <div className="flex flex-wrap justify-center gap-3">
-            {series.map((s) => (
-              <button
-                key={s}
-                onClick={() => setSelectedSeries(s)}
-                className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 ${selectedSeries === s
-                  ? 'bg-white text-black'
-                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                  }`}
-              >
-                {s === 'all' ? 'Tutti i Pacchetti' : s}
-              </button>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Packages Grid */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16"
-        >
-          {filteredPackages.map((pkg) => (
-            <PackageCard
-              key={pkg.id}
-              pkg={pkg}
-              onSelect={() => handleSelectPackage(pkg.id)}
-            />
-          ))}
-        </motion.div>
-
-        {/* Advantages Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-          className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg p-8 mb-16"
-        >
-          <h2 className="text-3xl font-bold text-white mb-8 text-center">
-            VANTAGGI DEL DR7 CREDIT WALLET
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h3 className="text-lg font-bold text-white mb-2">Fino all'80% di credito extra</h3>
-              <p className="text-gray-400">A seconda del pacchetto scelto</p>
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-white mb-2">Pagamenti più rapidi</h3>
-              <p className="text-gray-400">Senza pensieri e completamente automatici</p>
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-white mb-2">Nessuna scadenza del credito</h3>
-              <p className="text-gray-400">Usa il credito quando vuoi</p>
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-white mb-2">Maggior convenienza</h3>
-              <p className="text-gray-400">Per chi utilizza spesso i nostri servizi</p>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Transparency Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-          className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-lg p-8 mb-12"
-        >
-          <h2 className="text-3xl font-bold text-white mb-6 text-center">
-            TRASPARENZA E SICUREZZA
-          </h2>
-          <div className="space-y-4 text-gray-300 max-w-3xl mx-auto">
-            <p>• Tutti i pagamenti vengono gestiti tramite sistemi certificati e controllati.</p>
-            <p>• Ogni ricarica viene registrata, accreditata in tempo reale e visibile nel proprio profilo cliente.</p>
-            <p>• Il credito non scade e può essere utilizzato in qualsiasi momento presso tutte le sedi DR7 S.p.A.</p>
-          </div>
-        </motion.div>
-
-        {/* CTA Section */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.7 }}
-          className="text-center"
-        >
-          <h2 className="text-4xl font-extrabold text-white mb-6">
-            ATTIVA ORA IL TUO WALLET DR7
-          </h2>
-          <p className="text-xl text-gray-300 mb-8">
-            Scegli il pacchetto più adatto a te e inizia subito a risparmiare sui servizi DR7.
-          </p>
-          <button
-            onClick={() => {
-              window.scrollTo({ top: 400, behavior: 'smooth' });
-            }}
-            className="bg-white text-black px-12 py-4 rounded-full text-xl font-bold hover:bg-gray-200 transition-all duration-300 transform hover:scale-105 shadow-lg shadow-white/50"
-          >
-            Scegli il Tuo Pacchetto
-          </button>
-        </motion.div>
-      </div>
-    </div>
-
-    {/* Payment Modal */}
-    <AnimatePresence>
-      {showPaymentModal && selectedPackage && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
-        >
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className="pt-32 pb-24 bg-black min-h-screen">
+        <div className="container mx-auto px-6">
+          {/* Header */}
           <motion.div
-            initial={{ scale: 0.95, y: 20 }}
-            animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0.95, y: 20 }}
-            className="bg-gray-900 border border-gray-800 rounded-lg max-w-2xl w-full my-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-16"
           >
-            {/* Modal Header */}
-            <div className="p-6 border-b border-gray-800">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h2 className="text-2xl font-bold text-white mb-2">
-                    Completa la Ricarica
-                  </h2>
-                  <p className="text-gray-400">
-                    {selectedPackage.name} - {selectedPackage.series}
-                  </p>
-                </div>
+            <h1 className="text-6xl md:text-7xl font-extrabold text-white mb-4">
+              DR7 CREDIT WALLET
+            </h1>
+            <p className="text-2xl text-white font-semibold mb-6">
+              Ricarica. Guadagna. Vivi l'esperienza DR7.
+            </p>
+            <p className="text-gray-300 text-lg max-w-4xl mx-auto leading-relaxed">
+              Il DR7 Credit Wallet è il sistema esclusivo che permette ai nostri clienti di ricaricare il proprio credito e ottenere immediatamente un valore aggiuntivo significativo.
+              Una soluzione innovativa, sicura e trasparente, pensata per offrire vantaggi concreti a chi utilizza con frequenza i servizi DR7.
+            </p>
+          </motion.div>
+
+          {/* Benefits Grid */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16"
+          >
+            <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg p-6 text-center">
+              <h3 className="text-xl font-bold text-white mb-2">Fino all'80% Extra</h3>
+              <p className="text-gray-400">Credito bonus a seconda del pacchetto scelto</p>
+            </div>
+            <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg p-6 text-center">
+              <h3 className="text-xl font-bold text-white mb-2">Nessuna Scadenza</h3>
+              <p className="text-gray-400">Il credito rimane sempre disponibile nel tuo profilo</p>
+            </div>
+            <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg p-6 text-center">
+              <h3 className="text-xl font-bold text-white mb-2">100% Sicuro</h3>
+              <p className="text-gray-400">Pagamenti certificati e controllati</p>
+            </div>
+          </motion.div>
+
+          {/* Services Info */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="bg-gradient-to-r from-white/10 to-transparent border border-white/30 rounded-lg p-8 mb-16"
+          >
+            <h2 className="text-2xl font-bold text-white mb-4">
+              Il credito può essere utilizzato per:
+            </h2>
+            <p className="text-gray-300 text-lg leading-relaxed">
+              Noleggio auto, lavaggi, meccanica, carrozzeria, diagnostica, ricambi e tutti i nostri servizi premium.
+              <br />
+              <span className="text-white font-semibold">Il credito non ha scadenza</span> e rimane sempre disponibile nel proprio profilo personale.
+            </p>
+          </motion.div>
+
+          {/* Series Filter */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="mb-12"
+          >
+            <h2 className="text-3xl font-bold text-white text-center mb-6">
+              PACCHETTI DI RICARICA LINEA UFFICIALE DR7
+            </h2>
+            <div className="flex flex-wrap justify-center gap-3">
+              {series.map((s) => (
                 <button
-                  onClick={() => setShowPaymentModal(false)}
-                  className="text-gray-400 hover:text-white transition-colors"
+                  key={s}
+                  onClick={() => setSelectedSeries(s)}
+                  className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 ${selectedSeries === s
+                    ? 'bg-white text-black'
+                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                    }`}
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  {s === 'all' ? 'Tutti i Pacchetti' : s}
                 </button>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Packages Grid */}
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16"
+          >
+            {filteredPackages.map((pkg) => (
+              <PackageCard
+                key={pkg.id}
+                pkg={pkg}
+                onSelect={() => handleSelectPackage(pkg.id)}
+              />
+            ))}
+          </motion.div>
+
+          {/* Advantages Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg p-8 mb-16"
+          >
+            <h2 className="text-3xl font-bold text-white mb-8 text-center">
+              VANTAGGI DEL DR7 CREDIT WALLET
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-lg font-bold text-white mb-2">Fino all'80% di credito extra</h3>
+                <p className="text-gray-400">A seconda del pacchetto scelto</p>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white mb-2">Pagamenti più rapidi</h3>
+                <p className="text-gray-400">Senza pensieri e completamente automatici</p>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white mb-2">Nessuna scadenza del credito</h3>
+                <p className="text-gray-400">Usa il credito quando vuoi</p>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white mb-2">Maggior convenienza</h3>
+                <p className="text-gray-400">Per chi utilizza spesso i nostri servizi</p>
               </div>
             </div>
+          </motion.div>
 
-            {/* Modal Body */}
-            <form onSubmit={handlePayment} className="p-6 space-y-6">
-              {/* Package Summary */}
-              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-gray-400 text-xs">Ricarichi</span>
-                  <span className="text-gray-300 font-semibold">{selectedPackage.rechargeAmount}</span>
-                </div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-gray-400">Bonus (+{selectedPackage.bonusPercentage}%)</span>
-                  <span className="text-white font-bold text-xl">{selectedPackage.bonus}</span>
-                </div>
-                <div className="border-t border-gray-700 my-2"></div>
-                <div className="flex justify-between items-center">
-                  <span className="text-white font-semibold text-lg">Ricevi</span>
-                  <span className="text-white font-bold text-3xl">{selectedPackage.receivedAmount}</span>
+          {/* Transparency Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+            className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-lg p-8 mb-12"
+          >
+            <h2 className="text-3xl font-bold text-white mb-6 text-center">
+              TRASPARENZA E SICUREZZA
+            </h2>
+            <div className="space-y-4 text-gray-300 max-w-3xl mx-auto">
+              <p>• Tutti i pagamenti vengono gestiti tramite sistemi certificati e controllati.</p>
+              <p>• Ogni ricarica viene registrata, accreditata in tempo reale e visibile nel proprio profilo cliente.</p>
+              <p>• Il credito non scade e può essere utilizzato in qualsiasi momento presso tutte le sedi DR7 S.p.A.</p>
+            </div>
+          </motion.div>
+
+          {/* CTA Section */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.7 }}
+            className="text-center"
+          >
+            <h2 className="text-4xl font-extrabold text-white mb-6">
+              ATTIVA ORA IL TUO WALLET DR7
+            </h2>
+            <p className="text-xl text-gray-300 mb-8">
+              Scegli il pacchetto più adatto a te e inizia subito a risparmiare sui servizi DR7.
+            </p>
+            <button
+              onClick={() => {
+                window.scrollTo({ top: 400, behavior: 'smooth' });
+              }}
+              className="bg-white text-black px-12 py-4 rounded-full text-xl font-bold hover:bg-gray-200 transition-all duration-300 transform hover:scale-105 shadow-lg shadow-white/50"
+            >
+              Scegli il Tuo Pacchetto
+            </button>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Payment Modal */}
+      <AnimatePresence>
+        {showPaymentModal && selectedPackage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-gray-900 border border-gray-800 rounded-lg max-w-2xl w-full my-8"
+            >
+              {/* Modal Header */}
+              <div className="p-6 border-b border-gray-800">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className="text-2xl font-bold text-white mb-2">
+                      Completa la Ricarica
+                    </h2>
+                    <p className="text-gray-400">
+                      {selectedPackage.name} - {selectedPackage.series}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowPaymentModal(false)}
+                    className="text-gray-400 hover:text-white transition-colors"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 </div>
               </div>
 
-              {/* Customer Information */}
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-bold text-white">Informazioni Cart</h3>
-                  {!isEditing ? (
-                    <button
-                      type="button"
-                      onClick={() => setIsEditing(true)}
-                      className="text-sm text-gray-400 hover:text-white underline transition-colors"
-                    >
-                      Aggiungi Dati Fatturazione
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setIsEditing(false)}
-                      className="text-sm text-gray-400 hover:text-white underline transition-colors"
-                    >
-                      Annulla
-                    </button>
-                  )}
+              {/* Modal Body */}
+              <form onSubmit={handlePayment} className="p-6 space-y-6">
+                {/* Package Summary */}
+                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-gray-400 text-xs">Ricarichi</span>
+                    <span className="text-gray-300 font-semibold">{selectedPackage.rechargeAmount}</span>
+                  </div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-gray-400">Bonus (+{selectedPackage.bonusPercentage}%)</span>
+                    <span className="text-white font-bold text-xl">{selectedPackage.bonus}</span>
+                  </div>
+                  <div className="border-t border-gray-700 my-2"></div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-white font-semibold text-lg">Ricevi</span>
+                    <span className="text-white font-bold text-3xl">{selectedPackage.receivedAmount}</span>
+                  </div>
                 </div>
 
-                {!isEditing ? <div className="bg-gray-800/30 border border-gray-700 rounded-lg p-4 space-y-3">
-                  <div className="grid grid-cols-1 gap-4">
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Intestatario</p>
-                      <p className="text-white font-medium">{formData.fullName}</p>
-                      <div className="text-white/80 text-sm mt-1">
-                        {formData.email} • {formData.phone}
-                      </div>
-                    </div>
-
-                    {(formData.indirizzo || formData.codiceFiscale) && (
-                      <div className="grid grid-cols-2 gap-4 border-t border-gray-700 pt-3">
-                        {formData.codiceFiscale && (
-                          <div>
-                            <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">CF / P.IVA</p>
-                            <p className="text-white font-medium">{formData.codiceFiscale}</p>
-                          </div>
-                        )}
-                        {formData.indirizzo && (
-                          <div>
-                            <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Indirizzo</p>
-                            <p className="text-white/80 text-sm">
-                              {formData.indirizzo} {formData.numeroCivico}<br />
-                              {formData.codicePostale} {formData.cittaResidenza} ({formData.provinciaResidenza})
-                            </p>
-                          </div>
-                        )}
-                      </div>
+                {/* Customer Information */}
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold text-white">Informazioni Cart</h3>
+                    {!isEditing ? (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditing(true)}
+                        className="text-sm text-gray-400 hover:text-white underline transition-colors"
+                      >
+                        Aggiungi Dati Fatturazione
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditing(false)}
+                        className="text-sm text-gray-400 hover:text-white underline transition-colors"
+                      >
+                        Annulla
+                      </button>
                     )}
                   </div>
-                </div>
-                ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Nome Completo *
-                    </label>
-                    <input
-                      type="text"
-                      name="fullName"
-                      value={formData.fullName}
-                      onChange={handleChange}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                    />
-                    {errors.fullName && <p className="text-xs text-red-400 mt-1">{errors.fullName}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Email *</label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                    />
-                    {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Telefono *</label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      placeholder="+39 320 1234567"
-                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                    />
-                    {errors.phone && <p className="text-xs text-red-400 mt-1">{errors.phone}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Codice Fiscale *</label>
-                    <input
-                      type="text"
-                      name="codiceFiscale"
-                      value={formData.codiceFiscale}
-                      onChange={handleChange}
-                      maxLength={16}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
-                    />
-                    {errors.codiceFiscale && <p className="text-xs text-red-400 mt-1">{errors.codiceFiscale}</p>}
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Indirizzo *</label>
-                    <input
-                      type="text"
-                      name="indirizzo"
-                      value={formData.indirizzo}
-                      onChange={handleChange}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                    />
-                    {errors.indirizzo && <p className="text-xs text-red-400 mt-1">{errors.indirizzo}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">N. Civico</label>
-                    <input
-                      type="text"
-                      name="numeroCivico"
-                      value={formData.numeroCivico}
-                      onChange={handleChange}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Città *</label>
-                    <input
-                      type="text"
-                      name="cittaResidenza"
-                      value={formData.cittaResidenza}
-                      onChange={handleChange}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                    />
-                    {errors.cittaResidenza && <p className="text-xs text-red-400 mt-1">{errors.cittaResidenza}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">CAP *</label>
-                    <input
-                      type="text"
-                      name="codicePostale"
-                      value={formData.codicePostale}
-                      onChange={handleChange}
-                      maxLength={5}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                    />
-                    {errors.codicePostale && <p className="text-xs text-red-400 mt-1">{errors.codicePostale}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Provincia *</label>
-                    <input
-                      type="text"
-                      name="provinciaResidenza"
-                      value={formData.provinciaResidenza}
-                      onChange={handleChange}
-                      maxLength={2}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
-                    />
-                    {errors.provinciaResidenza && <p className="text-xs text-red-400 mt-1">{errors.provinciaResidenza}</p>}
-                  </div>
-                </div>
-                )}
-              </div>
 
-              {/* Payment Information */}
-              <div>
-                <h3 className="text-lg font-bold text-white mb-4">Informazioni di Pagamento</h3>
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 min-h-[56px] flex items-center">
-                  {isClientSecretLoading ? (
-                    <div className="flex items-center text-gray-400 text-sm">
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        className="w-4 h-4 border-2 border-t-white border-gray-600 rounded-full mr-2"
-                      />
-                      <span>Inizializzazione pagamento...</span>
+                  {!isEditing ? <div className="bg-gray-800/30 border border-gray-700 rounded-lg p-4 space-y-3">
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Intestatario</p>
+                        <p className="text-white font-medium">{formData.fullName}</p>
+                        <div className="text-white/80 text-sm mt-1">
+                          {formData.email} • {formData.phone}
+                        </div>
+                      </div>
+
+                      {(formData.indirizzo || formData.codiceFiscale) && (
+                        <div className="grid grid-cols-2 gap-4 border-t border-gray-700 pt-3">
+                          {formData.codiceFiscale && (
+                            <div>
+                              <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">CF / P.IVA</p>
+                              <p className="text-white font-medium">{formData.codiceFiscale}</p>
+                            </div>
+                          )}
+                          {formData.indirizzo && (
+                            <div>
+                              <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Indirizzo</p>
+                              <p className="text-white/80 text-sm">
+                                {formData.indirizzo} {formData.numeroCivico}<br />
+                                {formData.codicePostale} {formData.cittaResidenza} ({formData.provinciaResidenza})
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <div ref={cardElementRef} className="w-full" />
-                  )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Nome Completo *
+                      </label>
+                      <input
+                        type="text"
+                        name="fullName"
+                        value={formData.fullName}
+                        onChange={handleChange}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                      />
+                      {errors.fullName && <p className="text-xs text-red-400 mt-1">{errors.fullName}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Email *</label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                      />
+                      {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Telefono *</label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        placeholder="+39 320 1234567"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                      />
+                      {errors.phone && <p className="text-xs text-red-400 mt-1">{errors.phone}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Codice Fiscale *</label>
+                      <input
+                        type="text"
+                        name="codiceFiscale"
+                        value={formData.codiceFiscale}
+                        onChange={handleChange}
+                        maxLength={16}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
+                      />
+                      {errors.codiceFiscale && <p className="text-xs text-red-400 mt-1">{errors.codiceFiscale}</p>}
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Indirizzo *</label>
+                      <input
+                        type="text"
+                        name="indirizzo"
+                        value={formData.indirizzo}
+                        onChange={handleChange}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                      />
+                      {errors.indirizzo && <p className="text-xs text-red-400 mt-1">{errors.indirizzo}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">N. Civico</label>
+                      <input
+                        type="text"
+                        name="numeroCivico"
+                        value={formData.numeroCivico}
+                        onChange={handleChange}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Città *</label>
+                      <input
+                        type="text"
+                        name="cittaResidenza"
+                        value={formData.cittaResidenza}
+                        onChange={handleChange}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                      />
+                      {errors.cittaResidenza && <p className="text-xs text-red-400 mt-1">{errors.cittaResidenza}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">CAP *</label>
+                      <input
+                        type="text"
+                        name="codicePostale"
+                        value={formData.codicePostale}
+                        onChange={handleChange}
+                        maxLength={5}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                      />
+                      {errors.codicePostale && <p className="text-xs text-red-400 mt-1">{errors.codicePostale}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Provincia *</label>
+                      <input
+                        type="text"
+                        name="provinciaResidenza"
+                        value={formData.provinciaResidenza}
+                        onChange={handleChange}
+                        maxLength={2}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
+                      />
+                      {errors.provinciaResidenza && <p className="text-xs text-red-400 mt-1">{errors.provinciaResidenza}</p>}
+                    </div>
+                  </div>
+                )}
                 </div>
-                {stripeError && <p className="text-xs text-red-400 mt-2">{stripeError}</p>}
-              </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-4">
-                <button
-                  type="button"
-                  onClick={() => setShowPaymentModal(false)}
-                  className="flex-1 px-6 py-3 bg-gray-800 text-white rounded-full font-bold hover:bg-gray-700 transition-colors"
-                >
-                  Annulla
-                </button>
-                <button
-                  type="submit"
-                  disabled={isProcessing || isClientSecretLoading}
-                  className="flex-1 px-6 py-3 bg-white text-black rounded-full font-bold hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isProcessing ? 'Elaborazione...' : `Paga €${selectedPackage.rechargeAmount}`}
-                </button>
-              </div>
-            </form>
+                {/* Payment Information */}
+                <div>
+                  <h3 className="text-lg font-bold text-white mb-4">Informazioni di Pagamento</h3>
+                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 min-h-[56px] flex items-center">
+                    {isClientSecretLoading ? (
+                      <div className="flex items-center text-gray-400 text-sm">
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          className="w-4 h-4 border-2 border-t-white border-gray-600 rounded-full mr-2"
+                        />
+                        <span>Inizializzazione pagamento...</span>
+                      </div>
+                    ) : (
+                      <div ref={cardElementRef} className="w-full" />
+                    )}
+                  </div>
+                  {stripeError && <p className="text-xs text-red-400 mt-2">{stripeError}</p>}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowPaymentModal(false)}
+                    className="flex-1 px-6 py-3 bg-gray-800 text-white rounded-full font-bold hover:bg-gray-700 transition-colors"
+                  >
+                    Annulla
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isProcessing || isClientSecretLoading}
+                    className="flex-1 px-6 py-3 bg-white text-black rounded-full font-bold hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isProcessing ? 'Elaborazione...' : `Paga €${selectedPackage.rechargeAmount}`}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  </motion.div>
-);
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
 };
 
 export default CreditWalletPage;
