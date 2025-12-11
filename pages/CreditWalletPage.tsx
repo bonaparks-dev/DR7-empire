@@ -116,9 +116,8 @@ const PackageCard: React.FC<{ pkg: CreditPackage; onSelect: () => void }> = ({ p
   return (
     <motion.div
       variants={cardVariants}
-      className={`relative bg-gray-900/50 backdrop-blur-sm border ${
-        pkg.popular ? 'border-white' : 'border-gray-800'
-      } rounded-lg p-6 flex flex-col transition-all duration-300 hover:border-white hover:shadow-xl hover:shadow-white/20`}
+      className={`relative bg-gray-900/50 backdrop-blur-sm border ${pkg.popular ? 'border-white' : 'border-gray-800'
+        } rounded-lg p-6 flex flex-col transition-all duration-300 hover:border-white hover:shadow-xl hover:shadow-white/20`}
     >
       {pkg.popular && (
         <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-white text-black px-4 py-1 rounded-full text-sm font-semibold">
@@ -150,11 +149,10 @@ const PackageCard: React.FC<{ pkg: CreditPackage; onSelect: () => void }> = ({ p
 
       <button
         onClick={onSelect}
-        className={`w-full mt-auto py-3 px-6 font-bold rounded-full transition-all duration-300 transform hover:scale-105 ${
-          pkg.popular
+        className={`w-full mt-auto py-3 px-6 font-bold rounded-full transition-all duration-300 transform hover:scale-105 ${pkg.popular
             ? 'bg-white text-black hover:bg-gray-200'
             : 'bg-gray-700 text-white hover:bg-gray-600'
-        }`}
+          }`}
       >
         Ricarica Ora
       </button>
@@ -191,6 +189,7 @@ const CreditWalletPage: React.FC = () => {
     provinciaResidenza: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isEditing, setIsEditing] = useState(true);
 
   // Initialize Stripe
   useEffect(() => {
@@ -233,6 +232,19 @@ const CreditWalletPage: React.FC = () => {
               codicePostale: '',
               provinciaResidenza: ''
             });
+
+            // Check if essential data is present
+            const isComplete =
+              (customerData.tipo_cliente === 'azienda' ? customerData.denominazione : (customerData.nome && customerData.cognome)) &&
+              (customerData.email || user.email) &&
+              (customerData.telefono || user.phone) &&
+              (customerData.codice_fiscale || customerData.codice_fiscale_pa || customerData.partita_iva) &&
+              (customerData.indirizzo || customerData.indirizzo_azienda) &&
+              customerData.citta;
+
+            if (isComplete) {
+              setIsEditing(false);
+            }
           } else {
             // Fallback to basic user data
             setFormData(prev => ({
@@ -281,21 +293,21 @@ const CreditWalletPage: React.FC = () => {
           }
         })
       })
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) {
-          setStripeError(data.error);
-        } else {
-          setClientSecret(data.clientSecret);
-        }
-      })
-      .catch(error => {
-        console.error('Failed to fetch client secret:', error);
-        setStripeError('Could not connect to payment server.');
-      })
-      .finally(() => {
-        setIsClientSecretLoading(false);
-      });
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            setStripeError(data.error);
+          } else {
+            setClientSecret(data.clientSecret);
+          }
+        })
+        .catch(error => {
+          console.error('Failed to fetch client secret:', error);
+          setStripeError('Could not connect to payment server.');
+        })
+        .finally(() => {
+          setIsClientSecretLoading(false);
+        });
     }
   }, [showPaymentModal, selectedPackage, user]);
 
@@ -604,11 +616,10 @@ const CreditWalletPage: React.FC = () => {
                 <button
                   key={s}
                   onClick={() => setSelectedSeries(s)}
-                  className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 ${
-                    selectedSeries === s
+                  className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 ${selectedSeries === s
                       ? 'bg-white text-black'
                       : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                  }`}
+                    }`}
                 >
                   {s === 'all' ? 'Tutti i Pacchetti' : s}
                 </button>
@@ -762,119 +773,154 @@ const CreditWalletPage: React.FC = () => {
 
                 {/* Customer Information */}
                 <div>
-                  <h3 className="text-lg font-bold text-white mb-4">Informazioni Cliente</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Nome Completo *
-                      </label>
-                      <input
-                        type="text"
-                        name="fullName"
-                        value={formData.fullName}
-                        onChange={handleChange}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                      />
-                      {errors.fullName && <p className="text-xs text-red-400 mt-1">{errors.fullName}</p>}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Email *</label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                      />
-                      {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Telefono *</label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        placeholder="+39 320 1234567"
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                      />
-                      {errors.phone && <p className="text-xs text-red-400 mt-1">{errors.phone}</p>}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Codice Fiscale *</label>
-                      <input
-                        type="text"
-                        name="codiceFiscale"
-                        value={formData.codiceFiscale}
-                        onChange={handleChange}
-                        placeholder="RSSMRA80A01H501U"
-                        maxLength={16}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
-                      />
-                      {errors.codiceFiscale && <p className="text-xs text-red-400 mt-1">{errors.codiceFiscale}</p>}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Indirizzo *</label>
-                      <input
-                        type="text"
-                        name="indirizzo"
-                        value={formData.indirizzo}
-                        onChange={handleChange}
-                        placeholder="Via Roma"
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                      />
-                      {errors.indirizzo && <p className="text-xs text-red-400 mt-1">{errors.indirizzo}</p>}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Numero Civico</label>
-                      <input
-                        type="text"
-                        name="numeroCivico"
-                        value={formData.numeroCivico}
-                        onChange={handleChange}
-                        placeholder="123"
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Città *</label>
-                      <input
-                        type="text"
-                        name="cittaResidenza"
-                        value={formData.cittaResidenza}
-                        onChange={handleChange}
-                        placeholder="Milano"
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                      />
-                      {errors.cittaResidenza && <p className="text-xs text-red-400 mt-1">{errors.cittaResidenza}</p>}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">CAP *</label>
-                      <input
-                        type="text"
-                        name="codicePostale"
-                        value={formData.codicePostale}
-                        onChange={handleChange}
-                        placeholder="20100"
-                        maxLength={5}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                      />
-                      {errors.codicePostale && <p className="text-xs text-red-400 mt-1">{errors.codicePostale}</p>}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Provincia *</label>
-                      <input
-                        type="text"
-                        name="provinciaResidenza"
-                        value={formData.provinciaResidenza}
-                        onChange={handleChange}
-                        placeholder="MI"
-                        maxLength={2}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
-                      />
-                      {errors.provinciaResidenza && <p className="text-xs text-red-400 mt-1">{errors.provinciaResidenza}</p>}
-                    </div>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold text-white">Informazioni Cliente</h3>
+                    {!isEditing && (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditing(true)}
+                        className="text-sm text-gray-400 hover:text-white underline transition-colors"
+                      >
+                        Modifica
+                      </button>
+                    )}
                   </div>
+
+                  {!isEditing ? (
+                    <div className="bg-gray-800/30 border border-gray-700 rounded-lg p-4 space-y-3">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Intestatario</p>
+                          <p className="text-white font-medium">{formData.fullName}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Codice Fiscale / P.IVA</p>
+                          <p className="text-white font-medium">{formData.codiceFiscale}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Contatti</p>
+                          <div className="text-white/80 text-sm">
+                            <p>{formData.email}</p>
+                            <p>{formData.phone}</p>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Indirizzo</p>
+                          <p className="text-white/80 text-sm">
+                            {formData.indirizzo} {formData.numeroCivico}<br />
+                            {formData.codicePostale} {formData.cittaResidenza} ({formData.provinciaResidenza})
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Nome Completo *
+                        </label>
+                        <input
+                          type="text"
+                          name="fullName"
+                          value={formData.fullName}
+                          onChange={handleChange}
+                          className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                        />
+                        {errors.fullName && <p className="text-xs text-red-400 mt-1">{errors.fullName}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Email *</label>
+                        <input
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                        />
+                        {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Telefono *</label>
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleChange}
+                          placeholder="+39 320 1234567"
+                          className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                        />
+                        {errors.phone && <p className="text-xs text-red-400 mt-1">{errors.phone}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Codice Fiscale *</label>
+                        <input
+                          type="text"
+                          name="codiceFiscale"
+                          value={formData.codiceFiscale}
+                          onChange={handleChange}
+                          maxLength={16}
+                          className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
+                        />
+                        {errors.codiceFiscale && <p className="text-xs text-red-400 mt-1">{errors.codiceFiscale}</p>}
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Indirizzo *</label>
+                        <input
+                          type="text"
+                          name="indirizzo"
+                          value={formData.indirizzo}
+                          onChange={handleChange}
+                          className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                        />
+                        {errors.indirizzo && <p className="text-xs text-red-400 mt-1">{errors.indirizzo}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">N. Civico</label>
+                        <input
+                          type="text"
+                          name="numeroCivico"
+                          value={formData.numeroCivico}
+                          onChange={handleChange}
+                          className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Città *</label>
+                        <input
+                          type="text"
+                          name="cittaResidenza"
+                          value={formData.cittaResidenza}
+                          onChange={handleChange}
+                          className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                        />
+                        {errors.cittaResidenza && <p className="text-xs text-red-400 mt-1">{errors.cittaResidenza}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">CAP *</label>
+                        <input
+                          type="text"
+                          name="codicePostale"
+                          value={formData.codicePostale}
+                          onChange={handleChange}
+                          maxLength={5}
+                          className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                        />
+                        {errors.codicePostale && <p className="text-xs text-red-400 mt-1">{errors.codicePostale}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Provincia *</label>
+                        <input
+                          type="text"
+                          name="provinciaResidenza"
+                          value={formData.provinciaResidenza}
+                          onChange={handleChange}
+                          maxLength={2}
+                          className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
+                        />
+                        {errors.provinciaResidenza && <p className="text-xs text-red-400 mt-1">{errors.provinciaResidenza}</p>}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Payment Information */}
