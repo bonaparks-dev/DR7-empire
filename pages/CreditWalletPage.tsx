@@ -189,7 +189,7 @@ const CreditWalletPage: React.FC = () => {
     provinciaResidenza: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isEditing, setIsEditing] = useState(true);
+
 
   // Initialize Stripe
   useEffect(() => {
@@ -246,15 +246,7 @@ const CreditWalletPage: React.FC = () => {
               provinciaResidenza: customerData.provincia || customerData.provincia_residenza || ''
             });
 
-            // Check if essential data is present (Relaxed: Just Name, Email, Phone required for fast checkout)
-            const isComplete =
-              (formData.fullName || customerData.nome || customerData.denominazione) &&
-              (formData.email || customerData.email || user.email);
 
-            // Always default to summary view if we have at least name and email
-            if (isComplete) {
-              setIsEditing(false);
-            }
           } else {
             // Fallback to basic user data from Auth
             setFormData(prev => ({
@@ -264,10 +256,7 @@ const CreditWalletPage: React.FC = () => {
               phone: user.phone || ''
             }));
 
-            // Even with just Auth data, if we have name and email, show summary mode
-            if (user.email) {
-              setIsEditing(false);
-            }
+
           }
         } catch (err) {
           console.error('Error fetching customer data:', err);
@@ -278,7 +267,7 @@ const CreditWalletPage: React.FC = () => {
             email: user.email || '',
             phone: user.phone || ''
           }));
-          if (user.email) setIsEditing(false);
+
         }
       };
 
