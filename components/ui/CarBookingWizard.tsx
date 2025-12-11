@@ -243,6 +243,25 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Fetch credit balance
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (user?.id) {
+        setIsLoadingBalance(true);
+        try {
+          const balance = await getUserCreditBalance(user.id);
+          setCreditBalance(balance);
+        } catch (error) {
+          console.error('Error fetching credit balance:', error);
+        } finally {
+          setIsLoadingBalance(false);
+        }
+      }
+    };
+
+    fetchBalance();
+  }, [user]);
+
   // Helper function to get day of week without timezone issues
   const getDayOfWeek = (dateString: string): number => {
     const [year, month, day] = dateString.split('-').map(Number);
@@ -1047,7 +1066,40 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     if (!validateStep() || !item) return;
     setIsProcessing(true);
 
-    if (formData.paymentMethod === 'stripe' && step === 4) {
+    if (formData.paymentMethod === 'credit' && step === 4) {
+      // Credit wallet payment
+      if (!user?.id) {
+        setStripeError('User not logged in');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Check sufficient balance
+      const hasBalance = await hasSufficientBalance(user.id, total);
+      if (!hasBalance) {
+        setStripeError(`Credito insufficiente. Saldo attuale: €${creditBalance.toFixed(2)}, Richiesto: €${total.toFixed(2)}`);
+        setIsProcessing(false);
+        return;
+      }
+
+      // Deduct credits
+      const deductResult = await deductCredits(
+        user.id,
+        total,
+        `Noleggio ${item.name} - ${formData.pickupDate} to ${formData.returnDate}`,
+        undefined,
+        'car_rental'
+      );
+
+      if (!deductResult.success) {
+        setStripeError(deductResult.error || 'Failed to deduct credits');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Finalize booking without payment intent ID (credit wallet payment)
+      await finalizeBooking(undefined);
+    } else if (formData.paymentMethod === 'stripe' && step === 4) {
       setStripeError(null);
       if (!stripe || !cardElement || !clientSecret) {
         setStripeError("Payment system is not ready.");
@@ -1179,10 +1231,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
                         required
                         error={!!errors.pickupDate}
                         className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors cursor-pointer ${errors.pickupDate
-                            ? 'border-red-500 focus:border-red-400'
-                            : formData.pickupDate
-                              ? 'border-green-500 focus:border-green-400'
-                              : 'border-gray-700 focus:border-white'
+                          ? 'border-red-500 focus:border-red-400'
+                          : formData.pickupDate
+                            ? 'border-green-500 focus:border-green-400'
+                            : 'border-gray-700 focus:border-white'
                           }`}
                       />
                       {errors.pickupDate && (
@@ -1205,10 +1257,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
                         required
                         disabled={!formData.pickupDate || getValidPickupTimes(formData.pickupDate).length === 0}
                         className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors ${!formData.pickupDate || getValidPickupTimes(formData.pickupDate).length === 0
-                            ? 'border-gray-700 opacity-50 cursor-not-allowed'
-                            : formData.pickupTime
-                              ? 'border-green-500 focus:border-green-400'
-                              : 'border-gray-700 focus:border-white'
+                          ? 'border-gray-700 opacity-50 cursor-not-allowed'
+                          : formData.pickupTime
+                            ? 'border-green-500 focus:border-green-400'
+                            : 'border-gray-700 focus:border-white'
                           }`}
                       >
                         {getValidPickupTimes(formData.pickupDate).length > 0 ? (
@@ -1252,12 +1304,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
                         required
                         error={!!(errors.returnDate || errors.date)}
                         className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors ${!formData.pickupDate
-                            ? 'border-gray-700 opacity-50 cursor-not-allowed'
-                            : errors.returnDate || errors.date
-                              ? 'border-red-500 focus:border-red-400 cursor-pointer'
-                              : formData.returnDate
-                                ? 'border-green-500 focus:border-green-400 cursor-pointer'
-                                : 'border-gray-700 focus:border-white cursor-pointer'
+                          ? 'border-gray-700 opacity-50 cursor-not-allowed'
+                          : errors.returnDate || errors.date
+                            ? 'border-red-500 focus:border-red-400 cursor-pointer'
+                            : formData.returnDate
+                              ? 'border-green-500 focus:border-green-400 cursor-pointer'
+                              : 'border-gray-700 focus:border-white cursor-pointer'
                           }`}
                       />
                       {(errors.returnDate || errors.date) && (
@@ -1566,8 +1618,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
               <div className="space-y-3 mb-4">
                 <div
                   className={`p-4 rounded-md border cursor-pointer transition-all ${formData.kmPackageType === 'none'
-                      ? 'border-white bg-white/5'
-                      : 'border-gray-700 hover:border-gray-500'
+                    ? 'border-white bg-white/5'
+                    : 'border-gray-700 hover:border-gray-500'
                     }`}
                   onClick={() => setFormData(p => ({ ...p, kmPackageType: 'none' }))}
                 >
@@ -1594,8 +1646,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
                 <h4 className="text-sm font-semibold text-gray-300 mb-2">KM ILLIMITATI:</h4>
                 <div
                   className={`p-4 rounded-md border cursor-pointer transition-all ${formData.kmPackageType === 'unlimited'
-                      ? 'border-white bg-white/5'
-                      : 'border-gray-700 hover:border-gray-500'
+                    ? 'border-white bg-white/5'
+                    : 'border-gray-700 hover:border-gray-500'
                     }`}
                   onClick={() => setFormData(p => ({ ...p, kmPackageType: 'unlimited' }))}
                 >
@@ -1681,8 +1733,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
                     <div
                       key={extra.id}
                       className={`p-3 rounded-md border cursor-pointer transition-all ${isSelected
-                          ? 'border-white bg-white/5'
-                          : 'border-gray-700 hover:border-gray-500'
+                        ? 'border-white bg-white/5'
+                        : 'border-gray-700 hover:border-gray-500'
                         }`}
                       onClick={() => {
                         setFormData(prev => ({
@@ -1721,11 +1773,51 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         return (
           <div className="space-y-8">
             <section>
-              <h3 className="text-lg font-bold text-white mb-4">DATI CARTA DI CREDITO/DEBITO</h3>
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 min-h-[56px] flex items-center">
-                {isClientSecretLoading ? <div className="text-gray-400 text-sm">Initializing Payment...</div> : <div ref={cardElementRef} className="w-full" />}
+              <h3 className="text-lg font-bold text-white mb-4">METODO DI PAGAMENTO</h3>
+              <div className="flex border-b border-gray-700 mb-6">
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'credit' }))}
+                  className={`flex-1 py-2 text-sm font-semibold ${formData.paymentMethod === 'credit' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}
+                >
+                  Credit Wallet
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'stripe' }))}
+                  className={`flex-1 py-2 text-sm font-semibold ${formData.paymentMethod === 'stripe' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}
+                >
+                  Carta
+                </button>
               </div>
-              {stripeError && <p className="text-xs text-red-400 mt-1">{stripeError}</p>}
+
+              {formData.paymentMethod === 'credit' ? (
+                <div className="text-center py-6">
+                  {isLoadingBalance ? (
+                    <div className="flex items-center justify-center">
+                      <div className="w-8 h-8 border-2 border-t-white border-gray-600 rounded-full animate-spin"></div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-400 mb-2">Saldo Disponibile</p>
+                      <p className="text-4xl font-bold text-white mb-4">€{creditBalance.toFixed(2)}</p>
+                      {creditBalance < total ? (
+                        <p className="text-sm text-red-400">Credito insufficiente. Richiesto: €{total.toFixed(2)}</p>
+                      ) : (
+                        <p className="text-sm text-green-400">✓ Saldo sufficiente</p>
+                      )}
+                    </>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <h4 className="text-base font-semibold text-white mb-3">DATI CARTA DI CREDITO/DEBITO</h4>
+                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 min-h-[56px] flex items-center">
+                    {isClientSecretLoading ? <div className="text-gray-400 text-sm">Initializing Payment...</div> : <div ref={cardElementRef} className="w-full" />}
+                  </div>
+                  {stripeError && <p className="text-xs text-red-400 mt-1">{stripeError}</p>}
+                </>
+              )}
             </section>
 
             <section className="border-t border-gray-700 pt-6">
