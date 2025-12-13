@@ -212,7 +212,7 @@ const urbanCarsRawData = [
 const corporateFleetRawData = [
   {
     "id": 205,
-    "name": "Mercedes V Class VIP DR7",
+    "name": "Mercedes Vito VIP DR7",
     "dailyPrice": 199,
     "specs": {
       "power": "163Cv",
