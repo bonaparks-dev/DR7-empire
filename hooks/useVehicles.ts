@@ -210,8 +210,17 @@ const transformVehicle = (vehicle: Vehicle): TransformedVehicle => {
     });
   }
 
-  // Use metadata.image if available, otherwise fallback to getVehicleImage
-  const vehicleImage = vehicle.metadata?.image || getVehicleImage(vehicle.display_name);
+  // Force correct image for Vito/V-Class vehicles, otherwise use metadata or fallback
+  const lowerName = vehicle.display_name.toLowerCase();
+  let vehicleImage: string;
+
+  if (lowerName.includes('vito') || lowerName.includes('v class')) {
+    // Force correct image for Vito vehicles regardless of metadata
+    vehicleImage = '/mercedes_vito.jpeg';
+  } else {
+    // Use metadata.image if available, otherwise fallback to getVehicleImage
+    vehicleImage = vehicle.metadata?.image || getVehicleImage(vehicle.display_name);
+  }
 
   return {
     id: `car-${vehicle.id}`,
