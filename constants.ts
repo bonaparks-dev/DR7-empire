@@ -219,7 +219,7 @@ const corporateFleetRawData = [
       "engine": "2.0L Diesel",
       "seats": "7 posti"
     },
-    "image": "/vito.jpeg"
+    "image": "/mercedes_vito.jpeg"
   },
   {
     "id": 206,
