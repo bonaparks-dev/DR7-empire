@@ -48,6 +48,7 @@ const getVehicleImage = (name: string): string => {
   if (lowerName.includes('gle')) return '/mercedes-gle.jpeg';
   if (lowerName.includes('m4')) return '/bmw-m4.jpeg';
   if (lowerName.includes('ducato')) return '/ducato.jpeg';
+  if (lowerName.includes('vito') || lowerName.includes('v class')) return '/mercedes_vito.jpeg';
   if (lowerName.includes('208')) return '/208.jpeg';
   if (lowerName.includes('clio') && (lowerName.includes('arancio') || lowerName.includes('orange'))) return '/clio4a.jpeg';
   if (lowerName.includes('clio') && lowerName.includes('blu')) return '/clio4b.jpeg';
