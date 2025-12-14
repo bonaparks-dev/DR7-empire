@@ -74,10 +74,10 @@ const LotteriaPopup: React.FC = () => {
               {/* Main message */}
               <div className="mb-6 text-white">
                 <p className="text-xl md:text-2xl font-bold mb-3">
-                  Ultimi biglietti disponibili.
+                  ULTIMI BIGLIETTI IN PROMO
                 </p>
                 <p className="text-lg md:text-xl mb-2">
-                  Con 25€ puoi vincere un'auto da 50.000€.
+                  PARTE IL CONTO ALLA ROVESCIA
                 </p>
                 <p className="text-base md:text-lg text-white/90 mb-6">
                   Ne restano pochissimi: la fortuna adesso è questione di attimi.
@@ -89,16 +89,16 @@ const LotteriaPopup: React.FC = () => {
                 <p className="text-lg font-bold text-white mb-3 text-center">Promo pacchetti:</p>
                 <div className="space-y-2 text-white/90">
                   <div className="flex items-center justify-between px-4 py-2 bg-white/5 rounded-lg">
-                    <span className="text-sm md:text-base">10 biglietti → 250€</span>
-                    <span className="text-base md:text-lg font-bold text-dr7-gold">in promo 220€</span>
+                    <span className="text-sm md:text-base">10 biglietti = 219€</span>
                   </div>
                   <div className="flex items-center justify-between px-4 py-2 bg-white/5 rounded-lg">
-                    <span className="text-sm md:text-base">50 biglietti → 1250€</span>
-                    <span className="text-base md:text-lg font-bold text-dr7-gold">in promo 1100€</span>
+                    <span className="text-sm md:text-base">50 biglietti = 899€</span>
                   </div>
                   <div className="flex items-center justify-between px-4 py-2 bg-white/5 rounded-lg">
-                    <span className="text-sm md:text-base">100 biglietti → 2500€</span>
-                    <span className="text-base md:text-lg font-bold text-dr7-gold">in promo 1999€</span>
+                    <span className="text-sm md:text-base">100 biglietti = 1699€</span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-2 bg-white/5 rounded-lg border border-dr7-gold/30">
+                    <span className="text-sm md:text-base font-bold text-dr7-gold">150 biglietti = 1999€</span>
                   </div>
                 </div>
               </div>

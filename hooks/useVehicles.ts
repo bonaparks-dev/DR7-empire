@@ -243,8 +243,13 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
 
   useEffect(() => {
     const fetchVehicles = async () => {
+      let isMounted = true;
       try {
         setLoading(true);
+
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Request timed out')), 10000)
+        );
 
         let query = supabase
           .from('vehicles')
@@ -257,7 +262,13 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
           query = query.eq('category', category);
         }
 
-        const { data, error: fetchError } = await query;
+        // Race between query and timeout
+        const { data, error: fetchError } = await Promise.race([
+          query,
+          timeoutPromise
+        ]) as any;
+
+        if (!isMounted) return;
 
         if (fetchError) throw fetchError;
 
@@ -270,7 +281,7 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
           originals: any[];
         }>();
 
-        transformedVehicles.forEach((vehicle, index) => {
+        transformedVehicles.forEach((vehicle: any, index: number) => {
           const originalVehicle = data?.[index];
 
           // Helper to normalize strings for grouping
@@ -317,10 +328,11 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
         setError(null);
       } catch (err) {
         console.error('Error fetching vehicles:', err);
-        setError(err as Error);
+        if (isMounted) setError(err as Error);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
+      return () => { isMounted = false; };
     };
 
     fetchVehicles();

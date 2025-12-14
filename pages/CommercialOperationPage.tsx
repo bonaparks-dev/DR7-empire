@@ -12,6 +12,12 @@ import { supabase } from '../supabaseClient';
 import NewClientModal from '../components/NewClientModal';
 import { getUserCreditBalance, deductCredits, hasSufficientBalance } from '../utils/creditWallet';
 
+// Lottery Promo Bundle Prices
+// 10 tickets = €219
+// 50 tickets = €899
+// 100 tickets = €1699
+// 150 tickets = €1999 (New Tier)
+
 // Safely access the Stripe publishable key from Vite's environment variables.
 // If it's not available (e.g., in a non-Vite environment), it falls back to a placeholder.
 const STRIPE_PUBLISHABLE_KEY = 'pk_live_51S3dDjQcprtTyo8tBfBy5mAZj8PQXkxfZ1RCnWskrWFZ2WEnm1u93ZnE2tBi316Gz2CCrvLV98IjSoiXb0vSDpOQ003fNG69Y2';
@@ -109,15 +115,23 @@ const CommercialOperationPage: React.FC = () => {
         if (qty < 10) {
             // No discount for less than 10 tickets
             return qty * 25;
-        } else if (qty >= 10 && qty < 100) {
-            // 22€ per ticket for 10-99 tickets
-            return qty * 22;
-        } else if (qty === 100) {
-            // Special price for exactly 100 tickets
-            return 1999;
+        } else if (qty >= 10 && qty < 50) {
+            // Tier 1: 10 tickets for 219€ -> 21.9€/ticket
+            // For intermediate, let's keep it simple: 21.9 * qty? 
+            // Or just step-based? User asked for specific bundles.
+            // If they pick 11? Let's interpolate or just use the per-ticket price of the nearest lower tier.
+            // 10 tickets = 219. (21.9/ticket)
+            return qty * 21.9;
+        } else if (qty >= 50 && qty < 100) {
+            // Tier 2: 50 tickets for 899€ -> ~17.98€/ticket
+            return qty * 17.98;
+        } else if (qty >= 100 && qty < 150) {
+            // Tier 3: 100 tickets for 1699€ -> 16.99€/ticket
+            return qty * 16.99;
         } else {
-            // 20€ per ticket for more than 100 tickets
-            return qty * 20;
+            // Tier 4: 150 tickets for 1999€ -> 13.33€/ticket
+            // For > 150, apply 13.33 each
+            return qty * 13.326; // approx to match 1999 for 150
         }
     };
 
@@ -488,7 +502,7 @@ const CommercialOperationPage: React.FC = () => {
                                             <button onClick={() => handleQuantityChange(1)} className="w-8 h-8 sm:w-10 sm:h-10 font-bold text-white rounded-full hover:bg-white/20 transition-colors">+</button>
                                         </div>
                                         <div className="flex space-x-2 w-full sm:w-auto justify-center flex-wrap gap-2">
-                                            {[10, 25, 50, 100].map(val => (
+                                            {[10, 50, 100, 150].map(val => (
                                                 <button
                                                     key={val}
                                                     onClick={() => setQuantity(val)}
@@ -505,15 +519,14 @@ const CommercialOperationPage: React.FC = () => {
                                 </div>
 
                                 {/* Show discount information */}
-                                {quantity >= 10 && (
-                                    <div className="mb-4 p-3 bg-dr7-gold/20 border border-dr7-gold rounded-lg">
-                                        <p className="text-sm text-dr7-gold font-semibold text-center">
-                                            {quantity >= 10 && quantity < 100 && `Sconto applicato: ${quantity * 25 - totalPrice}€ risparmiati! (${(22).toFixed(2)}€/biglietto)`}
-                                            {quantity === 100 && `Sconto speciale applicato: ${quantity * 25 - totalPrice}€ risparmiati! (${(1999 / 100).toFixed(2)}€/biglietto)`}
-                                            {quantity > 100 && `Sconto applicato: ${quantity * 25 - totalPrice}€ risparmiati! (20€/biglietto)`}
-                                        </p>
-                                    </div>
-                                )}
+                                <div className="mb-4 p-3 bg-dr7-gold/20 border border-dr7-gold rounded-lg">
+                                    <p className="text-sm text-dr7-gold font-semibold text-center">
+                                        {quantity >= 10 && quantity < 50 && `Sconto applicato: ${(quantity * 25 - totalPrice).toFixed(2)}€ risparmiati!`}
+                                        {quantity >= 50 && quantity < 100 && `Sconto applicato: ${(quantity * 25 - totalPrice).toFixed(2)}€ risparmiati!`}
+                                        {quantity >= 100 && quantity < 150 && `Sconto applicato: ${(quantity * 25 - totalPrice).toFixed(2)}€ risparmiati!`}
+                                        {quantity >= 150 && `MAX SCONTO applicato: ${(quantity * 25 - totalPrice).toFixed(2)}€ risparmiati!`}
+                                    </p>
+                                </div>
 
                                 <div className="flex justify-between items-center text-lg sm:text-xl font-bold mb-6">
                                     <span className="text-white/80">{t('Total_Price')}</span>
