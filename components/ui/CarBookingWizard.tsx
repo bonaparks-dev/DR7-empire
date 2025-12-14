@@ -768,6 +768,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       }));
     }
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+
+    // Clear generic date error (duration, min rental) if any date/time field changes
+    if (['pickupDate', 'pickupTime', 'returnDate', 'returnTime'].includes(name) && errors.date) {
+      setErrors(prev => ({ ...prev, date: '' }));
+    }
   };
 
   // Camera helpers
