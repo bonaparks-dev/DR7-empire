@@ -2166,7 +2166,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
                   <p>Ritiro: {formData.pickupDate} alle {formData.pickupTime} - {getTranslated(PICKUP_LOCATIONS.find(l => l.id === formData.pickupLocation)?.label)}</p>
                   <p>Riconsegna: {formData.returnDate} alle {formData.returnTime} - {getTranslated(PICKUP_LOCATIONS.find(l => l.id === formData.returnLocation)?.label)}</p>
                   <p>Durata: {duration.days} giorni</p>
-                  <p>Pacchetto km: {formData.kmPackageType === 'unlimited' ? 'ILLIMITATI' : `${includedKm} km`}</p>
+                  <p>Pacchetto km: {(formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}</p>
                 </div>
 
                 <div>
@@ -2200,7 +2200,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
                     </span>
                     <span>{formatPrice(rentalCost)}</span>
                   </div>
-                  <div className="flex justify-between"><span>Pacchetto km ({formData.kmPackageType === 'unlimited' ? 'illimitati' : `${includedKm} km`})</span> <span>{formatPrice(kmPackageCost)}</span></div>
+                  <div className="flex justify-between"><span>Pacchetto km ({(formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'illimitati' : `${includedKm} km`})</span> <span>{formatPrice(kmPackageCost)}</span></div>
                   <div className="flex justify-between"><span className="notranslate">Assicurazione KASKO</span> <span>{formatPrice(insuranceCost)}</span></div>
                   <div className="flex justify-between"><span>Lavaggio obbligatorio</span> <span>{formatPrice(30)}</span></div>
                   <div className="flex justify-between"><span>Spese di ritiro</span> <span>{formatPrice(pickupFee)}</span></div>
@@ -2362,7 +2362,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
                 <div className="flex justify-between">
                   <span className="text-gray-400">Km pacchetto:</span>
                   <span className="text-white font-medium">
-                    {formData.kmPackageType === 'unlimited' ? 'ILLIMITATI' : `${includedKm} km`}
+                    {(formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}
                   </span>
                 </div>
 
