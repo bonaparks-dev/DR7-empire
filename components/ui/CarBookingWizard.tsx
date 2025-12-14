@@ -154,7 +154,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   const isUrbanOrCorporate = vehicleType !== 'SUPERCAR'; // For eligibility logic compatibility
 
   // Get appropriate insurance options based on vehicle type (UI display mainly, prices calculated dynamically below)
-  const insuranceOptions = useMemo(() => isUrbanOrCorporate ? URBAN_INSURANCE_OPTIONS : INSURANCE_OPTIONS, [isUrbanOrCorporate]);
+  const insuranceOptions = useMemo(() => {
+    let options = isUrbanOrCorporate ? URBAN_INSURANCE_OPTIONS : INSURANCE_OPTIONS;
+
+    // User Request: "NOT SUPPOSED TO SEE NOT DISPONIBLE KASKO... IT IS ONLY KASKO BASE AND DR7"
+    // Apply this filter for Utilitaria, Furgone, and V-Class (Utility category)
+    if (vehicleType === 'UTILITARIA' || vehicleType === 'FURGONE' || vehicleType === 'V_CLASS') {
+      return options.filter(opt => opt.id === 'KASKO_BASE' || opt.id === 'KASKO_DR7');
+    }
+
+    return options;
+  }, [isUrbanOrCorporate, vehicleType]);
+
   const eligibilityInfo = useMemo(() => isUrbanOrCorporate ? URBAN_INSURANCE_ELIGIBILITY : INSURANCE_ELIGIBILITY, [isUrbanOrCorporate]);
   const insuranceEligibility = useMemo(() => isUrbanOrCorporate ? URBAN_INSURANCE_ELIGIBILITY : INSURANCE_ELIGIBILITY, [isUrbanOrCorporate]);
 
@@ -664,7 +675,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     }
 
     // Massimo Override for KM OR Urban/Corporate (utilitarie) always unlimited
-    if (isMassimo || isUrbanOrCorporate) {
+    // NEW RULE: Utilitaria/Furgone/V_Class always get Free Unlimited KM
+    if (isMassimo || vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS') {
       calculatedKmPackageCost = 0; // Free unlimited KM
       calculatedIncludedKm = 9999;
     }
@@ -680,9 +692,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
     // Car Wash Fee (Mandatory)
     // Utilitarie: €15
-    // Supercar / V-Class / Furgone: €30
+    // Furgone / V-Class (Utility-like): €15 (User Request)
+    // Supercar: €30
     // vType already calculated above
-    const carWashFee = vType === 'UTILITARIA' ? 15 : 30;
+    const carWashFee = (vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS') ? 15 : 30;
 
     let calculatedSubtotal = calculatedRentalCost + calculatedInsuranceCost + calculatedExtrasCost + calculatedKmPackageCost + calculatedYoungDriverFee + calculatedRecentLicenseFee + calculatedSecondDriverFee + calculatedPickupFee + calculatedDropoffFee + carWashFee;
 
@@ -1873,23 +1886,28 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
             </section>
 
             <section className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-bold text-white mb-4">
-                B. CHILOMETRI INCLUSI
-              </h3>
-
-              {/* Free KM Display */}
-              <div className="mb-4 p-4 bg-green-900/20 border border-green-600 rounded-lg">
-                <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white mb-4">B. CHILOMETRI INCLUSI</h3>
+              <div className={`p-4 rounded-lg border-2 cursor-pointer transition-colors border-green-500 bg-green-500/10`}>
+                <div className="flex justify-between items-center">
                   <div>
-                    <p className="text-green-300 font-semibold">Km inclusi GRATIS nel noleggio</p>
-                    <p className="text-xs text-green-200 mt-1">Basato sulla durata del noleggio</p>
+                    <span className="font-bold text-white">
+                      {(isMassimo || displayVehicleType === 'UTILITARIA' || displayVehicleType === 'FURGONE' || displayVehicleType === 'V_CLASS')
+                        ? 'Km illimitati GRATIS nel noleggio'
+                        : 'Km illimitati inclusi nel noleggio'}
+                    </span>
+                    <p className="text-sm text-gray-400">Basato sulla durata del noleggio</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-green-400">{calculateIncludedKm(duration.days)} km</p>
-                    <p className="text-xs text-green-200">per {duration.days} {duration.days === 1 ? 'giorno' : 'giorni'}</p>
-                  </div>
+                  <span className="font-bold text-white">
+                    {(isMassimo || displayVehicleType === 'UTILITARIA' || displayVehicleType === 'FURGONE' || displayVehicleType === 'V_CLASS')
+                      ? 'Incluso'
+                      : formatPrice(0)}
+                  </span>
                 </div>
               </div>
+
+              {(isMassimo || displayVehicleType === 'UTILITARIA' || displayVehicleType === 'FURGONE' || displayVehicleType === 'V_CLASS') && (
+                <p className="text-xs text-green-400 mt-2">* Chilometri illimitati inclusi gratuitamente per questa categoria di veicoli.</p>
+              )}
 
               <h3 className="text-lg font-bold text-white mb-4 mt-6">
                 C. PACCHETTI CHILOMETRICI AGGIUNTIVI (OPZIONALE) {isPremium && <span className="text-yellow-400 text-sm">(Premium Vehicle)</span>}
