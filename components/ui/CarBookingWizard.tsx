@@ -2215,4 +2215,4 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     );
   };
 
-  export default CarBookingWizard;
+export default CarBookingWizard;
