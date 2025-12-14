@@ -691,9 +691,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     const calculatedDropoffFee = 0;
 
     // Car Wash Fee (Mandatory)
-    // Utilitarie / Furgone: €15
-    // Supercar / V-Class: €30 (Per pricelist image)
-    const carWashFee = (vType === 'UTILITARIA' || vType === 'FURGONE') ? 15 : 30;
+    // Utilitarie / Furgone / V-Class (Category Utility): €15 (User Correction)
+    // Supercar: €30
+    const carWashFee = (vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS') ? 15 : 30;
 
     let calculatedSubtotal = calculatedRentalCost + calculatedInsuranceCost + calculatedExtrasCost + calculatedKmPackageCost + calculatedYoungDriverFee + calculatedRecentLicenseFee + calculatedSecondDriverFee + calculatedPickupFee + calculatedDropoffFee + carWashFee;
 
