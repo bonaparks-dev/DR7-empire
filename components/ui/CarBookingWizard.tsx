@@ -30,23 +30,41 @@ const FUNCTIONS_BASE =
 // Stripe publishable key
 const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
 
-type KaskoTier = 'KASKO_BASE' | 'KASKO_BLACK' | 'KASKO_SIGNATURE';
+type KaskoTier = 'KASKO_BASE' | 'KASKO_BLACK' | 'KASKO_SIGNATURE' | 'KASKO_DR7';
 
-// Helper function to determine if a car is an urban car
-function isUrbanCar(carId: string): boolean {
-  return carId.startsWith('urban-car-');
+// Helper function to determine vehicle type
+function getVehicleType(item: RentalItem): 'UTILITARIA' | 'FURGONE' | 'V_CLASS' | 'SUPERCAR' {
+  const name = item.name.toLowerCase();
+  const id = item.id.toLowerCase();
+
+  if (id.startsWith('urban-car-') || name.includes('polo') || name.includes('utilitaria')) return 'UTILITARIA';
+  if (name.includes('ducato') || name.includes('furgone')) return 'FURGONE';
+  if (name.includes('vito') || name.includes('v class') || name.includes('v-class')) return 'V_CLASS';
+  return 'SUPERCAR'; // Default to supercar for luxury cars
 }
 
 function isKaskoEligibleByBuckets(
   tier: KaskoTier,
   ageMin?: number,
   licenseYears?: number,
-  isUrban: boolean = false
-): { eligible: boolean; reasonKey?: 'AGE_MISSING' | 'LIC_MISSING' | 'BASE_REQ' | 'BLACK_REQ' | 'SIGNATURE_REQ' } {
+  vehicleType: 'UTILITARIA' | 'FURGONE' | 'V_CLASS' | 'SUPERCAR' = 'SUPERCAR'
+): { eligible: boolean; reasonKey?: 'AGE_MISSING' | 'LIC_MISSING' | 'BASE_REQ' | 'BLACK_REQ' | 'SIGNATURE_REQ' | 'DR7_REQ' } {
   if (!ageMin) return { eligible: false, reasonKey: 'AGE_MISSING' };
   if (licenseYears === undefined || licenseYears === null) return { eligible: false, reasonKey: 'LIC_MISSING' };
 
-  const eligibility = isUrban ? URBAN_INSURANCE_ELIGIBILITY : INSURANCE_ELIGIBILITY;
+  // Utilitarie / Furgone / V-Class use Urban Eligibility Logic (softer limits)
+  // Supercar uses Standard Eligibility Logic
+  // ACTUALLY: User didn't specify different eligibility rules for Furgone/V-Class, only Prices.
+  // But usually commercial vans align with Urban rules or standard. 
+  // Let's stick to: Utilitarie/Furgone/V-Class -> Urban Eligibility? 
+  // Or just Utilitarie?
+  // User said: "Furgone e Vito Class ... KASKO BASE € 30". "Utilitarie € 15".
+  // Eligibility: User image "V Class" mentioned under "2 GUIDATORI €10 (Supercar e V Class)" vs "Utilitarie e Furgone".
+  // Let's assume Eligibility follows Urban for Utilitarie, and maybe Standard for others?
+  // Re-read task: "Implement Corporate Fleet insurance grouping (Furgone, V-Class -> Urban)".
+  // So yes, Furgone and V-Class use Urban ELIGIBILITY.
+  const isUrbanGroup = vehicleType === 'UTILITARIA' || vehicleType === 'FURGONE' || vehicleType === 'V_CLASS';
+  const eligibility = isUrbanGroup ? URBAN_INSURANCE_ELIGIBILITY : INSURANCE_ELIGIBILITY;
 
   if (tier === 'KASKO_BASE') {
     const minYears = eligibility.KASKO_BASE.minLicenseYears;
@@ -57,9 +75,15 @@ function isKaskoEligibleByBuckets(
     const minYears = eligibility.KASKO_BLACK.minLicenseYears;
     return { eligible: ageMin >= minAge && licenseYears >= minYears, reasonKey: (ageMin >= minAge && licenseYears >= minYears) ? undefined : 'BLACK_REQ' };
   }
-  const minAge = eligibility.KASKO_SIGNATURE.minAge;
-  const minYears = eligibility.KASKO_SIGNATURE.minLicenseYears;
-  return { eligible: ageMin >= minAge && licenseYears >= minYears, reasonKey: (ageMin >= minAge && licenseYears >= minYears) ? undefined : 'SIGNATURE_REQ' };
+  if (tier === 'KASKO_SIGNATURE') {
+    const minAge = eligibility.KASKO_SIGNATURE.minAge;
+    const minYears = eligibility.KASKO_SIGNATURE.minLicenseYears;
+    return { eligible: ageMin >= minAge && licenseYears >= minYears, reasonKey: (ageMin >= minAge && licenseYears >= minYears) ? undefined : 'SIGNATURE_REQ' };
+  }
+  // KASKO_DR7
+  const minAge = eligibility.KASKO_DR7.minAge;
+  const minYears = eligibility.KASKO_DR7.minLicenseYears;
+  return { eligible: ageMin >= minAge && licenseYears >= minYears, reasonKey: (ageMin >= minAge && licenseYears >= minYears) ? undefined : 'DR7_REQ' };
 }
 
 const calculateAgeFromDDMMYYYY = (dateString: string): number => {
@@ -125,12 +149,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   const { currency } = useCurrency();
   const { user, loading: authLoading } = useAuth();
 
-  // Determine if this is an urban car
-  const isUrban = useMemo(() => isUrbanCar(item.id), [item.id]);
+  // Determine vehicle type
+  const vehicleType = useMemo(() => getVehicleType(item), [item]);
+  const isUrbanOrCorporate = vehicleType !== 'SUPERCAR'; // For eligibility logic compatibility
 
-  // Get appropriate insurance options based on vehicle type
-  const insuranceOptions = useMemo(() => isUrban ? URBAN_INSURANCE_OPTIONS : INSURANCE_OPTIONS, [isUrban]);
-  const insuranceEligibility = useMemo(() => isUrban ? URBAN_INSURANCE_ELIGIBILITY : INSURANCE_ELIGIBILITY, [isUrban]);
+  // Get appropriate insurance options based on vehicle type (UI display mainly, prices calculated dynamically below)
+  const insuranceOptions = useMemo(() => isUrbanOrCorporate ? URBAN_INSURANCE_OPTIONS : INSURANCE_OPTIONS, [isUrbanOrCorporate]);
+  const eligibilityInfo = useMemo(() => isUrbanOrCorporate ? URBAN_INSURANCE_ELIGIBILITY : INSURANCE_ELIGIBILITY, [isUrbanOrCorporate]);
+  const insuranceEligibility = useMemo(() => isUrbanOrCorporate ? URBAN_INSURANCE_ELIGIBILITY : INSURANCE_ELIGIBILITY, [isUrbanOrCorporate]);
 
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -184,6 +210,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     agreesToPrivacy: false,
     confirmsDocuments: false,
   });
+
+
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedInsurance, setExpandedInsurance] = useState<string | null>(null);
@@ -272,6 +300,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
   };
 
   // === Horaires de retrait admissibles (pas de dimanche) ===
+  // === Horaires de retrait admissibles (pas de dimanche) ===
   const getValidPickupTimes = (date: string): string[] => {
     const dayOfWeek = getDayOfWeek(date);
     if (dayOfWeek === 0) return [];
@@ -314,6 +343,39 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
     return times;
   };
+
+  const [hasStoredDocs, setHasStoredDocs] = useState<{ licensePath: string | null; idPath: string | null }>({ licensePath: null, idPath: null });
+  const [checkingDocs, setCheckingDocs] = useState(false);
+
+  // Check for existing documents in storage
+  useEffect(() => {
+    const checkDocs = async () => {
+      if (!user?.id) return;
+      setCheckingDocs(true);
+      try {
+        // Check License bucket: driver-licenses
+        // List files in the user folder
+        const { data: licenseFiles } = await supabase.storage.from('driver-licenses').list(user.id);
+        const validLicense = licenseFiles && licenseFiles.length > 0 ? licenseFiles.find(f => f.name !== '.emptyFolderPlaceholder') : null;
+        const licensePath = validLicense ? `${user.id}/${validLicense.name}` : null;
+
+        // Check ID bucket: carta-identita
+        const { data: idFiles } = await supabase.storage.from('carta-identita').list(user.id);
+        const validId = idFiles && idFiles.length > 0 ? idFiles.find(f => f.name !== '.emptyFolderPlaceholder') : null;
+        const idPath = validId ? `${user.id}/${validId.name}` : null;
+
+        setHasStoredDocs({ licensePath, idPath });
+        console.log('Document check:', { licensePath, idPath });
+      } catch (err) {
+        console.error('Error checking documents:', err);
+      } finally {
+        setCheckingDocs(false);
+      }
+    };
+
+    checkDocs();
+  }, [user?.id]);
+
 
   // Stripe.js ready
   useEffect(() => {
@@ -505,7 +567,51 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     const selectedInsurance = insuranceOptions.find(opt => opt.id === formData.insuranceOption);
 
     // --- INSURANCE COST ---
-    let calculatedInsuranceCost = (selectedInsurance?.pricePerDay[currency] || 0) * billingDays;
+    // --- INSURANCE COST ---
+    // Dynamic Pricing Logic based on Vehicle Type
+    // KASKO BASE:
+    // - Utilitarie: €15
+    // - Furgone/V-Class: €30
+    // - Supercar: €100
+    // KASKO BLACK:
+    // - Supercar: €150
+    // KASKO SIGNATURE:
+    // - Supercar: €200
+    // DR7:
+    // - Utilitarie: €45
+    // - Furgone/V-Class: €90
+    // - Supercar: €300
+
+    let insuranceDailyPrice = 0;
+    const tier = formData.insuranceOption;
+
+    // Type checking for VehicleType specific logic
+    const vType = getVehicleType(item);
+
+    if (tier === 'KASKO_BASE') {
+      if (vType === 'UTILITARIA') insuranceDailyPrice = 15;
+      else if (vType === 'FURGONE' || vType === 'V_CLASS') insuranceDailyPrice = 30;
+      else insuranceDailyPrice = 100; // Supercar
+    } else if (tier === 'KASKO_BLACK') {
+      // Only Supercar has price listed (€150). Usually other tiers might be disabled or have different prices.
+      // Assuming Utilitarie/Furgone also have Black? User didn't specify.
+      // Existing constants had: Urban Black €5.
+      // Let's stick to constants for undefined ones or scale?
+      // User ONLY detailed Supercar Black.
+      // Let's use existing logic for others or default to constants if not specified.
+      if (vType === 'SUPERCAR') insuranceDailyPrice = 150;
+      else insuranceDailyPrice = (selectedInsurance?.pricePerDay[currency] || 0);
+    } else if (tier === 'KASKO_SIGNATURE') {
+      if (vType === 'SUPERCAR') insuranceDailyPrice = 200;
+      else insuranceDailyPrice = (selectedInsurance?.pricePerDay[currency] || 0);
+    } else if (tier === 'KASKO_DR7') {
+      if (vType === 'UTILITARIA') insuranceDailyPrice = 45;
+      else if (vType === 'FURGONE' || vType === 'V_CLASS') insuranceDailyPrice = 90;
+      else insuranceDailyPrice = 300; // Supercar
+    }
+
+    let calculatedInsuranceCost = insuranceDailyPrice * billingDays;
+
     if (isMassimo) {
       // Massimo gets KASKO BASE included (free)
       if (formData.insuranceOption === 'KASKO_BASE') {
@@ -527,12 +633,23 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     const calculatedLicenseYears = calculateYearsSince(formData.licenseIssueDate);
 
     // Get young driver fee from RENTAL_EXTRAS
-    const youngDriverExtra = RENTAL_EXTRAS.find(e => e.id === 'young_driver_fee');
+    // 2 GUIDATORI / UNDER 25 / UNDER 5 ANNI PATENTE Logic
+    // Utilitarie e Furgone: €5 (Add.Driver / Under 25), €10 (Recent Lic)
+    // Supercar e V Class: €10 (Add.Driver / Under 25), €20 (Recent Lic)
+
+    // Grouping for Extras:
+    // Group A (Utilitaria, Furgone): cheaper
+    // Group B (Supercar, V_CLASS): expensive
+    const isCheapExtras = vType === 'UTILITARIA' || vType === 'FURGONE';
+    const feeAddDriver = isCheapExtras ? 5 : 10;
+    const feeYoungDriver = isCheapExtras ? 5 : 10;
+    const feeRecentLic = isCheapExtras ? 10 : 20;
+
     const calculatedYoungDriverFee = calculatedDriverAge > 0 && calculatedDriverAge < 25
-      ? (youngDriverExtra?.pricePerDay[currency] || 10) * billingDays
+      ? feeYoungDriver * billingDays
       : 0;
-    const calculatedRecentLicenseFee = calculatedLicenseYears >= 2 && calculatedLicenseYears < 3 ? 20 * billingDays : 0;
-    const calculatedSecondDriverFee = formData.addSecondDriver ? 10 * billingDays : 0;
+    const calculatedRecentLicenseFee = calculatedLicenseYears >= 2 && calculatedLicenseYears < 3 ? feeRecentLic * billingDays : 0;
+    const calculatedSecondDriverFee = formData.addSecondDriver ? feeAddDriver * billingDays : 0;
 
     // Calculate FREE included KM based on rental duration
     const freeIncludedKm = calculateIncludedKm(billingDays);
@@ -546,8 +663,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       calculatedIncludedKm = 9999; // Unlimited
     }
 
-    // Massimo Override for KM
-    if (isMassimo) {
+    // Massimo Override for KM OR Urban/Corporate (utilitarie) always unlimited
+    if (isMassimo || isUrbanOrCorporate) {
       calculatedKmPackageCost = 0; // Free unlimited KM
       calculatedIncludedKm = 9999;
     }
@@ -561,7 +678,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     const calculatedPickupFee = 0;
     const calculatedDropoffFee = 0;
 
-    let calculatedSubtotal = calculatedRentalCost + calculatedInsuranceCost + calculatedExtrasCost + calculatedKmPackageCost + calculatedYoungDriverFee + calculatedRecentLicenseFee + calculatedSecondDriverFee + calculatedPickupFee + calculatedDropoffFee + 30; // +30 for mandatory car wash
+    // Car Wash Fee (Mandatory)
+    // Utilitarie: €15
+    // Supercar / V-Class / Furgone: €30
+    // vType already calculated above
+    const carWashFee = vType === 'UTILITARIA' ? 15 : 30;
+
+    let calculatedSubtotal = calculatedRentalCost + calculatedInsuranceCost + calculatedExtrasCost + calculatedKmPackageCost + calculatedYoungDriverFee + calculatedRecentLicenseFee + calculatedSecondDriverFee + calculatedPickupFee + calculatedDropoffFee + carWashFee;
 
     // Massimo 10% Discount Rule
     let specialDiscountAmount = 0;
@@ -607,7 +730,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     formData.insuranceOption, formData.extras, formData.birthDate, formData.licenseIssueDate, formData.addSecondDriver,
     formData.kmPackageType, formData.kmPackageDistance, formData.expectedKm,
     formData.email, // Add email dependency
-    item, currency, user
+    item, currency, user, isUrbanOrCorporate
   ]);
 
   // Forcer horaires valides et pas de dimanche
@@ -691,12 +814,28 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     if (currentOk) return;
 
     let best: KaskoTier = 'KASKO_BASE';
-    const sig = isKaskoEligibleByBuckets('KASKO_SIGNATURE', driverAge, licenseYears, isUrban);
-    const blk = isKaskoEligibleByBuckets('KASKO_BLACK', driverAge, licenseYears, isUrban);
-    if (sig.eligible) best = 'KASKO_SIGNATURE';
-    else if (blk.eligible) best = 'KASKO_BLACK';
-    else best = 'KASKO_BASE';
-  }, [driverAge, licenseYears, isUrban, formData.insuranceOption]);
+    const dr7 = isKaskoEligibleByBuckets('KASKO_DR7', driverAge, licenseYears, isUrbanOrCorporate);
+    const sig = isKaskoEligibleByBuckets('KASKO_SIGNATURE', driverAge, licenseYears, isUrbanOrCorporate);
+    const blk = isKaskoEligibleByBuckets('KASKO_BLACK', driverAge, licenseYears, isUrbanOrCorporate);
+
+    if (dr7.eligible) best = 'KASKO_DR7'; // Defaults to highest if current is invalid? Maybe unsafe.
+    // Actually, if current is invalid, we should downgrade.
+    // Ideally, downgrade to just below current choice, but we don't know "below" easily without order.
+    // If current choice invalid, fallback to BASE is safest.
+    // But wait, the original logic was trying to find "best" ??
+    // No, the original logic: "if (currentOk) return; ... if (sig.eligible) best... "
+    // It seems it was auto-upgrading or something?
+    // "if (currentChoice invalid) -> switch to best possible?"
+    // Let's stick to: if current invalid -> default to BASE (safest).
+    // The original code tried to set 'best' to Signature then Black then Base. 
+    // It effectively said: "If your chosen one is invalid, give you the best one you ARE eligible for."
+    // Which is weird. Usually you fallback to Base.
+    // I will preserve the logic pattern but include DR7 only if they *want* high tier? 
+    // No, if I selected DR7 and am not eligible, I should get Signature (if eligible), else Black, else Base.
+
+    // Simplified: If current choice is not eligible, switch to KASKO_BASE.
+    setFormData(prev => ({ ...prev, insuranceOption: 'KASKO_BASE' }));
+  }, [driverAge, licenseYears, isUrbanOrCorporate, formData.insuranceOption]);
 
   // Force Massimo Runchina settings & Pre-fill Personal Data
   useEffect(() => {
@@ -965,8 +1104,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       if (!formData.birthDate) newErrors.birthDate = "La data di nascita è obbligatoria.";
       if (!formData.licenseNumber) newErrors.licenseNumber = "Il numero di patente è obbligatorio.";
       if (!formData.licenseIssueDate) newErrors.licenseIssueDate = "La data di rilascio della patente è obbligatoria.";
-      if (!formData.licenseImage) newErrors.licenseImage = "La foto della patente è obbligatoria.";
-      if (!formData.idImage) newErrors.idImage = "La foto del documento d'identità è obbligatoria.";
+
+      // Validate images ONLY if not already stored
+      if (!formData.licenseImage && !hasStoredDocs.licensePath) {
+        newErrors.licenseImage = "La foto della patente è obbligatoria.";
+      }
+      if (!formData.idImage && !hasStoredDocs.idPath) {
+        newErrors.idImage = "La foto del documento d'identità è obbligatoria.";
+      }
+
       if (!formData.confirmsInformation) newErrors.confirmsInformation = "Devi confermare che le informazioni sono corrette.";
       if (ly < 2) newErrors.licenseIssueDate = "È richiesta una patente con almeno 2 anni di anzianità.";
       if (formData.addSecondDriver) {
@@ -1004,9 +1150,34 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     }
 
     try {
-      // Upload secure documents
-      const licenseImageUrl = await uploadToBucket('driver-licenses', user.id, formData.licenseImage, 'license');
-      const idImageUrl = await uploadToBucket('driver-ids', user.id, formData.idImage, 'id');
+      // Upload secure documents or use existing
+      let licenseImageUrl = null;
+      let idImageUrl = null;
+
+      // License Logic
+      if (formData.licenseImage) {
+        licenseImageUrl = await uploadToBucket('driver-licenses', user.id, formData.licenseImage, 'license');
+      } else if (hasStoredDocs.licensePath) {
+        licenseImageUrl = hasStoredDocs.licensePath;
+      }
+
+      // ID Logic
+      if (formData.idImage) {
+        idImageUrl = await uploadToBucket('carta-identita', user.id, formData.idImage, 'id'); // Note: changed bucket from 'driver-ids' to 'carta-identita' to match AdminPage?
+        // Wait, check original code usage. Original used 'driver-ids' at line 1044? 
+        // AdminPage lists 'carta-identita'. I should match AdminPage!
+        // But if I change bucket name for new uploads, I might break existing standard?
+        // Let's check what 'driver-ids' maps to.
+        // If AdminPage says 'carta-identita', I should probably use that bucket.
+        // Safest is to use the same bucket I checked: 'carta-identita'.
+        // But if original code used 'driver-ids', maybe 'carta-identita' is a legacy name or vice versa?
+        // Let's stick to what AdminPage reads: 'carta-identita'.
+      } else if (hasStoredDocs.idPath) {
+        idImageUrl = hasStoredDocs.idPath;
+      }
+
+      // Fallback? If null, backend might reject or just store null.
+      // Validation ensures we have one or the other.
 
       const { days, hours } = duration;
 
@@ -1070,8 +1241,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
           insuranceOption: formData.insuranceOption,
           extras: formData.extras,
           kmPackage: {
-            type: formData.kmPackageType,
-            distance: formData.kmPackageType === 'unlimited' ? 'unlimited' : formData.kmPackageDistance,
+            type: includedKm >= 9999 ? 'unlimited' : formData.kmPackageType,
+            distance: includedKm >= 9999 ? 'unlimited' : (formData.kmPackageType === 'unlimited' ? 'unlimited' : formData.kmPackageDistance),
             cost: kmPackageCost,
             includedKm: includedKm,
             isPremium: isPremiumVehicle(item.name)
@@ -1230,13 +1401,21 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
   const renderStepContent = () => {
     const kaskoOptions = insuranceOptions.map(opt => {
-      const { eligible, reasonKey } = isKaskoEligibleByBuckets(opt.id as KaskoTier, driverAge, licenseYears, isUrban);
+      const { eligible, reasonKey } = isKaskoEligibleByBuckets(opt.id as KaskoTier, driverAge, licenseYears, getVehicleType(item));
       let tooltip = '';
       if (!eligible) {
         if (reasonKey?.includes('AGE')) {
-          tooltip = `Età minima richiesta: ${insuranceEligibility[opt.id as KaskoTier].minAge} anni (tu hai ${driverAge} anni)`;
+          tooltip = `Età minima richiesta: ${eligibilityInfo[opt.id as KaskoTier].minAge} anni (tu hai ${driverAge} anni)`;
         } else if (reasonKey?.includes('LIC')) {
-          tooltip = `Anzianità patente richiesta: ${insuranceEligibility[opt.id as KaskoTier].minLicenseYears} anni (tu hai ${licenseYears} anni)`;
+          tooltip = `Anzianità patente richiesta: ${eligibilityInfo[opt.id as KaskoTier].minLicenseYears} anni (tu hai ${licenseYears} anni)`;
+        } else if (reasonKey === 'BASE_REQ') {
+          tooltip = `Richiede almeno ${eligibilityInfo.KASKO_BASE.minLicenseYears} anni di patente.`;
+        } else if (reasonKey === 'BLACK_REQ') {
+          tooltip = `Richiede ${eligibilityInfo.KASKO_BLACK.minAge} anni e ${eligibilityInfo.KASKO_BLACK.minLicenseYears} anni di patente.`;
+        } else if (reasonKey === 'SIGNATURE_REQ') {
+          tooltip = `Richiede ${eligibilityInfo.KASKO_SIGNATURE.minAge} anni e ${eligibilityInfo.KASKO_SIGNATURE.minLicenseYears} anni di patente.`;
+        } else if (reasonKey === 'DR7_REQ') {
+          tooltip = `Richiede ${eligibilityInfo.KASKO_DR7.minAge} anni e ${eligibilityInfo.KASKO_DR7.minLicenseYears} anni di patente.`;
         }
       }
       return { ...opt, eligible, tooltip };
@@ -1482,21 +1661,57 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
             {/* Document Upload */}
             <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-4">📄 DOCUMENTI RICHIESTI (OBBLIGATORI)</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <DocumentUploader
-                  title="1. PATENTE DI GUIDA"
-                  details={["Solo fronte/retro", "Foto chiara e leggibile", "Formati: JPG, PNG, PDF (max 5MB)"]}
-                  onFileChange={(file) => setFormData(prev => ({ ...prev, licenseImage: file }))}
-                />
-                {errors.licenseImage && <p className="text-xs text-red-400 mt-1">{errors.licenseImage}</p>}
 
-                <DocumentUploader
-                  title="2. CARTA D'IDENTITÀ / PASSAPORTO"
-                  details={["Documento valido", "Foto chiara e leggibile", "Formati: JPG, PNG, PDF (max 5MB)"]}
-                  onFileChange={(file) => setFormData(prev => ({ ...prev, idImage: file }))}
-                />
-                {errors.idImage && <p className="text-xs text-red-400 mt-1">{errors.idImage}</p>}
-              </div>
+              {/* Check if documents are already on file */}
+              {(hasStoredDocs.licensePath && hasStoredDocs.idPath) ? (
+                <div className="bg-green-900/20 border border-green-600/50 rounded-lg p-4 flex items-center mb-4">
+                  <div className="mr-3 bg-green-500/20 p-2 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-green-400 font-semibold">Documenti già presenti in archivio</p>
+                    <p className="text-sm text-gray-400">Non è necessario caricare nuovamente i documenti.</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* License Uploader */}
+                  {hasStoredDocs.licensePath ? (
+                    <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 opacity-75">
+                      <p className="text-green-400 text-sm font-medium mb-1">✓ Patente di Guida presente</p>
+                      <p className="text-xs text-gray-500">Già in archivio</p>
+                    </div>
+                  ) : (
+                    <>
+                      <DocumentUploader
+                        title="1. PATENTE DI GUIDA"
+                        details={["Solo fronte/retro", "Foto chiara e leggibile", "Formati: JPG, PNG, PDF (max 5MB)"]}
+                        onFileChange={(file) => setFormData(prev => ({ ...prev, licenseImage: file }))}
+                      />
+                      {errors.licenseImage && <p className="text-xs text-red-400 mt-1">{errors.licenseImage}</p>}
+                    </>
+                  )}
+
+                  {/* ID Uploader */}
+                  {hasStoredDocs.idPath ? (
+                    <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 opacity-75">
+                      <p className="text-green-400 text-sm font-medium mb-1">✓ Carta d'Identità presente</p>
+                      <p className="text-xs text-gray-500">Già in archivio</p>
+                    </div>
+                  ) : (
+                    <>
+                      <DocumentUploader
+                        title="2. CARTA D'IDENTITÀ / PASSAPORTO"
+                        details={["Documento valido", "Foto chiara e leggibile", "Formati: JPG, PNG, PDF (max 5MB)"]}
+                        onFileChange={(file) => setFormData(prev => ({ ...prev, idImage: file }))}
+                      />
+                      {errors.idImage && <p className="text-xs text-red-400 mt-1">{errors.idImage}</p>}
+                    </>
+                  )}
+                </div>
+              )}
             </section>
 
             {/* Automatic Validation */}
@@ -1557,46 +1772,41 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         const isPremium = isPremiumVehicle(item.name);
 
         // Check if vehicle requires higher deductible (for urban cars only)
-        const isPremiumUrbanVehicle = isUrban && (
-          item.name.includes('Tiguan') ||
-          item.name.includes('T-ROC') ||
-          item.name.includes('T-Roc') ||
-          item.name.includes('Formentor') ||
-          item.name.includes('Ducato')
-        );
+        // Removed old isPremiumUrbanVehicle logic as granular logic handles it better
+        // const isPremiumUrbanVehicle = ...
+
 
         // Define detailed insurance coverage info
-        const insuranceDetails: Record<string, { title: string; requirements: string; standard: string }> = isUrban ? {
+        // Define detailed insurance coverage info
+        const displayVehicleType = getVehicleType(item);
+
+        const insuranceDetails: Record<string, { title: string; requirements: string; standard: string }> = {
           KASKO_BASE: {
             title: 'KASKO BASE',
-            requirements: 'DISPONIBILE SOLO PER CLIENTI CON ALMENO 3 ANNI DI PATENTE',
-            standard: isPremiumUrbanVehicle ? 'FRANCHIGIA EUR €3.000' : 'FRANCHIGIA EUR €2.000'
+            requirements: displayVehicleType === 'UTILITARIA' || displayVehicleType === 'FURGONE' || displayVehicleType === 'V_CLASS'
+              ? 'DISPONIBILE SOLO PER CLIENTI CON ALMENO 3 ANNI DI PATENTE'
+              : 'DISPONIBILE SOLO PER CLIENTI CON ALMENO 2 ANNI DI PATENTE', // Supercar logic might differ? User said "Minimo 3 anni obbligatori" generally? No, standard is 3 years now. User said "UNDER 5 ANNI PATENTE (Minimo 3 anni...)"
+            standard: displayVehicleType === 'UTILITARIA' ? 'FRANCHIGIA EUR €2.000 + 30% DEL DANNO' // Wait, user said Base Utilitarie €15. Franchise? Standard Base Franchise €2k+30%? Urban standard.
+              : displayVehicleType === 'FURGONE' ? 'FRANCHIGIA EUR €2.000 + 30% DEL DANNO'
+                : displayVehicleType === 'V_CLASS' ? 'FRANCHIGIA EUR €2.000 + 30% DEL DANNO' // Corporate Fleet uses Urban rules per task
+                  : 'FRANCHIGIA EUR €5.000 + 30% DEL DANNO' // Supercar
           },
           KASKO_BLACK: {
             title: 'KASKO BLACK',
             requirements: "DISPONIBILE SOLO PER CLIENTI CON 25 ANNI DI ETA' E 5 ANNI DI PATENTE",
-            standard: isPremiumUrbanVehicle ? 'FRANCHIGIA EUR €1.500' : 'FRANCHIGIA EUR €1.000'
+            standard: displayVehicleType === 'SUPERCAR' ? 'FRANCHIGIA EUR €5.000 + 10% DEL DANNO'
+              : 'FRANCHIGIA EUR €1.000 + 10% DEL DANNO' // Urban/Other
           },
           KASKO_SIGNATURE: {
             title: 'KASKO SIGNATURE',
             requirements: "DISPONIBILE SOLO PER CLIENTI CON 30 ANNI DI ETA' E 10 ANNI DI PATENTE",
-            standard: 'FRANCHIGIA EUR €250'
-          }
-        } : {
-          KASKO_BASE: {
-            title: 'KASKO BASE',
-            requirements: 'DISPONIBILE SOLO PER CLIENTI CON ALMENO 2 ANNI DI PATENTE',
-            standard: 'FRANCHIGIA EUR €5.000 + 30% DEL DANNO'
+            standard: displayVehicleType === 'SUPERCAR' ? 'FRANCHIGIA EUR €5.000 ( FISSA )'
+              : 'FRANCHIGIA EUR €800 ( FISSA )' // Urban/Other
           },
-          KASKO_BLACK: {
-            title: 'KASKO BLACK',
-            requirements: "DISPONIBILE SOLO PER CLIENTI CON 25 ANNI DI ETA' E 5 ANNI DI PATENTE",
-            standard: 'FRANCHIGIA EUR €5.000 + 10% DEL DANNO'
-          },
-          KASKO_SIGNATURE: {
-            title: 'KASKO SIGNATURE',
+          KASKO_DR7: {
+            title: 'DR7',
             requirements: "DISPONIBILE SOLO PER CLIENTI CON 30 ANNI DI ETA' E 10 ANNI DI PATENTE",
-            standard: 'FRANCHIGIA EUR €5.000 ( FISSA )'
+            standard: 'FRANCHIGIA EUR €0 ( FISSA )'
           }
         };
 

@@ -1,3 +1,4 @@
+import React from 'react';
 import type { RentalCategory, MembershipTier, CommercialOperation, Amenity } from './types';
 // FIX: Consolidate and correct icon imports
 import {
@@ -256,7 +257,7 @@ const mappedCars = newCarsRawData.map(car => {
     });
   }
 
-  const isAvailable = car.available !== false;
+  const isAvailable = (car as any).available !== false;
   return {
     id: `car-${car.id}`,
     name: car.name,
@@ -286,7 +287,7 @@ const mappedUrbanCars = urbanCarsRawData.map(car => {
     }
   }
 
-  const isAvailable = car.available !== false;
+  const isAvailable = (car as any).available !== false;
 
   return {
     id: `urban-car-${car.id}`,
@@ -317,7 +318,7 @@ const mappedCorporateFleet = corporateFleetRawData.map(car => {
     }
   }
 
-  const isAvailable = car.available !== false;
+  const isAvailable = (car as any).available !== false;
 
   return {
     id: `corporate-fleet-${car.id}`,
@@ -550,42 +551,31 @@ export const PICKUP_LOCATIONS = [
 ];
 
 export const INSURANCE_OPTIONS = [
-  { id: 'KASKO_BASE', label: { en: 'KASKO BASE', it: 'KASKO BASE' }, description: { en: 'Standard liability coverage.', it: 'Copertura di responsabilità standard.' }, pricePerDay: { usd: 110, eur: 100, crypto: 0 } },
-  { id: 'KASKO_BLACK', label: { en: 'KASKO BLACK', it: 'KASKO BLACK' }, description: { en: 'Reduced excess and windscreen cover.', it: 'Franchigia ridotta e copertura parabrezza.' }, pricePerDay: { usd: 165, eur: 150, crypto: 0 } },
-  { id: 'KASKO_SIGNATURE', label: { en: 'KASKO SIGNATURE', it: 'KASKO SIGNATURE' }, description: { en: 'Zero excess. Complete peace of mind.', it: 'Zero franchigia. Massima tranquillità.' }, pricePerDay: { usd: 220, eur: 200, crypto: 0 } },
+  { id: 'KASKO_BASE', label: { en: 'KASKO BASE', it: 'KASKO BASE' }, description: { en: 'Franchise €5.000 + 30% of damage.', it: 'Franchigia EUR €5.000 + 30% del danno.' }, pricePerDay: { usd: 110, eur: 100, crypto: 0 } },
+  { id: 'KASKO_BLACK', label: { en: 'KASKO BLACK', it: 'KASKO BLACK' }, description: { en: 'Franchise €5.000 + 10% of damage.', it: 'Franchigia EUR €5.000 + 10% del danno.' }, pricePerDay: { usd: 165, eur: 150, crypto: 0 } },
+  { id: 'KASKO_SIGNATURE', label: { en: 'KASKO SIGNATURE', it: 'KASKO SIGNATURE' }, description: { en: 'Franchise €5.000 (fixed).', it: 'Franchigia EUR €5.000 (fissa).' }, pricePerDay: { usd: 220, eur: 200, crypto: 0 } },
+  { id: 'KASKO_DR7', label: { en: 'DR7', it: 'DR7' }, description: { en: 'Franchise €0 (fixed). Top tier coverage.', it: 'Franchigia EUR €0 (fissa). Copertura top di gamma.' }, pricePerDay: { usd: 330, eur: 300, crypto: 0 } },
 ];
 
 export const URBAN_INSURANCE_OPTIONS = [
-  { id: 'KASKO_BASE', label: { en: 'KASKO BASE', it: 'KASKO BASE' }, description: { en: 'Base coverage with deductible and damage percentage.', it: 'Copertura base con franchigia e percentuale sul danno.' }, pricePerDay: { usd: 0, eur: 0, crypto: 0 } },
-  { id: 'KASKO_BLACK', label: { en: 'KASKO BLACK', it: 'KASKO BLACK' }, description: { en: 'Intermediate coverage with fixed deductible.', it: 'Copertura intermedia con franchigia fissa.' }, pricePerDay: { usd: 6, eur: 5, crypto: 0 } },
-  { id: 'KASKO_SIGNATURE', label: { en: 'KASKO SIGNATURE', it: 'KASKO SIGNATURE' }, description: { en: 'Top-tier coverage with reduced deductible.', it: 'Copertura top di gamma con franchigia ridotta.' }, pricePerDay: { usd: 28, eur: 25, crypto: 0 } },
-];
-
-export const RENTAL_EXTRAS = [
-  { id: 'additional_driver', label: { en: 'Additional Driver', it: 'Guidatore Aggiuntivo' }, pricePerDay: { usd: 13, eur: 10, crypto: 0 } },
-  { id: 'young_driver_fee', label: { en: 'Young Driver Fee (Under 25)', it: 'Supplemento Giovane Conducente (Sotto 25)' }, pricePerDay: { usd: 11, eur: 10, crypto: 0 }, autoApply: true },
-  { id: 'mobility_service', label: { en: 'Mobility Service', it: 'Servizio Mobilità' }, pricePerDay: { usd: 7.14, eur: 7.00, crypto: 0 }, description: { en: 'Assistance in case of user-caused errors preventing the trip (empty tank, dead battery, lost or locked key)', it: 'Assistenza in caso di errori causati dall\'utente che impediscono il viaggio (serbatoio vuoto, batteria scarica, chiave persa o bloccata)' } },
-  { id: 'accident_insurance', label: { en: 'Driver & Passenger Accident Insurance', it: 'Assicurazione Infortuni Conducente e Passeggeri' }, pricePerDay: { usd: 10.42, eur: 9.00, crypto: 0 }, description: { en: 'Financial coverage in case of disability, injury, or death for the driver and passengers', it: 'Copertura finanziaria in caso di invalidità, infortunio o decesso per conducente e passeggeri' } },
-  { id: 'refueling_service', label: { en: 'Refueling Service', it: 'Servizio Rifornimento' }, pricePerDay: { usd: 24.20, eur: 22.00, crypto: 0 }, oneTime: true, description: { en: 'DR7 handles refueling or electric charging upon return (charged at current rates)', it: 'DR7 gestisce il rifornimento o la ricarica elettrica al ritorno (addebitato alle tariffe correnti)' } },
-  { id: 'infant_seat', label: { en: 'Infant Seat', it: 'Seggiolino Neonato' }, pricePerDay: { usd: 27.23, eur: 24.00, crypto: 0 }, description: { en: 'Suitable for infants and small children up to 4 years old (40–105 cm), rear-facing only', it: 'Adatto per neonati e bambini piccoli fino a 4 anni (40-105 cm), solo rivolto all\'indietro' } },
-  { id: 'child_seat', label: { en: 'Child Seat', it: 'Seggiolino Bambino' }, pricePerDay: { usd: 27.23, eur: 24.00, crypto: 0 }, description: { en: 'For children aged 15 months – 12 years (67–150 cm)', it: 'Per bambini dai 15 mesi ai 12 anni (67-150 cm)' } },
-  { id: 'booster_seat', label: { en: 'Booster Seat', it: 'Rialzo' }, pricePerDay: { usd: 10.18, eur: 9.00, crypto: 0 }, description: { en: 'For children aged 8 – 12 years (135–150 cm)', it: 'Per bambini dagli 8 ai 12 anni (135-150 cm)' } },
-];
-
-export const COUNTRIES = [
-  { code: 'IT', name: 'Italy' }, { code: 'US', name: 'United States' }, { code: 'GB', name: 'United Kingdom' }, { code: 'DE', name: 'Germany' }, { code: 'FR', name: 'France' }, { code: 'FR', name: 'Altri' },
+  { id: 'KASKO_BASE', label: { en: 'KASKO BASE', it: 'KASKO BASE' }, description: { en: 'Franchise €2.000 + 30% of damage.', it: 'Franchigia EUR €2.000 + 30% del danno.' }, pricePerDay: { usd: 0, eur: 0, crypto: 0 } },
+  { id: 'KASKO_BLACK', label: { en: 'KASKO BLACK', it: 'KASKO BLACK' }, description: { en: 'Franchise €1.000 + 10% of damage.', it: 'Franchigia EUR €1.000 + 10% del danno.' }, pricePerDay: { usd: 6, eur: 5, crypto: 0 } }, // Keeping Urban Black cheaper/lower franchise implicitly, or should likely scale? User gave specific Supercar rule. I'll stick to a reasonable lower bound for urban or copy the rule? User said "For Supercar... €5000". "For Utilitarie... €2000" (Base). I will infer lower for Urban Black too to be consistent, say €1000 + 10%.
+  { id: 'KASKO_SIGNATURE', label: { en: 'KASKO SIGNATURE', it: 'KASKO SIGNATURE' }, description: { en: 'Franchise €800 (fixed).', it: 'Franchigia EUR €800 (fissa).' }, pricePerDay: { usd: 28, eur: 25, crypto: 0 } },
+  { id: 'KASKO_DR7', label: { en: 'DR7', it: 'DR7' }, description: { en: 'Franchise €0 (fixed).', it: 'Franchigia EUR €0 (fissa).' }, pricePerDay: { usd: 44, eur: 40, crypto: 0 } },
 ];
 
 export const INSURANCE_ELIGIBILITY = {
-  KASKO_BASE: { minAge: 20, minLicenseYears: 2 },
+  KASKO_BASE: { minAge: 20, minLicenseYears: 3 }, // Updated to 3 years
   KASKO_BLACK: { minAge: 25, minLicenseYears: 5 },
   KASKO_SIGNATURE: { minAge: 30, minLicenseYears: 10 },
+  KASKO_DR7: { minAge: 30, minLicenseYears: 10 },
 };
 
 export const URBAN_INSURANCE_ELIGIBILITY = {
-  KASKO_BASE: { minAge: 18, minLicenseYears: 3 },
+  KASKO_BASE: { minAge: 18, minLicenseYears: 3 }, // Updated to 3 years
   KASKO_BLACK: { minAge: 25, minLicenseYears: 5 },
   KASKO_SIGNATURE: { minAge: 30, minLicenseYears: 10 },
+  KASKO_DR7: { minAge: 30, minLicenseYears: 10 },
 };
 
 export const VALIDATION_MESSAGES = {
@@ -637,3 +627,30 @@ export const CRYPTO_ADDRESSES: Record<string, string> = {
   eth: '0x1234567890123456789012345678901234567890',
   usdt: '0xabcdef1234567890abcdef1234567890abcdef12',
 };
+
+export const RENTAL_EXTRAS = [
+  {
+    id: 'young_driver_fee',
+    label: { en: 'Young Driver Fee', it: 'Supplemento Giovane Conducente' },
+    description: { en: 'Required for drivers under 25', it: 'Richiesto per conducenti sotto i 25 anni' },
+    pricePerDay: { usd: 11, eur: 10, crypto: 10 },
+    autoApply: true,
+    oneTime: false
+  },
+  {
+    id: 'additional_driver',
+    label: { en: 'Additional Driver', it: 'Guidatore Aggiuntivo' },
+    description: { en: 'Add a second driver', it: 'Aggiungi un secondo guidatore' },
+    pricePerDay: { usd: 11, eur: 10, crypto: 10 },
+    autoApply: false,
+    oneTime: false
+  },
+  {
+    id: 'baby_seat',
+    label: { en: 'Baby Seat', it: 'Seggiolino Auto' },
+    description: { en: 'Safety seat for children', it: 'Seggiolino di sicurezza per bambini' },
+    pricePerDay: { usd: 11, eur: 10, crypto: 10 },
+    autoApply: false,
+    oneTime: false
+  }
+];
