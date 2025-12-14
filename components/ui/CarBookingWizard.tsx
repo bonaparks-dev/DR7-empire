@@ -809,19 +809,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
   // Éligibilité KASKO auto (downgrade si non éligible)
   useEffect(() => {
-    const currentChoice: KaskoTier = formData.insuranceOption as KaskoTier;
-    const { eligible: currentOk } = isKaskoEligibleByBuckets(currentChoice, driverAge, licenseYears, isUrban);
-    if (currentOk) return;
-
-    let best: KaskoTier = 'KASKO_BASE';
-    const dr7 = isKaskoEligibleByBuckets('KASKO_DR7', driverAge, licenseYears, isUrbanOrCorporate);
-    const sig = isKaskoEligibleByBuckets('KASKO_SIGNATURE', driverAge, licenseYears, isUrbanOrCorporate);
-    const blk = isKaskoEligibleByBuckets('KASKO_BLACK', driverAge, licenseYears, isUrbanOrCorporate);
-
-    if (dr7.eligible) best = 'KASKO_DR7'; // Defaults to highest if current is invalid? Maybe unsafe.
-    // Actually, if current is invalid, we should downgrade.
-    // Ideally, downgrade to just below current choice, but we don't know "below" easily without order.
-    // If current choice invalid, fallback to BASE is safest.
     // But wait, the original logic was trying to find "best" ??
     // No, the original logic: "if (currentOk) return; ... if (sig.eligible) best... "
     // It seems it was auto-upgrading or something?
