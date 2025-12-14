@@ -478,7 +478,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         const diffMs = ret.getTime() - pickup.getTime();
         const totalHours = diffMs / (1000 * 60 * 60);
         const dayLength = 22.5; // 22h30 = one rental day
-        billingDays = Math.ceil(totalHours / dayLength);
+        // Subtract tiny epsilon to ensure exact 22.5h doesn't float-up to 2 days
+        billingDays = Math.ceil((totalHours - 0.05) / dayLength);
         hours = 0; // Reset hours since we're using 22.5h day system
 
         // Use billing days for display to ensure consistency with pricing and km
