@@ -546,7 +546,6 @@ export const COMMERCIAL_OPERATION_GIVEAWAY: CommercialOperation = {
 };
 
 export const PICKUP_LOCATIONS = [
-  { id: 'cagliari_airport', label: { en: 'Cagliari Elmas Airport', it: 'Aeroporto di Cagliari Elmas' } },
   { id: 'dr7_office', label: { en: 'DR7 Office (Viale Marconi, 229, 09131 Cagliari CA)', it: 'Viale Marconi, 229, 09131 Cagliari CA' } },
 ];
 

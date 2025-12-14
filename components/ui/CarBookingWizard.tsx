@@ -556,8 +556,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     const calculatedRecommendedKm = recommendKmPackage(formData.expectedKm, item.name, billingDays);
 
     // Pickup and Drop-off fees (€50 each)
-    const calculatedPickupFee = formData.pickupLocation === 'cagliari_airport' ? 50 : 0;
-    const calculatedDropoffFee = formData.returnLocation === 'cagliari_airport' ? 50 : 0;
+    // Airport fees removed
+    const calculatedPickupFee = 0;
+    const calculatedDropoffFee = 0;
 
     let calculatedSubtotal = calculatedRentalCost + calculatedInsuranceCost + calculatedExtrasCost + calculatedKmPackageCost + calculatedYoungDriverFee + calculatedRecentLicenseFee + calculatedSecondDriverFee + calculatedPickupFee + calculatedDropoffFee + 30; // +30 for mandatory car wash
 
