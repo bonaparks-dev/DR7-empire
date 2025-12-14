@@ -2058,7 +2058,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
             className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
             aria-label="Close"
           >
-
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
           <h2 className="text-2xl font-bold text-white mb-4">Accesso Richiesto</h2>
           <p className="text-gray-300 mb-6">Devi effettuare l'accesso o registrarti per poter completare una prenotazione.</p>
@@ -2171,7 +2173,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
                     className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
                     aria-label="Close"
                   >
-
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   </button>
                   {renderStepContent()}
                 </motion.div>
