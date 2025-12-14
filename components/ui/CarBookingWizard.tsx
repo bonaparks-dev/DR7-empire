@@ -696,13 +696,32 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     else best = 'KASKO_BASE';
   }, [driverAge, licenseYears, isUrban, formData.insuranceOption]);
 
-  // Force Massimo Runchina settings
+  // Force Massimo Runchina settings & Pre-fill Personal Data
   useEffect(() => {
     if (isMassimoRunchina(formData.email)) {
       setFormData(prev => {
         const updates: any = {};
+
+        // 1. Force Pricing/Insurance Settings
         if (prev.insuranceOption !== 'KASKO_BASE') updates.insuranceOption = 'KASKO_BASE';
         if (prev.kmPackageType !== 'unlimited') updates.kmPackageType = 'unlimited';
+
+        // 2. Pre-fill Personal Data (Fast Track)
+        // If name/last name are empty, fill them
+        if (!prev.firstName) updates.firstName = 'Massimo';
+        if (!prev.lastName) updates.lastName = 'Runchina';
+        if (!prev.phone) updates.phone = '+39 347 000 0000'; // Placeholder or real if known
+
+        // Pre-fill essential validation fields to allow skipping step 2
+        if (!prev.birthDate) updates.birthDate = '1969-01-01'; // imply from email/age
+        if (!prev.licenseNumber) updates.licenseNumber = 'VIP-AUTOFILLED';
+        if (!prev.licenseDate) updates.licenseDate = '2000-01-01';
+        if (!prev.birthPlace) updates.birthPlace = 'Cagliari'; // Default
+
+        // Skip address fields requirement logic handling elsewhere, but fill for now
+        if (!prev.address) updates.address = 'VIP Fast Track';
+        if (!prev.city) updates.city = 'Cagliari';
+        if (!prev.zipCode) updates.zipCode = '09100';
 
         if (Object.keys(updates).length > 0) {
           return { ...prev, ...updates };
@@ -710,7 +729,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         return prev;
       });
     }
-  }, [formData.email, formData.insuranceOption, formData.kmPackageType]);
+  }, [formData.email]); // Check whenever email changes (e.g. login or manual entry)
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', {
