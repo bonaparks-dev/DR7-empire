@@ -161,7 +161,7 @@ export const translations: Translations = {
   Child_Seat: { en: "Child Seat", it: "Seggiolino per Bambini" },
   Additional_Driver: { en: "Additional Driver", it: "Guidatore Aggiuntivo" },
   Cagliari_Elmas_Airport: { en: "Cagliari Elmas Airport", it: "Aeroporto di Cagliari Elmas" },
-  DR7_Office_Cagliari: { en: "DR7 Office Cagliari", it: "Ufficio DR7 Cagliari" },
+  DR7_Office_Cagliari: { en: "DR7 Office (Viale Marconi, 229, 09131 Cagliari CA)", it: "Viale Marconi, 229, 09131 Cagliari CA" },
   Dates_and_Guests: { en: "Dates & Guests", it: "Date e Ospiti" },
   Check_in_Date: { en: "Check-in Date", it: "Data di Check-in" },
   Check_out_Date: { en: "Check-out Date", it: "Data di Check-out" },
@@ -343,13 +343,13 @@ export const translations: Translations = {
   Go_to_Commercial_Operation: { en: "Go to Commercial Operation", it: "Vai all'Operazione Commerciale" },
   Login_Required_to_Buy: { en: 'Login Required', it: 'Accesso Richiesto' },
   Please_sign_in_to_purchase_tickets: { en: 'Please sign in to purchase tickets.', it: 'Effettua l\'accesso per acquistare i biglietti.' },
-  
+
   // Account -> Profile
   Profile_Details: { en: "Profile Details", it: "Dettagli Profilo" },
   Update_your_information: { en: "Update your personal information.", it: "Aggiorna le tue informazioni personali." },
   Save_Changes: { en: "Save Changes", it: "Salva Modifiche" },
   Changes_Saved: { en: "Changes Saved", it: "Modifiche Salvate" },
-  
+
   // Account -> Security
   Change_Password: { en: "Change Password", it: "Cambia Password" },
   Update_your_password: { en: "Update your password for enhanced security.", it: "Aggiorna la tua password per una maggiore sicurezza." },
@@ -381,7 +381,7 @@ export const translations: Translations = {
   Manage_Subscription: { en: "Manage Subscription", it: "Gestisci Iscrizione" },
   Your_Benefits: { en: "Your Benefits", it: "I Tuoi Vantaggi" },
   Rental_Credits: { en: "Rental Credits", it: "Crediti Noleggio" },
-  
+
   // Account -> Notifications
   Notification_Preferences: { en: "Notification Preferences", it: "Preferenze di Notifica" },
   Manage_how_we_communicate_with_you: { en: "Manage how we communicate with you.", it: "Gestisci come comunichiamo con te." },
