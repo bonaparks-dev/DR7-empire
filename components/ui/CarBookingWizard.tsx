@@ -1910,104 +1910,109 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
                 <p className="text-xs text-green-400 mt-2">* Chilometri illimitati inclusi gratuitamente per questa categoria di veicoli.</p>
               )}
 
-              <h3 className="text-lg font-bold text-white mb-4 mt-6">
-                C. PACCHETTI CHILOMETRICI AGGIUNTIVI (OPZIONALE) {isPremium && <span className="text-yellow-400 text-sm">(Premium Vehicle)</span>}
-              </h3>
-              <p className="text-sm text-gray-400 mb-4">Vuoi aggiungere più chilometri? Seleziona un pacchetto aggiuntivo</p>
+              {!(isMassimo || displayVehicleType === 'UTILITARIA' || displayVehicleType === 'FURGONE' || displayVehicleType === 'V_CLASS') && (
+                <>
+                  <h3 className="text-lg font-bold text-white mb-4 mt-6">
+                    C. PACCHETTI CHILOMETRICI AGGIUNTIVI (OPZIONALE) {isPremium && <span className="text-yellow-400 text-sm">(Premium Vehicle)</span>}
+                  </h3>
+                  <p className="text-sm text-gray-400 mb-4">Vuoi aggiungere più chilometri? Seleziona un pacchetto aggiuntivo</p>
 
-              {/* No Extra KM Option (Default) */}
-              <div className="space-y-3 mb-4">
-                <div
-                  className={`p-4 rounded-md border cursor-pointer transition-all ${formData.kmPackageType === 'none'
-                    ? 'border-white bg-white/5'
-                    : 'border-gray-700 hover:border-gray-500'
-                    }`}
-                  onClick={() => setFormData(p => ({ ...p, kmPackageType: 'none' }))}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <input
-                        type="radio"
-                        name="kmPackage"
-                        checked={formData.kmPackageType === 'none'}
-                        onChange={() => setFormData(p => ({ ...p, kmPackageType: 'none' }))}
-                        className="w-4 h-4 text-white"
-                      />
-                      <label className="ml-3 text-white font-semibold">Solo km inclusi ({calculateIncludedKm(duration.days)} km)</label>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-green-400 font-bold">GRATIS</span>
+                  {/* No Extra KM Option (Default) */}
+                  <div className="space-y-3 mb-4">
+                    <div
+                      className={`p-4 rounded-md border cursor-pointer transition-all ${formData.kmPackageType === 'none'
+                        ? 'border-white bg-white/5'
+                        : 'border-gray-700 hover:border-gray-500'
+                        }`}
+                      onClick={() => setFormData(p => ({ ...p, kmPackageType: 'none' }))}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <input
+                            type="radio"
+                            name="kmPackage"
+                            checked={formData.kmPackageType === 'none'}
+                            onChange={() => setFormData(p => ({ ...p, kmPackageType: 'none' }))}
+                            className="w-4 h-4 text-white"
+                          />
+                          <label className="ml-3 text-white font-semibold">Solo km inclusi ({calculateIncludedKm(duration.days)} km)</label>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-green-400 font-bold">GRATIS</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
 
-              {/* KM Package Options */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-semibold text-gray-300 mb-2">KM ILLIMITATI:</h4>
-                <div
-                  className={`p-4 rounded-md border cursor-pointer transition-all ${formData.kmPackageType === 'unlimited'
-                    ? 'border-white bg-white/5'
-                    : 'border-gray-700 hover:border-gray-500'
-                    }`}
-                  onClick={() => setFormData(p => ({ ...p, kmPackageType: 'unlimited' }))}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center">
-                      <input
-                        type="radio"
-                        name="kmPackage"
-                        checked={formData.kmPackageType === 'unlimited'}
-                        onChange={() => setFormData(p => ({ ...p, kmPackageType: 'unlimited' }))}
-                        className="w-4 h-4 text-white"
-                      />
-                      <label className="ml-3 text-white font-semibold">KM ILLIMITATI</label>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-white font-bold">€{calculateUnlimitedKmPrice(item.name, duration.days || 1, true)}</span>
+                  {/* KM Package Options */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-gray-300 mb-2">KM ILLIMITATI:</h4>
+                    <div
+                      className={`p-4 rounded-md border cursor-pointer transition-all ${formData.kmPackageType === 'unlimited'
+                        ? 'border-white bg-white/5'
+                        : 'border-gray-700 hover:border-gray-500'
+                        }`}
+                      onClick={() => setFormData(p => ({ ...p, kmPackageType: 'unlimited' }))}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center">
+                          <input
+                            type="radio"
+                            name="kmPackage"
+                            checked={formData.kmPackageType === 'unlimited'}
+                            onChange={() => setFormData(p => ({ ...p, kmPackageType: 'unlimited' }))}
+                            className="w-4 h-4 text-white"
+                          />
+                          <label className="ml-3 text-white font-semibold">KM ILLIMITATI</label>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-white font-bold">€{calculateUnlimitedKmPrice(item.name, duration.days || 1, true)}</span>
+                        </div>
+                      </div>
+                      <div className="ml-7 text-xs text-gray-400">
+                        {isDucatoVehicle(item.name) ? (
+                          <p>Prezzo fisso per Ducato</p>
+                        ) : (
+                          <p>Per {duration.days || 1} {duration.days === 1 ? 'giorno' : 'giorni'}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div className="ml-7 text-xs text-gray-400">
-                    {isDucatoVehicle(item.name) ? (
-                      <p>Prezzo fisso per Ducato</p>
-                    ) : (
-                      <p>Per {duration.days || 1} {duration.days === 1 ? 'giorno' : 'giorni'}</p>
+
+                  {/* KM Package Summary */}
+                  <div className="mt-4 p-3 bg-gray-800/50 rounded-md border border-gray-700">
+                    {formData.kmPackageType !== 'unlimited' && (
+                      <div className="flex justify-between text-sm mb-2">
+                        <span className="text-gray-300">Km inclusi gratis:</span>
+                        <span className="text-green-400 font-semibold">{calculateIncludedKm(duration.days)} km</span>
+                      </div>
                     )}
-                  </div>
-                </div>
-              </div>
+                    {formData.kmPackageType !== 'none' && (
+                      <>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-300">Pacchetto extra selezionato:</span>
+                          <span className="text-white font-semibold">
+                            {formData.kmPackageType === 'unlimited' ? '∞ KM ILLIMITATI' : `+${formData.kmPackageDistance} km`}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm mt-1">
+                          <span className="text-gray-300">Costo pacchetto extra:</span>
+                          <span className="text-white font-semibold">€{kmPackageCost}</span>
+                        </div>
+                      </>
+                    )}
 
-              {/* KM Package Summary */}
-              <div className="mt-4 p-3 bg-gray-800/50 rounded-md border border-gray-700">
-                {formData.kmPackageType !== 'unlimited' && (
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-300">Km inclusi gratis:</span>
-                    <span className="text-green-400 font-semibold">{calculateIncludedKm(duration.days)} km</span>
-                  </div>
-                )}
-                {formData.kmPackageType !== 'none' && (
-                  <>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-300">Pacchetto extra selezionato:</span>
-                      <span className="text-white font-semibold">
-                        {formData.kmPackageType === 'unlimited' ? '∞ KM ILLIMITATI' : `+${formData.kmPackageDistance} km`}
-                      </span>
+                    <div className="border-t border-gray-600 mt-2 pt-2">
+                      <div className="flex justify-between text-base font-bold">
+                        <span className="text-white">Km totali disponibili:</span>
+                        <span className="text-white">
+                          {formData.kmPackageType === 'unlimited' ? '∞ ILLIMITATI' : `${calculateIncludedKm(duration.days)} km`}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex justify-between text-sm mt-1">
-                      <span className="text-gray-300">Costo pacchetto extra:</span>
-                      <span className="text-white font-semibold">€{kmPackageCost}</span>
-                    </div>
-                  </>
-                )}
-                <div className="border-t border-gray-600 mt-2 pt-2">
-                  <div className="flex justify-between text-base font-bold">
-                    <span className="text-white">Km totali disponibili:</span>
-                    <span className="text-white">
-                      {formData.kmPackageType === 'unlimited' ? '∞ ILLIMITATI' : `${calculateIncludedKm(duration.days)} km`}
-                    </span>
                   </div>
-                </div>
-              </div>
+                </>
+              )}
             </section>
 
             <section className="border-t border-gray-700 pt-6">
