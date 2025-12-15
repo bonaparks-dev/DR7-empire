@@ -1812,6 +1812,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
           <div className="space-y-8">
             <section>
               <h3 className="text-lg font-bold text-white mb-4 notranslate">A. KASKO INSURANCE</h3>
+              <div className="mb-4 p-3 bg-green-900/20 border border-green-600 rounded-lg">
+                <p className="text-green-300 font-semibold text-sm">✅ RCA (Responsabilità Civile Auto) inclusa nel prezzo per tutti i veicoli.</p>
+              </div>
               <div className="space-y-4">
                 {kaskoOptions.map(opt => {
                   const details = insuranceDetails[opt.id as keyof typeof insuranceDetails];
