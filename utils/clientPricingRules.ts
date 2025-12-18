@@ -7,9 +7,10 @@ export const SPECIAL_CLIENTS = {
     MASSIMO_RUNCHINA: {
         email: 'massimorunchina69@gmail.com',
         config: {
-            dailyRate: 305,
-            discountThresholdDays: 2,
-            discountPercentage: 0.10,
+            baseRate: 339,              // Base rate before any discounts
+            baseDiscount: 0.10,         // Always applied: €339 - 10% = €305/day
+            discountThresholdDays: 3,   // Additional discount for 3+ days
+            additionalDiscount: 0.10,   // Additional 10% off total for 3+ days
             includeUnlimitedKm: true,
             includeKaskoBase: true,
             excludeCarWash: true,
@@ -53,30 +54,34 @@ export const calculateClientPricing = (
         };
     }
 
-    const { dailyRate, discountThresholdDays, discountPercentage } = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config;
+    const { baseRate, baseDiscount, discountThresholdDays, additionalDiscount } = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config;
 
-    // Calculate new base rental cost
-    const specialRentalCost = dailyRate * days;
+    // Step 1: Calculate base rental cost (€339 × days)
+    const baseRentalCost = baseRate * days;
 
-    // Recalculate subtotal using special rate + other fees (like car wash, pickup fees, etc.)
-    // Note: We need to know what "currentSubtotal" includes. 
-    // Usually: Rental + Insurance + Extras + Fees.
-    // For Massimo: Rental is fixed, Insurance (Kasko Base) is 0, Unlimited Km is 0.
-    // So we really just need to know the 'other fees' (extras + pickup/dropoff + young driver + car wash)
+    // Step 2: Apply first discount (always applied): -10% on rental
+    const firstDiscount = baseRentalCost * baseDiscount;
+    const rentalAfterFirstDiscount = baseRentalCost - firstDiscount;
 
-    let newSubtotal = specialRentalCost + otherFees;
-    let discount = 0;
+    // Step 3: Add other fees to get subtotal
+    let newSubtotal = rentalAfterFirstDiscount + otherFees;
+    let totalDiscount = firstDiscount;
 
+    // Step 4: Apply additional discount for 3+ days (10% off entire subtotal)
     if (days >= discountThresholdDays) {
-        discount = newSubtotal * discountPercentage;
-        newSubtotal -= discount;
+        const secondDiscount = newSubtotal * additionalDiscount;
+        newSubtotal -= secondDiscount;
+        totalDiscount += secondDiscount;
     }
+
+    // Calculate effective daily rate after first discount
+    const effectiveDailyRate = rentalAfterFirstDiscount / days;
 
     return {
         isSpecialClient: true,
-        dailyRate: dailyRate,
-        discountAmount: discount,
+        dailyRate: effectiveDailyRate, // €305/day (after first discount)
+        discountAmount: totalDiscount,
         subtotal: newSubtotal,
-        message: days >= discountThresholdDays ? 'Sconto cliente speciale 10% applicato' : 'Tariffa fissa cliente speciale'
+        message: days >= discountThresholdDays ? 'Sconto cliente speciale 20% applicato (10% + 10%)' : 'Sconto cliente speciale 10% applicato'
     };
 };

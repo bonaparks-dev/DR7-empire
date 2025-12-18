@@ -585,8 +585,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
     // --- RENTAL COST ---
     let calculatedRentalCost = billingDays * pricePerDay;
+    let massimoFirstDiscount = 0;
     if (isMassimo) {
-      calculatedRentalCost = billingDaysCalc * SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.dailyRate;
+      // Massimo pricing: €339 base rate with automatic -10% = €305/day
+      const baseRate = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseRate;
+      const baseDiscount = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseDiscount;
+      const baseRentalCost = billingDaysCalc * baseRate;
+      massimoFirstDiscount = baseRentalCost * baseDiscount;
+      calculatedRentalCost = baseRentalCost - massimoFirstDiscount; // €305/day after first discount
     }
 
     const selectedInsurance = insuranceOptions.find(opt => opt.id === formData.insuranceOption);
@@ -716,11 +722,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
     let calculatedSubtotal = calculatedRentalCost + calculatedInsuranceCost + calculatedExtrasCost + calculatedKmPackageCost + calculatedYoungDriverFee + calculatedRecentLicenseFee + calculatedSecondDriverFee + calculatedPickupFee + calculatedDropoffFee + carWashFee;
 
-    // Massimo 10% Discount Rule
-    let specialDiscountAmount = 0;
+    // Massimo Discount Rules
+    // First discount (always applied): already included in calculatedRentalCost above
+    // Second discount (3+ days): additional 10% off total
+    let specialDiscountAmount = massimoFirstDiscount; // Track first discount
     if (isMassimo && billingDaysCalc >= SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.discountThresholdDays) {
-      specialDiscountAmount = calculatedSubtotal * SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.discountPercentage;
-      calculatedSubtotal -= specialDiscountAmount;
+      const additionalDiscount = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.additionalDiscount;
+      const secondDiscountAmount = calculatedSubtotal * additionalDiscount;
+      specialDiscountAmount += secondDiscountAmount; // Total both discounts
+      calculatedSubtotal -= secondDiscountAmount;
     }
 
     const calculatedTaxes = calculatedSubtotal * 0.10;
@@ -2223,7 +2233,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
                   <hr className="border-gray-600 mb-2" />
                   <div className="flex justify-between">
                     <span>
-                      Noleggio ({duration.days} gg {isMassimo ? `× €${SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.dailyRate} [FISSO]` : `× ${item.pricePerDay ? formatPrice(item.pricePerDay[currency]) : '€0'}`})
+                      Noleggio ({duration.days} gg {isMassimo ? `× €${Math.round(SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseRate * (1 - SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseDiscount))} [FISSO]` : `× ${item.pricePerDay ? formatPrice(item.pricePerDay[currency]) : '€0'}`})
                     </span>
                     <span>{formatPrice(rentalCost)}</span>
                   </div>
