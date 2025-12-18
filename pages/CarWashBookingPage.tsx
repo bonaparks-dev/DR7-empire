@@ -83,14 +83,14 @@ const CarWashBookingPage: React.FC = () => {
   // Helper function to get service duration in hours based on price
   const getServiceDurationInHours = (price: number): number => {
     // Exact price to duration mapping:
-    // €25 = 1 hour (LAVAGGIO COMPLETO)
-    // €49 = 2 hours (LAVAGGIO TOP)
-    // €75 = 3 hours (LAVAGGIO VIP)
-    // €99 = 4 hours (LAVAGGIO DR7 LUXURY)
-    if (price <= 25) return 1;
-    if (price <= 49) return 2;
-    if (price <= 75) return 3;
-    return 4;
+    // €25 = 45 minutes (LAVAGGIO COMPLETO)
+    // €49 = 1.5 hours (LAVAGGIO TOP)
+    // €75 = 2 hours (LAVAGGIO VIP)
+    // €99 = 2.5 hours (LAVAGGIO DR7 LUXURY) - dalle 9:00 alle 10:30 o dalle 15:00 alle 16:30
+    if (price <= 25) return 0.75; // 45 minutes
+    if (price <= 49) return 1.5;
+    if (price <= 75) return 2;
+    return 2.5;
   };
 
   // Log bookings for debugging
@@ -262,21 +262,21 @@ const CarWashBookingPage: React.FC = () => {
           }
         })
       })
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) {
-          setStripeError(data.error);
-        } else {
-          setClientSecret(data.clientSecret);
-        }
-      })
-      .catch(error => {
-        console.error('Failed to fetch client secret:', error);
-        setStripeError('Could not connect to payment server.');
-      })
-      .finally(() => {
-        setIsClientSecretLoading(false);
-      });
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            setStripeError(data.error);
+          } else {
+            setClientSecret(data.clientSecret);
+          }
+        })
+        .catch(error => {
+          console.error('Failed to fetch client secret:', error);
+          setStripeError('Could not connect to payment server.');
+        })
+        .finally(() => {
+          setIsClientSecretLoading(false);
+        });
     }
   }, [showPaymentModal, paymentMethod, user, selectedService, formData.appointmentDate, formData.appointmentTime, lang]);
 
@@ -434,25 +434,34 @@ const CarWashBookingPage: React.FC = () => {
       const startMinutes = timeToMinutes(startTime);
       const endMinutes = startMinutes + (durationHours * 60);
 
-      if (durationHours >= 4) {
+      // For 2.5-hour services (€99 - LAVAGGIO DR7 LUXURY), only allow specific time slots
+      // dalle 9:00 alle 10:30 or dalle 15:00 alle 16:30
+      if (durationHours >= 2.5) {
         return startMinutes === 9 * 60 || startMinutes === 15 * 60;
       }
 
-      if (durationHours === 1) {
+      // For 0.75-hour services (45 min - €25 LAVAGGIO COMPLETO), allow booking throughout the day
+      if (durationHours <= 0.75) {
         if (startMinutes >= 9 * 60 && startMinutes <= 12 * 60) return true;
         if (startMinutes >= 15 * 60 && startMinutes <= 18 * 60) return true;
         return false;
       }
 
-      if (durationHours === 2) {
-        if (startMinutes >= 9 * 60 && startMinutes <= 11 * 60) return true;
-        if (startMinutes >= 15 * 60 && startMinutes <= 17 * 60) return true;
+      // For 1.5-hour services (€49 - LAVAGGIO TOP)
+      if (durationHours === 1.5) {
+        // Morning: 9:00 to 10:30 (ends by 12:00)
+        if (startMinutes >= 9 * 60 && startMinutes <= 10 * 60 + 30) return true;
+        // Afternoon: 15:00 to 16:30 (ends by 18:00)
+        if (startMinutes >= 15 * 60 && startMinutes <= 16 * 60 + 30) return true;
         return false;
       }
 
-      if (durationHours === 3) {
-        if (startMinutes >= 9 * 60 && startMinutes <= 10 * 60) return endMinutes <= 13 * 60;
-        if (startMinutes >= 15 * 60 && startMinutes <= 16 * 60) return endMinutes <= 19 * 60;
+      // For 2-hour services (€75 - LAVAGGIO VIP)
+      if (durationHours === 2) {
+        // Morning: 9:00 to 10:00 (ends by 12:00)
+        if (startMinutes >= 9 * 60 && startMinutes <= 10 * 60) return true;
+        // Afternoon: 15:00 to 16:00 (ends by 18:00)
+        if (startMinutes >= 15 * 60 && startMinutes <= 16 * 60) return true;
         return false;
       }
 
@@ -489,133 +498,6 @@ const CarWashBookingPage: React.FC = () => {
     return getAllTimeSlotsWithAvailability()
       .filter(slot => slot.available)
       .map(slot => slot.time);
-  };
-
-  const getAvailableTimeSlots_OLD = () => {
-    if (!selectedService || !formData.appointmentDate) return [];
-
-    const serviceDuration = getServiceDurationInHours(selectedService.price);
-
-    // Define valid time slots based on time ranges
-    // Morning: 9:00-12:00, Afternoon: 15:00-18:00
-    const allTimeSlots = [
-      '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00',
-      '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00'
-    ];
-
-    // Parse selected date as local date to avoid timezone issues
-    const [year, month, day] = formData.appointmentDate.split('-').map(Number);
-    const selectedDate = new Date(year, month - 1, day);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset time for accurate comparison
-    const isToday = selectedDate.toDateString() === today.toDateString();
-
-    // Helper to convert time string to minutes
-    const timeToMinutes = (time: string) => {
-      const [h, m] = time.split(':').map(Number);
-      return h * 60 + m;
-    };
-
-    // Helper to check if a time range overlaps with existing booking
-    const hasOverlap = (startTime: string, durationHours: number) => {
-      const startMinutes = timeToMinutes(startTime);
-      const endMinutes = startMinutes + (durationHours * 60);
-
-      const hasConflict = existingBookings.some(booking => {
-        if (!booking.appointment_time) {
-          console.warn('Booking missing appointment_time:', booking);
-          return false;
-        }
-        const bookingStart = timeToMinutes(booking.appointment_time);
-        const bookingDuration = getServiceDurationInHours(booking.price_total / 100);
-        const bookingEnd = bookingStart + (bookingDuration * 60);
-
-        const overlap = (startMinutes < bookingEnd && endMinutes > bookingStart);
-        if (overlap) {
-          console.log(`Time slot ${startTime} conflicts with existing booking at ${booking.appointment_time}`);
-        }
-        return overlap;
-      });
-
-      return hasConflict;
-    };
-
-    // Helper to check if service can fit in time range
-    const canFitInRange = (startTime: string, durationHours: number) => {
-      const startMinutes = timeToMinutes(startTime);
-      const endMinutes = startMinutes + (durationHours * 60);
-
-      // For 4-hour services (€99), only allow 9:00 or 15:00
-      if (durationHours >= 4) {
-        return startMinutes === 9 * 60 || startMinutes === 15 * 60;
-      }
-
-      // For 1-hour services (€25 - LAVAGGIO COMPLETO), allow booking up to and including 12:00 and 18:00
-      if (durationHours === 1) {
-        // Morning: 9:00 to 12:00 (inclusive)
-        if (startMinutes >= 9 * 60 && startMinutes <= 12 * 60) {
-          return true;
-        }
-        // Afternoon: 15:00 to 18:00 (inclusive)
-        if (startMinutes >= 15 * 60 && startMinutes <= 18 * 60) {
-          return true;
-        }
-        return false;
-      }
-
-      // For 2-hour services (€49 - LAVAGGIO TOP), allow booking up to 11:00 morning and 17:00 afternoon
-      if (durationHours === 2) {
-        // Morning: 9:00 to 11:00 (inclusive)
-        if (startMinutes >= 9 * 60 && startMinutes <= 11 * 60) {
-          return true;
-        }
-        // Afternoon: 15:00 to 17:00 (inclusive)
-        if (startMinutes >= 15 * 60 && startMinutes <= 17 * 60) {
-          return true;
-        }
-        return false;
-      }
-
-      // For 3-hour services (€75), they must complete within the shift
-      // Morning: can only start at 9:00, 9:30, or 10:00 to finish by 12:00
-      if (durationHours === 3) {
-        // Morning: 9:00 to 10:00 (inclusive)
-        if (startMinutes >= 9 * 60 && startMinutes <= 10 * 60) {
-          return endMinutes <= 13 * 60; // Allow ending at 13:00
-        }
-        // Afternoon: 15:00 to 16:00 (inclusive)
-        if (startMinutes >= 15 * 60 && startMinutes <= 16 * 60) {
-          return endMinutes <= 19 * 60; // Allow ending at 19:00
-        }
-        return false;
-      }
-
-      return false;
-    };
-
-    return allTimeSlots.filter(slot => {
-      // Check if service fits in time range
-      if (!canFitInRange(slot, serviceDuration)) {
-        return false;
-      }
-
-      // Check for past times with 2-hour buffer if today
-      if (isToday) {
-        const now = new Date();
-        const currentMinutes = now.getHours() * 60 + now.getMinutes();
-        const slotMinutes = timeToMinutes(slot);
-        if (slotMinutes < currentMinutes + 120) {
-          return false;
-        }
-      }
-
-      // Check for overlaps with existing bookings
-      if (hasOverlap(slot, serviceDuration)) {
-        return false;
-      }
-
-      return true;
-    });
   };
 
   const isValidAppointmentTime = (date: string, time: string) => {
@@ -1072,7 +954,7 @@ const CarWashBookingPage: React.FC = () => {
                             </div>
                             <div className="text-xs text-gray-500">
                               {client.tipo_cliente === 'persona_fisica' ? '👤 Persona Fisica' :
-                               client.tipo_cliente === 'azienda' ? '🏢 Azienda' : '🏛️ PA'}
+                                client.tipo_cliente === 'azienda' ? '🏢 Azienda' : '🏛️ PA'}
                             </div>
                           </button>
                         );
@@ -1272,8 +1154,8 @@ const CarWashBookingPage: React.FC = () => {
                           ${formData.appointmentTime === slot.time
                             ? 'bg-white text-black ring-2 ring-white'
                             : slot.available
-                            ? 'bg-gray-700 text-white hover:bg-gray-600 border border-gray-600'
-                            : 'bg-gray-900 text-gray-500 border-2 border-red-500 cursor-not-allowed opacity-60'
+                              ? 'bg-gray-700 text-white hover:bg-gray-600 border border-gray-600'
+                              : 'bg-gray-900 text-gray-500 border-2 border-red-500 cursor-not-allowed opacity-60'
                           }
                         `}
                         title={!slot.available ? (lang === 'it' ? `Non disponibile: ${slot.reason}` : `Unavailable: ${slot.reason}`) : ''}
@@ -1386,11 +1268,10 @@ const CarWashBookingPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('credit')}
-                    className={`p-4 rounded-lg border-2 transition-all ${
-                      paymentMethod === 'credit'
-                        ? 'border-white bg-white/10'
-                        : 'border-gray-700 bg-gray-800 hover:border-gray-600'
-                    }`}
+                    className={`p-4 rounded-lg border-2 transition-all ${paymentMethod === 'credit'
+                      ? 'border-white bg-white/10'
+                      : 'border-gray-700 bg-gray-800 hover:border-gray-600'
+                      }`}
                   >
                     <div className="text-center">
                       <div className="text-sm font-semibold text-white mb-1">
@@ -1406,11 +1287,10 @@ const CarWashBookingPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('stripe')}
-                    className={`p-4 rounded-lg border-2 transition-all ${
-                      paymentMethod === 'stripe'
-                        ? 'border-white bg-white/10'
-                        : 'border-gray-700 bg-gray-800 hover:border-gray-600'
-                    }`}
+                    className={`p-4 rounded-lg border-2 transition-all ${paymentMethod === 'stripe'
+                      ? 'border-white bg-white/10'
+                      : 'border-gray-700 bg-gray-800 hover:border-gray-600'
+                      }`}
                   >
                     <div className="text-center">
                       <div className="text-sm font-semibold text-white mb-1">
@@ -1486,9 +1366,8 @@ const CarWashBookingPage: React.FC = () => {
                       <span className="text-sm text-white font-semibold">
                         {lang === 'it' ? 'Saldo Dopo' : 'Balance After'}:
                       </span>
-                      <span className={`text-lg font-bold ${
-                        creditBalance >= calculateTotal() ? 'text-green-400' : 'text-red-400'
-                      }`}>
+                      <span className={`text-lg font-bold ${creditBalance >= calculateTotal() ? 'text-green-400' : 'text-red-400'
+                        }`}>
                         €{(creditBalance - calculateTotal()).toFixed(2)}
                       </span>
                     </div>
@@ -1508,8 +1387,8 @@ const CarWashBookingPage: React.FC = () => {
                     {isProcessing
                       ? (lang === 'it' ? 'Elaborazione...' : 'Processing...')
                       : creditBalance < calculateTotal()
-                      ? (lang === 'it' ? 'Credito Insufficiente' : 'Insufficient Credit')
-                      : (lang === 'it' ? `Paga con Credit Wallet` : `Pay with Credit Wallet`)}
+                        ? (lang === 'it' ? 'Credito Insufficiente' : 'Insufficient Credit')
+                        : (lang === 'it' ? `Paga con Credit Wallet` : `Pay with Credit Wallet`)}
                   </button>
 
                   {creditBalance < calculateTotal() && (

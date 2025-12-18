@@ -2,11 +2,11 @@
 
 ## Current System Status
 
-The main website (`dr7empire.com`) **already has correct durations**:
-- ✅ LAVAGGIO COMPLETO (€25) = 1 hour
-- ✅ LAVAGGIO TOP (€49) = 2 hours
-- ✅ LAVAGGIO VIP (€75) = 3 hours
-- ✅ LAVAGGIO DR7 LUXURY (€99) = 4 hours
+The main website (`dr7empire.com`) **has updated durations**:
+- ✅ LAVAGGIO COMPLETO (€25) = 45 minutes
+- ✅ LAVAGGIO TOP (€49) = 1.5 hours
+- ✅ LAVAGGIO VIP (€75) = 2 hours
+- ✅ LAVAGGIO DR7 LUXURY (€99) = 2.5 hours (only bookable at 9:00-10:30 or 15:00-16:30)
 
 **Location:** `pages/CarWashBookingPage.tsx:69-79`
 
@@ -18,19 +18,19 @@ Run this SQL in Supabase to fix the `car_wash_services` table:
 ```sql
 -- Fix car wash service durations
 UPDATE car_wash_services
-SET duration = '1 hour'
+SET duration = '45 min'
 WHERE price = 25;
 
 UPDATE car_wash_services
-SET duration = '2 hours'
+SET duration = '1.5 ore'
 WHERE price = 49;
 
 UPDATE car_wash_services
-SET duration = '3 hours'
+SET duration = '2 ore'
 WHERE price = 75;
 
 UPDATE car_wash_services
-SET duration = '4 hours'
+SET duration = '2.5 ore'
 WHERE price = 99;
 
 -- Verify
@@ -72,10 +72,10 @@ When admin creates a car wash booking:
 After running the SQL:
 
 - [ ] Check database: `SELECT * FROM car_wash_services;`
-- [ ] Book €25 service on website → verify 1-hour slot blocked
-- [ ] Book €49 service on website → verify 2-hour slot blocked
-- [ ] Book €75 service on website → verify 3-hour slot blocked
-- [ ] Book €99 service on website → verify 4-hour slot blocked
+- [ ] Book €25 service on website → verify 45-minute slot blocked
+- [ ] Book €49 service on website → verify 1.5-hour slot blocked
+- [ ] Book €75 service on website → verify 2-hour slot blocked
+- [ ] Book €99 service on website → verify 2.5-hour slot blocked (only 9:00 or 15:00)
 - [ ] Check email shows correct duration
 - [ ] Check Google Calendar event has correct end time
 - [ ] Verify admin panel displays correct duration

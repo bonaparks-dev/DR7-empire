@@ -30,10 +30,10 @@ When creating bookings directly in the Supabase database, follow these guideline
 ### Validation Rules:
 1. **Time slot conflicts**: The database will automatically prevent double-booking the same time slot
 2. **Service duration** (exact mapping from price):
-   - €25: 1 hour (LAVAGGIO COMPLETO)
-   - €49: 2 hours (LAVAGGIO TOP)
-   - €75: 3 hours (LAVAGGIO VIP)
-   - €99: 4 hours (LAVAGGIO DR7 LUXURY)
+   - €25: 45 minutes (LAVAGGIO COMPLETO)
+   - €49: 1.5 hours (LAVAGGIO TOP)
+   - €75: 2 hours (LAVAGGIO VIP)
+   - €99: 2.5 hours (LAVAGGIO DR7 LUXURY) - only bookable at 9:00 or 15:00
 3. **Working hours**: Monday-Saturday, closed on Sundays
 4. **Time slots**: 30-minute intervals between 09:00-12:00 and 15:00-18:00
 

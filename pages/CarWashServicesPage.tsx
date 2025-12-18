@@ -23,7 +23,7 @@ const FALLBACK_SERVICES: Service[] = [
     name: 'LAVAGGIO COMPLETO',
     nameEn: 'FULL CLEAN',
     price: 25,
-    duration: '30-45 min',
+    duration: '45 min',
     description: 'Rapido e completo, per un\'auto pulita ogni giorno.',
     descriptionEn: 'Quick and complete, for a clean car every day.',
     features: [
@@ -44,7 +44,7 @@ const FALLBACK_SERVICES: Service[] = [
     name: 'LAVAGGIO TOP',
     nameEn: 'TOP SHINE',
     price: 49,
-    duration: '1-1.5 ore',
+    duration: '1.5 ore',
     description: 'Più brillantezza e protezione, con cura extra dei dettagli.',
     descriptionEn: 'More shine and protection, with extra detail care.',
     features: [
@@ -65,7 +65,7 @@ const FALLBACK_SERVICES: Service[] = [
     name: 'LAVAGGIO VIP',
     nameEn: 'VIP EXPERIENCE',
     price: 75,
-    duration: '3 ore',
+    duration: '2 ore',
     description: 'Il pacchetto che ti fa ritirare l\'auto "come nuova".',
     descriptionEn: 'The package that makes your car look "like new".',
     features: [
@@ -92,7 +92,7 @@ const FALLBACK_SERVICES: Service[] = [
     name: 'LAVAGGIO DR7 LUXURY',
     nameEn: 'DR7 LUXURY',
     price: 99,
-    duration: '4 ore',
+    duration: '2.5 ore',
     description: 'L\'auto esce meglio di quando è uscita dalla concessionaria.',
     descriptionEn: 'Your car comes out better than when it left the dealership.',
     features: [
@@ -312,7 +312,7 @@ const CarWashServicesPage: React.FC = () => {
       <div className="bg-gray-900/50 py-16">
         <div className="container mx-auto px-6 max-w-4xl">
           <h2 className="text-3xl font-bold text-white mb-8 text-center">
-             DR7 LUXURY WASH – ORARI E TIPOLOGIE DI LAVAGGIO
+            DR7 LUXURY WASH – ORARI E TIPOLOGIE DI LAVAGGIO
           </h2>
 
           <div className="space-y-6 text-gray-300">
@@ -332,26 +332,26 @@ const CarWashServicesPage: React.FC = () => {
               <div className="space-y-4">
                 <div className="bg-black/30 p-5 rounded-lg border border-gray-700">
                   <h4 className="text-white font-bold mb-2">• Lavaggio da 25 euro</h4>
-                  <p className="text-sm mb-2"><strong className="text-white">Durata:</strong> 1 ora.</p>
+                  <p className="text-sm mb-2"><strong className="text-white">Durata:</strong> 45 minuti.</p>
                   <p className="text-sm">Si può prenotare in vari orari della fascia mattutina o pomeridiana. Al mattino: dalle 9:00 fino alle 12:00. Al pomeriggio: dalle 15:00 fino alle 18:00.</p>
                 </div>
 
                 <div className="bg-black/30 p-5 rounded-lg border border-gray-700">
                   <h4 className="text-white font-bold mb-2">• Lavaggio da 49 euro</h4>
-                  <p className="text-sm mb-2"><strong className="text-white">Durata:</strong> 2 ore.</p>
-                  <p className="text-sm">Si può prenotare al mattino alle 9:00, 9:30, 10:00, 10:30 o 11:00, e al pomeriggio alle 15:00, 15:30, 16:00, 16:30 o 17:00.</p>
+                  <p className="text-sm mb-2"><strong className="text-white">Durata:</strong> 1 ora e 30 minuti.</p>
+                  <p className="text-sm">Si può prenotare al mattino dalle 9:00 alle 10:30, e al pomeriggio dalle 15:00 alle 16:30.</p>
                 </div>
 
                 <div className="bg-black/30 p-5 rounded-lg border border-gray-700">
                   <h4 className="text-white font-bold mb-2">• Lavaggio da 75 euro</h4>
-                  <p className="text-sm mb-2"><strong className="text-white">Durata:</strong> 3 ore.</p>
-                  <p className="text-sm">Essendo un lavaggio approfondito, va prenotato in modo che ci sia il tempo necessario per completarlo. Al mattino è possibile prenotarlo alle 9:00, 9:30 o 10:00. Al pomeriggio alle 15:00, 15:30 o 16:00.</p>
+                  <p className="text-sm mb-2"><strong className="text-white">Durata:</strong> 2 ore.</p>
+                  <p className="text-sm">Essendo un lavaggio approfondito, va prenotato in modo che ci sia il tempo necessario per completarlo. Al mattino è possibile prenotarlo dalle 9:00 alle 10:00. Al pomeriggio dalle 15:00 alle 16:00.</p>
                 </div>
 
                 <div className="bg-black/30 p-5 rounded-lg border border-gray-700">
                   <h4 className="text-white font-bold mb-2">• Lavaggio da 99 euro</h4>
-                  <p className="text-sm mb-2"><strong className="text-white">Durata:</strong> 4 ore.</p>
-                  <p className="text-sm">È il lavaggio più completo e richiede un'intera fascia di lavoro continuativa. Può essere prenotato solo alle 9:00 del mattino (durata 9–13) oppure alle 15:00 del pomeriggio (durata 15–19).</p>
+                  <p className="text-sm mb-2"><strong className="text-white">Durata:</strong> 2 ore e 30 minuti.</p>
+                  <p className="text-sm">È il lavaggio più completo. Può essere prenotato solo alle 9:00 del mattino (dalle 9:00 alle 10:30) oppure alle 15:00 del pomeriggio (dalle 15:00 alle 16:30).</p>
                 </div>
               </div>
             </div>
@@ -360,7 +360,7 @@ const CarWashServicesPage: React.FC = () => {
               <h3 className="text-xl font-bold text-white mb-4">📋 Regole e consigli utili</h3>
               <ul className="space-y-3 text-sm">
                 <li>• Ogni prenotazione è calcolata in base alla durata effettiva del trattamento scelto.</li>
-                <li>• I lavaggi da 75€ e 100€ devono iniziare tassativamente all'inizio della fascia, per permettere il completamento del servizio.</li>
+                <li>• Il lavaggio da 99€ può essere prenotato solo alle 9:00 o alle 15:00.</li>
                 <li>• I lavaggi da 25€ e 50€ sono più flessibili e possono essere prenotati anche a orari intermedi.</li>
                 <li>• È richiesto di arrivare almeno <strong className="text-white">10 minuti prima</strong> dell'orario prenotato, per consentire una corretta gestione dei tempi.</li>
                 <li>• Il servizio <strong className="text-white">non è disponibile la domenica</strong>.</li>

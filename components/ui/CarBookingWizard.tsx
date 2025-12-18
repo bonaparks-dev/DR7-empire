@@ -547,20 +547,34 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
       const ret = new Date(`${formData.returnDate}T${formData.returnTime}`);
       if (pickup < ret) {
-        // Calculate billing based on hours for pricing (22.5 hour days)
-        const diffMs = ret.getTime() - pickup.getTime();
-        const totalHours = diffMs / (1000 * 60 * 60);
-        const dayLength = 22.5; // 22h30 = one rental day
-        // Subtract tiny epsilon to ensure exact 22.5h doesn't float-up to 2 days
-        billingDays = Math.ceil((totalHours - 0.05) / dayLength);
-        hours = 0; // Reset hours since we're using 22.5h day system
+        // Check if Massimo Runchina uses calendar days
+        const usesCalendarDays = isMassimoRunchina(formData.email) && SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.useCalendarDays;
 
-        // Use billing days for display to ensure consistency with pricing and km
-        days = billingDays;
+        if (usesCalendarDays) {
+          // Calendar day calculation for Massimo Runchina
+          const pickupDate = new Date(formData.pickupDate);
+          const returnDate = new Date(formData.returnDate);
+          pickupDate.setHours(0, 0, 0, 0);
+          returnDate.setHours(0, 0, 0, 0);
+          const diffDays = Math.round((returnDate.getTime() - pickupDate.getTime()) / (1000 * 60 * 60 * 24));
+          billingDays = Math.max(1, diffDays);
+          days = billingDays;
+        } else {
+          // Calculate billing based on hours for pricing (22.5 hour days)
+          const diffMs = ret.getTime() - pickup.getTime();
+          const totalHours = diffMs / (1000 * 60 * 60);
+          const dayLength = 22.5; // 22h30 = one rental day
+          // Subtract tiny epsilon to ensure exact 22.5h doesn't float-up to 2 days
+          billingDays = Math.ceil((totalHours - 0.05) / dayLength);
+          hours = 0; // Reset hours since we're using 22.5h day system
 
-        // Ensure at least 1 day
-        if (days < 1) days = 1;
-        if (billingDays < 1) billingDays = 1;
+          // Use billing days for display to ensure consistency with pricing and km
+          days = billingDays;
+
+          // Ensure at least 1 day
+          if (days < 1) days = 1;
+          if (billingDays < 1) billingDays = 1;
+        }
       }
     }
 
@@ -690,10 +704,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     const calculatedPickupFee = 0;
     const calculatedDropoffFee = 0;
 
-    // Car Wash Fee (Mandatory)
+    // Car Wash Fee (Mandatory for most clients, excluded for special clients)
     // Utilitarie / Furgone: €15
     // Supercar / V-Class: €30 (User Request: "SOLO PER SUPERCAR E V CLASS")
-    const carWashFee = (vType === 'UTILITARIA' || vType === 'FURGONE') ? 15 : 30;
+    let carWashFee = (vType === 'UTILITARIA' || vType === 'FURGONE') ? 15 : 30;
+
+    // Exclude car wash for Massimo Runchina
+    if (isMassimo && SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.excludeCarWash) {
+      carWashFee = 0;
+    }
 
     let calculatedSubtotal = calculatedRentalCost + calculatedInsuranceCost + calculatedExtrasCost + calculatedKmPackageCost + calculatedYoungDriverFee + calculatedRecentLicenseFee + calculatedSecondDriverFee + calculatedPickupFee + calculatedDropoffFee + carWashFee;
 

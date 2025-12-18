@@ -8,10 +8,12 @@ export const SPECIAL_CLIENTS = {
         email: 'massimorunchina69@gmail.com',
         config: {
             dailyRate: 305,
-            discountThresholdDays: 3,
+            discountThresholdDays: 2,
             discountPercentage: 0.10,
             includeUnlimitedKm: true,
-            includeKaskoBase: true
+            includeKaskoBase: true,
+            excludeCarWash: true,
+            useCalendarDays: true
         }
     }
 };
