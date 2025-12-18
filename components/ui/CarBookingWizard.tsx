@@ -733,8 +733,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       calculatedSubtotal -= secondDiscountAmount;
     }
 
-    const calculatedTaxes = calculatedSubtotal * 0.10;
-    const calculatedTotal = calculatedSubtotal + calculatedTaxes;
+    // Tax calculation
+    // For Massimo: prices are tax-inclusive, so after discounts the subtotal IS the final price
+    // For others: add 10% tax
+    let calculatedTaxes = 0;
+    let calculatedTotal = calculatedSubtotal;
+
+    if (!isMassimo) {
+      calculatedTaxes = calculatedSubtotal * 0.10;
+      calculatedTotal = calculatedSubtotal + calculatedTaxes;
+    }
 
     // Apply membership discount
     const discountInfo = calculateDiscountedPrice(calculatedTotal, user, 'car_rental');
