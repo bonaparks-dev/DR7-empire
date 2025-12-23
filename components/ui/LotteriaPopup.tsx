@@ -73,10 +73,13 @@ const LotteriaPopup: React.FC = () => {
 
               {/* Main message */}
               <div className="mb-6 text-white">
-                <p className="text-xl md:text-2xl font-bold mb-3 text-dr7-gold">
+                <p className="text-xl md:text-2xl font-bold mb-2 text-dr7-gold">
                   Vinci un'Alfa Romeo Stelvio Quadrifoglio
                 </p>
-                <p className="text-base md:text-lg text-white/90 mb-4">
+                <p className="text-lg md:text-xl font-semibold text-white mb-3">
+                  Acquista i tuoi biglietti
+                </p>
+                <p className="text-base md:text-lg text-white/90">
                   In palio: 50.000€
                 </p>
               </div>
