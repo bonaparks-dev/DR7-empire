@@ -79,9 +79,6 @@ const LotteriaPopup: React.FC = () => {
                 <p className="text-lg md:text-xl font-semibold text-white mb-3">
                   Acquista i tuoi biglietti
                 </p>
-                <p className="text-base md:text-lg text-white/90">
-                  In palio: 50.000€
-                </p>
               </div>
 
               {/* Ticket price */}
