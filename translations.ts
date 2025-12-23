@@ -255,7 +255,7 @@ export const translations: Translations = {
   Step_2: { en: "Step 2", it: "Passo 2" },
   Step_3: { en: "Step 3", it: "Passo 3" },
   Buy_your_tickets: { en: "Buy your tickets", it: "Acquista i tuoi biglietti" },
-  Wait_for_the_draw: { en: "Wait for the draw on December 24 at 10:00 AM", it: "Attendi l'estrazione il 24 Dicembre alle ore 10:00" },
+  Wait_for_the_draw: { en: "Wait for the draw on January 24, 2026 at 10:00 AM", it: "Attendi l'estrazione il 24 Gennaio 2026 alle ore 10:00" },
   Win_amazing_prizes: { en: "Win amazing prizes!", it: "Vinci premi fantastici!" },
   Tickets_Sent_Message: { en: "Your tickets have been sent to your email. You can also view them below or in your account's \"My Tickets\" section. Good luck!", it: "I tuoi biglietti sono stati inviati alla tua email. Puoi anche visualizzarli qui sotto o nella sezione \"I Miei Biglietti\" del tuo account. Buona fortuna!" },
   View_My_Tickets: { en: "View My Tickets", it: "Vedi I Miei Biglietti" },

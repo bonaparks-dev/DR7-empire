@@ -532,7 +532,7 @@ export const COMMERCIAL_OPERATION_GIVEAWAY: CommercialOperation = {
   subtitle: { en: 'Win an Alfa Romeo Stelvio Quadrifoglio', it: 'Vinci un\'Alfa Romeo Stelvio Quadrifoglio' },
   image: '/main.jpeg',
   ticketPriceEUR: 25,
-  drawDate: '2025-12-22T18:00:00Z',
+  drawDate: '2026-01-24T09:00:00Z',
   prizes: [
     {
       tier: { en: 'Grand Prize', it: 'Premio Unico' },
@@ -551,6 +551,7 @@ export const PICKUP_LOCATIONS = [
 ];
 
 export const INSURANCE_OPTIONS = [
+  { id: 'RCA', label: { en: 'RCA', it: 'RCA' }, description: { en: 'Basic civil liability insurance included.', it: 'Assicurazione responsabilità civile base inclusa.' }, pricePerDay: { usd: 0, eur: 0, crypto: 0 } },
   { id: 'KASKO_BASE', label: { en: 'KASKO BASE', it: 'KASKO BASE' }, description: { en: 'Franchise €5.000 + 30% of damage.', it: 'Franchigia EUR €5.000 + 30% del danno.' }, pricePerDay: { usd: 110, eur: 100, crypto: 0 } },
   { id: 'KASKO_BLACK', label: { en: 'KASKO BLACK', it: 'KASKO BLACK' }, description: { en: 'Franchise €5.000 + 10% of damage.', it: 'Franchigia EUR €5.000 + 10% del danno.' }, pricePerDay: { usd: 165, eur: 150, crypto: 0 } },
   { id: 'KASKO_SIGNATURE', label: { en: 'KASKO SIGNATURE', it: 'KASKO SIGNATURE' }, description: { en: 'Franchise €5.000 (fixed).', it: 'Franchigia EUR €5.000 (fissa).' }, pricePerDay: { usd: 220, eur: 200, crypto: 0 } },
@@ -558,10 +559,15 @@ export const INSURANCE_OPTIONS = [
 ];
 
 export const URBAN_INSURANCE_OPTIONS = [
-  { id: 'KASKO_BASE', label: { en: 'KASKO BASE', it: 'KASKO BASE' }, description: { en: 'Franchise €2.000 + 30% of damage.', it: 'Franchigia EUR €2.000 + 30% del danno.' }, pricePerDay: { usd: 0, eur: 0, crypto: 0 } },
-  { id: 'KASKO_BLACK', label: { en: 'KASKO BLACK', it: 'KASKO BLACK' }, description: { en: 'Franchise €1.000 + 10% of damage.', it: 'Franchigia EUR €1.000 + 10% del danno.' }, pricePerDay: { usd: 6, eur: 5, crypto: 0 } }, // Keeping Urban Black cheaper/lower franchise implicitly, or should likely scale? User gave specific Supercar rule. I'll stick to a reasonable lower bound for urban or copy the rule? User said "For Supercar... €5000". "For Utilitarie... €2000" (Base). I will infer lower for Urban Black too to be consistent, say €1000 + 10%.
-  { id: 'KASKO_SIGNATURE', label: { en: 'KASKO SIGNATURE', it: 'KASKO SIGNATURE' }, description: { en: 'Franchise €800 (fixed).', it: 'Franchigia EUR €800 (fissa).' }, pricePerDay: { usd: 28, eur: 25, crypto: 0 } },
-  { id: 'KASKO_DR7', label: { en: 'DR7', it: 'DR7' }, description: { en: 'Franchise €0 (fixed).', it: 'Franchigia EUR €0 (fissa).' }, pricePerDay: { usd: 44, eur: 40, crypto: 0 } },
+  { id: 'RCA', label: { en: 'RCA', it: 'RCA' }, description: { en: 'Basic civil liability insurance included.', it: 'Assicurazione responsabilità civile base inclusa.' }, pricePerDay: { usd: 0, eur: 0, crypto: 0 } },
+  { id: 'KASKO_BASE', label: { en: 'KASKO BASE', it: 'KASKO BASE' }, description: { en: 'Franchise €2.000 + 30% of damage.', it: 'Franchigia EUR €2.000 + 30% del danno.' }, pricePerDay: { usd: 17, eur: 15, crypto: 0 } },
+  { id: 'KASKO_DR7', label: { en: 'DR7', it: 'DR7' }, description: { en: 'Franchise €0 (fixed).', it: 'Franchigia EUR €0 (fissa).' }, pricePerDay: { usd: 50, eur: 45, crypto: 0 } },
+];
+
+export const UTILITAIRE_INSURANCE_OPTIONS = [
+  { id: 'RCA', label: { en: 'RCA', it: 'RCA' }, description: { en: 'Basic civil liability insurance included.', it: 'Assicurazione responsabilità civile base inclusa.' }, pricePerDay: { usd: 0, eur: 0, crypto: 0 } },
+  { id: 'KASKO_BASE', label: { en: 'KASKO BASE', it: 'KASKO BASE' }, description: { en: 'Franchise €3.000 + 30% of damage.', it: 'Franchigia EUR €3.000 + 30% del danno.' }, pricePerDay: { usd: 50, eur: 45, crypto: 0 } },
+  { id: 'KASKO_DR7', label: { en: 'DR7', it: 'DR7' }, description: { en: 'Franchise €0 (fixed).', it: 'Franchigia EUR €0 (fissa).' }, pricePerDay: { usd: 99, eur: 90, crypto: 0 } },
 ];
 
 export const INSURANCE_ELIGIBILITY = {

@@ -81,7 +81,7 @@ const generateTicketPdf = (fullName, tickets, purchaseDate) => {
       yPos += 30;
 
       // Lottery info
-      doc.font('Helvetica-Bold').fontSize(12).text('Estrazione: 24 Dicembre 2025, ore 10:00', 50, yPos, { align: 'center', width: doc.page.width - 100 });
+      doc.font('Helvetica-Bold').fontSize(12).text('Estrazione: 24 Gennaio 2026, ore 10:00', 50, yPos, { align: 'center', width: doc.page.width - 100 });
       yPos += 20;
       doc.font('Helvetica').fontSize(10).text('Solo 2.000 biglietti disponibili', 50, yPos, { align: 'center', width: doc.page.width - 100 });
       yPos += 15;
@@ -203,7 +203,7 @@ async function regenerateAndResendPDFs() {
         from: `"DR7 Empire" <${process.env.GMAIL_USER}>`,
         to: customer.email,
         subject: 'AGGIORNAMENTO - I Tuoi Biglietti LOTTERIA',
-        text: `Ciao ${customer.full_name},\n\nAbbiamo aggiornato il sistema dei biglietti della LOTTERIA. I tuoi nuovi numeri di biglietto sono:\n\n${tickets.map(t => `• Biglietto #${String(t.number).padStart(4, '0')}`).join('\n')}\n\nI tuoi biglietti aggiornati sono allegati a questa email in formato PDF.\n\nEstrazione: 24 Dicembre 2025, ore 10:00\nSolo 2.000 biglietti disponibili!\n\nIn bocca al lupo!\n\nIl Team DR7 Empire`,
+        text: `Ciao ${customer.full_name},\n\nAbbiamo aggiornato il sistema dei biglietti della LOTTERIA. I tuoi nuovi numeri di biglietto sono:\n\n${tickets.map(t => `• Biglietto #${String(t.number).padStart(4, '0')}`).join('\n')}\n\nI tuoi biglietti aggiornati sono allegati a questa email in formato PDF.\n\nEstrazione: 24 Gennaio 2026, ore 10:00\nSolo 2.000 biglietti disponibili!\n\nIn bocca al lupo!\n\nIl Team DR7 Empire`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -241,8 +241,8 @@ async function regenerateAndResendPDFs() {
                   <p style="margin-top: 20px;">I tuoi biglietti aggiornati sono allegati a questa email in formato PDF.</p>
                 </div>
 
-                <p><strong>🎄 Data Estrazione:</strong> 24 Dicembre 2025, ore 10:00</p>
-                <p><strong>🎟️ Biglietti disponibili:</strong> Solo 2.000</p>
+                <p><strong>Data Estrazione:</strong> 24 Gennaio 2026, ore 10:00</p>
+                <p><strong>Biglietti disponibili:</strong> Solo 2.000</p>
                 <p style="margin-top: 30px;"><strong>In bocca al lupo!</strong></p>
                 <div class="footer">
                   <p>DR7 Empire – Luxury Car Rental & Services</p>

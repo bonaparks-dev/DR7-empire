@@ -103,7 +103,7 @@ export async function deductCredits(
   amount: number,
   description: string,
   referenceId?: string,
-  referenceType?: string
+  serviceType?: string
 ): Promise<{ success: boolean; newBalance: number; error?: string }> {
   try {
     // Get current balance
@@ -141,7 +141,7 @@ export async function deductCredits(
         balance_after: newBalance,
         description: description,
         reference_id: referenceId,
-        reference_type: referenceType,
+        service_type: serviceType,
         created_at: new Date().toISOString()
       });
 

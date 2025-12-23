@@ -5,7 +5,7 @@ import { useCurrency } from '../../contexts/CurrencyContext';
 import { isMassimoRunchina, SPECIAL_CLIENTS } from '../../utils/clientPricingRules';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../supabaseClient';
-import { PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, INSURANCE_ELIGIBILITY, URBAN_INSURANCE_OPTIONS, URBAN_INSURANCE_ELIGIBILITY } from '../../constants';
+import { PICKUP_LOCATIONS, INSURANCE_OPTIONS, RENTAL_EXTRAS, INSURANCE_ELIGIBILITY, URBAN_INSURANCE_OPTIONS, URBAN_INSURANCE_ELIGIBILITY, UTILITAIRE_INSURANCE_OPTIONS } from '../../constants';
 import type { Booking, RentalItem } from '../../types';
 import { Link } from 'react-router-dom';
 import DocumentUploader from './DocumentUploader';
@@ -30,7 +30,7 @@ const FUNCTIONS_BASE =
 // Stripe publishable key
 const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
 
-type KaskoTier = 'KASKO_BASE' | 'KASKO_BLACK' | 'KASKO_SIGNATURE' | 'KASKO_DR7';
+type KaskoTier = 'RCA' | 'KASKO_BASE' | 'KASKO_BLACK' | 'KASKO_SIGNATURE' | 'KASKO_DR7';
 
 // Helper function to determine vehicle type
 function getVehicleType(item: RentalItem): 'UTILITARIA' | 'FURGONE' | 'V_CLASS' | 'SUPERCAR' {
@@ -49,20 +49,16 @@ function isKaskoEligibleByBuckets(
   licenseYears?: number,
   vehicleType: 'UTILITARIA' | 'FURGONE' | 'V_CLASS' | 'SUPERCAR' = 'SUPERCAR'
 ): { eligible: boolean; reasonKey?: 'AGE_MISSING' | 'LIC_MISSING' | 'BASE_REQ' | 'BLACK_REQ' | 'SIGNATURE_REQ' | 'DR7_REQ' } {
+  // RCA is always eligible for everyone
+  if (tier === 'RCA') {
+    return { eligible: true };
+  }
+
   if (!ageMin) return { eligible: false, reasonKey: 'AGE_MISSING' };
   if (licenseYears === undefined || licenseYears === null) return { eligible: false, reasonKey: 'LIC_MISSING' };
 
   // Utilitarie / Furgone / V-Class use Urban Eligibility Logic (softer limits)
   // Supercar uses Standard Eligibility Logic
-  // ACTUALLY: User didn't specify different eligibility rules for Furgone/V-Class, only Prices.
-  // But usually commercial vans align with Urban rules or standard. 
-  // Let's stick to: Utilitarie/Furgone/V-Class -> Urban Eligibility? 
-  // Or just Utilitarie?
-  // User said: "Furgone e Vito Class ... KASKO BASE € 30". "Utilitarie € 15".
-  // Eligibility: User image "V Class" mentioned under "2 GUIDATORI €10 (Supercar e V Class)" vs "Utilitarie e Furgone".
-  // Let's assume Eligibility follows Urban for Utilitarie, and maybe Standard for others?
-  // Re-read task: "Implement Corporate Fleet insurance grouping (Furgone, V-Class -> Urban)".
-  // So yes, Furgone and V-Class use Urban ELIGIBILITY.
   const isUrbanGroup = vehicleType === 'UTILITARIA' || vehicleType === 'FURGONE' || vehicleType === 'V_CLASS';
   const eligibility = isUrbanGroup ? URBAN_INSURANCE_ELIGIBILITY : INSURANCE_ELIGIBILITY;
 
@@ -155,16 +151,21 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
   // Get appropriate insurance options based on vehicle type (UI display mainly, prices calculated dynamically below)
   const insuranceOptions = useMemo(() => {
-    let options = isUrbanOrCorporate ? URBAN_INSURANCE_OPTIONS : INSURANCE_OPTIONS;
+    const vType = getVehicleType(item);
 
-    // User Request: "NOT SUPPOSED TO SEE NOT DISPONIBLE KASKO... IT IS ONLY KASKO BASE AND DR7"
-    // Apply this filter for Utilitaria, Furgone, and V-Class (Utility category)
-    if (vehicleType === 'UTILITARIA' || vehicleType === 'FURGONE' || vehicleType === 'V_CLASS') {
-      return options.filter(opt => opt.id === 'KASKO_BASE' || opt.id === 'KASKO_DR7');
+    // SUPERCARS: All options (RCA, KASKO BASE, BLACK, SIGNATURE, DR7)
+    if (vType === 'SUPERCAR') {
+      return INSURANCE_OPTIONS;
     }
 
-    return options;
-  }, [isUrbanOrCorporate, vehicleType]);
+    // UTILITAIRE (Ducato, Vito): RCA, KASKO BASE, KASKO DR7
+    if (vType === 'FURGONE' || vType === 'V_CLASS') {
+      return UTILITAIRE_INSURANCE_OPTIONS;
+    }
+
+    // URBAN (Panda, Captur): RCA, KASKO BASE, KASKO DR7
+    return URBAN_INSURANCE_OPTIONS;
+  }, [item]);
 
   const eligibilityInfo = useMemo(() => isUrbanOrCorporate ? URBAN_INSURANCE_ELIGIBILITY : INSURANCE_ELIGIBILITY, [isUrbanOrCorporate]);
   const insuranceEligibility = useMemo(() => isUrbanOrCorporate ? URBAN_INSURANCE_ELIGIBILITY : INSURANCE_ELIGIBILITY, [isUrbanOrCorporate]);
@@ -209,7 +210,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     },
 
     // Step 3
-    insuranceOption: 'KASKO_BASE',
+    insuranceOption: 'RCA',
     extras: [] as string[],
     kmPackageType: 'none' as 'none' | 'unlimited', // 'none' = only free included km
     kmPackageDistance: 100, // default 100km package
@@ -598,20 +599,19 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     const selectedInsurance = insuranceOptions.find(opt => opt.id === formData.insuranceOption);
 
     // --- INSURANCE COST ---
-    // --- INSURANCE COST ---
     // Dynamic Pricing Logic based on Vehicle Type
-    // KASKO BASE:
-    // - Utilitarie: €15
-    // - Furgone/V-Class: €30
-    // - Supercar: €100
-    // KASKO BLACK:
-    // - Supercar: €150
-    // KASKO SIGNATURE:
-    // - Supercar: €200
-    // DR7:
-    // - Utilitarie: €45
-    // - Furgone/V-Class: €90
-    // - Supercar: €300
+    // RCA: €0/day (all categories)
+    // SUPERCARS:
+    //   - KASKO BASE: €100/day
+    //   - KASKO BLACK: €150/day
+    //   - KASKO SIGNATURE: €200/day
+    //   - DR7: €300/day
+    // URBAN (Panda, Captur):
+    //   - KASKO BASE: €15/day
+    //   - KASKO DR7: €45/day
+    // UTILITAIRE (Ducato, Vito):
+    //   - KASKO BASE: €45/day
+    //   - KASKO DR7: €90/day
 
     let insuranceDailyPrice = 0;
     const tier = formData.insuranceOption;
@@ -619,20 +619,19 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     // Type checking for VehicleType specific logic
     const vType = getVehicleType(item);
 
-    if (tier === 'KASKO_BASE') {
+    // RCA is always €0 for all categories
+    if (tier === 'RCA') {
+      insuranceDailyPrice = 0;
+    } else if (tier === 'KASKO_BASE') {
       if (vType === 'UTILITARIA') insuranceDailyPrice = 15;
-      else if (vType === 'FURGONE' || vType === 'V_CLASS') insuranceDailyPrice = 30;
+      else if (vType === 'FURGONE' || vType === 'V_CLASS') insuranceDailyPrice = 45;
       else insuranceDailyPrice = 100; // Supercar
     } else if (tier === 'KASKO_BLACK') {
-      // Only Supercar has price listed (€150). Usually other tiers might be disabled or have different prices.
-      // Assuming Utilitarie/Furgone also have Black? User didn't specify.
-      // Existing constants had: Urban Black €5.
-      // Let's stick to constants for undefined ones or scale?
-      // User ONLY detailed Supercar Black.
-      // Let's use existing logic for others or default to constants if not specified.
+      // Only available for Supercars
       if (vType === 'SUPERCAR') insuranceDailyPrice = 150;
       else insuranceDailyPrice = (selectedInsurance?.pricePerDay[currency] || 0);
     } else if (tier === 'KASKO_SIGNATURE') {
+      // Only available for Supercars
       if (vType === 'SUPERCAR') insuranceDailyPrice = 200;
       else insuranceDailyPrice = (selectedInsurance?.pricePerDay[currency] || 0);
     } else if (tier === 'KASKO_DR7') {
@@ -1261,17 +1260,34 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         price_total: Math.round(total * 100),
         currency: currency.toUpperCase(),
         status: 'pending',
-        payment_status: paymentIntentId ? 'succeeded' : 'pending',
+        payment_status: paymentIntentId || formData.paymentMethod === 'credit' ? 'succeeded' : 'pending',
         payment_method: formData.paymentMethod,
         stripe_payment_intent_id: paymentIntentId || null,
         booked_at: new Date().toISOString(),
         booking_details: {
           customer: {
             fullName: `${formData.firstName} ${formData.lastName}`,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
             email: formData.email,
             phone: formData.phone,
+            birthDate: formData.birthDate,
             age: driverAge,
+            licenseNumber: formData.licenseNumber,
+            licenseIssueDate: formData.licenseIssueDate,
+            licenseYears: licenseYears,
+            isSardinianResident: formData.isSardinianResident,
           },
+          secondDriver: formData.addSecondDriver ? {
+            fullName: `${formData.secondDriver.firstName} ${formData.secondDriver.lastName}`,
+            firstName: formData.secondDriver.firstName,
+            lastName: formData.secondDriver.lastName,
+            email: formData.secondDriver.email,
+            phone: formData.secondDriver.phone,
+            birthDate: formData.secondDriver.birthDate,
+            licenseNumber: formData.secondDriver.licenseNumber,
+            licenseIssueDate: formData.secondDriver.licenseIssueDate,
+          } : null,
           duration: `${days} days`,
           insuranceOption: formData.insuranceOption,
           extras: formData.extras,
@@ -1316,8 +1332,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         const vehicleName = data.vehicle_name;
         const pickupDate = new Date(data.pickup_date);
         const dropoffDate = new Date(data.dropoff_date);
-        const customerName = formData.customer.fullName;
-        const customerPhone = formData.customer.phone;
+        const customerName = `${formData.firstName} ${formData.lastName}`;
+        const customerPhone = formData.phone;
         const totalPrice = (data.price_total / 100).toFixed(2);
         const insuranceOption = data.insurance_option || data.booking_details?.insuranceOption || 'Nessuna';
 

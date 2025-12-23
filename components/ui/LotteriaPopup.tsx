@@ -73,39 +73,36 @@ const LotteriaPopup: React.FC = () => {
 
               {/* Main message */}
               <div className="mb-6 text-white">
-                <p className="text-xl md:text-2xl font-bold mb-3">
-                  ULTIMI BIGLIETTI IN PROMO
+                <p className="text-xl md:text-2xl font-bold mb-3 text-dr7-gold">
+                  MAXI PROMO ULTIMI BIGLIETTI
                 </p>
-                <p className="text-lg md:text-xl mb-2">
-                  PARTE IL CONTO ALLA ROVESCIA
-                </p>
-                <p className="text-base md:text-lg text-white/90 mb-6">
-                  Ne restano pochissimi: la fortuna adesso è questione di attimi.
+                <p className="text-base md:text-lg text-white/90 mb-4">
+                  Si comunica che, in via del tutto straordinaria e limitatamente agli ultimi biglietti disponibili, è attiva la seguente maxi promozione.
                 </p>
               </div>
 
               {/* Promo packages */}
               <div className="mb-6 text-left">
-                <p className="text-lg font-bold text-white mb-3 text-center">Promo pacchetti:</p>
+                <p className="text-lg font-bold text-white mb-3 text-center">Pacchetti Speciali:</p>
                 <div className="space-y-2 text-white/90">
-                  <div className="flex items-center justify-between px-4 py-2 bg-white/5 rounded-lg">
-                    <span className="text-sm md:text-base">10 biglietti = 219€</span>
-                  </div>
-                  <div className="flex items-center justify-between px-4 py-2 bg-white/5 rounded-lg">
-                    <span className="text-sm md:text-base">50 biglietti = 899€</span>
-                  </div>
-                  <div className="flex items-center justify-between px-4 py-2 bg-white/5 rounded-lg">
-                    <span className="text-sm md:text-base">100 biglietti = 1699€</span>
+                  <div className="flex items-center justify-between px-4 py-2 bg-white/5 rounded-lg border border-dr7-gold/30">
+                    <span className="text-sm md:text-base font-bold">20 biglietti</span>
+                    <span className="text-sm md:text-base font-bold text-dr7-gold">400€</span>
                   </div>
                   <div className="flex items-center justify-between px-4 py-2 bg-white/5 rounded-lg border border-dr7-gold/30">
-                    <span className="text-sm md:text-base font-bold text-dr7-gold">150 biglietti = 1999€</span>
+                    <span className="text-sm md:text-base font-bold">50 biglietti</span>
+                    <span className="text-sm md:text-base font-bold text-dr7-gold">800€</span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-2 bg-white/5 rounded-lg border border-dr7-gold/30">
+                    <span className="text-sm md:text-base font-bold">100 biglietti</span>
+                    <span className="text-sm md:text-base font-bold text-dr7-gold">1.400€</span>
                   </div>
                 </div>
               </div>
 
               {/* Urgency message */}
-              <p className="text-base md:text-lg font-semibold text-white/90 mb-6">
-                Affrettati prima che finiscano.
+              <p className="text-sm md:text-base font-semibold text-white/90 mb-6 text-center">
+                L'offerta è valida esclusivamente fino ad esaurimento dei biglietti disponibili ed è riservata agli acquisti effettuati nel periodo di proroga dell'iniziativa.
               </p>
 
               {/* CTA Button */}

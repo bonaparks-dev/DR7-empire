@@ -74,7 +74,7 @@ const generateTicketPdf = (fullName, tickets, purchaseDate) => {
       doc.font('Courier').fontSize(10).text(`ID: ${ticket.uuid}`, 50, yPos, { align: 'center', width: doc.page.width - 100 });
       yPos += 30;
 
-      doc.font('Helvetica-Bold').fontSize(12).text('Estrazione: 24 Dicembre 2025, ore 10:00', 50, yPos, { align: 'center', width: doc.page.width - 100 });
+      doc.font('Helvetica-Bold').fontSize(12).text('Estrazione: 24 Gennaio 2026, ore 10:00', 50, yPos, { align: 'center', width: doc.page.width - 100 });
       yPos += 20;
       doc.font('Helvetica').fontSize(10).text('Solo 2.000 biglietti disponibili', 50, yPos, { align: 'center', width: doc.page.width - 100 });
       yPos += 15;
@@ -201,8 +201,8 @@ exports.handler = async (event) => {
                     </ul>
                     <p style="margin-top: 20px;">I tuoi biglietti aggiornati sono allegati a questa email in formato PDF.</p>
                   </div>
-                  <p><strong>🎄 Data Estrazione:</strong> 24 Dicembre 2025, ore 10:00</p>
-                  <p><strong>🎟️ Biglietti disponibili:</strong> Solo 2.000</p>
+                  <p><strong>Data Estrazione:</strong> 24 Gennaio 2026, ore 10:00</p>
+                  <p><strong>Biglietti disponibili:</strong> Solo 2.000</p>
                   <p style="margin-top: 30px;"><strong>In bocca al lupo!</strong></p>
                   <div class="footer">
                     <p>DR7 Empire – Luxury Car Rental & Services</p>
