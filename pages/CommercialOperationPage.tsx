@@ -493,6 +493,29 @@ const CommercialOperationPage: React.FC = () => {
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
+
+                                {/* Promotional Packages */}
+                                <div className="mb-6 p-4 bg-dr7-gold/10 border border-dr7-gold/30 rounded-lg">
+                                    <h3 className="text-lg font-bold text-dr7-gold mb-3 text-center">MAXI PROMO ULTIMI BIGLIETTI</h3>
+                                    <p className="text-sm text-white/80 mb-4 text-center">
+                                        Pacchetti Speciali - Offerta limitata!
+                                    </p>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between px-4 py-2 bg-black/40 rounded-lg border border-dr7-gold/30">
+                                            <span className="text-sm md:text-base font-bold text-white">20 biglietti</span>
+                                            <span className="text-sm md:text-base font-bold text-dr7-gold">400€</span>
+                                        </div>
+                                        <div className="flex items-center justify-between px-4 py-2 bg-black/40 rounded-lg border border-dr7-gold/30">
+                                            <span className="text-sm md:text-base font-bold text-white">50 biglietti</span>
+                                            <span className="text-sm md:text-base font-bold text-dr7-gold">800€</span>
+                                        </div>
+                                        <div className="flex items-center justify-between px-4 py-2 bg-black/40 rounded-lg border border-dr7-gold/30">
+                                            <span className="text-sm md:text-base font-bold text-white">100 biglietti</span>
+                                            <span className="text-sm md:text-base font-bold text-dr7-gold">1.400€</span>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div className="mb-4 sm:mb-6">
                                     <h3 className="text-lg sm:text-xl font-semibold text-white mb-3">{t('How_many_tickets')}</h3>
                                     <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-4 mt-2">
