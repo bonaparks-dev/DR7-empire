@@ -26,8 +26,8 @@ const WinRulesPage = () => {
         dates: {
             title: { it: 'Date Importanti', en: 'Important Dates' },
             items: [
-                { label: { it: 'Termine vendita biglietti:', en: 'Ticket sales end:' }, value: { it: '22 gennaio 2026, ore 18:00', en: 'January 22, 2026, 6:00 PM' } },
-                { label: { it: 'Data estrazione:', en: 'Drawing date:' }, value: { it: '24 gennaio 2026, ore 10:00', en: 'January 24, 2026, 10:00 AM' } },
+                { label: { it: 'Termine vendita biglietti:', en: 'Ticket sales end:' }, value: { it: '22 gennaio 2025, ore 18:00', en: 'January 22, 2025, 6:00 PM' } },
+                { label: { it: 'Data estrazione:', en: 'Drawing date:' }, value: { it: '24 gennaio 2025, ore 10:00', en: 'January 24, 2025, 10:00 AM' } },
                 { label: { it: 'Modalità estrazione:', en: 'Drawing method:' }, value: { it: 'Pubblica e trasparente, alla presenza di un avvocato', en: 'Public and transparent, in the presence of a lawyer' } },
             ],
         },
