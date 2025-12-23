@@ -99,7 +99,7 @@ const LotteriaPopup: React.FC = () => {
                 onClick={handleParticipate}
                 className="w-full bg-white text-black font-bold text-lg py-4 px-8 rounded-full hover:bg-gray-200 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
               >
-                PARTECIPA ORA
+                Acquista subito
               </button>
             </div>
           </motion.div>
