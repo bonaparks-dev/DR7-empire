@@ -556,6 +556,7 @@ const CommercialOperationPage: React.FC = () => {
                                 </div>
                                 <p className="text-white font-bold mb-2">{t('Step_1')}</p>
                                 <h3 className="text-base sm:text-lg font-semibold text-white">{t('Buy_your_tickets')}</h3>
+                                <p className="text-sm text-white/70 mt-2">Fine vendita: 22 Gennaio 2025</p>
                             </div>
                             <div className="bg-black/80 border border-white/40 p-6 rounded-lg">
                                 <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
