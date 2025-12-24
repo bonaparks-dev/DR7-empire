@@ -439,7 +439,7 @@ exports.handler = async (event) => {
       try {
         await transporter.sendMail({
           from: `"DR7 Empire" <${process.env.GMAIL_USER}>`,
-          to: 'dubai.rent7.0srl@gmail.com',
+          to: 'Info@dr7.app',
           subject: `Nuovo Acquisto Biglietti - ${qty} biglietto/i - ${fullName}`,
           html: `
             <h2>🎟️ Nuovo Acquisto Operazione Commerciale</h2>

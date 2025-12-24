@@ -263,7 +263,7 @@ exports.handler = async (event) => {
     try {
       await transporter.sendMail({
         from: `"DR7 Empire" <${process.env.GMAIL_USER}>`,
-        to: 'dubai.rent7.0srl@gmail.com',
+        to: 'Info@dr7.app',
         subject: `Vendita Manuale Biglietto - #${String(ticketNumber).padStart(4, '0')} - ${fullName}`,
         html: `
           <h2>Vendita Manuale Biglietto LOTTERIA</h2>
