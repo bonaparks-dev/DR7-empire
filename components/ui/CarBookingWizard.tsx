@@ -212,8 +212,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     // Step 3
     insuranceOption: 'RCA',
     extras: [] as string[],
-    kmPackageType: 'none' as 'none' | 'unlimited' | 'limited', // 'none' = only free included km, 'limited' = specific km package
-    kmPackageDistance: 0, // 0, 100, 180, 240, 280, 300
+    kmPackageType: 'none' as 'none' | 'unlimited', // 'none' = only free included km
+    kmPackageDistance: 100, // default 100km package
     expectedKm: 0, // user's expected distance for recommendation
 
     // Step 4
@@ -691,11 +691,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     if (formData.kmPackageType === 'unlimited') {
       calculatedKmPackageCost = calculateUnlimitedKmPrice(item.name, billingDays, true);
       calculatedIncludedKm = 9999; // Unlimited
-    } else if (formData.kmPackageType === 'limited' && formData.kmPackageDistance > 0) {
-      // Specific km package selected (100, 180, 240, 280, 300)
-      // Price: €0.50 per km
-      calculatedKmPackageCost = formData.kmPackageDistance * 0.50;
-      calculatedIncludedKm = freeIncludedKm + formData.kmPackageDistance;
     }
 
     // Massimo Override for KM OR Urban/Corporate (utilitarie) always unlimited
@@ -1298,7 +1293,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
           extras: formData.extras,
           kmPackage: {
             type: includedKm >= 9999 ? 'unlimited' : formData.kmPackageType,
-            distance: includedKm >= 9999 ? 'unlimited' : (formData.kmPackageType === 'unlimited' ? 'unlimited' : formData.kmPackageType === 'limited' ? formData.kmPackageDistance : 0),
+            distance: includedKm >= 9999 ? 'unlimited' : (formData.kmPackageType === 'unlimited' ? 'unlimited' : formData.kmPackageDistance),
             cost: kmPackageCost,
             includedKm: includedKm,
             isPremium: isPremiumVehicle(item.name)
@@ -2004,44 +1999,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
                   {/* KM Package Options */}
                   <div className="space-y-3">
-                    <h4 className="text-sm font-semibold text-gray-300 mb-2">LIMITE KM (Da inserire):</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {[100, 180, 240, 280, 300].map((kmLimit) => (
-                        <div
-                          key={kmLimit}
-                          className={`p-3 rounded-md border cursor-pointer transition-all ${formData.kmPackageType === 'limited' && formData.kmPackageDistance === kmLimit
-                            ? 'border-white bg-white/5'
-                            : 'border-gray-700 hover:border-gray-500'
-                            }`}
-                          onClick={() => setFormData(p => ({
-                            ...p,
-                            kmPackageType: 'limited',
-                            kmPackageDistance: kmLimit
-                          }))}
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center">
-                              <input
-                                type="checkbox"
-                                checked={formData.kmPackageType === 'limited' && formData.kmPackageDistance === kmLimit}
-                                onChange={() => setFormData(p => ({
-                                  ...p,
-                                  kmPackageType: 'limited',
-                                  kmPackageDistance: kmLimit
-                                }))}
-                                className="w-4 h-4 text-white"
-                              />
-                              <label className="ml-2 text-white font-semibold">{kmLimit} km</label>
-                            </div>
-                          </div>
-                          <div className="text-xs text-gray-400 ml-6">
-                            €{(kmLimit * 0.50).toFixed(2)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Unlimited KM Option */}
+                    <h4 className="text-sm font-semibold text-gray-300 mb-2">KM ILLIMITATI:</h4>
                     <div
                       className={`p-4 rounded-md border cursor-pointer transition-all ${formData.kmPackageType === 'unlimited'
                         ? 'border-white bg-white/5'
@@ -2076,7 +2034,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
                   {/* KM Package Summary */}
                   <div className="mt-4 p-3 bg-gray-800/50 rounded-md border border-gray-700">
-                    {formData.kmPackageType === 'none' && (
+                    {formData.kmPackageType !== 'unlimited' && (
                       <div className="flex justify-between text-sm mb-2">
                         <span className="text-gray-300">Km inclusi gratis:</span>
                         <span className="text-green-400 font-semibold">{calculateIncludedKm(duration.days)} km</span>
@@ -2087,11 +2045,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-300">Pacchetto extra selezionato:</span>
                           <span className="text-white font-semibold">
-                            {formData.kmPackageType === 'unlimited'
-                              ? '∞ KM ILLIMITATI'
-                              : formData.kmPackageType === 'limited'
-                                ? `+${formData.kmPackageDistance} km`
-                                : `${calculateIncludedKm(duration.days)} km`}
+                            {formData.kmPackageType === 'unlimited' ? '∞ KM ILLIMITATI' : `+${formData.kmPackageDistance} km`}
                           </span>
                         </div>
                         <div className="flex justify-between text-sm mt-1">
@@ -2105,9 +2059,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
                       <div className="flex justify-between text-base font-bold">
                         <span className="text-white">Km totali disponibili:</span>
                         <span className="text-white">
-                          {formData.kmPackageType === 'unlimited'
-                            ? '∞ ILLIMITATI'
-                            : `${includedKm} km`}
+                          {formData.kmPackageType === 'unlimited' ? '∞ ILLIMITATI' : `${calculateIncludedKm(duration.days)} km`}
                         </span>
                       </div>
                     </div>
@@ -2275,7 +2227,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
                   <p>Ritiro: {formData.pickupDate} alle {formData.pickupTime} - {getTranslated(PICKUP_LOCATIONS.find(l => l.id === formData.pickupLocation)?.label)}</p>
                   <p>Riconsegna: {formData.returnDate} alle {formData.returnTime} - {getTranslated(PICKUP_LOCATIONS.find(l => l.id === formData.returnLocation)?.label)}</p>
                   <p>Durata: {duration.days} giorni</p>
-                  <p>Pacchetto km: {(formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : formData.kmPackageType === 'limited' ? `${includedKm} km (base + ${formData.kmPackageDistance} km extra)` : `${includedKm} km`}</p>
+                  <p>Pacchetto km: {(formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}</p>
                 </div>
 
                 <div>

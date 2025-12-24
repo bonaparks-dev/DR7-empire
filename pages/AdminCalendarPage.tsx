@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { supabase } from '../supabaseClient';
 import { useTranslation } from '../hooks/useTranslation';
 import { RENTAL_CATEGORIES } from '../constants';
-import { getHolidayForDate, isSunday } from '../data/italianHolidays';
 
 interface Booking {
   id: string;
@@ -379,30 +378,20 @@ const AdminCalendarPage: React.FC = () => {
                 const dayBookings = getBookingsForDate(day);
                 const isToday = day.toDateString() === new Date().toDateString();
                 const isCurrentMonth = day.getMonth() === currentDate.getMonth();
-                const holiday = getHolidayForDate(day);
-                const isSundayDay = isSunday(day);
 
                 return (
                   <motion.div
                     key={day.toISOString()}
                     whileHover={{ scale: 1.02 }}
                     className={`
-                      aspect-square border rounded-lg p-2 transition-colors relative
+                      aspect-square border rounded-lg p-2 transition-colors
                       ${isToday ? 'border-white bg-white/10' : 'border-gray-700'}
                       ${!isCurrentMonth ? 'opacity-50' : ''}
                       ${dayBookings.length > 0 ? 'bg-gray-800/50' : 'bg-gray-900/30'}
-                      ${holiday || isSundayDay ? 'bg-red-900/20 border-red-500/30' : ''}
                       hover:bg-gray-800 cursor-pointer
                     `}
                   >
-                    {/* Holiday/Sunday indicator at top */}
-                    {(holiday || isSundayDay) && (
-                      <div className="absolute top-0 left-0 right-0 bg-red-600 text-white text-[8px] px-1 py-0.5 rounded-t-lg text-center font-semibold truncate">
-                        {holiday ? holiday.name : 'Domenica'}
-                      </div>
-                    )}
-
-                    <div className={`text-sm font-semibold text-white mb-1 ${holiday || isSundayDay ? 'mt-4' : ''}`}>
+                    <div className="text-sm font-semibold text-white mb-1">
                       {day.getDate()}
                     </div>
 
@@ -478,8 +467,8 @@ const AdminCalendarPage: React.FC = () => {
                               {booking.appointment_date
                                 ? new Date(booking.appointment_date).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', { timeZone: 'Europe/Rome' })
                                 : booking.pickup_date
-                                  ? new Date(booking.pickup_date).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', { timeZone: 'Europe/Rome' })
-                                  : 'N/A'}
+                                ? new Date(booking.pickup_date).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', { timeZone: 'Europe/Rome' })
+                                : 'N/A'}
                             </p>
                           </div>
                           <div>
@@ -652,7 +641,6 @@ const AdminCalendarPage: React.FC = () => {
                       <option value="pending">Pending</option>
                       <option value="confirmed">Confirmed</option>
                       <option value="completed">Completed</option>
-                      <option value="returned">Returned</option>
                       <option value="cancelled">Cancelled</option>
                     </select>
                   </div>
@@ -736,9 +724,9 @@ const AdminCalendarPage: React.FC = () => {
 
                       const vehicleBookings = bookings.filter(
                         b => b.vehicle_name === showVehicleCalendar &&
-                          b.pickup_date && b.dropoff_date &&
-                          new Date(day) >= new Date(b.pickup_date) &&
-                          new Date(day) <= new Date(b.dropoff_date)
+                        b.pickup_date && b.dropoff_date &&
+                        new Date(day) >= new Date(b.pickup_date) &&
+                        new Date(day) <= new Date(b.dropoff_date)
                       );
 
                       const isToday = day.toDateString() === new Date().toDateString();

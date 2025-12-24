@@ -76,7 +76,6 @@ import TokenPage from './pages/TokenPage';
 import AdminCalendarPage from './pages/AdminCalendarPage';
 import AdminDocumentsPage from './pages/AdminDocumentsPage';
 import CreditWalletPage from './pages/CreditWalletPage';
-import LateReturnAlarm from './components/admin/LateReturnAlarm';
 
 const AuthRedirector: React.FC = () => {
   const { user, authEvent } = useAuth();
@@ -259,7 +258,6 @@ const MainContent = () => {
         <CookieBanner />
         <LotteriaPopup />
         <DR7AIFloatingButton />
-        <LateReturnAlarm />
         <AnimatePresence>
           {isCarWizardOpen && selectedCar && (
             <motion.div
