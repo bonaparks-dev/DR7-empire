@@ -99,9 +99,13 @@ exports.handler = async (event) => {
     // Create payment with Nexi
     console.log('Creating Nexi payment:', { orderId, amount, currency });
 
-    // Build URL
+    // For Nexi XPay, we need to redirect directly to the payment page
+    // The DispatcherServlet endpoint handles the payment form
     const queryString = new URLSearchParams(params).toString();
     const paymentUrl = `${baseUrl}/ecomm/ecomm/DispatcherServlet?${queryString}`;
+
+    console.log('Payment URL created:', paymentUrl.substring(0, 100) + '...');
+    console.log('MAC generated:', mac);
 
     // Return payment URL to frontend
     return {
