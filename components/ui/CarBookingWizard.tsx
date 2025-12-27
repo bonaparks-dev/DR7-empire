@@ -494,19 +494,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
           conflictEndDateOnly.setHours(0, 0, 0, 0);
 
           if (requestedPickupDate.getTime() === conflictEndDateOnly.getTime()) {
-            // Same day - show available time
+            // Same day - show available time only
             const availableTimeStr = availableTime.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
             setAvailabilityError(
-              `Questo veicolo sara disponibile dopo le ${availableTimeStr} (tempo di preparazione 1h30). Per favore scegli un orario successivo.`
+              `Disponibile dopo le ${availableTimeStr}.`
             );
           } else {
-            // Different days - show date range
-            const conflictStart = conflictStartDate.toLocaleDateString('it-IT');
-            const conflictEnd = conflictEndDate.toLocaleDateString('it-IT');
+            // Different days - show date and time only
             const availableDateStr = availableTime.toLocaleDateString('it-IT');
             const availableTimeStr = availableTime.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
             setAvailabilityError(
-              `Questo veicolo non e disponibile per le date selezionate. E gia prenotato dal ${conflictStart} al ${conflictEnd}. Disponibile dal ${availableDateStr} alle ${availableTimeStr}.`
+              `Disponibile dal ${availableDateStr} alle ${availableTimeStr}.`
             );
           }
         } else {

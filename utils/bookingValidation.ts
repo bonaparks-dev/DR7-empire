@@ -27,7 +27,7 @@ export async function checkGroupedVehicleAvailability(
   vehicleNames: string[],
   pickupDate: string,
   dropoffDate: string
-): Promise<{ isAvailable: boolean; availableVehicleName?: string; conflicts?: BookingConflict[] }> {
+): Promise<{ isAvailable: boolean; availableVehicleName?: string; conflicts?: BookingConflict[]; closestAvailableDate?: Date }> {
   try {
     // Check availability for each vehicle in the group
     for (const vehicleName of vehicleNames) {
@@ -39,9 +39,31 @@ export async function checkGroupedVehicleAvailability(
     }
 
     // No vehicles in the group are available
-    // Return conflicts from the first vehicle as reference
-    const firstVehicleConflicts = await checkVehicleAvailability(vehicleNames[0], pickupDate, dropoffDate);
-    return { isAvailable: false, conflicts: firstVehicleConflicts };
+    // Find the closest available date across ALL vehicles
+    let closestAvailableDate: Date | null = null;
+    let closestConflicts: BookingConflict[] = [];
+
+    for (const vehicleName of vehicleNames) {
+      const conflicts = await checkVehicleAvailability(vehicleName, pickupDate, dropoffDate);
+
+      if (conflicts.length > 0) {
+        // Get the end date of the first conflict + 1h30 buffer
+        const conflictEnd = new Date(conflicts[0].dropoff_date);
+        const availableAfter = new Date(conflictEnd.getTime() + (90 * 60 * 1000));
+
+        // Track the earliest available date across all vehicles
+        if (!closestAvailableDate || availableAfter < closestAvailableDate) {
+          closestAvailableDate = availableAfter;
+          closestConflicts = conflicts;
+        }
+      }
+    }
+
+    return {
+      isAvailable: false,
+      conflicts: closestConflicts,
+      closestAvailableDate: closestAvailableDate || undefined
+    };
   } catch (error) {
     console.error('Error checking grouped vehicle availability:', error);
     throw error;
@@ -292,11 +314,11 @@ export async function checkVehiclePartialUnavailability(
     // If times are specified, it's partial-day unavailability
     // Check that times are valid strings with content
     const hasValidTimes = unavailableFromTime &&
-                          unavailableUntilTime &&
-                          typeof unavailableFromTime === 'string' &&
-                          typeof unavailableUntilTime === 'string' &&
-                          unavailableFromTime.trim() !== '' &&
-                          unavailableUntilTime.trim() !== '';
+      unavailableUntilTime &&
+      typeof unavailableFromTime === 'string' &&
+      typeof unavailableUntilTime === 'string' &&
+      unavailableFromTime.trim() !== '' &&
+      unavailableUntilTime.trim() !== '';
 
     if (hasValidTimes) {
       // Add 1h30 buffer to unavailability end time (same as booking buffer)
