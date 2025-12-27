@@ -53,6 +53,7 @@ const getVehicleImage = (name: string): string => {
   if (lowerName.includes('clio') && (lowerName.includes('arancio') || lowerName.includes('orange'))) return '/clio4a.jpeg';
   if (lowerName.includes('clio') && lowerName.includes('blu')) return '/clio4b.jpeg';
   if (lowerName.includes('c3')) return '/c3.jpeg';
+  if (lowerName.includes('captur')) return '/captur.jpeg';
   if (lowerName.includes('panda') && (lowerName.includes('bianca') || lowerName.includes('white'))) return '/panda2.jpeg';
   if (lowerName.includes('panda') && (lowerName.includes('aranci') || lowerName.includes('orange'))) return '/panda3.jpeg';
   if (lowerName.includes('panda')) return '/panda1.jpeg';
