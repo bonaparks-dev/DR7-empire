@@ -33,8 +33,8 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
     return new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', {
       style: 'currency',
       currency: currency.toUpperCase(),
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(price);
   };
 
@@ -63,7 +63,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
 
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.2 }}
@@ -84,8 +84,8 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
               </>
             )}
           </div>
-           {isVilla ? (
-            <Link 
+          {isVilla ? (
+            <Link
               to={`/villas/${item.id}`}
               className="bg-transparent border-2 border-white text-white px-6 py-2 rounded-full font-semibold text-sm transform transition-all duration-300 group-hover:bg-white group-hover:text-black group-hover:scale-105"
             >
