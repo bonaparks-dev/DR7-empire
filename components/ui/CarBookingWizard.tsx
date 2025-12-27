@@ -927,8 +927,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
       maximumFractionDigits: 0
     }).format(price).replace(/\./g, ' ');
 
-  // Calculate deposit based on residency
+  // Calculate deposit based on vehicle type and insurance
   const getDeposit = () => {
+    const vType = getVehicleType(item);
+
+    // Urban cars: deposit based on insurance type
+    if (vType === 'UTILITARIA') {
+      if (formData.insuranceOption === 'KASKO_DR7') return 0;
+      if (formData.insuranceOption === 'KASKO_BASE') return 500;
+      return 500; // Default for urban
+    }
+
+    // Supercars and others: based on residency
     return formData.isSardinianResident ? 2500 : 5000;
   };
 
