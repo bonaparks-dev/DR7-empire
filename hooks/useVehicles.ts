@@ -37,6 +37,7 @@ interface TransformedVehicle {
 
 // Helper function to get vehicle image based on name
 const getVehicleImage = (name: string): string => {
+  if (!name) return '/default-car.jpeg';
   const lowerName = name.toLowerCase();
 
   if (lowerName.includes('rs3')) return '/rs3.jpeg';
@@ -63,7 +64,9 @@ const getVehicleImage = (name: string): string => {
 };
 
 // Helper function to get vehicle specs based on name
+// Helper function to get vehicle specs based on name
 const getVehicleSpecs = (name: string) => {
+  if (!name) return { acceleration: 'N/A', power: 'N/A', engine: 'N/A' };
   const lowerName = name.toLowerCase();
 
   // RS3 specs
@@ -212,7 +215,7 @@ const transformVehicle = (vehicle: Vehicle): TransformedVehicle => {
   }
 
   // Force correct image for Vito/V-Class vehicles, otherwise use metadata or fallback
-  const lowerName = vehicle.display_name.toLowerCase();
+  const lowerName = vehicle.display_name ? vehicle.display_name.toLowerCase() : '';
   let vehicleImage: string;
 
   if (lowerName.includes('vito') || lowerName.includes('v class')) {
@@ -286,10 +289,12 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
           const originalVehicle = data?.[index];
 
           // Helper to normalize strings for grouping
-          const normalizeKey = (str: string) => str.toLowerCase().replace(/\s+/g, ' ').trim();
+          const normalizeKey = (str: string) => (str || '').toLowerCase().replace(/\s+/g, ' ').trim();
 
           // Key priority: Valid display_group -> display_name (normalized)
-          const key = originalVehicle?.metadata?.display_group || normalizeKey(vehicle.name);
+          // Ensure we have a valid name to group by, fallback to ID if mostly broken
+          const rawName = vehicle.name || `unknown-${vehicle.id}`;
+          const key = originalVehicle?.metadata?.display_group || normalizeKey(rawName);
 
           if (!vehicleGroups.has(key)) {
             vehicleGroups.set(key, { members: [], originals: [] });

@@ -17,7 +17,7 @@ import {
   isPremiumVehicle,
   isDucatoVehicle
 } from '../../data/kmPricingData';
-import { checkVehicleAvailability, checkVehiclePartialUnavailability, checkGroupedVehicleAvailability } from '../../utils/bookingValidation';
+import { checkVehicleAvailability, checkVehiclePartialUnavailability, checkGroupedVehicleAvailability, safeDate } from '../../utils/bookingValidation';
 import { getUserCreditBalance, deductCredits, hasSufficientBalance } from '../../utils/creditWallet';
 import { calculateDiscountedPrice, getMembershipTierName } from '../../utils/membershipDiscounts';
 
@@ -34,8 +34,9 @@ type KaskoTier = 'RCA' | 'KASKO_BASE' | 'KASKO_BLACK' | 'KASKO_SIGNATURE' | 'KAS
 
 // Helper function to determine vehicle type
 function getVehicleType(item: RentalItem): 'UTILITARIA' | 'FURGONE' | 'V_CLASS' | 'SUPERCAR' {
+  if (!item || !item.name) return 'SUPERCAR';
   const name = item.name.toLowerCase();
-  const id = item.id.toLowerCase();
+  const id = item.id ? item.id.toLowerCase() : '';
 
   if (id.startsWith('urban-car-') || name.includes('polo') || name.includes('utilitaria')) return 'UTILITARIA';
   if (name.includes('ducato') || name.includes('furgone')) return 'FURGONE';
@@ -99,7 +100,7 @@ const calculateAgeFromDDMMYYYY = (dateString: string): number => {
     if (birthDate.getFullYear() !== year || birthDate.getMonth() !== month || birthDate.getDate() !== day) return 0;
   } else {
     // YYYY-MM-DD format (from date input)
-    birthDate = new Date(dateString);
+    birthDate = safeDate(dateString);
     if (isNaN(birthDate.getTime())) return 0;
   }
 
@@ -112,7 +113,7 @@ const calculateAgeFromDDMMYYYY = (dateString: string): number => {
 
 const calculateYearsSince = (dateString: string): number => {
   if (!dateString) return 0;
-  const sinceDate = new Date(dateString);
+  const sinceDate = safeDate(dateString);
   if (isNaN(sinceDate.getTime())) return 0;
 
   const today = new Date();
@@ -345,7 +346,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     }
 
     // Filter out past times if the selected date is today
-    const selectedDate = new Date(date);
+    const selectedDate = safeDate(date);
     const now = new Date();
     const isToday = selectedDate.toDateString() === now.toDateString();
 
@@ -481,16 +482,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
         if (conflicts.length > 0) {
           const conflict = conflicts[0];
-          const conflictStartDate = new Date(conflict.pickup_date);
-          const conflictEndDate = new Date(conflict.dropoff_date);
+          const conflictStartDate = safeDate(conflict.pickup_date);
+          const conflictEndDate = safeDate(conflict.dropoff_date);
 
           // Calculate when vehicle becomes available (end time + 1h30 buffer)
           const availableTime = new Date(conflictEndDate.getTime() + (90 * 60 * 1000));
 
           // Check if the conflict is on the same day as requested pickup
-          const requestedPickupDate = new Date(formData.pickupDate);
+          const requestedPickupDate = safeDate(formData.pickupDate);
           requestedPickupDate.setHours(0, 0, 0, 0);
-          const conflictEndDateOnly = new Date(conflictEndDate);
+          const conflictEndDateOnly = safeDate(conflictEndDate);
           conflictEndDateOnly.setHours(0, 0, 0, 0);
 
           if (requestedPickupDate.getTime() === conflictEndDateOnly.getTime()) {
@@ -554,16 +555,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     let days = 0;
     let hours = 0;
     if (formData.pickupDate && formData.returnDate) {
-      const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
-      const ret = new Date(`${formData.returnDate}T${formData.returnTime}`);
+      const pickup = safeDate(`${formData.pickupDate}T${formData.pickupTime}`);
+      const ret = safeDate(`${formData.returnDate}T${formData.returnTime}`);
       if (pickup < ret) {
         // Check if Massimo Runchina uses calendar days
         const usesCalendarDays = isMassimoRunchina(formData.email) && SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.useCalendarDays;
 
         if (usesCalendarDays) {
           // Calendar day calculation for Massimo Runchina
-          const pickupDate = new Date(formData.pickupDate);
-          const returnDate = new Date(formData.returnDate);
+          const pickupDate = safeDate(formData.pickupDate);
+          const returnDate = safeDate(formData.returnDate);
           pickupDate.setHours(0, 0, 0, 0);
           returnDate.setHours(0, 0, 0, 0);
           const diffDays = Math.round((returnDate.getTime() - pickupDate.getTime()) / (1000 * 60 * 60 * 24));

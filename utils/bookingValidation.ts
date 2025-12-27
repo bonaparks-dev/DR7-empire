@@ -17,6 +17,22 @@ export interface VehicleUnavailabilityInfo {
 }
 
 /**
+ * Helper to safely parse dates for all browsers (especially Safari)
+ * Replaces space with T in ISO-like strings: "2023-01-01 10:00:00" -> "2023-01-01T10:00:00"
+ */
+export function safeDate(dateStr: string | Date): Date {
+  if (dateStr instanceof Date) return dateStr;
+  if (!dateStr) return new Date();
+
+  // If it's a string like "YYYY-MM-DD HH:mm:ss", replace space with T
+  if (typeof dateStr === 'string' && dateStr.includes(' ')) {
+    return new Date(dateStr.replace(' ', 'T'));
+  }
+
+  return new Date(dateStr);
+}
+
+/**
  * Check if any vehicle in a group is available for the requested dates
  * @param vehicleNames - Array of vehicle names to check (for grouped vehicles)
  * @param pickupDate - Requested pickup date (ISO string)
@@ -48,7 +64,7 @@ export async function checkGroupedVehicleAvailability(
 
       if (conflicts.length > 0) {
         // Get the end date of the first conflict + 1h30 buffer
-        const conflictEnd = new Date(conflicts[0].dropoff_date);
+        const conflictEnd = safeDate(conflicts[0].dropoff_date);
         const availableAfter = new Date(conflictEnd.getTime() + (90 * 60 * 1000));
 
         // Track the earliest available date across all vehicles
@@ -84,8 +100,8 @@ export async function checkVehicleAvailability(
   dropoffDate: string
 ): Promise<BookingConflict[]> {
   try {
-    const requestedPickup = new Date(pickupDate);
-    const requestedDropoff = new Date(dropoffDate);
+    const requestedPickup = safeDate(pickupDate);
+    const requestedDropoff = safeDate(dropoffDate);
 
     // Buffer time in milliseconds (1h30 = 90 minutes)
     const BUFFER_TIME_MS = 90 * 60 * 1000;
@@ -146,8 +162,8 @@ export async function checkVehicleAvailability(
     // Check bookings table conflicts
     if (bookings && bookings.length > 0) {
       for (const booking of bookings) {
-        const existingPickup = new Date(booking.pickup_date);
-        const existingDropoff = new Date(booking.dropoff_date);
+        const existingPickup = safeDate(booking.pickup_date);
+        const existingDropoff = safeDate(booking.dropoff_date);
 
         if (hasConflict(existingPickup, existingDropoff)) {
           conflicts.push({
@@ -162,8 +178,8 @@ export async function checkVehicleAvailability(
     // Check reservations table conflicts (from admin panel)
     if (reservations.length > 0) {
       for (const reservation of reservations) {
-        const existingStart = new Date(reservation.start_at);
-        const existingEnd = new Date(reservation.end_at);
+        const existingStart = safeDate(reservation.start_at);
+        const existingEnd = safeDate(reservation.end_at);
 
         if (hasConflict(existingStart, existingEnd)) {
           conflicts.push({
@@ -231,8 +247,8 @@ export async function getUnavailableDateRanges(vehicleName: string): Promise<Arr
     if (bookings && bookings.length > 0) {
       bookings.forEach((booking) => {
         unavailableDates.push({
-          start: new Date(booking.pickup_date),
-          end: new Date(booking.dropoff_date),
+          start: safeDate(booking.pickup_date),
+          end: safeDate(booking.dropoff_date),
         });
       });
     }
@@ -241,8 +257,8 @@ export async function getUnavailableDateRanges(vehicleName: string): Promise<Arr
     if (reservations.length > 0) {
       reservations.forEach((reservation) => {
         unavailableDates.push({
-          start: new Date(reservation.start_at),
-          end: new Date(reservation.end_at),
+          start: safeDate(reservation.start_at),
+          end: safeDate(reservation.end_at),
         });
       });
     }
@@ -296,9 +312,9 @@ export async function checkVehiclePartialUnavailability(
     }
 
     // Check if requested date falls within unavailability range
-    const requested = new Date(requestedDate);
-    const fromDate = new Date(unavailableFrom);
-    const untilDate = new Date(unavailableUntil);
+    const requested = safeDate(requestedDate);
+    const fromDate = safeDate(unavailableFrom);
+    const untilDate = safeDate(unavailableUntil);
 
     // Normalize dates to midnight for comparison
     requested.setHours(0, 0, 0, 0);
@@ -463,7 +479,7 @@ export async function checkCarWashAvailability(
       }
 
       if (!booking.appointment_date) return false;
-      const bookingDate = new Date(booking.appointment_date).toISOString().split('T')[0];
+      const bookingDate = safeDate(booking.appointment_date).toISOString().split('T')[0];
       return bookingDate === appointmentDate;
     });
 
@@ -482,7 +498,7 @@ export async function checkCarWashAvailability(
       );
 
       if (hasOverlap) {
-        const bookingDate = new Date(booking.appointment_date);
+        const bookingDate = safeDate(booking.appointment_date);
         return {
           isAvailable: false,
           conflictingBooking: booking,
