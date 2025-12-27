@@ -271,6 +271,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     };
   }, [step, onClose]);
 
+  // Auto-set unlimited KM for urban/utility vehicles
+  useEffect(() => {
+    const vType = getVehicleType(item.name);
+    if (vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS') {
+      setFormData(prev => ({
+        ...prev,
+        kmPackageType: 'unlimited'
+      }));
+    }
+  }, [item.name]);
+
   // Health ping (helps detect wrong FUNCTIONS_BASE early)
   useEffect(() => {
     (async () => {
