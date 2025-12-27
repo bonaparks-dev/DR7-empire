@@ -34,23 +34,27 @@ export function safeDate(dateStr: string | Date): Date {
 
 /**
  * Check if any vehicle in a group is available for the requested dates
- * @param vehicleNames - Array of vehicle names to check (for grouped vehicles)
+ * @param vehicles - Array of vehicle objects { name: string, id: string } to check
  * @param pickupDate - Requested pickup date (ISO string)
  * @param dropoffDate - Requested dropoff date (ISO string)
- * @returns Object with availability info and first available vehicle name
+ * @returns Object with availability info and first available vehicle name/id
  */
 export async function checkGroupedVehicleAvailability(
-  vehicleNames: string[],
+  vehicles: Array<{ name: string; id: string }>,
   pickupDate: string,
   dropoffDate: string
-): Promise<{ isAvailable: boolean; availableVehicleName?: string; conflicts?: BookingConflict[]; closestAvailableDate?: Date }> {
+): Promise<{ isAvailable: boolean; availableVehicleName?: string; availableVehicleId?: string; conflicts?: BookingConflict[]; closestAvailableDate?: Date }> {
   try {
     // Check availability for each vehicle in the group
-    for (const vehicleName of vehicleNames) {
-      const conflicts = await checkVehicleAvailability(vehicleName, pickupDate, dropoffDate);
+    for (const vehicle of vehicles) {
+      const conflicts = await checkVehicleAvailability(vehicle.name, pickupDate, dropoffDate, vehicle.id);
       if (conflicts.length === 0) {
         // This vehicle is available
-        return { isAvailable: true, availableVehicleName: vehicleName };
+        return {
+          isAvailable: true,
+          availableVehicleName: vehicle.name,
+          availableVehicleId: vehicle.id
+        };
       }
     }
 
@@ -59,8 +63,13 @@ export async function checkGroupedVehicleAvailability(
     let closestAvailableDate: Date | null = null;
     let closestConflicts: BookingConflict[] = [];
 
-    for (const vehicleName of vehicleNames) {
-      const conflicts = await checkVehicleAvailability(vehicleName, pickupDate, dropoffDate);
+    // For failover suggestion, we just check the first one or iterate all (simplified to first for conflicts reporting)
+    // But logically we should find the 'best' alternative. 
+    // For now, let's just re-check the first one without ID specific filter to see general conflicts? 
+    // Or just iterate all and find minimum date.
+
+    for (const vehicle of vehicles) {
+      const conflicts = await checkVehicleAvailability(vehicle.name, pickupDate, dropoffDate, vehicle.id);
 
       if (conflicts.length > 0) {
         // Get the end date of the first conflict + 1h30 buffer
@@ -92,12 +101,14 @@ export async function checkGroupedVehicleAvailability(
  * @param vehicleName - Name of the vehicle to check
  * @param pickupDate - Requested pickup date (ISO string)
  * @param dropoffDate - Requested dropoff date (ISO string)
+ * @param targetVehicleId - Optional specific vehicle ID to check against (if stored in booking_details)
  * @returns Array of conflicting bookings, empty if no conflicts
  */
 export async function checkVehicleAvailability(
   vehicleName: string,
   pickupDate: string,
-  dropoffDate: string
+  dropoffDate: string,
+  targetVehicleId?: string
 ): Promise<BookingConflict[]> {
   try {
     const requestedPickup = safeDate(pickupDate);
@@ -108,9 +119,10 @@ export async function checkVehicleAvailability(
 
     // Query all bookings for this vehicle from bookings table (main website + admin)
     // Admin bookings should ALWAYS block slots regardless of payment/status
+    // We select booking_details to check for specific vehicle_id
     const { data: bookings, error } = await supabase
       .from('bookings')
-      .select('pickup_date, dropoff_date, vehicle_name, status, booking_source')
+      .select('pickup_date, dropoff_date, vehicle_name, status, booking_source, booking_details')
       .eq('vehicle_name', vehicleName)
       .neq('status', 'cancelled') // Only exclude cancelled bookings
       .order('pickup_date', { ascending: true });
@@ -122,25 +134,44 @@ export async function checkVehicleAvailability(
 
     // Query all reservations for this vehicle from reservations table (admin panel)
     // We need to get the vehicle by matching display_name
-    const { data: vehicle } = await supabase
-      .from('vehicles')
-      .select('id')
-      .eq('display_name', vehicleName)
-      .single();
+    // Admin reservations are explicitly linked to vehicle_id usually, but here we query by name first?
+    // Actually, Admin reservations rely on vehicle_id in the table 'reservations'.
+    // If we have targetVehicleId, we should use that to filter reservations precisely.
+    // If NOT, we have to look up by name.
 
-    let reservations = [];
-    if (vehicle) {
+    let reservations: any[] = [];
+
+    if (targetVehicleId) {
+      // If we know the ID, we can query reservations directly by vehicle_id
       const { data: reservationData, error: reservationError } = await supabase
         .from('reservations')
         .select('start_at, end_at, vehicle_id, status')
-        .eq('vehicle_id', vehicle.id)
+        .eq('vehicle_id', targetVehicleId)
         .in('status', ['confirmed', 'pending', 'active'])
         .order('start_at', { ascending: true });
 
-      if (reservationError) {
-        console.error('Error checking reservations:', reservationError);
-      } else {
-        reservations = reservationData || [];
+      if (!reservationError && reservationData) {
+        reservations = reservationData;
+      }
+    } else {
+      // Fallback: look up by name
+      const { data: vehicle } = await supabase
+        .from('vehicles')
+        .select('id')
+        .eq('display_name', vehicleName)
+        .single();
+
+      if (vehicle) {
+        const { data: reservationData, error: reservationError } = await supabase
+          .from('reservations')
+          .select('start_at, end_at, vehicle_id, status')
+          .eq('vehicle_id', vehicle.id)
+          .in('status', ['confirmed', 'pending', 'active'])
+          .order('start_at', { ascending: true });
+
+        if (!reservationError && reservationData) {
+          reservations = reservationData;
+        }
       }
     }
 
@@ -162,6 +193,22 @@ export async function checkVehicleAvailability(
     // Check bookings table conflicts
     if (bookings && bookings.length > 0) {
       for (const booking of bookings) {
+        // Smart filtering:
+        // If we are checking for a specific vehicle ID (targetVehicleId):
+        // - We ignore bookings that represent a DIFFERENT vehicle ID (bookedId != targetId)
+        // - We MUST count bookings that have NO vehicle ID (legacy/name-only bookings) as conflicts to be safe
+        // - We MUST count bookings that MATCH our ID
+
+        if (targetVehicleId) {
+          // Check if booking has a specific ID stored in details
+          const bookedId = (booking.booking_details as any)?.vehicle_id;
+
+          // If booking has a specific ID and it's DIFFERENT from target, it's NOT a conflict for this specific car
+          if (bookedId && bookedId !== targetVehicleId) {
+            continue;
+          }
+        }
+
         const existingPickup = safeDate(booking.pickup_date);
         const existingDropoff = safeDate(booking.dropoff_date);
 

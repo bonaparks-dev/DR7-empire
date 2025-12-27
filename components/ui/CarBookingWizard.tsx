@@ -192,8 +192,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     birthDate: '',
     licenseNumber: '',
     licenseIssueDate: '',
-    licenseImage: null as File | string | null, // File or dataURL
-    idImage: null as File | string | null,
+    licenseImage: null, // File or dataURL
+    idImage: null,
     isSardinianResident: false,
     confirmsInformation: false,
 
@@ -459,25 +459,43 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
         let availableVehicle: string | undefined;
 
         if (isGroupedVehicle) {
+          // Construct array of vehicle objects {name, id} from the item's stored IDs and displayNames
+          // We assume item.vehicleIds and item.displayNames are aligned by index
+          const vehicleObjects = (item.vehicleIds || []).map((id: string, index: number) => ({
+            id,
+            name: item.displayNames?.[index] || item.name // fallback to main name if specific name missing
+          }));
+
           // Check availability for all vehicles in the group
           const groupResult = await checkGroupedVehicleAvailability(
-            item.displayNames!,
+            vehicleObjects,
             pickupDateTime,
             dropoffDateTime
           );
 
           if (groupResult.isAvailable) {
-            // Store the available vehicle name for booking creation
+            // Store the available vehicle name AND ID for booking creation
             availableVehicle = groupResult.availableVehicleName;
             setAvailableVehicleName(availableVehicle || null);
+            // We also need to store the available vehicle ID to use in the booking!
+            // We'll store it in a state or ref. 
+            // Since availableVehicleName is used in the hook, let's update how we store "availableVehicle"
+            // For now, we'll just ensure we can access it later during handleBooking
+            // We can store it in a hidden form field or state
+            if (groupResult.availableVehicleId) {
+              setFormData(prev => ({ ...prev, selectedVehicleId: groupResult.availableVehicleId }));
+            }
             conflicts = [];
           } else {
             conflicts = groupResult.conflicts || [];
           }
         } else {
           // Regular single vehicle check
-          conflicts = await checkVehicleAvailability(item.name, pickupDateTime, dropoffDateTime);
-          setAvailableVehicleName(null); // Clear any previous grouped vehicle selection
+          // Extract ID from item.id (format "car-UUID")
+          const specificId = item.id.replace('car-', '');
+          conflicts = await checkVehicleAvailability(item.name, pickupDateTime, dropoffDateTime, specificId);
+          setAvailableVehicleName(null);
+          setFormData(prev => ({ ...prev, selectedVehicleId: specificId }));
         }
 
         if (conflicts.length > 0) {
@@ -1313,6 +1331,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
             includedKm: includedKm,
             isPremium: isPremiumVehicle(item.name)
           },
+          vehicle_id: formData.selectedVehicleId, // Store specific vehicle ID to avoid grouping collisions
           driverLicenseImage: licenseImageUrl,
           driverIdImage: idImageUrl,
         }
