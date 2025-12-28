@@ -571,11 +571,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     duration, rentalCost, insuranceCost, extrasCost, kmPackageCost, pickupFee, dropoffFee, subtotal, taxes, total, includedKm,
     driverAge, licenseYears, youngDriverFee, recentLicenseFee, secondDriverFee, recommendedKm,
     membershipDiscount, membershipTier, originalTotal, finalTotal,
-    isMassimo, specialDiscountAmount
+    isMassimo, specialDiscountAmount, carWashFee
   } = useMemo(() => {
     const zero = {
       duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, kmPackageCost: 0, pickupFee: 0, dropoffFee: 0, subtotal: 0, taxes: 0, total: 0, includedKm: 0, driverAge: 0, licenseYears: 0, youngDriverFee: 0, recentLicenseFee: 0, secondDriverFee: 0, recommendedKm: null, membershipDiscount: 0, membershipTier: null, originalTotal: 0, finalTotal: 0,
-      isMassimo: false, specialDiscountAmount: 0
+      isMassimo: false, specialDiscountAmount: 0, carWashFee: 0
     };
     if (!item || !item.pricePerDay) return zero;
 
@@ -805,7 +805,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       originalTotal: discountInfo.originalPrice,
       finalTotal: discountInfo.finalPrice,
       isMassimo,
-      specialDiscountAmount
+      specialDiscountAmount,
+      carWashFee
     };
   }, [
     formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime,
