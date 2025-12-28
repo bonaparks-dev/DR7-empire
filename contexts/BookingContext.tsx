@@ -10,9 +10,10 @@ interface BookingContextType {
 
   // Car booking wizard state
   isCarWizardOpen: boolean;
-  openCarWizard: (item: RentalItem) => void;
+  openCarWizard: (item: RentalItem, categoryContext?: string) => void;
   closeCarWizard: () => void;
   selectedCar: RentalItem | null;
+  wizardCategory: string | null;
 }
 
 export const BookingContext = createContext<BookingContextType | undefined>(undefined);
@@ -25,6 +26,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isCarWizardOpen, setCarWizardOpen] = useState(false);
   const [selectedCar, setSelectedCar] = useState<RentalItem | null>(null);
 
+  const [wizardCategory, setWizardCategory] = useState<string | null>(null);
 
   useEffect(() => {
     if (isBookingOpen || isCarWizardOpen) {
@@ -47,25 +49,26 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const closeBooking = useCallback(() => {
     setIsBookingOpen(false);
     setTimeout(() => {
-        setBookingItem(null);
-        setBookingCategory(null);
+      setBookingItem(null);
+      setBookingCategory(null);
     }, 300);
   }, []);
 
-  const openCarWizard = useCallback((item: RentalItem) => {
-    console.log('BookingContext openCarWizard called with:', item);
+  const openCarWizard = useCallback((item: RentalItem, categoryContext?: string) => {
+    console.log('BookingContext openCarWizard called with:', item, 'categoryContext:', categoryContext);
     setSelectedCar(item);
+    setWizardCategory(categoryContext || null);
     setCarWizardOpen(true);
-    console.log('BookingContext state should now be: isCarWizardOpen=true, selectedCar=', item.name);
   }, []);
 
   const closeCarWizard = useCallback(() => {
     setCarWizardOpen(false);
     setTimeout(() => {
       setSelectedCar(null);
+      setWizardCategory(null);
     }, 300);
   }, []);
-  
+
   const value = useMemo(() => ({
     bookingItem,
     isBookingOpen,
@@ -76,7 +79,8 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     openCarWizard,
     closeCarWizard,
     selectedCar,
-  }), [bookingItem, isBookingOpen, bookingCategory, openBooking, closeBooking, isCarWizardOpen, openCarWizard, closeCarWizard, selectedCar]);
+    wizardCategory
+  }), [bookingItem, isBookingOpen, bookingCategory, openBooking, closeBooking, isCarWizardOpen, openCarWizard, closeCarWizard, selectedCar, wizardCategory]);
 
   return (
     <BookingContext.Provider value={value}>

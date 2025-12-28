@@ -238,7 +238,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
     console.log('RentalPage handleBook called:', { item, categoryId });
     if (categoryId === 'cars' || categoryId === 'urban-cars' || categoryId === 'corporate-fleet') {
       console.log('Opening car wizard for:', item.name);
-      openCarWizard(item);
+      openCarWizard(item, categoryId);
     } else if (['jets', 'helicopters'].includes(categoryId)) {
       console.log('Navigating to booking page for jet/helicopter');
       navigate(`/book/${categoryId}/${item.id}`);

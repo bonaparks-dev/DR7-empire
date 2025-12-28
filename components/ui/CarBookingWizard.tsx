@@ -33,8 +33,19 @@ const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ''
 type KaskoTier = 'RCA' | 'KASKO_BASE' | 'KASKO_BLACK' | 'KASKO_SIGNATURE' | 'KASKO_DR7';
 
 // Helper function to determine vehicle type
-function getVehicleType(item: RentalItem): 'UTILITARIA' | 'FURGONE' | 'V_CLASS' | 'SUPERCAR' {
+// Helper function to determine vehicle type
+function getVehicleType(item: RentalItem, categoryContext?: string): 'UTILITARIA' | 'FURGONE' | 'V_CLASS' | 'SUPERCAR' {
   if (!item || !item.name) return 'SUPERCAR';
+
+  // Robust Context-Based Classification
+  if (categoryContext === 'urban-cars') return 'UTILITARIA';
+  if (categoryContext === 'corporate-fleet') {
+    const name = item.name.toLowerCase();
+    if (name.includes('ducato') || name.includes('furgone')) return 'FURGONE';
+    if (name.includes('vito') || name.includes('v class') || name.includes('v-class')) return 'V_CLASS';
+    return 'UTILITARIA'; // Fallback for corporate fleet
+  }
+
   const name = item.name.toLowerCase();
   const id = item.id ? item.id.toLowerCase() : '';
 
@@ -137,22 +148,23 @@ const calculateIncludedKm = (days: number) => {
 
 interface CarBookingWizardProps {
   item: RentalItem;
+  categoryContext?: string;
   onBookingComplete: (booking: Booking) => void;
   onClose: () => void;
 }
 
-const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComplete, onClose }) => {
+const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryContext, onBookingComplete, onClose }) => {
   const { t, getTranslated } = useTranslation();
   const { currency } = useCurrency();
   const { user, loading: authLoading } = useAuth();
 
   // Determine vehicle type
-  const vehicleType = useMemo(() => getVehicleType(item), [item]);
+  const vehicleType = useMemo(() => getVehicleType(item, categoryContext), [item, categoryContext]);
   const isUrbanOrCorporate = vehicleType !== 'SUPERCAR'; // For eligibility logic compatibility
 
   // Get appropriate insurance options based on vehicle type (UI display mainly, prices calculated dynamically below)
   const insuranceOptions = useMemo(() => {
-    const vType = getVehicleType(item);
+    const vType = getVehicleType(item, categoryContext);
 
     // SUPERCARS: All options (RCA, KASKO BASE, BLACK, SIGNATURE, DR7)
     if (vType === 'SUPERCAR') {
@@ -166,7 +178,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
     // URBAN (Panda, Captur): RCA, KASKO BASE, KASKO DR7
     return URBAN_INSURANCE_OPTIONS;
-  }, [item]);
+  }, [item, categoryContext]);
 
   const eligibilityInfo = useMemo(() => isUrbanOrCorporate ? URBAN_INSURANCE_ELIGIBILITY : INSURANCE_ELIGIBILITY, [isUrbanOrCorporate]);
   const insuranceEligibility = useMemo(() => isUrbanOrCorporate ? URBAN_INSURANCE_ELIGIBILITY : INSURANCE_ELIGIBILITY, [isUrbanOrCorporate]);
@@ -274,14 +286,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
 
   // Auto-set unlimited KM for urban/utility vehicles
   useEffect(() => {
-    const vType = getVehicleType(item.name);
+    const vType = getVehicleType(item, categoryContext);
     if (vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS') {
       setFormData(prev => ({
         ...prev,
         kmPackageType: 'unlimited'
       }));
     }
-  }, [item.name]);
+  }, [item.name, categoryContext]);
 
   // Health ping (helps detect wrong FUNCTIONS_BASE early)
   useEffect(() => {
@@ -645,7 +657,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, onBookingComp
     const tier = formData.insuranceOption;
 
     // Type checking for VehicleType specific logic
-    const vType = getVehicleType(item);
+    const vType = getVehicleType(item, categoryContext);
 
     // RCA is always €0 for all categories
     if (tier === 'RCA') {

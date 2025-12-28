@@ -236,7 +236,7 @@ const PageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
 
 const MainContent = () => {
-  const { isCarWizardOpen, closeCarWizard, selectedCar } = useBooking();
+  const { isCarWizardOpen, closeCarWizard, selectedCar, wizardCategory } = useBooking();
   const navigate = useNavigate();
 
   console.log('MainContent render - isCarWizardOpen:', isCarWizardOpen, 'selectedCar:', selectedCar?.name);
@@ -278,6 +278,7 @@ const MainContent = () => {
               >
                 <CarBookingWizard
                   item={selectedCar}
+                  categoryContext={wizardCategory || undefined}
                   onClose={closeCarWizard}
                   onBookingComplete={handleBookingComplete}
                 />
