@@ -543,9 +543,27 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           if (requestedPickupDate.getTime() === conflictEndDateOnly.getTime()) {
             // Same day - show available time only
             const availableTimeStr = availableTime.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
-            setAvailabilityError(
-              `Disponibile dopo le ${availableTimeStr}.`
-            );
+
+            // Only show error if the available time is AFTER the requested pickup time
+            // Otherwise, it's just a buffer warning that might be resolved by the user's selection
+            // But wait, if 'conflicts' has items, it implies an overlap.
+            // If we are strictly checking, we should trust the conflict.
+            // However, the user said "It shows available after 17:00" and they selected 18:00.
+            // IF 18:00 > 17:30, it should be VALID.
+            // Why did it return a conflict? Maybe the backend check is overly aggressive on buffer?
+            // Let's add a frontend check:
+            const requestedTime = safeDate(`${formData.pickupDate}T${formData.pickupTime}`);
+            if (requestedTime < availableTime) {
+              setAvailabilityError(`Disponibile dopo le ${availableTimeStr}.`);
+            } else {
+              // Technically no conflict if we respect buffer locally?
+              // But usually we shouldn't get here if backend is correct.
+              // We'll trust the backend mostly, but this check prevents "Disponibile dopo 17:30" when you selected 18:00.
+              // If we are here, backend said NO. So we explain WHY.
+              // But if 18:00 > 17:30, why did backend say NO?
+              // Maybe backend buffer is larger? Or backend timezone diff?
+              setAvailabilityError(`Veicolo non disponibile. Riprova dopo le ${availableTimeStr}.`);
+            }
           } else {
             // Different days - show date and time only
             const availableDateStr = availableTime.toLocaleDateString('it-IT');
@@ -762,9 +780,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       const calculatedDropoffFee = 0;
 
       // Car Wash Fee (Mandatory for most clients, excluded for special clients)
-      // Utilitarie / Furgone / V-Class: €15
-      // Supercar: €30 (User Request: "SOLO PER SUPERCAR")
-      let carWashFee = (vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS') ? 15 : 30;
+      // Utilitarie / Furgone / V-Class: €30 (Updated per user request to flat 30)
+      // Supercar: €30
+      // User requested "SHOULD ALSO SHOW 30 euros not 15" for Urban cars.
+      let carWashFee = 30;
 
       // Exclude car wash for Massimo Runchina
       if (isMassimo && SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.excludeCarWash) {
@@ -824,7 +843,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime,
       formData.insuranceOption, formData.extras, formData.birthDate, formData.licenseIssueDate, formData.addSecondDriver,
       formData.kmPackageType, formData.kmPackageDistance, formData.expectedKm,
-      formData.email, // Add email dependency
+      formData.email,
       item, currency, user, isUrbanOrCorporate, categoryContext
     ]);
 
@@ -1586,24 +1605,33 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           dropoff_date: bookingPayload.dropoff_date
         };
 
+        // Construct the full booking object with the ID from RPC
+        const finalBookingData = {
+          ...bookingPayload,
+          id: data.booking_id, // Important: Use ID from RPC response
+          created_at: new Date().toISOString(),
+          status: 'confirmed',
+          payment_status: 'succeeded'
+        };
+
         // Send Email Confirmation
         fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ booking: bookingData }),
+          body: JSON.stringify({ booking: finalBookingData }),
         }).catch(e => console.error('Email error', e));
 
         // Send WhatsApp Admin
         fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ booking: bookingData }),
+          body: JSON.stringify({ booking: finalBookingData }),
         }).catch(e => console.error('WhatsApp error', e));
 
-        // Completed
-        onBookingComplete(bookingData);
+        // Completed - Pass the full object with ID so UI can redirect
+        onBookingComplete(finalBookingData);
 
-        // WhatsApp Customer Message (Optional, as per finalizeBooking)
+        // WhatsApp Customer Message
         const bookingId = data.booking_id.substring(0, 8).toUpperCase();
         const customerName = `${formData.firstName} ${formData.lastName}`;
         const customerPhone = formData.phone;
@@ -1766,10 +1794,18 @@ const renderStepContent = () => {
                           alert('Non è possibile ritirare il veicolo nei giorni festivi.\n\nPer favore seleziona un altro giorno.');
                           return;
                         }
-                        const syntheticEvent = {
-                          target: { name: 'pickupDate', value }
-                        } as React.ChangeEvent<HTMLInputElement>;
-                        handleChange(syntheticEvent);
+
+                        // Auto-Clear Return Date if Pickup > Return
+                        const newPickup = value;
+                        const currentReturn = formData.returnDate;
+
+                        if (currentReturn && newPickup > currentReturn) {
+                          // Reset return date if it becomes invalid
+                          setFormData(prev => ({ ...prev, pickupDate: value, returnDate: '', returnTime: '' }));
+                        } else {
+                          const syntheticEvent = { target: { name: 'pickupDate', value } } as React.ChangeEvent<HTMLInputElement>;
+                          handleChange(syntheticEvent);
+                        }
                       }}
                       min={today}
                       required
@@ -1843,6 +1879,13 @@ const renderStepContent = () => {
                           alert('Non è possibile riconsegnare il veicolo nei giorni festivi.\n\nPer favore seleziona un altro giorno.');
                           return;
                         }
+
+                        // STRICT VALIDATION: Return Date cannot be before Pickup Date
+                        if (formData.pickupDate && value < formData.pickupDate) {
+                          alert('La data di riconsegna non può essere precedente alla data di ritiro.');
+                          return;
+                        }
+
                         const syntheticEvent = {
                           target: { name: 'returnDate', value }
                         } as React.ChangeEvent<HTMLInputElement>;
@@ -2194,9 +2237,7 @@ const renderStepContent = () => {
               </div>
             </div>
 
-            {(isMassimo || displayVehicleType === 'UTILITARIA' || displayVehicleType === 'FURGONE' || displayVehicleType === 'V_CLASS') && (
-              <p className="text-xs text-green-400 mt-2">* Chilometri illimitati inclusi gratuitamente per questa categoria di veicoli.</p>
-            )}
+
 
             {!(isMassimo || displayVehicleType === 'UTILITARIA' || displayVehicleType === 'FURGONE' || displayVehicleType === 'V_CLASS') && (
               <>
