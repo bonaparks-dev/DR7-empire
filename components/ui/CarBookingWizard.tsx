@@ -336,10 +336,26 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   };
 
   // === Horaires de retrait admissibles (pas de dimanche) ===
-  // === Horaires de retrait admissibles (pas de dimanche) ===
+
+  // === HOLIDAY LOGIC ===
+  const ITALIAN_HOLIDAYS = [
+    '01-01', '06-01', '25-04', '01-05', '02-06', '15-08', '01-11', '08-12', '25-12', '26-12', // Fixed
+    '2024-03-31', '2024-04-01', // Easter 2024
+    '2025-04-20', '2025-04-21', // Easter 2025
+    '2026-04-05', '2026-04-06', // Easter 2026
+  ];
+
+  const isHoliday = (dateString: string): boolean => {
+    if (!dateString) return false;
+    const [year, month, day] = dateString.split('-');
+    const formattedDate = `${day}-${month}`;
+    const fullDate = dateString; // YYYY-MM-DD
+    return ITALIAN_HOLIDAYS.includes(formattedDate) || ITALIAN_HOLIDAYS.includes(fullDate);
+  };
+
   const getValidPickupTimes = (date: string): string[] => {
     const dayOfWeek = getDayOfWeek(date);
-    if (dayOfWeek === 0) return [];
+    if (dayOfWeek === 0 || isHoliday(date)) return []; // Block Sundays & Holidays
 
     const times: string[] = [];
     const addTimes = (start: number, end: number, interval: number) => {
@@ -490,7 +506,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             availableVehicle = groupResult.availableVehicleName;
             setAvailableVehicleName(availableVehicle || null);
             // We also need to store the available vehicle ID to use in the booking!
-            // We'll store it in a state or ref. 
+            // We'll store it in a state or ref.
             // Since availableVehicleName is used in the hook, let's update how we store "availableVehicle"
             // For now, we'll just ensure we can access it later during handleBooking
             // We can store it in a hidden form field or state
@@ -588,233 +604,229 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       const pickup = safeDate(`${formData.pickupDate}T${formData.pickupTime}`);
       const ret = safeDate(`${formData.returnDate}T${formData.returnTime}`);
       if (pickup < ret) {
-        // Check if Massimo Runchina uses calendar days
-        const usesCalendarDays = isMassimoRunchina(formData.email) && SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.useCalendarDays;
+        // Updated Logic: User requested "Dal 6 al 8 sono 2 giorni... even if it is 22:30"
+        // This implies strict calendar day difference: (Return Date - Pickup Date) in days.
+        // We calculate this by normalizing both to midnight or simply taking the difference in days.
 
-        if (usesCalendarDays) {
-          // Calendar day calculation for Massimo Runchina
-          const pickupDate = safeDate(formData.pickupDate);
-          const returnDate = safeDate(formData.returnDate);
-          pickupDate.setHours(0, 0, 0, 0);
-          returnDate.setHours(0, 0, 0, 0);
-          const diffDays = Math.round((returnDate.getTime() - pickupDate.getTime()) / (1000 * 60 * 60 * 24));
-          billingDays = Math.max(1, diffDays);
-          days = billingDays;
-        } else {
-          // Calculate billing based on hours for pricing (22.5 hour days)
-          const diffMs = ret.getTime() - pickup.getTime();
-          const totalHours = diffMs / (1000 * 60 * 60);
-          const dayLength = 22.5; // 22h30 = one rental day
-          // Subtract tiny epsilon to ensure exact 22.5h doesn't float-up to 2 days
-          billingDays = Math.ceil((totalHours - 0.05) / dayLength);
-          hours = 0; // Reset hours since we're using 22.5h day system
+        const diffTime = Math.abs(ret.getTime() - pickup.getTime());
+        const standardHours = diffTime / (1000 * 60 * 60);
+        // Display precise duration
+        days = Math.floor(standardHours / 24);
+        hours = Math.floor(standardHours % 24);
 
-          // Use billing days for display to ensure consistency with pricing and km
-          days = billingDays;
+        // Billing Logic:
+        // User requested strict "Day 8 - Day 6 = 2 Days".
+        // This is equivalent to Math.ceil((ReturnDate - PickupDate) / 24h) IF we ignore partial times?
+        // NO, "Dal 6 al 8" implies ReturnDate(8) - PickupDate(6) = 2.
+        // A simple day difference ignoring time:
+        const pDate = new Date(pickup); pDate.setHours(0, 0, 0, 0);
+        const rDate = new Date(ret); rDate.setHours(0, 0, 0, 0);
+        const diffDaysCalendar = Math.round((rDate.getTime() - pDate.getTime()) / (1000 * 60 * 60 * 24));
 
-          // Ensure at least 1 day
-          if (days < 1) days = 1;
-          if (billingDays < 1) billingDays = 1;
+        // Ensure minimum 1 day billing
+        billingDays = Math.max(1, diffDaysCalendar);
+
+        // Ensure at least 1 day for display
+        if (days < 1) days = 1;
+        if (billingDays < 1) billingDays = 1;
+      }
+
+
+
+      const isMassimo = isMassimoRunchina(formData.email);
+      const billingDaysCalc = billingDays < 1 ? 1 : billingDays;
+
+      // --- RENTAL COST ---
+      let calculatedRentalCost = billingDays * pricePerDay;
+      let massimoFirstDiscount = 0;
+      if (isMassimo) {
+        // Massimo pricing: €339 base rate with automatic -10% = €305/day
+        const baseRate = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseRate;
+        const baseDiscount = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseDiscount;
+        const baseRentalCost = billingDaysCalc * baseRate;
+        massimoFirstDiscount = baseRentalCost * baseDiscount;
+        calculatedRentalCost = baseRentalCost - massimoFirstDiscount; // €305/day after first discount
+      }
+
+      const selectedInsurance = insuranceOptions.find(opt => opt.id === formData.insuranceOption);
+
+      // --- INSURANCE COST ---
+      // Dynamic Pricing Logic based on Vehicle Type
+      // RCA: €0/day (all categories)
+      // SUPERCARS:
+      //   - KASKO BASE: €100/day
+      //   - KASKO BLACK: €150/day
+      //   - KASKO SIGNATURE: €200/day
+      //   - DR7: €300/day
+      // URBAN (Panda, Captur):
+      //   - KASKO BASE: €15/day
+      //   - KASKO DR7: €45/day
+      // UTILITAIRE (Ducato, Vito):
+      //   - KASKO BASE: €45/day
+      //   - KASKO DR7: €90/day
+
+      let insuranceDailyPrice = 0;
+      const tier = formData.insuranceOption;
+
+      // Type checking for VehicleType specific logic
+      const vType = getVehicleType(item, categoryContext);
+
+      // RCA is always €0 for all categories
+      if (tier === 'RCA') {
+        insuranceDailyPrice = 0;
+      } else if (tier === 'KASKO_BASE') {
+        if (vType === 'UTILITARIA') insuranceDailyPrice = 15;
+        else if (vType === 'FURGONE' || vType === 'V_CLASS') insuranceDailyPrice = 45;
+        else insuranceDailyPrice = 100; // Supercar
+      } else if (tier === 'KASKO_BLACK') {
+        // Only available for Supercars
+        if (vType === 'SUPERCAR') insuranceDailyPrice = 150;
+        else insuranceDailyPrice = (selectedInsurance?.pricePerDay[currency] || 0);
+      } else if (tier === 'KASKO_SIGNATURE') {
+        // Only available for Supercars
+        if (vType === 'SUPERCAR') insuranceDailyPrice = 200;
+        else insuranceDailyPrice = (selectedInsurance?.pricePerDay[currency] || 0);
+      } else if (tier === 'KASKO_DR7') {
+        if (vType === 'UTILITARIA') insuranceDailyPrice = 45;
+        else if (vType === 'FURGONE' || vType === 'V_CLASS') insuranceDailyPrice = 90;
+        else insuranceDailyPrice = 300; // Supercar
+      }
+
+      let calculatedInsuranceCost = insuranceDailyPrice * billingDays;
+
+      if (isMassimo) {
+        // Massimo gets KASKO BASE included (free)
+        if (formData.insuranceOption === 'KASKO_BASE') {
+          calculatedInsuranceCost = 0;
         }
       }
-    }
 
+      // Calculate extras cost
+      const calculatedExtrasCost = formData.extras.reduce((acc, extraId) => {
+        const extra = RENTAL_EXTRAS.find(e => e.id === extraId);
+        if (!extra) return acc;
+        if (extra.oneTime) {
+          return acc + (extra.pricePerDay[currency] || 0);
+        }
+        return acc + (extra.pricePerDay[currency] || 0) * billingDays;
+      }, 0);
 
+      const calculatedDriverAge = calculateAgeFromDDMMYYYY(formData.birthDate);
+      const calculatedLicenseYears = calculateYearsSince(formData.licenseIssueDate);
 
-    const isMassimo = isMassimoRunchina(formData.email);
-    const billingDaysCalc = billingDays < 1 ? 1 : billingDays;
+      // Get young driver fee from RENTAL_EXTRAS
+      // 2 GUIDATORI / UNDER 25 / UNDER 5 ANNI PATENTE Logic
+      // Utilitarie e Furgone: €5 (Add.Driver / Under 25), €10 (Recent Lic)
+      // Supercar e V Class: €10 (Add.Driver / Under 25), €20 (Recent Lic)
 
-    // --- RENTAL COST ---
-    let calculatedRentalCost = billingDays * pricePerDay;
-    let massimoFirstDiscount = 0;
-    if (isMassimo) {
-      // Massimo pricing: €339 base rate with automatic -10% = €305/day
-      const baseRate = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseRate;
-      const baseDiscount = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseDiscount;
-      const baseRentalCost = billingDaysCalc * baseRate;
-      massimoFirstDiscount = baseRentalCost * baseDiscount;
-      calculatedRentalCost = baseRentalCost - massimoFirstDiscount; // €305/day after first discount
-    }
+      // Grouping for Extras:
+      // Group A (Utilitaria, Furgone): cheaper
+      // Group B (Supercar, V_CLASS): expensive
+      const isCheapExtras = vType === 'UTILITARIA' || vType === 'FURGONE';
+      const feeAddDriver = isCheapExtras ? 5 : 10;
+      const feeYoungDriver = isCheapExtras ? 5 : 10;
+      const feeRecentLic = isCheapExtras ? 10 : 20;
 
-    const selectedInsurance = insuranceOptions.find(opt => opt.id === formData.insuranceOption);
+      const calculatedYoungDriverFee = calculatedDriverAge > 0 && calculatedDriverAge < 25
+        ? feeYoungDriver * billingDays
+        : 0;
+      const calculatedRecentLicenseFee = calculatedLicenseYears >= 2 && calculatedLicenseYears < 3 ? feeRecentLic * billingDays : 0;
+      const calculatedSecondDriverFee = formData.addSecondDriver ? feeAddDriver * billingDays : 0;
 
-    // --- INSURANCE COST ---
-    // Dynamic Pricing Logic based on Vehicle Type
-    // RCA: €0/day (all categories)
-    // SUPERCARS:
-    //   - KASKO BASE: €100/day
-    //   - KASKO BLACK: €150/day
-    //   - KASKO SIGNATURE: €200/day
-    //   - DR7: €300/day
-    // URBAN (Panda, Captur):
-    //   - KASKO BASE: €15/day
-    //   - KASKO DR7: €45/day
-    // UTILITAIRE (Ducato, Vito):
-    //   - KASKO BASE: €45/day
-    //   - KASKO DR7: €90/day
+      // Calculate FREE included KM based on rental duration
+      const freeIncludedKm = calculateIncludedKm(billingDays);
 
-    let insuranceDailyPrice = 0;
-    const tier = formData.insuranceOption;
+      // Calculate KM package cost (OPTIONAL - user can add extra km)
+      let calculatedKmPackageCost = 0;
+      let calculatedIncludedKm = freeIncludedKm; // Start with free KM
 
-    // Type checking for VehicleType specific logic
-    const vType = getVehicleType(item, categoryContext);
-
-    // RCA is always €0 for all categories
-    if (tier === 'RCA') {
-      insuranceDailyPrice = 0;
-    } else if (tier === 'KASKO_BASE') {
-      if (vType === 'UTILITARIA') insuranceDailyPrice = 15;
-      else if (vType === 'FURGONE' || vType === 'V_CLASS') insuranceDailyPrice = 45;
-      else insuranceDailyPrice = 100; // Supercar
-    } else if (tier === 'KASKO_BLACK') {
-      // Only available for Supercars
-      if (vType === 'SUPERCAR') insuranceDailyPrice = 150;
-      else insuranceDailyPrice = (selectedInsurance?.pricePerDay[currency] || 0);
-    } else if (tier === 'KASKO_SIGNATURE') {
-      // Only available for Supercars
-      if (vType === 'SUPERCAR') insuranceDailyPrice = 200;
-      else insuranceDailyPrice = (selectedInsurance?.pricePerDay[currency] || 0);
-    } else if (tier === 'KASKO_DR7') {
-      if (vType === 'UTILITARIA') insuranceDailyPrice = 45;
-      else if (vType === 'FURGONE' || vType === 'V_CLASS') insuranceDailyPrice = 90;
-      else insuranceDailyPrice = 300; // Supercar
-    }
-
-    let calculatedInsuranceCost = insuranceDailyPrice * billingDays;
-
-    if (isMassimo) {
-      // Massimo gets KASKO BASE included (free)
-      if (formData.insuranceOption === 'KASKO_BASE') {
-        calculatedInsuranceCost = 0;
+      if (formData.kmPackageType === 'unlimited') {
+        calculatedKmPackageCost = calculateUnlimitedKmPrice(item.name, billingDays, true);
+        calculatedIncludedKm = 9999; // Unlimited
       }
-    }
 
-    // Calculate extras cost
-    const calculatedExtrasCost = formData.extras.reduce((acc, extraId) => {
-      const extra = RENTAL_EXTRAS.find(e => e.id === extraId);
-      if (!extra) return acc;
-      if (extra.oneTime) {
-        return acc + (extra.pricePerDay[currency] || 0);
+      // Massimo Override for KM OR Urban/Corporate (utilitarie) always unlimited
+      // NEW RULE: Utilitaria/Furgone/V_Class always get Free Unlimited KM
+      if (isMassimo || vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS') {
+        calculatedKmPackageCost = 0; // Free unlimited KM
+        calculatedIncludedKm = 9999;
       }
-      return acc + (extra.pricePerDay[currency] || 0) * billingDays;
-    }, 0);
+      // else kmPackageType === 'none' -> only free KM included
 
-    const calculatedDriverAge = calculateAgeFromDDMMYYYY(formData.birthDate);
-    const calculatedLicenseYears = calculateYearsSince(formData.licenseIssueDate);
+      // Get recommendation
+      const calculatedRecommendedKm = recommendKmPackage(formData.expectedKm, item.name, billingDays);
 
-    // Get young driver fee from RENTAL_EXTRAS
-    // 2 GUIDATORI / UNDER 25 / UNDER 5 ANNI PATENTE Logic
-    // Utilitarie e Furgone: €5 (Add.Driver / Under 25), €10 (Recent Lic)
-    // Supercar e V Class: €10 (Add.Driver / Under 25), €20 (Recent Lic)
+      // Pickup and Drop-off fees (€50 each)
+      // Airport fees removed
+      const calculatedPickupFee = 0;
+      const calculatedDropoffFee = 0;
 
-    // Grouping for Extras:
-    // Group A (Utilitaria, Furgone): cheaper
-    // Group B (Supercar, V_CLASS): expensive
-    const isCheapExtras = vType === 'UTILITARIA' || vType === 'FURGONE';
-    const feeAddDriver = isCheapExtras ? 5 : 10;
-    const feeYoungDriver = isCheapExtras ? 5 : 10;
-    const feeRecentLic = isCheapExtras ? 10 : 20;
+      // Car Wash Fee (Mandatory for most clients, excluded for special clients)
+      // Utilitarie / Furgone / V-Class: €15
+      // Supercar: €30 (User Request: "SOLO PER SUPERCAR")
+      let carWashFee = (vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS') ? 15 : 30;
 
-    const calculatedYoungDriverFee = calculatedDriverAge > 0 && calculatedDriverAge < 25
-      ? feeYoungDriver * billingDays
-      : 0;
-    const calculatedRecentLicenseFee = calculatedLicenseYears >= 2 && calculatedLicenseYears < 3 ? feeRecentLic * billingDays : 0;
-    const calculatedSecondDriverFee = formData.addSecondDriver ? feeAddDriver * billingDays : 0;
+      // Exclude car wash for Massimo Runchina
+      if (isMassimo && SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.excludeCarWash) {
+        carWashFee = 0;
+      }
 
-    // Calculate FREE included KM based on rental duration
-    const freeIncludedKm = calculateIncludedKm(billingDays);
+      let calculatedSubtotal = calculatedRentalCost + calculatedInsuranceCost + calculatedExtrasCost + calculatedKmPackageCost + calculatedYoungDriverFee + calculatedRecentLicenseFee + calculatedSecondDriverFee + calculatedPickupFee + calculatedDropoffFee + carWashFee;
 
-    // Calculate KM package cost (OPTIONAL - user can add extra km)
-    let calculatedKmPackageCost = 0;
-    let calculatedIncludedKm = freeIncludedKm; // Start with free KM
+      // Massimo Discount Rules
+      // First discount (always applied): already included in calculatedRentalCost above
+      // Second discount (3+ days): additional 10% off total
+      let specialDiscountAmount = massimoFirstDiscount; // Track first discount
+      if (isMassimo && billingDaysCalc >= SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.discountThresholdDays) {
+        const additionalDiscount = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.additionalDiscount;
+        const secondDiscountAmount = calculatedSubtotal * additionalDiscount;
+        specialDiscountAmount += secondDiscountAmount; // Total both discounts
+        calculatedSubtotal -= secondDiscountAmount;
+      }
 
-    if (formData.kmPackageType === 'unlimited') {
-      calculatedKmPackageCost = calculateUnlimitedKmPrice(item.name, billingDays, true);
-      calculatedIncludedKm = 9999; // Unlimited
-    }
+      // Tax calculation
+      // ALL PRICES ARE TAX-INCLUSIVE (IVA/TVA already included)
+      // No additional tax should be added
+      const calculatedTaxes = 0;
+      const calculatedTotal = calculatedSubtotal;
 
-    // Massimo Override for KM OR Urban/Corporate (utilitarie) always unlimited
-    // NEW RULE: Utilitaria/Furgone/V_Class always get Free Unlimited KM
-    if (isMassimo || vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS') {
-      calculatedKmPackageCost = 0; // Free unlimited KM
-      calculatedIncludedKm = 9999;
-    }
-    // else kmPackageType === 'none' -> only free KM included
+      // Apply membership discount
+      const discountInfo = calculateDiscountedPrice(calculatedTotal, user, 'car_rental');
+      const membershipTierName = getMembershipTierName(user);
 
-    // Get recommendation
-    const calculatedRecommendedKm = recommendKmPackage(formData.expectedKm, item.name, billingDays);
-
-    // Pickup and Drop-off fees (€50 each)
-    // Airport fees removed
-    const calculatedPickupFee = 0;
-    const calculatedDropoffFee = 0;
-
-    // Car Wash Fee (Mandatory for most clients, excluded for special clients)
-    // Utilitarie / Furgone / V-Class: €15
-    // Supercar: €30 (User Request: "SOLO PER SUPERCAR")
-    let carWashFee = (vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS') ? 15 : 30;
-
-    // Exclude car wash for Massimo Runchina
-    if (isMassimo && SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.excludeCarWash) {
-      carWashFee = 0;
-    }
-
-    let calculatedSubtotal = calculatedRentalCost + calculatedInsuranceCost + calculatedExtrasCost + calculatedKmPackageCost + calculatedYoungDriverFee + calculatedRecentLicenseFee + calculatedSecondDriverFee + calculatedPickupFee + calculatedDropoffFee + carWashFee;
-
-    // Massimo Discount Rules
-    // First discount (always applied): already included in calculatedRentalCost above
-    // Second discount (3+ days): additional 10% off total
-    let specialDiscountAmount = massimoFirstDiscount; // Track first discount
-    if (isMassimo && billingDaysCalc >= SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.discountThresholdDays) {
-      const additionalDiscount = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.additionalDiscount;
-      const secondDiscountAmount = calculatedSubtotal * additionalDiscount;
-      specialDiscountAmount += secondDiscountAmount; // Total both discounts
-      calculatedSubtotal -= secondDiscountAmount;
-    }
-
-    // Tax calculation
-    // ALL PRICES ARE TAX-INCLUSIVE (IVA/TVA already included)
-    // No additional tax should be added
-    const calculatedTaxes = 0;
-    const calculatedTotal = calculatedSubtotal;
-
-    // Apply membership discount
-    const discountInfo = calculateDiscountedPrice(calculatedTotal, user, 'car_rental');
-    const membershipTierName = getMembershipTierName(user);
-
-    return {
-      duration: { days, hours },
-      rentalCost: calculatedRentalCost,
-      insuranceCost: calculatedInsuranceCost,
-      extrasCost: calculatedExtrasCost,
-      kmPackageCost: calculatedKmPackageCost,
-      pickupFee: calculatedPickupFee,
-      dropoffFee: calculatedDropoffFee,
-      subtotal: calculatedSubtotal,
-      taxes: calculatedTaxes,
-      total: calculatedTotal,
-      includedKm: calculatedIncludedKm,
-      driverAge: calculatedDriverAge,
-      licenseYears: calculatedLicenseYears,
-      youngDriverFee: calculatedYoungDriverFee,
-      recentLicenseFee: calculatedRecentLicenseFee,
-      secondDriverFee: calculatedSecondDriverFee,
-      recommendedKm: calculatedRecommendedKm,
-      membershipDiscount: discountInfo.discountAmount,
-      membershipTier: membershipTierName,
-      originalTotal: discountInfo.originalPrice,
-      finalTotal: discountInfo.finalPrice,
-      isMassimo,
-      specialDiscountAmount,
-      carWashFee
-    };
-  }, [
-    formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime,
-    formData.insuranceOption, formData.extras, formData.birthDate, formData.licenseIssueDate, formData.addSecondDriver,
-    formData.kmPackageType, formData.kmPackageDistance, formData.expectedKm,
-    formData.email, // Add email dependency
-    item, currency, user, isUrbanOrCorporate, categoryContext
-  ]);
+      return {
+        duration: { days, hours },
+        rentalCost: calculatedRentalCost,
+        insuranceCost: calculatedInsuranceCost,
+        extrasCost: calculatedExtrasCost,
+        kmPackageCost: calculatedKmPackageCost,
+        pickupFee: calculatedPickupFee,
+        dropoffFee: calculatedDropoffFee,
+        subtotal: calculatedSubtotal,
+        taxes: calculatedTaxes,
+        total: calculatedTotal,
+        includedKm: calculatedIncludedKm,
+        driverAge: calculatedDriverAge,
+        licenseYears: calculatedLicenseYears,
+        youngDriverFee: calculatedYoungDriverFee,
+        recentLicenseFee: calculatedRecentLicenseFee,
+        secondDriverFee: calculatedSecondDriverFee,
+        recommendedKm: calculatedRecommendedKm,
+        membershipDiscount: discountInfo.discountAmount,
+        membershipTier: membershipTierName,
+        originalTotal: discountInfo.originalPrice,
+        finalTotal: discountInfo.finalPrice,
+        isMassimo,
+        specialDiscountAmount,
+        carWashFee
+      };
+    }, [
+      formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime,
+      formData.insuranceOption, formData.extras, formData.birthDate, formData.licenseIssueDate, formData.addSecondDriver,
+      formData.kmPackageType, formData.kmPackageDistance, formData.expectedKm,
+      formData.email, // Add email dependency
+      item, currency, user, isUrbanOrCorporate, categoryContext
+    ]);
 
   // Forcer horaires valides et pas de dimanche
   useEffect(() => {
@@ -895,11 +907,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // No, the original logic: "if (currentOk) return; ... if (sig.eligible) best... "
     // It seems it was auto-upgrading or something?
     // "if (currentChoice invalid) -> switch to best possible?"
-    // Let's stick to: if current invalid -> default to BASE (safest).
-    // The original code tried to set 'best' to Signature then Black then Base. 
-    // It effectively said: "If your chosen one is invalid, give you the best one you ARE eligible for."
     // Which is weird. Usually you fallback to Base.
-    // I will preserve the logic pattern but include DR7 only if they *want* high tier? 
+    // I will preserve the logic pattern but include DR7 only if they *want* high tier?
     // No, if I selected DR7 and am not eligible, I should get Signature (if eligible), else Black, else Base.
 
     // Simplified: If current choice is NOT eligible, switch to KASKO_BASE.
@@ -1266,7 +1275,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // ID Logic
       if (formData.idImage) {
         idImageUrl = await uploadToBucket('carta-identita', user.id, formData.idImage, 'id'); // Note: changed bucket from 'driver-ids' to 'carta-identita' to match AdminPage?
-        // Wait, check original code usage. Original used 'driver-ids' at line 1044? 
+        // Wait, check original code usage. Original used 'driver-ids' at line 1044?
         // AdminPage lists 'carta-identita'. I should match AdminPage!
         // But if I change bucket name for new uploads, I might break existing standard?
         // Let's check what 'driver-ids' maps to.
@@ -1442,1150 +1451,1305 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (!validateStep() || !item) return;
     setIsProcessing(true);
 
-    if (formData.paymentMethod === 'credit' && step === 4) {
-      // Credit wallet payment
-      if (!user?.id) {
-        setStripeError('User not logged in');
-        setIsProcessing(false);
-        return;
+    // Credit wallet payment (ATOMIC TRANSACTION)
+    if (!user?.id) {
+      setStripeError('User not logged in');
+      setIsProcessing(false);
+      return;
+    }
+
+    // Check sufficient balance (Front-check for UX)
+    const hasBalance = await hasSufficientBalance(user.id, finalTotal);
+    if (!hasBalance) {
+      setStripeError(`Credito insufficiente. Saldo attuale: €${creditBalance.toFixed(2)}, Richiesto: €${finalTotal.toFixed(2)}`);
+      setIsProcessing(false);
+      return;
+    }
+
+    try {
+      // 1. Prepare Documents (Upload if needed)
+      let licenseImageUrl = null;
+      let idImageUrl = null;
+
+      if (formData.licenseImage) {
+        licenseImageUrl = await uploadToBucket('driver-licenses', user.id, formData.licenseImage, 'license');
+      } else if (hasStoredDocs.licensePath) {
+        licenseImageUrl = hasStoredDocs.licensePath;
       }
 
-      // Check sufficient balance
-      const hasBalance = await hasSufficientBalance(user.id, finalTotal);
-      if (!hasBalance) {
-        setStripeError(`Credito insufficiente. Saldo attuale: €${creditBalance.toFixed(2)}, Richiesto: €${finalTotal.toFixed(2)}`);
-        setIsProcessing(false);
-        return;
+      if (formData.idImage) {
+        idImageUrl = await uploadToBucket('carta-identita', user.id, formData.idImage, 'id');
+      } else if (hasStoredDocs.idPath) {
+        idImageUrl = hasStoredDocs.idPath;
       }
 
-      // Deduct credits
-      const deductResult = await deductCredits(
-        user.id,
-        finalTotal,
-        `Noleggio ${item.name} - ${formData.pickupDate} to ${formData.returnDate}`,
-        undefined,
-        'car_rental'
-      );
+      // 2. Prepare Payload (Replicating finalizeBooking logic)
+      const createItalyDateTime = (dateStr: string, timeStr: string) => {
+        const dateTimeString = `${dateStr}T${timeStr}:00`;
+        const localDate = new Date(dateTimeString);
+        const italyTimeString = new Date(dateTimeString).toLocaleString('en-US', { timeZone: 'Europe/Rome' });
+        const italyDate = new Date(italyTimeString);
+        const offset = localDate.getTime() - italyDate.getTime();
+        return new Date(localDate.getTime() - offset);
+      };
 
-      if (!deductResult.success) {
-        setStripeError(deductResult.error || 'Failed to deduct credits');
-        setIsProcessing(false);
-        return;
-      }
+      const pickupDateTime = createItalyDateTime(formData.pickupDate, formData.pickupTime);
+      const dropoffDateTime = createItalyDateTime(formData.returnDate, formData.returnTime);
+      const { days } = duration;
 
-      // Finalize booking without payment intent ID (credit wallet payment)
-      await finalizeBooking(undefined);
-    } else if (formData.paymentMethod === 'stripe' && step === 4) {
-      setStripeError(null);
-      if (!stripe || !cardElement || !clientSecret) {
-        setStripeError("Payment system is not ready.");
-        setIsProcessing(false);
-        return;
-      }
-
-      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: cardElement,
-          billing_details: {
-            name: `${formData.firstName} ${formData.lastName}`,
+      const bookingPayload = {
+        user_id: user.id,
+        vehicle_type: item.type || 'car',
+        vehicle_name: availableVehicleName || item.name,
+        vehicle_image_url: item.image,
+        pickup_date: pickupDateTime.toISOString(),
+        dropoff_date: dropoffDateTime.toISOString(),
+        pickup_location: formData.pickupLocation,
+        dropoff_location: formData.returnLocation,
+        price_total: Math.round(finalTotal * 100),
+        currency: currency.toUpperCase(),
+        booking_source: 'website',
+        booking_details: {
+          customer: {
+            fullName: `${formData.firstName} ${formData.lastName}`,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
             email: formData.email,
-            phone: formData.phone
-          }
+            phone: formData.phone,
+            birthDate: formData.birthDate,
+            age: driverAge,
+            licenseNumber: formData.licenseNumber,
+            licenseIssueDate: formData.licenseIssueDate,
+            licenseYears: licenseYears,
+            isSardinianResident: formData.isSardinianResident,
+          },
+          secondDriver: formData.addSecondDriver ? {
+            fullName: `${formData.secondDriver.firstName} ${formData.secondDriver.lastName}`,
+            firstName: formData.secondDriver.firstName,
+            lastName: formData.secondDriver.lastName,
+            email: formData.secondDriver.email,
+            phone: formData.secondDriver.phone,
+            birthDate: formData.secondDriver.birthDate,
+            licenseNumber: formData.secondDriver.licenseNumber,
+            licenseIssueDate: formData.secondDriver.licenseIssueDate,
+          } : null,
+          duration: `${days} days`,
+          insuranceOption: formData.insuranceOption,
+          extras: formData.extras,
+          kmPackage: {
+            type: includedKm >= 9999 ? 'unlimited' : formData.kmPackageType,
+            distance: includedKm >= 9999 ? 'unlimited' : (formData.kmPackageType === 'unlimited' ? 'unlimited' : formData.kmPackageDistance),
+            cost: kmPackageCost,
+            includedKm: includedKm,
+            isPremium: isPremiumVehicle(item.name)
+          },
+          vehicle_id: formData.selectedVehicleId,
+          driverLicenseImage: licenseImageUrl,
+          driverIdImage: idImageUrl,
         }
+      };
+
+      // 3. Call Atomic RPC
+      const { data, error } = await supabase.rpc('book_with_credits', {
+        p_user_id: user.id,
+        p_amount_cents: Math.round(finalTotal * 100),
+        p_vehicle_name: item.name,
+        p_booking_payload: bookingPayload
       });
 
       if (error) {
-        setStripeError(error.message || "An unexpected error occurred.");
+        setStripeError(error.message);
         setIsProcessing(false);
+        // Attempt Refund logic if needed? 
+        // RPC handles rollback internally, so no manual refund needed!
         return;
       }
 
-      if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
-        await finalizeBooking(paymentIntent.id);
-      } else {
-        setStripeError("Payment not completed. Status: " + paymentIntent?.status);
-        setIsProcessing(false);
+      if (data && data.success) {
+        // 4. Success Notifications
+        // We need a 'full' booking object for the notification functions, similar to what 'insert' returns.
+        // The RPC returns { success: true, booking_id: '...', new_balance: ... }
+        // We can reconstruct the necessary fields or better yet, fetch the booking?
+        // Fetching adds latency but ensures accuracy.
+        // OR we just use the payload + id.
+
+        const bookingData = {
+          id: data.booking_id,
+          created_at: new Date().toISOString(),
+          ...bookingPayload,
+          booking_details: bookingPayload.booking_details, // ensure accessible
+          // Flat fields for notification scripts might be expected
+          pickup_location: bookingPayload.pickup_location,
+          vehicle_name: bookingPayload.vehicle_name,
+          price_total: bookingPayload.price_total,
+          pickup_date: bookingPayload.pickup_date,
+          dropoff_date: bookingPayload.dropoff_date
+        };
+
+        // Send Email Confirmation
+        fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ booking: bookingData }),
+        }).catch(e => console.error('Email error', e));
+
+        // Send WhatsApp Admin
+        fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ booking: bookingData }),
+        }).catch(e => console.error('WhatsApp error', e));
+
+        // Completed
+        onBookingComplete(bookingData);
+
+        // WhatsApp Customer Message (Optional, as per finalizeBooking)
+        const bookingId = data.booking_id.substring(0, 8).toUpperCase();
+        const customerName = `${formData.firstName} ${formData.lastName}`;
+        const customerPhone = formData.phone;
+        const totalPrice = finalTotal.toFixed(2);
+
+        const whatsappMessage = `Ciao! Ho appena completato una prenotazione con Credito DR7.\n\n` +
+          `📋 *Dettagli Prenotazione*\n` +
+          `*ID:* DR7-${bookingId}\n` +
+          `*Nome:* ${customerName}\n` +
+          `*Telefono:* ${customerPhone}\n` +
+          `*Veicolo:* ${item.name}\n` +
+          `*Ritiro:* ${formData.pickupDate} ${formData.pickupTime}\n` +
+          `*Totale:* €${totalPrice}\n\n` +
+          `Grazie!`;
+
+        const whatsappUrl = `https://wa.me/393457905205?text=${encodeURIComponent(whatsappMessage)}`;
+        setTimeout(() => window.open(whatsappUrl, '_blank'), 1000);
       }
+
+    } catch (err: any) {
+      setStripeError(err.message || "Unknown error during booking");
+      setIsProcessing(false);
     }
-  };
+  } else if (formData.paymentMethod === 'stripe' && step === 4) {
+    setStripeError(null);
+    if (!stripe || !cardElement || !clientSecret) {
+      setStripeError("Payment system is not ready.");
+      setIsProcessing(false);
+      return;
+    }
 
-  const handleNext = () => validateStep() && setStep(s => s + 1);
-  const handleBack = () => setStep(s => s - 1);
-
-  const steps = [
-    { id: 1, name: t('STEP 1: Date e Località') },
-    { id: 2, name: t('STEP 2: Informazioni Conducente') },
-    { id: 3, name: t('STEP 3: Opzioni e Assicurazioni') },
-    { id: 4, name: t('STEP 4: Pagamento e Conferma') }
-  ];
-
-  const renderStepContent = () => {
-    const kaskoOptions = insuranceOptions.map(opt => {
-      const { eligible, reasonKey } = isKaskoEligibleByBuckets(opt.id as KaskoTier, driverAge, licenseYears, getVehicleType(item));
-      let tooltip = '';
-      if (!eligible) {
-        if (reasonKey?.includes('AGE')) {
-          tooltip = `Età minima richiesta: ${eligibilityInfo[opt.id as KaskoTier].minAge} anni (tu hai ${driverAge} anni)`;
-        } else if (reasonKey?.includes('LIC')) {
-          tooltip = `Anzianità patente richiesta: ${eligibilityInfo[opt.id as KaskoTier].minLicenseYears} anni (tu hai ${licenseYears} anni)`;
-        } else if (reasonKey === 'BASE_REQ') {
-          tooltip = `Richiede almeno ${eligibilityInfo.KASKO_BASE.minLicenseYears} anni di patente.`;
-        } else if (reasonKey === 'BLACK_REQ') {
-          tooltip = `Richiede ${eligibilityInfo.KASKO_BLACK.minAge} anni e ${eligibilityInfo.KASKO_BLACK.minLicenseYears} anni di patente.`;
-        } else if (reasonKey === 'SIGNATURE_REQ') {
-          tooltip = `Richiede ${eligibilityInfo.KASKO_SIGNATURE.minAge} anni e ${eligibilityInfo.KASKO_SIGNATURE.minLicenseYears} anni di patente.`;
-        } else if (reasonKey === 'DR7_REQ') {
-          tooltip = `Richiede ${eligibilityInfo.KASKO_DR7.minAge} anni e ${eligibilityInfo.KASKO_DR7.minLicenseYears} anni di patente.`;
+    const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+      payment_method: {
+        card: cardElement,
+        billing_details: {
+          name: `${formData.firstName} ${formData.lastName}`,
+          email: formData.email,
+          phone: formData.phone
         }
       }
-      return { ...opt, eligible, tooltip };
     });
 
-    switch (step) {
-      case 1:
-        return (
-          <div className="space-y-6">
-            {/* Car Image Preview */}
-            <div className="mb-6">
-              <img
-                src={item.image}
-                alt={item.name}
-                className="w-full h-48 object-contain rounded-lg border border-gray-700 bg-gray-800/30"
-              />
-              <h2 className="text-2xl font-bold text-white mt-3">{item.name}</h2>
-              {item.pricePerDay && (
-                <p className="text-gray-400 text-sm">Prezzo base: {formatPrice(item.pricePerDay[currency])}/giorno</p>
-              )}
-            </div>
+    if (error) {
+      setStripeError(error.message || "An unexpected error occurred.");
+      setIsProcessing(false);
+      return;
+    }
 
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-2">LOCATION SELECTION</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm text-gray-400 font-semibold mb-2 block">Luogo di ritiro *</label>
-                  {PICKUP_LOCATIONS.map(loc => (
-                    <div key={loc.id} className="flex items-start mt-2 p-2 rounded hover:bg-gray-800/30 transition-colors">
-                      <input type="radio" id={`pickup-${loc.id}`} name="pickupLocation" value={loc.id} checked={formData.pickupLocation === loc.id} onChange={handleChange} className="w-4 h-4 mt-1 text-white bg-gray-700 border-gray-600 focus:ring-white" />
-                      <label htmlFor={`pickup-${loc.id}`} className="ml-2 text-white flex-1">
-                        {getTranslated(loc.label)}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <label className="text-sm text-gray-400 font-semibold mb-2 block">Luogo di riconsegna *</label>
-                  {PICKUP_LOCATIONS.map(loc => (
-                    <div key={loc.id} className="flex items-start mt-2 p-2 rounded hover:bg-gray-800/30 transition-colors">
-                      <input type="radio" id={`return-${loc.id}`} name="returnLocation" value={loc.id} checked={formData.returnLocation === loc.id} onChange={handleChange} className="w-4 h-4 mt-1 text-white bg-gray-700 border-gray-600 focus:ring-white" />
-                      <label htmlFor={`return-${loc.id}`} className="ml-2 text-white flex-1">
-                        {getTranslated(loc.label)}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+    if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
+      await finalizeBooking(paymentIntent.id);
+    } else {
+      setStripeError("Payment not completed. Status: " + paymentIntent?.status);
+      setIsProcessing(false);
+    }
+  }
+};
 
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-4">DATE AND TIME SELECTION</h3>
-              <div className="space-y-4">
-                {/* Pickup Date & Time */}
-                <div className="p-4 rounded-lg border border-gray-700 bg-gray-800/30">
-                  <h4 className="text-white font-semibold mb-3 flex items-center">
-                    <span className="mr-2"></span> Ritiro del veicolo
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Data di ritiro *
-                        {formData.pickupDate && (
-                          <span className="ml-2 text-xs text-green-400">Selezionata</span>
-                        )}
-                      </label>
-                      <CalendarPicker
-                        name="pickupDate"
-                        value={formData.pickupDate}
-                        onChange={(value) => {
-                          const syntheticEvent = {
-                            target: { name: 'pickupDate', value }
-                          } as React.ChangeEvent<HTMLInputElement>;
-                          handleChange(syntheticEvent);
-                        }}
-                        min={today}
-                        required
-                        error={!!errors.pickupDate}
-                        className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors cursor-pointer ${errors.pickupDate
-                          ? 'border-red-500 focus:border-red-400'
-                          : formData.pickupDate
-                            ? 'border-green-500 focus:border-green-400'
-                            : 'border-gray-700 focus:border-white'
-                          }`}
-                      />
-                      {errors.pickupDate && (
-                        <p className="text-xs text-red-400 mt-1 flex items-center">
-                          <span className="mr-1"></span> {errors.pickupDate}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Ora di ritiro *
-                        {formData.pickupTime && (
-                          <span className="ml-2 text-xs text-green-400">{formData.pickupTime}</span>
-                        )}
-                      </label>
-                      <select
-                        name="pickupTime"
-                        value={formData.pickupTime}
-                        onChange={handleChange}
-                        required
-                        disabled={!formData.pickupDate || getValidPickupTimes(formData.pickupDate).length === 0}
-                        className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors ${!formData.pickupDate || getValidPickupTimes(formData.pickupDate).length === 0
-                          ? 'border-gray-700 opacity-50 cursor-not-allowed'
-                          : formData.pickupTime
-                            ? 'border-green-500 focus:border-green-400'
-                            : 'border-gray-700 focus:border-white'
-                          }`}
-                      >
-                        {getValidPickupTimes(formData.pickupDate).length > 0 ? (
-                          getValidPickupTimes(formData.pickupDate).map(time => <option key={time} value={time}>{time}</option>)
-                        ) : (
-                          <option value="">Seleziona prima una data feriale</option>
-                        )}
-                      </select>
-                    </div>
-                  </div>
-                </div>
+const handleNext = () => validateStep() && setStep(s => s + 1);
+const handleBack = () => setStep(s => s - 1);
 
-                {/* Return Date & Time */}
-                <div className="p-4 rounded-lg border border-gray-700 bg-gray-800/30">
-                  <h4 className="text-white font-semibold mb-3 flex items-center">
-                    <span className="mr-2"></span> Riconsegna del veicolo
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Data di riconsegna *
-                        {formData.returnDate && (
-                          <span className="ml-2 text-xs text-green-400">Selezionata</span>
-                        )}
-                      </label>
-                      <CalendarPicker
-                        name="returnDate"
-                        value={formData.returnDate}
-                        onChange={(value) => {
-                          // Check if selected date is Sunday (0 = Sunday)
-                          if (getDayOfWeek(value) === 0) {
-                            alert('Non è possibile riconsegnare il veicolo di domenica. Siamo chiusi la domenica.\n\nPer favore seleziona un altro giorno.');
-                            return;
-                          }
-                          const syntheticEvent = {
-                            target: { name: 'returnDate', value }
-                          } as React.ChangeEvent<HTMLInputElement>;
-                          handleChange(syntheticEvent);
-                        }}
-                        min={formData.pickupDate || today}
-                        required
-                        error={!!(errors.returnDate || errors.date)}
-                        className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors ${!formData.pickupDate
-                          ? 'border-gray-700 opacity-50 cursor-not-allowed'
-                          : errors.returnDate || errors.date
-                            ? 'border-red-500 focus:border-red-400 cursor-pointer'
-                            : formData.returnDate
-                              ? 'border-green-500 focus:border-green-400 cursor-pointer'
-                              : 'border-gray-700 focus:border-white cursor-pointer'
-                          }`}
-                      />
-                      {(errors.returnDate || errors.date) && (
-                        <p className="text-xs text-red-400 mt-1 flex items-center">
-                          <span className="mr-1"></span> {errors.returnDate || errors.date}
-                        </p>
-                      )}
-                      {!formData.pickupDate && (
-                        <p className="text-xs text-gray-400 mt-1">Seleziona prima la data di ritiro</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Ora di riconsegna
-                        <span className="ml-2 text-xs text-gray-400">(calcolata automaticamente)</span>
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="time"
-                          name="returnTime"
-                          value={formData.returnTime}
-                          readOnly
-                          className="w-full bg-gray-700 border-2 border-gray-600 rounded-md px-3 py-2 text-white text-sm cursor-not-allowed opacity-75"
-                        />
-                        <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                          <span className="text-gray-400"></span>
-                        </div>
-                      </div>
-                      <p className="text-xs text-gray-400 mt-1">Ritiro - 1h30 (automatico)</p>
-                    </div>
-                  </div>
+const steps = [
+  { id: 1, name: t('STEP 1: Date e Località') },
+  { id: 2, name: t('STEP 2: Informazioni Conducente') },
+  { id: 3, name: t('STEP 3: Opzioni e Assicurazioni') },
+  { id: 4, name: t('STEP 4: Pagamento e Conferma') }
+];
 
-                  {/* Vehicle Availability Check */}
-                  {isCheckingAvailability && (
-                    <div className="mt-4 p-3 bg-blue-900/20 border border-blue-600 rounded-lg">
-                      <p className="text-blue-300 text-sm">Verifica disponibilità veicolo...</p>
-                    </div>
-                  )}
-                  {availabilityError && (
-                    <div className="mt-4 p-4 bg-red-900/30 border-2 border-red-500 rounded-lg">
-                      <p className="text-red-300 font-semibold">{availabilityError}</p>
-                    </div>
-                  )}
-                  {partialUnavailabilityWarning && !availabilityError && (
-                    <div className="mt-4 p-4 bg-yellow-900/30 border-2 border-yellow-500 rounded-lg">
-                      <p className="text-yellow-200 font-semibold">{partialUnavailabilityWarning}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
+const renderStepContent = () => {
+  const kaskoOptions = insuranceOptions.map(opt => {
+    const { eligible, reasonKey } = isKaskoEligibleByBuckets(opt.id as KaskoTier, driverAge, licenseYears, getVehicleType(item));
+    let tooltip = '';
+    if (!eligible) {
+      if (reasonKey?.includes('AGE')) {
+        tooltip = `Età minima richiesta: ${eligibilityInfo[opt.id as KaskoTier].minAge} anni (tu hai ${driverAge} anni)`;
+      } else if (reasonKey?.includes('LIC')) {
+        tooltip = `Anzianità patente richiesta: ${eligibilityInfo[opt.id as KaskoTier].minLicenseYears} anni (tu hai ${licenseYears} anni)`;
+      } else if (reasonKey === 'BASE_REQ') {
+        tooltip = `Richiede almeno ${eligibilityInfo.KASKO_BASE.minLicenseYears} anni di patente.`;
+      } else if (reasonKey === 'BLACK_REQ') {
+        tooltip = `Richiede ${eligibilityInfo.KASKO_BLACK.minAge} anni e ${eligibilityInfo.KASKO_BLACK.minLicenseYears} anni di patente.`;
+      } else if (reasonKey === 'SIGNATURE_REQ') {
+        tooltip = `Richiede ${eligibilityInfo.KASKO_SIGNATURE.minAge} anni e ${eligibilityInfo.KASKO_SIGNATURE.minLicenseYears} anni di patente.`;
+      } else if (reasonKey === 'DR7_REQ') {
+        tooltip = `Richiede ${eligibilityInfo.KASKO_DR7.minAge} anni e ${eligibilityInfo.KASKO_DR7.minLicenseYears} anni di patente.`;
+      }
+    }
+    return { ...opt, eligible, tooltip };
+  });
 
-              {/* Info message about KM */}
-            </div>
+  switch (step) {
+    case 1:
+      return (
+        <div className="space-y-6">
+          {/* Car Image Preview */}
+          <div className="mb-6">
+            <img
+              src={item.image}
+              alt={item.name}
+              className="w-full h-48 object-contain rounded-lg border border-gray-700 bg-gray-800/30"
+            />
+            <h2 className="text-2xl font-bold text-white mt-3">{item.name}</h2>
+            {item.pricePerDay && (
+              <p className="text-gray-400 text-sm">Prezzo base: {formatPrice(item.pricePerDay[currency])}/giorno</p>
+            )}
           </div>
-        );
-      case 2:
-        const renderDriverForm = (driverType: 'main' | 'second') => {
-          const driverData = driverType === 'main' ? formData : formData.secondDriver;
-          const prefix = driverType === 'main' ? '' : 'secondDriver.';
 
-          return (
+          <div>
+            <h3 className="text-lg font-semibold text-white mb-2">LOCATION SELECTION</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><label className="text-sm text-gray-400">Nome *</label><input type="text" name={`${prefix}firstName`} value={(driverData as any).firstName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}firstName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}firstName`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Cognome *</label><input type="text" name={`${prefix}lastName`} value={(driverData as any).lastName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}lastName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}lastName`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Email *</label><input type="email" name={`${prefix}email`} value={(driverData as any).email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}email`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}email`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Telefono *</label><input type="tel" name={`${prefix}phone`} value={(driverData as any).phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}phone`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}phone`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Data di nascita *</label><CalendarPicker name={`${prefix}birthDate`} value={(driverData as any).birthDate} onChange={(value) => { const syntheticEvent = { target: { name: `${prefix}birthDate`, value } } as React.ChangeEvent<HTMLInputElement>; handleChange(syntheticEvent); }} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm cursor-pointer" />{errors[`${prefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}birthDate`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Numero patente *</label><input type="text" name={`${prefix}licenseNumber`} value={(driverData as any).licenseNumber} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}licenseNumber`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseNumber`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Data rilascio patente *</label><CalendarPicker name={`${prefix}licenseIssueDate`} value={(driverData as any).licenseIssueDate} onChange={(value) => { const syntheticEvent = { target: { name: `${prefix}licenseIssueDate`, value } } as React.ChangeEvent<HTMLInputElement>; handleChange(syntheticEvent); }} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm cursor-pointer" />{errors[`${prefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseIssueDate`]}</p>}</div>
+              <div>
+                <label className="text-sm text-gray-400 font-semibold mb-2 block">Luogo di ritiro *</label>
+                {PICKUP_LOCATIONS.map(loc => (
+                  <div key={loc.id} className="flex items-start mt-2 p-2 rounded hover:bg-gray-800/30 transition-colors">
+                    <input type="radio" id={`pickup-${loc.id}`} name="pickupLocation" value={loc.id} checked={formData.pickupLocation === loc.id} onChange={handleChange} className="w-4 h-4 mt-1 text-white bg-gray-700 border-gray-600 focus:ring-white" />
+                    <label htmlFor={`pickup-${loc.id}`} className="ml-2 text-white flex-1">
+                      {getTranslated(loc.label)}
+                    </label>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <label className="text-sm text-gray-400 font-semibold mb-2 block">Luogo di riconsegna *</label>
+                {PICKUP_LOCATIONS.map(loc => (
+                  <div key={loc.id} className="flex items-start mt-2 p-2 rounded hover:bg-gray-800/30 transition-colors">
+                    <input type="radio" id={`return-${loc.id}`} name="returnLocation" value={loc.id} checked={formData.returnLocation === loc.id} onChange={handleChange} className="w-4 h-4 mt-1 text-white bg-gray-700 border-gray-600 focus:ring-white" />
+                    <label htmlFor={`return-${loc.id}`} className="ml-2 text-white flex-1">
+                      {getTranslated(loc.label)}
+                    </label>
+                  </div>
+                ))}
+              </div>
             </div>
-          );
-        };
+          </div>
 
-        const driverAgeLocal = driverAge;
-        const licenseYearsLocal = licenseYears;
-
-        return (
-          <div className="space-y-8">
-            {/* Main Driver */}
-            <section>
-              <h3 className="text-lg font-bold text-white mb-4">A. MAIN DRIVER</h3>
-              {renderDriverForm('main')}
-            </section>
-
-            {/* Document Upload */}
-            <section className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-bold text-white mb-4">📄 DOCUMENTI RICHIESTI (OBBLIGATORI)</h3>
-
-              {/* Check if documents are already on file */}
-              {(hasStoredDocs.licensePath && hasStoredDocs.idPath) ? (
-                <div className="bg-green-900/20 border border-green-600/50 rounded-lg p-4 flex items-center mb-4">
-                  <div className="mr-3 bg-green-500/20 p-2 rounded-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
+          <div>
+            <h3 className="text-lg font-semibold text-white mb-4">DATE AND TIME SELECTION</h3>
+            <div className="space-y-4">
+              {/* Pickup Date & Time */}
+              <div className="p-4 rounded-lg border border-gray-700 bg-gray-800/30">
+                <h4 className="text-white font-semibold mb-3 flex items-center">
+                  <span className="mr-2"></span> Ritiro del veicolo
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Data di ritiro *
+                      {formData.pickupDate && (
+                        <span className="ml-2 text-xs text-green-400">Selezionata</span>
+                      )}
+                    </label>
+                    <CalendarPicker
+                      name="pickupDate"
+                      value={formData.pickupDate}
+                      onChange={(value) => {
+                        if (getDayOfWeek(value) === 0) {
+                          alert('Non è possibile ritirare il veicolo di domenica. Siamo chiusi la domenica.\n\nPer favore seleziona un altro giorno.');
+                          return;
+                        }
+                        if (isHoliday(value)) {
+                          alert('Non è possibile ritirare il veicolo nei giorni festivi.\n\nPer favore seleziona un altro giorno.');
+                          return;
+                        }
+                        const syntheticEvent = {
+                          target: { name: 'pickupDate', value }
+                        } as React.ChangeEvent<HTMLInputElement>;
+                        handleChange(syntheticEvent);
+                      }}
+                      min={today}
+                      required
+                      error={!!errors.pickupDate}
+                      className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors cursor-pointer ${errors.pickupDate
+                        ? 'border-red-500 focus:border-red-400'
+                        : formData.pickupDate
+                          ? 'border-green-500 focus:border-green-400'
+                          : 'border-gray-700 focus:border-white'
+                        }`}
+                    />
+                    {errors.pickupDate && (
+                      <p className="text-xs text-red-400 mt-1 flex items-center">
+                        <span className="mr-1"></span> {errors.pickupDate}
+                      </p>
+                    )}
                   </div>
                   <div>
-                    <p className="text-green-400 font-semibold">Documenti già presenti in archivio</p>
-                    <p className="text-sm text-gray-400">Non è necessario caricare nuovamente i documenti.</p>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Ora di ritiro *
+                      {formData.pickupTime && (
+                        <span className="ml-2 text-xs text-green-400">{formData.pickupTime}</span>
+                      )}
+                    </label>
+                    <select
+                      name="pickupTime"
+                      value={formData.pickupTime}
+                      onChange={handleChange}
+                      required
+                      disabled={!formData.pickupDate || getValidPickupTimes(formData.pickupDate).length === 0}
+                      className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors ${!formData.pickupDate || getValidPickupTimes(formData.pickupDate).length === 0
+                        ? 'border-gray-700 opacity-50 cursor-not-allowed'
+                        : formData.pickupTime
+                          ? 'border-green-500 focus:border-green-400'
+                          : 'border-gray-700 focus:border-white'
+                        }`}
+                    >
+                      {getValidPickupTimes(formData.pickupDate).length > 0 ? (
+                        getValidPickupTimes(formData.pickupDate).map(time => <option key={time} value={time}>{time}</option>)
+                      ) : (
+                        <option value="">Seleziona prima una data feriale</option>
+                      )}
+                    </select>
                   </div>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* License Uploader */}
-                  {hasStoredDocs.licensePath ? (
-                    <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 opacity-75">
-                      <p className="text-green-400 text-sm font-medium mb-1">✓ Patente di Guida presente</p>
-                      <p className="text-xs text-gray-500">Già in archivio</p>
-                    </div>
-                  ) : (
-                    <>
-                      <DocumentUploader
-                        title="1. PATENTE DI GUIDA"
-                        details={["Solo fronte/retro", "Foto chiara e leggibile", "Formati: JPG, PNG, PDF (max 5MB)"]}
-                        onFileChange={(file) => setFormData(prev => ({ ...prev, licenseImage: file }))}
-                      />
-                      {errors.licenseImage && <p className="text-xs text-red-400 mt-1">{errors.licenseImage}</p>}
-                    </>
-                  )}
+              </div>
 
-                  {/* ID Uploader */}
-                  {hasStoredDocs.idPath ? (
-                    <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 opacity-75">
-                      <p className="text-green-400 text-sm font-medium mb-1">✓ Carta d'Identità presente</p>
-                      <p className="text-xs text-gray-500">Già in archivio</p>
-                    </div>
-                  ) : (
-                    <>
-                      <DocumentUploader
-                        title="2. CARTA D'IDENTITÀ / PASSAPORTO"
-                        details={["Documento valido", "Foto chiara e leggibile", "Formati: JPG, PNG, PDF (max 5MB)"]}
-                        onFileChange={(file) => setFormData(prev => ({ ...prev, idImage: file }))}
+              {/* Return Date & Time */}
+              <div className="p-4 rounded-lg border border-gray-700 bg-gray-800/30">
+                <h4 className="text-white font-semibold mb-3 flex items-center">
+                  <span className="mr-2"></span> Riconsegna del veicolo
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Data di riconsegna *
+                      {formData.returnDate && (
+                        <span className="ml-2 text-xs text-green-400">Selezionata</span>
+                      )}
+                    </label>
+                    <CalendarPicker
+                      name="returnDate"
+                      value={formData.returnDate}
+                      onChange={(value) => {
+                        // Check if selected date is Sunday (0 = Sunday)
+                        if (getDayOfWeek(value) === 0) {
+                          alert('Non è possibile riconsegnare il veicolo di domenica. Siamo chiusi la domenica.\n\nPer favorere seleziona un altro giorno.');
+                          return;
+                        }
+                        if (isHoliday(value)) {
+                          alert('Non è possibile riconsegnare il veicolo nei giorni festivi.\n\nPer favore seleziona un altro giorno.');
+                          return;
+                        }
+                        const syntheticEvent = {
+                          target: { name: 'returnDate', value }
+                        } as React.ChangeEvent<HTMLInputElement>;
+                        handleChange(syntheticEvent);
+                      }}
+                      min={formData.pickupDate || today}
+                      required
+                      error={!!(errors.returnDate || errors.date)}
+                      className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors ${!formData.pickupDate
+                        ? 'border-gray-700 opacity-50 cursor-not-allowed'
+                        : errors.returnDate || errors.date
+                          ? 'border-red-500 focus:border-red-400 cursor-pointer'
+                          : formData.returnDate
+                            ? 'border-green-500 focus:border-green-400 cursor-pointer'
+                            : 'border-gray-700 focus:border-white cursor-pointer'
+                        }`}
+                    />
+                    {(errors.returnDate || errors.date) && (
+                      <p className="text-xs text-red-400 mt-1 flex items-center">
+                        <span className="mr-1"></span> {errors.returnDate || errors.date}
+                      </p>
+                    )}
+                    {!formData.pickupDate && (
+                      <p className="text-xs text-gray-400 mt-1">Seleziona prima la data di ritiro</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Ora di riconsegna
+                      <span className="ml-2 text-xs text-gray-400">(calcolata automaticamente)</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="time"
+                        name="returnTime"
+                        value={formData.returnTime}
+                        readOnly
+                        className="w-full bg-gray-700 border-2 border-gray-600 rounded-md px-3 py-2 text-white text-sm cursor-not-allowed opacity-75"
                       />
-                      {errors.idImage && <p className="text-xs text-red-400 mt-1">{errors.idImage}</p>}
-                    </>
-                  )}
+                      <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                        <span className="text-gray-400"></span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">Ritiro - 1h30 (automatico)</p>
+                  </div>
                 </div>
-              )}
-            </section>
 
-            {/* Automatic Validation */}
-            <section className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-bold text-white mb-4">C. AUTOMATIC VALIDATION AND CALCULATION</h3>
-              <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 space-y-2">
-                <p>Età conducente: {driverAgeLocal || '--'} anni</p>
-                <p>Anzianità patente: {licenseYearsLocal || '--'} anni</p>
-                {licenseYearsLocal < 2 && formData.licenseIssueDate && <p className="text-red-500 font-bold">ATTENZIONE: È richiesta una patente con almeno 2 anni di anzianità per noleggiare.</p>}
-              </div>
-            </section>
-
-            {/* Second Driver */}
-            <section className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-bold text-white mb-4">D. SECOND DRIVER (OPTIONAL)</h3>
-              <div className="flex items-center">
-                <input type="checkbox" name="addSecondDriver" checked={formData.addSecondDriver} onChange={handleChange} id="add-second-driver" className="h-4 w-4 text-white bg-gray-700 border-gray-600 rounded focus:ring-white" />
-                <label htmlFor="add-second-driver" className="ml-2 text-white">Aggiungi secondo guidatore (+€10/giorno)</label>
-              </div>
-              <AnimatePresence>
-                {formData.addSecondDriver && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-4 pl-4 border-l-2 border-gray-700">
-                    {renderDriverForm('second')}
-                  </motion.div>
+                {/* Vehicle Availability Check */}
+                {isCheckingAvailability && (
+                  <div className="mt-4 p-3 bg-blue-900/20 border border-blue-600 rounded-lg">
+                    <p className="text-blue-300 text-sm">Verifica disponibilità veicolo...</p>
+                  </div>
                 )}
-              </AnimatePresence>
-            </section>
-
-            {/* Security Deposit - Sixt Style */}
-            <section className="border-t border-gray-700 pt-6">
-              {!isUrbanOrCorporate && (
-                <div className="mt-4">
-                  <p className="text-base font-semibold text-white mb-3">Sei residente in Sardegna? *</p>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center">
-                      <input type="radio" id="resident-yes" name="isSardinianResident" checked={formData.isSardinianResident} onChange={() => setFormData(p => ({ ...p, isSardinianResident: true }))} className="w-4 h-4 text-white" />
-                      <label htmlFor="resident-yes" className="ml-2 text-white">Sì - Residente in Sardegna</label>
-                    </div>
-                    <div className="flex items-center">
-                      <input type="radio" id="resident-no" name="isSardinianResident" checked={!formData.isSardinianResident} onChange={() => setFormData(p => ({ ...p, isSardinianResident: false }))} className="w-4 h-4 text-white" />
-                      <label htmlFor="resident-no" className="ml-2 text-white">No - Non residente</label>
-                    </div>
+                {availabilityError && (
+                  <div className="mt-4 p-4 bg-red-900/30 border-2 border-red-500 rounded-lg">
+                    <p className="text-red-300 font-semibold">{availabilityError}</p>
                   </div>
-                </div>
-              )}
-            </section>
-
-            {/* Final Checkbox */}
-            <section className="border-t border-gray-700 pt-6">
-              <div className="flex items-start">
-                <input type="checkbox" name="confirmsInformation" checked={formData.confirmsInformation} onChange={handleChange} id="confirms-information" className="h-4 w-4 mt-1 text-white bg-gray-700 border-gray-600 rounded focus:ring-white" />
-                <label htmlFor="confirms-information" className="ml-2 text-white">Dichiaro che i dati inseriti sono veritieri e conformi ai requisiti richiesti.</label>
+                )}
+                {partialUnavailabilityWarning && !availabilityError && (
+                  <div className="mt-4 p-4 bg-yellow-900/30 border-2 border-yellow-500 rounded-lg">
+                    <p className="text-yellow-200 font-semibold">{partialUnavailabilityWarning}</p>
+                  </div>
+                )}
               </div>
-              {errors.confirmsInformation && <p className="text-xs text-red-400 mt-1">{errors.confirmsInformation}</p>}
-            </section>
+            </div>
+
+            {/* Info message about KM */}
+          </div>
+        </div>
+      );
+    case 2:
+      const renderDriverForm = (driverType: 'main' | 'second') => {
+        const driverData = driverType === 'main' ? formData : formData.secondDriver;
+        const prefix = driverType === 'main' ? '' : 'secondDriver.';
+
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><label className="text-sm text-gray-400">Nome *</label><input type="text" name={`${prefix}firstName`} value={(driverData as any).firstName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}firstName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}firstName`]}</p>}</div>
+            <div><label className="text-sm text-gray-400">Cognome *</label><input type="text" name={`${prefix}lastName`} value={(driverData as any).lastName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}lastName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}lastName`]}</p>}</div>
+            <div><label className="text-sm text-gray-400">Email *</label><input type="email" name={`${prefix}email`} value={(driverData as any).email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}email`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}email`]}</p>}</div>
+            <div><label className="text-sm text-gray-400">Telefono *</label><input type="tel" name={`${prefix}phone`} value={(driverData as any).phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}phone`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}phone`]}</p>}</div>
+            <div><label className="text-sm text-gray-400">Data di nascita *</label><CalendarPicker name={`${prefix}birthDate`} value={(driverData as any).birthDate} onChange={(value) => { const syntheticEvent = { target: { name: `${prefix}birthDate`, value } } as React.ChangeEvent<HTMLInputElement>; handleChange(syntheticEvent); }} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm cursor-pointer" />{errors[`${prefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}birthDate`]}</p>}</div>
+            <div><label className="text-sm text-gray-400">Numero patente *</label><input type="text" name={`${prefix}licenseNumber`} value={(driverData as any).licenseNumber} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}licenseNumber`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseNumber`]}</p>}</div>
+            <div><label className="text-sm text-gray-400">Data rilascio patente *</label><CalendarPicker name={`${prefix}licenseIssueDate`} value={(driverData as any).licenseIssueDate} onChange={(value) => { const syntheticEvent = { target: { name: `${prefix}licenseIssueDate`, value } } as React.ChangeEvent<HTMLInputElement>; handleChange(syntheticEvent); }} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm cursor-pointer" />{errors[`${prefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseIssueDate`]}</p>}</div>
           </div>
         );
-      case 3:
-        const unlimitedOptions = getUnlimitedKmOptions(item.name);
-        const isPremium = isPremiumVehicle(item.name);
+      };
 
-        // Check if vehicle requires higher deductible (for urban cars only)
-        // Removed old isPremiumUrbanVehicle logic as granular logic handles it better
-        // const isPremiumUrbanVehicle = ...
+      const driverAgeLocal = driverAge;
+      const licenseYearsLocal = licenseYears;
 
+      return (
+        <div className="space-y-8">
+          {/* Main Driver */}
+          <section>
+            <h3 className="text-lg font-bold text-white mb-4">A. MAIN DRIVER</h3>
+            {renderDriverForm('main')}
+          </section>
 
-        // Define detailed insurance coverage info
-        // Define detailed insurance coverage info
-        const displayVehicleType = getVehicleType(item);
+          {/* Document Upload */}
+          <section className="border-t border-gray-700 pt-6">
+            <h3 className="text-lg font-bold text-white mb-4">📄 DOCUMENTI RICHIESTI (OBBLIGATORI)</h3>
 
-        const insuranceDetails: Record<string, { title: string; requirements: string; standard: string }> = {
-          KASKO_BASE: {
-            title: 'KASKO BASE',
-            requirements: displayVehicleType === 'UTILITARIA' || displayVehicleType === 'FURGONE' || displayVehicleType === 'V_CLASS'
-              ? 'DISPONIBILE SOLO PER CLIENTI CON ALMENO 3 ANNI DI PATENTE'
-              : 'DISPONIBILE SOLO PER CLIENTI CON ALMENO 2 ANNI DI PATENTE', // Supercar logic might differ? User said "Minimo 3 anni obbligatori" generally? No, standard is 3 years now. User said "UNDER 5 ANNI PATENTE (Minimo 3 anni...)"
-            standard: displayVehicleType === 'UTILITARIA' ? 'FRANCHIGIA EUR €2.000 + 30% DEL DANNO' // Wait, user said Base Utilitarie €15. Franchise? Standard Base Franchise €2k+30%? Urban standard.
-              : displayVehicleType === 'FURGONE' ? 'FRANCHIGIA EUR €2.000 + 30% DEL DANNO'
-                : displayVehicleType === 'V_CLASS' ? 'FRANCHIGIA EUR €2.000 + 30% DEL DANNO' // Corporate Fleet uses Urban rules per task
-                  : 'FRANCHIGIA EUR €5.000 + 30% DEL DANNO' // Supercar
-          },
-          KASKO_BLACK: {
-            title: 'KASKO BLACK',
-            requirements: "DISPONIBILE SOLO PER CLIENTI CON 25 ANNI DI ETA' E 5 ANNI DI PATENTE",
-            standard: displayVehicleType === 'SUPERCAR' ? 'FRANCHIGIA EUR €5.000 + 10% DEL DANNO'
-              : 'FRANCHIGIA EUR €1.000 + 10% DEL DANNO' // Urban/Other
-          },
-          KASKO_SIGNATURE: {
-            title: 'KASKO SIGNATURE',
-            requirements: "DISPONIBILE SOLO PER CLIENTI CON 30 ANNI DI ETA' E 10 ANNI DI PATENTE",
-            standard: displayVehicleType === 'SUPERCAR' ? 'FRANCHIGIA EUR €5.000 ( FISSA )'
-              : 'FRANCHIGIA EUR €800 ( FISSA )' // Urban/Other
-          },
-          KASKO_DR7: {
-            title: 'DR7',
-            requirements: "DISPONIBILE SOLO PER CLIENTI CON 30 ANNI DI ETA' E 10 ANNI DI PATENTE",
-            standard: 'FRANCHIGIA EUR €0 ( FISSA )'
-          }
-        };
-
-        return (
-          <div className="space-y-8">
-            <section>
-              <h3 className="text-lg font-bold text-white mb-4 notranslate">A. KASKO INSURANCE</h3>
-              <div className="mb-4 p-3 bg-green-900/20 border border-green-600 rounded-lg">
-                <p className="text-green-300 font-semibold text-sm">✅ RCA (Responsabilità Civile Auto) inclusa nel prezzo per tutti i veicoli.</p>
-              </div>
-              <div className="space-y-4">
-                {kaskoOptions.map(opt => {
-                  const details = insuranceDetails[opt.id as keyof typeof insuranceDetails];
-                  const isExpanded = expandedInsurance === opt.id;
-
-                  return (
-                    <div key={opt.id} className={`relative group rounded-md border ${formData.insuranceOption === opt.id ? 'border-white' : 'border-gray-700'} ${!opt.eligible ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                      <div className={`p-4 ${!opt.eligible ? '' : 'cursor-pointer'}`} onClick={() => opt.eligible && setFormData(p => ({ ...p, insuranceOption: opt.id }))}>
-                        <div className="flex items-center">
-                          <input type="radio" name="insuranceOption" value={opt.id} checked={formData.insuranceOption === opt.id} disabled={!opt.eligible} className="w-4 h-4 text-white" />
-                          <label className="ml-3 text-white font-semibold notranslate">{getTranslated(opt.label)}</label>
-                          {opt.pricePerDay.eur > 0 && <span className="ml-auto text-white">+€{opt.pricePerDay.eur}/giorno</span>}
-                        </div>
-                        <div className="ml-7 text-sm text-gray-400 mt-1">
-                          <p>{getTranslated(opt.description)}</p>
-                          {!opt.eligible && <p className="text-red-400 text-xs mt-1">Non disponibile.</p>}
-                        </div>
-                        {!opt.eligible && opt.tooltip && (
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-2 py-1 bg-black text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                            {opt.tooltip}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Expandable details button */}
-                      {details && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setExpandedInsurance(isExpanded ? null : opt.id);
-                            }}
-                            className="w-full px-4 py-2 text-xs text-gray-400 hover:text-white border-t border-gray-700 flex items-center justify-between transition-colors"
-                          >
-                            <span>{isExpanded ? '▼ Nascondi dettagli copertura' : '▶ Mostra dettagli copertura'}</span>
-                          </button>
-
-                          {/* Expanded details */}
-                          <AnimatePresence>
-                            {isExpanded && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.2 }}
-                                className="overflow-hidden border-t border-gray-700"
-                              >
-                                <div className="p-4 bg-gray-800/30 space-y-3 text-xs">
-                                  <div>
-                                    <p className="text-white font-semibold mb-1 notranslate">{details.title}</p>
-                                    <p className="text-yellow-400">{details.requirements}</p>
-                                  </div>
-                                  <div className="space-y-1">
-                                    <p className="text-gray-300">
-                                      <span className="font-semibold">Franchigia:</span><br />
-                                      {details.standard}
-                                    </p>
-                                  </div>
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-
-            <section className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-bold text-white mb-4">B. CHILOMETRI INCLUSI</h3>
-              <div className={`p-4 rounded-lg border-2 cursor-pointer transition-colors border-green-500 bg-green-500/10`}>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <span className="font-bold text-white">
-                      {(isMassimo || displayVehicleType === 'UTILITARIA' || displayVehicleType === 'FURGONE' || displayVehicleType === 'V_CLASS')
-                        ? 'Km illimitati GRATIS nel noleggio'
-                        : 'Km illimitati inclusi nel noleggio'}
-                    </span>
-                    <p className="text-sm text-gray-400">Basato sulla durata del noleggio</p>
-                  </div>
-                  <span className="font-bold text-white">
-                    {(isMassimo || displayVehicleType === 'UTILITARIA' || displayVehicleType === 'FURGONE' || displayVehicleType === 'V_CLASS')
-                      ? 'Incluso'
-                      : formatPrice(0)}
-                  </span>
+            {/* Check if documents are already on file */}
+            {(hasStoredDocs.licensePath && hasStoredDocs.idPath) ? (
+              <div className="bg-green-900/20 border border-green-600/50 rounded-lg p-4 flex items-center mb-4">
+                <div className="mr-3 bg-green-500/20 p-2 rounded-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-green-400 font-semibold">Documenti già presenti in archivio</p>
+                  <p className="text-sm text-gray-400">Non è necessario caricare nuovamente i documenti.</p>
                 </div>
               </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* License Uploader */}
+                {hasStoredDocs.licensePath ? (
+                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 opacity-75">
+                    <p className="text-green-400 text-sm font-medium mb-1">✓ Patente di Guida presente</p>
+                    <p className="text-xs text-gray-500">Già in archivio</p>
+                  </div>
+                ) : (
+                  <>
+                    <DocumentUploader
+                      title="1. PATENTE DI GUIDA"
+                      details={["Solo fronte/retro", "Foto chiara e leggibile", "Formati: JPG, PNG, PDF (max 5MB)"]}
+                      onFileChange={(file) => setFormData(prev => ({ ...prev, licenseImage: file }))}
+                    />
+                    {errors.licenseImage && <p className="text-xs text-red-400 mt-1">{errors.licenseImage}</p>}
+                  </>
+                )}
 
-              {(isMassimo || displayVehicleType === 'UTILITARIA' || displayVehicleType === 'FURGONE' || displayVehicleType === 'V_CLASS') && (
-                <p className="text-xs text-green-400 mt-2">* Chilometri illimitati inclusi gratuitamente per questa categoria di veicoli.</p>
+                {/* ID Uploader */}
+                {hasStoredDocs.idPath ? (
+                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 opacity-75">
+                    <p className="text-green-400 text-sm font-medium mb-1">✓ Carta d'Identità presente</p>
+                    <p className="text-xs text-gray-500">Già in archivio</p>
+                  </div>
+                ) : (
+                  <>
+                    <DocumentUploader
+                      title="2. CARTA D'IDENTITÀ / PASSAPORTO"
+                      details={["Documento valido", "Foto chiara e leggibile", "Formati: JPG, PNG, PDF (max 5MB)"]}
+                      onFileChange={(file) => setFormData(prev => ({ ...prev, idImage: file }))}
+                    />
+                    {errors.idImage && <p className="text-xs text-red-400 mt-1">{errors.idImage}</p>}
+                  </>
+                )}
+              </div>
+            )}
+          </section>
+
+          {/* Automatic Validation */}
+          <section className="border-t border-gray-700 pt-6">
+            <h3 className="text-lg font-bold text-white mb-4">C. AUTOMATIC VALIDATION AND CALCULATION</h3>
+            <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 space-y-2">
+              <p>Età conducente: {driverAgeLocal || '--'} anni</p>
+              <p>Anzianità patente: {licenseYearsLocal || '--'} anni</p>
+              {licenseYearsLocal < 2 && formData.licenseIssueDate && <p className="text-red-500 font-bold">ATTENZIONE: È richiesta una patente con almeno 2 anni di anzianità per noleggiare.</p>}
+            </div>
+          </section>
+
+          {/* Second Driver */}
+          <section className="border-t border-gray-700 pt-6">
+            <h3 className="text-lg font-bold text-white mb-4">D. SECOND DRIVER (OPTIONAL)</h3>
+            <div className="flex items-center">
+              <input type="checkbox" name="addSecondDriver" checked={formData.addSecondDriver} onChange={handleChange} id="add-second-driver" className="h-4 w-4 text-white bg-gray-700 border-gray-600 rounded focus:ring-white" />
+              <label htmlFor="add-second-driver" className="ml-2 text-white">Aggiungi secondo guidatore (+€10/giorno)</label>
+            </div>
+            <AnimatePresence>
+              {formData.addSecondDriver && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-4 pl-4 border-l-2 border-gray-700">
+                  {renderDriverForm('second')}
+                </motion.div>
               )}
+            </AnimatePresence>
+          </section>
 
-              {!(isMassimo || displayVehicleType === 'UTILITARIA' || displayVehicleType === 'FURGONE' || displayVehicleType === 'V_CLASS') && (
-                <>
-                  <h3 className="text-lg font-bold text-white mb-4 mt-6">
-                    C. PACCHETTI CHILOMETRICI AGGIUNTIVI (OPZIONALE) {isPremium && <span className="text-yellow-400 text-sm">(Premium Vehicle)</span>}
-                  </h3>
-                  <p className="text-sm text-gray-400 mb-4">Vuoi aggiungere più chilometri? Seleziona un pacchetto aggiuntivo</p>
-
-                  {/* No Extra KM Option (Default) */}
-                  <div className="space-y-3 mb-4">
-                    <div
-                      className={`p-4 rounded-md border cursor-pointer transition-all ${formData.kmPackageType === 'none'
-                        ? 'border-white bg-white/5'
-                        : 'border-gray-700 hover:border-gray-500'
-                        }`}
-                      onClick={() => setFormData(p => ({ ...p, kmPackageType: 'none' }))}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <input
-                            type="radio"
-                            name="kmPackage"
-                            checked={formData.kmPackageType === 'none'}
-                            onChange={() => setFormData(p => ({ ...p, kmPackageType: 'none' }))}
-                            className="w-4 h-4 text-white"
-                          />
-                          <label className="ml-3 text-white font-semibold">Solo km inclusi ({calculateIncludedKm(duration.days)} km)</label>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-green-400 font-bold">GRATIS</span>
-                        </div>
-                      </div>
-                    </div>
+          {/* Security Deposit - Sixt Style */}
+          <section className="border-t border-gray-700 pt-6">
+            {!isUrbanOrCorporate && (
+              <div className="mt-4">
+                <p className="text-base font-semibold text-white mb-3">Sei residente in Sardegna? *</p>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center">
+                    <input type="radio" id="resident-yes" name="isSardinianResident" checked={formData.isSardinianResident} onChange={() => setFormData(p => ({ ...p, isSardinianResident: true }))} className="w-4 h-4 text-white" />
+                    <label htmlFor="resident-yes" className="ml-2 text-white">Sì - Residente in Sardegna</label>
                   </div>
-
-                  {/* KM Package Options */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-semibold text-gray-300 mb-2">KM ILLIMITATI:</h4>
-                    <div
-                      className={`p-4 rounded-md border cursor-pointer transition-all ${formData.kmPackageType === 'unlimited'
-                        ? 'border-white bg-white/5'
-                        : 'border-gray-700 hover:border-gray-500'
-                        }`}
-                      onClick={() => setFormData(p => ({ ...p, kmPackageType: 'unlimited' }))}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center">
-                          <input
-                            type="radio"
-                            name="kmPackage"
-                            checked={formData.kmPackageType === 'unlimited'}
-                            onChange={() => setFormData(p => ({ ...p, kmPackageType: 'unlimited' }))}
-                            className="w-4 h-4 text-white"
-                          />
-                          <label className="ml-3 text-white font-semibold">KM ILLIMITATI</label>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-white font-bold">€{calculateUnlimitedKmPrice(item.name, duration.days || 1, true)}</span>
-                        </div>
-                      </div>
-                      <div className="ml-7 text-xs text-gray-400">
-                        {isDucatoVehicle(item.name) ? (
-                          <p>Prezzo fisso per Ducato</p>
-                        ) : (
-                          <p>Per {duration.days || 1} {duration.days === 1 ? 'giorno' : 'giorni'}</p>
-                        )}
-                      </div>
-                    </div>
+                  <div className="flex items-center">
+                    <input type="radio" id="resident-no" name="isSardinianResident" checked={!formData.isSardinianResident} onChange={() => setFormData(p => ({ ...p, isSardinianResident: false }))} className="w-4 h-4 text-white" />
+                    <label htmlFor="resident-no" className="ml-2 text-white">No - Non residente</label>
                   </div>
+                </div>
+              </div>
+            )}
+          </section>
 
-                  {/* KM Package Summary */}
-                  <div className="mt-4 p-3 bg-gray-800/50 rounded-md border border-gray-700">
-                    {formData.kmPackageType !== 'unlimited' && (
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-gray-300">Km inclusi gratis:</span>
-                        <span className="text-green-400 font-semibold">{calculateIncludedKm(duration.days)} km</span>
+          {/* Final Checkbox */}
+          <section className="border-t border-gray-700 pt-6">
+            <div className="flex items-start">
+              <input type="checkbox" name="confirmsInformation" checked={formData.confirmsInformation} onChange={handleChange} id="confirms-information" className="h-4 w-4 mt-1 text-white bg-gray-700 border-gray-600 rounded focus:ring-white" />
+              <label htmlFor="confirms-information" className="ml-2 text-white">Dichiaro che i dati inseriti sono veritieri e conformi ai requisiti richiesti.</label>
+            </div>
+            {errors.confirmsInformation && <p className="text-xs text-red-400 mt-1">{errors.confirmsInformation}</p>}
+          </section>
+        </div>
+      );
+    case 3:
+      const unlimitedOptions = getUnlimitedKmOptions(item.name);
+      const isPremium = isPremiumVehicle(item.name);
+
+      // Check if vehicle requires higher deductible (for urban cars only)
+      // Removed old isPremiumUrbanVehicle logic as granular logic handles it better
+      // const isPremiumUrbanVehicle = ...
+
+
+      // Define detailed insurance coverage info
+      // Define detailed insurance coverage info
+      const displayVehicleType = getVehicleType(item);
+
+      const insuranceDetails: Record<string, { title: string; requirements: string; standard: string }> = {
+        KASKO_BASE: {
+          title: 'KASKO BASE',
+          requirements: displayVehicleType === 'UTILITARIA' || displayVehicleType === 'FURGONE' || displayVehicleType === 'V_CLASS'
+            ? 'DISPONIBILE SOLO PER CLIENTI CON ALMENO 3 ANNI DI PATENTE'
+            : 'DISPONIBILE SOLO PER CLIENTI CON ALMENO 2 ANNI DI PATENTE', // Supercar logic might differ? User said "Minimo 3 anni obbligatori" generally? No, standard is 3 years now. User said "UNDER 5 ANNI PATENTE (Minimo 3 anni...)"
+          standard: displayVehicleType === 'UTILITARIA' ? 'FRANCHIGIA EUR €2.000 + 30% DEL DANNO' // Wait, user said Base Utilitarie €15. Franchise? Standard Base Franchise €2k+30%? Urban standard.
+            : displayVehicleType === 'FURGONE' ? 'FRANCHIGIA EUR €2.000 + 30% DEL DANNO'
+              : displayVehicleType === 'V_CLASS' ? 'FRANCHIGIA EUR €2.000 + 30% DEL DANNO' // Corporate Fleet uses Urban rules per task
+                : 'FRANCHIGIA EUR €5.000 + 30% DEL DANNO' // Supercar
+        },
+        KASKO_BLACK: {
+          title: 'KASKO BLACK',
+          requirements: "DISPONIBILE SOLO PER CLIENTI CON 25 ANNI DI ETA' E 5 ANNI DI PATENTE",
+          standard: displayVehicleType === 'SUPERCAR' ? 'FRANCHIGIA EUR €5.000 + 10% DEL DANNO'
+            : 'FRANCHIGIA EUR €1.000 + 10% DEL DANNO' // Urban/Other
+        },
+        KASKO_SIGNATURE: {
+          title: 'KASKO SIGNATURE',
+          requirements: "DISPONIBILE SOLO PER CLIENTI CON 30 ANNI DI ETA' E 10 ANNI DI PATENTE",
+          standard: displayVehicleType === 'SUPERCAR' ? 'FRANCHIGIA EUR €5.000 ( FISSA )'
+            : 'FRANCHIGIA EUR €800 ( FISSA )' // Urban/Other
+        },
+        KASKO_DR7: {
+          title: 'DR7',
+          requirements: "DISPONIBILE SOLO PER CLIENTI CON 30 ANNI DI ETA' E 10 ANNI DI PATENTE",
+          standard: 'FRANCHIGIA EUR €0 ( FISSA )'
+        }
+      };
+
+      return (
+        <div className="space-y-8">
+          <section>
+            <h3 className="text-lg font-bold text-white mb-4 notranslate">A. KASKO INSURANCE</h3>
+            <div className="mb-4 p-3 bg-green-900/20 border border-green-600 rounded-lg">
+              <p className="text-green-300 font-semibold text-sm">✅ RCA (Responsabilità Civile Auto) inclusa nel prezzo per tutti i veicoli.</p>
+            </div>
+            <div className="space-y-4">
+              {kaskoOptions.map(opt => {
+                const details = insuranceDetails[opt.id as keyof typeof insuranceDetails];
+                const isExpanded = expandedInsurance === opt.id;
+
+                return (
+                  <div key={opt.id} className={`relative group rounded-md border ${formData.insuranceOption === opt.id ? 'border-white' : 'border-gray-700'} ${!opt.eligible ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                    <div className={`p-4 ${!opt.eligible ? '' : 'cursor-pointer'}`} onClick={() => opt.eligible && setFormData(p => ({ ...p, insuranceOption: opt.id }))}>
+                      <div className="flex items-center">
+                        <input type="radio" name="insuranceOption" value={opt.id} checked={formData.insuranceOption === opt.id} disabled={!opt.eligible} className="w-4 h-4 text-white" />
+                        <label className="ml-3 text-white font-semibold notranslate">{getTranslated(opt.label)}</label>
+                        {opt.pricePerDay.eur > 0 && <span className="ml-auto text-white">+€{opt.pricePerDay.eur}/giorno</span>}
                       </div>
-                    )}
-                    {formData.kmPackageType !== 'none' && (
+                      <div className="ml-7 text-sm text-gray-400 mt-1">
+                        <p>{getTranslated(opt.description)}</p>
+                        {!opt.eligible && <p className="text-red-400 text-xs mt-1">Non disponibile.</p>}
+                      </div>
+                      {!opt.eligible && opt.tooltip && (
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-2 py-1 bg-black text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                          {opt.tooltip}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Expandable details button */}
+                    {details && (
                       <>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-300">Pacchetto extra selezionato:</span>
-                          <span className="text-white font-semibold">
-                            {formData.kmPackageType === 'unlimited' ? '∞ KM ILLIMITATI' : `+${formData.kmPackageDistance} km`}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-sm mt-1">
-                          <span className="text-gray-300">Costo pacchetto extra:</span>
-                          <span className="text-white font-semibold">€{kmPackageCost}</span>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedInsurance(isExpanded ? null : opt.id);
+                          }}
+                          className="w-full px-4 py-2 text-xs text-gray-400 hover:text-white border-t border-gray-700 flex items-center justify-between transition-colors"
+                        >
+                          <span>{isExpanded ? '▼ Nascondi dettagli copertura' : '▶ Mostra dettagli copertura'}</span>
+                        </button>
+
+                        {/* Expanded details */}
+                        <AnimatePresence>
+                          {isExpanded && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="overflow-hidden border-t border-gray-700"
+                            >
+                              <div className="p-4 bg-gray-800/30 space-y-3 text-xs">
+                                <div>
+                                  <p className="text-white font-semibold mb-1 notranslate">{details.title}</p>
+                                  <p className="text-yellow-400">{details.requirements}</p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-gray-300">
+                                    <span className="font-semibold">Franchigia:</span><br />
+                                    {details.standard}
+                                  </p>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </>
                     )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
 
-                    <div className="border-t border-gray-600 mt-2 pt-2">
-                      <div className="flex justify-between text-base font-bold">
-                        <span className="text-white">Km totali disponibili:</span>
-                        <span className="text-white">
-                          {formData.kmPackageType === 'unlimited' ? '∞ ILLIMITATI' : `${calculateIncludedKm(duration.days)} km`}
+          <section className="border-t border-gray-700 pt-6">
+            <h3 className="text-lg font-bold text-white mb-4">B. CHILOMETRI INCLUSI</h3>
+            <div className={`p-4 rounded-lg border-2 cursor-pointer transition-colors border-green-500 bg-green-500/10`}>
+              <div className="flex justify-between items-center">
+                <div>
+                  <span className="font-bold text-white">
+                    {(isMassimo || displayVehicleType === 'UTILITARIA' || displayVehicleType === 'FURGONE' || displayVehicleType === 'V_CLASS')
+                      ? 'Km illimitati GRATIS nel noleggio'
+                      : 'Km illimitati inclusi nel noleggio'}
+                  </span>
+                  <p className="text-sm text-gray-400">Basato sulla durata del noleggio</p>
+                </div>
+                <span className="font-bold text-white">
+                  {(isMassimo || displayVehicleType === 'UTILITARIA' || displayVehicleType === 'FURGONE' || displayVehicleType === 'V_CLASS')
+                    ? 'Incluso'
+                    : formatPrice(0)}
+                </span>
+              </div>
+            </div>
+
+            {(isMassimo || displayVehicleType === 'UTILITARIA' || displayVehicleType === 'FURGONE' || displayVehicleType === 'V_CLASS') && (
+              <p className="text-xs text-green-400 mt-2">* Chilometri illimitati inclusi gratuitamente per questa categoria di veicoli.</p>
+            )}
+
+            {!(isMassimo || displayVehicleType === 'UTILITARIA' || displayVehicleType === 'FURGONE' || displayVehicleType === 'V_CLASS') && (
+              <>
+                <h3 className="text-lg font-bold text-white mb-4 mt-6">
+                  C. PACCHETTI CHILOMETRICI AGGIUNTIVI (OPZIONALE) {isPremium && <span className="text-yellow-400 text-sm">(Premium Vehicle)</span>}
+                </h3>
+                <p className="text-sm text-gray-400 mb-4">Vuoi aggiungere più chilometri? Seleziona un pacchetto aggiuntivo</p>
+
+                {/* No Extra KM Option (Default) */}
+                <div className="space-y-3 mb-4">
+                  <div
+                    className={`p-4 rounded-md border cursor-pointer transition-all ${formData.kmPackageType === 'none'
+                      ? 'border-white bg-white/5'
+                      : 'border-gray-700 hover:border-gray-500'
+                      }`}
+                    onClick={() => setFormData(p => ({ ...p, kmPackageType: 'none' }))}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <input
+                          type="radio"
+                          name="kmPackage"
+                          checked={formData.kmPackageType === 'none'}
+                          onChange={() => setFormData(p => ({ ...p, kmPackageType: 'none' }))}
+                          className="w-4 h-4 text-white"
+                        />
+                        <label className="ml-3 text-white font-semibold">Solo km inclusi ({calculateIncludedKm(duration.days)} km)</label>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-green-400 font-bold">GRATIS</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* KM Package Options */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-gray-300 mb-2">KM ILLIMITATI:</h4>
+                  <div
+                    className={`p-4 rounded-md border cursor-pointer transition-all ${formData.kmPackageType === 'unlimited'
+                      ? 'border-white bg-white/5'
+                      : 'border-gray-700 hover:border-gray-500'
+                      }`}
+                    onClick={() => setFormData(p => ({ ...p, kmPackageType: 'unlimited' }))}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center">
+                        <input
+                          type="radio"
+                          name="kmPackage"
+                          checked={formData.kmPackageType === 'unlimited'}
+                          onChange={() => setFormData(p => ({ ...p, kmPackageType: 'unlimited' }))}
+                          className="w-4 h-4 text-white"
+                        />
+                        <label className="ml-3 text-white font-semibold">KM ILLIMITATI</label>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-white font-bold">€{calculateUnlimitedKmPrice(item.name, duration.days || 1, true)}</span>
+                      </div>
+                    </div>
+                    <div className="ml-7 text-xs text-gray-400">
+                      {isDucatoVehicle(item.name) ? (
+                        <p>Prezzo fisso per Ducato</p>
+                      ) : (
+                        <p>Per {duration.days || 1} {duration.days === 1 ? 'giorno' : 'giorni'}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* KM Package Summary */}
+                <div className="mt-4 p-3 bg-gray-800/50 rounded-md border border-gray-700">
+                  {formData.kmPackageType !== 'unlimited' && (
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="text-gray-300">Km inclusi gratis:</span>
+                      <span className="text-green-400 font-semibold">{calculateIncludedKm(duration.days)} km</span>
+                    </div>
+                  )}
+                  {formData.kmPackageType !== 'none' && (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-300">Pacchetto extra selezionato:</span>
+                        <span className="text-white font-semibold">
+                          {formData.kmPackageType === 'unlimited' ? '∞ KM ILLIMITATI' : `+${formData.kmPackageDistance} km`}
                         </span>
                       </div>
-                    </div>
-                  </div>
-                </>
-              )}
-            </section>
-
-            <section className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-bold text-white mb-2">C. SERVIZI AGGIUNTIVI</h3>
-              <p className="text-sm text-gray-400 mb-4">
-                Aggiungi servizi extra per un viaggio più confortevole e sicuro.
-              </p>
-              <div className="space-y-3">
-                {/* Mandatory car wash */}
-                <div className="flex items-center p-3 bg-gray-800/50 rounded-md border border-gray-700">
-                  <input type="checkbox" checked disabled className="h-4 w-4" />
-                  <span className="ml-3 text-white">LAVAGGIO COMPLETO [OBBLIGATORIO]</span>
-                  <span className="ml-auto font-semibold text-white">€30</span>
-                </div>
-
-                {/* Rental Extras from constants */}
-                {RENTAL_EXTRAS.filter(extra => !extra.autoApply && extra.id !== 'additional_driver').map(extra => {
-                  const isSelected = formData.extras.includes(extra.id);
-                  const priceDisplay = extra.oneTime
-                    ? `€${extra.pricePerDay.eur}`
-                    : `€${extra.pricePerDay.eur}/giorno`;
-
-                  return (
-                    <div
-                      key={extra.id}
-                      className={`p-3 rounded-md border cursor-pointer transition-all ${isSelected
-                        ? 'border-white bg-white/5'
-                        : 'border-gray-700 hover:border-gray-500'
-                        }`}
-                      onClick={() => {
-                        setFormData(prev => ({
-                          ...prev,
-                          extras: isSelected
-                            ? prev.extras.filter(id => id !== extra.id)
-                            : [...prev.extras, extra.id]
-                        }));
-                      }}
-                    >
-                      <div className="flex items-start">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => { }}
-                          className="h-4 w-4 mt-1 text-white"
-                        />
-                        <div className="ml-3 flex-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-white font-medium">{getTranslated(extra.label)}</span>
-                            <span className="font-semibold text-white">{priceDisplay}</span>
-                          </div>
-                          {extra.description && (
-                            <p className="text-xs text-gray-400 mt-1">{getTranslated(extra.description)}</p>
-                          )}
-                        </div>
+                      <div className="flex justify-between text-sm mt-1">
+                        <span className="text-gray-300">Costo pacchetto extra:</span>
+                        <span className="text-white font-semibold">€{kmPackageCost}</span>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          </div>
-        );
-      case 4:
-        return (
-          <div className="space-y-8">
-            <section>
-              <h3 className="text-lg font-bold text-white mb-4">METODO DI PAGAMENTO</h3>
-              <div className="flex border-b border-gray-700 mb-6">
-                <button
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'credit' }))}
-                  className={`flex-1 py-2 text-sm font-semibold ${formData.paymentMethod === 'credit' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}
-                >
-                  Credit Wallet
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'stripe' }))}
-                  className={`flex-1 py-2 text-sm font-semibold ${formData.paymentMethod === 'stripe' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}
-                >
-                  Carta
-                </button>
-              </div>
-
-              {formData.paymentMethod === 'credit' ? (
-                <div className="text-center py-6">
-                  {isLoadingBalance ? (
-                    <div className="flex items-center justify-center">
-                      <div className="w-8 h-8 border-2 border-t-white border-gray-600 rounded-full animate-spin"></div>
-                    </div>
-                  ) : (
-                    <>
-                      <p className="text-sm text-gray-400 mb-2">Saldo Disponibile</p>
-                      <p className="text-4xl font-bold text-white mb-4">€{creditBalance.toFixed(2)}</p>
-                      {creditBalance < total ? (
-                        <p className="text-sm text-red-400">Credito insufficiente. Richiesto: €{total.toFixed(2)}</p>
-                      ) : (
-                        <p className="text-sm text-green-400">✓ Saldo sufficiente</p>
-                      )}
                     </>
                   )}
-                </div>
-              ) : (
-                <>
-                  <h4 className="text-base font-semibold text-white mb-3">DATI CARTA DI CREDITO/DEBITO</h4>
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 min-h-[56px] flex items-center">
-                    {isClientSecretLoading ? <div className="text-gray-400 text-sm">Initializing Payment...</div> : <div ref={cardElementRef} className="w-full" />}
-                  </div>
-                  {stripeError && <p className="text-xs text-red-400 mt-1">{stripeError}</p>}
-                </>
-              )}
-            </section>
 
-            <section className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-bold text-white mb-4 uppercase">Conferme Finali</h3>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex items-start">
-                    <input id="confirms-documents" name="confirmsDocuments" type="checkbox" checked={formData.confirmsDocuments} onChange={handleChange} className="h-4 w-4 mt-1 rounded border-gray-600 bg-gray-700 text-white focus:ring-white" />
-                    <label htmlFor="confirms-documents" className="ml-3 block text-sm font-medium text-white">
-                      Confermo che i documenti caricati sono corretti e appartengono al conducente principale.
-                    </label>
+                  <div className="border-t border-gray-600 mt-2 pt-2">
+                    <div className="flex justify-between text-base font-bold">
+                      <span className="text-white">Km totali disponibili:</span>
+                      <span className="text-white">
+                        {formData.kmPackageType === 'unlimited' ? '∞ ILLIMITATI' : `${calculateIncludedKm(duration.days)} km`}
+                      </span>
+                    </div>
                   </div>
-                  {errors.confirmsDocuments && <p className="text-xs text-red-400 mt-1 pl-7">{errors.confirmsDocuments}</p>}
                 </div>
-                <div>
-                  <div className="flex items-start">
-                    <input id="agrees-to-terms" name="agreesToTerms" type="checkbox" checked={formData.agreesToTerms} onChange={handleChange} className="h-4 w-4 mt-1 rounded border-gray-600 bg-gray-700 text-white focus:ring-white" />
-                    <label htmlFor="agrees-to-terms" className="ml-3 block text-sm font-medium text-white">
-                      Ho letto e accetto i <Link to="/rental-agreement" target="_blank" className="underline hover:text-white">termini e le condizioni di noleggio</Link>.
-                    </label>
-                  </div>
-                  {errors.agreesToTerms && <p className="text-xs text-red-400 mt-1 pl-7">{errors.agreesToTerms}</p>}
-                </div>
-                <div>
-                  <div className="flex items-start">
-                    <input id="agrees-to-privacy" name="agreesToPrivacy" type="checkbox" checked={formData.agreesToPrivacy} onChange={handleChange} className="h-4 w-4 mt-1 rounded border-gray-600 bg-gray-700 text-white focus:ring-white" />
-                    <label htmlFor="agrees-to-privacy" className="ml-3 block text-sm font-medium text-white">
-                      Ho letto e accetto l'<Link to="/privacy-policy" target="_blank" className="underline hover:text-white">informativa sulla privacy</Link>.
-                    </label>
-                  </div>
-                  {errors.agreesToPrivacy && <p className="text-xs text-red-400 mt-1 pl-7">{errors.agreesToPrivacy}</p>}
-                </div>
+              </>
+            )}
+          </section>
+
+          <section className="border-t border-gray-700 pt-6">
+            <h3 className="text-lg font-bold text-white mb-2">C. SERVIZI AGGIUNTIVI</h3>
+            <p className="text-sm text-gray-400 mb-4">
+              Aggiungi servizi extra per un viaggio più confortevole e sicuro.
+            </p>
+            <div className="space-y-3">
+              {/* Mandatory car wash */}
+              <div className="flex items-center p-3 bg-gray-800/50 rounded-md border border-gray-700">
+                <input type="checkbox" checked disabled className="h-4 w-4" />
+                <span className="ml-3 text-white">LAVAGGIO COMPLETO [OBBLIGATORIO]</span>
+                <span className="ml-auto font-semibold text-white">€30</span>
               </div>
-            </section>
 
-            <section className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-bold text-white mb-4 uppercase">Riepilogo Completo Prenotazione</h3>
-              <div className="p-6 bg-gray-800/50 rounded-lg border border-gray-700 space-y-6 text-sm">
-                <div>
-                  <p className="font-bold text-base text-white mb-2">VEICOLO SELEZIONATO</p>
-                  <hr className="border-gray-600 mb-2" />
-                  <p>{item.name}</p>
-                </div>
+              {/* Rental Extras from constants */}
+              {RENTAL_EXTRAS.filter(extra => !extra.autoApply && extra.id !== 'additional_driver').map(extra => {
+                const isSelected = formData.extras.includes(extra.id);
+                const priceDisplay = extra.oneTime
+                  ? `€${extra.pricePerDay.eur}`
+                  : `€${extra.pricePerDay.eur}/giorno`;
 
-                <div>
-                  <p className="font-bold text-base text-white mb-2">DATE E LOCALITÀ</p>
-                  <hr className="border-gray-600 mb-2" />
-                  <p>Ritiro: {formData.pickupDate} alle {formData.pickupTime} - {getTranslated(PICKUP_LOCATIONS.find(l => l.id === formData.pickupLocation)?.label)}</p>
-                  <p>Riconsegna: {formData.returnDate} alle {formData.returnTime} - {getTranslated(PICKUP_LOCATIONS.find(l => l.id === formData.returnLocation)?.label)}</p>
-                  <p>Durata: {duration.days} giorni</p>
-                  <p>Pacchetto km: {(formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}</p>
-                </div>
-
-                <div>
-                  <p className="font-bold text-base text-white mb-2">CONDUCENTE/I</p>
-                  <hr className="border-gray-600 mb-2" />
-                  <p>Principale: {formData.firstName} {formData.lastName}</p>
-                  <p className="text-xs text-gray-400">{formData.email} - {formData.phone}</p>
-                  <p className="text-xs text-gray-400">{driverAge} anni - Patente: {licenseYears} anni</p>
-                  {(formData.licenseImage || formData.idImage) && <p className="text-xs text-green-400">Documenti caricati</p>}
-                  {formData.addSecondDriver && (
-                    <div className="mt-2">
-                      <p>Secondo: {formData.secondDriver.firstName} {formData.secondDriver.lastName}</p>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <p className="font-bold text-base text-white mb-2">ASSICURAZIONE E SERVIZI</p>
-                  <hr className="border-gray-600 mb-2" />
-                  <p>Assicurazione: {getTranslated(insuranceOptions.find(i => i.id === formData.insuranceOption)?.label)}</p>
-                  <p>Lavaggio completo obbligatorio</p>
-                  {formData.addSecondDriver && <p>Secondo guidatore</p>}
-                </div>
-
-                <div>
-                  <p className="font-bold text-base text-white mb-2">DETTAGLIO COSTI</p>
-                  <hr className="border-gray-600 mb-2" />
-                  <div className="flex justify-between">
-                    <span>
-                      Noleggio ({duration.days} gg {isMassimo ? `× €${Math.round(SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseRate * (1 - SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseDiscount))} [FISSO]` : `× ${item.pricePerDay ? formatPrice(item.pricePerDay[currency]) : '€0'}`})
-                    </span>
-                    <span>{formatPrice(rentalCost)}</span>
-                  </div>
-                  <div className="flex justify-between"><span>Pacchetto km ({(formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'illimitati' : `${includedKm} km`})</span> <span>{formatPrice(kmPackageCost)}</span></div>
-                  <div className="flex justify-between"><span className="notranslate">Assicurazione KASKO</span> <span>{formatPrice(insuranceCost)}</span></div>
-                  <div className="flex justify-between"><span>Lavaggio obbligatorio</span> <span>{formatPrice(carWashFee)}</span></div>
-                  <div className="flex justify-between"><span>Spese di ritiro</span> <span>{formatPrice(pickupFee)}</span></div>
-                  <div className="flex justify-between"><span>Spese di riconsegna</span> <span>{formatPrice(dropoffFee)}</span></div>
-                  {secondDriverFee > 0 && <div className="flex justify-between"><span>Secondo guidatore ({duration.days} gg × €10)</span> <span>{formatPrice(secondDriverFee)}</span></div>}
-                  {youngDriverFee > 0 && <div className="flex justify-between"><span>Supplemento under 25 ({duration.days} gg × €10)</span> <span>{formatPrice(youngDriverFee)}</span></div>}
-                  {recentLicenseFee > 0 && <div className="flex justify-between"><span>Supplemento patente recente ({duration.days} gg × €20)</span> <span>{formatPrice(recentLicenseFee)}</span></div>}
-                  <hr className="border-gray-500 my-2" />
-
-                  {isMassimo && (
-                    <div className="mb-2 p-2 bg-blue-900/30 border border-blue-500/30 rounded">
-                      <p className="text-blue-200 font-semibold text-center text-xs uppercase mb-1">★ Cliente Speciale Massimo Runchina ★</p>
-                      {specialDiscountAmount > 0 ? (
-                        <div className="flex justify-between text-green-400 font-bold">
-                          <span>Sconto Fedeltà (10% dopo 3gg)</span>
-                          <span>-{formatPrice(specialDiscountAmount)}</span>
+                return (
+                  <div
+                    key={extra.id}
+                    className={`p-3 rounded-md border cursor-pointer transition-all ${isSelected
+                      ? 'border-white bg-white/5'
+                      : 'border-gray-700 hover:border-gray-500'
+                      }`}
+                    onClick={() => {
+                      setFormData(prev => ({
+                        ...prev,
+                        extras: isSelected
+                          ? prev.extras.filter(id => id !== extra.id)
+                          : [...prev.extras, extra.id]
+                      }));
+                    }}
+                  >
+                    <div className="flex items-start">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => { }}
+                        className="h-4 w-4 mt-1 text-white"
+                      />
+                      <div className="ml-3 flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-white font-medium">{getTranslated(extra.label)}</span>
+                          <span className="font-semibold text-white">{priceDisplay}</span>
                         </div>
-                      ) : (
-                        <p className="text-gray-400 text-xs text-center">Tariffa fissa €305/gg applicata</p>
-                      )}
-                    </div>
-                  )}
-
-                  {membershipDiscount > 0 ? (
-                    <>
-                      <div className="flex justify-between text-gray-400 line-through"><span>Totale</span> <span>{formatPrice(originalTotal)}</span></div>
-                      <div className="flex justify-between text-green-400 text-sm">
-                        <span>Sconto {membershipTier} ({(membershipDiscount / originalTotal * 100).toFixed(0)}%)</span>
-                        <span>-{formatPrice(membershipDiscount)}</span>
-                      </div>
-                      <div className="flex justify-between font-bold text-lg text-white"><span>TOTALE</span> <span>{formatPrice(finalTotal)}</span></div>
-                    </>
-                  ) : (
-                    <div className="flex justify-between font-bold text-lg"><span>TOTALE</span> <span>{formatPrice(total)}</span></div>
-                  )}
-                </div>
-
-                {/* Maggiori informazioni */}
-                <div className="border-t border-gray-600 pt-3">
-                  <details className="group">
-                    <summary className="cursor-pointer text-sm text-gray-300 hover:text-white flex items-center gap-2 font-semibold">
-                      <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
-                      Maggiori informazioni
-                    </summary>
-                    <div className="mt-3 pl-4 space-y-3 border-l-2 border-gray-600">
-                      <div>
-                        {isPremiumVehicle(item.name) ? (
-                          <>
-                            <p className="text-sm text-gray-300">
-                              Al Check-in vi verrà richiesto un deposito cauzionale di 5000€
-                            </p>
-                            <p className="text-sm text-gray-300 mt-2">
-                              O un veicolo dal 2020 in poi di proprietà in buone condizioni,con un supplemento di servizio di 20€ al gg
-                            </p>
-                            <p className="text-sm text-gray-300 mt-2">
-                              Non residente in sardegna 10.000€
-                            </p>
-                          </>
-                        ) : (
-                          <>
-                            <p className="text-sm text-gray-300">
-                              Al Check-in vi verrà richiesto un deposito cauzionale di 2500€
-                            </p>
-                            <p className="text-sm text-gray-300 mt-2">
-                              Non residente in sardegna 5000€
-                            </p>
-                          </>
+                        {extra.description && (
+                          <p className="text-xs text-gray-400 mt-1">{getTranslated(extra.description)}</p>
                         )}
                       </div>
                     </div>
-                  </details>
-                </div>
-              </div>
-            </section>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
-
-  if (authLoading) {
-    return (
-      <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800 relative text-center">
-        <h2 className="text-2xl font-bold text-white mb-4">Loading...</h2>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800 relative text-center">
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
-          aria-label="Close"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-        <h2 className="text-2xl font-bold text-white mb-4">Accesso Richiesto</h2>
-        <p className="text-gray-300 mb-6">Devi effettuare l'accesso o registrarti per poter completare una prenotazione.</p>
-        <div className="flex justify-center space-x-4">
-          <Link to="/signin" onClick={onClose} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">Accedi</Link>
-          <Link to="/signup" onClick={onClose} className="px-8 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors">Registrati</Link>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <AnimatePresence>
-        {isCameraOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4"
-          >
-            <video ref={videoRef} autoPlay playsInline className="max-w-full max-h-[70vh] rounded-lg mb-4" style={{ transform: 'scaleX(-1)' }}></video>
-            <div className="flex space-x-4">
-              <button type="button" onClick={handleTakePhoto} className="px-6 py-2 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">
-                {t('Take_Photo')}
+      );
+    case 4:
+      return (
+        <div className="space-y-8">
+          <section>
+            <h3 className="text-lg font-bold text-white mb-4">METODO DI PAGAMENTO</h3>
+            <div className="flex border-b border-gray-700 mb-6">
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'credit' }))}
+                className={`flex-1 py-2 text-sm font-semibold ${formData.paymentMethod === 'credit' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}
+              >
+                Credit Wallet
               </button>
-              <button type="button" onClick={handleCloseCamera} className="px-6 py-2 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors">
-                {t('Close')}
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'stripe' }))}
+                className={`flex-1 py-2 text-sm font-semibold ${formData.paymentMethod === 'stripe' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}
+              >
+                Carta
               </button>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <canvas ref={canvasRef} className="hidden"></canvas>
 
-      <div className="w-full max-w-lg mx-auto mb-12 px-4">
-        <div className="flex items-center justify-between">
-          {steps.map((s, index) => (
-            <React.Fragment key={s.id}>
-              <div className="flex flex-col items-center text-center">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${step >= s.id ? 'bg-white border-white text-black' : 'border-gray-600 text-gray-400'}`}>{s.id}</div>
-                <p className={`mt-2 text-xs font-semibold ${step >= s.id ? 'text-white' : 'text-gray-500'}`}>{s.name}</p>
+            {formData.paymentMethod === 'credit' ? (
+              <div className="text-center py-6">
+                {isLoadingBalance ? (
+                  <div className="flex items-center justify-center">
+                    <div className="w-8 h-8 border-2 border-t-white border-gray-600 rounded-full animate-spin"></div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm text-gray-400 mb-2">Saldo Disponibile</p>
+                    <p className="text-4xl font-bold text-white mb-4">€{creditBalance.toFixed(2)}</p>
+                    {creditBalance < total ? (
+                      <p className="text-sm text-red-400">Credito insufficiente. Richiesto: €{total.toFixed(2)}</p>
+                    ) : (
+                      <p className="text-sm text-green-400">✓ Saldo sufficiente</p>
+                    )}
+                  </>
+                )}
               </div>
-              {index < steps.length - 1 && <div className={`flex-1 h-0.5 mx-4 transition-colors duration-300 ${step > s.id ? 'bg-white' : 'bg-gray-700'}`}></div>}
-            </React.Fragment>
-          ))}
-        </div>
-      </div>
-
-      <div className={step === 4 ? "lg:grid lg:grid-cols-3 lg:gap-8 px-4" : "px-4"}>
-        {step === 4 && (
-          <aside className="lg:col-span-1 lg:sticky lg:top-32 self-start mb-8 lg:mb-0">
-            <div className="bg-gray-900/50 p-6 rounded-lg border border-gray-800">
-              <h2 className="text-2xl font-bold text-white mb-4">RIEPILOGO COSTI</h2>
-              <img src={item.image} alt={item.name} className="w-full h-40 object-contain rounded-md mb-4 bg-gray-800/30" />
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-gray-400">Durata noleggio:</span><span className="text-white font-medium">{duration.days} giorni</span></div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Km pacchetto:</span>
-                  <span className="text-white font-medium">
-                    {(formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}
-                  </span>
+            ) : (
+              <>
+                <h4 className="text-base font-semibold text-white mb-3">DATI CARTA DI CREDITO/DEBITO</h4>
+                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 min-h-[56px] flex items-center">
+                  {isClientSecretLoading ? <div className="text-gray-400 text-sm">Initializing Payment...</div> : <div ref={cardElementRef} className="w-full" />}
                 </div>
+                {stripeError && <p className="text-xs text-red-400 mt-1">{stripeError}</p>}
+              </>
+            )}
+          </section>
 
-                <div className="border-t border-gray-700 my-2"></div>
+          <section className="border-t border-gray-700 pt-6">
+            <h3 className="text-lg font-bold text-white mb-4 uppercase">Conferme Finali</h3>
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-start">
+                  <input id="confirms-documents" name="confirmsDocuments" type="checkbox" checked={formData.confirmsDocuments} onChange={handleChange} className="h-4 w-4 mt-1 rounded border-gray-600 bg-gray-700 text-white focus:ring-white" />
+                  <label htmlFor="confirms-documents" className="ml-3 block text-sm font-medium text-white">
+                    Confermo che i documenti caricati sono corretti e appartengono al conducente principale.
+                  </label>
+                </div>
+                {errors.confirmsDocuments && <p className="text-xs text-red-400 mt-1 pl-7">{errors.confirmsDocuments}</p>}
+              </div>
+              <div>
+                <div className="flex items-start">
+                  <input id="agrees-to-terms" name="agreesToTerms" type="checkbox" checked={formData.agreesToTerms} onChange={handleChange} className="h-4 w-4 mt-1 rounded border-gray-600 bg-gray-700 text-white focus:ring-white" />
+                  <label htmlFor="agrees-to-terms" className="ml-3 block text-sm font-medium text-white">
+                    Ho letto e accetto i <Link to="/rental-agreement" target="_blank" className="underline hover:text-white">termini e le condizioni di noleggio</Link>.
+                  </label>
+                </div>
+                {errors.agreesToTerms && <p className="text-xs text-red-400 mt-1 pl-7">{errors.agreesToTerms}</p>}
+              </div>
+              <div>
+                <div className="flex items-start">
+                  <input id="agrees-to-privacy" name="agreesToPrivacy" type="checkbox" checked={formData.agreesToPrivacy} onChange={handleChange} className="h-4 w-4 mt-1 rounded border-gray-600 bg-gray-700 text-white focus:ring-white" />
+                  <label htmlFor="agrees-to-privacy" className="ml-3 block text-sm font-medium text-white">
+                    Ho letto e accetto l'<Link to="/privacy-policy" target="_blank" className="underline hover:text-white">informativa sulla privacy</Link>.
+                  </label>
+                </div>
+                {errors.agreesToPrivacy && <p className="text-xs text-red-400 mt-1 pl-7">{errors.agreesToPrivacy}</p>}
+              </div>
+            </div>
+          </section>
 
-                <div className="flex justify-between"><span className="text-gray-400">Noleggio {item.name}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Pacchetto chilometrici</span><span className="text-white font-medium">{formatPrice(kmPackageCost)}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400 notranslate">Assicurazione KASKO</span><span className="text-white font-medium">{formatPrice(insuranceCost)}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Lavaggio obbligatorio</span><span className="text-white font-medium">{formatPrice(carWashFee)}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Spese di ritiro</span><span className="text-white font-medium">{formatPrice(pickupFee)}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Spese di riconsegna</span><span className="text-white font-medium">{formatPrice(dropoffFee)}</span></div>
-                {secondDriverFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Secondo guidatore</span><span className="text-white font-medium">{formatPrice(secondDriverFee)}</span></div>}
-                {youngDriverFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Supplemento under 25</span><span className="text-white font-medium">{formatPrice(youngDriverFee)}</span></div>}
-                {recentLicenseFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Supplemento patente recente</span><span className="text-white font-medium">{formatPrice(recentLicenseFee)}</span></div>}
+          <section className="border-t border-gray-700 pt-6">
+            <h3 className="text-lg font-bold text-white mb-4 uppercase">Riepilogo Completo Prenotazione</h3>
+            <div className="p-6 bg-gray-800/50 rounded-lg border border-gray-700 space-y-6 text-sm">
+              <div>
+                <p className="font-bold text-base text-white mb-2">VEICOLO SELEZIONATO</p>
+                <hr className="border-gray-600 mb-2" />
+                <p>{item.name}</p>
+              </div>
 
-                <div className="border-t border-white/20 my-2"></div>
+              <div>
+                <p className="font-bold text-base text-white mb-2">DATE E LOCALITÀ</p>
+                <hr className="border-gray-600 mb-2" />
+                <p>Ritiro: {formData.pickupDate} alle {formData.pickupTime} - {getTranslated(PICKUP_LOCATIONS.find(l => l.id === formData.pickupLocation)?.label)}</p>
+                <p>Riconsegna: {formData.returnDate} alle {formData.returnTime} - {getTranslated(PICKUP_LOCATIONS.find(l => l.id === formData.returnLocation)?.label)}</p>
+                <p>Durata: {duration.days} giorni</p>
+                <p>Pacchetto km: {(formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}</p>
+              </div>
+
+              <div>
+                <p className="font-bold text-base text-white mb-2">CONDUCENTE/I</p>
+                <hr className="border-gray-600 mb-2" />
+                <p>Principale: {formData.firstName} {formData.lastName}</p>
+                <p className="text-xs text-gray-400">{formData.email} - {formData.phone}</p>
+                <p className="text-xs text-gray-400">{driverAge} anni - Patente: {licenseYears} anni</p>
+                {(formData.licenseImage || formData.idImage) && <p className="text-xs text-green-400">Documenti caricati</p>}
+                {formData.addSecondDriver && (
+                  <div className="mt-2">
+                    <p>Secondo: {formData.secondDriver.firstName} {formData.secondDriver.lastName}</p>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <p className="font-bold text-base text-white mb-2">ASSICURAZIONE E SERVIZI</p>
+                <hr className="border-gray-600 mb-2" />
+                <p>Assicurazione: {getTranslated(insuranceOptions.find(i => i.id === formData.insuranceOption)?.label)}</p>
+                <p>Lavaggio completo obbligatorio</p>
+                {formData.addSecondDriver && <p>Secondo guidatore</p>}
+              </div>
+
+              <div>
+                <p className="font-bold text-base text-white mb-2">DETTAGLIO COSTI</p>
+                <hr className="border-gray-600 mb-2" />
+                <div className="flex justify-between">
+                  <span>
+                    Noleggio ({duration.days} gg {isMassimo ? `× €${Math.round(SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseRate * (1 - SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseDiscount))} [FISSO]` : `× ${item.pricePerDay ? formatPrice(item.pricePerDay[currency]) : '€0'}`})
+                  </span>
+                  <span>{formatPrice(rentalCost)}</span>
+                </div>
+                <div className="flex justify-between"><span>Pacchetto km ({(formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'illimitati' : `${includedKm} km`})</span> <span>{formatPrice(kmPackageCost)}</span></div>
+                <div className="flex justify-between"><span className="notranslate">Assicurazione KASKO</span> <span>{formatPrice(insuranceCost)}</span></div>
+                <div className="flex justify-between"><span>Lavaggio obbligatorio</span> <span>{formatPrice(carWashFee)}</span></div>
+                <div className="flex justify-between"><span>Spese di ritiro</span> <span>{formatPrice(pickupFee)}</span></div>
+                <div className="flex justify-between"><span>Spese di riconsegna</span> <span>{formatPrice(dropoffFee)}</span></div>
+                {secondDriverFee > 0 && <div className="flex justify-between"><span>Secondo guidatore ({duration.days} gg × €10)</span> <span>{formatPrice(secondDriverFee)}</span></div>}
+                {youngDriverFee > 0 && <div className="flex justify-between"><span>Supplemento under 25 ({duration.days} gg × €10)</span> <span>{formatPrice(youngDriverFee)}</span></div>}
+                {recentLicenseFee > 0 && <div className="flex justify-between"><span>Supplemento patente recente ({duration.days} gg × €20)</span> <span>{formatPrice(recentLicenseFee)}</span></div>}
+                <hr className="border-gray-500 my-2" />
+
+                {isMassimo && (
+                  <div className="mb-2 p-2 bg-blue-900/30 border border-blue-500/30 rounded">
+                    <p className="text-blue-200 font-semibold text-center text-xs uppercase mb-1">★ Cliente Speciale Massimo Runchina ★</p>
+                    {specialDiscountAmount > 0 ? (
+                      <div className="flex justify-between text-green-400 font-bold">
+                        <span>Sconto Fedeltà (10% dopo 3gg)</span>
+                        <span>-{formatPrice(specialDiscountAmount)}</span>
+                      </div>
+                    ) : (
+                      <p className="text-gray-400 text-xs text-center">Tariffa fissa €305/gg applicata</p>
+                    )}
+                  </div>
+                )}
 
                 {membershipDiscount > 0 ? (
                   <>
-                    <div className="flex justify-between text-gray-400 line-through text-sm"><span>Totale</span><span>{formatPrice(originalTotal)}</span></div>
+                    <div className="flex justify-between text-gray-400 line-through"><span>Totale</span> <span>{formatPrice(originalTotal)}</span></div>
                     <div className="flex justify-between text-green-400 text-sm">
-                      <span>Sconto {membershipTier}</span>
+                      <span>Sconto {membershipTier} ({(membershipDiscount / originalTotal * 100).toFixed(0)}%)</span>
                       <span>-{formatPrice(membershipDiscount)}</span>
                     </div>
-                    <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(finalTotal)}</span></div>
+                    <div className="flex justify-between font-bold text-lg text-white"><span>TOTALE</span> <span>{formatPrice(finalTotal)}</span></div>
                   </>
                 ) : (
-                  <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(total)}</span></div>
+                  <div className="flex justify-between font-bold text-lg"><span>TOTALE</span> <span>{formatPrice(total)}</span></div>
                 )}
               </div>
-            </div>
-          </aside>
-        )}
 
-        <main className={step === 4 ? "lg:col-span-2" : ""}>
-          <form onSubmit={handleSubmit}>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={step}
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -50 }}
-                transition={{ duration: 0.3 }}
-                className="bg-gray-900/50 p-4 sm:p-6 md:p-8 rounded-lg border border-gray-800 relative"
-              >
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
-                  aria-label="Close"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-                {renderStepContent()}
-              </motion.div>
-            </AnimatePresence>
-
-            {errors.form && (
-              <div className="mt-4 text-center p-3 rounded-md border border-red-500 bg-red-500/10 text-red-400">
-                <p>{errors.form}</p>
+              {/* Maggiori informazioni */}
+              <div className="border-t border-gray-600 pt-3">
+                <details className="group">
+                  <summary className="cursor-pointer text-sm text-gray-300 hover:text-white flex items-center gap-2 font-semibold">
+                    <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
+                    Maggiori informazioni
+                  </summary>
+                  <div className="mt-3 pl-4 space-y-3 border-l-2 border-gray-600">
+                    <div>
+                      {isPremiumVehicle(item.name) ? (
+                        <>
+                          <p className="text-sm text-gray-300">
+                            Al Check-in vi verrà richiesto un deposito cauzionale di 5000€
+                          </p>
+                          <p className="text-sm text-gray-300 mt-2">
+                            O un veicolo dal 2020 in poi di proprietà in buone condizioni,con un supplemento di servizio di 20€ al gg
+                          </p>
+                          <p className="text-sm text-gray-300 mt-2">
+                            Non residente in sardegna 10.000€
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-sm text-gray-300">
+                            Al Check-in vi verrà richiesto un deposito cauzionale di 2500€
+                          </p>
+                          <p className="text-sm text-gray-300 mt-2">
+                            Non residente in sardegna 5000€
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </details>
               </div>
-            )}
+            </div>
+          </section>
+        </div>
+      );
+    default:
+      return null;
+  }
+};
 
-            <div className="flex justify-between gap-4 mt-8">
-              <button type="button" onClick={handleBack} disabled={step === 1} className="px-4 sm:px-8 py-3 bg-gray-700 text-white text-sm sm:text-base font-bold rounded-full hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('Back')}</button>
-              {step < steps.length ? (
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  className="px-4 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={(licenseYears < 2 && step === 2) || (step === 2 && !formData.confirmsInformation)}
-                >
-                  Continua
-                </button>
+if (authLoading) {
+  return (
+    <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800 relative text-center">
+      <h2 className="text-2xl font-bold text-white mb-4">Loading...</h2>
+    </div>
+  );
+}
+
+if (!user) {
+  return (
+    <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800 relative text-center">
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
+        aria-label="Close"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+      <h2 className="text-2xl font-bold text-white mb-4">Accesso Richiesto</h2>
+      <p className="text-gray-300 mb-6">Devi effettuare l'accesso o registrarti per poter completare una prenotazione.</p>
+      <div className="flex justify-center space-x-4">
+        <Link to="/signin" onClick={onClose} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">Accedi</Link>
+        <Link to="/signup" onClick={onClose} className="px-8 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors">Registrati</Link>
+      </div>
+    </div>
+  );
+}
+
+return (
+  <>
+    <AnimatePresence>
+      {isCameraOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4"
+        >
+          <video ref={videoRef} autoPlay playsInline className="max-w-full max-h-[70vh] rounded-lg mb-4" style={{ transform: 'scaleX(-1)' }}></video>
+          <div className="flex space-x-4">
+            <button type="button" onClick={handleTakePhoto} className="px-6 py-2 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">
+              {t('Take_Photo')}
+            </button>
+            <button type="button" onClick={handleCloseCamera} className="px-6 py-2 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors">
+              {t('Close')}
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    <canvas ref={canvasRef} className="hidden"></canvas>
+
+    <div className="w-full max-w-lg mx-auto mb-12 px-4">
+      <div className="flex items-center justify-between">
+        {steps.map((s, index) => (
+          <React.Fragment key={s.id}>
+            <div className="flex flex-col items-center text-center">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${step >= s.id ? 'bg-white border-white text-black' : 'border-gray-600 text-gray-400'}`}>{s.id}</div>
+              <p className={`mt-2 text-xs font-semibold ${step >= s.id ? 'text-white' : 'text-gray-500'}`}>{s.name}</p>
+            </div>
+            {index < steps.length - 1 && <div className={`flex-1 h-0.5 mx-4 transition-colors duration-300 ${step > s.id ? 'bg-white' : 'bg-gray-700'}`}></div>}
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+
+    <div className={step === 4 ? "lg:grid lg:grid-cols-3 lg:gap-8 px-4" : "px-4"}>
+      {step === 4 && (
+        <aside className="lg:col-span-1 lg:sticky lg:top-32 self-start mb-8 lg:mb-0">
+          <div className="bg-gray-900/50 p-6 rounded-lg border border-gray-800">
+            <h2 className="text-2xl font-bold text-white mb-4">RIEPILOGO COSTI</h2>
+            <img src={item.image} alt={item.name} className="w-full h-40 object-contain rounded-md mb-4 bg-gray-800/30" />
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-gray-400">Durata noleggio:</span><span className="text-white font-medium">{duration.days} giorni</span></div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Km pacchetto:</span>
+                <span className="text-white font-medium">
+                  {(formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}
+                </span>
+              </div>
+
+              <div className="border-t border-gray-700 my-2"></div>
+
+              <div className="flex justify-between"><span className="text-gray-400">Noleggio {item.name}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div>
+              <div className="flex justify-between"><span className="text-gray-400">Pacchetto chilometrici</span><span className="text-white font-medium">{formatPrice(kmPackageCost)}</span></div>
+              <div className="flex justify-between"><span className="text-gray-400 notranslate">Assicurazione KASKO</span><span className="text-white font-medium">{formatPrice(insuranceCost)}</span></div>
+              <div className="flex justify-between"><span className="text-gray-400">Lavaggio obbligatorio</span><span className="text-white font-medium">{formatPrice(carWashFee)}</span></div>
+              <div className="flex justify-between"><span className="text-gray-400">Spese di ritiro</span><span className="text-white font-medium">{formatPrice(pickupFee)}</span></div>
+              <div className="flex justify-between"><span className="text-gray-400">Spese di riconsegna</span><span className="text-white font-medium">{formatPrice(dropoffFee)}</span></div>
+              {secondDriverFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Secondo guidatore</span><span className="text-white font-medium">{formatPrice(secondDriverFee)}</span></div>}
+              {youngDriverFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Supplemento under 25</span><span className="text-white font-medium">{formatPrice(youngDriverFee)}</span></div>}
+              {recentLicenseFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Supplemento patente recente</span><span className="text-white font-medium">{formatPrice(recentLicenseFee)}</span></div>}
+
+              <div className="border-t border-white/20 my-2"></div>
+
+              {membershipDiscount > 0 ? (
+                <>
+                  <div className="flex justify-between text-gray-400 line-through text-sm"><span>Totale</span><span>{formatPrice(originalTotal)}</span></div>
+                  <div className="flex justify-between text-green-400 text-sm">
+                    <span>Sconto {membershipTier}</span>
+                    <span>-{formatPrice(membershipDiscount)}</span>
+                  </div>
+                  <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(finalTotal)}</span></div>
+                </>
               ) : (
-                <button
-                  type="submit"
-                  disabled={isProcessing || !formData.agreesToTerms || !formData.agreesToPrivacy || !formData.confirmsDocuments}
-                  className="px-4 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed"
-                >
-                  {isProcessing ? 'Processing...' : 'CONFERMA PRENOTAZIONE'}
-                </button>
+                <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(total)}</span></div>
               )}
             </div>
-          </form>
-        </main>
-      </div>
-    </>
-  );
+          </div>
+        </aside>
+      )}
+
+      <main className={step === 4 ? "lg:col-span-2" : ""}>
+        <form onSubmit={handleSubmit}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              transition={{ duration: 0.3 }}
+              className="bg-gray-900/50 p-4 sm:p-6 md:p-8 rounded-lg border border-gray-800 relative"
+            >
+              <button
+                type="button"
+                onClick={onClose}
+                className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
+                aria-label="Close"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              {renderStepContent()}
+            </motion.div>
+          </AnimatePresence>
+
+          {errors.form && (
+            <div className="mt-4 text-center p-3 rounded-md border border-red-500 bg-red-500/10 text-red-400">
+              <p>{errors.form}</p>
+            </div>
+          )}
+
+          <div className="flex justify-between gap-4 mt-8">
+            <button type="button" onClick={handleBack} disabled={step === 1} className="px-4 sm:px-8 py-3 bg-gray-700 text-white text-sm sm:text-base font-bold rounded-full hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('Back')}</button>
+            {step < steps.length ? (
+              <button
+                type="button"
+                onClick={handleNext}
+                className="px-4 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={(licenseYears < 2 && step === 2) || (step === 2 && !formData.confirmsInformation)}
+              >
+                Continua
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={isProcessing || !formData.agreesToTerms || !formData.agreesToPrivacy || !formData.confirmsDocuments}
+                className="px-4 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed"
+              >
+                {isProcessing ? 'Processing...' : 'CONFERMA PRENOTAZIONE'}
+              </button>
+            )}
+          </div>
+        </form>
+      </main>
+    </div>
+  </>
+);
 };
 
 export default CarBookingWizard;

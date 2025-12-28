@@ -578,10 +578,10 @@ export const INSURANCE_ELIGIBILITY = {
 };
 
 export const URBAN_INSURANCE_ELIGIBILITY = {
-  KASKO_BASE: { minAge: 18, minLicenseYears: 3 }, // Updated to 3 years
+  KASKO_BASE: { minAge: 18, minLicenseYears: 1 }, // User Update: Min 1 year license
   KASKO_BLACK: { minAge: 25, minLicenseYears: 5 },
   KASKO_SIGNATURE: { minAge: 30, minLicenseYears: 10 },
-  KASKO_DR7: { minAge: 30, minLicenseYears: 10 },
+  KASKO_DR7: { minAge: 18, minLicenseYears: 10 }, // User Update: Min 10 years check, NO AGE limit (set to 18 base)
 };
 
 export const VALIDATION_MESSAGES = {

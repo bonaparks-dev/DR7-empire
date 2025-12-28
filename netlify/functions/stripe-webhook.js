@@ -347,10 +347,10 @@ exports.handler = async (event) => {
       case 'checkout.session.completed': {
         const session = stripeEvent.data.object;
         await createAndSendVoucher({
-            email: session.customer_email,
-            paid_cents: session.amount_total,
-            stripe_object_id: session.id,
-            value_cents: parseInt(session.metadata.value, 10) * 100 || 2500
+          email: session.customer_email,
+          paid_cents: session.amount_total,
+          stripe_object_id: session.id,
+          value_cents: parseInt(session.metadata.value, 10) * 100 || 2500
         });
         break;
       }
@@ -361,10 +361,10 @@ exports.handler = async (event) => {
         // Handle old voucher system
         if (paymentIntent.metadata.generateVoucher === 'true') {
           await createAndSendVoucher({
-              email: paymentIntent.metadata.email,
-              paid_cents: paymentIntent.amount,
-              stripe_object_id: paymentIntent.id,
-              value_cents: parseInt(paymentIntent.metadata.voucherValue, 10) || 2500
+            email: paymentIntent.metadata.email,
+            paid_cents: paymentIntent.amount,
+            stripe_object_id: paymentIntent.id,
+            value_cents: parseInt(paymentIntent.metadata.voucherValue, 10) || 2500
           });
         }
 
@@ -392,6 +392,61 @@ exports.handler = async (event) => {
             console.log('[Ticket] WhatsApp notification sent');
           } catch (error) {
             console.error('[Ticket] Failed to send WhatsApp notification:', error);
+          }
+        }
+
+        // Handle car wash booking payments (BACKUP NOTIFICATION SYSTEM)
+        if (paymentIntent.metadata.bookingType === 'car_wash') {
+          console.log('[CarWash] Car wash payment detected, processing backup notifications...');
+
+          try {
+            // Find the booking by stripe_payment_intent_id
+            const { data: booking, error: fetchError } = await supabase
+              .from('bookings')
+              .select('*')
+              .eq('stripe_payment_intent_id', paymentIntent.id)
+              .eq('service_type', 'car_wash')
+              .single();
+
+            if (fetchError || !booking) {
+              console.error('[CarWash] Could not find booking for payment intent:', paymentIntent.id, fetchError);
+            } else {
+              console.log('[CarWash] Found booking:', booking.id);
+
+              // Send confirmation email (this is the backup in case frontend call failed)
+              try {
+                console.log('[CarWash] Sending confirmation email via webhook backup...');
+                const emailResponse = await fetch(`${process.env.URL}/.netlify/functions/send-booking-confirmation`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ booking })
+                });
+
+                if (emailResponse.ok) {
+                  console.log('[CarWash] ✅ Confirmation email sent successfully via webhook');
+                } else {
+                  const errorText = await emailResponse.text();
+                  console.error('[CarWash] ❌ Email sending failed:', emailResponse.status, errorText);
+                }
+              } catch (emailError) {
+                console.error('[CarWash] ❌ Error sending confirmation email:', emailError);
+              }
+
+              // Send WhatsApp notification
+              try {
+                console.log('[CarWash] Sending WhatsApp notification via webhook backup...');
+                await fetch(`${process.env.URL}/.netlify/functions/send-whatsapp-notification`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ booking })
+                });
+                console.log('[CarWash] ✅ WhatsApp notification sent successfully via webhook');
+              } catch (whatsappError) {
+                console.error('[CarWash] ❌ Error sending WhatsApp notification:', whatsappError);
+              }
+            }
+          } catch (error) {
+            console.error('[CarWash] Error processing car wash booking webhook:', error);
           }
         }
 
@@ -423,8 +478,8 @@ exports.handler = async (event) => {
         console.log(`Unhandled event type ${stripeEvent.type}`);
     }
   } catch (error) {
-      console.error('Error processing webhook event:', error);
-      return { statusCode: 500, body: JSON.stringify({ error: 'Internal Server Error' }) };
+    console.error('Error processing webhook event:', error);
+    return { statusCode: 500, body: JSON.stringify({ error: 'Internal Server Error' }) };
   }
 
   return { statusCode: 200, body: JSON.stringify({ received: true }) };

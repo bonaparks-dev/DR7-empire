@@ -3,7 +3,10 @@ import nodemailer from "nodemailer";
 import { createCalendarEvent, formatCarRentalEvent, formatCarWashEvent } from './utils/googleCalendar';
 
 const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
+  console.log('📧 [send-booking-confirmation] Function invoked');
+
   if (event.httpMethod !== 'POST') {
+    console.error('❌ Invalid HTTP method:', event.httpMethod);
     return {
       statusCode: 405,
       body: JSON.stringify({ message: 'Method Not Allowed' }),
@@ -13,12 +16,30 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
   const { booking } = JSON.parse(event.body || '{}');
 
   if (!booking) {
+    console.error('❌ No booking data provided');
     return {
       statusCode: 400,
       body: JSON.stringify({ message: 'Booking data is required' }),
     };
   }
 
+  console.log('📋 Processing booking:', {
+    id: booking.id,
+    service_type: booking.service_type,
+    customer_email: booking.customer_email || booking.booking_details?.customer?.email,
+    payment_status: booking.payment_status
+  });
+
+  // Check Gmail credentials
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    console.error('❌ Missing Gmail credentials in environment variables');
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: 'Email service not configured' }),
+    };
+  }
+
+  console.log('✅ Gmail credentials found, creating transporter...');
   const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 587,
@@ -166,16 +187,23 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
   try {
     // Send email to customer
+    console.log('📤 Sending email to customer:', customerEmail);
     await transporter.sendMail(customerMailOptions);
-    console.log('✅ Customer email sent successfully');
+    console.log('✅ Customer email sent successfully to:', customerEmail);
 
     // Send copy to admin (blocking to catch errors)
     try {
+      console.log('📤 Sending notification to admin: info@dr7.app');
       await transporter.sendMail(adminMailOptions);
       console.log('✅ Admin notification email sent successfully');
     } catch (adminError: any) {
       console.error('❌ Failed to send admin notification:', adminError.message);
-      console.error('Admin email error details:', adminError);
+      console.error('Admin email error details:', {
+        code: adminError.code,
+        command: adminError.command,
+        response: adminError.response,
+        responseCode: adminError.responseCode
+      });
     }
 
     // Create Google Calendar event (non-blocking)
@@ -204,10 +232,21 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       body: JSON.stringify({ message: 'Email sent successfully' }),
     };
   } catch (error: any) {
-    console.error('Error sending email:', error);
+    console.error('❌ Critical error sending email:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      command: error.command,
+      response: error.response,
+      stack: error.stack
+    });
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'Error sending email', error: error.message }),
+      body: JSON.stringify({
+        message: 'Error sending email',
+        error: error.message,
+        code: error.code
+      }),
     };
   }
 };

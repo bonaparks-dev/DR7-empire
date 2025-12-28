@@ -467,8 +467,8 @@ const AdminCalendarPage: React.FC = () => {
                               {booking.appointment_date
                                 ? new Date(booking.appointment_date).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', { timeZone: 'Europe/Rome' })
                                 : booking.pickup_date
-                                ? new Date(booking.pickup_date).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', { timeZone: 'Europe/Rome' })
-                                : 'N/A'}
+                                  ? new Date(booking.pickup_date).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', { timeZone: 'Europe/Rome' })
+                                  : 'N/A'}
                             </p>
                           </div>
                           <div>
@@ -661,14 +661,26 @@ const AdminCalendarPage: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      {lang === 'it' ? 'Totale (centesimi)' : 'Total (cents)'}
+                      {lang === 'it' ? 'Totale (€)' : 'Total (€)'}
                     </label>
                     <input
                       type="number"
-                      value={editingBooking.price_total}
-                      onChange={(e) => setEditingBooking({ ...editingBooking, price_total: parseInt(e.target.value) })}
+                      step="0.01"
+                      min="0"
+                      value={(editingBooking.price_total / 100).toFixed(2)}
+                      onChange={(e) => {
+                        const euros = parseFloat(e.target.value) || 0;
+                        const cents = Math.round(euros * 100);
+                        setEditingBooking({ ...editingBooking, price_total: cents });
+                      }}
                       className="w-full bg-gray-800 border-gray-700 rounded-md p-2 text-white"
+                      placeholder="4.90"
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {lang === 'it'
+                        ? `Centesimi: ${editingBooking.price_total}`
+                        : `Cents: ${editingBooking.price_total}`}
+                    </p>
                   </div>
                 </div>
                 <div className="flex gap-4 mt-6">
@@ -724,9 +736,9 @@ const AdminCalendarPage: React.FC = () => {
 
                       const vehicleBookings = bookings.filter(
                         b => b.vehicle_name === showVehicleCalendar &&
-                        b.pickup_date && b.dropoff_date &&
-                        new Date(day) >= new Date(b.pickup_date) &&
-                        new Date(day) <= new Date(b.dropoff_date)
+                          b.pickup_date && b.dropoff_date &&
+                          new Date(day) >= new Date(b.pickup_date) &&
+                          new Date(day) <= new Date(b.dropoff_date)
                       );
 
                       const isToday = day.toDateString() === new Date().toDateString();

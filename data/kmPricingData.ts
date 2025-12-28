@@ -226,6 +226,13 @@ export const getUnlimitedKmOptions = (vehicleName: string): UnlimitedKmOption[] 
   return isPremiumVehicle(vehicleName) ? UNLIMITED_KM_PREMIUM : UNLIMITED_KM_STANDARD;
 };
 
+export const isUrbanVehicle = (vehicleName: string): boolean => {
+  const lower = vehicleName.toLowerCase();
+  return lower.includes('panda') || lower.includes('500') || lower.includes('clio') || lower.includes('renault clio') ||
+    lower.includes('captur') || lower.includes('twingo') || lower.includes('ypsilon') ||
+    lower.includes('smart') || lower.includes('polo') || lower.includes('c3') || lower.includes('citroen') || lower.includes('lancia');
+};
+
 /**
  * Calculate unlimited KM price based on rental duration
  */
@@ -234,6 +241,11 @@ export const calculateUnlimitedKmPrice = (
   rentalDays: number,
   isFirstPurchase: boolean = true
 ): number => {
+  // Urban vehicles have FREE unlimited km
+  if (isUrbanVehicle(vehicleName)) {
+    return 0;
+  }
+
   // Special pricing for Ducato: flat €100 for unlimited km
   if (isDucatoVehicle(vehicleName)) {
     return 100;
