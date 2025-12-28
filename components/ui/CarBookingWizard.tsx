@@ -750,9 +750,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const calculatedDropoffFee = 0;
 
     // Car Wash Fee (Mandatory for most clients, excluded for special clients)
-    // Utilitarie / Furgone: €15
-    // Supercar / V-Class: €30 (User Request: "SOLO PER SUPERCAR E V CLASS")
-    let carWashFee = (vType === 'UTILITARIA' || vType === 'FURGONE') ? 15 : 30;
+    // Utilitarie / Furgone / V-Class: €15
+    // Supercar: €30 (User Request: "SOLO PER SUPERCAR")
+    let carWashFee = (vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS') ? 15 : 30;
 
     // Exclude car wash for Massimo Runchina
     if (isMassimo && SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.excludeCarWash) {
