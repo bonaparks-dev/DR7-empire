@@ -199,6 +199,34 @@ const MyBookings = () => {
                         </>
                       )}
 
+                      {/* Insurance and Deposit Info */}
+                      {booking.pickup_date && (
+                        <>
+                          <div>
+                            <p className="text-gray-400">
+                              {lang === 'it' ? 'Assicurazione' : 'Insurance'}:
+                            </p>
+                            <p className="text-white">
+                              {booking.insurance_option || booking.booking_details?.insuranceOption || 'N/A'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-400">
+                              {lang === 'it' ? 'Cauzione' : 'Deposit'}:
+                            </p>
+                            <p className="text-white">
+                              {(() => {
+                                const insurance = booking.insurance_option || booking.booking_details?.insuranceOption;
+                                if (insurance === 'RCA') return '2000€';
+                                if (insurance === 'KASKO_BASE' || insurance === 'Kasko Base') return '500€';
+                                if (insurance === 'KASKO_DR7' || insurance === 'Kasko DR7') return '0€';
+                                return 'N/A';
+                              })()}
+                            </p>
+                          </div>
+                        </>
+                      )}
+
                       <div>
                         <p className="text-gray-400">
                           {lang === 'it' ? 'Totale' : 'Total'}:
