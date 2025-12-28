@@ -628,24 +628,19 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
         const diffTime = Math.abs(ret.getTime() - pickup.getTime());
         const standardHours = diffTime / (1000 * 60 * 60);
-        // Display precise duration
-        days = Math.floor(standardHours / 24);
-        hours = Math.floor(standardHours % 24);
 
-        // Billing Logic:
-        // User requested strict "Day 8 - Day 6 = 2 Days".
-        // This is equivalent to Math.ceil((ReturnDate - PickupDate) / 24h) IF we ignore partial times?
-        // NO, "Dal 6 al 8" implies ReturnDate(8) - PickupDate(6) = 2.
-        // A simple day difference ignoring time:
+        // Calendar Day Logic (Midnight to Midnight)
         const pDate = new Date(pickup); pDate.setHours(0, 0, 0, 0);
         const rDate = new Date(ret); rDate.setHours(0, 0, 0, 0);
         const diffDaysCalendar = Math.round((rDate.getTime() - pDate.getTime()) / (1000 * 60 * 60 * 24));
 
-        // Ensure minimum 1 day billing
+        // Unified Duration & Billing Logic
+        // Ensures that if price is for 4 days, display says "4 days"
         billingDays = Math.max(1, diffDaysCalendar);
+        days = billingDays;
 
-        // Ensure at least 1 day for display
-        if (days < 1) days = 1;
+        hours = Math.floor(standardHours % 24);
+
         if (billingDays < 1) billingDays = 1;
       }
     }
@@ -1800,10 +1795,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           <span className="ml-2 text-xs text-green-400">Selezionata</span>
                         )}
                       </label>
-                      <CalendarPicker
+                      <input
+                        type="date"
                         name="pickupDate"
                         value={formData.pickupDate}
-                        onChange={(value) => {
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (!value) return;
+
                           if (getDayOfWeek(value) === 0) {
                             alert('Non è possibile ritirare il veicolo di domenica. Siamo chiusi la domenica.\n\nPer favore seleziona un altro giorno.');
                             return;
@@ -1821,13 +1820,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             // Reset return date if it becomes invalid
                             setFormData(prev => ({ ...prev, pickupDate: value, returnDate: '', returnTime: '' }));
                           } else {
-                            const syntheticEvent = { target: { name: 'pickupDate', value } } as React.ChangeEvent<HTMLInputElement>;
-                            handleChange(syntheticEvent);
+                            handleChange(e);
                           }
                         }}
                         min={today}
                         required
-                        error={!!errors.pickupDate}
                         className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors cursor-pointer ${errors.pickupDate
                           ? 'border-red-500 focus:border-red-400'
                           : formData.pickupDate
@@ -1884,10 +1881,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           <span className="ml-2 text-xs text-green-400">Selezionata</span>
                         )}
                       </label>
-                      <CalendarPicker
+                      <input
+                        type="date"
                         name="returnDate"
                         value={formData.returnDate}
-                        onChange={(value) => {
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (!value) return;
+
                           // Check if selected date is Sunday (0 = Sunday)
                           if (getDayOfWeek(value) === 0) {
                             alert('Non è possibile riconsegnare il veicolo di domenica. Siamo chiusi la domenica.\n\nPer favorere seleziona un altro giorno.');
@@ -1904,14 +1905,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             return;
                           }
 
-                          const syntheticEvent = {
-                            target: { name: 'returnDate', value }
-                          } as React.ChangeEvent<HTMLInputElement>;
-                          handleChange(syntheticEvent);
+                          handleChange(e);
                         }}
                         min={formData.pickupDate || today}
                         required
-                        error={!!(errors.returnDate || errors.date)}
                         className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors ${!formData.pickupDate
                           ? 'border-gray-700 opacity-50 cursor-not-allowed'
                           : errors.returnDate || errors.date
@@ -1985,9 +1982,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               <div><label className="text-sm text-gray-400">Cognome *</label><input type="text" name={`${prefix}lastName`} value={(driverData as any).lastName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}lastName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}lastName`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Email *</label><input type="email" name={`${prefix}email`} value={(driverData as any).email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}email`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}email`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Telefono *</label><input type="tel" name={`${prefix}phone`} value={(driverData as any).phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}phone`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}phone`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Data di nascita *</label><CalendarPicker name={`${prefix}birthDate`} value={(driverData as any).birthDate} onChange={(value) => { const syntheticEvent = { target: { name: `${prefix}birthDate`, value } } as React.ChangeEvent<HTMLInputElement>; handleChange(syntheticEvent); }} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm cursor-pointer" />{errors[`${prefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}birthDate`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Data di nascita *</label><input type="date" name={`${prefix}birthDate`} value={(driverData as any).birthDate} onChange={handleChange} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}birthDate`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Numero patente *</label><input type="text" name={`${prefix}licenseNumber`} value={(driverData as any).licenseNumber} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}licenseNumber`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseNumber`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Data rilascio patente *</label><CalendarPicker name={`${prefix}licenseIssueDate`} value={(driverData as any).licenseIssueDate} onChange={(value) => { const syntheticEvent = { target: { name: `${prefix}licenseIssueDate`, value } } as React.ChangeEvent<HTMLInputElement>; handleChange(syntheticEvent); }} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm cursor-pointer" />{errors[`${prefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseIssueDate`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Data rilascio patente *</label><input type="date" name={`${prefix}licenseIssueDate`} value={(driverData as any).licenseIssueDate} onChange={handleChange} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseIssueDate`]}</p>}</div>
             </div>
           );
         };
@@ -2561,7 +2558,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     <span>{formatPrice(rentalCost)}</span>
                   </div>
                   <div className="flex justify-between"><span>Pacchetto km ({(formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'illimitati' : `${includedKm} km`})</span> <span>{formatPrice(kmPackageCost)}</span></div>
-                  <div className="flex justify-between"><span className="notranslate">Assicurazione KASKO</span> <span>{formatPrice(insuranceCost)}</span></div>
+                  <div className="flex justify-between"><span className="notranslate">Assicurazione {formData.insuranceOption?.replace(/_/g, ' ') || 'KASKO'}</span> <span>{formatPrice(insuranceCost)}</span></div>
                   <div className="flex justify-between"><span>Lavaggio obbligatorio</span> <span>{formatPrice(carWashFee)}</span></div>
                   <div className="flex justify-between"><span>Spese di ritiro</span> <span>{formatPrice(pickupFee)}</span></div>
                   <div className="flex justify-between"><span>Spese di riconsegna</span> <span>{formatPrice(dropoffFee)}</span></div>
@@ -2729,7 +2726,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
                 <div className="flex justify-between"><span className="text-gray-400">Noleggio {item.name}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div>
                 <div className="flex justify-between"><span className="text-gray-400">Pacchetto chilometrici</span><span className="text-white font-medium">{formatPrice(kmPackageCost)}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400 notranslate">Assicurazione KASKO</span><span className="text-white font-medium">{formatPrice(insuranceCost)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-400 notranslate">Assicurazione {formData.insuranceOption?.replace(/_/g, ' ') || 'KASKO'}</span><span className="text-white font-medium">{formatPrice(insuranceCost)}</span></div>
                 <div className="flex justify-between"><span className="text-gray-400">Lavaggio obbligatorio</span><span className="text-white font-medium">{formatPrice(carWashFee)}</span></div>
                 <div className="flex justify-between"><span className="text-gray-400">Spese di ritiro</span><span className="text-white font-medium">{formatPrice(pickupFee)}</span></div>
                 <div className="flex justify-between"><span className="text-gray-400">Spese di riconsegna</span><span className="text-white font-medium">{formatPrice(dropoffFee)}</span></div>
