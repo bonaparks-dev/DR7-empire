@@ -28,7 +28,7 @@ const CalendarPicker: React.FC<CalendarPickerProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const MONTHS = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-                  'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+    'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
   const DAYS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
 
   // Convert ISO date to European format
@@ -135,16 +135,16 @@ const CalendarPicker: React.FC<CalendarPickerProps> = ({
   const isToday = (day: number): boolean => {
     const today = new Date();
     return day === today.getDate() &&
-           currentMonth.getMonth() === today.getMonth() &&
-           currentMonth.getFullYear() === today.getFullYear();
+      currentMonth.getMonth() === today.getMonth() &&
+      currentMonth.getFullYear() === today.getFullYear();
   };
 
   const isSelected = (day: number): boolean => {
     if (!value) return false;
     const [year, month, selectedDay] = value.split('-');
     return day === parseInt(selectedDay) &&
-           currentMonth.getMonth() === parseInt(month) - 1 &&
-           currentMonth.getFullYear() === parseInt(year);
+      currentMonth.getMonth() === parseInt(month) - 1 &&
+      currentMonth.getFullYear() === parseInt(year);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -261,7 +261,7 @@ const CalendarPicker: React.FC<CalendarPickerProps> = ({
                       aspect-square rounded-lg text-sm font-medium transition-all
                       ${disabled ? 'text-gray-600 cursor-not-allowed' : 'text-white hover:bg-gray-800 cursor-pointer'}
                       ${today && !selected ? 'ring-2 ring-blue-500' : ''}
-                      ${selected ? 'bg-white text-black font-bold' : ''}
+                      ${selected ? 'bg-blue-500 text-white font-bold' : ''}
                     `}
                   >
                     {day}
