@@ -1467,6 +1467,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("handleSubmit called", { paymentMethod: formData.paymentMethod, step, userId: user?.id });
     if (!validateStep() || !item) return;
     setIsProcessing(true);
 
