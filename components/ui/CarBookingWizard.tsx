@@ -1570,14 +1570,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         };
 
         // 3. Call Atomic RPC
+        console.log("Starting credit booking RPC call...", { user: user.id, amount: Math.round(finalTotal * 100), vehicle: item.name });
         const { data, error } = await supabase.rpc('book_with_credits', {
           p_user_id: user.id,
           p_amount_cents: Math.round(finalTotal * 100),
           p_vehicle_name: item.name,
           p_booking_payload: bookingPayload
         });
+        console.log("RPC returned:", { data, error });
 
         if (error) {
+          console.error("RPC Error:", error);
           setStripeError(error.message);
           setIsProcessing(false);
           // Attempt Refund logic if needed? 
@@ -1586,6 +1589,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         }
 
         if (data && data.success) {
+          console.log("Booking successful! Payload:", data);
           // 4. Success Notifications
           // We need a 'full' booking object for the notification functions, similar to what 'insert' returns.
           // The RPC returns { success: true, booking_id: '...', new_balance: ... }
@@ -1614,6 +1618,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             status: 'confirmed',
             payment_status: 'succeeded'
           };
+
+          console.log("Calling onBookingComplete...", finalBookingData);
 
           // Send Email Confirmation
           fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
@@ -1652,14 +1658,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           setTimeout(() => window.open(whatsappUrl, '_blank'), 1000);
 
           // CRITICAL: Reset processing state after successful booking
+          console.log("Resetting processing state to false");
           setIsProcessing(false);
         } else {
           // RPC returned but success was not true
+          console.warn("RPC returned success: false", data);
           setStripeError(data?.message || "Booking failed. Please try again or contact support.");
           setIsProcessing(false);
         }
 
       } catch (err: any) {
+        console.error("Catch Error during booking:", err);
         setStripeError(err.message || "Unknown error during booking");
         setIsProcessing(false);
       }
@@ -2450,6 +2459,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         <p className="text-sm text-green-400">✓ Saldo sufficiente</p>
                       )}
                     </>
+                  )}
+                  {stripeError && (
+                    <div className="mt-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg">
+                      <p className="text-sm text-red-400 text-center">{stripeError}</p>
+                    </div>
                   )}
                 </div>
               ) : (
