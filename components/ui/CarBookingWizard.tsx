@@ -2607,10 +2607,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         ) : (
                           <>
                             <p className="text-sm text-gray-300">
-                              Al Check-in vi verrà richiesto un deposito cauzionale di 2500€
-                            </p>
-                            <p className="text-sm text-gray-300 mt-2">
-                              Non residente in sardegna 5000€
+                              {formData.insuranceOption === 'RCA' && 'Cauzione: 2000€'}
+                              {formData.insuranceOption === 'KASKO_BASE' && 'Cauzione: 500€'}
+                              {formData.insuranceOption === 'KASKO_DR7' && 'Cauzione: 0€ (Nessun deposito richiesto)'}
                             </p>
                           </>
                         )}
