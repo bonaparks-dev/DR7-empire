@@ -124,6 +124,22 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     const customerPhone = booking.customer_phone || booking.booking_details?.customer?.phone || 'N/A';
     const insuranceOption = booking.insurance_option || booking.booking_details?.insuranceOption || 'Nessuna';
 
+    // Calculate deposit based on insurance type
+    let depositAmount = 'N/A';
+    if (insuranceOption === 'RCA') {
+      depositAmount = '2000€';
+    } else if (insuranceOption === 'KASKO_BASE') {
+      depositAmount = '500€';
+    } else if (insuranceOption === 'KASKO_DR7') {
+      depositAmount = '0€';
+    }
+
+    // Get pickup location - replace dr7_office with actual address
+    let pickupLocation = booking.pickup_location || 'DR7 Office';
+    if (pickupLocation === 'dr7_office' || pickupLocation === 'DR7 Office') {
+      pickupLocation = 'Via Cagliari, 09040 Settimo San Pietro CA, Italia';
+    }
+
     // Format dates and times in Europe/Rome timezone with dd/mm/yyyy and 24-hour format
     const pickupDateFormatted = pickupDate.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Rome' });
     const pickupTimeFormatted = pickupDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Rome' });
@@ -146,8 +162,9 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
           <p><strong>Telefono:</strong> ${customerPhone}</p>
           <p><strong>Data e Ora Ritiro:</strong> ${pickupDateFormatted} alle ${pickupTimeFormatted}</p>
           <p><strong>Data e Ora Riconsegna:</strong> ${dropoffDateFormatted} alle ${dropoffTimeFormatted}</p>
-          <p><strong>Luogo di Ritiro:</strong> ${booking.pickup_location}</p>
+          <p><strong>Luogo di Ritiro:</strong> ${pickupLocation}</p>
           <p><strong>Assicurazione:</strong> ${insuranceOption}</p>
+          <p><strong>Cauzione:</strong> ${depositAmount}</p>
           <p><strong>Stato Pagamento:</strong> ${booking.payment_status === 'pending' ? 'In attesa' : 'Completato'}</p>
         </div>
 
