@@ -1650,10 +1650,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
           const whatsappUrl = `https://wa.me/393457905205?text=${encodeURIComponent(whatsappMessage)}`;
           setTimeout(() => window.open(whatsappUrl, '_blank'), 1000);
-        }
 
-        // CRITICAL: Reset processing state after successful booking
-        setIsProcessing(false);
+          // CRITICAL: Reset processing state after successful booking
+          setIsProcessing(false);
+        } else {
+          // RPC returned but success was not true
+          setStripeError(data?.message || "Booking failed. Please try again or contact support.");
+          setIsProcessing(false);
+        }
 
       } catch (err: any) {
         setStripeError(err.message || "Unknown error during booking");
