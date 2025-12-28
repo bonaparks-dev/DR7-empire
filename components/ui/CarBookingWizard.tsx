@@ -1486,7 +1486,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       return;
     }
 
-    if (formData.paymentMethod === 'credits' && step === 4) {
+    if (formData.paymentMethod === 'credit' && step === 4) {
       try {
         // 1. Prepare Documents (Upload if needed)
         let licenseImageUrl = null;
