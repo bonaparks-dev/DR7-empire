@@ -137,7 +137,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     // Get pickup location - replace dr7_office with actual address
     let pickupLocation = booking.pickup_location || 'DR7 Office';
     if (pickupLocation === 'dr7_office' || pickupLocation === 'DR7 Office') {
-      pickupLocation = 'Via Cagliari, 09040 Settimo San Pietro CA, Italia';
+      pickupLocation = 'Viale Marconi, 229, 09131 Cagliari CA';
     }
 
     // Format dates and times in Europe/Rome timezone with dd/mm/yyyy and 24-hour format
