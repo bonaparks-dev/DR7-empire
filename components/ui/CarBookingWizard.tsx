@@ -648,204 +648,204 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         if (days < 1) days = 1;
         if (billingDays < 1) billingDays = 1;
       }
+    }
 
 
+    const isMassimo = isMassimoRunchina(formData.email);
+    const billingDaysCalc = billingDays < 1 ? 1 : billingDays;
 
-      const isMassimo = isMassimoRunchina(formData.email);
-      const billingDaysCalc = billingDays < 1 ? 1 : billingDays;
+    // --- RENTAL COST ---
+    let calculatedRentalCost = billingDays * pricePerDay;
+    let massimoFirstDiscount = 0;
+    if (isMassimo) {
+      // Massimo pricing: €339 base rate with automatic -10% = €305/day
+      const baseRate = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseRate;
+      const baseDiscount = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseDiscount;
+      const baseRentalCost = billingDaysCalc * baseRate;
+      massimoFirstDiscount = baseRentalCost * baseDiscount;
+      calculatedRentalCost = baseRentalCost - massimoFirstDiscount; // €305/day after first discount
+    }
 
-      // --- RENTAL COST ---
-      let calculatedRentalCost = billingDays * pricePerDay;
-      let massimoFirstDiscount = 0;
-      if (isMassimo) {
-        // Massimo pricing: €339 base rate with automatic -10% = €305/day
-        const baseRate = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseRate;
-        const baseDiscount = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseDiscount;
-        const baseRentalCost = billingDaysCalc * baseRate;
-        massimoFirstDiscount = baseRentalCost * baseDiscount;
-        calculatedRentalCost = baseRentalCost - massimoFirstDiscount; // €305/day after first discount
+    const selectedInsurance = insuranceOptions.find(opt => opt.id === formData.insuranceOption);
+
+    // --- INSURANCE COST ---
+    // Dynamic Pricing Logic based on Vehicle Type
+    // RCA: €0/day (all categories)
+    // SUPERCARS:
+    //   - KASKO BASE: €100/day
+    //   - KASKO BLACK: €150/day
+    //   - KASKO SIGNATURE: €200/day
+    //   - DR7: €300/day
+    // URBAN (Panda, Captur):
+    //   - KASKO BASE: €15/day
+    //   - KASKO DR7: €45/day
+    // UTILITAIRE (Ducato, Vito):
+    //   - KASKO BASE: €45/day
+    //   - KASKO DR7: €90/day
+
+    let insuranceDailyPrice = 0;
+    const tier = formData.insuranceOption;
+
+    // Type checking for VehicleType specific logic
+    const vType = getVehicleType(item, categoryContext);
+
+    // RCA is always €0 for all categories
+    if (tier === 'RCA') {
+      insuranceDailyPrice = 0;
+    } else if (tier === 'KASKO_BASE') {
+      if (vType === 'UTILITARIA') insuranceDailyPrice = 15;
+      else if (vType === 'FURGONE' || vType === 'V_CLASS') insuranceDailyPrice = 45;
+      else insuranceDailyPrice = 100; // Supercar
+    } else if (tier === 'KASKO_BLACK') {
+      // Only available for Supercars
+      if (vType === 'SUPERCAR') insuranceDailyPrice = 150;
+      else insuranceDailyPrice = (selectedInsurance?.pricePerDay[currency] || 0);
+    } else if (tier === 'KASKO_SIGNATURE') {
+      // Only available for Supercars
+      if (vType === 'SUPERCAR') insuranceDailyPrice = 200;
+      else insuranceDailyPrice = (selectedInsurance?.pricePerDay[currency] || 0);
+    } else if (tier === 'KASKO_DR7') {
+      if (vType === 'UTILITARIA') insuranceDailyPrice = 45;
+      else if (vType === 'FURGONE' || vType === 'V_CLASS') insuranceDailyPrice = 90;
+      else insuranceDailyPrice = 300; // Supercar
+    }
+
+    let calculatedInsuranceCost = insuranceDailyPrice * billingDays;
+
+    if (isMassimo) {
+      // Massimo gets KASKO BASE included (free)
+      if (formData.insuranceOption === 'KASKO_BASE') {
+        calculatedInsuranceCost = 0;
       }
+    }
 
-      const selectedInsurance = insuranceOptions.find(opt => opt.id === formData.insuranceOption);
-
-      // --- INSURANCE COST ---
-      // Dynamic Pricing Logic based on Vehicle Type
-      // RCA: €0/day (all categories)
-      // SUPERCARS:
-      //   - KASKO BASE: €100/day
-      //   - KASKO BLACK: €150/day
-      //   - KASKO SIGNATURE: €200/day
-      //   - DR7: €300/day
-      // URBAN (Panda, Captur):
-      //   - KASKO BASE: €15/day
-      //   - KASKO DR7: €45/day
-      // UTILITAIRE (Ducato, Vito):
-      //   - KASKO BASE: €45/day
-      //   - KASKO DR7: €90/day
-
-      let insuranceDailyPrice = 0;
-      const tier = formData.insuranceOption;
-
-      // Type checking for VehicleType specific logic
-      const vType = getVehicleType(item, categoryContext);
-
-      // RCA is always €0 for all categories
-      if (tier === 'RCA') {
-        insuranceDailyPrice = 0;
-      } else if (tier === 'KASKO_BASE') {
-        if (vType === 'UTILITARIA') insuranceDailyPrice = 15;
-        else if (vType === 'FURGONE' || vType === 'V_CLASS') insuranceDailyPrice = 45;
-        else insuranceDailyPrice = 100; // Supercar
-      } else if (tier === 'KASKO_BLACK') {
-        // Only available for Supercars
-        if (vType === 'SUPERCAR') insuranceDailyPrice = 150;
-        else insuranceDailyPrice = (selectedInsurance?.pricePerDay[currency] || 0);
-      } else if (tier === 'KASKO_SIGNATURE') {
-        // Only available for Supercars
-        if (vType === 'SUPERCAR') insuranceDailyPrice = 200;
-        else insuranceDailyPrice = (selectedInsurance?.pricePerDay[currency] || 0);
-      } else if (tier === 'KASKO_DR7') {
-        if (vType === 'UTILITARIA') insuranceDailyPrice = 45;
-        else if (vType === 'FURGONE' || vType === 'V_CLASS') insuranceDailyPrice = 90;
-        else insuranceDailyPrice = 300; // Supercar
+    // Calculate extras cost
+    const calculatedExtrasCost = formData.extras.reduce((acc, extraId) => {
+      const extra = RENTAL_EXTRAS.find(e => e.id === extraId);
+      if (!extra) return acc;
+      if (extra.oneTime) {
+        return acc + (extra.pricePerDay[currency] || 0);
       }
+      return acc + (extra.pricePerDay[currency] || 0) * billingDays;
+    }, 0);
 
-      let calculatedInsuranceCost = insuranceDailyPrice * billingDays;
+    const calculatedDriverAge = calculateAgeFromDDMMYYYY(formData.birthDate);
+    const calculatedLicenseYears = calculateYearsSince(formData.licenseIssueDate);
 
-      if (isMassimo) {
-        // Massimo gets KASKO BASE included (free)
-        if (formData.insuranceOption === 'KASKO_BASE') {
-          calculatedInsuranceCost = 0;
-        }
-      }
+    // Get young driver fee from RENTAL_EXTRAS
+    // 2 GUIDATORI / UNDER 25 / UNDER 5 ANNI PATENTE Logic
+    // Utilitarie e Furgone: €5 (Add.Driver / Under 25), €10 (Recent Lic)
+    // Supercar e V Class: €10 (Add.Driver / Under 25), €20 (Recent Lic)
 
-      // Calculate extras cost
-      const calculatedExtrasCost = formData.extras.reduce((acc, extraId) => {
-        const extra = RENTAL_EXTRAS.find(e => e.id === extraId);
-        if (!extra) return acc;
-        if (extra.oneTime) {
-          return acc + (extra.pricePerDay[currency] || 0);
-        }
-        return acc + (extra.pricePerDay[currency] || 0) * billingDays;
-      }, 0);
+    // Grouping for Extras:
+    // Group A (Utilitaria, Furgone): cheaper
+    // Group B (Supercar, V_CLASS): expensive
+    const isCheapExtras = vType === 'UTILITARIA' || vType === 'FURGONE';
+    const feeAddDriver = isCheapExtras ? 5 : 10;
+    const feeYoungDriver = isCheapExtras ? 5 : 10;
+    const feeRecentLic = isCheapExtras ? 10 : 20;
 
-      const calculatedDriverAge = calculateAgeFromDDMMYYYY(formData.birthDate);
-      const calculatedLicenseYears = calculateYearsSince(formData.licenseIssueDate);
+    const calculatedYoungDriverFee = calculatedDriverAge > 0 && calculatedDriverAge < 25
+      ? feeYoungDriver * billingDays
+      : 0;
+    const calculatedRecentLicenseFee = calculatedLicenseYears >= 2 && calculatedLicenseYears < 3 ? feeRecentLic * billingDays : 0;
+    const calculatedSecondDriverFee = formData.addSecondDriver ? feeAddDriver * billingDays : 0;
 
-      // Get young driver fee from RENTAL_EXTRAS
-      // 2 GUIDATORI / UNDER 25 / UNDER 5 ANNI PATENTE Logic
-      // Utilitarie e Furgone: €5 (Add.Driver / Under 25), €10 (Recent Lic)
-      // Supercar e V Class: €10 (Add.Driver / Under 25), €20 (Recent Lic)
+    // Calculate FREE included KM based on rental duration
+    const freeIncludedKm = calculateIncludedKm(billingDays);
 
-      // Grouping for Extras:
-      // Group A (Utilitaria, Furgone): cheaper
-      // Group B (Supercar, V_CLASS): expensive
-      const isCheapExtras = vType === 'UTILITARIA' || vType === 'FURGONE';
-      const feeAddDriver = isCheapExtras ? 5 : 10;
-      const feeYoungDriver = isCheapExtras ? 5 : 10;
-      const feeRecentLic = isCheapExtras ? 10 : 20;
+    // Calculate KM package cost (OPTIONAL - user can add extra km)
+    let calculatedKmPackageCost = 0;
+    let calculatedIncludedKm = freeIncludedKm; // Start with free KM
 
-      const calculatedYoungDriverFee = calculatedDriverAge > 0 && calculatedDriverAge < 25
-        ? feeYoungDriver * billingDays
-        : 0;
-      const calculatedRecentLicenseFee = calculatedLicenseYears >= 2 && calculatedLicenseYears < 3 ? feeRecentLic * billingDays : 0;
-      const calculatedSecondDriverFee = formData.addSecondDriver ? feeAddDriver * billingDays : 0;
+    if (formData.kmPackageType === 'unlimited') {
+      calculatedKmPackageCost = calculateUnlimitedKmPrice(item.name, billingDays, true);
+      calculatedIncludedKm = 9999; // Unlimited
+    }
 
-      // Calculate FREE included KM based on rental duration
-      const freeIncludedKm = calculateIncludedKm(billingDays);
+    // Massimo Override for KM OR Urban/Corporate (utilitarie) always unlimited
+    // NEW RULE: Utilitaria/Furgone/V_Class always get Free Unlimited KM
+    if (isMassimo || vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS') {
+      calculatedKmPackageCost = 0; // Free unlimited KM
+      calculatedIncludedKm = 9999;
+    }
+    // else kmPackageType === 'none' -> only free KM included
 
-      // Calculate KM package cost (OPTIONAL - user can add extra km)
-      let calculatedKmPackageCost = 0;
-      let calculatedIncludedKm = freeIncludedKm; // Start with free KM
+    // Get recommendation
+    const calculatedRecommendedKm = recommendKmPackage(formData.expectedKm, item.name, billingDays);
 
-      if (formData.kmPackageType === 'unlimited') {
-        calculatedKmPackageCost = calculateUnlimitedKmPrice(item.name, billingDays, true);
-        calculatedIncludedKm = 9999; // Unlimited
-      }
+    // Pickup and Drop-off fees (€50 each)
+    // Airport fees removed
+    const calculatedPickupFee = 0;
+    const calculatedDropoffFee = 0;
 
-      // Massimo Override for KM OR Urban/Corporate (utilitarie) always unlimited
-      // NEW RULE: Utilitaria/Furgone/V_Class always get Free Unlimited KM
-      if (isMassimo || vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS') {
-        calculatedKmPackageCost = 0; // Free unlimited KM
-        calculatedIncludedKm = 9999;
-      }
-      // else kmPackageType === 'none' -> only free KM included
+    // Car Wash Fee (Mandatory for most clients, excluded for special clients)
+    // Utilitarie / Furgone / V-Class: €30 (Updated per user request to flat 30)
+    // Supercar: €30
+    // User requested "SHOULD ALSO SHOW 30 euros not 15" for Urban cars.
+    let carWashFee = 30;
 
-      // Get recommendation
-      const calculatedRecommendedKm = recommendKmPackage(formData.expectedKm, item.name, billingDays);
+    // Exclude car wash for Massimo Runchina
+    if (isMassimo && SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.excludeCarWash) {
+      carWashFee = 0;
+    }
 
-      // Pickup and Drop-off fees (€50 each)
-      // Airport fees removed
-      const calculatedPickupFee = 0;
-      const calculatedDropoffFee = 0;
+    let calculatedSubtotal = calculatedRentalCost + calculatedInsuranceCost + calculatedExtrasCost + calculatedKmPackageCost + calculatedYoungDriverFee + calculatedRecentLicenseFee + calculatedSecondDriverFee + calculatedPickupFee + calculatedDropoffFee + carWashFee;
 
-      // Car Wash Fee (Mandatory for most clients, excluded for special clients)
-      // Utilitarie / Furgone / V-Class: €30 (Updated per user request to flat 30)
-      // Supercar: €30
-      // User requested "SHOULD ALSO SHOW 30 euros not 15" for Urban cars.
-      let carWashFee = 30;
+    // Massimo Discount Rules
+    // First discount (always applied): already included in calculatedRentalCost above
+    // Second discount (3+ days): additional 10% off total
+    let specialDiscountAmount = massimoFirstDiscount; // Track first discount
+    if (isMassimo && billingDaysCalc >= SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.discountThresholdDays) {
+      const additionalDiscount = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.additionalDiscount;
+      const secondDiscountAmount = calculatedSubtotal * additionalDiscount;
+      specialDiscountAmount += secondDiscountAmount; // Total both discounts
+      calculatedSubtotal -= secondDiscountAmount;
+    }
 
-      // Exclude car wash for Massimo Runchina
-      if (isMassimo && SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.excludeCarWash) {
-        carWashFee = 0;
-      }
+    // Tax calculation
+    // ALL PRICES ARE TAX-INCLUSIVE (IVA/TVA already included)
+    // No additional tax should be added
+    const calculatedTaxes = 0;
+    const calculatedTotal = calculatedSubtotal;
 
-      let calculatedSubtotal = calculatedRentalCost + calculatedInsuranceCost + calculatedExtrasCost + calculatedKmPackageCost + calculatedYoungDriverFee + calculatedRecentLicenseFee + calculatedSecondDriverFee + calculatedPickupFee + calculatedDropoffFee + carWashFee;
+    // Apply membership discount
+    const discountInfo = calculateDiscountedPrice(calculatedTotal, user, 'car_rental');
+    const membershipTierName = getMembershipTierName(user);
 
-      // Massimo Discount Rules
-      // First discount (always applied): already included in calculatedRentalCost above
-      // Second discount (3+ days): additional 10% off total
-      let specialDiscountAmount = massimoFirstDiscount; // Track first discount
-      if (isMassimo && billingDaysCalc >= SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.discountThresholdDays) {
-        const additionalDiscount = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.additionalDiscount;
-        const secondDiscountAmount = calculatedSubtotal * additionalDiscount;
-        specialDiscountAmount += secondDiscountAmount; // Total both discounts
-        calculatedSubtotal -= secondDiscountAmount;
-      }
-
-      // Tax calculation
-      // ALL PRICES ARE TAX-INCLUSIVE (IVA/TVA already included)
-      // No additional tax should be added
-      const calculatedTaxes = 0;
-      const calculatedTotal = calculatedSubtotal;
-
-      // Apply membership discount
-      const discountInfo = calculateDiscountedPrice(calculatedTotal, user, 'car_rental');
-      const membershipTierName = getMembershipTierName(user);
-
-      return {
-        duration: { days, hours },
-        rentalCost: calculatedRentalCost,
-        insuranceCost: calculatedInsuranceCost,
-        extrasCost: calculatedExtrasCost,
-        kmPackageCost: calculatedKmPackageCost,
-        pickupFee: calculatedPickupFee,
-        dropoffFee: calculatedDropoffFee,
-        subtotal: calculatedSubtotal,
-        taxes: calculatedTaxes,
-        total: calculatedTotal,
-        includedKm: calculatedIncludedKm,
-        driverAge: calculatedDriverAge,
-        licenseYears: calculatedLicenseYears,
-        youngDriverFee: calculatedYoungDriverFee,
-        recentLicenseFee: calculatedRecentLicenseFee,
-        secondDriverFee: calculatedSecondDriverFee,
-        recommendedKm: calculatedRecommendedKm,
-        membershipDiscount: discountInfo.discountAmount,
-        membershipTier: membershipTierName,
-        originalTotal: discountInfo.originalPrice,
-        finalTotal: discountInfo.finalPrice,
-        isMassimo,
-        specialDiscountAmount,
-        carWashFee
-      };
-    }, [
-      formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime,
-      formData.insuranceOption, formData.extras, formData.birthDate, formData.licenseIssueDate, formData.addSecondDriver,
-      formData.kmPackageType, formData.kmPackageDistance, formData.expectedKm,
-      formData.email,
-      item, currency, user, isUrbanOrCorporate, categoryContext
-    ]);
+    return {
+      duration: { days, hours },
+      rentalCost: calculatedRentalCost,
+      insuranceCost: calculatedInsuranceCost,
+      extrasCost: calculatedExtrasCost,
+      kmPackageCost: calculatedKmPackageCost,
+      pickupFee: calculatedPickupFee,
+      dropoffFee: calculatedDropoffFee,
+      subtotal: calculatedSubtotal,
+      taxes: calculatedTaxes,
+      total: calculatedTotal,
+      includedKm: calculatedIncludedKm,
+      driverAge: calculatedDriverAge,
+      licenseYears: calculatedLicenseYears,
+      youngDriverFee: calculatedYoungDriverFee,
+      recentLicenseFee: calculatedRecentLicenseFee,
+      secondDriverFee: calculatedSecondDriverFee,
+      recommendedKm: calculatedRecommendedKm,
+      membershipDiscount: discountInfo.discountAmount,
+      membershipTier: membershipTierName,
+      originalTotal: discountInfo.originalPrice,
+      finalTotal: discountInfo.finalPrice,
+      isMassimo,
+      specialDiscountAmount,
+      carWashFee
+    };
+  }, [
+    formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime,
+    formData.insuranceOption, formData.extras, formData.birthDate, formData.licenseIssueDate, formData.addSecondDriver,
+    formData.kmPackageType, formData.kmPackageDistance, formData.expectedKm,
+    formData.email,
+    item, currency, user, isUrbanOrCorporate, categoryContext
+  ]);
 
   // Forcer horaires valides et pas de dimanche
   useEffect(() => {
