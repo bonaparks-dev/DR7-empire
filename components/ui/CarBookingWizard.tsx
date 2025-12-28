@@ -1652,6 +1652,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           setTimeout(() => window.open(whatsappUrl, '_blank'), 1000);
         }
 
+        // CRITICAL: Reset processing state after successful booking
+        setIsProcessing(false);
+
       } catch (err: any) {
         setStripeError(err.message || "Unknown error during booking");
         setIsProcessing(false);
