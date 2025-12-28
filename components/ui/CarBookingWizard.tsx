@@ -812,7 +812,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     formData.insuranceOption, formData.extras, formData.birthDate, formData.licenseIssueDate, formData.addSecondDriver,
     formData.kmPackageType, formData.kmPackageDistance, formData.expectedKm,
     formData.email, // Add email dependency
-    item, currency, user, isUrbanOrCorporate
+    item, currency, user, isUrbanOrCorporate, categoryContext
   ]);
 
   // Forcer horaires valides et pas de dimanche
