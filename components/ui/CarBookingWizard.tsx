@@ -38,7 +38,7 @@ function getVehicleType(item: RentalItem): 'UTILITARIA' | 'FURGONE' | 'V_CLASS' 
   const name = item.name.toLowerCase();
   const id = item.id ? item.id.toLowerCase() : '';
 
-  if (id.startsWith('urban-car-') || name.includes('polo') || name.includes('utilitaria')) return 'UTILITARIA';
+  if (id.startsWith('urban-car-') || name.includes('polo') || name.includes('utilitaria') || name.includes('clio') || name.includes('captur') || name.includes('panda') || name.includes('500') || name.includes('smart') || name.includes('twingo') || name.includes('ypsilon')) return 'UTILITARIA';
   if (name.includes('ducato') || name.includes('furgone')) return 'FURGONE';
   if (name.includes('vito') || name.includes('v class') || name.includes('v-class')) return 'V_CLASS';
   return 'SUPERCAR'; // Default to supercar for luxury cars
