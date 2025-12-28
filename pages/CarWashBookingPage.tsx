@@ -256,9 +256,12 @@ const CarWashBookingPage: React.FC = () => {
           email: user?.email,
           purchaseType: 'car-wash',
           metadata: {
+            bookingType: 'car_wash',
             serviceName: lang === 'it' ? selectedService?.name : selectedService?.nameEn,
             appointmentDate: formData.appointmentDate,
-            appointmentTime: formData.appointmentTime
+            appointmentTime: formData.appointmentTime,
+            customerEmail: formData.email,
+            customerName: formData.fullName
           }
         })
       })
@@ -748,24 +751,56 @@ const CarWashBookingPage: React.FC = () => {
       console.log('Booking created successfully:', data);
 
       // Send confirmation email and WhatsApp notification (don't block on failure)
+      let emailSent = false;
+      let whatsappSent = false;
+
       try {
-        await fetch('/.netlify/functions/send-booking-confirmation', {
+        console.log('Sending booking confirmation email...');
+        const emailResponse = await fetch('/.netlify/functions/send-booking-confirmation', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ booking: data })
         });
+
+        if (!emailResponse.ok) {
+          const errorText = await emailResponse.text();
+          console.error('Email API returned error:', emailResponse.status, errorText);
+        } else {
+          emailSent = true;
+          console.log('✅ Email confirmation sent successfully');
+        }
       } catch (emailError) {
-        console.error('Email error (non-blocking):', emailError);
+        console.error('❌ Email error (non-blocking):', emailError);
+        console.error('Email error details:', {
+          message: emailError instanceof Error ? emailError.message : 'Unknown error',
+          stack: emailError instanceof Error ? emailError.stack : undefined
+        });
       }
 
       try {
-        await fetch('/.netlify/functions/send-whatsapp-notification', {
+        console.log('Sending WhatsApp notification...');
+        const whatsappResponse = await fetch('/.netlify/functions/send-whatsapp-notification', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ booking: data })
         });
+
+        if (!whatsappResponse.ok) {
+          console.error('WhatsApp API returned error:', whatsappResponse.status);
+        } else {
+          whatsappSent = true;
+          console.log('✅ WhatsApp notification sent successfully');
+        }
       } catch (whatsappError) {
-        console.error('WhatsApp error (non-blocking):', whatsappError);
+        console.error('❌ WhatsApp error (non-blocking):', whatsappError);
+      }
+
+      // Log notification status for debugging
+      console.log('Notification status:', { emailSent, whatsappSent, bookingId: data.id });
+
+      // Show warning if emails failed (but don't block the success flow)
+      if (!emailSent) {
+        console.warn('⚠️ Booking saved but email notification failed. Webhook backup will send notifications.');
       }
 
       // Generate WhatsApp prefilled message for customer
