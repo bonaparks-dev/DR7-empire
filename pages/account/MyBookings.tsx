@@ -107,7 +107,7 @@ const MyBookings = () => {
     <div className="bg-gray-900/50 border border-gray-800 rounded-lg">
       <div className="p-6 border-b border-gray-800">
         <div className="flex items-center gap-3 mb-1">
-          
+
           <h2 className="text-xl font-bold text-white">{t('My_Bookings')}</h2>
         </div>
         <p className="text-sm text-gray-400 mt-1">
@@ -135,7 +135,7 @@ const MyBookings = () => {
                           {booking.service_type === 'car_wash' ? '' : ''}
                           {booking.service_name}
                         </h3>
-                        {booking.vehicle_name && booking.service_type === 'car_rental' && (
+                        {booking.vehicle_name && (
                           <p className="text-sm text-gray-400">{booking.vehicle_name}</p>
                         )}
                       </div>
@@ -172,7 +172,7 @@ const MyBookings = () => {
                         </div>
                       )}
 
-                      {booking.service_type === 'car_rental' && booking.pickup_date && (
+                      {booking.pickup_date && (
                         <>
                           <div>
                             <p className="text-gray-400">
@@ -222,7 +222,7 @@ const MyBookings = () => {
           </div>
         ) : (
           <div className="text-center py-12 border-2 border-dashed border-gray-700 rounded-lg">
-            
+
             <h3 className="text-lg font-semibold text-white">
               {lang === 'it'
                 ? 'Nessuna prenotazione ancora'
