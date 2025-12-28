@@ -42,7 +42,7 @@ function getVehicleType(item: RentalItem, categoryContext?: string): 'UTILITARIA
   if (categoryContext === 'corporate-fleet') {
     const name = item.name.toLowerCase();
     if (name.includes('ducato') || name.includes('furgone')) return 'FURGONE';
-    if (name.includes('vito') || name.includes('v class') || name.includes('v-class')) return 'V_CLASS';
+    if (name.includes('vito') || name.includes('v class') || name.includes('v-class') || name.includes('classe v')) return 'V_CLASS';
     return 'UTILITARIA'; // Fallback for corporate fleet
   }
 
@@ -51,7 +51,7 @@ function getVehicleType(item: RentalItem, categoryContext?: string): 'UTILITARIA
 
   if (id.startsWith('urban-car-') || name.includes('polo') || name.includes('utilitaria') || name.includes('clio') || name.includes('captur') || name.includes('panda') || name.includes('500') || name.includes('smart') || name.includes('twingo') || name.includes('ypsilon')) return 'UTILITARIA';
   if (name.includes('ducato') || name.includes('furgone')) return 'FURGONE';
-  if (name.includes('vito') || name.includes('v class') || name.includes('v-class')) return 'V_CLASS';
+  if (name.includes('vito') || name.includes('v class') || name.includes('v-class') || name.includes('classe v')) return 'V_CLASS';
   return 'SUPERCAR'; // Default to supercar for luxury cars
 }
 
@@ -887,8 +887,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     return () => { if (card) { card.destroy(); setCardElement(null); } };
   }, [stripe, step, formData.paymentMethod, clientSecret]);
 
-  // Pré-remplir email si connecté
-  useEffect(() => { if (user) setFormData(prev => ({ ...prev, email: user.email || '' })); }, [user]);
+
 
   // Éligibilité KASKO auto (downgrade si non éligible)
   useEffect(() => {
@@ -903,44 +902,67 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // I will preserve the logic pattern but include DR7 only if they *want* high tier? 
     // No, if I selected DR7 and am not eligible, I should get Signature (if eligible), else Black, else Base.
 
-    // Simplified: If current choice is not eligible, switch to KASKO_BASE.
-    setFormData(prev => ({ ...prev, insuranceOption: 'KASKO_BASE' }));
-  }, [driverAge, licenseYears, isUrbanOrCorporate, formData.insuranceOption]);
+    // Simplified: If current choice is NOT eligible, switch to KASKO_BASE.
+    // RCA is always eligible, so it won't be overwritten.
+    if (formData.insuranceOption !== 'RCA') {
+      const eligibility = isKaskoEligibleByBuckets(
+        formData.insuranceOption as KaskoTier,
+        driverAge,
+        licenseYears,
+        vehicleType
+      );
+
+      if (!eligibility.eligible) {
+        setFormData(prev => ({ ...prev, insuranceOption: 'KASKO_BASE' }));
+      }
+    }
+  }, [driverAge, licenseYears, isUrbanOrCorporate, formData.insuranceOption, vehicleType]);
 
   // Force Massimo Runchina settings & Pre-fill Personal Data
   useEffect(() => {
-    if (isMassimoRunchina(formData.email)) {
-      setFormData(prev => {
-        const updates: any = {};
+    let updates: any = {};
 
-        // 1. Force Pricing/Insurance Settings
-        if (prev.insuranceOption !== 'KASKO_BASE') updates.insuranceOption = 'KASKO_BASE';
-        if (prev.kmPackageType !== 'unlimited') updates.kmPackageType = 'unlimited';
+    // 1. Pre-fill Personal Data (Fast Track) for ANY logged-in user
+    if (user && !formData.firstName && !formData.lastName) {
+      const nameParts = user.fullName ? user.fullName.split(' ') : [];
+      const first = nameParts.length > 0 ? nameParts[0] : '';
+      const last = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
 
-        // 2. Pre-fill Personal Data (Fast Track)
-        // If name/last name are empty, fill them
-        if (!prev.firstName) updates.firstName = 'Massimo';
-        if (!prev.lastName) updates.lastName = 'Runchina';
-        if (!prev.phone) updates.phone = '+39 347 000 0000'; // Placeholder or real if known
-
-        // Pre-fill essential validation fields to allow skipping step 2
-        if (!prev.birthDate) updates.birthDate = '1969-01-01'; // imply from email/age
-        if (!prev.licenseNumber) updates.licenseNumber = 'VIP-AUTOFILLED';
-        if (!prev.licenseDate) updates.licenseDate = '2000-01-01';
-        if (!prev.birthPlace) updates.birthPlace = 'Cagliari'; // Default
-
-        // Skip address fields requirement logic handling elsewhere, but fill for now
-        if (!prev.address) updates.address = 'VIP Fast Track';
-        if (!prev.city) updates.city = 'Cagliari';
-        if (!prev.zipCode) updates.zipCode = '09100';
-
-        if (Object.keys(updates).length > 0) {
-          return { ...prev, ...updates };
-        }
-        return prev;
-      });
+      updates.firstName = first;
+      updates.lastName = last;
+      updates.phone = user.phone || '';
+      updates.email = user.email || '';
     }
-  }, [formData.email]); // Check whenever email changes (e.g. login or manual entry)
+
+    // 2. Special Rules for Massimo Runchina
+    if (isMassimoRunchina(formData.email || user?.email || '')) {
+      // Force Pricing/Insurance Settings
+      if (formData.insuranceOption !== 'KASKO_BASE') updates.insuranceOption = 'KASKO_BASE';
+      if (formData.kmPackageType !== 'unlimited') updates.kmPackageType = 'unlimited';
+
+      // Ensure name is correct if empty (Massimo specific fallback)
+      if (!formData.firstName && !updates.firstName) updates.firstName = 'Massimo';
+      if (!formData.lastName && !updates.lastName) updates.lastName = 'Runchina';
+      if (!formData.phone && !updates.phone) updates.phone = '+39 347 000 0000'; // Placeholder
+
+      // Fast Track Defaults for Massimo
+      if (!formData.birthDate && !updates.birthDate) updates.birthDate = '1969-01-01';
+      if (!formData.licenseNumber && !updates.licenseNumber) updates.licenseNumber = 'VIP-AUTOFILLED';
+      if (!formData.licenseDate && !updates.licenseDate) updates.licenseDate = '2000-01-01';
+      if (!formData.birthPlace && !updates.birthPlace) updates.birthPlace = 'Cagliari';
+      if (!formData.address && !updates.address) updates.address = 'VIP Fast Track';
+      if (!formData.city && !updates.city) updates.city = 'Cagliari';
+      if (!formData.zipCode && !updates.zipCode) updates.zipCode = '09100';
+    }
+
+    // Apply updates if any
+    if (Object.keys(updates).length > 0) {
+      setFormData(prev => ({ ...prev, ...updates }));
+    }
+  }, [user, formData.firstName, formData.lastName, formData.email, formData.insuranceOption, formData.kmPackageType]);
+
+
+
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', {
@@ -1840,19 +1862,21 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
             {/* Security Deposit - Sixt Style */}
             <section className="border-t border-gray-700 pt-6">
-              <div className="mt-4">
-                <p className="text-base font-semibold text-white mb-3">Sei residente in Sardegna? *</p>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center">
-                    <input type="radio" id="resident-yes" name="isSardinianResident" checked={formData.isSardinianResident} onChange={() => setFormData(p => ({ ...p, isSardinianResident: true }))} className="w-4 h-4 text-white" />
-                    <label htmlFor="resident-yes" className="ml-2 text-white">Sì - Residente in Sardegna</label>
-                  </div>
-                  <div className="flex items-center">
-                    <input type="radio" id="resident-no" name="isSardinianResident" checked={!formData.isSardinianResident} onChange={() => setFormData(p => ({ ...p, isSardinianResident: false }))} className="w-4 h-4 text-white" />
-                    <label htmlFor="resident-no" className="ml-2 text-white">No - Non residente</label>
+              {!isUrbanOrCorporate && (
+                <div className="mt-4">
+                  <p className="text-base font-semibold text-white mb-3">Sei residente in Sardegna? *</p>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center">
+                      <input type="radio" id="resident-yes" name="isSardinianResident" checked={formData.isSardinianResident} onChange={() => setFormData(p => ({ ...p, isSardinianResident: true }))} className="w-4 h-4 text-white" />
+                      <label htmlFor="resident-yes" className="ml-2 text-white">Sì - Residente in Sardegna</label>
+                    </div>
+                    <div className="flex items-center">
+                      <input type="radio" id="resident-no" name="isSardinianResident" checked={!formData.isSardinianResident} onChange={() => setFormData(p => ({ ...p, isSardinianResident: false }))} className="w-4 h-4 text-white" />
+                      <label htmlFor="resident-no" className="ml-2 text-white">No - Non residente</label>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </section>
 
             {/* Final Checkbox */}

@@ -45,50 +45,121 @@ export async function checkGroupedVehicleAvailability(
   dropoffDate: string
 ): Promise<{ isAvailable: boolean; availableVehicleName?: string; availableVehicleId?: string; conflicts?: BookingConflict[]; closestAvailableDate?: Date }> {
   try {
-    // Check availability for each vehicle in the group
-    for (const vehicle of vehicles) {
-      const conflicts = await checkVehicleAvailability(vehicle.name, pickupDate, dropoffDate, vehicle.id);
-      if (conflicts.length === 0) {
-        // This vehicle is available
-        return {
-          isAvailable: true,
-          availableVehicleName: vehicle.name,
-          availableVehicleId: vehicle.id
-        };
-      }
-    }
+    const requestedPickup = safeDate(pickupDate);
+    const requestedDropoff = safeDate(dropoffDate);
+    const BUFFER_TIME_MS = 90 * 60 * 1000;
 
-    // No vehicles in the group are available
-    // Find the closest available date across ALL vehicles
-    let closestAvailableDate: Date | null = null;
-    let closestConflicts: BookingConflict[] = [];
+    // Helper to check conflict
+    const hasConflict = (existingStart: Date, existingEnd: Date) => {
+      const existingEndWithBuffer = new Date(existingEnd.getTime() + BUFFER_TIME_MS);
+      return (
+        (requestedPickup >= existingStart && requestedPickup < existingEndWithBuffer) ||
+        (requestedDropoff > existingStart && requestedDropoff <= existingEndWithBuffer) ||
+        (requestedPickup <= existingStart && requestedDropoff >= existingEndWithBuffer)
+      );
+    };
 
-    // For failover suggestion, we just check the first one or iterate all (simplified to first for conflicts reporting)
-    // But logically we should find the 'best' alternative. 
-    // For now, let's just re-check the first one without ID specific filter to see general conflicts? 
-    // Or just iterate all and find minimum date.
+    // 1. Fetch ALL bookings for this vehicle name (group name)
+    // We assume all vehicles in the group share the same "vehicle_name" in bookings if booked generally
+    // Or they might have specific names. But 'vehicles' input usually share a display name or we check individually?
+    // Actually, usually they share the main name. Let's assume we check for the *name of the first vehicle* essentially?
+    // Or we should query for ANY of the names in the group.
 
-    for (const vehicle of vehicles) {
-      const conflicts = await checkVehicleAvailability(vehicle.name, pickupDate, dropoffDate, vehicle.id);
+    // Simplification: We query bookings where vehicle_name matches ANY of the group's names
+    const names = Array.from(new Set(vehicles.map(v => v.name)));
+    const ids = vehicles.map(v => v.id);
 
-      if (conflicts.length > 0) {
-        // Get the end date of the first conflict + 1h30 buffer
-        const conflictEnd = safeDate(conflicts[0].dropoff_date);
-        const availableAfter = new Date(conflictEnd.getTime() + (90 * 60 * 1000));
+    // Fetch bookings for these names
+    const { data: bookings } = await supabase
+      .from('bookings')
+      .select('pickup_date, dropoff_date, vehicle_name, booking_details')
+      .in('vehicle_name', names)
+      .neq('status', 'cancelled');
 
-        // Track the earliest available date across all vehicles
-        if (!closestAvailableDate || availableAfter < closestAvailableDate) {
-          closestAvailableDate = availableAfter;
-          closestConflicts = conflicts;
+    // Fetch reservations for these IDs
+    const { data: reservations } = await supabase
+      .from('reservations')
+      .select('start_at, end_at, vehicle_id, vehicle_name') // vehicle_name for fallback
+      .in('vehicle_id', ids)
+      .in('status', ['confirmed', 'pending', 'active']);
+
+    // 2. Identify Unavailable Vehicles (Specific ID conflicts)
+    const blockedVehicleIds = new Set<string>();
+    let genericConflictCount = 0;
+    const relevantConflicts: BookingConflict[] = [];
+
+    // Process Specific ID conflicts first
+    if (bookings) {
+      for (const b of bookings) {
+        const p = safeDate(b.pickup_date);
+        const d = safeDate(b.dropoff_date);
+        if (hasConflict(p, d)) {
+          const bookedId = (b.booking_details as any)?.vehicle_id;
+          if (bookedId && ids.includes(bookedId)) {
+            blockedVehicleIds.add(bookedId);
+          } else {
+            // Generic conflict (no ID or ID not in list but name matches)
+            genericConflictCount++;
+          }
+          relevantConflicts.push({ pickup_date: b.pickup_date, dropoff_date: b.dropoff_date, vehicle_name: b.vehicle_name });
         }
       }
     }
 
+    if (reservations) {
+      for (const r of reservations) {
+        const s = safeDate(r.start_at);
+        const e = safeDate(r.end_at);
+        if (hasConflict(s, e)) {
+          if (r.vehicle_id && ids.includes(r.vehicle_id)) {
+            blockedVehicleIds.add(r.vehicle_id);
+          } else {
+            // Should generally not happen for admin reservations, but treat as generic if ID missing
+            genericConflictCount++;
+          }
+          relevantConflicts.push({ pickup_date: r.start_at, dropoff_date: r.end_at, vehicle_name: r.vehicle_name || 'Reservation' });
+        }
+      }
+    }
+
+    // 3. Filter Candidates
+    const candidates = vehicles.filter(v => !blockedVehicleIds.has(v.id));
+
+    // 4. Apply Generic Conflicts (pool reduction)
+    // We have 'genericConflictCount' bookings that take up *some* slot but we don't know which.
+    // So we subtract them from the remaining candidates.
+    const availableCount = candidates.length - genericConflictCount;
+
+    if (availableCount > 0) {
+      // We have at least one car left!
+      // Return the first candidate that effectively "survives" the subtraction
+      // (Any of the candidates is valid, as the generic bookings don't care which one they take)
+      const winner = candidates[0];
+      return {
+        isAvailable: true,
+        availableVehicleName: winner.name,
+        availableVehicleId: winner.id
+      };
+    }
+
+    // Not available
+    // For close-date suggestion, we can just use the end of the last conflict found
+    // (Simplified logic)
+    let closestAvailableDate: Date | undefined;
+    if (relevantConflicts.length > 0) {
+      // Sort by end date descending to find the latest blocker? 
+      // No, we want the earliest hole. That's complex. 
+      // Just return end of the first conflict + buffer for now as a naive suggestion
+      const lastConflict = relevantConflicts.sort((a, b) => new Date(a.dropoff_date).getTime() - new Date(b.dropoff_date).getTime())[0];
+      closestAvailableDate = new Date(safeDate(lastConflict.dropoff_date).getTime() + (90 * 60 * 1000));
+    }
+
     return {
       isAvailable: false,
-      conflicts: closestConflicts,
-      closestAvailableDate: closestAvailableDate || undefined
+      conflicts: relevantConflicts,
+      closestAvailableDate
     };
+
   } catch (error) {
     console.error('Error checking grouped vehicle availability:', error);
     throw error;
