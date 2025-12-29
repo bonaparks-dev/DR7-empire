@@ -229,9 +229,7 @@ const ProfileSettings = () => {
 
             // Also update auth user metadata for consistency
             await updateUser({
-                fullName: extendedProfile?.tipo_cliente === 'persona_fisica'
-                    ? `${formData.firstName} ${formData.lastName}`.trim()
-                    : formData.fullName,
+                fullName: formData.fullName || `${formData.firstName} ${formData.lastName}`.trim(),
                 phone: formData.phone
             });
 
