@@ -145,10 +145,28 @@ const ProfileSettings = () => {
                             patenteScadenza: data.metadata?.patente_scadenza || ''
                         }));
                     } else {
-                        console.warn('No extended profile found for user:', user.id);
+                        console.warn('No extended profile found for user (null data), initializing default.');
+                        setExtendedProfile({
+                            id: '',
+                            user_id: user.id,
+                            tipo_cliente: 'persona_fisica',
+                            email: user.email,
+                            metadata: {}
+                        } as any);
                     }
-                } catch (error) {
-                    console.error('Error fetching data:', error);
+                } catch (error: any) {
+                    if (error.code === 'PGRST116') {
+                        console.log('Profile not found (PGRST116), initializing default.');
+                        setExtendedProfile({
+                            id: '',
+                            user_id: user.id,
+                            tipo_cliente: 'persona_fisica',
+                            email: user.email,
+                            metadata: {}
+                        } as any);
+                    } else {
+                        console.error('Error fetching data:', error);
+                    }
                 } finally {
                     setIsLoadingCredits(false);
                     setIsLoadingProfile(false);
