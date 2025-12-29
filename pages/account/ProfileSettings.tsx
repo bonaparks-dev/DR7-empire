@@ -56,6 +56,7 @@ const ProfileSettings = () => {
         dataNascita: '',
         cittaNascita: '',
         provinciaNascita: '',
+        codiceFiscale: '',
         // Address
         indirizzo: '',
         numeroCivico: '',
@@ -122,6 +123,7 @@ const ProfileSettings = () => {
                         // Persona Fisica fields
                         firstName: data.nome || '',
                         lastName: data.cognome || '',
+                        codiceFiscale: data.codice_fiscale || '',
                         sesso: data.sesso || '',
                         dataNascita: data.data_nascita || '',
                         cittaNascita: data.citta_nascita || '',
@@ -187,8 +189,9 @@ const ProfileSettings = () => {
                 if (extendedProfile.tipo_cliente === 'persona_fisica') {
                     updateData.nome = formData.firstName;
                     updateData.cognome = formData.lastName;
+                    updateData.codice_fiscale = formData.codiceFiscale.toUpperCase();
                     updateData.sesso = formData.sesso;
-                    updateData.data_nascita = formData.dataNascita;
+                    updateData.data_nascita = formData.dataNascita || null; // Fix for empty date error
                     updateData.citta_nascita = formData.cittaNascita;
                     updateData.provincia_nascita = formData.provinciaNascita;
                     updateData.indirizzo = formData.indirizzo;
@@ -203,8 +206,8 @@ const ProfileSettings = () => {
                         tipo_patente: formData.tipoPatente,
                         numero_patente: formData.numeroPatente,
                         patente_emessa_da: formData.patenteEmessaDa,
-                        patente_data_rilascio: formData.patenteDataRilascio,
-                        patente_scadenza: formData.patenteScadenza
+                        patente_data_rilascio: formData.patenteDataRilascio || null, // Fix for empty date error
+                        patente_scadenza: formData.patenteScadenza || null // Fix for empty date error
                     };
                 }
 
@@ -222,6 +225,7 @@ const ProfileSettings = () => {
                     tipo_cliente: 'persona_fisica',
                     nome: firstName,
                     cognome: lastName,
+                    codice_fiscale: formData.codiceFiscale?.toUpperCase() || null,
                     email: formData.email,
                     telefono: formData.phone,
                     nazione: 'Italia', // Default
@@ -356,7 +360,7 @@ const ProfileSettings = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div><label className="text-sm text-gray-400">Nome</label><input type="text" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
                                         <div><label className="text-sm text-gray-400">Cognome</label><input type="text" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
-                                        <div><label className="text-sm text-gray-400">Codice Fiscale</label><p className="text-white font-mono bg-gray-800/50 p-2 rounded-md">{extendedProfile.codice_fiscale}</p></div>
+                                        <div><label className="text-sm text-gray-400">Codice Fiscale</label><input type="text" value={formData.codiceFiscale} onChange={handleChange} name="codiceFiscale" className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2 font-mono uppercase" maxLength={16} /></div>
                                         <div><label className="text-sm text-gray-400">Sesso</label><select value={formData.sesso} onChange={(e) => setFormData({ ...formData, sesso: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2"><option value="">Seleziona...</option><option value="M">Maschio</option><option value="F">Femmina</option></select></div>
                                         <div><label className="text-sm text-gray-400">Data di Nascita</label><input type="date" value={formData.dataNascita} onChange={(e) => setFormData({ ...formData, dataNascita: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
                                         <div><label className="text-sm text-gray-400">Città di Nascita</label><input type="text" value={formData.cittaNascita} onChange={(e) => setFormData({ ...formData, cittaNascita: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
