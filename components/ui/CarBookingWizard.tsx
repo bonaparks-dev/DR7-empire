@@ -693,7 +693,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
 
 
-    const isMassimo = isMassimoRunchina(formData.email);
+    const isMassimo = user ? isMassimoRunchina(user) : isMassimoRunchina({
+      email: formData.email,
+      firstName: formData.firstName,
+      lastName: formData.lastName
+    });
     const billingDaysCalc = billingDays < 1 ? 1 : billingDays;
 
     // --- RENTAL COST ---

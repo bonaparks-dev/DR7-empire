@@ -45,9 +45,29 @@ const ProfileSettings = () => {
     const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
+        // Basic
         fullName: '',
         email: '',
-        phone: ''
+        phone: '',
+        // Persona Fisica
+        firstName: '',
+        lastName: '',
+        sesso: '',
+        dataNascita: '',
+        cittaNascita: '',
+        provinciaNascita: '',
+        // Address
+        indirizzo: '',
+        numeroCivico: '',
+        cittaResidenza: '',
+        provinciaResidenza: '',
+        codicePostale: '',
+        // License
+        tipoPatente: '',
+        numeroPatente: '',
+        patenteEmessaDa: '',
+        patenteDataRilascio: '',
+        patenteScadenza: ''
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
@@ -89,12 +109,32 @@ const ProfileSettings = () => {
 
                     if (data) {
                         setExtendedProfile(data);
-                        // Update basic form data from extended profile if available, otherwise fallback to auth user
+                        // Update form data from extended profile
+                        const isAzienda = data.tipo_cliente === 'azienda';
                         setFormData(prev => ({
                             ...prev,
-                            fullName: data.tipo_cliente === 'azienda' ? data.denominazione : `${data.nome || ''} ${data.cognome || ''}`.trim() || user.fullName || '',
+                            fullName: isAzienda ? data.denominazione : `${data.nome || ''} ${data.cognome || ''}`.trim() || user.fullName || '',
                             phone: data.telefono || user.phone || '',
-                            email: data.email || user.email || '' // Usually email matches
+                            email: data.email || user.email || '',
+                            // Persona Fisica fields
+                            firstName: data.nome || '',
+                            lastName: data.cognome || '',
+                            sesso: data.sesso || '',
+                            dataNascita: data.data_nascita || '',
+                            cittaNascita: data.citta_nascita || '',
+                            provinciaNascita: data.provincia_nascita || '',
+                            // Address
+                            indirizzo: data.indirizzo || '',
+                            numeroCivico: data.numero_civico || '',
+                            cittaResidenza: data.citta_residenza || '',
+                            provinciaResidenza: data.provincia_residenza || '',
+                            codicePostale: data.codice_postale || '',
+                            // License (from metadata)
+                            tipoPatente: data.metadata?.tipo_patente || '',
+                            numeroPatente: data.metadata?.numero_patente || '',
+                            patenteEmessaDa: data.metadata?.patente_emessa_da || '',
+                            patenteDataRilascio: data.metadata?.patente_data_rilascio || '',
+                            patenteScadenza: data.metadata?.patente_scadenza || ''
                         }));
                     }
                 } catch (error) {
@@ -120,14 +160,58 @@ const ProfileSettings = () => {
         setIsSubmitting(true);
         setSuccessMessage('');
         try {
+            // Update customers_extended table
+            if (extendedProfile) {
+                const updateData: any = {
+                    telefono: formData.phone
+                };
+
+                // For persona_fisica, update personal fields
+                if (extendedProfile.tipo_cliente === 'persona_fisica') {
+                    updateData.nome = formData.firstName;
+                    updateData.cognome = formData.lastName;
+                    updateData.sesso = formData.sesso;
+                    updateData.data_nascita = formData.dataNascita;
+                    updateData.citta_nascita = formData.cittaNascita;
+                    updateData.provincia_nascita = formData.provinciaNascita;
+                    updateData.indirizzo = formData.indirizzo;
+                    updateData.numero_civico = formData.numeroCivico;
+                    updateData.citta_residenza = formData.cittaResidenza;
+                    updateData.provincia_residenza = formData.provinciaResidenza;
+                    updateData.codice_postale = formData.codicePostale;
+
+                    // Update license metadata
+                    updateData.metadata = {
+                        ...extendedProfile.metadata,
+                        tipo_patente: formData.tipoPatente,
+                        numero_patente: formData.numeroPatente,
+                        patente_emessa_da: formData.patenteEmessaDa,
+                        patente_data_rilascio: formData.patenteDataRilascio,
+                        patente_scadenza: formData.patenteScadenza
+                    };
+                }
+
+                const { error } = await supabase
+                    .from('customers_extended')
+                    .update(updateData)
+                    .eq('user_id', user!.id);
+
+                if (error) throw error;
+            }
+
+            // Also update auth user metadata for consistency
             await updateUser({
-                fullName: formData.fullName,
+                fullName: extendedProfile?.tipo_cliente === 'persona_fisica'
+                    ? `${formData.firstName} ${formData.lastName}`.trim()
+                    : formData.fullName,
                 phone: formData.phone
             });
-            setSuccessMessage(t('Changes_Saved'));
+
+            setSuccessMessage('Modifiche salvate con successo!');
             setTimeout(() => setSuccessMessage(''), 3000);
         } catch (error) {
             console.error("Failed to update profile", error);
+            setSuccessMessage('Errore nel salvare le modifiche');
         } finally {
             setIsSubmitting(false);
         }
@@ -185,8 +269,8 @@ const ProfileSettings = () => {
                                                 </div>
                                                 <div className="text-right">
                                                     <p className={`text-sm font-bold ${transaction.transaction_type === 'credit'
-                                                            ? 'text-green-400'
-                                                            : 'text-red-400'
+                                                        ? 'text-green-400'
+                                                        : 'text-red-400'
                                                         }`}>
                                                         {transaction.transaction_type === 'credit' ? '+' : '-'}€{transaction.amount.toFixed(2)}
                                                     </p>
@@ -233,29 +317,31 @@ const ProfileSettings = () => {
                                 <div className="border-t border-gray-800 pt-4">
                                     <h3 className="text-lg font-semibold text-white mb-4">Dati Personali</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div><label className="text-sm text-gray-400">Nome</label><p className="text-white">{extendedProfile.nome}</p></div>
-                                        <div><label className="text-sm text-gray-400">Cognome</label><p className="text-white">{extendedProfile.cognome}</p></div>
-                                        <div><label className="text-sm text-gray-400">Codice Fiscale</label><p className="text-white font-mono">{extendedProfile.codice_fiscale}</p></div>
-                                        <div><label className="text-sm text-gray-400">Sesso</label><p className="text-white">{extendedProfile.sesso}</p></div>
-                                        <div><label className="text-sm text-gray-400">Data di Nascita</label><p className="text-white">{extendedProfile.data_nascita}</p></div>
-                                        <div><label className="text-sm text-gray-400">Luogo di Nascita</label><p className="text-white">{extendedProfile.citta_nascita} ({extendedProfile.provincia_nascita})</p></div>
+                                        <div><label className="text-sm text-gray-400">Nome</label><input type="text" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
+                                        <div><label className="text-sm text-gray-400">Cognome</label><input type="text" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
+                                        <div><label className="text-sm text-gray-400">Codice Fiscale</label><p className="text-white font-mono bg-gray-800/50 p-2 rounded-md">{extendedProfile.codice_fiscale}</p></div>
+                                        <div><label className="text-sm text-gray-400">Sesso</label><select value={formData.sesso} onChange={(e) => setFormData({ ...formData, sesso: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2"><option value="">Seleziona...</option><option value="M">Maschio</option><option value="F">Femmina</option></select></div>
+                                        <div><label className="text-sm text-gray-400">Data di Nascita</label><input type="date" value={formData.dataNascita} onChange={(e) => setFormData({ ...formData, dataNascita: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
+                                        <div><label className="text-sm text-gray-400">Città di Nascita</label><input type="text" value={formData.cittaNascita} onChange={(e) => setFormData({ ...formData, cittaNascita: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
+                                        <div><label className="text-sm text-gray-400">Provincia di Nascita</label><input type="text" value={formData.provinciaNascita} onChange={(e) => setFormData({ ...formData, provinciaNascita: e.target.value })} maxLength={2} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2 uppercase" /></div>
                                     </div>
 
                                     <h3 className="text-lg font-semibold text-white mt-6 mb-4">Residenza</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="md:col-span-2"><label className="text-sm text-gray-400">Indirizzo</label><p className="text-white">{extendedProfile.indirizzo} {extendedProfile.numero_civico ? `, ${extendedProfile.numero_civico}` : ''}</p></div>
-                                        <div><label className="text-sm text-gray-400">Città</label><p className="text-white">{extendedProfile.citta_residenza}</p></div>
-                                        <div><label className="text-sm text-gray-400">Provincia</label><p className="text-white">{extendedProfile.provincia_residenza}</p></div>
-                                        <div><label className="text-sm text-gray-400">CAP</label><p className="text-white">{extendedProfile.codice_postale}</p></div>
+                                        <div><label className="text-sm text-gray-400">Indirizzo</label><input type="text" value={formData.indirizzo} onChange={(e) => setFormData({ ...formData, indirizzo: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
+                                        <div><label className="text-sm text-gray-400">Numero Civico</label><input type="text" value={formData.numeroCivico} onChange={(e) => setFormData({ ...formData, numeroCivico: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
+                                        <div><label className="text-sm text-gray-400">Città</label><input type="text" value={formData.cittaResidenza} onChange={(e) => setFormData({ ...formData, cittaResidenza: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
+                                        <div><label className="text-sm text-gray-400">Provincia</label><input type="text" value={formData.provinciaResidenza} onChange={(e) => setFormData({ ...formData, provinciaResidenza: e.target.value })} maxLength={2} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2 uppercase" /></div>
+                                        <div><label className="text-sm text-gray-400">CAP</label><input type="text" value={formData.codicePostale} onChange={(e) => setFormData({ ...formData, codicePostale: e.target.value })} maxLength={5} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
                                     </div>
 
                                     <h3 className="text-lg font-semibold text-white mt-6 mb-4">Patente di Guida</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div><label className="text-sm text-gray-400">Tipo Patente</label><p className="text-white">{extendedProfile.metadata?.tipo_patente || '-'}</p></div>
-                                        <div><label className="text-sm text-gray-400">Numero</label><p className="text-white font-mono">{extendedProfile.metadata?.numero_patente || '-'}</p></div>
-                                        <div><label className="text-sm text-gray-400">Rilasciata da</label><p className="text-white">{extendedProfile.metadata?.patente_emessa_da || '-'}</p></div>
-                                        <div><label className="text-sm text-gray-400">Data Rilascio</label><p className="text-white">{extendedProfile.metadata?.patente_data_rilascio || '-'}</p></div>
-                                        <div><label className="text-sm text-gray-400">Scadenza</label><p className="text-white">{extendedProfile.metadata?.patente_scadenza || '-'}</p></div>
+                                        <div><label className="text-sm text-gray-400">Tipo Patente</label><input type="text" value={formData.tipoPatente} onChange={(e) => setFormData({ ...formData, tipoPatente: e.target.value })} placeholder="es. B" className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
+                                        <div><label className="text-sm text-gray-400">Numero</label><input type="text" value={formData.numeroPatente} onChange={(e) => setFormData({ ...formData, numeroPatente: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2 font-mono" /></div>
+                                        <div><label className="text-sm text-gray-400">Rilasciata da</label><input type="text" value={formData.patenteEmessaDa} onChange={(e) => setFormData({ ...formData, patenteEmessaDa: e.target.value })} placeholder="es. MIT" className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
+                                        <div><label className="text-sm text-gray-400">Data Rilascio</label><input type="date" value={formData.patenteDataRilascio} onChange={(e) => setFormData({ ...formData, patenteDataRilascio: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
+                                        <div><label className="text-sm text-gray-400">Scadenza</label><input type="date" value={formData.patenteScadenza} onChange={(e) => setFormData({ ...formData, patenteScadenza: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
                                     </div>
                                 </div>
                             )}

@@ -21,10 +21,61 @@ export const SPECIAL_CLIENTS = {
 
 /**
  * Check if the current user/form data corresponds to Massimo Runchina
+ * Checks by Email OR by Name+Surname
  */
-export const isMassimoRunchina = (email?: string): boolean => {
-    if (!email) return false;
-    return email.toLowerCase().trim() === SPECIAL_CLIENTS.MASSIMO_RUNCHINA.email;
+import type { User } from '../types';
+
+/**
+ * Check if the current user/form data corresponds to Massimo Runchina
+ * Checks by Email OR by Name+Surname (from User object or form data)
+ */
+export const isMassimoRunchina = (
+    data: { email?: string, firstName?: string, lastName?: string } | string | User | null
+): boolean => {
+    if (!data) return false;
+
+    // Handle legacy string call (just email)
+    if (typeof data === 'string') {
+        return data.toLowerCase().trim() === SPECIAL_CLIENTS.MASSIMO_RUNCHINA.email;
+    }
+
+    // Handle User object
+    if ('fullName' in data && 'email' in data) {
+        // Check User Email
+        if (data.email?.toLowerCase().trim() === SPECIAL_CLIENTS.MASSIMO_RUNCHINA.email) {
+            return true;
+        }
+        // Check User Name
+        if (data.fullName) {
+            const nameParts = data.fullName.toLowerCase().split(' ');
+            // Simple check if it contains both "massimo" and "runchina"
+            if (data.fullName.toLowerCase().includes('massimo') && data.fullName.toLowerCase().includes('runchina')) {
+                return true;
+            }
+        }
+        // Fallback: check if metadata (if available on User type extensions elsewhere) matches... 
+        // But types.ts User doesn't have metadata explicitly typed other than fields.
+        return false;
+    }
+
+    // Handle Form Data object
+    const { email, firstName, lastName } = data as { email?: string, firstName?: string, lastName?: string };
+
+    // Check email
+    if (email && email.toLowerCase().trim() === SPECIAL_CLIENTS.MASSIMO_RUNCHINA.email) {
+        return true;
+    }
+
+    // Check Name + Surname
+    if (firstName && lastName) {
+        const f = firstName.toLowerCase().trim();
+        const l = lastName.toLowerCase().trim();
+        if (f === 'massimo' && l === 'runchina') {
+            return true;
+        }
+    }
+
+    return false;
 };
 
 /**
