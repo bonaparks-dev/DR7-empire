@@ -88,93 +88,73 @@ const ProfileSettings = () => {
     }, [user]);
 
     // Fetch credit balance and profile data
-    useEffect(() => {
-        const fetchData = async () => {
-            if (user?.id) {
-                setIsLoadingCredits(true);
-                setIsLoadingProfile(true);
-                try {
-                    // Fetch Credits
-                    const balance = await getUserCreditBalance(user.id);
-                    const transactions = await getCreditTransactions(user.id, 5);
-                    setCreditBalance(balance);
-                    setRecentTransactions(transactions);
+    const loadData = async () => {
+        if (user?.id) {
+            setIsLoadingCredits(true);
+            setIsLoadingProfile(true);
+            try {
+                // Fetch Credits
+                const balance = await getUserCreditBalance(user.id);
+                const transactions = await getCreditTransactions(user.id, 5);
+                setCreditBalance(balance);
+                setRecentTransactions(transactions);
 
-                    // Fetch Extended Profile
-                    console.log('Fetching extended profile for user:', user.id);
-                    const { data, error } = await supabase
-                        .from('customers_extended')
-                        .select('*')
-                        .eq('user_id', user.id)
-                        .single();
+                // Fetch Extended Profile
+                const { data, error } = await supabase
+                    .from('customers_extended')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .maybeSingle();
 
-                    console.log('Extended profile query result:', { data, error });
-
-                    if (error) {
-                        console.error('Error fetching extended profile:', error);
-                    }
-
-                    if (data) {
-                        console.log('Extended profile loaded successfully:', data);
-                        setExtendedProfile(data);
-                        // Update form data from extended profile
-                        const isAzienda = data.tipo_cliente === 'azienda';
-                        setFormData(prev => ({
-                            ...prev,
-                            fullName: isAzienda ? data.denominazione : `${data.nome || ''} ${data.cognome || ''}`.trim() || user.fullName || '',
-                            phone: data.telefono || user.phone || '',
-                            email: data.email || user.email || '',
-                            // Persona Fisica fields
-                            firstName: data.nome || '',
-                            lastName: data.cognome || '',
-                            sesso: data.sesso || '',
-                            dataNascita: data.data_nascita || '',
-                            cittaNascita: data.citta_nascita || '',
-                            provinciaNascita: data.provincia_nascita || '',
-                            // Address
-                            indirizzo: data.indirizzo || '',
-                            numeroCivico: data.numero_civico || '',
-                            cittaResidenza: data.citta_residenza || '',
-                            provinciaResidenza: data.provincia_residenza || '',
-                            codicePostale: data.codice_postale || '',
-                            // License (from metadata)
-                            tipoPatente: data.metadata?.tipo_patente || '',
-                            numeroPatente: data.metadata?.numero_patente || '',
-                            patenteEmessaDa: data.metadata?.patente_emessa_da || '',
-                            patenteDataRilascio: data.metadata?.patente_data_rilascio || '',
-                            patenteScadenza: data.metadata?.patente_scadenza || ''
-                        }));
-                    } else {
-                        console.warn('No extended profile found for user (null data), initializing default.');
-                        setExtendedProfile({
-                            id: '',
-                            user_id: user.id,
-                            tipo_cliente: 'persona_fisica',
-                            email: user.email,
-                            metadata: {}
-                        } as any);
-                    }
-                } catch (error: any) {
-                    if (error.code === 'PGRST116') {
-                        console.log('Profile not found (PGRST116), initializing default.');
-                        setExtendedProfile({
-                            id: '',
-                            user_id: user.id,
-                            tipo_cliente: 'persona_fisica',
-                            email: user.email,
-                            metadata: {}
-                        } as any);
-                    } else {
-                        console.error('Error fetching data:', error);
-                    }
-                } finally {
-                    setIsLoadingCredits(false);
-                    setIsLoadingProfile(false);
+                if (error) {
+                    console.error('Error fetching extended profile:', error);
                 }
-            }
-        };
 
-        fetchData();
+                if (data) {
+                    setExtendedProfile(data);
+                    // Update form data from extended profile
+                    const isAzienda = data.tipo_cliente === 'azienda';
+                    setFormData(prev => ({
+                        ...prev,
+                        fullName: isAzienda ? data.denominazione : `${data.nome || ''} ${data.cognome || ''}`.trim() || user.fullName || '',
+                        phone: data.telefono || user.phone || '',
+                        email: data.email || user.email || '',
+                        // Persona Fisica fields
+                        firstName: data.nome || '',
+                        lastName: data.cognome || '',
+                        sesso: data.sesso || '',
+                        dataNascita: data.data_nascita || '',
+                        cittaNascita: data.citta_nascita || '',
+                        provinciaNascita: data.provincia_nascita || '',
+                        // Address
+                        indirizzo: data.indirizzo || '',
+                        numeroCivico: data.numero_civico || '',
+                        cittaResidenza: data.citta_residenza || '',
+                        provinciaResidenza: data.provincia_residenza || '',
+                        codicePostale: data.codice_postale || '',
+                        // License (from metadata)
+                        tipoPatente: data.metadata?.tipo_patente || '',
+                        numeroPatente: data.metadata?.numero_patente || '',
+                        patenteEmessaDa: data.metadata?.patente_emessa_da || '',
+                        patenteDataRilascio: data.metadata?.patente_data_rilascio || '',
+                        patenteScadenza: data.metadata?.patente_scadenza || ''
+                    }));
+                } else {
+                    // No profile found - we set null to trigger the fallback UI
+                    // But we don't set a dummy object anymore to ensure we know it's missing
+                    setExtendedProfile(null);
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            } finally {
+                setIsLoadingCredits(false);
+                setIsLoadingProfile(false);
+            }
+        }
+    };
+
+    useEffect(() => {
+        loadData();
     }, [user]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -188,11 +168,20 @@ const ProfileSettings = () => {
         setIsSubmitting(true);
         setSuccessMessage('');
         try {
-            // Update customers_extended table
-            if (extendedProfile) {
-                const updateData: any = {
-                    telefono: formData.phone
-                };
+            // Update or Create in customers_extended table
+            const nameParts = formData.fullName.trim().split(' ');
+            const lastName = nameParts.length > 1 ? nameParts.pop() : '';
+            const firstName = nameParts.join(' ');
+
+            const commonData = {
+                telefono: formData.phone,
+                // If creating new or fallback, these might be useful defaults
+                email: formData.email,
+            };
+
+            if (extendedProfile && extendedProfile.id) {
+                // Update existing profile
+                const updateData: any = { ...commonData };
 
                 // For persona_fisica, update personal fields
                 if (extendedProfile.tipo_cliente === 'persona_fisica') {
@@ -225,7 +214,29 @@ const ProfileSettings = () => {
                     .eq('user_id', user!.id);
 
                 if (error) throw error;
+            } else {
+                // INSERT NEW PROFILE
+                // We default to persona_fisica and parse the fullName from the basic form
+                const insertData = {
+                    user_id: user!.id,
+                    tipo_cliente: 'persona_fisica',
+                    nome: firstName,
+                    cognome: lastName,
+                    email: formData.email,
+                    telefono: formData.phone,
+                    nazione: 'Italia', // Default
+                    metadata: {}
+                };
+
+                const { error } = await supabase
+                    .from('customers_extended')
+                    .insert([insertData]);
+
+                if (error) throw error;
             }
+
+            // Reload data to reflect changes
+            await loadData();
 
             // Also update auth user metadata for consistency
             await updateUser({

@@ -49,15 +49,13 @@ BEGIN
     amount,
     balance_after,
     description,
-    service_type,
     created_at
   ) VALUES (
     p_user_id,
     'debit',
     v_amount_eur,
     v_new_balance,
-    'Noleggio ' || p_vehicle_name,
-    'car_rental',
+    'Noleggio ' || p_vehicle_name || ' - ' || (p_booking_payload->>'pickup_date') || ' to ' || (p_booking_payload->>'dropoff_date'),
     NOW()
   );
 
@@ -92,7 +90,7 @@ BEGIN
     p_booking_payload->>'dropoff_location',
     (p_booking_payload->>'price_total')::numeric,
     p_booking_payload->>'currency',
-    'pending', -- Status pending initially
+    'confirmed', -- Status confirmed (payment already succeeded)
     'succeeded', -- Payment succeeded (we just deducted it)
     'credit',
     COALESCE(p_booking_payload->>'booking_source', 'website'),
