@@ -45,12 +45,60 @@ const DocumentsVerification = () => {
     }, []);
 
     // Fetch uploaded documents from storage buckets
-    // DISABLED temporarily to prevent connection flooding
-    // Documents can be viewed in admin panel
     useEffect(() => {
-        // Skip fetching to avoid connection issues
-        setLoadingDocuments(false);
-        setUploadedDocuments([]);
+        const fetchDocuments = async () => {
+            if (!user?.id) {
+                setLoadingDocuments(false);
+                return;
+            }
+
+            setLoadingDocuments(true);
+            try {
+                const buckets = ['carta-identita', 'codice-fiscale', 'driver-licenses'];
+                const allDocs: any[] = [];
+
+                for (const bucket of buckets) {
+                    const { data: files, error } = await supabase.storage
+                        .from(bucket)
+                        .list(user.id);
+
+                    if (!error && files) {
+                        // Filter out placeholder files and add to documents list
+                        const validFiles = files.filter(f => f.name !== '.emptyFolderPlaceholder');
+                        validFiles.forEach(file => {
+                            allDocs.push({
+                                id: `${bucket}-${file.name}`,
+                                document_type: file.name.split('_')[0] || 'document',
+                                bucket: bucket,
+                                file_path: `${user.id}/${file.name}`,
+                                upload_date: file.created_at || new Date().toISOString(),
+                                status: 'verified' // Default to verified since they're uploaded
+                            });
+                        });
+                    }
+                }
+
+                setUploadedDocuments(allDocs);
+
+                // Mark steps as uploaded based on found documents
+                const newUploadedSteps = new Set<number>();
+                allDocs.forEach(doc => {
+                    const stepIndex = uploadSteps.findIndex(step =>
+                        doc.file_path.includes(step.key) || doc.document_type === step.key
+                    );
+                    if (stepIndex !== -1) {
+                        newUploadedSteps.add(stepIndex);
+                    }
+                });
+                setUploadedSteps(newUploadedSteps);
+            } catch (error) {
+                console.error('Error fetching documents:', error);
+            } finally {
+                setLoadingDocuments(false);
+            }
+        };
+
+        fetchDocuments();
     }, [user?.id]);
 
     const handleFileChange = (stepIndex: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
