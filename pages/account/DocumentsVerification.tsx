@@ -159,12 +159,20 @@ const DocumentsVerification = () => {
     };
 
     const getDocumentUrl = async (doc: any) => {
-        const { data } = await supabase.storage
-            .from(doc.bucket)
-            .createSignedUrl(doc.file_path, 3600);
+        try {
+            console.log(`Requesting signed URL for bucket: ${doc.bucket}, path: ${doc.file_path}`);
+            const { data, error } = await supabase.storage
+                .from(doc.bucket)
+                .createSignedUrl(doc.file_path, 3600);
 
-        if (data?.signedUrl) {
+            if (error) throw error;
+            if (!data || !data.signedUrl) throw new Error('No signed URL returned');
+
+            console.log('Opening document URL:', data.signedUrl);
             window.open(data.signedUrl, '_blank');
+        } catch (error: any) {
+            console.error('Error viewing document:', error);
+            alert(`Impossibile visualizzare il documento. Riprova più tardi.\nErrore: ${error.message || 'Unknown error'}`);
         }
     };
 

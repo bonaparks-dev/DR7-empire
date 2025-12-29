@@ -39,6 +39,12 @@ interface CustomerExtended {
     metadata?: any;
 }
 
+const sanitizeDate = (dateString: string | undefined | null): string | null => {
+    if (!dateString) return null;
+    const trimmed = dateString.trim();
+    return trimmed === '' ? null : trimmed;
+};
+
 const ProfileSettings = () => {
     const { user, updateUser } = useAuth();
     const { t } = useTranslation();
@@ -189,9 +195,9 @@ const ProfileSettings = () => {
                 if (extendedProfile.tipo_cliente === 'persona_fisica') {
                     updateData.nome = formData.firstName;
                     updateData.cognome = formData.lastName;
-                    updateData.codice_fiscale = formData.codiceFiscale.toUpperCase();
+                    updateData.codice_fiscale = formData.codiceFiscale?.toUpperCase().trim() || null;
                     updateData.sesso = formData.sesso;
-                    updateData.data_nascita = formData.dataNascita || null; // Fix for empty date error
+                    updateData.data_nascita = sanitizeDate(formData.dataNascita);
                     updateData.citta_nascita = formData.cittaNascita;
                     updateData.provincia_nascita = formData.provinciaNascita;
                     updateData.indirizzo = formData.indirizzo;
@@ -206,8 +212,8 @@ const ProfileSettings = () => {
                         tipo_patente: formData.tipoPatente,
                         numero_patente: formData.numeroPatente,
                         patente_emessa_da: formData.patenteEmessaDa,
-                        patente_data_rilascio: formData.patenteDataRilascio || null, // Fix for empty date error
-                        patente_scadenza: formData.patenteScadenza || null // Fix for empty date error
+                        patente_data_rilascio: sanitizeDate(formData.patenteDataRilascio),
+                        patente_scadenza: sanitizeDate(formData.patenteScadenza)
                     };
                 }
 
