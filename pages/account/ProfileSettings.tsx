@@ -101,13 +101,21 @@ const ProfileSettings = () => {
                     setRecentTransactions(transactions);
 
                     // Fetch Extended Profile
+                    console.log('Fetching extended profile for user:', user.id);
                     const { data, error } = await supabase
                         .from('customers_extended')
                         .select('*')
                         .eq('user_id', user.id)
                         .single();
 
+                    console.log('Extended profile query result:', { data, error });
+
+                    if (error) {
+                        console.error('Error fetching extended profile:', error);
+                    }
+
                     if (data) {
+                        console.log('Extended profile loaded successfully:', data);
                         setExtendedProfile(data);
                         // Update form data from extended profile
                         const isAzienda = data.tipo_cliente === 'azienda';
@@ -136,6 +144,8 @@ const ProfileSettings = () => {
                             patenteDataRilascio: data.metadata?.patente_data_rilascio || '',
                             patenteScadenza: data.metadata?.patente_scadenza || ''
                         }));
+                    } else {
+                        console.warn('No extended profile found for user:', user.id);
                     }
                 } catch (error) {
                     console.error('Error fetching data:', error);
