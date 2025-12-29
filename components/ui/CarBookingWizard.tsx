@@ -428,6 +428,53 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     checkDocs();
   }, [user?.id]);
 
+  // AUTOFILL USER DATA FROM PROFILE
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!user?.id) return;
+
+      try {
+        const { data: customerData, error } = await supabase
+          .from('customers_extended')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error || !customerData) {
+          // If no extended profile, at least try to fill basic info from Auth Context if available
+          setFormData(prev => ({
+            ...prev,
+            firstName: prev.firstName || (user.fullName ? user.fullName.split(' ')[0] : ''),
+            lastName: prev.lastName || (user.fullName ? user.fullName.split(' ').slice(1).join(' ') : ''),
+            email: prev.email || user.email || '',
+            phone: prev.phone || user.phone || ''
+          }));
+          return;
+        }
+
+        // Autofill form with extended data
+        setFormData(prev => ({
+          ...prev,
+          firstName: customerData.nome || prev.firstName || (user.fullName ? user.fullName.split(' ')[0] : ''),
+          lastName: customerData.cognome || prev.lastName || (user.fullName ? user.fullName.split(' ').slice(1).join(' ') : ''),
+          email: customerData.email || prev.email || user.email || '',
+          phone: customerData.telefono || prev.phone || user.phone || '',
+          birthDate: customerData.data_nascita || prev.birthDate,
+          // License fields from metadata
+          licenseNumber: customerData.metadata?.numero_patente || prev.licenseNumber,
+          licenseIssueDate: customerData.metadata?.patente_data_rilascio || prev.licenseIssueDate,
+        }));
+
+        console.log('Autofilled form with user profile data');
+
+      } catch (err) {
+        console.error('Error autofilling user data:', err);
+      }
+    };
+
+    fetchUserData();
+  }, [user?.id, user?.email, user?.fullName, user?.phone]);
+
 
   // Stripe.js ready
   useEffect(() => {

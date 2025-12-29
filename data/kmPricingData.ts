@@ -269,6 +269,12 @@ export const calculateUnlimitedKmPrice = (
   }
 
   // For 4+ days: use 3-day price + (days-3) * daily rate
+  // UNLESS it is a Premium Vehicle (Ferrari/Lamborghini), then it is flat €200/day
+  if (isPremiumVehicle(vehicleName) && rentalDays >= 4) {
+    const dailyRate = isFirstPurchase ? 200 : 240; // 200 base + 20% if not first purchase
+    return rentalDays * dailyRate;
+  }
+
   const threeDayOption = options.find(opt => opt.duration_days === 3);
   const dailyOption = options.find(opt => opt.duration === "Dal 4° giorno in poi (+/gg)");
 
