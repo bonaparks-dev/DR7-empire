@@ -343,6 +343,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     '2024-03-31', '2024-04-01', // Easter 2024
     '2025-04-20', '2025-04-21', // Easter 2025
     '2026-04-05', '2026-04-06', // Easter 2026
+    '2026-01-02', '2026-01-03', // Office Closed for New Year 2026
   ];
 
   const isHoliday = (dateString: string): boolean => {

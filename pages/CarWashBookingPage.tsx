@@ -43,6 +43,23 @@ const CarWashBookingPage: React.FC = () => {
 
   const minDate = getTodayDate();
 
+  // === HOLIDAY LOGIC ===
+  const ITALIAN_HOLIDAYS = [
+    '01-01', '06-01', '25-04', '01-05', '02-06', '15-08', '01-11', '08-12', '25-12', '26-12',
+    '2024-03-31', '2024-04-01', // Easter 2024
+    '2025-04-20', '2025-04-21', // Easter 2025
+    '2026-04-05', '2026-04-06', // Easter 2026
+    '2026-01-02', '2026-01-03', // Office Closed for New Year 2026
+  ];
+
+  const isHoliday = (dateString: string): boolean => {
+    if (!dateString) return false;
+    const [year, month, day] = dateString.split('-');
+    const formattedDate = `${day}-${month}`;
+    const fullDate = dateString; // YYYY-MM-DD
+    return ITALIAN_HOLIDAYS.includes(formattedDate) || ITALIAN_HOLIDAYS.includes(fullDate);
+  };
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -351,16 +368,29 @@ const CarWashBookingPage: React.FC = () => {
     }
 
     // Block past dates immediately when date field changes
-    if (name === 'appointmentDate' && value && value < minDate) {
-      setErrors(prev => ({
-        ...prev,
-        appointmentDate: lang === 'it'
-          ? 'Non puoi selezionare date passate. Seleziona da oggi in poi.'
-          : 'You cannot select past dates. Select from today onwards.'
-      }));
-      // Reset to empty instead of keeping invalid date
-      setFormData(prev => ({ ...prev, appointmentDate: '' }));
-      return;
+    if (name === 'appointmentDate' && value) {
+      if (value < minDate) {
+        setErrors(prev => ({
+          ...prev,
+          appointmentDate: lang === 'it'
+            ? 'Non puoi selezionare date passate. Seleziona da oggi in poi.'
+            : 'You cannot select past dates. Select from today onwards.'
+        }));
+        setFormData(prev => ({ ...prev, appointmentDate: '' }));
+        return;
+      }
+
+      // Block Holidays
+      if (isHoliday(value)) {
+        setErrors(prev => ({
+          ...prev,
+          appointmentDate: lang === 'it'
+            ? 'Non puoi prenotare nei giorni festivi. Siamo chiusi.'
+            : 'You cannot book on holidays. We are closed.'
+        }));
+        setFormData(prev => ({ ...prev, appointmentDate: '' }));
+        return;
+      }
     }
 
     setFormData(prev => ({ ...prev, [name]: newValue }));
@@ -514,6 +544,9 @@ const CarWashBookingPage: React.FC = () => {
     // Sunday = 0 - closed on Sundays
     if (dayOfWeek === 0) return false;
 
+    // Closed on Holidays
+    if (isHoliday(date)) return false;
+
     // Check if the selected time is in the available slots
     const availableSlots = getAvailableTimeSlots();
     return availableSlots.includes(time);
@@ -555,6 +588,8 @@ const CarWashBookingPage: React.FC = () => {
         const dayOfWeek = new Date(year, month - 1, day).getDay();
         if (dayOfWeek === 0) {
           newErrors.appointmentDate = lang === 'it' ? 'Siamo chiusi la domenica' : 'We are closed on Sundays';
+        } else if (isHoliday(formData.appointmentDate)) {
+          newErrors.appointmentDate = lang === 'it' ? 'Siamo chiusi nei giorni festivi' : 'We are closed on holidays';
         } else {
           newErrors.appointmentTime = lang === 'it' ? 'Orario disponibile: Lunedì-Sabato 9:00-19:00 (minimo 2 ore in anticipo)' : 'Available hours: Monday-Saturday 9:00-19:00 (minimum 2 hours in advance)';
         }
