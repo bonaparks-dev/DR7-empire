@@ -381,12 +381,12 @@ const CarWashBookingPage: React.FC = () => {
       }
 
       // Block Holidays
-      if (['2026-01-01', '2026-01-02', '2026-01-03'].includes(value)) {
+      if (['2026-01-01', '2026-01-02', '2026-01-03', '2026-01-04'].includes(value)) {
         setErrors(prev => ({
           ...prev,
           appointmentDate: lang === 'it'
-            ? 'Siamo chiusi per ferie. Riapriremo il 4 Gennaio 2026.'
-            : 'We are closed for holidays. We will reopen on January 4th, 2026.'
+            ? 'Siamo chiusi per ferie. Riapriremo il 5 Gennaio 2026.'
+            : 'We are closed for holidays. We will reopen on January 5th, 2026.'
         }));
         setFormData(prev => ({ ...prev, appointmentDate: '' }));
         return;

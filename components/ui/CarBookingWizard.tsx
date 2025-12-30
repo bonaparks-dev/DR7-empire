@@ -1859,9 +1859,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             alert('Non è possibile ritirare il veicolo di domenica. Siamo chiusi la domenica.\n\nPer favore seleziona un altro giorno.');
                             return;
                           }
-                          // Specific Check for Jan 1-3 2026 Closure
-                          if (['2026-01-01', '2026-01-02', '2026-01-03'].includes(value)) {
-                            alert('Siamo chiusi per ferie. Riapriremo il 4 Gennaio 2026.\n\nWe are closed for holidays. We will reopen on January 4th, 2026.');
+                          // Specific Check for Jan 1-4 2026 Closure
+                          if (['2026-01-01', '2026-01-02', '2026-01-03', '2026-01-04'].includes(value)) {
+                            alert('Siamo chiusi per ferie. Riapriremo il 5 Gennaio 2026.\n\nWe are closed for holidays. We will reopen on January 5th, 2026.');
                             return;
                           }
                           if (isHoliday(value)) {
@@ -1951,9 +1951,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             alert('Non è possibile riconsegnare il veicolo di domenica. Siamo chiusi la domenica.\n\nPer favorere seleziona un altro giorno.');
                             return;
                           }
-                          // Specific Check for Jan 1-3 2026 Closure
-                          if (['2026-01-01', '2026-01-02', '2026-01-03'].includes(value)) {
-                            alert('Siamo chiusi per ferie. Riapriremo il 4 Gennaio 2026.\n\nWe are closed for holidays. We will reopen on January 4th, 2026.');
+                          // Specific Check for Jan 1-4 2026 Closure
+                          if (['2026-01-01', '2026-01-02', '2026-01-03', '2026-01-04'].includes(value)) {
+                            alert('Siamo chiusi per ferie. Riapriremo il 5 Gennaio 2026.\n\nWe are closed for holidays. We will reopen on January 5th, 2026.');
                             return;
                           }
                           if (isHoliday(value)) {
