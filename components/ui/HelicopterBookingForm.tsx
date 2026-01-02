@@ -369,6 +369,8 @@ const HelicopterBookingForm: React.FC = () => {
                     name="returnDate"
                     value={formData.returnDate}
                     onChange={handleChange}
+                    min={formData.flightDate}
+                    disabled={!formData.flightDate}
                     className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 focus:outline-none focus:border-white"
                   />
                 </div>

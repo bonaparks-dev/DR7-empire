@@ -185,7 +185,7 @@ const JetSearchPage: React.FC = () => {
                 {tripType === 'round-trip' && (
                   <motion.div initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: 'auto' }} exit={{ opacity: 0, width: 0 }} className="overflow-hidden">
                     <label className="text-sm text-gray-400 block mb-2">{t('Return_Date')}</label>
-                    <input type="date" value={returnDate} onChange={e => setReturnDate(e.target.value)} min={departureDate || today} className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white" />
+                    <input type="date" value={returnDate} onChange={e => setReturnDate(e.target.value)} min={departureDate || today} disabled={!departureDate} className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white" />
                   </motion.div>
                 )}
               </AnimatePresence>

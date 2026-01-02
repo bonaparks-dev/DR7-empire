@@ -1970,6 +1970,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           handleChange(e);
                         }}
                         min={formData.pickupDate || today}
+                        disabled={!formData.pickupDate}
                         required
                         className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors ${!formData.pickupDate
                           ? 'border-gray-700 opacity-50 cursor-not-allowed'

@@ -265,7 +265,7 @@ const BookingModal: React.FC = () => {
               className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors z-10"
               aria-label={t('Close')}
             >
-              
+
             </button>
 
             {!isConfirmed ? (
@@ -309,6 +309,7 @@ const BookingModal: React.FC = () => {
                             setReturnDate(e.target.value);
                           }}
                           min={pickupDate || today}
+                          disabled={!pickupDate}
                           required
                           className="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm text-white focus:ring-white focus:border-white"
                         />
