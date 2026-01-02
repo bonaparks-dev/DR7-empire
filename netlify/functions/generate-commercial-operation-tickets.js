@@ -515,10 +515,11 @@ exports.handler = async (event) => {
       const ticketsToInsert = tickets.map(ticket => ({
         uuid: ticket.uuid,
         ticket_number: ticket.number,
-        user_id: null, // Will be linked if user is authenticated
+        user_id: clientId || null, // Link to user if clientId is available
         email: email,
         full_name: fullName,
         customer_phone: phone,
+        customer_data: passedCustomerData || null, // Store complete customer data
         payment_intent_id: paymentIntentId,
         amount_paid: 2500, // 25€ per ticket
         currency: pi.currency,
