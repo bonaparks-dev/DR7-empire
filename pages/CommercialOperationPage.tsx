@@ -414,9 +414,6 @@ const CommercialOperationPage: React.FC = () => {
                     <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-exo2 uppercase tracking-wider mb-4" style={{ textShadow: '0 0 15px rgba(255,255,255,0.3)' }}>
                         PROMO ULTIMI BIGLIETTI
                     </motion.h1>
-                    <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.3 }} className="text-2xl sm:text-3xl md:text-4xl text-white font-bold tracking-wide mb-4">
-                        MANCANO SOLO 19 GIORNI
-                    </motion.p>
                     <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.4 }} className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white/90 font-semibold tracking-wide mb-12">
                         Vinci un'Alfa Romeo Stelvio Quadrifoglio
                     </motion.p>
