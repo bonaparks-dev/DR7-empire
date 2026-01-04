@@ -412,8 +412,11 @@ const CommercialOperationPage: React.FC = () => {
 
                 <div className="relative z-20 px-4 sm:px-6 container mx-auto">
                     <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-exo2 uppercase tracking-wider mb-4" style={{ textShadow: '0 0 15px rgba(255,255,255,0.3)' }}>
-                        LOTTERIA
+                        PROMO ULTIMI BIGLIETTI
                     </motion.h1>
+                    <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.3 }} className="text-2xl sm:text-3xl md:text-4xl text-white font-bold tracking-wide mb-4">
+                        MANCANO SOLO 19 GIORNI
+                    </motion.p>
                     <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.4 }} className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white/90 font-semibold tracking-wide mb-12">
                         Vinci un'Alfa Romeo Stelvio Quadrifoglio
                     </motion.p>
@@ -467,11 +470,14 @@ const CommercialOperationPage: React.FC = () => {
                                     <p className="text-lg sm:text-xl text-white/80">
                                         Una chance reale di portarti a casa un'auto da sogno.
                                     </p>
-                                    <p className="text-xl sm:text-2xl font-bold text-white">
-                                        GIOCA ORA.
+                                    <p className="text-2xl sm:text-3xl font-bold text-dr7-gold">
+                                        ULTIMA CHIAMATA
                                     </p>
-                                    <p className="text-lg text-white/70">
-                                        Prima che finiscano.
+                                    <p className="text-xl sm:text-2xl font-bold text-white">
+                                        BUONA FORTUNA A TUTTI
+                                    </p>
+                                    <p className="text-xl sm:text-2xl font-bold text-white">
+                                        ENTRA QUI PER ACQUISTARLO
                                     </p>
                                 </div>
                             </div>
@@ -496,22 +502,26 @@ const CommercialOperationPage: React.FC = () => {
 
                                 {/* Promotional Packages */}
                                 <div className="mb-6 p-4 bg-dr7-gold/10 border border-dr7-gold/30 rounded-lg">
-                                    <h3 className="text-lg font-bold text-dr7-gold mb-3 text-center">MAXI PROMO ULTIMI BIGLIETTI</h3>
+                                    <h3 className="text-lg font-bold text-dr7-gold mb-3 text-center">PROMO ULTIMI BIGLIETTI</h3>
                                     <p className="text-sm text-white/80 mb-4 text-center">
                                         Pacchetti Speciali - Offerta limitata!
                                     </p>
                                     <div className="space-y-2">
-                                        <div className="flex items-center justify-between px-4 py-2 bg-black/40 rounded-lg border border-dr7-gold/30">
-                                            <span className="text-sm md:text-base font-bold text-white">20 biglietti</span>
-                                            <span className="text-sm md:text-base font-bold text-dr7-gold">400€</span>
+                                        <div className="flex items-center justify-between px-4 py-3 bg-black/40 rounded-lg border border-dr7-gold/30">
+                                            <span className="text-base md:text-lg font-bold text-white">1 BIGLIETTO</span>
+                                            <span className="text-base md:text-lg font-bold text-dr7-gold">IN PROMO 25 €</span>
                                         </div>
-                                        <div className="flex items-center justify-between px-4 py-2 bg-black/40 rounded-lg border border-dr7-gold/30">
-                                            <span className="text-sm md:text-base font-bold text-white">50 biglietti</span>
-                                            <span className="text-sm md:text-base font-bold text-dr7-gold">800€</span>
+                                        <div className="flex items-center justify-between px-4 py-3 bg-black/40 rounded-lg border border-dr7-gold/30">
+                                            <span className="text-base md:text-lg font-bold text-white">10 BIGLIETTI</span>
+                                            <span className="text-base md:text-lg font-bold text-dr7-gold">IN PROMO 190 €</span>
                                         </div>
-                                        <div className="flex items-center justify-between px-4 py-2 bg-black/40 rounded-lg border border-dr7-gold/30">
-                                            <span className="text-sm md:text-base font-bold text-white">100 biglietti</span>
-                                            <span className="text-sm md:text-base font-bold text-dr7-gold">1.400€</span>
+                                        <div className="flex items-center justify-between px-4 py-3 bg-black/40 rounded-lg border border-dr7-gold/30">
+                                            <span className="text-base md:text-lg font-bold text-white">20 BIGLIETTI</span>
+                                            <span className="text-base md:text-lg font-bold text-dr7-gold">IN PROMO 350 €</span>
+                                        </div>
+                                        <div className="flex items-center justify-between px-4 py-3 bg-black/40 rounded-lg border border-dr7-gold/30">
+                                            <span className="text-base md:text-lg font-bold text-white">30 BIGLIETTI</span>
+                                            <span className="text-base md:text-lg font-bold text-dr7-gold">IN PROMO 370 €</span>
                                         </div>
                                     </div>
                                 </div>
