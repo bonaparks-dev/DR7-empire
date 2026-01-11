@@ -76,8 +76,8 @@ import TokenPage from './pages/TokenPage';
 import AdminCalendarPage from './pages/AdminCalendarPage';
 import AdminDocumentsPage from './pages/AdminDocumentsPage';
 import CreditWalletPage from './pages/CreditWalletPage';
-import PaymentSuccessPage from './pages/PaymentSuccessPage';
-import PaymentCancelPage from './pages/PaymentCancelPage';
+
+
 
 const AuthRedirector: React.FC = () => {
   const { user, authEvent } = useAuth();

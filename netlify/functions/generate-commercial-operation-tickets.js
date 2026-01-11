@@ -227,7 +227,7 @@ exports.handler = async (event) => {
       const { data, error } = await supabase
         .from('customers_extended')
         .select('*')
-        .eq('id', clientId)
+        .eq('user_id', clientId)
         .maybeSingle();
 
       if (error) {

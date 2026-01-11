@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -51,6 +52,7 @@
         opacity: 0;
         transform: translateY(-15px);
       }
+
       to {
         opacity: 1;
         transform: translateY(0);
@@ -233,11 +235,13 @@
       .form-input,
       .form-select {
         padding: 0.85rem 1rem;
-        font-size: 16px; /* Prevents zoom on iOS */
+        font-size: 16px;
+        /* Prevents zoom on iOS */
       }
     }
   </style>
 </head>
+
 <body>
   <div class="container">
     <h1 class="form-title">Registrazione Cliente</h1>
@@ -288,7 +292,8 @@
 
         <div class="form-group">
           <label class="form-label required" for="indirizzo_az">Indirizzo</label>
-          <input type="text" id="indirizzo_az" name="indirizzo" class="form-input" placeholder="Via, Numero Civico, CAP, Città">
+          <input type="text" id="indirizzo_az" name="indirizzo" class="form-input"
+            placeholder="Via, Numero Civico, CAP, Città">
         </div>
 
         <div class="optional-section">
@@ -318,12 +323,14 @@
 
         <div class="form-group">
           <label class="form-label required" for="codiceFiscale_pf">Codice Fiscale</label>
-          <input type="text" id="codiceFiscale_pf" name="codiceFiscale" class="form-input" placeholder="RSSMRA80A01H501U">
+          <input type="text" id="codiceFiscale_pf" name="codiceFiscale" class="form-input"
+            placeholder="RSSMRA80A01H501U">
         </div>
 
         <div class="form-group">
           <label class="form-label required" for="indirizzo_pf">Indirizzo</label>
-          <input type="text" id="indirizzo_pf" name="indirizzo" class="form-input" placeholder="Via, Numero Civico, CAP, Città">
+          <input type="text" id="indirizzo_pf" name="indirizzo" class="form-input"
+            placeholder="Via, Numero Civico, CAP, Città">
         </div>
 
         <div class="optional-section">
@@ -369,7 +376,8 @@
         <div class="form-group">
           <label class="form-label required" for="enteUfficio">Ente o Ufficio</label>
           <div class="input-with-button">
-            <input type="text" id="enteUfficio" name="enteUfficio" class="form-input" placeholder="Nome dell'ente o ufficio">
+            <input type="text" id="enteUfficio" name="enteUfficio" class="form-input"
+              placeholder="Nome dell'ente o ufficio">
             <button type="button" class="btn-search" onclick="cercaPerEnteUfficio()">🔍 Cerca</button>
           </div>
         </div>
@@ -398,7 +406,7 @@
     const customerForm = document.getElementById('customerForm');
 
     // Show/Hide fields based on client type
-    tipoClienteSelect.addEventListener('change', function() {
+    tipoClienteSelect.addEventListener('change', function () {
       const selectedType = this.value;
 
       // Hide all sections first
@@ -535,38 +543,72 @@
     }
 
     // Form submission
-    customerForm.addEventListener('submit', function(e) {
+    customerForm.addEventListener('submit', async function (e) {
       e.preventDefault();
 
-      // Collect form data
-      const formData = new FormData(customerForm);
-      const data = Object.fromEntries(formData.entries());
+      const submitButton = document.getElementById('submitBtn');
+      const originalButtonText = submitButton.textContent;
 
-      console.log('Form submitted with data:', data);
+      // Disable button and show loading state
+      submitButton.disabled = true;
+      submitButton.textContent = 'Invio in corso...';
+      submitButton.style.opacity = '0.6';
+      submitButton.style.cursor = 'not-allowed';
 
-      // TODO: Send data to your backend
-      alert('Form submitted successfully!\n\nDati inviati:\n' + JSON.stringify(data, null, 2));
+      try {
+        // Collect form data
+        const formData = new FormData(customerForm);
+        const data = Object.fromEntries(formData.entries());
 
-      // Example: Send to API
-      /*
-      fetch('/api/register-customer', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-      })
-      .then(response => response.json())
-      .then(result => {
-        console.log('Success:', result);
-        alert('Registrazione completata con successo!');
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        alert('Errore durante la registrazione. Riprova.');
-      });
-      */
+        console.log('Form submitted with data:', data);
+
+        // Send to backend
+        const response = await fetch('/.netlify/functions/save-customer-data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Errore durante la registrazione');
+        }
+
+        // Success!
+        console.log('Registration successful:', result);
+
+        // Show success message
+        alert('✅ ' + result.message + '\n\nGrazie per la registrazione!\n\nID Cliente: ' + result.customerId);
+
+        // Reset form
+        customerForm.reset();
+
+        // Hide all sections and submit button
+        hideAllSections();
+        submitButton.classList.remove('visible');
+
+        // Reset tipo cliente select
+        tipoClienteSelect.value = '';
+
+      } catch (error) {
+        console.error('Registration error:', error);
+
+        // Show error message
+        alert('❌ Errore durante la registrazione\n\n' + error.message + '\n\nRiprova o contatta il supporto.');
+
+      } finally {
+        // Re-enable button
+        submitButton.disabled = false;
+        submitButton.textContent = originalButtonText;
+        submitButton.style.opacity = '1';
+        submitButton.style.cursor = 'pointer';
+      }
     });
+
   </script>
 </body>
+
 </html>
