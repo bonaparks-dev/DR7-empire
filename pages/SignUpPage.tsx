@@ -174,11 +174,16 @@ const SignUpPage: React.FC = () => {
       if (tipoCliente === 'persona_fisica') {
         if (!formData.nome) newErrors.nome = 'Nome è obbligatorio';
         if (!formData.cognome) newErrors.cognome = 'Cognome è obbligatorio';
-        if (!formData.codiceFiscale) {
-          newErrors.codiceFiscale = 'Codice Fiscale è obbligatorio';
-        } else if (!validateCodiceFiscale(formData.codiceFiscale)) {
-          newErrors.codiceFiscale = 'Codice Fiscale non valido (16 caratteri)';
+
+        // Codice Fiscale is only required for Italian nationals
+        if (formData.nazione === 'Italia') {
+          if (!formData.codiceFiscale) {
+            newErrors.codiceFiscale = 'Codice Fiscale è obbligatorio';
+          } else if (!validateCodiceFiscale(formData.codiceFiscale)) {
+            newErrors.codiceFiscale = 'Codice Fiscale non valido (16 caratteri)';
+          }
         }
+
         if (!formData.telefono) {
           newErrors.telefono = 'Telefono è obbligatorio';
         } else if (!validateItalianPhone(formData.telefono)) {
@@ -232,23 +237,13 @@ const SignUpPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // Step 1: Create auth user
-      const { data: authData, error: authError } = await signup(
-        formData.email,
-        formData.password,
-        {}
-      );
-
-      if (authError) throw authError;
-
-      // Step 2: Save customer data to customers_extended
+      // Prepare customer data payload
       const customerData: any = {
         tipo_cliente: tipoCliente,
         nazione: formData.nazione,
         codice_fiscale: formData.codiceFiscale,
         indirizzo: formData.indirizzo,
-        source: 'website',
-        user_id: authData?.user?.id || null
+        source: 'website'
       };
 
       // Add type-specific fields
@@ -306,24 +301,48 @@ const SignUpPage: React.FC = () => {
         customerData.telefono = formData.telefono;
       }
 
-      const { error: customerError } = await supabase
-        .from('customers_extended')
-        .insert([customerData]);
+      // Call the backend function to handle registration securely
+      const response = await fetch('/.netlify/functions/register-customer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          customerData
+        })
+      });
 
-      if (customerError) {
-        console.error('Error saving customer data:', customerError);
-        console.error('Customer data attempted:', customerData);
-        // Silently fail for the customer data part as the auth user is created
-        // The user can update their profile later
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || t('Something_went_wrong'));
       }
 
-      // Show document upload modal
-      if (authData?.user?.id) {
-        setNewUserId(authData.user.id);
-        setShowDocumentModal(true);
-      } else {
+      // Success - now handle post-signup flow
+      // Since we created the user via admin API, we might need to sign them in automatically?
+      // Or just prompt to check email (if using email confirm)
+      // The `signup` hook usually handles auto-login if email confirm is off.
+      // But here we used backend. We should manual login?
+      // Actually, let's try to sign them in immediately if we can, or just navigate.
+
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password
+      });
+
+      if (signInError) {
+        // Presumably email not confirmed yet
         navigate('/check-email');
+      } else if (signInData.user) {
+        // Logged in successfully
+        if (result.user?.id) {
+          setNewUserId(result.user.id);
+          setShowDocumentModal(true);
+        } else {
+          navigate('/account');
+        }
       }
+
     } catch (err: any) {
       setGeneralError(err.message || t('Something_went_wrong'));
     } finally {
@@ -641,22 +660,25 @@ const SignUpPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Codice Fiscale <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="codiceFiscale"
-                      value={formData.codiceFiscale}
-                      onChange={handleChange}
-                      placeholder="RSSMRA80A01H501U"
-                      maxLength={16}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
-                      required
-                    />
-                    {errors.codiceFiscale && <p className="text-xs text-red-400 mt-1">{errors.codiceFiscale}</p>}
-                  </div>
+
+                  {formData.nazione === 'Italia' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Codice Fiscale <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="codiceFiscale"
+                        value={formData.codiceFiscale}
+                        onChange={handleChange}
+                        placeholder="RSSMRA80A01H501U"
+                        maxLength={16}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
+                        required
+                      />
+                      {errors.codiceFiscale && <p className="text-xs text-red-400 mt-1">{errors.codiceFiscale}</p>}
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
