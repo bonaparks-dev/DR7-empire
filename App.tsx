@@ -76,6 +76,8 @@ import TokenPage from './pages/TokenPage';
 import AdminCalendarPage from './pages/AdminCalendarPage';
 import AdminDocumentsPage from './pages/AdminDocumentsPage';
 import CreditWalletPage from './pages/CreditWalletPage';
+// import PaymentSuccessPage from './pages/PaymentSuccessPage';
+// import PaymentCancelPage from './pages/PaymentCancelPage';
 
 
 
@@ -211,8 +213,8 @@ const AnimatedRoutes = () => {
         <Route path="/confirmation-success" element={<ConfirmationSuccessPage />} />
         <Route path="/car-booking-success" element={<CarBookingConfirmationPage />} />
         <Route path="/booking-success" element={<ConfirmationSuccessPage />} />
-        <Route path="/payment-success" element={<PaymentSuccessPage />} />
-        <Route path="/payment-cancel" element={<PaymentCancelPage />} />
+        {/* <Route path="/payment-success" element={<PaymentSuccessPage />} /> */}
+        {/* <Route path="/payment-cancel" element={<PaymentCancelPage />} /> */}
         <Route path="/post/:id" element={<PostPage />} />
       </Routes>
     </AnimatePresence>
