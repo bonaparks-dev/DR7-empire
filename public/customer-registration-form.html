@@ -308,7 +308,10 @@
 
         <div class="form-group">
           <label class="form-label required" for="nazione_pf">Nazione</label>
-          <input type="text" id="nazione_pf" name="nazione" class="form-input" value="Italia">
+          <select id="nazione_pf" name="nazione" class="form-select">
+            <option value="Italia" selected>Italia</option>
+            <option value="Altro">Altro</option>
+          </select>
         </div>
 
         <div class="form-group">
@@ -328,9 +331,91 @@
         </div>
 
         <div class="form-group">
+          <label class="form-label required" for="sesso">Sesso</label>
+          <select id="sesso" name="sesso" class="form-select">
+            <option value="">Seleziona...</option>
+            <option value="M">M</option>
+            <option value="F">F</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="dataNascita">Data di Nascita</label>
+          <input type="date" id="dataNascita" name="dataNascita" class="form-input">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="cittaNascita">Città di Nascita</label>
+          <input type="text" id="cittaNascita" name="cittaNascita" class="form-input" placeholder="Roma">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="provinciaNascita">Provincia di Nascita</label>
+          <input type="text" id="provinciaNascita" name="provinciaNascita" class="form-input" placeholder="RM"
+            maxlength="2">
+        </div>
+
+        <div class="section-divider"></div>
+
+        <div class="form-group">
           <label class="form-label required" for="indirizzo_pf">Indirizzo</label>
-          <input type="text" id="indirizzo_pf" name="indirizzo" class="form-input"
-            placeholder="Via, Numero Civico, CAP, Città">
+          <input type="text" id="indirizzo_pf" name="indirizzo" class="form-input" placeholder="Via Roma">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="numeroCivico">Numero Civico</label>
+          <input type="text" id="numeroCivico" name="numeroCivico" class="form-input" placeholder="123">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="cittaResidenza">Città di Residenza</label>
+          <input type="text" id="cittaResidenza" name="cittaResidenza" class="form-input" placeholder="Milano">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="cap">CAP</label>
+          <input type="text" id="cap" name="cap" class="form-input" placeholder="20100" maxlength="5">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="provinciaResidenza">Provincia</label>
+          <input type="text" id="provinciaResidenza" name="provinciaResidenza" class="form-input" placeholder="MI"
+            maxlength="2">
+        </div>
+
+        <div class="section-divider"></div>
+        <h3 class="optional-section-title">Patente di Guida</h3>
+
+        <div class="form-group">
+          <label class="form-label required" for="tipoPatente">Tipo</label>
+          <select id="tipoPatente" name="tipoPatente" class="form-select">
+            <option value="">Seleziona...</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+            <option value="E">E</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="numeroPatente">Numero</label>
+          <input type="text" id="numeroPatente" name="numeroPatente" class="form-input" placeholder="AB1234567">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="emessaDa">Emessa Da</label>
+          <input type="text" id="emessaDa" name="emessaDa" class="form-input" placeholder="MIT - UCO">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="dataRilascioPatente">Data Rilascio</label>
+          <input type="date" id="dataRilascioPatente" name="dataRilascioPatente" class="form-input">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="scadenzaPatente">Scadenza</label>
+          <input type="date" id="scadenzaPatente" name="scadenzaPatente" class="form-input">
         </div>
 
         <div class="optional-section">
