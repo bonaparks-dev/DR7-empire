@@ -168,21 +168,21 @@ const MechanicalBookingPage: React.FC = () => {
           }
         })
       })
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) {
-          setStripeError(data.error);
-        } else {
-          setClientSecret(data.clientSecret);
-        }
-      })
-      .catch(error => {
-        console.error('Failed to fetch client secret:', error);
-        setStripeError('Could not connect to payment server.');
-      })
-      .finally(() => {
-        setIsClientSecretLoading(false);
-      });
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            setStripeError(data.error);
+          } else {
+            setClientSecret(data.clientSecret);
+          }
+        })
+        .catch(error => {
+          console.error('Failed to fetch client secret:', error);
+          setStripeError('Could not connect to payment server.');
+        })
+        .finally(() => {
+          setIsClientSecretLoading(false);
+        });
     }
   }, [showPaymentModal, paymentMethod, user, selectedService, formData.appointmentDate, formData.appointmentTime, lang]);
 
@@ -660,7 +660,7 @@ const MechanicalBookingPage: React.FC = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
-                onClick={() => navigate('/login', { state: { from: location.pathname } })}
+                onClick={() => navigate('/signin', { state: { from: location.pathname } })}
                 className="px-8 py-3 bg-dr7-gold text-black font-bold rounded hover:bg-dr7-gold/90 transition-colors"
               >
                 {lang === 'it' ? 'Accedi' : 'Login'}
@@ -940,8 +940,8 @@ const MechanicalBookingPage: React.FC = () => {
                           ${formData.appointmentTime === slot.time
                             ? 'bg-white text-black ring-2 ring-white'
                             : slot.available
-                            ? 'bg-gray-700 text-white hover:bg-gray-600 border border-gray-600'
-                            : 'bg-gray-900 text-gray-500 border-2 border-red-500 cursor-not-allowed opacity-60'
+                              ? 'bg-gray-700 text-white hover:bg-gray-600 border border-gray-600'
+                              : 'bg-gray-900 text-gray-500 border-2 border-red-500 cursor-not-allowed opacity-60'
                           }
                         `}
                         title={!slot.available ? (lang === 'it' ? `Non disponibile` : `Unavailable`) : ''}
@@ -1043,11 +1043,10 @@ const MechanicalBookingPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('credit')}
-                    className={`p-4 rounded-lg border-2 transition-all ${
-                      paymentMethod === 'credit'
+                    className={`p-4 rounded-lg border-2 transition-all ${paymentMethod === 'credit'
                         ? 'border-white bg-white/10'
                         : 'border-gray-700 bg-gray-800 hover:border-gray-600'
-                    }`}
+                      }`}
                   >
                     <div className="text-center">
                       <div className="text-sm font-semibold text-white mb-1">
@@ -1063,11 +1062,10 @@ const MechanicalBookingPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('stripe')}
-                    className={`p-4 rounded-lg border-2 transition-all ${
-                      paymentMethod === 'stripe'
+                    className={`p-4 rounded-lg border-2 transition-all ${paymentMethod === 'stripe'
                         ? 'border-white bg-white/10'
                         : 'border-gray-700 bg-gray-800 hover:border-gray-600'
-                    }`}
+                      }`}
                   >
                     <div className="text-center">
                       <div className="text-sm font-semibold text-white mb-1">
@@ -1143,9 +1141,8 @@ const MechanicalBookingPage: React.FC = () => {
                       <span className="text-sm text-white font-semibold">
                         {lang === 'it' ? 'Saldo Dopo' : 'Balance After'}:
                       </span>
-                      <span className={`text-lg font-bold ${
-                        creditBalance >= (selectedService?.price || 0) ? 'text-green-400' : 'text-red-400'
-                      }`}>
+                      <span className={`text-lg font-bold ${creditBalance >= (selectedService?.price || 0) ? 'text-green-400' : 'text-red-400'
+                        }`}>
                         €{(creditBalance - (selectedService?.price || 0)).toFixed(2)}
                       </span>
                     </div>
@@ -1165,8 +1162,8 @@ const MechanicalBookingPage: React.FC = () => {
                     {isProcessing
                       ? (lang === 'it' ? 'Elaborazione...' : 'Processing...')
                       : creditBalance < (selectedService?.price || 0)
-                      ? (lang === 'it' ? 'Credito Insufficiente' : 'Insufficient Credit')
-                      : (lang === 'it' ? `Paga con Credit Wallet` : `Pay with Credit Wallet`)}
+                        ? (lang === 'it' ? 'Credito Insufficiente' : 'Insufficient Credit')
+                        : (lang === 'it' ? `Paga con Credit Wallet` : `Pay with Credit Wallet`)}
                   </button>
 
                   {creditBalance < (selectedService?.price || 0) && (

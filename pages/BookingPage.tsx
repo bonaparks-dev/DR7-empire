@@ -477,7 +477,7 @@ const BookingPage: React.FC = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
-                onClick={() => navigate('/login', { state: { from: location.pathname } })}
+                onClick={() => navigate('/signin', { state: { from: location.pathname } })}
                 className="px-8 py-3 bg-dr7-gold text-black font-bold rounded hover:bg-dr7-gold/90 transition-colors"
               >
                 {lang === 'it' ? 'Accedi' : 'Login'}
