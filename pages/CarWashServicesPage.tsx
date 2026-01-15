@@ -107,7 +107,7 @@ const FALLBACK_SERVICES: Service[] = [
     name: 'LAVAGGIO TOP',
     nameEn: 'TOP SHINE',
     price: 49,
-    duration: '1.5 ore',
+    duration: '1-2 ore',
     description: 'Più brillantezza e protezione, con cura extra dei dettagli.',
     descriptionEn: 'More shine and protection, with extra detail care.',
     features: [
@@ -128,7 +128,7 @@ const FALLBACK_SERVICES: Service[] = [
     name: 'LAVAGGIO VIP',
     nameEn: 'VIP EXPERIENCE',
     price: 75,
-    duration: '2 ore',
+    duration: '2-3 ore',
     description: 'Il pacchetto che ti fa ritirare l\'auto "come nuova".',
     descriptionEn: 'The package that makes your car look "like new".',
     features: [
@@ -155,7 +155,7 @@ const FALLBACK_SERVICES: Service[] = [
     name: 'LAVAGGIO DR7 LUXURY',
     nameEn: 'DR7 LUXURY',
     price: 99,
-    duration: '2.5 ore',
+    duration: '2-3 ore',
     description: 'L\'auto esce meglio di quando è uscita dalla concessionaria.',
     descriptionEn: 'Your car comes out better than when it left the dealership.',
     features: [
