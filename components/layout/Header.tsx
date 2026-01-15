@@ -99,7 +99,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                 aria-label="Close menu"
                 className="absolute top-6 right-6 text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-800"
               >
-                
+
               </button>
             </div>
 
@@ -142,17 +142,6 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                 </div>
               </div>
 
-              {/* OPERAZIONI UFFICIALI */}
-              <div>
-                <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-3 px-1">
-                  Operazioni Ufficiali
-                </h3>
-                <div className="space-y-1">
-                  <NavLink to="/commercial-operation" onClick={onClose} className={navLinkClasses}>
-                    <span>DR7 Official Lottery</span>
-                  </NavLink>
-                </div>
-              </div>
 
               {/* BUSINESS & CORPORATE */}
               <div>
@@ -296,11 +285,10 @@ const Header: React.FC = () => {
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
-          scrolled
+        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${scrolled
             ? 'bg-black/50 backdrop-blur-lg border-b border-gray-800'
             : 'bg-transparent'
-        }`}
+          }`}
       >
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           {/* EXPLORE menu button on the left */}
