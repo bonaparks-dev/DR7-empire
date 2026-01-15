@@ -19,6 +19,69 @@ interface Service {
 // Fallback hardcoded services in case database is unavailable
 const FALLBACK_SERVICES: Service[] = [
   {
+    id: 'scooter-wash',
+    name: 'LAVAGGIO SCOOTER',
+    nameEn: 'SCOOTER WASH',
+    price: 10,
+    duration: '15 min',
+    description: 'Lavaggio rapido ed efficace per il tuo scooter.',
+    descriptionEn: 'Quick and effective wash for your scooter.',
+    features: [
+      'Lavaggio esterno completo',
+      'Pulizia sella',
+      'Pulizia cerchi e pneumatici',
+      'Asciugatura'
+    ],
+    featuresEn: [
+      'Complete exterior wash',
+      'Seat cleaning',
+      'Wheel and tire cleaning',
+      'Drying'
+    ]
+  },
+  {
+    id: 'exterior-only',
+    name: 'LAVAGGIO SOLO ESTERNO',
+    nameEn: 'EXTERIOR ONLY',
+    price: 15,
+    duration: '15 min',
+    description: 'Lavaggio esterno rapido per una carrozzeria brillante.',
+    descriptionEn: 'Quick exterior wash for a shiny body.',
+    features: [
+      'Lavaggio carrozzeria completo',
+      'Schiuma colorata profumata',
+      'Pulizia cerchi e vetri esterni',
+      'Asciugatura'
+    ],
+    featuresEn: [
+      'Complete body wash',
+      'Scented colored foam',
+      'Wheel and exterior glass cleaning',
+      'Drying'
+    ]
+  },
+  {
+    id: 'interior-only',
+    name: 'LAVAGGIO SOLO INTERNO',
+    nameEn: 'INTERIOR ONLY',
+    price: 20,
+    duration: '30 min',
+    description: 'Pulizia approfondita degli interni per un abitacolo fresco.',
+    descriptionEn: 'Deep interior cleaning for a fresh cabin.',
+    features: [
+      'Aspirazione completa interni',
+      'Pulizia cruscotto e consolle',
+      'Pulizia vetri interni',
+      'Pulizia sedili e tappetini'
+    ],
+    featuresEn: [
+      'Complete interior vacuuming',
+      'Dashboard and console cleaning',
+      'Interior glass cleaning',
+      'Seat and mat cleaning'
+    ]
+  },
+  {
     id: 'full-clean',
     name: 'LAVAGGIO COMPLETO',
     nameEn: 'FULL CLEAN',

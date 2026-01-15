@@ -100,10 +100,16 @@ const CarWashBookingPage: React.FC = () => {
   // Helper function to get service duration in hours based on price
   const getServiceDurationInHours = (price: number): number => {
     // Exact price to duration mapping:
+    // €10 = 15 minutes (LAVAGGIO SCOOTER)
+    // €15 = 15 minutes (LAVAGGIO SOLO ESTERNO)
+    // €20 = 30 minutes (LAVAGGIO SOLO INTERNO)
     // €25 = 45 minutes (LAVAGGIO COMPLETO)
     // €49 = 1.5 hours (LAVAGGIO TOP)
     // €75 = 2 hours (LAVAGGIO VIP)
     // €99 = 2.5 hours (LAVAGGIO DR7 LUXURY) - dalle 9:00 alle 10:30 o dalle 15:00 alle 16:30
+    if (price <= 10) return 0.25; // 15 minutes
+    if (price <= 15) return 0.25; // 15 minutes
+    if (price <= 20) return 0.5;  // 30 minutes
     if (price <= 25) return 0.75; // 45 minutes
     if (price <= 49) return 1.5;
     if (price <= 75) return 2;

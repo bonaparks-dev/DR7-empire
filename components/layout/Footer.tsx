@@ -32,10 +32,10 @@ const Footer: React.FC = () => {
             <p className="text-sm mb-4">Entra nel nostro ecosistema globale e ricevi contenuti esclusivi, priorità sulle novità e aggiornamenti riservati ai membri del DR7 Empire.</p>
             <div className="flex space-x-4">
               <a href="https://www.instagram.com/dubai_rent_7.0_s_p_a_" aria-label="Instagram" className="text-gray-400 hover:text-white transition-colors">
-                
+
               </a>
               <a href="https://www.tiktok.com/@dr7luxuryempire" aria-label="Tiktok" className="text-gray-400 hover:text-white transition-colors">
-                
+
               </a>
             </div>
           </div>
@@ -73,7 +73,7 @@ const Footer: React.FC = () => {
             className="inline-flex items-center space-x-3 text-lg text-gray-300 hover:text-white transition-colors group mb-6"
             aria-label="Contact us on WhatsApp"
           >
-            
+
             <span className="font-semibold tracking-wider">+39 345 790 5205</span>
           </a>
 
@@ -111,17 +111,17 @@ const Footer: React.FC = () => {
             </Link>
             <div className="text-sm order-last md:order-none text-center">
               <p className="font-semibold text-white mb-1">DR7 Empire – Global Mobility & Luxury Lifestyle Group</p>
-              <p>&copy; 2025 DR7 Empire. All Rights Reserved.</p>
+              <p>&copy; 2024 - 2026 DR7 Empire. All Rights Reserved.</p>
             </div>
             <button
-                onClick={scrollToTop}
-                className="text-sm font-semibold hover:text-white transition-colors flex items-center gap-1"
-                aria-label="Back to top"
+              onClick={scrollToTop}
+              className="text-sm font-semibold hover:text-white transition-colors flex items-center gap-1"
+              aria-label="Back to top"
             >
-                Back to Top
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
-                </svg>
+              Back to Top
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+              </svg>
             </button>
           </div>
         </div>
