@@ -20,6 +20,7 @@ import {
 import { checkVehicleAvailability, checkVehiclePartialUnavailability, checkGroupedVehicleAvailability, safeDate } from '../../utils/bookingValidation';
 import { getUserCreditBalance, deductCredits, hasSufficientBalance } from '../../utils/creditWallet';
 import { calculateDiscountedPrice, getMembershipTierName } from '../../utils/membershipDiscounts';
+import { roundToTwoDecimals, eurosToCents, roundToWholeEuros } from '../../utils/pricing';
 
 const FUNCTIONS_BASE =
   import.meta.env.VITE_FUNCTIONS_BASE ??
@@ -703,14 +704,20 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     // --- RENTAL COST ---
     let calculatedRentalCost = billingDays * pricePerDay;
-    let massimoFirstDiscount = 0;
+    let massimoTotalDiscount = 0;
     if (isMassimo) {
-      // Massimo pricing: €339 base rate with automatic -10% = €305/day
+      // Massimo pricing: Tiered discount based on rental duration
+      // 1-3 days: -10%, 4 days: -15%, 5 days: -25%, 7+ days: -30%
       const baseRate = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseRate;
-      const baseDiscount = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseDiscount;
+      const discountTiers = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.discountTiers;
+
+      // Find applicable discount tier
+      const tier = discountTiers.find(t => billingDaysCalc >= t.minDays);
+      const discountPercent = tier ? tier.discount : 0.10;
+
       const baseRentalCost = billingDaysCalc * baseRate;
-      massimoFirstDiscount = baseRentalCost * baseDiscount;
-      calculatedRentalCost = baseRentalCost - massimoFirstDiscount; // €305/day after first discount
+      massimoTotalDiscount = roundToTwoDecimals(baseRentalCost * discountPercent);
+      calculatedRentalCost = roundToTwoDecimals(baseRentalCost - massimoTotalDiscount);
     }
 
     const selectedInsurance = insuranceOptions.find(opt => opt.id === formData.insuranceOption);
@@ -839,15 +846,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     let calculatedSubtotal = calculatedRentalCost + calculatedInsuranceCost + calculatedExtrasCost + calculatedKmPackageCost + calculatedYoungDriverFee + calculatedRecentLicenseFee + calculatedSecondDriverFee + calculatedPickupFee + calculatedDropoffFee + carWashFee;
 
-    // Massimo Discount Rules
-    // First discount (always applied): already included in calculatedRentalCost above
-    // Second discount (3+ days): additional 10% off total
-    let specialDiscountAmount = massimoFirstDiscount; // Track first discount
-    if (isMassimo && billingDaysCalc >= SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.discountThresholdDays) {
-      const additionalDiscount = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.additionalDiscount;
-      const secondDiscountAmount = calculatedSubtotal * additionalDiscount;
-      specialDiscountAmount += secondDiscountAmount; // Total both discounts
-      calculatedSubtotal -= secondDiscountAmount;
+    // Massimo: Round to whole euros (no cents)
+    let specialDiscountAmount = massimoTotalDiscount;
+    if (isMassimo && SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.noCents) {
+      calculatedSubtotal = roundToWholeEuros(calculatedSubtotal);
     }
 
     // Tax calculation
@@ -1400,7 +1402,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         dropoff_date: dropoffDateTime.toISOString(),
         pickup_location: formData.pickupLocation,
         dropoff_location: formData.returnLocation,
-        price_total: Math.round(total * 100),
+        price_total: eurosToCents(total),
         currency: currency.toUpperCase(),
         status: 'pending',
         payment_status: paymentIntentId || formData.paymentMethod === 'credit' ? 'succeeded' : 'pending',
@@ -2616,7 +2618,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   <hr className="border-gray-600 mb-2" />
                   <div className="flex justify-between">
                     <span>
-                      Noleggio ({duration.days} gg {isMassimo ? `× €${Math.round(SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseRate * (1 - SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseDiscount))} [FISSO]` : `× ${item.pricePerDay ? formatPrice(item.pricePerDay[currency]) : '€0'}`})
+                      Noleggio ({duration.days} gg {isMassimo ? `× €${Math.round(rentalCost / duration.days)} [FISSO]` : `× ${item.pricePerDay ? formatPrice(item.pricePerDay[currency]) : '€0'}`})
                     </span>
                     <span>{formatPrice(rentalCost)}</span>
                   </div>

@@ -3,18 +3,25 @@
  * Handles special pricing logic for VIP clients
  */
 
+import { roundToTwoDecimals, roundToWholeEuros } from './pricing';
+
 export const SPECIAL_CLIENTS = {
     MASSIMO_RUNCHINA: {
         email: 'massimorunchina69@gmail.com',
         config: {
             baseRate: 339,              // Base rate before any discounts
-            baseDiscount: 0.10,         // Always applied: €339 - 10% = €305/day
-            discountThresholdDays: 3,   // Additional discount for 3+ days
-            additionalDiscount: 0.10,   // Additional 10% off total for 3+ days
+            // Tiered discount structure based on rental duration
+            discountTiers: [
+                { minDays: 7, discount: 0.30 },  // 7+ days: -30%
+                { minDays: 5, discount: 0.25 },  // 5-6 days: -25%
+                { minDays: 4, discount: 0.15 },  // 4 days: -15%
+                { minDays: 1, discount: 0.10 }   // 1-3 days: -10%
+            ],
             includeUnlimitedKm: true,
             includeKaskoBase: true,
             excludeCarWash: true,
-            useCalendarDays: true
+            useCalendarDays: true,
+            noCents: true  // Round to whole euros (no cents)
         }
     }
 };
@@ -89,6 +96,16 @@ export interface ClientPricingResult {
     message?: string;
 }
 
+/**
+ * Get the appropriate discount percentage for Massimo based on rental duration
+ */
+const getMassimoDiscount = (days: number): number => {
+    const tiers = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.discountTiers;
+    // Find the first tier where days >= minDays (tiers are sorted descending)
+    const tier = tiers.find(t => days >= t.minDays);
+    return tier ? tier.discount : 0.10; // Default to 10% if no tier matches
+};
+
 export const calculateClientPricing = (
     email: string | undefined,
     days: number,
@@ -105,34 +122,34 @@ export const calculateClientPricing = (
         };
     }
 
-    const { baseRate, baseDiscount, discountThresholdDays, additionalDiscount } = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config;
+    const { baseRate, noCents } = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config;
+    const discountPercent = getMassimoDiscount(days);
 
     // Step 1: Calculate base rental cost (€339 × days)
     const baseRentalCost = baseRate * days;
 
-    // Step 2: Apply first discount (always applied): -10% on rental
-    const firstDiscount = baseRentalCost * baseDiscount;
-    const rentalAfterFirstDiscount = baseRentalCost - firstDiscount;
+    // Step 2: Apply tiered discount
+    const totalDiscount = roundToTwoDecimals(baseRentalCost * discountPercent);
+    const rentalAfterDiscount = roundToTwoDecimals(baseRentalCost - totalDiscount);
 
     // Step 3: Add other fees to get subtotal
-    let newSubtotal = rentalAfterFirstDiscount + otherFees;
-    let totalDiscount = firstDiscount;
+    let newSubtotal = roundToTwoDecimals(rentalAfterDiscount + otherFees);
 
-    // Step 4: Apply additional discount for 3+ days (10% off entire subtotal)
-    if (days >= discountThresholdDays) {
-        const secondDiscount = newSubtotal * additionalDiscount;
-        newSubtotal -= secondDiscount;
-        totalDiscount += secondDiscount;
+    // Step 4: Round to whole euros if noCents is enabled
+    if (noCents) {
+        newSubtotal = roundToWholeEuros(newSubtotal);
     }
 
-    // Calculate effective daily rate after first discount
-    const effectiveDailyRate = rentalAfterFirstDiscount / days;
+    // Calculate effective daily rate after discount
+    const effectiveDailyRate = roundToTwoDecimals(rentalAfterDiscount / days);
+
+    const discountLabel = Math.round(discountPercent * 100);
 
     return {
         isSpecialClient: true,
-        dailyRate: effectiveDailyRate, // €305/day (after first discount)
+        dailyRate: effectiveDailyRate,
         discountAmount: totalDiscount,
         subtotal: newSubtotal,
-        message: days >= discountThresholdDays ? 'Sconto cliente speciale 20% applicato (10% + 10%)' : 'Sconto cliente speciale 10% applicato'
+        message: `Sconto cliente speciale ${discountLabel}% applicato`
     };
 };
