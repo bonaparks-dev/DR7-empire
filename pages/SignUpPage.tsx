@@ -76,6 +76,7 @@ const SignUpPage: React.FC = () => {
     patenteEmessaDa: '',
     patenteDataRilascio: '',
     patenteScadenza: '',
+    residencyZone: 'NON_RESIDENTE', // Required residency zone field
     // Pubblica Amministrazione fields
     codiceUnivoco: '',
     enteUfficio: '',
@@ -198,6 +199,9 @@ const SignUpPage: React.FC = () => {
         if (!formData.dataNascita) newErrors.dataNascita = 'Data di nascita è obbligatoria';
         if (!formData.cittaNascita) newErrors.cittaNascita = 'Città di nascita è obbligatoria';
 
+        // Residency Zone Validation
+        if (!formData.residencyZone) newErrors.residencyZone = 'Zona di residenza è obbligatoria';
+
         // License Validations
         if (!formData.tipoPatente) newErrors.tipoPatente = 'Tipo patente è obbligatorio';
         if (!formData.numeroPatente) newErrors.numeroPatente = 'Numero patente è obbligatorio';
@@ -284,6 +288,9 @@ const SignUpPage: React.FC = () => {
         customerData.codice_postale = formData.codicePostale;
         customerData.citta_residenza = formData.cittaResidenza;
         customerData.provincia_residenza = formData.provinciaResidenza;
+
+        // Residency Zone
+        customerData.residency_zone = formData.residencyZone || 'NON_RESIDENTE';
 
         // License Metadata
         customerData.metadata = {
@@ -729,14 +736,48 @@ const SignUpPage: React.FC = () => {
                       </label>
                       <input
                         type="text"
-                        name="provinciaNascita"
-                        value={formData.provinciaNascita}
-                        onChange={handleChange}
-                        maxLength={2}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
+                      name="provinciaNascita"
+                      value={formData.provinciaNascita}
+                      onChange={handleChange}
+                      maxLength={2}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
                       />
                     </div>
                   </div>
+
+                  {/* Residency Zone Section - Only for Italia */}
+                  {formData.nazione === 'Italia' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Zona di Residenza <span className="text-red-500">*</span>
+                      </label>
+                      <div className="space-y-2">
+                        <label className="flex items-center p-3 bg-gray-800 border border-gray-700 rounded-md cursor-pointer hover:border-yellow-500 transition-colors">
+                          <input
+                            type="radio"
+                            name="residencyZone"
+                            value="RESIDENTE_CAGLIARI_SUD_SARDEGNA"
+                            checked={formData.residencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA'}
+                            onChange={handleChange}
+                            className="h-4 w-4 text-yellow-500 bg-gray-700 border-gray-600 focus:ring-yellow-500"
+                          />
+                          <span className="ml-3 text-white">RESIDENTE CAGLIARI–SUD SARDEGNA</span>
+                        </label>
+                        <label className="flex items-center p-3 bg-gray-800 border border-gray-700 rounded-md cursor-pointer hover:border-yellow-500 transition-colors">
+                          <input
+                            type="radio"
+                            name="residencyZone"
+                            value="NON_RESIDENTE"
+                            checked={formData.residencyZone === 'NON_RESIDENTE'}
+                            onChange={handleChange}
+                            className="h-4 w-4 text-yellow-500 bg-gray-700 border-gray-600 focus:ring-yellow-500"
+                          />
+                          <span className="ml-3 text-white">NON RESIDENTE</span>
+                        </label>
+                      </div>
+                      {errors.residencyZone && <p className="text-xs text-red-400 mt-1">{errors.residencyZone}</p>}
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-3 gap-4">
                     <div className="col-span-2">

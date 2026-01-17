@@ -69,7 +69,10 @@ exports.handler = async (event) => {
                 // Pubblica Amministrazione fields
                 codiceUnivoco: customerData.codice_univoco,
                 enteUfficio: customerData.ente_ufficio,
-                citta: customerData.citta
+                citta: customerData.citta,
+
+                // Residency Zone
+                residencyZone: customerData.residency_zone
             })
         };
 

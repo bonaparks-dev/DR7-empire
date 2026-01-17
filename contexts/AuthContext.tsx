@@ -5,7 +5,7 @@ import { supabase } from '../supabaseClient';
 import type { AuthError, Session, User as SupabaseUser, OAuthResponse, UserResponse } from '@supabase/supabase-js';
 
 // Define a compatible user type for the rest of the app
-interface AppUser extends User {}
+interface AppUser extends User { }
 
 interface AuthContextType {
   user: AppUser | null;
@@ -27,30 +27,30 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const mapSupabaseUserToAppUser = (supabaseUser: SupabaseUser): AppUser => {
-    const user_metadata = supabaseUser.user_metadata || {};
-    const app_metadata = supabaseUser.app_metadata || {};
+  const user_metadata = supabaseUser.user_metadata || {};
+  const app_metadata = supabaseUser.app_metadata || {};
 
-    return {
-        id: supabaseUser.id,
-        email: supabaseUser.email || '',
-        fullName: user_metadata.full_name || user_metadata.name || 'No Name',
-        provider: app_metadata.provider,
-        role: user_metadata.role || 'personal',
-        companyName: user_metadata.company_name,
-        phone: user_metadata.phone,
-        profilePicture: user_metadata.avatar_url,
-        membership: user_metadata.membership,
-        verification: user_metadata.verification || {
-            idStatus: 'unverified', cardStatus: 'none', phoneStatus: 'none',
-        },
-        businessVerification: user_metadata.businessVerification || {
-            status: 'unverified',
-        },
-        notifications: user_metadata.notifications || {
-            bookingConfirmations: true, specialOffers: true, newsletter: false,
-        },
-        paymentMethods: user_metadata.paymentMethods || [],
-    };
+  return {
+    id: supabaseUser.id,
+    email: supabaseUser.email || '',
+    fullName: user_metadata.full_name || user_metadata.name || 'No Name',
+    provider: app_metadata.provider,
+    role: user_metadata.role || 'personal',
+    companyName: user_metadata.company_name,
+    phone: user_metadata.phone,
+    profilePicture: user_metadata.avatar_url,
+    membership: user_metadata.membership,
+    verification: user_metadata.verification || {
+      idStatus: 'unverified', cardStatus: 'none', phoneStatus: 'none',
+    },
+    businessVerification: user_metadata.businessVerification || {
+      status: 'unverified',
+    },
+    notifications: user_metadata.notifications || {
+      bookingConfirmations: true, specialOffers: true, newsletter: false,
+    },
+    paymentMethods: user_metadata.paymentMethods || [],
+  };
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -60,38 +60,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isFirstSignIn, setIsFirstSignIn] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const setSessionUser = (session: Session | null) => {
-        if (session?.user) {
-            setUser(mapSupabaseUserToAppUser(session.user));
-        } else {
-            setUser(null);
+    const setSessionUser = async (session: Session | null) => {
+      if (session?.user) {
+        const appUser = mapSupabaseUserToAppUser(session.user);
+
+        // Fetch residency_zone from customers_extended
+        try {
+          const { data: customerData } = await supabase
+            .from('customers_extended')
+            .select('residency_zone')
+            .eq('user_id', session.user.id)
+            .single();
+
+          if (customerData?.residency_zone) {
+            (appUser as any).residencyZone = customerData.residency_zone;
+          }
+        } catch (error) {
+          console.error('Error fetching residency zone:', error);
         }
-        setLoading(false);
+
+        setUser(appUser);
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
     };
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-        setSessionUser(session);
+      setSessionUser(session);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-        setAuthEvent(event);
-        if (event === 'SIGNED_IN' && session?.user) {
-            const user = session.user;
-            const createdAt = new Date(user.created_at || 0).getTime();
-            const lastSignInAt = user.last_sign_in_at ? new Date(user.last_sign_in_at).getTime() : 0;
-            
-            // Check if this is the first sign-in by comparing creation and last sign-in times.
-            // A small tolerance (e.g., 60 seconds) handles minor delays after confirmation.
-            const firstSignIn = !lastSignInAt || Math.abs(lastSignInAt - createdAt) < 60000;
-            setIsFirstSignIn(firstSignIn);
+      setAuthEvent(event);
+      if (event === 'SIGNED_IN' && session?.user) {
+        const user = session.user;
+        const createdAt = new Date(user.created_at || 0).getTime();
+        const lastSignInAt = user.last_sign_in_at ? new Date(user.last_sign_in_at).getTime() : 0;
 
-            // Custom welcome email logic has been removed to rely on Supabase's built-in email templates
-            // for both confirmation and welcome emails, ensuring a consistent experience.
-        } else if (event === 'SIGNED_OUT') {
-            setIsFirstSignIn(null);
-        }
-        
-        setSessionUser(session);
+        // Check if this is the first sign-in by comparing creation and last sign-in times.
+        // A small tolerance (e.g., 60 seconds) handles minor delays after confirmation.
+        const firstSignIn = !lastSignInAt || Math.abs(lastSignInAt - createdAt) < 60000;
+        setIsFirstSignIn(firstSignIn);
+
+        // Custom welcome email logic has been removed to rely on Supabase's built-in email templates
+        // for both confirmation and welcome emails, ensuring a consistent experience.
+      } else if (event === 'SIGNED_OUT') {
+        setIsFirstSignIn(null);
+      }
+
+      setSessionUser(session);
     });
 
     return () => {
@@ -103,8 +120,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     const { data, error } = await supabase.auth.signInWithPassword({ email, password: password! });
     if (data.user) {
-        // onAuthStateChange will set loading to false
-        return { user: mapSupabaseUserToAppUser(data.user), error };
+      // onAuthStateChange will set loading to false
+      return { user: mapSupabaseUserToAppUser(data.user), error };
     }
     setLoading(false);
     return { user: null, error };
@@ -113,12 +130,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signup = useCallback(async (email: string, password: string, data: { full_name: string, company_name?: string, role: 'personal' | 'business' }) => {
     setLoading(true);
     const result = await supabase.auth.signUp({
-        email, 
-        password,
-        options: { 
-            data,
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
-        }
+      email,
+      password,
+      options: {
+        data,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      }
     });
     // Stop loading after the attempt. The user is not logged in until email confirmation.
     setLoading(false);
@@ -156,7 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     }
   }, []);
-  
+
   // ✅ SIMPLE GOOGLE SIGN-IN: Let Supabase use your Dashboard "Site URL"
   const signInWithGoogle = useCallback(async () => {
     return supabase.auth.signInWithOAuth({
@@ -169,26 +186,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Redirect to the app root. The AuthRedirector will handle routing
     // to the reset password page once the user is signed in.
     return supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/`,
+      redirectTo: `${window.location.origin}/`,
     });
   }, []);
 
   const updateUserPassword = useCallback(async (password: string) => {
-      return supabase.auth.updateUser({ password });
+    return supabase.auth.updateUser({ password });
   }, []);
-  
+
   const updateUser = useCallback(async (updates: Partial<AppUser>) => {
     const currentMeta = user ? (await supabase.auth.getUser()).data.user?.user_metadata : {};
     const { data, error } = await supabase.auth.updateUser({
-        data: { ...currentMeta, ...updates }
+      data: { ...currentMeta, ...updates }
     });
 
     if (error) return { data: null, error };
     if (data.user) {
-        setUser(mapSupabaseUserToAppUser(data.user)); // Update local state immediately
-        return { data: mapSupabaseUserToAppUser(data.user), error: null };
+      setUser(mapSupabaseUserToAppUser(data.user)); // Update local state immediately
+      return { data: mapSupabaseUserToAppUser(data.user), error: null };
     }
-    return { data: null, error: new Error('User data could not be updated.')};
+    return { data: null, error: new Error('User data could not be updated.') };
   }, [user]);
 
   const verifyEmailOtp = useCallback((token: string) => {
@@ -203,8 +220,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value = useMemo(() => ({
     user, loading, authEvent, isFirstSignIn, login, signup, logout, signInWithGoogle,
     sendPasswordResetEmail, updateUserPassword, updateUser, verifyEmailOtp, isSessionActive,
-  }), [user, loading, authEvent, isFirstSignIn, login, signup, logout, signInWithGoogle, 
-      sendPasswordResetEmail, updateUserPassword, updateUser, verifyEmailOtp, isSessionActive]);
+  }), [user, loading, authEvent, isFirstSignIn, login, signup, logout, signInWithGoogle,
+    sendPasswordResetEmail, updateUserPassword, updateUser, verifyEmailOtp, isSessionActive]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
