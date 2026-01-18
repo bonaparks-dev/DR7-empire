@@ -56,7 +56,7 @@ const getVehicleImage = (name: string): string => {
   if (lowerName.includes('vito') || lowerName.includes('v class')) return '/vito.jpeg';
   if (lowerName.includes('208')) return '/208.jpeg';
   if (lowerName.includes('clio') && (lowerName.includes('arancio') || lowerName.includes('orange'))) return '/clio4a.jpeg';
-  if (lowerName.includes('clio') && lowerName.includes('blu')) return '/clio4b.jpeg';
+  if (lowerName.includes('clio') && (lowerName.includes('blu') || lowerName.includes('blue'))) return '/clio4b.jpeg';
   if (lowerName.includes('c3') && (lowerName.includes('red') || lowerName.includes('rosso'))) return '/c3r.jpeg';
   if (lowerName.includes('c3') && (lowerName.includes('white') || lowerName.includes('bianca'))) return '/cr3w.jpeg';
   if (lowerName.includes('c3')) return '/c3.jpeg'; // fallback for other C3 variants
