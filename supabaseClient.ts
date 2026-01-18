@@ -10,12 +10,20 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Required: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
 }
 
-// Custom fetch to fix Chrome HTTP/2 issues
-// Setting keepalive: false prevents connection pooling issues in Chrome
+// Aggressive Chrome HTTP/2 fix
+// Forces HTTP/1.1 by disabling connection reuse and caching
 const customFetch: typeof fetch = (input, init?) => {
+  const headers = new Headers(init?.headers);
+
+  // Force connection close to prevent HTTP/2 pooling
+  headers.set('Connection', 'close');
+
   return fetch(input, {
     ...init,
-    keepalive: false, // Prevents Chrome HTTP/2 connection reuse issues
+    headers,
+    keepalive: false,
+    cache: 'no-store', // Prevent caching
+    credentials: 'same-origin', // Prevent credential caching
   });
 };
 
