@@ -126,9 +126,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const isUrbanOrCorporate = vehicleType === 'URBAN' || vehicleType === 'FURGONE' || vehicleType === 'V_CLASS';
 
 
-  const eligibilityInfo = useMemo(() => isUrbanOrCorporate ? URBAN_INSURANCE_ELIGIBILITY : INSURANCE_ELIGIBILITY, [isUrbanOrCorporate]);
-  const insuranceEligibility = useMemo(() => isUrbanOrCorporate ? URBAN_INSURANCE_ELIGIBILITY : INSURANCE_ELIGIBILITY, [isUrbanOrCorporate]);
-
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const today = useMemo(() => new Date().toISOString().split('T')[0], []);
@@ -2481,149 +2478,149 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               </p>
 
               <div className="space-y-3">
-              {/* Option 1: Cagliari e Sud Sardegna */}
-              <div
-              className={`p-4 rounded-md border cursor-pointer transition-all ${formData.usageZone === 'CAGLIARI_SUD'
-                ? 'border-yellow-400 bg-yellow-400/10'
-                : 'border-gray-700 hover:border-gray-500'
-                }`}
-              onClick={() => setFormData(p => ({...p, usageZone: 'CAGLIARI_SUD' }))}
-              >
-              <div className="flex items-center">
-              <input
-              type="radio"
-              name="usageZone"
-              value="CAGLIARI_SUD"
-              checked={formData.usageZone === 'CAGLIARI_SUD'}
-              onChange={() => setFormData(p => ({...p, usageZone: 'CAGLIARI_SUD' }))}
-              className="w-4 h-4 text-yellow-400"
-              />
-              <label className="ml-3 text-white font-semibold">
-              Cagliari e Sud Sardegna
-              </label>
-              </div>
-              <p className="ml-7 text-xs text-gray-400 mt-1">
-              Utilizzo limitato all'area di Cagliari e provincia del Sud Sardegna
-              </p>
-              </div>
-
-              {/* Option 2: Fuori zona */}
-              <div
-              className={`p-4 rounded-md border transition-all ${formData.usageZone === 'FUORI_ZONA'
-                ? 'border-yellow-400 bg-yellow-400/10'
-                : 'border-gray-700 hover:border-gray-500'
-                } ${usageZoneError ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-              onClick={() => {
-                  const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
-              const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
-
-              // Allow non-residents to select, block residents
-              if (!isResident) {
-                setFormData(p => ({...p, usageZone: 'FUORI_ZONA' }));
-                  }
-                }}
-              >
-              <div className="flex items-center">
-              <input
-              type="radio"
-              name="usageZone"
-              value="FUORI_ZONA"
-              checked={formData.usageZone === 'FUORI_ZONA'}
-              disabled={!!usageZoneError}
-              onChange={() => {
-                      const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
-              const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
-              if (!isResident) {
-                setFormData(p => ({...p, usageZone: 'FUORI_ZONA' }));
-                      }
-                    }}
-              className="w-4 h-4 text-yellow-400"
-              />
-              <label className="ml-3 text-white font-semibold">
-              Fuori zona (resto della Sardegna / Italia)
-              </label>
-              </div>
-              <p className="ml-7 text-xs text-gray-400 mt-1">
-              Utilizzo al di fuori dell'area di Cagliari e Sud Sardegna
-              </p>
-              </div>
-
-              {/* Error message for residents trying to select Fuori zona */}
-              {usageZoneError && (
-              <div className="mt-3 p-4 bg-red-900/30 border-2 border-red-500 rounded-lg">
-              <p className="text-red-300 font-semibold text-sm">
-              ⚠️ {usageZoneError}
-              </p>
-              </div>
-              )}
-
-              {/* Validation error if no zone selected */}
-              {errors.usageZone && (
-              <p className="text-xs text-red-400 mt-2 flex items-center">
-              <span className="mr-1">⚠️</span> {errors.usageZone}
-              </p>
-              )}
-              </div>
-              </section>
-
-              <section className="border-t border-gray-700 pt-6">
-                <h3 className="text-lg font-bold text-white mb-2">C. SERVIZI AGGIUNTIVI</h3>
-                <p className="text-sm text-gray-400 mb-4">
-                  Aggiungi servizi extra per un viaggio più confortevole e sicuro.
-                </p>
-                <div className="space-y-3">
-                  {/* Mandatory car wash */}
-                  <div className="flex items-center p-3 bg-gray-800/50 rounded-md border border-gray-700">
-                    <input type="checkbox" checked disabled className="h-4 w-4" />
-                    <span className="ml-3 text-white">LAVAGGIO COMPLETO [OBBLIGATORIO]</span>
-                    <span className="ml-auto font-semibold text-white">€30</span>
+                {/* Option 1: Cagliari e Sud Sardegna */}
+                <div
+                  className={`p-4 rounded-md border cursor-pointer transition-all ${formData.usageZone === 'CAGLIARI_SUD'
+                    ? 'border-yellow-400 bg-yellow-400/10'
+                    : 'border-gray-700 hover:border-gray-500'
+                    }`}
+                  onClick={() => setFormData(p => ({ ...p, usageZone: 'CAGLIARI_SUD' }))}
+                >
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      name="usageZone"
+                      value="CAGLIARI_SUD"
+                      checked={formData.usageZone === 'CAGLIARI_SUD'}
+                      onChange={() => setFormData(p => ({ ...p, usageZone: 'CAGLIARI_SUD' }))}
+                      className="w-4 h-4 text-yellow-400"
+                    />
+                    <label className="ml-3 text-white font-semibold">
+                      Cagliari e Sud Sardegna
+                    </label>
                   </div>
+                  <p className="ml-7 text-xs text-gray-400 mt-1">
+                    Utilizzo limitato all'area di Cagliari e provincia del Sud Sardegna
+                  </p>
+                </div>
 
-                  {/* Rental Extras from constants */}
-                  {RENTAL_EXTRAS.filter(extra => !extra.autoApply && extra.id !== 'additional_driver').map(extra => {
-                    const isSelected = formData.extras.includes(extra.id);
-                    const priceDisplay = extra.oneTime
-                      ? `€${extra.pricePerDay.eur}`
-                      : `€${extra.pricePerDay.eur}/giorno`;
+                {/* Option 2: Fuori zona */}
+                <div
+                  className={`p-4 rounded-md border transition-all ${formData.usageZone === 'FUORI_ZONA'
+                    ? 'border-yellow-400 bg-yellow-400/10'
+                    : 'border-gray-700 hover:border-gray-500'
+                    } ${usageZoneError ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  onClick={() => {
+                    const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
+                    const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
 
-                    return (
-                      <div
-                        key={extra.id}
-                        className={`p-3 rounded-md border cursor-pointer transition-all ${isSelected
-                          ? 'border-white bg-white/5'
-                          : 'border-gray-700 hover:border-gray-500'
-                          }`}
-                        onClick={() => {
-                          setFormData(prev => ({
-                            ...prev,
-                            extras: isSelected
-                              ? prev.extras.filter(id => id !== extra.id)
-                              : [...prev.extras, extra.id]
-                          }));
-                        }}
-                      >
-                        <div className="flex items-start">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => { }}
-                            className="h-4 w-4 mt-1 text-white"
-                          />
-                          <div className="ml-3 flex-1">
-                            <div className="flex items-center justify-between">
-                              <span className="text-white font-medium">{getTranslated(extra.label)}</span>
-                              <span className="font-semibold text-white">{priceDisplay}</span>
-                            </div>
-                            {extra.description && (
-                              <p className="text-xs text-gray-400 mt-1">{getTranslated(extra.description)}</p>
-                            )}
+                    // Allow non-residents to select, block residents
+                    if (!isResident) {
+                      setFormData(p => ({ ...p, usageZone: 'FUORI_ZONA' }));
+                    }
+                  }}
+                >
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      name="usageZone"
+                      value="FUORI_ZONA"
+                      checked={formData.usageZone === 'FUORI_ZONA'}
+                      disabled={!!usageZoneError}
+                      onChange={() => {
+                        const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
+                        const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
+                        if (!isResident) {
+                          setFormData(p => ({ ...p, usageZone: 'FUORI_ZONA' }));
+                        }
+                      }}
+                      className="w-4 h-4 text-yellow-400"
+                    />
+                    <label className="ml-3 text-white font-semibold">
+                      Fuori zona (resto della Sardegna / Italia)
+                    </label>
+                  </div>
+                  <p className="ml-7 text-xs text-gray-400 mt-1">
+                    Utilizzo al di fuori dell'area di Cagliari e Sud Sardegna
+                  </p>
+                </div>
+
+                {/* Error message for residents trying to select Fuori zona */}
+                {usageZoneError && (
+                  <div className="mt-3 p-4 bg-red-900/30 border-2 border-red-500 rounded-lg">
+                    <p className="text-red-300 font-semibold text-sm">
+                      ⚠️ {usageZoneError}
+                    </p>
+                  </div>
+                )}
+
+                {/* Validation error if no zone selected */}
+                {errors.usageZone && (
+                  <p className="text-xs text-red-400 mt-2 flex items-center">
+                    <span className="mr-1">⚠️</span> {errors.usageZone}
+                  </p>
+                )}
+              </div>
+            </section>
+
+            <section className="border-t border-gray-700 pt-6">
+              <h3 className="text-lg font-bold text-white mb-2">C. SERVIZI AGGIUNTIVI</h3>
+              <p className="text-sm text-gray-400 mb-4">
+                Aggiungi servizi extra per un viaggio più confortevole e sicuro.
+              </p>
+              <div className="space-y-3">
+                {/* Mandatory car wash */}
+                <div className="flex items-center p-3 bg-gray-800/50 rounded-md border border-gray-700">
+                  <input type="checkbox" checked disabled className="h-4 w-4" />
+                  <span className="ml-3 text-white">LAVAGGIO COMPLETO [OBBLIGATORIO]</span>
+                  <span className="ml-auto font-semibold text-white">€30</span>
+                </div>
+
+                {/* Rental Extras from constants */}
+                {RENTAL_EXTRAS.filter(extra => !extra.autoApply && extra.id !== 'additional_driver').map(extra => {
+                  const isSelected = formData.extras.includes(extra.id);
+                  const priceDisplay = extra.oneTime
+                    ? `€${extra.pricePerDay.eur}`
+                    : `€${extra.pricePerDay.eur}/giorno`;
+
+                  return (
+                    <div
+                      key={extra.id}
+                      className={`p-3 rounded-md border cursor-pointer transition-all ${isSelected
+                        ? 'border-white bg-white/5'
+                        : 'border-gray-700 hover:border-gray-500'
+                        }`}
+                      onClick={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          extras: isSelected
+                            ? prev.extras.filter(id => id !== extra.id)
+                            : [...prev.extras, extra.id]
+                        }));
+                      }}
+                    >
+                      <div className="flex items-start">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => { }}
+                          className="h-4 w-4 mt-1 text-white"
+                        />
+                        <div className="ml-3 flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-white font-medium">{getTranslated(extra.label)}</span>
+                            <span className="font-semibold text-white">{priceDisplay}</span>
                           </div>
+                          {extra.description && (
+                            <p className="text-xs text-gray-400 mt-1">{getTranslated(extra.description)}</p>
+                          )}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </section>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
           </div>
         );
       case 4:
