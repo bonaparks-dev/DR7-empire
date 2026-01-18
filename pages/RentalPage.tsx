@@ -383,14 +383,73 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
           </motion.div>
 
           {vehiclesLoading ? (
-            <div className="text-center text-white mt-12">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
-              <p className="mt-4">Loading vehicles...</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
+              {/* Loading skeleton - 3 placeholder cards */}
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-2xl overflow-hidden animate-pulse">
+                  <div className="h-64 bg-gray-800"></div>
+                  <div className="p-6 space-y-4">
+                    <div className="h-6 bg-gray-800 rounded w-3/4"></div>
+                    <div className="h-4 bg-gray-800 rounded w-1/2"></div>
+                    <div className="space-y-2">
+                      <div className="h-3 bg-gray-800 rounded"></div>
+                      <div className="h-3 bg-gray-800 rounded w-5/6"></div>
+                    </div>
+                    <div className="h-10 bg-gray-800 rounded"></div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : vehiclesError ? (
-            <div className="text-center text-red-400 mt-12">
-              <p>Unable to load vehicles. Please try again later.</p>
-              <p className="text-sm text-gray-500 mt-2">{vehiclesError.message}</p>
+            <div className="mt-12 max-w-2xl mx-auto">
+              <div className="bg-red-900/20 border-2 border-red-500 rounded-lg p-6">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0">
+                    <svg className="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-red-400 mb-2">Unable to Load Vehicles</h3>
+                    <p className="text-gray-300 mb-4">
+                      We're having trouble connecting to our vehicle database. This could be due to a network issue or temporary service disruption.
+                    </p>
+
+                    <div className="bg-black/30 rounded p-4 mb-4 font-mono text-sm">
+                      <p className="text-red-300 mb-1"><strong>Error:</strong> {vehiclesError.message}</p>
+                      {(vehiclesError as any).code && (
+                        <p className="text-gray-400"><strong>Code:</strong> {(vehiclesError as any).code}</p>
+                      )}
+                      <p className="text-gray-400 mt-2">
+                        <strong>Network Status:</strong> {navigator.onLine ? '🟢 Online' : '🔴 Offline'}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <button
+                        onClick={() => window.location.reload()}
+                        className="flex-1 bg-white text-black px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+                      >
+                        🔄 Retry
+                      </button>
+                      <a
+                        href="https://status.supabase.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 bg-gray-800 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition-colors text-center"
+                      >
+                        Check Service Status
+                      </a>
+                    </div>
+
+                    {!navigator.onLine && (
+                      <div className="mt-4 p-3 bg-yellow-900/20 border border-yellow-500 rounded text-yellow-300 text-sm">
+                        ⚠️ Your device appears to be offline. Please check your internet connection.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           ) : categoryData.length === 0 ? (
             <div className="text-center text-gray-400 mt-12">
@@ -405,6 +464,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
               ))}
             </div>
           )}     </div>
+
       </div>
     </motion.div>
   );

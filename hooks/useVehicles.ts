@@ -256,10 +256,7 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
       let isMounted = true;
       try {
         setLoading(true);
-
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Request timed out')), 10000)
-        );
+        setError(null);
 
         let query = supabase
           .from('vehicles')
@@ -272,15 +269,23 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
           query = query.eq('category', category);
         }
 
-        // Race between query and timeout
-        const { data, error: fetchError } = await Promise.race([
-          query,
-          timeoutPromise
-        ]) as any;
+        const { data, error: fetchError } = await query;
 
         if (!isMounted) return;
 
-        if (fetchError) throw fetchError;
+        if (fetchError) {
+          // Enhanced error logging
+          console.error('❌ Error fetching vehicles:', {
+            message: fetchError.message,
+            code: fetchError.code,
+            details: fetchError.details,
+            hint: fetchError.hint,
+            category,
+            networkOnline: navigator.onLine,
+            timestamp: new Date().toISOString(),
+          });
+          throw fetchError;
+        }
 
         // Transform vehicles to expected format
         const transformedVehicles = (data || []).map(transformVehicle);
@@ -336,10 +341,17 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
           }
         });
 
+        console.log(`✅ Successfully fetched ${finalVehicles.length} vehicles (category: ${category || 'all'})`);
         setVehicles(finalVehicles);
         setError(null);
       } catch (err) {
-        console.error('Error fetching vehicles:', err);
+        console.error('❌ Fatal error in fetchVehicles:', {
+          error: err,
+          errorMessage: (err as Error).message,
+          errorName: (err as Error).name,
+          category,
+          networkOnline: navigator.onLine,
+        });
         if (isMounted) setError(err as Error);
       } finally {
         if (isMounted) setLoading(false);
@@ -352,3 +364,4 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
 
   return { vehicles, loading, error };
 };
+

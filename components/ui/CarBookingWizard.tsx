@@ -260,7 +260,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetch credit balance
+  // Fetch credit balance with safe fallback
   useEffect(() => {
     const fetchBalance = async () => {
       if (user?.id) {
@@ -269,7 +269,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           const balance = await getUserCreditBalance(user.id);
           setCreditBalance(balance);
         } catch (error) {
-          console.error('Error fetching credit balance:', error);
+          console.error('❌ Error fetching credit balance:', {
+            error,
+            errorMessage: (error as Error).message,
+            userId: user.id,
+            networkOnline: navigator.onLine,
+          });
+          // Safe default: set balance to 0 if fetch fails
+          setCreditBalance(0);
         } finally {
           setIsLoadingBalance(false);
         }
@@ -426,7 +433,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     checkDocs();
   }, [user?.id]);
 
-  // AUTOFILL USER DATA FROM PROFILE
+  // AUTOFILL USER DATA FROM PROFILE with safe fallback
   useEffect(() => {
     const fetchUserData = async () => {
       if (!user?.id) return;
@@ -439,6 +446,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           .single();
 
         if (error || !customerData) {
+          if (error) {
+            console.warn('⚠️ Unable to fetch customer data from customers_extended:', {
+              error: error.message,
+              code: error.code,
+              userId: user.id,
+              networkOnline: navigator.onLine,
+            });
+          }
           // If no extended profile, at least try to fill basic info from Auth Context if available
           setFormData(prev => ({
             ...prev,
@@ -463,10 +478,23 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           licenseIssueDate: customerData.metadata?.patente_data_rilascio || prev.licenseIssueDate,
         }));
 
-        console.log('Autofilled form with user profile data');
+        console.log('✅ Autofilled form with user profile data');
 
       } catch (err) {
-        console.error('Error autofilling user data:', err);
+        console.error('❌ Error autofilling user data:', {
+          error: err,
+          errorMessage: (err as Error).message,
+          userId: user.id,
+          networkOnline: navigator.onLine,
+        });
+        // Continue with basic auth data even if extended profile fails
+        setFormData(prev => ({
+          ...prev,
+          firstName: prev.firstName || (user.fullName ? user.fullName.split(' ')[0] : ''),
+          lastName: prev.lastName || (user.fullName ? user.fullName.split(' ').slice(1).join(' ') : ''),
+          email: prev.email || user.email || '',
+          phone: prev.phone || user.phone || ''
+        }));
       }
     };
 
