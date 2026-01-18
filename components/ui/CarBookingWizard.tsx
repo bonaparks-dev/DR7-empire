@@ -745,7 +745,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       calculatedRentalCost = calculateMultiDayPrice(vType, billingDaysCalc, pricePerDay, isResident);
     }
 
-    const selectedInsurance = insuranceOptions.find(opt => opt.id === formData.insuranceOption);
 
     // --- INSURANCE COST ---
     // Dynamic Pricing Logic based on Vehicle Type
@@ -778,11 +777,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     } else if (tier === 'KASKO_BLACK') {
       // Only available for Supercars
       if (vType === 'SUPERCAR') insuranceDailyPrice = 150;
-      else insuranceDailyPrice = (selectedInsurance?.pricePerDay[currency] || 0);
+      else insuranceDailyPrice = 0; // Not available for this vehicle type
     } else if (tier === 'KASKO_SIGNATURE') {
       // Only available for Supercars
       if (vType === 'SUPERCAR') insuranceDailyPrice = 200;
-      else insuranceDailyPrice = (selectedInsurance?.pricePerDay[currency] || 0);
+      else insuranceDailyPrice = 0; // Not available for this vehicle type
     } else if (tier === 'KASKO_DR7') {
       if (vType === 'UTILITARIA') insuranceDailyPrice = 45;
       else if (vType === 'FURGONE' || vType === 'V_CLASS') insuranceDailyPrice = 90;
