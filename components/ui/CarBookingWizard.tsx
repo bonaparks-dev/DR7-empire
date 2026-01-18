@@ -2312,12 +2312,20 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       className="w-4 h-4 text-yellow-400"
                     />
                     <label className="ml-3 text-white font-semibold">
-                      Fuori zona (resto della Sardegna / Italia)
+                      Fuori zona (resto della Sardegna)
                     </label>
                   </div>
                   <p className="ml-7 text-xs text-gray-400 mt-1">
-                    Utilizzo al di fuori dell'area di Cagliari e Sud Sardegna
+                    Utilizzo al di fuori dell'area di Cagliari e Sud Sardegna (solo Sardegna, non Italia continentale)
                   </p>
+                  {/* Pricing warning for residents */}
+                  {user && (user as any)?.residencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA' && item.priceResidentDaily && item.priceNonresidentDaily && (
+                    <div className="ml-7 mt-2 p-2 bg-yellow-900/20 border border-yellow-600/50 rounded">
+                      <p className="text-yellow-300 text-xs font-semibold">
+                        ⚠️ Selezionando questa opzione, si applica la tariffa non residente: €{item.priceNonresidentDaily}/giorno invece di €{item.priceResidentDaily}/giorno
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Error message for residents trying to select Fuori zona */}

@@ -657,7 +657,7 @@ export const RENTAL_EXTRAS = [
     id: 'baby_seat',
     label: { en: 'Baby Seat', it: 'Seggiolino Auto' },
     description: { en: 'Safety seat for children', it: 'Seggiolino di sicurezza per bambini' },
-    pricePerDay: { usd: 11, eur: 10, crypto: 10 },
+    pricePerDay: { usd: 0, eur: 0, crypto: 0 },
     autoApply: false,
     oneTime: false
   }
