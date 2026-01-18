@@ -767,26 +767,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // Type checking for VehicleType specific logic
     const vType = getVehicleType(item, categoryContext);
 
-    // RCA is always €0 for all categories
+    // Insurance pricing - KASKO BASE is now the only option and is included
+    // RCA is always €0 (basic coverage, not used)
     if (tier === 'RCA') {
       insuranceDailyPrice = 0;
     } else if (tier === 'KASKO_BASE') {
+      // KASKO BASE pricing by vehicle type
       if (vType === 'UTILITARIA') insuranceDailyPrice = 15;
       else if (vType === 'FURGONE' || vType === 'V_CLASS') insuranceDailyPrice = 45;
       else insuranceDailyPrice = 100; // Supercar
-    } else if (tier === 'KASKO_BLACK') {
-      // Only available for Supercars
-      if (vType === 'SUPERCAR') insuranceDailyPrice = 150;
-      else insuranceDailyPrice = 0; // Not available for this vehicle type
-    } else if (tier === 'KASKO_SIGNATURE') {
-      // Only available for Supercars
-      if (vType === 'SUPERCAR') insuranceDailyPrice = 200;
-      else insuranceDailyPrice = 0; // Not available for this vehicle type
-    } else if (tier === 'KASKO_DR7') {
-      if (vType === 'UTILITARIA') insuranceDailyPrice = 45;
-      else if (vType === 'FURGONE' || vType === 'V_CLASS') insuranceDailyPrice = 90;
-      else insuranceDailyPrice = 300; // Supercar
     }
+    // Note: KASKO_BLACK, KASKO_SIGNATURE, and KASKO_DR7 have been removed
+
 
     let calculatedInsuranceCost = insuranceDailyPrice * billingDays;
 
@@ -1811,26 +1803,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   ];
 
   const renderStepContent = () => {
-    const kaskoOptions = insuranceOptions.map(opt => {
-      const { eligible, reasonKey } = isKaskoEligibleByBuckets(opt.id as KaskoTier, driverAge, licenseYears, getVehicleType(item));
-      let tooltip = '';
-      if (!eligible) {
-        if (reasonKey?.includes('AGE')) {
-          tooltip = `Età minima richiesta: ${eligibilityInfo[opt.id as KaskoTier].minAge} anni (tu hai ${driverAge} anni)`;
-        } else if (reasonKey?.includes('LIC')) {
-          tooltip = `Anzianità patente richiesta: ${eligibilityInfo[opt.id as KaskoTier].minLicenseYears} anni (tu hai ${licenseYears} anni)`;
-        } else if (reasonKey === 'BASE_REQ') {
-          tooltip = `Richiede almeno ${eligibilityInfo.KASKO_BASE.minLicenseYears} anni di patente.`;
-        } else if (reasonKey === 'BLACK_REQ') {
-          tooltip = `Richiede ${eligibilityInfo.KASKO_BLACK.minAge} anni e ${eligibilityInfo.KASKO_BLACK.minLicenseYears} anni di patente.`;
-        } else if (reasonKey === 'SIGNATURE_REQ') {
-          tooltip = `Richiede ${eligibilityInfo.KASKO_SIGNATURE.minAge} anni e ${eligibilityInfo.KASKO_SIGNATURE.minLicenseYears} anni di patente.`;
-        } else if (reasonKey === 'DR7_REQ') {
-          tooltip = `Richiede ${eligibilityInfo.KASKO_DR7.minAge} anni e ${eligibilityInfo.KASKO_DR7.minLicenseYears} anni di patente.`;
-        }
-      }
-      return { ...opt, eligible, tooltip };
-    });
+    // Insurance is now automatic (KASKO BASE included) - no selection UI needed
+
 
     switch (step) {
       case 1:
@@ -2265,81 +2239,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
         return (
           <div className="space-y-8">
+            {/* Insurance is now automatic (KASKO BASE included) - no selection UI */}
             <section>
-              <h3 className="text-lg font-bold text-white mb-4 notranslate">A. KASKO INSURANCE</h3>
-              <div className="mb-4 p-3 bg-green-900/20 border border-green-600 rounded-lg">
-                <p className="text-green-300 font-semibold text-sm">✅ RCA (Responsabilità Civile Auto) inclusa nel prezzo per tutti i veicoli.</p>
-              </div>
-              <div className="space-y-4">
-                {kaskoOptions.map(opt => {
-                  const details = insuranceDetails[opt.id as keyof typeof insuranceDetails];
-                  const isExpanded = expandedInsurance === opt.id;
-
-                  return (
-                    <div key={opt.id} className={`relative group rounded-md border ${formData.insuranceOption === opt.id ? 'border-white' : 'border-gray-700'} ${!opt.eligible ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                      <div className={`p-4 ${!opt.eligible ? '' : 'cursor-pointer'}`} onClick={() => opt.eligible && setFormData(p => ({ ...p, insuranceOption: opt.id }))}>
-                        <div className="flex items-center">
-                          <input type="radio" name="insuranceOption" value={opt.id} checked={formData.insuranceOption === opt.id} disabled={!opt.eligible} className="w-4 h-4 text-white" />
-                          <label className="ml-3 text-white font-semibold notranslate">{getTranslated(opt.label)}</label>
-                          {opt.pricePerDay.eur > 0 && <span className="ml-auto text-white">+€{opt.pricePerDay.eur}/giorno</span>}
-                        </div>
-                        <div className="ml-7 text-sm text-gray-400 mt-1">
-                          <p>{getTranslated(opt.description)}</p>
-                          {!opt.eligible && <p className="text-red-400 text-xs mt-1">Non disponibile.</p>}
-                        </div>
-                        {!opt.eligible && opt.tooltip && (
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-2 py-1 bg-black text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                            {opt.tooltip}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Expandable details button */}
-                      {details && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setExpandedInsurance(isExpanded ? null : opt.id);
-                            }}
-                            className="w-full px-4 py-2 text-xs text-gray-400 hover:text-white border-t border-gray-700 flex items-center justify-between transition-colors"
-                          >
-                            <span>{isExpanded ? '▼ Nascondi dettagli copertura' : '▶ Mostra dettagli copertura'}</span>
-                          </button>
-
-                          {/* Expanded details */}
-                          <AnimatePresence>
-                            {isExpanded && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.2 }}
-                                className="overflow-hidden border-t border-gray-700"
-                              >
-                                <div className="p-4 bg-gray-800/30 space-y-3 text-xs">
-                                  <div>
-                                    <p className="text-white font-semibold mb-1 notranslate">{details.title}</p>
-                                    <p className="text-yellow-400">{details.requirements}</p>
-                                  </div>
-                                  <div className="space-y-1">
-                                    <p className="text-gray-300">
-                                      <span className="font-semibold">Franchigia:</span><br />
-                                      {details.standard}
-                                    </p>
-                                  </div>
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
+              <h3 className="text-lg font-bold text-white mb-4">A. ASSICURAZIONE INCLUSA</h3>
+              <div className="p-4 bg-green-900/20 border border-green-600 rounded-lg">
+                <p className="text-green-300 font-semibold">✅ KASKO BASE inclusa automaticamente nel prezzo</p>
+                <p className="text-sm text-gray-400 mt-2">Copertura completa RCA + KASKO BASE per tutti i veicoli</p>
               </div>
             </section>
+
 
             <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-4">B. CHILOMETRI INCLUSI</h3>
@@ -2745,7 +2653,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 <div>
                   <p className="font-bold text-base text-white mb-2">ASSICURAZIONE E SERVIZI</p>
                   <hr className="border-gray-600 mb-2" />
-                  <p>Assicurazione: {getTranslated(insuranceOptions.find(i => i.id === formData.insuranceOption)?.label)}</p>
+                  <p>Assicurazione: KASKO BASE (inclusa)</p>
                   <p>Lavaggio completo obbligatorio</p>
                   {formData.addSecondDriver && <p>Secondo guidatore</p>}
                 </div>
