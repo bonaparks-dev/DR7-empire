@@ -83,8 +83,8 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
         <img src={item.image} alt={item.name} className={`w-full ${imageAspectRatio} object-cover transition-transform duration-500`} />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
       </div>
-      <div className="p-6 flex-grow flex flex-col">
-        <div className="mt-auto pt-4 space-y-3">
+      <div className="px-6 pt-6 pb-4 flex-grow flex flex-col">
+        <div className="mt-auto space-y-2">
           <div>
             {hasDualPricing ? (
               // Dual pricing display for cars with residency-based rates
@@ -125,7 +125,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
             </div>
           )}
         </div>
-        <div className="flex-shrink-0">
+        <div className="mt-3">
           {isVilla ? (
             <Link
               to={`/villas/${item.id}`}
