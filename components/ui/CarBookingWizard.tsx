@@ -817,18 +817,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // Supercar e V Class: €10 (Add.Driver / Under 25), €20 (Recent Lic)
 
     // Grouping for Extras:
-    // Group A (Utilitaria, Furgone): cheaper
-    // Group B (Supercar, V_CLASS): expensive
+    // ALL ADDITIONAL FEES REMOVED - No extra charges for young drivers or recent licenses
     const isCheapExtras = vType === 'UTILITARIA' || vType === 'FURGONE';
     const feeAddDriver = 0; // Second driver is FREE - no additional charge
     const calculatedSecondDriverFee = 0; // Second driver is always free
-    const feeYoungDriver = isCheapExtras ? 5 : 10;
-    const feeRecentLic = isCheapExtras ? 10 : 20;
+    const feeYoungDriver = 0; // Young driver fee REMOVED - now FREE
+    const feeRecentLic = 0; // Recent license fee REMOVED - now FREE
 
-    const calculatedYoungDriverFee = calculatedDriverAge > 0 && calculatedDriverAge < 25
-      ? feeYoungDriver * billingDays
-      : 0;
-    const calculatedRecentLicenseFee = calculatedLicenseYears >= 2 && calculatedLicenseYears < 3 ? feeRecentLic * billingDays : 0;
+    const calculatedYoungDriverFee = 0; // No young driver fee
+    const calculatedRecentLicenseFee = 0; // No recent license fee
+
 
 
     // Calculate FREE included KM based on rental duration
