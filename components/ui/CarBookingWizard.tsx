@@ -775,46 +775,23 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
 
     // --- INSURANCE COST ---
-    // Dynamic Pricing Logic based on Vehicle Type
-    // RCA: €0/day (all categories)
-    // SUPERCARS:
-    //   - KASKO BASE: €100/day
-    //   - KASKO BLACK: €150/day
-    //   - KASKO SIGNATURE: €200/day
-    //   - DR7: €300/day
-    // URBAN (Panda, Captur):
-    //   - KASKO BASE: €15/day
-    //   - KASKO DR7: €45/day
-    // UTILITAIRE (Ducato, Vito):
-    //   - KASKO BASE: €45/day
-    //   - KASKO DR7: €90/day
-
+    // KASKO BASE is now INCLUDED in the rental price at NO ADDITIONAL COST
+    // All insurance costs are €0 regardless of vehicle type
     let insuranceDailyPrice = 0;
     const tier = formData.insuranceOption;
 
     // Type checking for VehicleType specific logic
     const vType = getVehicleType(item, categoryContext);
 
-    // Insurance pricing - KASKO BASE is now the only option and is included
-    // RCA is always €0 (basic coverage, not used)
-    if (tier === 'RCA') {
-      insuranceDailyPrice = 0;
-    } else if (tier === 'KASKO_BASE') {
-      // KASKO BASE pricing by vehicle type
-      if (vType === 'UTILITARIA') insuranceDailyPrice = 15;
-      else if (vType === 'FURGONE' || vType === 'V_CLASS') insuranceDailyPrice = 45;
-      else insuranceDailyPrice = 100; // Supercar
-    }
-    // Note: KASKO_BLACK, KASKO_SIGNATURE, and KASKO_DR7 have been removed
+    // Insurance pricing - KASKO BASE is now INCLUDED (free)
+    // All tiers have €0 cost since insurance is included in the base rental price
+    insuranceDailyPrice = 0;
 
-
-    let calculatedInsuranceCost = insuranceDailyPrice * billingDays;
+    let calculatedInsuranceCost = 0; // Always 0 since insurance is included
 
     if (isMassimo) {
-      // Massimo gets KASKO BASE included (free)
-      if (formData.insuranceOption === 'KASKO_BASE') {
-        calculatedInsuranceCost = 0;
-      }
+      // Massimo gets KASKO BASE included (free) - same as everyone else now
+      calculatedInsuranceCost = 0;
     }
 
     // Calculate extras cost
