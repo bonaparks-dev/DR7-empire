@@ -248,17 +248,52 @@ const transformVehicle = (vehicle: Vehicle): TransformedVehicle => {
   };
 };
 
+
+const CACHE_KEY_PREFIX = 'dr7_vehicles_cache_';
+const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+
 export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
   const [vehicles, setVehicles] = useState<TransformedVehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [usingCache, setUsingCache] = useState(false);
 
   useEffect(() => {
+    const cacheKey = `${CACHE_KEY_PREFIX}${category || 'all'}`;
+
+    // Try to load from cache immediately
+    const loadFromCache = () => {
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const { data, timestamp } = JSON.parse(cached);
+          const age = Date.now() - timestamp;
+
+          // Use cache if less than 24 hours old
+          if (age < CACHE_EXPIRY_MS) {
+            console.log(`📦 Loaded ${data.length} vehicles from cache (age: ${Math.round(age / 1000 / 60)}min)`);
+            setVehicles(data);
+            return true;
+          }
+        }
+      } catch (err) {
+        console.warn('⚠️ Failed to load from cache:', err);
+      }
+      return false;
+    };
+
     const fetchVehicles = async () => {
       let isMounted = true;
+
+      // Load cache first for instant display
+      const hasCache = loadFromCache();
+      if (hasCache) {
+        setLoading(false); // Show cached data immediately
+      }
+
       try {
-        setLoading(true);
         setError(null);
+        setUsingCache(false);
 
         let query = supabase
           .from('vehicles')
@@ -276,7 +311,7 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
         if (!isMounted) return;
 
         if (fetchError) {
-          // Enhanced error logging
+          // Enhanced error logging (console only, not user-facing)
           console.error('❌ Error fetching vehicles:', {
             message: fetchError.message,
             code: fetchError.code,
@@ -344,8 +379,20 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
         });
 
         console.log(`✅ Successfully fetched ${finalVehicles.length} vehicles (category: ${category || 'all'})`);
+
+        // Save to cache
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify({
+            data: finalVehicles,
+            timestamp: Date.now()
+          }));
+        } catch (err) {
+          console.warn('⚠️ Failed to save to cache:', err);
+        }
+
         setVehicles(finalVehicles);
         setError(null);
+        setUsingCache(false);
       } catch (err) {
         console.error('❌ Fatal error in fetchVehicles:', {
           error: err,
@@ -354,7 +401,15 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
           category,
           networkOnline: navigator.onLine,
         });
-        if (isMounted) setError(err as Error);
+
+        if (isMounted) {
+          setError(err as Error);
+          // If we have cache, use it and mark as using cache
+          if (hasCache) {
+            setUsingCache(true);
+            console.log('📦 Using cached vehicles due to fetch error');
+          }
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -364,6 +419,8 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
     fetchVehicles();
   }, [category]);
 
-  return { vehicles, loading, error };
+  return { vehicles, loading, error, usingCache };
 };
+
+
 
