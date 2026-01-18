@@ -50,19 +50,21 @@ exports.handler = async (event) => {
 
     // Get Nexi configuration from environment variables
     const nexiConfig = {
-      alias: process.env.NEXI_ALIAS,
+      apiKey: process.env.NEXI_API_KEY,
       macKey: process.env.NEXI_MAC_KEY,
       merchantId: process.env.NEXI_MERCHANT_ID,
-      environment: process.env.NEXI_ENVIRONMENT || 'sandbox',
-      apiKey:
-        process.env.NEXI_ENVIRONMENT === 'production'
-          ? process.env.NEXI_API_KEY_PRODUCTION
-          : process.env.NEXI_API_KEY_SANDBOX,
+      terminalId: process.env.NEXI_TERMINAL_ID,
+      accountId: process.env.NEXI_ACCOUNT_ID,
+      environment: process.env.NEXI_ENVIRONMENT || 'production',
     };
 
     // Validate configuration
-    if (!nexiConfig.alias || !nexiConfig.macKey || !nexiConfig.apiKey) {
-      console.error('Missing Nexi configuration');
+    if (!nexiConfig.apiKey || !nexiConfig.macKey || !nexiConfig.merchantId) {
+      console.error('Missing Nexi configuration:', {
+        hasApiKey: !!nexiConfig.apiKey,
+        hasMacKey: !!nexiConfig.macKey,
+        hasMerchantId: !!nexiConfig.merchantId,
+      });
       return {
         statusCode: 500,
         body: JSON.stringify({ error: 'Nexi configuration error' }),
@@ -78,9 +80,9 @@ exports.handler = async (event) => {
     // Get site URL for callbacks
     const siteUrl = process.env.URL || 'https://dr7empire.com';
 
-    // Prepare request parameters
+    // Prepare request parameters for Nexi X-Pay
     const params = {
-      alias: nexiConfig.alias,
+      alias: `payment_${nexiConfig.merchantId}`, // Generate alias from merchant ID
       importo: amount.toString(),
       divisa: currency,
       codTrans: orderId,

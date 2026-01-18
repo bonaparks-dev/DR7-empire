@@ -32,6 +32,9 @@ export interface RentalItem {
     eur: number;
     crypto: number;
   };
+  // Residency-based pricing (EUR only, converted to USD as needed)
+  priceResidentDaily?: number;
+  priceNonresidentDaily?: number;
   specs: RentalSpec[];
 
   // New optional fields for villas

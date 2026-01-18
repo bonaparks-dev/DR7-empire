@@ -550,38 +550,40 @@ export const PICKUP_LOCATIONS = [
   { id: 'dr7_office', label: { en: 'DR7 Office (Viale Marconi, 229, 09131 Cagliari CA)', it: 'Viale Marconi, 229, 09131 Cagliari CA' } },
 ];
 
-export const INSURANCE_OPTIONS = [
-  { id: 'RCA', label: { en: 'RCA', it: 'RCA' }, description: { en: 'Basic civil liability insurance included.', it: 'Assicurazione responsabilità civile base inclusa.' }, pricePerDay: { usd: 0, eur: 0, crypto: 0 } },
-  { id: 'KASKO_BASE', label: { en: 'KASKO BASE', it: 'KASKO BASE' }, description: { en: 'Franchise €5.000 + 30% of damage.', it: 'Franchigia EUR €5.000 + 30% del danno.' }, pricePerDay: { usd: 110, eur: 100, crypto: 0 } },
-  { id: 'KASKO_BLACK', label: { en: 'KASKO BLACK', it: 'KASKO BLACK' }, description: { en: 'Franchise €5.000 + 10% of damage.', it: 'Franchigia EUR €5.000 + 10% del danno.' }, pricePerDay: { usd: 165, eur: 150, crypto: 0 } },
-  { id: 'KASKO_SIGNATURE', label: { en: 'KASKO SIGNATURE', it: 'KASKO SIGNATURE' }, description: { en: 'Franchise €5.000 (fixed).', it: 'Franchigia EUR €5.000 (fissa).' }, pricePerDay: { usd: 220, eur: 200, crypto: 0 } },
-  { id: 'KASKO_DR7', label: { en: 'DR7', it: 'DR7' }, description: { en: 'Franchise €0 (fixed). Top tier coverage.', it: 'Franchigia EUR €0 (fissa). Copertura top di gamma.' }, pricePerDay: { usd: 330, eur: 300, crypto: 0 } },
-];
-
-export const URBAN_INSURANCE_OPTIONS = [
-  { id: 'RCA', label: { en: 'RCA', it: 'RCA' }, description: { en: 'Basic civil liability insurance included.', it: 'Assicurazione responsabilità civile base inclusa.' }, pricePerDay: { usd: 0, eur: 0, crypto: 0 } },
-  { id: 'KASKO_BASE', label: { en: 'KASKO BASE', it: 'KASKO BASE' }, description: { en: 'Franchise €2.000 + 30% of damage.', it: 'Franchigia EUR €2.000 + 30% del danno.' }, pricePerDay: { usd: 17, eur: 15, crypto: 0 } },
-  { id: 'KASKO_DR7', label: { en: 'DR7', it: 'DR7' }, description: { en: 'Franchise €0 (fixed).', it: 'Franchigia EUR €0 (fissa).' }, pricePerDay: { usd: 50, eur: 45, crypto: 0 } },
-];
-
-export const UTILITAIRE_INSURANCE_OPTIONS = [
-  { id: 'RCA', label: { en: 'RCA', it: 'RCA' }, description: { en: 'Basic civil liability insurance included.', it: 'Assicurazione responsabilità civile base inclusa.' }, pricePerDay: { usd: 0, eur: 0, crypto: 0 } },
-  { id: 'KASKO_BASE', label: { en: 'KASKO BASE', it: 'KASKO BASE' }, description: { en: 'Franchise €3.000 + 30% of damage.', it: 'Franchigia EUR €3.000 + 30% del danno.' }, pricePerDay: { usd: 50, eur: 45, crypto: 0 } },
-  { id: 'KASKO_DR7', label: { en: 'DR7', it: 'DR7' }, description: { en: 'Franchise €0 (fixed).', it: 'Franchigia EUR €0 (fissa).' }, pricePerDay: { usd: 99, eur: 90, crypto: 0 } },
-];
-
-export const INSURANCE_ELIGIBILITY = {
-  KASKO_BASE: { minAge: 20, minLicenseYears: 3 }, // Updated to 3 years
-  KASKO_BLACK: { minAge: 25, minLicenseYears: 5 },
-  KASKO_SIGNATURE: { minAge: 30, minLicenseYears: 10 },
-  KASKO_DR7: { minAge: 30, minLicenseYears: 10 },
+// Automatic KASKO BASE Insurance - Applied to all bookings
+export const AUTO_INSURANCE = {
+  id: 'KASKO_BASE',
+  name: 'Copertura assicurativa KASKO BASE',
+  coverage: [
+    'RCA',
+    'Furto (solo in caso di restituzione chiave, altrimenti paga il 100% del valore del veicolo)',
+    'Atti vandalici',
+    'Agenti atmosferici',
+    'Incendio',
+    'Distruzione totale'
+  ],
+  additionalCondition: 'È attivabile per qualsiasi danno recato alla vettura anche con oggetti non identificabili per mezzo di targa, previo preventivo in officina ufficiale.'
 };
 
-export const URBAN_INSURANCE_ELIGIBILITY = {
-  KASKO_BASE: { minAge: 18, minLicenseYears: 1 }, // User Update: Min 1 year license
-  KASKO_BLACK: { minAge: 25, minLicenseYears: 5 },
-  KASKO_SIGNATURE: { minAge: 30, minLicenseYears: 10 },
-  KASKO_DR7: { minAge: 18, minLicenseYears: 10 }, // User Update: Min 10 years check, NO AGE limit (set to 18 base)
+// Deductible amounts by vehicle category
+export const INSURANCE_DEDUCTIBLES = {
+  URBAN: { fixed: 2000, percent: 30, description: 'Da risarcire: €2.000 + 30% del valore del danno' },
+  UTILITARIA: { fixed: 2000, percent: 30, description: 'Da risarcire: €2.000 + 30% del valore del danno' },
+  SUPERCAR: { fixed: 5000, percent: 30, description: 'Da risarcire: €5.000 + 30% del danno' }
+};
+
+export const DEPOSIT_RULES = {
+  UTILITARIA: {
+    LOYAL_CUSTOMER: 0,      // 3+ rentals
+    LICENSE_UP_TO_5: 1000,  // ≤5 years
+    LICENSE_OVER_5: 500,    // >5 years
+  },
+  SUPERCAR: {
+    LOYAL_CUSTOMER: 0,      // 3+ rentals
+    LICENSE_UP_TO_5: 2000,  // ≤5 years
+    LICENSE_OVER_5: 1000,   // >5 years
+  },
+  LOYAL_CUSTOMER_THRESHOLD: 3, // Minimum rentals for loyalty
 };
 
 export const VALIDATION_MESSAGES = {

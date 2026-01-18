@@ -296,7 +296,7 @@ const CarWashServicesPage: React.FC = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="bg-gray-900/50 border border-gray-800 rounded-lg p-8 hover:border-white transition-colors"
+              className="bg-gray-900/50 border border-gray-800 rounded-lg p-8 hover:border-white transition-colors flex flex-col"
             >
               <h3 className="text-2xl font-bold text-white mb-2">
                 {lang === 'it' ? service.name : service.nameEn}
@@ -309,7 +309,7 @@ const CarWashServicesPage: React.FC = () => {
                 {lang === 'it' ? service.description : service.descriptionEn}
               </p>
 
-              <div className="space-y-3 mb-8">
+              <div className="space-y-3 mb-8 flex-grow">
                 {(lang === 'it' ? service.features : service.featuresEn).map((feature, idx) => (
                   <div key={idx} className="flex items-start">
                     <span className="text-white mr-3">•</span>

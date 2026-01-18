@@ -191,6 +191,7 @@ const SignUpPage: React.FC = () => {
           newErrors.telefono = 'Formato telefono non valido';
         }
         if (!formData.indirizzo) newErrors.indirizzo = 'Indirizzo è obbligatorio';
+        if (!formData.numeroCivico) newErrors.numeroCivico = 'Numero Civico è obbligatorio';
         if (!formData.cittaResidenza) newErrors.cittaResidenza = 'Città è obbligatoria';
         if (!formData.codicePostale) newErrors.codicePostale = 'CAP è obbligatorio';
         if (!formData.provinciaResidenza) newErrors.provinciaResidenza = 'Provincia è obbligatoria';
@@ -198,6 +199,7 @@ const SignUpPage: React.FC = () => {
         if (!formData.sesso) newErrors.sesso = 'Sesso è obbligatorio';
         if (!formData.dataNascita) newErrors.dataNascita = 'Data di nascita è obbligatoria';
         if (!formData.cittaNascita) newErrors.cittaNascita = 'Città di nascita è obbligatoria';
+        if (!formData.provinciaNascita) newErrors.provinciaNascita = 'Provincia di nascita è obbligatoria';
 
         // Residency Zone Validation
         if (!formData.residencyZone) newErrors.residencyZone = 'Zona di residenza è obbligatoria';
@@ -732,16 +734,18 @@ const SignUpPage: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Provincia di Nascita
+                        Provincia di Nascita <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
-                      name="provinciaNascita"
-                      value={formData.provinciaNascita}
-                      onChange={handleChange}
-                      maxLength={2}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
+                        name="provinciaNascita"
+                        value={formData.provinciaNascita}
+                        onChange={handleChange}
+                        maxLength={2}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
+                        required
                       />
+                      {errors.provinciaNascita && <p className="text-xs text-red-400 mt-1">{errors.provinciaNascita}</p>}
                     </div>
                   </div>
 
@@ -798,7 +802,7 @@ const SignUpPage: React.FC = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Numero Civico
+                        Numero Civico <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -807,7 +811,9 @@ const SignUpPage: React.FC = () => {
                         onChange={handleChange}
                         placeholder="123"
                         className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                        required
                       />
+                      {errors.numeroCivico && <p className="text-xs text-red-400 mt-1">{errors.numeroCivico}</p>}
                     </div>
                   </div>
 

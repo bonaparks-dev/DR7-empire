@@ -218,7 +218,20 @@ const MyBookings = () => {
                               {(() => {
                                 const insurance = booking.insurance_option || booking.booking_details?.insuranceOption;
                                 if (insurance === 'RCA') return '2000€';
-                                if (insurance === 'KASKO_BASE' || insurance === 'Kasko Base') return '500€';
+                                // Handle both old KASKO_BASE and new KASKO for backward compatibility
+                                if (insurance === 'KASKO_BASE' || insurance === 'KASKO' || insurance === 'Kasko Base') {
+                                  // For new bookings, deposit is dynamic based on license/loyalty
+                                  const licenseYears = booking.booking_details?.customer?.licenseYears || 0;
+                                  const vehicleName = booking.vehicle_name || '';
+                                  const isUtilitaria = vehicleName.includes('Panda') || vehicleName.includes('Captur') ||
+                                    vehicleName.includes('Ducato') || vehicleName.includes('Vito');
+
+                                  if (isUtilitaria) {
+                                    return licenseYears <= 5 ? '1000€' : '500€';
+                                  } else {
+                                    return licenseYears <= 5 ? '2000€' : '1000€';
+                                  }
+                                }
                                 if (insurance === 'KASKO_DR7' || insurance === 'Kasko DR7') return '0€';
                                 return 'N/A';
                               })()}

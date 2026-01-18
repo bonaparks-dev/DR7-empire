@@ -2,6 +2,7 @@ import React from 'react';
 import type { RentalItem } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useCurrency } from '../../contexts/CurrencyContext';
+import { useAuth } from '../../hooks/useAuth';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
@@ -21,38 +22,47 @@ interface RentalCardProps {
 const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) => {
   const { t, getTranslated } = useTranslation();
   const { currency } = useCurrency();
+  const { user } = useAuth();
 
   const isVilla = item.id.startsWith('villa');
   const isJet = item.id.startsWith('jet');
   const isHelicopter = item.id.startsWith('heli');
   const isYacht = item.id.startsWith('yacht');
+  const isCar = item.id.startsWith('car-');
+
   // Jets, yachts, and helicopters use landscape format, others use vertical format
   const imageAspectRatio = (isJet || isYacht || isHelicopter) ? 'aspect-[16/9]' : 'aspect-[9/16]';
+
+  // Determine user's residency zone (treat null as NON_RESIDENTE)
+  const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
+  const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
+
+  // Check if dual pricing is available for this vehicle
+  const hasDualPricing = isCar && item.priceResidentDaily && item.priceNonresidentDaily;
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', {
       style: 'currency',
       currency: currency.toUpperCase(),
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(price);
   };
 
-
   const handleJetQuote = () => {
-    let message = `Ciao! Sono interessato a prenotare ${item.name}.\n\n`;
+    let message = `Ciao! Sono interessato a prenotare ${item.name}.\\n\\n`;
 
     if (jetSearchData) {
-      message += `Dettagli del volo:\n`;
-      message += `• Tipo di viaggio: ${jetSearchData.tripType === 'round-trip' ? 'Andata e ritorno' : 'Solo andata'}\n`;
-      if (jetSearchData.departure) message += `• Partenza: ${jetSearchData.departure}\n`;
-      if (jetSearchData.arrival) message += `• Arrivo: ${jetSearchData.arrival}\n`;
-      if (jetSearchData.departureDate) message += `• Data di partenza: ${jetSearchData.departureDate}\n`;
+      message += `Dettagli del volo:\\n`;
+      message += `• Tipo di viaggio: ${jetSearchData.tripType === 'round-trip' ? 'Andata e ritorno' : 'Solo andata'}\\n`;
+      if (jetSearchData.departure) message += `• Partenza: ${jetSearchData.departure}\\n`;
+      if (jetSearchData.arrival) message += `• Arrivo: ${jetSearchData.arrival}\\n`;
+      if (jetSearchData.departureDate) message += `• Data di partenza: ${jetSearchData.departureDate}\\n`;
       if (jetSearchData.returnDate && jetSearchData.tripType === 'round-trip') {
-        message += `• Data di ritorno: ${jetSearchData.returnDate}\n`;
+        message += `• Data di ritorno: ${jetSearchData.returnDate}\\n`;
       }
-      if (jetSearchData.passengers) message += `• Passeggeri: ${jetSearchData.passengers}\n`;
-      message += `\n`;
+      if (jetSearchData.passengers) message += `• Passeggeri: ${jetSearchData.passengers}\\n`;
+      message += `\\n`;
     }
 
     message += `Potrebbe fornirmi un preventivo? Grazie!`;
@@ -60,7 +70,6 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
     const whatsappUrl = `https://wa.me/393457905205?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
-
 
   return (
     <motion.div
@@ -76,14 +85,47 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
       </div>
       <div className="p-6 flex-grow flex flex-col">
         <div className="flex justify-between items-center mt-auto pt-4">
-          <div>
-            {item.pricePerDay && !isYacht && (
+          <div className="flex-grow">
+            {hasDualPricing ? (
+              // Dual pricing display for cars with residency-based rates
+              <div className="space-y-1">
+                <div className={`flex items-baseline ${isResident ? 'text-yellow-400 font-bold' : 'text-gray-400'}`}>
+                  <span className={`${isResident ? 'text-lg' : 'text-sm'}`}>
+                    {formatPrice(item.priceResidentDaily!)}/giorno
+                  </span>
+                  <span className="text-xs ml-1">Residenti</span>
+                </div>
+                <div className={`flex items-baseline ${!isResident ? 'text-white font-bold' : 'text-gray-400'}`}>
+                  <span className={`${!isResident ? 'text-lg' : 'text-sm'}`}>
+                    {formatPrice(item.priceNonresidentDaily!)}/giorno
+                  </span>
+                  <span className="text-xs ml-1">Non Residenti</span>
+                </div>
+                {!user && (
+                  <p className="text-xs text-gray-500 mt-2 italic">
+                    Accedi per applicare automaticamente la tariffa corretta.
+                  </p>
+                )}
+              </div>
+            ) : item.pricePerDay && !isYacht ? (
+              // Standard single pricing
               <>
                 <span className="text-xl font-bold text-white">{formatPrice(item.pricePerDay[currency])}</span>
                 <span className="text-sm text-gray-400 ml-1">/{t('per_day')}</span>
               </>
-            )}
+            ) : null}
           </div>
+          {/* Insurance Indicator */}
+          {isCar && (
+            <div className="w-full mt-2 flex items-center text-xs text-green-400">
+              <svg className="h-4 w-4 mr-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <span>Assicurazione inclusa: KASKO BASE</span>
+            </div>
+          )}
+        </div>
+        <div className="flex-shrink-0">
           {isVilla ? (
             <Link
               to={`/villas/${item.id}`}
@@ -101,14 +143,14 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
                   onBook(item);
                 }
               }}
-              className="bg-transparent border-2 border-white text-white px-6 py-2 rounded-full font-semibold text-sm transform transition-all duration-300 group-hover:bg-white group-hover:text-black group-hover:scale-105"
+              className="bg-transparent border-2 border-white text-white px-6 py-2 rounded-full font-semibold text-sm transform transition-all duration-300 group-hover:bg-white group-hover:text-black group-hover:scale-105 whitespace-nowrap"
             >
               {t('Book_Now')}
             </button>
           )}
         </div>
       </div>
-    </motion.div>
+    </motion.div >
   );
 };
 

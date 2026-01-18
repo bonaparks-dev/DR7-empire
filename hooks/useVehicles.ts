@@ -10,6 +10,8 @@ interface Vehicle {
   plate: string | null;
   status: 'available' | 'unavailable' | 'rented' | 'maintenance' | 'retired';
   daily_rate: number;
+  price_resident_daily: number | null;
+  price_nonresident_daily: number | null;
   category: 'exotic' | 'urban' | 'aziendali' | null;
   metadata: Record<string, any> | null;
   created_at: string;
@@ -26,6 +28,8 @@ interface TransformedVehicle {
     eur: number;
     crypto: number;
   };
+  priceResidentDaily?: number;
+  priceNonresidentDaily?: number;
   specs: Array<{
     label: { en: string; it: string };
     value: string;
@@ -236,6 +240,8 @@ const transformVehicle = (vehicle: Vehicle): TransformedVehicle => {
       eur: vehicle.daily_rate,
       crypto: 0
     } : undefined,
+    priceResidentDaily: vehicle.price_resident_daily ?? undefined,
+    priceNonresidentDaily: vehicle.price_nonresident_daily ?? undefined,
     specs: specsArray
   };
 };
