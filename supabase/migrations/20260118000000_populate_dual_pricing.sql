@@ -18,7 +18,7 @@
 UPDATE vehicles SET 
   price_resident_daily = 349,
   price_nonresident_daily = 449
-WHERE name IN (
+WHERE display_name IN (
   'Audi RS3 Rossa',
   'BMW M3 Competition',
   'BMW M4 Competition',
@@ -46,12 +46,12 @@ UPDATE vehicles SET
   price_resident_daily = 39,
   price_nonresident_daily = 39
 WHERE category = 'corporate-fleet' 
-  AND name NOT LIKE '%Ducato%' 
-  AND name NOT LIKE '%Furgone%'
-  AND name NOT LIKE '%Vito%'
-  AND name NOT LIKE '%V Class%'
-  AND name NOT LIKE '%V-Class%'
-  AND name NOT LIKE '%Classe V%';
+  AND display_name NOT LIKE '%Ducato%' 
+  AND display_name NOT LIKE '%Furgone%'
+  AND display_name NOT LIKE '%Vito%'
+  AND display_name NOT LIKE '%V Class%'
+  AND display_name NOT LIKE '%V-Class%'
+  AND display_name NOT LIKE '%Classe V%';
 
 -- Furgone Ducato: €139/day
 UPDATE vehicles SET 
@@ -59,8 +59,8 @@ UPDATE vehicles SET
   price_nonresident_daily = 139
 WHERE category = 'corporate-fleet' 
   AND (
-    name LIKE '%Ducato%' 
-    OR name LIKE '%Furgone%'
+    display_name LIKE '%Ducato%' 
+    OR display_name LIKE '%Furgone%'
   );
 
 -- Vito/V-Class (if exists): €139/day (treating as furgone)
@@ -69,10 +69,10 @@ UPDATE vehicles SET
   price_nonresident_daily = 139
 WHERE category = 'corporate-fleet' 
   AND (
-    name LIKE '%Vito%'
-    OR name LIKE '%V Class%'
-    OR name LIKE '%V-Class%'
-    OR name LIKE '%Classe V%'
+    display_name LIKE '%Vito%'
+    OR display_name LIKE '%V Class%'
+    OR display_name LIKE '%V-Class%'
+    OR display_name LIKE '%Classe V%'
   );
 
 -- ==============================
@@ -80,7 +80,7 @@ WHERE category = 'corporate-fleet'
 -- ==============================
 -- Uncomment to verify the updates:
 -- SELECT 
---   name, 
+--   display_name, 
 --   category,
 --   price_resident_daily,
 --   price_nonresident_daily,
@@ -89,4 +89,4 @@ WHERE category = 'corporate-fleet'
 --     ELSE 'DUAL'
 --   END as pricing_type
 -- FROM vehicles
--- ORDER BY category, name;
+-- ORDER BY category, display_name;
