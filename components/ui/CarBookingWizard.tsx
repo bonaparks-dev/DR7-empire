@@ -130,30 +130,23 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [isProcessing, setIsProcessing] = useState(false);
   const today = useMemo(() => new Date().toISOString().split('T')[0], []);
 
-  const [formData, setFormData] = useState({
-    // Step 1
-    pickupLocation: PICKUP_LOCATIONS[0].id,
-    returnLocation: PICKUP_LOCATIONS[0].id,
-    pickupDate: today,
-    pickupTime: '10:30',
-    returnDate: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0],
-    returnTime: '09:00',
+  const [formData, setFormData] = useState(() => {
+    // Determine initial usage zone based on user residency
+    // This ensures resident pricing is applied from the start
+    const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
+    const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
+    const initialUsageZone = isResident ? 'CAGLIARI_SUD' : '';
 
-    // Step 2
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    birthDate: '',
-    licenseNumber: '',
-    licenseIssueDate: '',
-    licenseImage: null, // File or dataURL
-    idImage: null,
-    isSardinianResident: false,
-    confirmsInformation: false,
+    return {
+      // Step 1
+      pickupLocation: PICKUP_LOCATIONS[0].id,
+      returnLocation: PICKUP_LOCATIONS[0].id,
+      pickupDate: today,
+      pickupTime: '10:30',
+      returnDate: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0],
+      returnTime: '09:00',
 
-    addSecondDriver: false,
-    secondDriver: {
+      // Step 2
       firstName: '',
       lastName: '',
       email: '',
@@ -161,23 +154,38 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       birthDate: '',
       licenseNumber: '',
       licenseIssueDate: '',
-      licenseImage: null as File | string | null,
-      idImage: null as File | string | null,
-    },
+      licenseImage: null, // File or dataURL
+      idImage: null,
+      isSardinianResident: false,
+      confirmsInformation: false,
 
-    // Step 3
-    insuranceOption: 'RCA',
-    extras: [] as string[],
-    kmPackageType: 'none' as 'none' | 'unlimited', // 'none' = only free included km
-    kmPackageDistance: 100, // default 100km package
-    expectedKm: 0, // user's expected distance for recommendation
-    usageZone: '' as 'CAGLIARI_SUD' | 'FUORI_ZONA' | '', // Usage zone for residency-based pricing
+      addSecondDriver: false,
+      secondDriver: {
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        birthDate: '',
+        licenseNumber: '',
+        licenseIssueDate: '',
+        licenseImage: null as File | string | null,
+        idImage: null as File | string | null,
+      },
 
-    // Step 4
-    paymentMethod: 'stripe' as 'stripe' | 'credit',
-    agreesToTerms: false,
-    agreesToPrivacy: false,
-    confirmsDocuments: false,
+      // Step 3
+      insuranceOption: 'RCA',
+      extras: [] as string[],
+      kmPackageType: 'none' as 'none' | 'unlimited', // 'none' = only free included km
+      kmPackageDistance: 100, // default 100km package
+      expectedKm: 0, // user's expected distance for recommendation
+      usageZone: initialUsageZone as 'CAGLIARI_SUD' | 'FUORI_ZONA' | '', // Usage zone for residency-based pricing
+
+      // Step 4
+      paymentMethod: 'stripe' as 'stripe' | 'credit',
+      agreesToTerms: false,
+      agreesToPrivacy: false,
+      confirmsDocuments: false,
+    };
   });
 
 
@@ -678,7 +686,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     duration, rentalCost, insuranceCost, extrasCost, kmPackageCost, pickupFee, dropoffFee, subtotal, taxes, total, includedKm,
     driverAge, licenseYears, youngDriverFee, recentLicenseFee, secondDriverFee, recommendedKm,
     membershipDiscount, membershipTier, originalTotal, finalTotal,
-    isMassimo, specialDiscountAmount, carWashFee
+    isMassimo, specialDiscountAmount, carWashFee,
+    effectivePricePerDay // Calculated price per day (resident or non-resident)
   } = useMemo(() => {
     const zero = {
       duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, kmPackageCost: 0, pickupFee: 0, dropoffFee: 0, subtotal: 0, taxes: 0, total: 0, includedKm: 0, driverAge: 0, licenseYears: 0, youngDriverFee: 0, recentLicenseFee: 0, secondDriverFee: 0, recommendedKm: null, membershipDiscount: 0, membershipTier: null, originalTotal: 0, finalTotal: 0,
@@ -914,7 +923,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       finalTotal: discountInfo.finalPrice,
       isMassimo,
       specialDiscountAmount,
-      carWashFee
+      carWashFee,
+      effectivePricePerDay: pricePerDay // Expose the calculated price per day
     };
   }, [
     formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime,
@@ -1819,8 +1829,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 className="w-full h-48 object-contain rounded-lg border border-gray-700 bg-gray-800/30"
               />
               <h2 className="text-2xl font-bold text-white mt-3">{item.name}</h2>
-              {item.pricePerDay && (
-                <p className="text-gray-400 text-sm">Prezzo base: {formatPrice(item.pricePerDay[currency])}/giorno</p>
+              {effectivePricePerDay && (
+                <p className="text-gray-400 text-sm">Prezzo base: {formatPrice(effectivePricePerDay)}/giorno</p>
               )}
             </div>
 
@@ -2568,7 +2578,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   <hr className="border-gray-600 mb-2" />
                   <div className="flex justify-between">
                     <span>
-                      Noleggio ({duration.days} gg {isMassimo ? `× €${Math.round(rentalCost / duration.days)} [FISSO]` : `× ${item.pricePerDay ? formatPrice(item.pricePerDay[currency]) : '€0'}`})
+                      Noleggio ({duration.days} gg {isMassimo ? `× €${Math.round(rentalCost / duration.days)} [FISSO]` : `× ${effectivePricePerDay ? formatPrice(effectivePricePerDay) : '€0'}`})
                     </span>
                     <span>{formatPrice(rentalCost)}</span>
                   </div>
