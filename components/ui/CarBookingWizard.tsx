@@ -983,6 +983,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   // Insurance is now automatic KASKO_BASE - no eligibility checks needed
 
 
+  // Auto-set usage zone for residents to ensure correct pricing
+  useEffect(() => {
+    const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
+    const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
+
+    // Default to CAGLIARI_SUD for residents if not already set
+    if (isResident && !formData.usageZone) {
+      setFormData(prev => ({ ...prev, usageZone: 'CAGLIARI_SUD' }));
+    }
+  }, [user, formData.usageZone]);
+
   // Force Massimo Runchina settings & Pre-fill Personal Data
   useEffect(() => {
     let updates: any = {};
