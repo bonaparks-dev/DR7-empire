@@ -88,21 +88,21 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
           <div>
             {hasDualPricing ? (
               // Dual pricing display for cars with residency-based rates
-              <div className="space-y-1">
-                <div className={`flex items-baseline ${isResident ? 'text-yellow-400 font-bold' : 'text-gray-400'}`}>
-                  <span className={`${isResident ? 'text-lg' : 'text-sm'}`}>
+              <div className="space-y-0.5">
+                <div className={`flex items-baseline gap-2 ${isResident ? 'text-yellow-400' : 'text-gray-400'}`}>
+                  <span className={`${isResident ? 'text-2xl font-bold' : 'text-base'}`}>
                     {formatPrice(item.priceResidentDaily!)}/giorno
                   </span>
-                  <span className="text-xs ml-1">Residenti</span>
+                  <span className="text-xs uppercase tracking-wide">Residenti</span>
                 </div>
-                <div className={`flex items-baseline ${!isResident ? 'text-white font-bold' : 'text-gray-400'}`}>
-                  <span className={`${!isResident ? 'text-lg' : 'text-sm'}`}>
+                <div className={`flex items-baseline gap-2 ${!isResident ? 'text-white' : 'text-gray-400'}`}>
+                  <span className={`${!isResident ? 'text-2xl font-bold' : 'text-base'}`}>
                     {formatPrice(item.priceNonresidentDaily!)}/giorno
                   </span>
-                  <span className="text-xs ml-1">Non Residenti</span>
+                  <span className="text-xs uppercase tracking-wide">Non Residenti</span>
                 </div>
                 {!user && (
-                  <p className="text-xs text-gray-500 mt-2 italic">
+                  <p className="text-xs text-gray-400 mt-1.5 leading-tight">
                     Accedi per applicare automaticamente la tariffa corretta.
                   </p>
                 )}
