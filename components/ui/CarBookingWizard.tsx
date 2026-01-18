@@ -984,31 +984,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
 
 
-  // Éligibilité KASKO auto (downgrade si non éligible)
-  useEffect(() => {
-    // But wait, the original logic was trying to find "best" ??
-    // No, the original logic: "if (currentOk) return; ... if (sig.eligible) best... "
-    // It seems it was auto-upgrading or something?
-    // "if (currentChoice invalid) -> switch to best possible?"
-    // Which is weird. Usually you fallback to Base.
-    // I will preserve the logic pattern but include DR7 only if they *want* high tier?
-    // No, if I selected DR7 and am not eligible, I should get Signature (if eligible), else Black, else Base.
+  // Insurance is now automatic KASKO_BASE - no eligibility checks needed
 
-    // Simplified: If current choice is NOT eligible, switch to KASKO.
-    // RCA is always eligible, so it won't be overwritten.
-    if (formData.insuranceOption !== 'RCA') {
-      const eligibility = isKaskoEligibleByBuckets(
-        formData.insuranceOption as KaskoTier,
-        driverAge,
-        licenseYears,
-        vehicleType
-      );
-
-      if (!eligibility.eligible) {
-        setFormData(prev => ({ ...prev, insuranceOption: 'KASKO_BASE' }));
-      }
-    }
-  }, [driverAge, licenseYears, isUrbanOrCorporate, formData.insuranceOption, vehicleType]);
 
   // Force Massimo Runchina settings & Pre-fill Personal Data
   useEffect(() => {
