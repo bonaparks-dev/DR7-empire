@@ -88,15 +88,16 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
           <div>
             {hasDualPricing ? (
               // Dual pricing display for cars with residency-based rates
+              // Always show CHEAPER price (resident) as LARGER text
               <div className="space-y-0.5">
-                <div className={`flex items-baseline gap-2 ${isResident ? 'text-yellow-400' : 'text-gray-400'}`}>
-                  <span className={`${isResident ? 'text-2xl font-bold' : 'text-base'}`}>
+                <div className={`flex items-baseline gap-2 ${isResident ? 'text-yellow-400' : 'text-white'}`}>
+                  <span className="text-2xl font-bold">
                     {formatPrice(item.priceResidentDaily!)}/giorno
                   </span>
                   <span className="text-xs uppercase tracking-wide">Residenti</span>
                 </div>
-                <div className={`flex items-baseline gap-2 ${!isResident ? 'text-white' : 'text-gray-400'}`}>
-                  <span className={`${!isResident ? 'text-2xl font-bold' : 'text-base'}`}>
+                <div className={`flex items-baseline gap-2 text-gray-400`}>
+                  <span className="text-base">
                     {formatPrice(item.priceNonresidentDaily!)}/giorno
                   </span>
                   <span className="text-xs uppercase tracking-wide">Non Residenti</span>
