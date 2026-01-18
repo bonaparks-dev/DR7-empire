@@ -10,21 +10,53 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Required: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
 }
 
-// Aggressive Chrome HTTP/2 fix
-// Forces HTTP/1.1 by disabling connection reuse and caching
-const customFetch: typeof fetch = (input, init?) => {
-  const headers = new Headers(init?.headers);
+// Detect Chrome browser
+const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
 
-  // Force connection close to prevent HTTP/2 pooling
-  headers.set('Connection', 'close');
+// Aggressive retry logic for Chrome HTTP/2 issues
+const customFetch: typeof fetch = async (input, init?) => {
+  const maxRetries = 3;
+  const retryDelays = [500, 1000, 2000]; // Exponential backoff
 
-  return fetch(input, {
-    ...init,
-    headers,
-    keepalive: false,
-    cache: 'no-store', // Prevent caching
-    credentials: 'same-origin', // Prevent credential caching
-  });
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const headers = new Headers(init?.headers);
+
+      // Chrome-specific: Force fresh connections
+      if (isChrome) {
+        headers.set('Connection', 'close');
+        headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        headers.set('Pragma', 'no-cache');
+      }
+
+      const response = await fetch(input, {
+        ...init,
+        headers,
+        keepalive: false,
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+
+      // Success - return response
+      return response;
+    } catch (error) {
+      const isLastAttempt = attempt === maxRetries;
+
+      if (isLastAttempt) {
+        // All retries failed - throw error
+        console.error(`❌ Fetch failed after ${maxRetries + 1} attempts:`, error);
+        throw error;
+      }
+
+      // Wait before retry
+      const delay = retryDelays[attempt];
+      console.warn(`⚠️ Fetch attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+
+  // Should never reach here, but TypeScript needs it
+  throw new Error('Unexpected error in customFetch');
 };
 
 // Create Supabase client with custom fetch
