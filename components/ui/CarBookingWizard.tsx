@@ -820,7 +820,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // Group A (Utilitaria, Furgone): cheaper
     // Group B (Supercar, V_CLASS): expensive
     const isCheapExtras = vType === 'UTILITARIA' || vType === 'FURGONE';
-    const feeAddDriver = isCheapExtras ? 5 : 10;
+    const feeAddDriver = 0; // Second driver is FREE - no additional charge
+    const calculatedSecondDriverFee = 0; // Second driver is always free
     const feeYoungDriver = isCheapExtras ? 5 : 10;
     const feeRecentLic = isCheapExtras ? 10 : 20;
 
@@ -828,7 +829,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       ? feeYoungDriver * billingDays
       : 0;
     const calculatedRecentLicenseFee = calculatedLicenseYears >= 2 && calculatedLicenseYears < 3 ? feeRecentLic * billingDays : 0;
-    const calculatedSecondDriverFee = formData.addSecondDriver ? feeAddDriver * billingDays : 0;
+
 
     // Calculate FREE included KM based on rental duration
     const freeIncludedKm = calculateIncludedKm(billingDays);
