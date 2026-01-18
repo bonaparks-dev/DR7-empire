@@ -695,17 +695,29 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
       const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
 
+      // Debug logging for pricing
+      console.log('🏷️ Pricing Debug:', {
+        userResidencyZone,
+        isResident,
+        usageZone: formData.usageZone,
+        priceResidentDaily: item.priceResidentDaily,
+        priceNonresidentDaily: item.priceNonresidentDaily,
+        willApplyResidentPrice: isResident && formData.usageZone === 'CAGLIARI_SUD'
+      });
+
       // Apply resident pricing ONLY if:
       // 1. User is a resident (RESIDENTE_CAGLIARI_SUD_SARDEGNA)
       // 2. AND selected usage zone is CAGLIARI_SUD
       if (isResident && formData.usageZone === 'CAGLIARI_SUD') {
         pricePerDay = item.priceResidentDaily;
+        console.log('✅ Applied RESIDENT pricing:', pricePerDay);
       } else {
         // All other cases use non-resident pricing:
         // - Non-resident users (regardless of zone)
         // - Resident users selecting FUORI_ZONA (blocked by validation)
         // - No zone selected yet (defaults to non-resident)
         pricePerDay = item.priceNonresidentDaily;
+        console.log('📍 Applied NON-RESIDENT pricing:', pricePerDay);
       }
     }
 
