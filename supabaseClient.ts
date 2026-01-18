@@ -10,8 +10,16 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Required: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
 }
 
-// Create Supabase client with standard configuration
-// Note: Supabase JS client has built-in retry logic and timeout handling
+// Custom fetch to fix Chrome HTTP/2 issues
+// Setting keepalive: false prevents connection pooling issues in Chrome
+const customFetch: typeof fetch = (input, init?) => {
+  return fetch(input, {
+    ...init,
+    keepalive: false, // Prevents Chrome HTTP/2 connection reuse issues
+  });
+};
+
+// Create Supabase client with custom fetch
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
@@ -19,5 +27,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
   db: {
     schema: 'public',
+  },
+  global: {
+    fetch: customFetch,
   },
 });
