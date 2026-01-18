@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import { isMassimoRunchina, SPECIAL_CLIENTS } from '../../utils/clientPricingRules';
+import { calculateMultiDayPrice } from '../../utils/multiDayPricing';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../supabaseClient';
 import { PICKUP_LOCATIONS, AUTO_INSURANCE, INSURANCE_DEDUCTIBLES, RENTAL_EXTRAS, DEPOSIT_RULES } from '../../constants';
@@ -732,8 +733,9 @@ const {
   // --- RENTAL COST ---
   let calculatedRentalCost = billingDays * pricePerDay;
   let massimoTotalDiscount = 0;
+
   if (isMassimo) {
-    // Massimo pricing: Tiered discount based on rental duration
+    // Massimo pricing: UNCHANGED - keep existing tiered discount logic
     // 1-3 days: -10%, 4 days: -15%, 5 days: -25%, 7+ days: -30%
     const baseRate = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseRate;
     const discountTiers = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.discountTiers;
@@ -745,6 +747,13 @@ const {
     const baseRentalCost = billingDaysCalc * baseRate;
     massimoTotalDiscount = roundToTwoDecimals(baseRentalCost * discountPercent);
     calculatedRentalCost = roundToTwoDecimals(baseRentalCost - massimoTotalDiscount);
+  } else {
+    // NEW: Apply multi-day pricing for all other customers
+    const vType = getVehicleType(item, categoryContext);
+    const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
+    const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA' && formData.usageZone === 'CAGLIARI_SUD';
+
+    calculatedRentalCost = calculateMultiDayPrice(vType, billingDaysCalc, pricePerDay, isResident);
   }
 
   const selectedInsurance = insuranceOptions.find(opt => opt.id === formData.insuranceOption);
