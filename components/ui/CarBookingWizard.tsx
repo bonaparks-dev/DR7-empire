@@ -2395,7 +2395,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 <div className="flex items-center p-3 bg-gray-800/50 rounded-md border border-gray-700">
                   <input type="checkbox" checked disabled className="h-4 w-4" />
                   <span className="ml-3 text-white">LAVAGGIO COMPLETO [OBBLIGATORIO]</span>
-                  <span className="ml-auto font-semibold text-white">€30</span>
+                  <span className="ml-auto font-semibold text-green-400">INCLUSO</span>
                 </div>
 
                 {/* Rental Extras from constants */}
