@@ -8,6 +8,9 @@
 -- FURGONE: €139/day (no dual pricing)
 --
 -- All prices include: KASKO BASE, washing, unlimited KM, no hidden fees
+--
+-- NOTE: The 'plate' (targa/license plate) column is important for admin panel views
+-- Admin panel shares the same Supabase database but is in a different repository
 
 -- ==============================
 -- A) SUPERCARS — DUAL PRICING
