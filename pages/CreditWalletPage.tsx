@@ -613,7 +613,7 @@ const CreditWalletPage: React.FC = () => {
             className="mb-12"
           >
             <h2 className="text-3xl font-bold text-white text-center mb-6">
-              PACCHETTI DI RICARICA LINEA UFFICIALE DR7
+              SCEGLI IL TUO PACCHETTO: 👑
             </h2>
             <div className="flex flex-wrap justify-center gap-3">
               {series.map((s) => (
@@ -645,6 +645,21 @@ const CreditWalletPage: React.FC = () => {
                 onSelect={() => handleSelectPackage(pkg.id)}
               />
             ))}
+          </motion.div>
+
+          {/* Promotional Footer */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="text-center mb-16"
+          >
+            <p className="text-2xl md:text-3xl font-extrabold text-white mb-3">
+              CREDITO IMMEDIATO. NESSUNA SCADENZA.
+            </p>
+            <p className="text-2xl md:text-3xl font-extrabold text-white">
+              SOLO VANTAGGI. SOLO DR7.
+            </p>
           </motion.div>
 
           {/* Advantages Section */}

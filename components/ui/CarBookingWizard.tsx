@@ -2480,91 +2480,91 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 Seleziona dove utilizzerai il veicolo durante il noleggio.
               </p>
 
-              \u003cdiv className="space-y-3"\u003e
+              <div className="space-y-3">
               {/* Option 1: Cagliari e Sud Sardegna */}
-              \u003cdiv
+              <div
               className={`p-4 rounded-md border cursor-pointer transition-all ${formData.usageZone === 'CAGLIARI_SUD'
                 ? 'border-yellow-400 bg-yellow-400/10'
                 : 'border-gray-700 hover:border-gray-500'
                 }`}
-              onClick={() =\u003e setFormData(p =\u003e ({...p, usageZone: 'CAGLIARI_SUD' }))}
-              \u003e
-              \u003cdiv className="flex items-center"\u003e
-              \u003cinput
+              onClick={() => setFormData(p => ({...p, usageZone: 'CAGLIARI_SUD' }))}
+              >
+              <div className="flex items-center">
+              <input
               type="radio"
               name="usageZone"
               value="CAGLIARI_SUD"
               checked={formData.usageZone === 'CAGLIARI_SUD'}
-              onChange={() =\u003e setFormData(p =\u003e ({...p, usageZone: 'CAGLIARI_SUD' }))}
+              onChange={() => setFormData(p => ({...p, usageZone: 'CAGLIARI_SUD' }))}
               className="w-4 h-4 text-yellow-400"
-              /\u003e
-              \u003clabel className="ml-3 text-white font-semibold"\u003e
+              />
+              <label className="ml-3 text-white font-semibold">
               Cagliari e Sud Sardegna
-              \u003c/label\u003e
-              \u003c/div\u003e
-              \u003cp className="ml-7 text-xs text-gray-400 mt-1"\u003e
+              </label>
+              </div>
+              <p className="ml-7 text-xs text-gray-400 mt-1">
               Utilizzo limitato all'area di Cagliari e provincia del Sud Sardegna
-              \u003c/p\u003e
-              \u003c/div\u003e
+              </p>
+              </div>
 
               {/* Option 2: Fuori zona */}
-              \u003cdiv
+              <div
               className={`p-4 rounded-md border transition-all ${formData.usageZone === 'FUORI_ZONA'
                 ? 'border-yellow-400 bg-yellow-400/10'
                 : 'border-gray-700 hover:border-gray-500'
                 } ${usageZoneError ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-              onClick={() =\u003e {
+              onClick={() => {
                   const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
               const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
 
               // Allow non-residents to select, block residents
               if (!isResident) {
-                setFormData(p =\u003e ({...p, usageZone: 'FUORI_ZONA' }));
+                setFormData(p => ({...p, usageZone: 'FUORI_ZONA' }));
                   }
                 }}
-              \u003e
-              \u003cdiv className="flex items-center"\u003e
-              \u003cinput
+              >
+              <div className="flex items-center">
+              <input
               type="radio"
               name="usageZone"
               value="FUORI_ZONA"
               checked={formData.usageZone === 'FUORI_ZONA'}
               disabled={!!usageZoneError}
-              onChange={() =\u003e {
+              onChange={() => {
                       const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
               const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
               if (!isResident) {
-                setFormData(p =\u003e ({...p, usageZone: 'FUORI_ZONA' }));
+                setFormData(p => ({...p, usageZone: 'FUORI_ZONA' }));
                       }
                     }}
               className="w-4 h-4 text-yellow-400"
-              /\u003e
-              \u003clabel className="ml-3 text-white font-semibold"\u003e
+              />
+              <label className="ml-3 text-white font-semibold">
               Fuori zona (resto della Sardegna / Italia)
-              \u003c/label\u003e
-              \u003c/div\u003e
-              \u003cp className="ml-7 text-xs text-gray-400 mt-1"\u003e
+              </label>
+              </div>
+              <p className="ml-7 text-xs text-gray-400 mt-1">
               Utilizzo al di fuori dell'area di Cagliari e Sud Sardegna
-              \u003c/p\u003e
-              \u003c/div\u003e
+              </p>
+              </div>
 
               {/* Error message for residents trying to select Fuori zona */}
               {usageZoneError && (
-              \u003cdiv className="mt-3 p-4 bg-red-900/30 border-2 border-red-500 rounded-lg"\u003e
-              \u003cp className="text-red-300 font-semibold text-sm"\u003e
+              <div className="mt-3 p-4 bg-red-900/30 border-2 border-red-500 rounded-lg">
+              <p className="text-red-300 font-semibold text-sm">
               ⚠️ {usageZoneError}
-              \u003c/p\u003e
-              \u003c/div\u003e
+              </p>
+              </div>
               )}
 
               {/* Validation error if no zone selected */}
               {errors.usageZone && (
-              \u003cp className="text-xs text-red-400 mt-2 flex items-center"\u003e
-              \u003cspan className="mr-1"\u003e⚠️\u003c/span\u003e {errors.usageZone}
-              \u003c/p\u003e
+              <p className="text-xs text-red-400 mt-2 flex items-center">
+              <span className="mr-1">⚠️</span> {errors.usageZone}
+              </p>
               )}
-              \u003c/div\u003e
-              \u003c/section\u003e
+              </div>
+              </section>
 
               <section className="border-t border-gray-700 pt-6">
                 <h3 className="text-lg font-bold text-white mb-2">C. SERVIZI AGGIUNTIVI</h3>
