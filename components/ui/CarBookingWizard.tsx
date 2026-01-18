@@ -201,6 +201,7 @@ const [availabilityError, setAvailabilityError] = useState<string | null>(null);
 const [partialUnavailabilityWarning, setPartialUnavailabilityWarning] = useState<string | null>(null);
 const [availableVehicleName, setAvailableVehicleName] = useState<string | null>(null);
 const [usageZoneError, setUsageZoneError] = useState<string | null>(null); // Error for resident blocking
+const [showZoneConfirmation, setShowZoneConfirmation] = useState(false); // Zone confirmation modal
 
 // Credit wallet state
 const [creditBalance, setCreditBalance] = useState<number>(0);
@@ -2482,156 +2483,156 @@ const renderStepContent = () => {
           </section>
 
           {/* === USAGE ZONE SELECTOR === */}
-          \u003csection className="border-t border-gray-700 pt-6"\u003e
-          \u003ch3 className="text-lg font-bold text-white mb-2"\u003eC. ZONA DI UTILIZZO *\u003c/h3\u003e
-          \u003cp className="text-sm text-gray-400 mb-4"\u003e
-          Seleziona dove utilizzerai il veicolo durante il noleggio.
-          \u003c/p\u003e
+          <section className="border-t border-gray-700 pt-6">
+            <h3 className="text-lg font-bold text-white mb-2">C. ZONA DI UTILIZZO *</h3>
+            <p className="text-sm text-gray-400 mb-4">
+              Seleziona dove utilizzerai il veicolo durante il noleggio.
+            </p>
 
-          \u003cdiv className="space-y-3"\u003e
-          {/* Option 1: Cagliari e Sud Sardegna */}
-          \u003cdiv
-          className={`p-4 rounded-md border cursor-pointer transition-all ${formData.usageZone === 'CAGLIARI_SUD'
-            ? 'border-yellow-400 bg-yellow-400/10'
-            : 'border-gray-700 hover:border-gray-500'
-            }`}
-          onClick={() =\u003e setFormData(p =\u003e ({...p, usageZone: 'CAGLIARI_SUD' }))}
-          \u003e
-          \u003cdiv className="flex items-center"\u003e
-          \u003cinput
-          type="radio"
-          name="usageZone"
-          value="CAGLIARI_SUD"
-          checked={formData.usageZone === 'CAGLIARI_SUD'}
-          onChange={() =\u003e setFormData(p =\u003e ({...p, usageZone: 'CAGLIARI_SUD' }))}
-          className="w-4 h-4 text-yellow-400"
-          /\u003e
-          \u003clabel className="ml-3 text-white font-semibold"\u003e
-          📍 Cagliari e Sud Sardegna
-          \u003c/label\u003e
-          \u003c/div\u003e
-          \u003cp className="ml-7 text-xs text-gray-400 mt-1"\u003e
-          Utilizzo limitato all'area di Cagliari e provincia del Sud Sardegna
-          \u003c/p\u003e
-          \u003c/div\u003e
+            \u003cdiv className="space-y-3"\u003e
+            {/* Option 1: Cagliari e Sud Sardegna */}
+            \u003cdiv
+            className={`p-4 rounded-md border cursor-pointer transition-all ${formData.usageZone === 'CAGLIARI_SUD'
+              ? 'border-yellow-400 bg-yellow-400/10'
+              : 'border-gray-700 hover:border-gray-500'
+              }`}
+            onClick={() =\u003e setFormData(p =\u003e ({...p, usageZone: 'CAGLIARI_SUD' }))}
+            \u003e
+            \u003cdiv className="flex items-center"\u003e
+            \u003cinput
+            type="radio"
+            name="usageZone"
+            value="CAGLIARI_SUD"
+            checked={formData.usageZone === 'CAGLIARI_SUD'}
+            onChange={() =\u003e setFormData(p =\u003e ({...p, usageZone: 'CAGLIARI_SUD' }))}
+            className="w-4 h-4 text-yellow-400"
+            /\u003e
+            \u003clabel className="ml-3 text-white font-semibold"\u003e
+            Cagliari e Sud Sardegna
+            \u003c/label\u003e
+            \u003c/div\u003e
+            \u003cp className="ml-7 text-xs text-gray-400 mt-1"\u003e
+            Utilizzo limitato all'area di Cagliari e provincia del Sud Sardegna
+            \u003c/p\u003e
+            \u003c/div\u003e
 
-          {/* Option 2: Fuori zona */}
-          \u003cdiv
-          className={`p-4 rounded-md border transition-all ${formData.usageZone === 'FUORI_ZONA'
-            ? 'border-yellow-400 bg-yellow-400/10'
-            : 'border-gray-700 hover:border-gray-500'
-            } ${usageZoneError ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-          onClick={() =\u003e {
+            {/* Option 2: Fuori zona */}
+            \u003cdiv
+            className={`p-4 rounded-md border transition-all ${formData.usageZone === 'FUORI_ZONA'
+              ? 'border-yellow-400 bg-yellow-400/10'
+              : 'border-gray-700 hover:border-gray-500'
+              } ${usageZoneError ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            onClick={() =\u003e {
                   const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
-          const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
+            const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
 
-          // Allow non-residents to select, block residents
-          if (!isResident) {
-            setFormData(p =\u003e ({...p, usageZone: 'FUORI_ZONA' }));
+            // Allow non-residents to select, block residents
+            if (!isResident) {
+              setFormData(p =\u003e ({...p, usageZone: 'FUORI_ZONA' }));
                   }
                 }}
-          \u003e
-          \u003cdiv className="flex items-center"\u003e
-          \u003cinput
-          type="radio"
-          name="usageZone"
-          value="FUORI_ZONA"
-          checked={formData.usageZone === 'FUORI_ZONA'}
-          disabled={!!usageZoneError}
-          onChange={() =\u003e {
+            \u003e
+            \u003cdiv className="flex items-center"\u003e
+            \u003cinput
+            type="radio"
+            name="usageZone"
+            value="FUORI_ZONA"
+            checked={formData.usageZone === 'FUORI_ZONA'}
+            disabled={!!usageZoneError}
+            onChange={() =\u003e {
                       const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
-          const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
-          if (!isResident) {
-            setFormData(p =\u003e ({...p, usageZone: 'FUORI_ZONA' }));
+            const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
+            if (!isResident) {
+              setFormData(p =\u003e ({...p, usageZone: 'FUORI_ZONA' }));
                       }
                     }}
-          className="w-4 h-4 text-yellow-400"
-          /\u003e
-          \u003clabel className="ml-3 text-white font-semibold"\u003e
-          🌍 Fuori zona (resto della Sardegna / Italia)
-          \u003c/label\u003e
-          \u003c/div\u003e
-          \u003cp className="ml-7 text-xs text-gray-400 mt-1"\u003e
-          Utilizzo al di fuori dell'area di Cagliari e Sud Sardegna
-          \u003c/p\u003e
-          \u003c/div\u003e
+            className="w-4 h-4 text-yellow-400"
+            /\u003e
+            \u003clabel className="ml-3 text-white font-semibold"\u003e
+            Fuori zona (resto della Sardegna / Italia)
+            \u003c/label\u003e
+            \u003c/div\u003e
+            \u003cp className="ml-7 text-xs text-gray-400 mt-1"\u003e
+            Utilizzo al di fuori dell'area di Cagliari e Sud Sardegna
+            \u003c/p\u003e
+            \u003c/div\u003e
 
-          {/* Error message for residents trying to select Fuori zona */}
-          {usageZoneError && (
-          \u003cdiv className="mt-3 p-4 bg-red-900/30 border-2 border-red-500 rounded-lg"\u003e
-          \u003cp className="text-red-300 font-semibold text-sm"\u003e
-          ⚠️ {usageZoneError}
-          \u003c/p\u003e
-          \u003c/div\u003e
+            {/* Error message for residents trying to select Fuori zona */}
+            {usageZoneError && (
+            \u003cdiv className="mt-3 p-4 bg-red-900/30 border-2 border-red-500 rounded-lg"\u003e
+            \u003cp className="text-red-300 font-semibold text-sm"\u003e
+            ⚠️ {usageZoneError}
+            \u003c/p\u003e
+            \u003c/div\u003e
               )}
 
-          {/* Validation error if no zone selected */}
-          {errors.usageZone && (
-          \u003cp className="text-xs text-red-400 mt-2 flex items-center"\u003e
-          \u003cspan className="mr-1"\u003e⚠️\u003c/span\u003e {errors.usageZone}
-          \u003c/p\u003e
+            {/* Validation error if no zone selected */}
+            {errors.usageZone && (
+            \u003cp className="text-xs text-red-400 mt-2 flex items-center"\u003e
+            \u003cspan className="mr-1"\u003e⚠️\u003c/span\u003e {errors.usageZone}
+            \u003c/p\u003e
               )}
-          \u003c/div\u003e
-          \u003c/section\u003e
+            \u003c/div\u003e
+            \u003c/section\u003e
 
-          <section className="border-t border-gray-700 pt-6">
-            <h3 className="text-lg font-bold text-white mb-2">C. SERVIZI AGGIUNTIVI</h3>
-            <p className="text-sm text-gray-400 mb-4">
-              Aggiungi servizi extra per un viaggio più confortevole e sicuro.
-            </p>
-            <div className="space-y-3">
-              {/* Mandatory car wash */}
-              <div className="flex items-center p-3 bg-gray-800/50 rounded-md border border-gray-700">
-                <input type="checkbox" checked disabled className="h-4 w-4" />
-                <span className="ml-3 text-white">LAVAGGIO COMPLETO [OBBLIGATORIO]</span>
-                <span className="ml-auto font-semibold text-white">€30</span>
-              </div>
+            <section className="border-t border-gray-700 pt-6">
+              <h3 className="text-lg font-bold text-white mb-2">C. SERVIZI AGGIUNTIVI</h3>
+              <p className="text-sm text-gray-400 mb-4">
+                Aggiungi servizi extra per un viaggio più confortevole e sicuro.
+              </p>
+              <div className="space-y-3">
+                {/* Mandatory car wash */}
+                <div className="flex items-center p-3 bg-gray-800/50 rounded-md border border-gray-700">
+                  <input type="checkbox" checked disabled className="h-4 w-4" />
+                  <span className="ml-3 text-white">LAVAGGIO COMPLETO [OBBLIGATORIO]</span>
+                  <span className="ml-auto font-semibold text-white">€30</span>
+                </div>
 
-              {/* Rental Extras from constants */}
-              {RENTAL_EXTRAS.filter(extra => !extra.autoApply && extra.id !== 'additional_driver').map(extra => {
-                const isSelected = formData.extras.includes(extra.id);
-                const priceDisplay = extra.oneTime
-                  ? `€${extra.pricePerDay.eur}`
-                  : `€${extra.pricePerDay.eur}/giorno`;
+                {/* Rental Extras from constants */}
+                {RENTAL_EXTRAS.filter(extra => !extra.autoApply && extra.id !== 'additional_driver').map(extra => {
+                  const isSelected = formData.extras.includes(extra.id);
+                  const priceDisplay = extra.oneTime
+                    ? `€${extra.pricePerDay.eur}`
+                    : `€${extra.pricePerDay.eur}/giorno`;
 
-                return (
-                  <div
-                    key={extra.id}
-                    className={`p-3 rounded-md border cursor-pointer transition-all ${isSelected
-                      ? 'border-white bg-white/5'
-                      : 'border-gray-700 hover:border-gray-500'
-                      }`}
-                    onClick={() => {
-                      setFormData(prev => ({
-                        ...prev,
-                        extras: isSelected
-                          ? prev.extras.filter(id => id !== extra.id)
-                          : [...prev.extras, extra.id]
-                      }));
-                    }}
-                  >
-                    <div className="flex items-start">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => { }}
-                        className="h-4 w-4 mt-1 text-white"
-                      />
-                      <div className="ml-3 flex-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-white font-medium">{getTranslated(extra.label)}</span>
-                          <span className="font-semibold text-white">{priceDisplay}</span>
+                  return (
+                    <div
+                      key={extra.id}
+                      className={`p-3 rounded-md border cursor-pointer transition-all ${isSelected
+                        ? 'border-white bg-white/5'
+                        : 'border-gray-700 hover:border-gray-500'
+                        }`}
+                      onClick={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          extras: isSelected
+                            ? prev.extras.filter(id => id !== extra.id)
+                            : [...prev.extras, extra.id]
+                        }));
+                      }}
+                    >
+                      <div className="flex items-start">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => { }}
+                          className="h-4 w-4 mt-1 text-white"
+                        />
+                        <div className="ml-3 flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-white font-medium">{getTranslated(extra.label)}</span>
+                            <span className="font-semibold text-white">{priceDisplay}</span>
+                          </div>
+                          {extra.description && (
+                            <p className="text-xs text-gray-400 mt-1">{getTranslated(extra.description)}</p>
+                          )}
                         </div>
-                        {extra.description && (
-                          <p className="text-xs text-gray-400 mt-1">{getTranslated(extra.description)}</p>
-                        )}
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
+                  );
+                })}
+              </div>
+            </section>
         </div>
       );
     case 4:
