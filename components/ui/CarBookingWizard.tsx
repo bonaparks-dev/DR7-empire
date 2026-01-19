@@ -1159,11 +1159,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const isUtilitaria = vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS';
     const depositRules = isUtilitaria ? DEPOSIT_RULES.UTILITARIA : DEPOSIT_RULES.SUPERCAR;
 
-    // Use license years from pricing calculation (≥6 years = lower deposit)
-    if (licenseYears >= 6) {
-      return depositRules.LICENSE_6_OR_MORE;
+    // Use license years from pricing calculation (≥5 years = lower deposit)
+    if (licenseYears >= 5) {
+      return depositRules.LICENSE_5_OR_MORE;
     } else {
-      return depositRules.LICENSE_UNDER_6;
+      return depositRules.LICENSE_UNDER_5;
     }
   };
 
