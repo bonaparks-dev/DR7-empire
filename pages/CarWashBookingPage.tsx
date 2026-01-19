@@ -785,13 +785,17 @@ const CarWashBookingPage: React.FC = () => {
 
         // Create Nexi payment
         console.log('Creating Nexi payment for booking:', bookingData.id);
+
+        // Nexi requires orderId to be alphanumeric only (no dashes or special chars)
+        const nexiOrderId = bookingData.id.replace(/-/g, '').substring(0, 50);
+
         const nexiResponse = await fetch('/.netlify/functions/create-nexi-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             amount: calculateTotal() * 100, // Convert to cents
             currency: 'EUR',
-            orderId: `CARWASH-${bookingData.id}`,
+            orderId: nexiOrderId,
             description: `Lavaggio ${lang === 'it' ? selectedService?.name : selectedService?.nameEn}`,
             customerEmail: formData.email,
             metadata: {
