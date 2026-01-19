@@ -1,31 +1,6 @@
-const crypto = require('crypto');
-
 /**
- * Generate MAC (Message Authentication Code) for Nexi XPay
- */
-function generateMAC(params, macKey) {
-  // Sort parameters alphabetically
-  const sortedKeys = Object.keys(params).sort();
-
-  // Build the string to hash
-  let macString = '';
-  for (const key of sortedKeys) {
-    if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
-      macString += `${key}=${params[key]}`;
-    }
-  }
-
-  // Add MAC key at the end
-  macString += macKey;
-
-  // Calculate SHA1 hash
-  const hash = crypto.createHash('sha1').update(macString, 'utf8').digest('hex');
-
-  return hash;
-}
-
-/**
- * Netlify Function to create Nexi XPay payment
+ * Netlify Function to create Nexi XPay payment using API method
+ * Uses /orders/hpp endpoint with X-API-KEY authentication
  */
 exports.handler = async (event) => {
   // Only allow POST requests
@@ -51,76 +26,72 @@ exports.handler = async (event) => {
     // Get Nexi configuration from environment variables
     const nexiConfig = {
       apiKey: process.env.NEXI_API_KEY,
-      macKey: process.env.NEXI_MAC_KEY,
-      merchantId: process.env.NEXI_MERCHANT_ID,
-      terminalId: process.env.NEXI_TERMINAL_ID,
-      accountId: process.env.NEXI_ACCOUNT_ID,
       environment: process.env.NEXI_ENVIRONMENT || 'production',
     };
 
-    // Validate configuration (MAC key is optional)
-    if (!nexiConfig.apiKey || !nexiConfig.merchantId) {
-      console.error('Missing Nexi configuration:', {
-        hasApiKey: !!nexiConfig.apiKey,
-        hasMacKey: !!nexiConfig.macKey,
-        hasMerchantId: !!nexiConfig.merchantId,
-      });
+    // Validate configuration
+    if (!nexiConfig.apiKey) {
+      console.error('Missing Nexi API key');
       return {
         statusCode: 500,
         body: JSON.stringify({ error: 'Nexi configuration error' }),
       };
     }
 
-    // Check if MAC authentication is available
-    const useMac = !!nexiConfig.macKey;
-    if (!useMac) {
-      console.warn('⚠️  Operating without MAC authentication - reduced security');
-    }
-
     // Determine base URL
     const baseUrl =
       nexiConfig.environment === 'production'
-        ? 'https://xpay.nexigroup.com'
-        : 'https://xpaysandboxdb.nexigroup.com';
+        ? 'https://xpay.nexigroup.com/api/phoenix-0.0'
+        : 'https://int-ecommerce.nexi.it/ecomm/api/phoenix-0.0';
 
     // Get site URL for callbacks
     const siteUrl = process.env.URL || 'https://dr7empire.com';
 
-    // Prepare request parameters for Nexi X-Pay
-    const params = {
-      alias: 'xpay web', // Alias from Nexi backoffice
-      importo: amount.toString(),
-      divisa: currency,
-      codTrans: orderId,
-      descrizione: description || 'Payment',
-      mail: customerEmail || '',
-      languageId: 'ITA',
-      urlpost: `${siteUrl}/.netlify/functions/nexi-callback`,
-      url: `${siteUrl}/payment-success`,
-      urlback: `${siteUrl}/payment-cancel`,
+    // Prepare request body for Nexi API
+    const requestBody = {
+      order: {
+        orderId: orderId,
+        amount: amount.toString(),
+        currency: currency,
+        customerId: customerEmail || 'guest',
+        description: description || 'Payment',
+      },
+      paymentSession: {
+        actionType: 'PAY',
+        amount: amount.toString(),
+        language: 'ITA',
+        resultUrl: `${siteUrl}/payment-success`,
+        cancelUrl: `${siteUrl}/payment-cancel`,
+        notificationUrl: `${siteUrl}/.netlify/functions/nexi-callback`,
+      },
     };
 
-    // Generate MAC only if key is available
-    if (useMac) {
-      const mac = generateMAC(params, nexiConfig.macKey);
-      params.mac = mac;
-      console.log('✅ Using MAC authentication');
-    } else {
-      console.log('ℹ️  Proceeding without MAC parameter');
+    console.log('Creating Nexi payment via API:', { orderId, amount, currency });
+
+    // Call Nexi API
+    const response = await fetch(`${baseUrl}/orders/hpp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-KEY': nexiConfig.apiKey,
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+      console.error('Nexi API error:', responseData);
+      return {
+        statusCode: response.status,
+        body: JSON.stringify({
+          error: 'Failed to create payment',
+          details: responseData,
+        }),
+      };
     }
 
-    // Create payment with Nexi
-    console.log('Creating Nexi payment:', { orderId, amount, currency });
-
-    // For Nexi XPay, we need to redirect directly to the payment page
-    // The DispatcherServlet endpoint handles the payment form
-    const queryString = new URLSearchParams(params).toString();
-    const paymentUrl = `${baseUrl}/ecomm/ecomm/DispatcherServlet?${queryString}`;
-
-    console.log('Payment URL created:', paymentUrl.substring(0, 100) + '...');
-    if (useMac) {
-      console.log('MAC generated and included in request');
-    }
+    console.log('Payment created successfully:', responseData);
 
     // Return payment URL to frontend
     return {
@@ -130,8 +101,9 @@ exports.handler = async (event) => {
       },
       body: JSON.stringify({
         success: true,
-        paymentUrl: paymentUrl,
+        paymentUrl: responseData.hostedPage,
         orderId: orderId,
+        sessionId: responseData.sessionId,
       }),
     };
   } catch (error) {
