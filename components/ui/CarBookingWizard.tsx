@@ -830,24 +830,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
 
 
-    // Calculate FREE included KM based on rental duration
-    const freeIncludedKm = calculateIncludedKm(billingDays);
-
-    // Calculate KM package cost (OPTIONAL - user can add extra km)
+    // ALL VEHICLES NOW HAVE UNLIMITED KM INCLUDED
+    // No km package cost - unlimited km is always free and included
     let calculatedKmPackageCost = 0;
-    let calculatedIncludedKm = freeIncludedKm; // Start with free KM
-
-    if (formData.kmPackageType === 'unlimited') {
-      calculatedKmPackageCost = calculateUnlimitedKmPrice(item.name, billingDays, true);
-      calculatedIncludedKm = 9999; // Unlimited
-    }
-
-    // Massimo Override for KM OR Urban/Corporate (utilitarie) always unlimited
-    // NEW RULE: Utilitaria/Furgone/V_Class always get Free Unlimited KM
-    if (isMassimo || vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS') {
-      calculatedKmPackageCost = 0; // Free unlimited KM
-      calculatedIncludedKm = 9999;
-    }
+    let calculatedIncludedKm = 9999; // Always unlimited for all vehicles
     // else kmPackageType === 'none' -> only free KM included
 
     // Get recommendation
