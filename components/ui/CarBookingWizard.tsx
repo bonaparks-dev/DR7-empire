@@ -320,19 +320,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     fetchRentalCount();
   }, [user?.email, formData.email]);
 
-  // Usage zone validation for residents
-  useEffect(() => {
-    const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
-    const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
+  // Usage zone validation removed - pricing is now based on usage zone selection only
+  // Users can freely select CAGLIARI_SUD (resident pricing) or FUORI_ZONA (non-resident pricing)
 
-    if (isResident && formData.usageZone === 'FUORI_ZONA') {
-      setUsageZoneError(
-        "Con tariffa residente il veicolo è autorizzato solo a Cagliari e Sud Sardegna. Fuori zona il veicolo verrà bloccato automaticamente: prenotazione non consentita."
-      );
-    } else {
-      setUsageZoneError(null);
-    }
-  }, [formData.usageZone, user]);
 
 
   // Helper function to get day of week without timezone issues
@@ -702,23 +692,22 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // Debug logging for pricing
       console.log('🏷️ Pricing Debug:', {
         userResidencyZone,
-        isResident,
+        isResidentInDB: isResident,
         usageZone: formData.usageZone,
         priceResidentDaily: item.priceResidentDaily,
         priceNonresidentDaily: item.priceNonresidentDaily,
-        willApplyResidentPrice: isResident && formData.usageZone === 'CAGLIARI_SUD'
+        willApplyResidentPrice: formData.usageZone === 'CAGLIARI_SUD'
       });
 
-      // Apply resident pricing ONLY if:
-      // 1. User is a resident (RESIDENTE_CAGLIARI_SUD_SARDEGNA)
-      // 2. AND selected usage zone is CAGLIARI_SUD
-      if (isResident && formData.usageZone === 'CAGLIARI_SUD') {
+      // NEW LOGIC: Apply resident pricing based on USAGE ZONE selection
+      // This allows users without the database residency_zone field to still get resident pricing
+      // when they select "Cagliari e Sud Sardegna" usage zone
+      if (formData.usageZone === 'CAGLIARI_SUD') {
         pricePerDay = item.priceResidentDaily;
-        console.log('✅ Applied RESIDENT pricing:', pricePerDay);
+        console.log('✅ Applied RESIDENT pricing (based on usage zone selection):', pricePerDay);
       } else {
         // All other cases use non-resident pricing:
-        // - Non-resident users (regardless of zone)
-        // - Resident users selecting FUORI_ZONA (blocked by validation)
+        // - FUORI_ZONA selected
         // - No zone selected yet (defaults to non-resident)
         pricePerDay = item.priceNonresidentDaily;
         console.log('📍 Applied NON-RESIDENT pricing:', pricePerDay);
@@ -783,8 +772,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     } else {
       // NEW: Apply multi-day pricing for all other customers
       const vType = getVehicleType(item, categoryContext);
-      const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
-      const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA' && formData.usageZone === 'CAGLIARI_SUD';
+      // Use usage zone selection to determine resident status (not database field)
+      const isResident = formData.usageZone === 'CAGLIARI_SUD';
 
       calculatedRentalCost = calculateMultiDayPrice(vType, billingDaysCalc, pricePerDay, isResident);
     }
