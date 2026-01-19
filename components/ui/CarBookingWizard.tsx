@@ -2727,215 +2727,224 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   return (
     <>
-      <AnimatePresence>
-        {isCameraOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4"
-          >
-            <video ref={videoRef} autoPlay playsInline className="max-w-full max-h-[70vh] rounded-lg mb-4" style={{ transform: 'scaleX(-1)' }}></video>
-            <div className="flex space-x-4">
-              <button type="button" onClick={handleTakePhoto} className="px-6 py-2 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">
-                {t('Take_Photo')}
-              </button>
-              <button type="button" onClick={handleCloseCamera} className="px-6 py-2 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors">
-                {t('Close')}
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Full-screen modal overlay */}
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-black/90 backdrop-blur-sm">
+        <div className="min-h-screen px-2 sm:px-4 py-4 sm:py-8">
+          <div className="max-w-6xl mx-auto">
 
-      {/* Resident Zone Confirmation Modal */}
-      <AnimatePresence>
-        {showZoneConfirmation && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={() => setShowZoneConfirmation(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-gray-900 border-2 border-yellow-500 rounded-lg p-8 max-w-lg w-full"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="text-center mb-6">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-yellow-500/20 rounded-full mb-4">
-                  <svg className="w-8 h-8 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold text-yellow-500 mb-2">
-                  ATTENZIONE – LIMITI DI UTILIZZO DEL VEICOLO
-                </h3>
-              </div>
-
-              <div className="space-y-4 text-white mb-8">
-                <p className="text-lg">
-                  Hai selezionato una <span className="font-bold text-yellow-400">tariffa residente / utilizzo entro perimetro autorizzato</span>.
-                </p>
-                <p className="text-lg font-semibold">
-                  Confermi che non uscirai dal perimetro consentito?
-                </p>
-                <div className="bg-red-900/30 border border-red-500 rounded-lg p-4">
-                  <p className="text-sm text-red-200">
-                    Ti ricordiamo che i veicoli sono dotati di <span className="font-bold">sistema GPS</span>:
-                    in caso di uscita non autorizzata, la vettura potrà essere <span className="font-bold">bloccata automaticamente</span> e
-                    verranno applicate <span className="font-bold">penali e adeguamento tariffario</span>.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <button
-                  onClick={handleZoneModification}
-                  className="flex-1 px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+            <AnimatePresence>
+              {isCameraOpen && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4"
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  Modifica prenotazione
-                </button>
-                <button
-                  onClick={handleZoneConfirmation}
-                  className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Confermo
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <canvas ref={canvasRef} className="hidden"></canvas>
-
-      <div className="w-full max-w-lg mx-auto mb-12 px-4">
-        <div className="flex items-center justify-between">
-          {steps.map((s, index) => (
-            <React.Fragment key={s.id}>
-              <div className="flex flex-col items-center text-center">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${step >= s.id ? 'bg-white border-white text-black' : 'border-gray-600 text-gray-400'}`}>{s.id}</div>
-                <p className={`mt-2 text-xs font-semibold ${step >= s.id ? 'text-white' : 'text-gray-500'}`}>{s.name}</p>
-              </div>
-              {index < steps.length - 1 && <div className={`flex-1 h-0.5 mx-4 transition-colors duration-300 ${step > s.id ? 'bg-white' : 'bg-gray-700'}`}></div>}
-            </React.Fragment>
-          ))}
-        </div>
-      </div>
-
-      <div className={step === 4 ? "lg:grid lg:grid-cols-3 lg:gap-8 px-4" : "px-4"}>
-        {step === 4 && (
-          <aside className="lg:col-span-1 lg:sticky lg:top-32 self-start mb-8 lg:mb-0">
-            <div className="bg-gray-900/50 p-6 rounded-lg border border-gray-800">
-              <h2 className="text-2xl font-bold text-white mb-4">RIEPILOGO COSTI</h2>
-              <img src={item.image} alt={item.name} className="w-full h-40 object-contain rounded-md mb-4 bg-gray-800/30" />
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-gray-400">Durata noleggio:</span><span className="text-white font-medium">{duration.days} giorni</span></div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Km pacchetto:</span>
-                  <span className="text-white font-medium">
-                    {(formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}
-                  </span>
-                </div>
-
-                <div className="border-t border-gray-700 my-2"></div>
-
-                <div className="flex justify-between"><span className="text-gray-400">Noleggio {item.name}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Pacchetto chilometrici</span><span className="text-white font-medium">{formatPrice(kmPackageCost)}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400 notranslate">Assicurazione {formData.insuranceOption?.replace(/_/g, ' ') || 'KASKO'}</span><span className="text-white font-medium">{formatPrice(insuranceCost)}</span></div>
-                {/* Lavaggio is now included in the price - no additional fee */}
-                <div className="flex justify-between"><span className="text-gray-400">Spese di ritiro</span><span className="text-white font-medium">{formatPrice(pickupFee)}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Spese di riconsegna</span><span className="text-white font-medium">{formatPrice(dropoffFee)}</span></div>
-                {secondDriverFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Secondo guidatore</span><span className="text-white font-medium">{formatPrice(secondDriverFee)}</span></div>}
-                {youngDriverFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Supplemento under 25</span><span className="text-white font-medium">{formatPrice(youngDriverFee)}</span></div>}
-                {recentLicenseFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Supplemento patente recente</span><span className="text-white font-medium">{formatPrice(recentLicenseFee)}</span></div>}
-
-                <div className="border-t border-white/20 my-2"></div>
-
-                {membershipDiscount > 0 ? (
-                  <>
-                    <div className="flex justify-between text-gray-400 line-through text-sm"><span>Totale</span><span>{formatPrice(originalTotal)}</span></div>
-                    <div className="flex justify-between text-green-400 text-sm">
-                      <span>Sconto {membershipTier}</span>
-                      <span>-{formatPrice(membershipDiscount)}</span>
-                    </div>
-                    <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(finalTotal)}</span></div>
-                  </>
-                ) : (
-                  <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(total)}</span></div>
-                )}
-              </div>
-            </div>
-          </aside>
-        )}
-
-        <main className={step === 4 ? "lg:col-span-2" : ""}>
-          <form onSubmit={handleSubmit}>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={step}
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -50 }}
-                transition={{ duration: 0.3 }}
-                className="bg-gray-900/50 p-4 sm:p-6 md:p-8 rounded-lg border border-gray-800 relative"
-              >
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
-                  aria-label="Close"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-                {renderStepContent()}
-              </motion.div>
+                  <video ref={videoRef} autoPlay playsInline className="max-w-full max-h-[70vh] rounded-lg mb-4" style={{ transform: 'scaleX(-1)' }}></video>
+                  <div className="flex space-x-4">
+                    <button type="button" onClick={handleTakePhoto} className="px-6 py-2 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">
+                      {t('Take_Photo')}
+                    </button>
+                    <button type="button" onClick={handleCloseCamera} className="px-6 py-2 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors">
+                      {t('Close')}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
             </AnimatePresence>
 
-            {errors.form && (
-              <div className="mt-4 text-center p-3 rounded-md border border-red-500 bg-red-500/10 text-red-400">
-                <p>{errors.form}</p>
-              </div>
-            )}
+            {/* Resident Zone Confirmation Modal */}
+            <AnimatePresence>
+              {showZoneConfirmation && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+                  onClick={() => setShowZoneConfirmation(false)}
+                >
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    className="bg-gray-900 border-2 border-yellow-500 rounded-lg p-6 sm:p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="text-center mb-4 sm:mb-6">
+                      <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-yellow-500/20 rounded-full mb-3 sm:mb-4">
+                        <svg className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg sm:text-2xl font-bold text-yellow-500 mb-2">
+                        ATTENZIONE – LIMITI DI UTILIZZO DEL VEICOLO
+                      </h3>
+                    </div>
 
-            <div className="flex justify-between gap-4 mt-8">
-              <button type="button" onClick={handleBack} disabled={step === 1} className="px-4 sm:px-8 py-3 bg-gray-700 text-white text-sm sm:text-base font-bold rounded-full hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('Back')}</button>
-              {step < steps.length ? (
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  className="px-4 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={(licenseYears < 2 && step === 2) || (step === 2 && !formData.confirmsInformation)}
-                >
-                  Continua
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={isProcessing || !formData.agreesToTerms || !formData.agreesToPrivacy || !formData.confirmsDocuments}
-                  className="px-4 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed"
-                >
-                  {isProcessing ? 'Processing...' : 'CONFERMA PRENOTAZIONE'}
-                </button>
+                    <div className="space-y-3 sm:space-y-4 text-white mb-6 sm:mb-8">
+                      <p className="text-sm sm:text-lg">
+                        Hai selezionato <strong>"Cagliari e Sud Sardegna"</strong> come zona di utilizzo.
+                      </p>
+                      <div className="bg-yellow-900/20 border border-yellow-600/50 rounded-lg p-3 sm:p-4">
+                        <p className="text-yellow-300 text-xs sm:text-sm font-semibold mb-2">
+                          ⚠️ LIMITAZIONI GEOGRAFICHE
+                        </p>
+                        <p className="text-yellow-100 text-xs sm:text-sm">
+                          Il veicolo è autorizzato <strong>SOLO</strong> all'interno dell'area di Cagliari e provincia del Sud Sardegna. L'utilizzo al di fuori di questa zona comporterà:
+                        </p>
+                        <ul className="list-disc list-inside mt-2 text-yellow-100 text-xs sm:text-sm space-y-1">
+                          <li>Tracciamento GPS attivo</li>
+                          <li>Penali economiche</li>
+                          <li>Possibile sospensione del servizio</li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                      <button
+                        onClick={handleZoneModification}
+                        className="flex-1 px-4 sm:px-6 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors text-sm sm:text-base"
+                      >
+                        Modifica selezione
+                      </button>
+                      <button
+                        onClick={handleZoneConfirmation}
+                        className="flex-1 px-4 sm:px-6 py-3 bg-yellow-500 text-black font-bold rounded-full hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
+                      >
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Confermo
+                      </button>
+                    </div>
+                  </motion.div>
+                </motion.div>
               )}
+            </AnimatePresence>
+
+            <canvas ref={canvasRef} className="hidden"></canvas>
+
+            <div className="w-full max-w-4xl mx-auto mb-6 sm:mb-12 px-2 sm:px-4">
+              <div className="flex items-center justify-between">
+                {steps.map((s, index) => (
+                  <React.Fragment key={s.id}>
+                    <div className="flex flex-col items-center text-center flex-shrink-0">
+                      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 text-sm sm:text-base transition-all duration-300 ${step >= s.id ? 'bg-white border-white text-black' : 'border-gray-600 text-gray-400'}`}>{s.id}</div>
+                      <p className={`mt-1 sm:mt-2 text-[10px] sm:text-xs font-semibold max-w-[60px] sm:max-w-none leading-tight ${step >= s.id ? 'text-white' : 'text-gray-500'}`}>{s.name}</p>
+                    </div>
+                    {index < steps.length - 1 && <div className={`flex-1 h-0.5 mx-1 sm:mx-4 transition-colors duration-300 ${step > s.id ? 'bg-white' : 'bg-gray-700'}`}></div>}
+                  </React.Fragment>
+                ))}
+              </div>
             </div>
-          </form>
-        </main>
-      </div>
+
+            <div className={step === 4 ? "lg:grid lg:grid-cols-3 lg:gap-8 px-2 sm:px-4" : "px-2 sm:px-4"}>
+              {step === 4 && (
+                <aside className="lg:col-span-1 lg:sticky lg:top-32 self-start mb-8 lg:mb-0">
+                  <div className="bg-gray-900/50 p-6 rounded-lg border border-gray-800">
+                    <h2 className="text-2xl font-bold text-white mb-4">RIEPILOGO COSTI</h2>
+                    <img src={item.image} alt={item.name} className="w-full h-40 object-contain rounded-md mb-4 bg-gray-800/30" />
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between"><span className="text-gray-400">Durata noleggio:</span><span className="text-white font-medium">{duration.days} giorni</span></div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Km pacchetto:</span>
+                        <span className="text-white font-medium">
+                          {(formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}
+                        </span>
+                      </div>
+
+                      <div className="border-t border-gray-700 my-2"></div>
+
+                      <div className="flex justify-between"><span className="text-gray-400">Noleggio {item.name}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-400">Pacchetto chilometrici</span><span className="text-white font-medium">{formatPrice(kmPackageCost)}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-400 notranslate">Assicurazione {formData.insuranceOption?.replace(/_/g, ' ') || 'KASKO'}</span><span className="text-white font-medium">{formatPrice(insuranceCost)}</span></div>
+                      {/* Lavaggio is now included in the price - no additional fee */}
+                      <div className="flex justify-between"><span className="text-gray-400">Spese di ritiro</span><span className="text-white font-medium">{formatPrice(pickupFee)}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-400">Spese di riconsegna</span><span className="text-white font-medium">{formatPrice(dropoffFee)}</span></div>
+                      {secondDriverFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Secondo guidatore</span><span className="text-white font-medium">{formatPrice(secondDriverFee)}</span></div>}
+                      {youngDriverFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Supplemento under 25</span><span className="text-white font-medium">{formatPrice(youngDriverFee)}</span></div>}
+                      {recentLicenseFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Supplemento patente recente</span><span className="text-white font-medium">{formatPrice(recentLicenseFee)}</span></div>}
+
+                      <div className="border-t border-white/20 my-2"></div>
+
+                      {membershipDiscount > 0 ? (
+                        <>
+                          <div className="flex justify-between text-gray-400 line-through text-sm"><span>Totale</span><span>{formatPrice(originalTotal)}</span></div>
+                          <div className="flex justify-between text-green-400 text-sm">
+                            <span>Sconto {membershipTier}</span>
+                            <span>-{formatPrice(membershipDiscount)}</span>
+                          </div>
+                          <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(finalTotal)}</span></div>
+                        </>
+                      ) : (
+                        <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(total)}</span></div>
+                      )}
+                    </div>
+                  </div>
+                </aside>
+              )}
+
+              <main className={step === 4 ? "lg:col-span-2" : ""}>
+                <form onSubmit={handleSubmit}>
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={step}
+                      initial={{ opacity: 0, x: 50 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -50 }}
+                      transition={{ duration: 0.3 }}
+                      className="bg-gray-900/50 p-3 sm:p-6 md:p-8 rounded-lg border border-gray-800 relative"
+                    >
+                      <button
+                        type="button"
+                        onClick={onClose}
+                        className="absolute top-2 right-2 sm:top-4 sm:right-4 text-gray-400 hover:text-white transition-colors z-10 p-2"
+                        aria-label="Close"
+                      >
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                      {renderStepContent()}
+                    </motion.div>
+                  </AnimatePresence>
+
+                  {errors.form && (
+                    <div className="mt-4 text-center p-3 rounded-md border border-red-500 bg-red-500/10 text-red-400">
+                      <p>{errors.form}</p>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-4 mt-6 sm:mt-8">
+                    <button type="button" onClick={handleBack} disabled={step === 1} className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-gray-700 text-white text-sm sm:text-base font-bold rounded-full hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('Back')}</button>
+                    {step < steps.length ? (
+                      <button
+                        type="button"
+                        onClick={handleNext}
+                        className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={(licenseYears < 2 && step === 2) || (step === 2 && !formData.confirmsInformation)}
+                      >
+                        Continua
+                      </button>
+                    ) : (
+                      <button
+                        type="submit"
+                        disabled={isProcessing || !formData.agreesToTerms || !formData.agreesToPrivacy || !formData.confirmsDocuments}
+                        className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed"
+                      >
+                        {isProcessing ? 'Processing...' : 'CONFERMA PRENOTAZIONE'}
+                      </button>
+                    )}
+                  </div>
+                </form>
+              </main>
+            </div>
+          </div>
+        </div>
+      </div >
     </>
   );
 };
 
 export default CarBookingWizard;
+
