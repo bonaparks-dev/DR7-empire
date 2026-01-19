@@ -709,8 +709,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               `Disponibile dal ${availableDateStr} alle ${availableTimeStr}.`
             );
           }
+
+          // IMPORTANT: Return early to prevent checking partial unavailability
+          // when there's already a booking conflict. Only one message should show.
+          return;
         } else {
-          // Check for partial-day unavailability (e.g., at mechanic for a few hours)
+          // No booking conflicts - check for partial-day unavailability (e.g., at mechanic)
           const vehicleNameToCheck = availableVehicle || item.name;
           const partialInfo = await checkVehiclePartialUnavailability(
             vehicleNameToCheck,
