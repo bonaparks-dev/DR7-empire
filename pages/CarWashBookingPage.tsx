@@ -633,31 +633,166 @@ const CarWashBookingPage: React.FC = () => {
           payment_method: 'credit_wallet'
         };
 
+        // Create booking in database (common for both payment methods)
+        const { data, error } = await supabase
+          .from('bookings')
+          .insert(bookingDataWithPayment)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Database error:', error);
+          throw error;
+        }
+
+        console.log('Booking created successfully:', data);
+
+        // Send confirmation email and WhatsApp notification (don't block on failure)
+        let emailSent = false;
+        let whatsappSent = false;
+
+        try {
+          console.log('Sending booking confirmation email...');
+          const emailResponse = await fetch('/.netlify/functions/send-booking-confirmation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ booking: data })
+          });
+
+          if (!emailResponse.ok) {
+            const errorText = await emailResponse.text();
+            console.error('Email API returned error:', emailResponse.status, errorText);
+          } else {
+            emailSent = true;
+            console.log('✅ Email confirmation sent successfully');
+          }
+        } catch (emailError) {
+          console.error('❌ Email error (non-blocking):', emailError);
+          console.error('Email error details:', {
+            message: emailError instanceof Error ? emailError.message : 'Unknown error',
+            stack: emailError instanceof Error ? emailError.stack : undefined
+          });
+        }
+
+        try {
+          console.log('Sending WhatsApp notification...');
+          const whatsappResponse = await fetch('/.netlify/functions/send-whatsapp-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ booking: data })
+          });
+
+          if (!whatsappResponse.ok) {
+            console.error('WhatsApp API returned error:', whatsappResponse.status);
+          } else {
+            whatsappSent = true;
+            console.log('✅ WhatsApp notification sent successfully');
+          }
+        } catch (whatsappError) {
+          console.error('❌ WhatsApp error (non-blocking):', whatsappError);
+        }
+
+        // Log notification status for debugging
+        console.log('Notification status:', { emailSent, whatsappSent, bookingId: data.id });
+
+        // Show warning if emails failed (but don't block the success flow)
+        if (!emailSent) {
+          console.warn('⚠️ Booking saved but email notification failed. Webhook backup will send notifications.');
+        }
+
+        // Generate WhatsApp prefilled message for customer
+        const bookingId = data.id.substring(0, 8).toUpperCase();
+        const serviceName = data.service_name;
+        const appointmentDate = new Date(data.appointment_date);
+        const customerName = formData.fullName;
+        const customerPhone = formData.phone;
+        const totalPrice = (data.price_total / 100).toFixed(2);
+        const notes = data.booking_details?.notes || '';
+
+        // Format date in Europe/Rome timezone
+        const dateOptions: Intl.DateTimeFormatOptions = {
+          weekday: 'long',
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric',
+          timeZone: 'Europe/Rome'
+        };
+        const formattedDate = appointmentDate.toLocaleDateString('it-IT', dateOptions);
+        // Use the appointment_time field directly (e.g., "16:30") as it's the source of truth
+        const formattedTime = data.appointment_time;
+
+        let whatsappMessage = `Ciao! Ho appena completato una prenotazione autolavaggio sul vostro sito.\n\n` +
+          `📋 *Dettagli Prenotazione*\n` +
+          `*ID:* DR7-${bookingId}\n` +
+          `*Nome:* ${customerName}\n` +
+          `*Telefono:* ${customerPhone}\n` +
+          `*Servizio:* ${serviceName}\n` +
+          `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n`;
+
+        if (notes) {
+          whatsappMessage += `*Note:* ${notes}\n`;
+        }
+
+        whatsappMessage += `*Totale:* €${totalPrice}\n\n` +
+          `Grazie!`;
+
+        const officeWhatsAppNumber = '393457905205';
+        const whatsappUrl = `https://wa.me/${officeWhatsAppNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+
+        // Open WhatsApp in a new tab after a short delay
+        setTimeout(() => {
+          window.open(whatsappUrl, '_blank');
+        }, 1000);
+
+        // Navigate to success page
+        navigate('/booking-success', { state: { booking: data } });
+
       } else {
-        // Nexi card payment - TEMPORARY: Skip database save for testing
-        console.log('Creating Nexi payment (TEST MODE - skipping database)...');
+        // Nexi card payment - redirect to Nexi
+        console.log('Creating Nexi payment...');
 
-        // Generate a temporary booking ID for testing
-        const tempBookingId = `TEST-${Date.now()}`;
+        // First, save booking as pending
+        const pendingBooking = {
+          ...pendingBookingData,
+          payment_status: 'pending',
+          payment_method: 'nexi'
+        };
 
-        console.log('⚠️ TEST MODE: Skipping database save, going directly to Nexi');
+        console.log('Saving booking to database...');
+        const { data: bookingData, error: bookingError } = await supabase
+          .from('bookings')
+          .insert(pendingBooking)
+          .select()
+          .single();
 
-        // Create Nexi payment directly
+        if (bookingError) {
+          console.error('Database error:', bookingError);
+          setPaymentError(
+            lang === 'it'
+              ? `Errore database: ${bookingError.message}`
+              : `Database error: ${bookingError.message}`
+          );
+          setIsProcessing(false);
+          return;
+        }
+
+        console.log('✅ Booking saved:', bookingData.id);
+
+        // Create Nexi payment
+        console.log('Creating Nexi payment for booking:', bookingData.id);
         const nexiResponse = await fetch('/.netlify/functions/create-nexi-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             amount: calculateTotal() * 100, // Convert to cents
             currency: 'EUR',
-            orderId: `CARWASH-${tempBookingId}`,
+            orderId: `CARWASH-${bookingData.id}`,
             description: `Lavaggio ${lang === 'it' ? selectedService?.name : selectedService?.nameEn}`,
             customerEmail: formData.email,
             metadata: {
-              type: 'car-wash-test',
-              serviceName: lang === 'it' ? selectedService?.name : selectedService?.nameEn,
-              customerName: formData.fullName,
-              appointmentDate: formData.appointmentDate,
-              appointmentTime: formData.appointmentTime
+              type: 'car-wash',
+              bookingId: bookingData.id,
+              serviceName: lang === 'it' ? selectedService?.name : selectedService?.nameEn
             }
           })
         });
@@ -672,655 +807,649 @@ const CarWashBookingPage: React.FC = () => {
           return; // Stop execution as we're redirecting
         } else {
           console.error('❌ Nexi payment creation failed:', nexiData);
-          throw new Error(nexiData.error || 'Failed to create Nexi payment');
-        }
-      }
-
-      // Create booking in database (common for both payment methods)
-      const { data, error } = await supabase
         .from('bookings')
-        .insert(bookingDataWithPayment)
-        .select()
-        .single();
+  .insert(bookingDataWithPayment)
+  .select()
+  .single();
 
-      if (error) {
-        console.error('Database error:', error);
-        throw error;
-      }
+if (error) {
+  console.error('Database error:', error);
+  throw error;
+}
 
-      console.log('Booking created successfully:', data);
+console.log('Booking created successfully:', data);
 
-      // Send confirmation email and WhatsApp notification (don't block on failure)
-      let emailSent = false;
-      let whatsappSent = false;
+// Send confirmation email and WhatsApp notification (don't block on failure)
+let emailSent = false;
+let whatsappSent = false;
 
-      try {
-        console.log('Sending booking confirmation email...');
-        const emailResponse = await fetch('/.netlify/functions/send-booking-confirmation', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ booking: data })
-        });
+try {
+  console.log('Sending booking confirmation email...');
+  const emailResponse = await fetch('/.netlify/functions/send-booking-confirmation', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ booking: data })
+  });
 
-        if (!emailResponse.ok) {
-          const errorText = await emailResponse.text();
-          console.error('Email API returned error:', emailResponse.status, errorText);
-        } else {
-          emailSent = true;
-          console.log('✅ Email confirmation sent successfully');
-        }
-      } catch (emailError) {
-        console.error('❌ Email error (non-blocking):', emailError);
-        console.error('Email error details:', {
-          message: emailError instanceof Error ? emailError.message : 'Unknown error',
-          stack: emailError instanceof Error ? emailError.stack : undefined
-        });
-      }
+  if (!emailResponse.ok) {
+    const errorText = await emailResponse.text();
+    console.error('Email API returned error:', emailResponse.status, errorText);
+  } else {
+    emailSent = true;
+    console.log('✅ Email confirmation sent successfully');
+  }
+} catch (emailError) {
+  console.error('❌ Email error (non-blocking):', emailError);
+  console.error('Email error details:', {
+    message: emailError instanceof Error ? emailError.message : 'Unknown error',
+    stack: emailError instanceof Error ? emailError.stack : undefined
+  });
+}
 
-      try {
-        console.log('Sending WhatsApp notification...');
-        const whatsappResponse = await fetch('/.netlify/functions/send-whatsapp-notification', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ booking: data })
-        });
+try {
+  console.log('Sending WhatsApp notification...');
+  const whatsappResponse = await fetch('/.netlify/functions/send-whatsapp-notification', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ booking: data })
+  });
 
-        if (!whatsappResponse.ok) {
-          console.error('WhatsApp API returned error:', whatsappResponse.status);
-        } else {
-          whatsappSent = true;
-          console.log('✅ WhatsApp notification sent successfully');
-        }
-      } catch (whatsappError) {
-        console.error('❌ WhatsApp error (non-blocking):', whatsappError);
-      }
+  if (!whatsappResponse.ok) {
+    console.error('WhatsApp API returned error:', whatsappResponse.status);
+  } else {
+    whatsappSent = true;
+    console.log('✅ WhatsApp notification sent successfully');
+  }
+} catch (whatsappError) {
+  console.error('❌ WhatsApp error (non-blocking):', whatsappError);
+}
 
-      // Log notification status for debugging
-      console.log('Notification status:', { emailSent, whatsappSent, bookingId: data.id });
+// Log notification status for debugging
+console.log('Notification status:', { emailSent, whatsappSent, bookingId: data.id });
 
-      // Show warning if emails failed (but don't block the success flow)
-      if (!emailSent) {
-        console.warn('⚠️ Booking saved but email notification failed. Webhook backup will send notifications.');
-      }
+// Show warning if emails failed (but don't block the success flow)
+if (!emailSent) {
+  console.warn('⚠️ Booking saved but email notification failed. Webhook backup will send notifications.');
+}
 
-      // Generate WhatsApp prefilled message for customer
-      const bookingId = data.id.substring(0, 8).toUpperCase();
-      const serviceName = data.service_name;
-      const appointmentDate = new Date(data.appointment_date);
-      const customerName = formData.fullName;
-      const customerPhone = formData.phone;
-      const totalPrice = (data.price_total / 100).toFixed(2);
-      const notes = data.booking_details?.notes || '';
+// Generate WhatsApp prefilled message for customer
+const bookingId = data.id.substring(0, 8).toUpperCase();
+const serviceName = data.service_name;
+const appointmentDate = new Date(data.appointment_date);
+const customerName = formData.fullName;
+const customerPhone = formData.phone;
+const totalPrice = (data.price_total / 100).toFixed(2);
+const notes = data.booking_details?.notes || '';
 
-      // Format date in Europe/Rome timezone
-      const dateOptions: Intl.DateTimeFormatOptions = {
-        weekday: 'long',
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric',
-        timeZone: 'Europe/Rome'
-      };
-      const formattedDate = appointmentDate.toLocaleDateString('it-IT', dateOptions);
-      // Use the appointment_time field directly (e.g., "16:30") as it's the source of truth
-      const formattedTime = data.appointment_time;
+// Format date in Europe/Rome timezone
+const dateOptions: Intl.DateTimeFormatOptions = {
+  weekday: 'long',
+  day: '2-digit',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'Europe/Rome'
+};
+const formattedDate = appointmentDate.toLocaleDateString('it-IT', dateOptions);
+// Use the appointment_time field directly (e.g., "16:30") as it's the source of truth
+const formattedTime = data.appointment_time;
 
-      let whatsappMessage = `Ciao! Ho appena completato una prenotazione autolavaggio sul vostro sito.\n\n` +
-        `📋 *Dettagli Prenotazione*\n` +
-        `*ID:* DR7-${bookingId}\n` +
-        `*Nome:* ${customerName}\n` +
-        `*Telefono:* ${customerPhone}\n` +
-        `*Servizio:* ${serviceName}\n` +
-        `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n`;
+let whatsappMessage = `Ciao! Ho appena completato una prenotazione autolavaggio sul vostro sito.\n\n` +
+  `📋 *Dettagli Prenotazione*\n` +
+  `*ID:* DR7-${bookingId}\n` +
+  `*Nome:* ${customerName}\n` +
+  `*Telefono:* ${customerPhone}\n` +
+  `*Servizio:* ${serviceName}\n` +
+  `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n`;
 
-      if (notes) {
-        whatsappMessage += `*Note:* ${notes}\n`;
-      }
+if (notes) {
+  whatsappMessage += `*Note:* ${notes}\n`;
+}
 
-      whatsappMessage += `*Totale:* €${totalPrice}\n\n` +
-        `Grazie!`;
+whatsappMessage += `*Totale:* €${totalPrice}\n\n` +
+  `Grazie!`;
 
-      const officeWhatsAppNumber = '393457905205';
-      const whatsappUrl = `https://wa.me/${officeWhatsAppNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+const officeWhatsAppNumber = '393457905205';
+const whatsappUrl = `https://wa.me/${officeWhatsAppNumber}?text=${encodeURIComponent(whatsappMessage)}`;
 
-      // Open WhatsApp in a new tab after a short delay
-      setTimeout(() => {
-        window.open(whatsappUrl, '_blank');
-      }, 1000);
+// Open WhatsApp in a new tab after a short delay
+setTimeout(() => {
+  window.open(whatsappUrl, '_blank');
+}, 1000);
 
-      // Navigate to success page
-      navigate('/booking-success', { state: { booking: data } });
+// Navigate to success page
+navigate('/booking-success', { state: { booking: data } });
     } catch (error: any) {
-      console.error('Payment error:', error);
-      setPaymentError(error.message || 'Payment processing failed');
-    } finally {
-      setIsProcessing(false);
-    }
+  console.error('Payment error:', error);
+  setPaymentError(error.message || 'Payment processing failed');
+} finally {
+  setIsProcessing(false);
+}
   };
 
-  const handleCloseModal = () => {
-    setShowPaymentModal(false);
-    setClientSecret(null);
-    setPaymentError(null);
-    setPendingBookingData(null);
-  };
+const handleCloseModal = () => {
+  setShowPaymentModal(false);
+  setClientSecret(null);
+  setPaymentError(null);
+  setPendingBookingData(null);
+};
 
-  if (!selectedService) {
-    return (
-      <div className="min-h-screen bg-black pt-32 pb-16 px-6 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-white">{lang === 'it' ? 'Caricamento...' : 'Loading...'}</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show loading while checking authentication
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black pt-32 pb-16 px-6">
-        <div className="container mx-auto max-w-4xl flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-dr7-gold mx-auto mb-4"></div>
-            <p className="text-white text-lg">{lang === 'it' ? 'Caricamento...' : 'Loading...'}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Require authentication for booking
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-black pt-32 pb-16 px-6">
-        <div className="container mx-auto max-w-2xl">
-          <div className="bg-gray-900 border border-gray-700 rounded-lg p-8 text-center">
-            <div className="mb-6">
-              <svg className="w-20 h-20 mx-auto text-dr7-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            </div>
-            <h2 className="text-3xl font-bold text-white mb-4">
-              {lang === 'it' ? 'Accesso Richiesto' : 'Login Required'}
-            </h2>
-            <p className="text-gray-400 mb-8">
-              {lang === 'it'
-                ? 'Devi essere registrato e aver effettuato l\'accesso per prenotare questo servizio.'
-                : 'You must be registered and logged in to book this service.'}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                onClick={() => navigate('/signin', { state: { from: location.pathname } })}
-                className="px-8 py-3 bg-dr7-gold text-black font-bold rounded hover:bg-dr7-gold/90 transition-colors"
-              >
-                {lang === 'it' ? 'Accedi' : 'Login'}
-              </button>
-              <button
-                onClick={() => navigate('/signup', { state: { from: location.pathname } })}
-                className="px-8 py-3 bg-gray-700 text-white font-bold rounded hover:bg-gray-600 transition-colors"
-              >
-                {lang === 'it' ? 'Registrati' : 'Sign Up'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+if (!selectedService) {
   return (
-    <div className="min-h-screen bg-black pt-32 pb-16 px-6">
-      <div className="container mx-auto max-w-4xl">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <h1 className="text-4xl font-bold text-white mb-2">
-            {lang === 'it' ? 'Prenota il Servizio' : 'Book Service'}
-          </h1>
-          <p className="text-gray-400 mb-8">
-            {lang === 'it' ? selectedService.name : selectedService.nameEn} - €{selectedService.price}
-          </p>
-
-          <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Customer Info */}
-            <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
-              <h2 className="text-2xl font-bold text-white mb-6">
-                {lang === 'it' ? 'Informazioni Cliente' : 'Customer Information'}
-              </h2>
-
-              {/* Client search removed - form auto-fills from logged-in user data */}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {lang === 'it' ? 'Nome Completo' : 'Full Name'} *
-                  </label>
-                  <input
-                    type="text"
-                    name="fullName"
-                    value={formData.fullName}
-                    onChange={handleChange}
-                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
-                  />
-                  {errors.fullName && <p className="text-xs text-red-400 mt-1">{errors.fullName}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Email *</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
-                  />
-                  {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {lang === 'it' ? 'Telefono' : 'Phone'} *
-                  </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    placeholder="+39 320 1234567"
-                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
-                  />
-                  {errors.phone && <p className="text-xs text-red-400 mt-1">{errors.phone}</p>}
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {lang === 'it' ? 'Codice Fiscale' : 'Tax Code'} *
-                  </label>
-                  <input
-                    type="text"
-                    name="codiceFiscale"
-                    value={formData.codiceFiscale}
-                    onChange={handleChange}
-                    placeholder="RSSMRA80A01H501U"
-                    maxLength={16}
-                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white uppercase"
-                  />
-                  {errors.codiceFiscale && <p className="text-xs text-red-400 mt-1">{errors.codiceFiscale}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {lang === 'it' ? 'Indirizzo' : 'Address'} *
-                  </label>
-                  <input
-                    type="text"
-                    name="indirizzo"
-                    value={formData.indirizzo}
-                    onChange={handleChange}
-                    placeholder={lang === 'it' ? 'Via Roma' : 'Main Street'}
-                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
-                  />
-                  {errors.indirizzo && <p className="text-xs text-red-400 mt-1">{errors.indirizzo}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {lang === 'it' ? 'Numero Civico' : 'Civic Number'}
-                  </label>
-                  <input
-                    type="text"
-                    name="numeroCivico"
-                    value={formData.numeroCivico}
-                    onChange={handleChange}
-                    placeholder="123"
-                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {lang === 'it' ? 'Città di Residenza' : 'City'} *
-                  </label>
-                  <input
-                    type="text"
-                    name="cittaResidenza"
-                    value={formData.cittaResidenza}
-                    onChange={handleChange}
-                    placeholder={lang === 'it' ? 'Milano' : 'Milan'}
-                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
-                  />
-                  {errors.cittaResidenza && <p className="text-xs text-red-400 mt-1">{errors.cittaResidenza}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {lang === 'it' ? 'CAP' : 'Postal Code'} *
-                  </label>
-                  <input
-                    type="text"
-                    name="codicePostale"
-                    value={formData.codicePostale}
-                    onChange={handleChange}
-                    placeholder="20100"
-                    maxLength={5}
-                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
-                  />
-                  {errors.codicePostale && <p className="text-xs text-red-400 mt-1">{errors.codicePostale}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {lang === 'it' ? 'Provincia' : 'Province'} *
-                  </label>
-                  <input
-                    type="text"
-                    name="provinciaResidenza"
-                    value={formData.provinciaResidenza}
-                    onChange={handleChange}
-                    placeholder="MI"
-                    maxLength={2}
-                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white uppercase"
-                  />
-                  {errors.provinciaResidenza && <p className="text-xs text-red-400 mt-1">{errors.provinciaResidenza}</p>}
-                </div>
-              </div>
-            </div>
-
-            {/* Appointment */}
-            <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
-              <h2 className="text-2xl font-bold text-white mb-4">
-                {lang === 'it' ? 'Data e Ora Appuntamento' : 'Appointment Date & Time'}
-              </h2>
-              <div className="mb-4 p-3 bg-gray-800/50 rounded-md border border-gray-700">
-                <p className="text-sm text-gray-300">
-                  <span className="font-semibold text-white">
-                    {lang === 'it' ? 'Orari di apertura:' : 'Opening hours:'}
-                  </span>
-                  {' '}
-                  {lang === 'it' ? 'Lunedì - Sabato, 9:00 - 19:00' : 'Monday - Saturday, 9:00 AM - 7:00 PM'}
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  {lang === 'it' ? 'Chiusi la domenica' : 'Closed on Sundays'}
-                </p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {lang === 'it' ? 'Data' : 'Date'} *
-                  </label>
-                  <input
-                    type="date"
-                    name="appointmentDate"
-                    value={formData.appointmentDate}
-                    onChange={handleChange}
-                    onBlur={handleDateBlur}
-                    min={minDate}
-                    required
-                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-                    style={{ colorScheme: 'dark' }}
-                  />
-                  {errors.appointmentDate && <p className="text-xs text-red-400 mt-1 font-semibold">{errors.appointmentDate}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {lang === 'it' ? 'Ora' : 'Time'} *
-                  </label>
-                  <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
-                    {getAllTimeSlotsWithAvailability().map(slot => (
-                      <button
-                        key={slot.time}
-                        type="button"
-                        disabled={!slot.available}
-                        onClick={() => setFormData(prev => ({ ...prev, appointmentTime: slot.time }))}
-                        className={`
-                          px-4 py-3 rounded-lg font-semibold text-sm transition-all
-                          ${formData.appointmentTime === slot.time
-                            ? 'bg-white text-black ring-2 ring-white'
-                            : slot.available
-                              ? 'bg-gray-700 text-white hover:bg-gray-600 border border-gray-600'
-                              : 'bg-gray-900 text-gray-500 border-2 border-red-500 cursor-not-allowed opacity-60'
-                          }
-                        `}
-                        title={!slot.available ? (lang === 'it' ? `Non disponibile: ${slot.reason}` : `Unavailable: ${slot.reason}`) : ''}
-                      >
-                        {slot.time}
-                        {!slot.available && slot.reason === 'Already booked' && (
-                          <span className="block text-xs mt-1 text-red-400">
-                            {lang === 'it' ? 'Occupato' : 'Booked'}
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                  {errors.appointmentTime && <p className="text-xs text-red-400 mt-1">{errors.appointmentTime}</p>}
-                </div>
-              </div>
-            </div>
-
-            {/* Notes */}
-            <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
-              <h2 className="text-2xl font-bold text-white mb-6">
-                {lang === 'it' ? 'Note Aggiuntive' : 'Additional Notes'}
-              </h2>
-              <textarea
-                name="notes"
-                value={formData.notes}
-                onChange={handleChange}
-                rows={4}
-                placeholder={lang === 'it' ? 'Richieste speciali o note...' : 'Special requests or notes...'}
-                className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
-              />
-            </div>
-
-            {/* Total & Submit */}
-            <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
-              <div className="flex justify-between items-center mb-6">
-                <span className="text-2xl font-bold text-white">
-                  {lang === 'it' ? 'Totale' : 'Total'}
-                </span>
-                <span className="text-4xl font-bold text-white">€{calculateTotal()}</span>
-              </div>
-
-              {errors.form && (
-                <p className="text-sm text-red-400 bg-red-900/20 border border-red-800 rounded p-3 mb-4">
-                  {errors.form}
-                </p>
-              )}
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-white text-black font-bold py-4 px-6 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60"
-              >
-                {lang === 'it' ? 'PROCEDI AL PAGAMENTO' : 'PROCEED TO PAYMENT'}
-              </button>
-            </div>
-          </form>
-        </motion.div>
+    <div className="min-h-screen bg-black pt-32 pb-16 px-6 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+        <p className="text-white">{lang === 'it' ? 'Caricamento...' : 'Loading...'}</p>
       </div>
-
-      {/* Payment Modal */}
-      <AnimatePresence>
-        {showPaymentModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            onClick={handleCloseModal}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-gray-900 border border-gray-700 rounded-lg p-6 md:p-8 max-w-md w-full"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-white">
-                  {lang === 'it' ? 'Completa il Pagamento' : 'Complete Payment'}
-                </h2>
-                <button
-                  onClick={handleCloseModal}
-                  className="text-gray-400 hover:text-white text-2xl"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div className="mb-6 p-4 bg-gray-800 rounded-lg">
-                <div className="flex justify-between text-sm text-gray-300 mb-2">
-                  <span>{lang === 'it' ? 'Servizio' : 'Service'}:</span>
-                  <span className="text-white font-semibold">
-                    {lang === 'it' ? selectedService?.name : selectedService?.nameEn}
-                  </span>
-                </div>
-                <div className="border-t border-gray-700 my-3"></div>
-                <div className="flex justify-between text-lg font-bold text-white">
-                  <span>{lang === 'it' ? 'Totale' : 'Total'}:</span>
-                  <span>€{calculateTotal()}</span>
-                </div>
-              </div>
-
-              {/* Payment Method Selector */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-300 mb-3">
-                  {lang === 'it' ? 'Metodo di Pagamento' : 'Payment Method'}
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('credit')}
-                    className={`p-4 rounded-lg border-2 transition-all ${paymentMethod === 'credit'
-                      ? 'border-white bg-white/10'
-                      : 'border-gray-700 bg-gray-800 hover:border-gray-600'
-                      }`}
-                  >
-                    <div className="text-center">
-                      <div className="text-sm font-semibold text-white mb-1">
-                        {lang === 'it' ? 'Credit Wallet' : 'Credit Wallet'}
-                      </div>
-                      {!isLoadingBalance && (
-                        <div className="text-xs text-gray-400">
-                          {lang === 'it' ? 'Saldo: ' : 'Balance: '}€{creditBalance.toFixed(2)}
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('stripe')}
-                    className={`p-4 rounded-lg border-2 transition-all ${paymentMethod === 'stripe'
-                      ? 'border-white bg-white/10'
-                      : 'border-gray-700 bg-gray-800 hover:border-gray-600'
-                      }`}
-                  >
-                    <div className="text-center">
-                      <div className="text-sm font-semibold text-white mb-1">
-                        {lang === 'it' ? 'Carta di Credito' : 'Credit Card'}
-                      </div>
-                      <div className="text-xs text-gray-400">Visa, Mastercard</div>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              {paymentMethod === 'nexi' ? (
-                <>
-                  <div className="mb-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
-                    <div className="flex items-start gap-3">
-                      <svg className="w-6 h-6 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <div>
-                        <h3 className="text-white font-semibold mb-1">
-                          {lang === 'it' ? 'Pagamento Sicuro con Nexi' : 'Secure Payment with Nexi'}
-                        </h3>
-                        <p className="text-gray-400 text-sm">
-                          {lang === 'it'
-                            ? 'Sarai reindirizzato alla pagina di pagamento sicura di Nexi per completare la prenotazione.'
-                            : 'You will be redirected to Nexi\'s secure payment page to complete your booking.'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {paymentError && (
-                    <div className="mb-4 p-3 bg-red-900/20 border border-red-800 rounded text-sm text-red-400">
-                      {paymentError}
-                    </div>
-                  )}
-
-                  <button
-                    onClick={handlePayment}
-                    disabled={isProcessing}
-                    className="w-full bg-white text-black font-bold py-3 px-6 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60"
-                  >
-                    {isProcessing
-                      ? (lang === 'it' ? 'Reindirizzamento...' : 'Redirecting...')
-                      : (lang === 'it' ? `Procedi al Pagamento €${calculateTotal()}` : `Proceed to Payment €${calculateTotal()}`)}
-                  </button>
-
-                  <p className="text-xs text-gray-400 text-center mt-4">
-                    {lang === 'it'
-                      ? 'Pagamento sicuro elaborato da Nexi'
-                      : 'Secure payment processed by Nexi'}
-                  </p>
-                </>
-              ) : paymentMethod === 'credit' ? (
-                <>
-                  <div className="mb-6 p-4 bg-gray-800 rounded-lg">
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-sm text-gray-300">
-                        {lang === 'it' ? 'Saldo Disponibile' : 'Available Balance'}:
-                      </span>
-                      <span className="text-lg font-bold text-white">€{creditBalance.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-300">
-                        {lang === 'it' ? 'Costo Servizio' : 'Service Cost'}:
-                      </span>
-                      <span className="text-lg font-bold text-white">€{calculateTotal().toFixed(2)}</span>
-                    </div>
-                    <div className="border-t border-gray-700 my-3"></div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-white font-semibold">
-                        {lang === 'it' ? 'Saldo Dopo' : 'Balance After'}:
-                      </span>
-                      <span className={`text-lg font-bold ${creditBalance >= calculateTotal() ? 'text-green-400' : 'text-red-400'
-                        }`}>
-                        €{(creditBalance - calculateTotal()).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {paymentError && (
-                    <div className="mb-4 p-3 bg-red-900/20 border border-red-800 rounded text-sm text-red-400">
-                      {paymentError}
-                    </div>
-                  )}
-
-                  <button
-                    onClick={handlePayment}
-                    disabled={isProcessing || creditBalance < calculateTotal()}
-                    className="w-full bg-white text-black font-bold py-3 px-6 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {isProcessing
-                      ? (lang === 'it' ? 'Elaborazione...' : 'Processing...')
-                      : creditBalance < calculateTotal()
-                        ? (lang === 'it' ? 'Credito Insufficiente' : 'Insufficient Credit')
-                        : (lang === 'it' ? `Paga con Credit Wallet` : `Pay with Credit Wallet`)}
-                  </button>
-
-                  {creditBalance < calculateTotal() && (
-                    <p className="text-xs text-gray-400 text-center mt-4">
-                      {lang === 'it'
-                        ? 'Ricarica il tuo Credit Wallet per completare questa prenotazione'
-                        : 'Recharge your Credit Wallet to complete this booking'}
-                    </p>
-                  )}
-                </>
-              ) : null}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
+}
+
+// Show loading while checking authentication
+if (loading) {
+  return (
+    <div className="min-h-screen bg-black pt-32 pb-16 px-6">
+      <div className="container mx-auto max-w-4xl flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-dr7-gold mx-auto mb-4"></div>
+          <p className="text-white text-lg">{lang === 'it' ? 'Caricamento...' : 'Loading...'}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Require authentication for booking
+if (!user) {
+  return (
+    <div className="min-h-screen bg-black pt-32 pb-16 px-6">
+      <div className="container mx-auto max-w-2xl">
+        <div className="bg-gray-900 border border-gray-700 rounded-lg p-8 text-center">
+          <div className="mb-6">
+            <svg className="w-20 h-20 mx-auto text-dr7-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <h2 className="text-3xl font-bold text-white mb-4">
+            {lang === 'it' ? 'Accesso Richiesto' : 'Login Required'}
+          </h2>
+          <p className="text-gray-400 mb-8">
+            {lang === 'it'
+              ? 'Devi essere registrato e aver effettuato l\'accesso per prenotare questo servizio.'
+              : 'You must be registered and logged in to book this service.'}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => navigate('/signin', { state: { from: location.pathname } })}
+              className="px-8 py-3 bg-dr7-gold text-black font-bold rounded hover:bg-dr7-gold/90 transition-colors"
+            >
+              {lang === 'it' ? 'Accedi' : 'Login'}
+            </button>
+            <button
+              onClick={() => navigate('/signup', { state: { from: location.pathname } })}
+              className="px-8 py-3 bg-gray-700 text-white font-bold rounded hover:bg-gray-600 transition-colors"
+            >
+              {lang === 'it' ? 'Registrati' : 'Sign Up'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+return (
+  <div className="min-h-screen bg-black pt-32 pb-16 px-6">
+    <div className="container mx-auto max-w-4xl">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <h1 className="text-4xl font-bold text-white mb-2">
+          {lang === 'it' ? 'Prenota il Servizio' : 'Book Service'}
+        </h1>
+        <p className="text-gray-400 mb-8">
+          {lang === 'it' ? selectedService.name : selectedService.nameEn} - €{selectedService.price}
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Customer Info */}
+          <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
+            <h2 className="text-2xl font-bold text-white mb-6">
+              {lang === 'it' ? 'Informazioni Cliente' : 'Customer Information'}
+            </h2>
+
+            {/* Client search removed - form auto-fills from logged-in user data */}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  {lang === 'it' ? 'Nome Completo' : 'Full Name'} *
+                </label>
+                <input
+                  type="text"
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
+                />
+                {errors.fullName && <p className="text-xs text-red-400 mt-1">{errors.fullName}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Email *</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
+                />
+                {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  {lang === 'it' ? 'Telefono' : 'Phone'} *
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="+39 320 1234567"
+                  className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
+                />
+                {errors.phone && <p className="text-xs text-red-400 mt-1">{errors.phone}</p>}
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  {lang === 'it' ? 'Codice Fiscale' : 'Tax Code'} *
+                </label>
+                <input
+                  type="text"
+                  name="codiceFiscale"
+                  value={formData.codiceFiscale}
+                  onChange={handleChange}
+                  placeholder="RSSMRA80A01H501U"
+                  maxLength={16}
+                  className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white uppercase"
+                />
+                {errors.codiceFiscale && <p className="text-xs text-red-400 mt-1">{errors.codiceFiscale}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  {lang === 'it' ? 'Indirizzo' : 'Address'} *
+                </label>
+                <input
+                  type="text"
+                  name="indirizzo"
+                  value={formData.indirizzo}
+                  onChange={handleChange}
+                  placeholder={lang === 'it' ? 'Via Roma' : 'Main Street'}
+                  className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
+                />
+                {errors.indirizzo && <p className="text-xs text-red-400 mt-1">{errors.indirizzo}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  {lang === 'it' ? 'Numero Civico' : 'Civic Number'}
+                </label>
+                <input
+                  type="text"
+                  name="numeroCivico"
+                  value={formData.numeroCivico}
+                  onChange={handleChange}
+                  placeholder="123"
+                  className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  {lang === 'it' ? 'Città di Residenza' : 'City'} *
+                </label>
+                <input
+                  type="text"
+                  name="cittaResidenza"
+                  value={formData.cittaResidenza}
+                  onChange={handleChange}
+                  placeholder={lang === 'it' ? 'Milano' : 'Milan'}
+                  className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
+                />
+                {errors.cittaResidenza && <p className="text-xs text-red-400 mt-1">{errors.cittaResidenza}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  {lang === 'it' ? 'CAP' : 'Postal Code'} *
+                </label>
+                <input
+                  type="text"
+                  name="codicePostale"
+                  value={formData.codicePostale}
+                  onChange={handleChange}
+                  placeholder="20100"
+                  maxLength={5}
+                  className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
+                />
+                {errors.codicePostale && <p className="text-xs text-red-400 mt-1">{errors.codicePostale}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  {lang === 'it' ? 'Provincia' : 'Province'} *
+                </label>
+                <input
+                  type="text"
+                  name="provinciaResidenza"
+                  value={formData.provinciaResidenza}
+                  onChange={handleChange}
+                  placeholder="MI"
+                  maxLength={2}
+                  className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white uppercase"
+                />
+                {errors.provinciaResidenza && <p className="text-xs text-red-400 mt-1">{errors.provinciaResidenza}</p>}
+              </div>
+            </div>
+          </div>
+
+          {/* Appointment */}
+          <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
+            <h2 className="text-2xl font-bold text-white mb-4">
+              {lang === 'it' ? 'Data e Ora Appuntamento' : 'Appointment Date & Time'}
+            </h2>
+            <div className="mb-4 p-3 bg-gray-800/50 rounded-md border border-gray-700">
+              <p className="text-sm text-gray-300">
+                <span className="font-semibold text-white">
+                  {lang === 'it' ? 'Orari di apertura:' : 'Opening hours:'}
+                </span>
+                {' '}
+                {lang === 'it' ? 'Lunedì - Sabato, 9:00 - 19:00' : 'Monday - Saturday, 9:00 AM - 7:00 PM'}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                {lang === 'it' ? 'Chiusi la domenica' : 'Closed on Sundays'}
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  {lang === 'it' ? 'Data' : 'Date'} *
+                </label>
+                <input
+                  type="date"
+                  name="appointmentDate"
+                  value={formData.appointmentDate}
+                  onChange={handleChange}
+                  onBlur={handleDateBlur}
+                  min={minDate}
+                  required
+                  className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                  style={{ colorScheme: 'dark' }}
+                />
+                {errors.appointmentDate && <p className="text-xs text-red-400 mt-1 font-semibold">{errors.appointmentDate}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  {lang === 'it' ? 'Ora' : 'Time'} *
+                </label>
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
+                  {getAllTimeSlotsWithAvailability().map(slot => (
+                    <button
+                      key={slot.time}
+                      type="button"
+                      disabled={!slot.available}
+                      onClick={() => setFormData(prev => ({ ...prev, appointmentTime: slot.time }))}
+                      className={`
+                          px-4 py-3 rounded-lg font-semibold text-sm transition-all
+                          ${formData.appointmentTime === slot.time
+                          ? 'bg-white text-black ring-2 ring-white'
+                          : slot.available
+                            ? 'bg-gray-700 text-white hover:bg-gray-600 border border-gray-600'
+                            : 'bg-gray-900 text-gray-500 border-2 border-red-500 cursor-not-allowed opacity-60'
+                        }
+                        `}
+                      title={!slot.available ? (lang === 'it' ? `Non disponibile: ${slot.reason}` : `Unavailable: ${slot.reason}`) : ''}
+                    >
+                      {slot.time}
+                      {!slot.available && slot.reason === 'Already booked' && (
+                        <span className="block text-xs mt-1 text-red-400">
+                          {lang === 'it' ? 'Occupato' : 'Booked'}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                {errors.appointmentTime && <p className="text-xs text-red-400 mt-1">{errors.appointmentTime}</p>}
+              </div>
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
+            <h2 className="text-2xl font-bold text-white mb-6">
+              {lang === 'it' ? 'Note Aggiuntive' : 'Additional Notes'}
+            </h2>
+            <textarea
+              name="notes"
+              value={formData.notes}
+              onChange={handleChange}
+              rows={4}
+              placeholder={lang === 'it' ? 'Richieste speciali o note...' : 'Special requests or notes...'}
+              className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
+            />
+          </div>
+
+          {/* Total & Submit */}
+          <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
+            <div className="flex justify-between items-center mb-6">
+              <span className="text-2xl font-bold text-white">
+                {lang === 'it' ? 'Totale' : 'Total'}
+              </span>
+              <span className="text-4xl font-bold text-white">€{calculateTotal()}</span>
+            </div>
+
+            {errors.form && (
+              <p className="text-sm text-red-400 bg-red-900/20 border border-red-800 rounded p-3 mb-4">
+                {errors.form}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full bg-white text-black font-bold py-4 px-6 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60"
+            >
+              {lang === 'it' ? 'PROCEDI AL PAGAMENTO' : 'PROCEED TO PAYMENT'}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+
+    {/* Payment Modal */}
+    <AnimatePresence>
+      {showPaymentModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={handleCloseModal}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="bg-gray-900 border border-gray-700 rounded-lg p-6 md:p-8 max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white">
+                {lang === 'it' ? 'Completa il Pagamento' : 'Complete Payment'}
+              </h2>
+              <button
+                onClick={handleCloseModal}
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mb-6 p-4 bg-gray-800 rounded-lg">
+              <div className="flex justify-between text-sm text-gray-300 mb-2">
+                <span>{lang === 'it' ? 'Servizio' : 'Service'}:</span>
+                <span className="text-white font-semibold">
+                  {lang === 'it' ? selectedService?.name : selectedService?.nameEn}
+                </span>
+              </div>
+              <div className="border-t border-gray-700 my-3"></div>
+              <div className="flex justify-between text-lg font-bold text-white">
+                <span>{lang === 'it' ? 'Totale' : 'Total'}:</span>
+                <span>€{calculateTotal()}</span>
+              </div>
+            </div>
+
+            {/* Payment Method Selector */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-300 mb-3">
+                {lang === 'it' ? 'Metodo di Pagamento' : 'Payment Method'}
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('credit')}
+                  className={`p-4 rounded-lg border-2 transition-all ${paymentMethod === 'credit'
+                    ? 'border-white bg-white/10'
+                    : 'border-gray-700 bg-gray-800 hover:border-gray-600'
+                    }`}
+                >
+                  <div className="text-center">
+                    <div className="text-sm font-semibold text-white mb-1">
+                      {lang === 'it' ? 'Credit Wallet' : 'Credit Wallet'}
+                    </div>
+                    {!isLoadingBalance && (
+                      <div className="text-xs text-gray-400">
+                        {lang === 'it' ? 'Saldo: ' : 'Balance: '}€{creditBalance.toFixed(2)}
+                      </div>
+                    )}
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('stripe')}
+                  className={`p-4 rounded-lg border-2 transition-all ${paymentMethod === 'stripe'
+                    ? 'border-white bg-white/10'
+                    : 'border-gray-700 bg-gray-800 hover:border-gray-600'
+                    }`}
+                >
+                  <div className="text-center">
+                    <div className="text-sm font-semibold text-white mb-1">
+                      {lang === 'it' ? 'Carta di Credito' : 'Credit Card'}
+                    </div>
+                    <div className="text-xs text-gray-400">Visa, Mastercard</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {paymentMethod === 'nexi' ? (
+              <>
+                <div className="mb-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-6 h-6 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <h3 className="text-white font-semibold mb-1">
+                        {lang === 'it' ? 'Pagamento Sicuro con Nexi' : 'Secure Payment with Nexi'}
+                      </h3>
+                      <p className="text-gray-400 text-sm">
+                        {lang === 'it'
+                          ? 'Sarai reindirizzato alla pagina di pagamento sicura di Nexi per completare la prenotazione.'
+                          : 'You will be redirected to Nexi\'s secure payment page to complete your booking.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {paymentError && (
+                  <div className="mb-4 p-3 bg-red-900/20 border border-red-800 rounded text-sm text-red-400">
+                    {paymentError}
+                  </div>
+                )}
+
+                <button
+                  onClick={handlePayment}
+                  disabled={isProcessing}
+                  className="w-full bg-white text-black font-bold py-3 px-6 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60"
+                >
+                  {isProcessing
+                    ? (lang === 'it' ? 'Reindirizzamento...' : 'Redirecting...')
+                    : (lang === 'it' ? `Procedi al Pagamento €${calculateTotal()}` : `Proceed to Payment €${calculateTotal()}`)}
+                </button>
+
+                <p className="text-xs text-gray-400 text-center mt-4">
+                  {lang === 'it'
+                    ? 'Pagamento sicuro elaborato da Nexi'
+                    : 'Secure payment processed by Nexi'}
+                </p>
+              </>
+            ) : paymentMethod === 'credit' ? (
+              <>
+                <div className="mb-6 p-4 bg-gray-800 rounded-lg">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-sm text-gray-300">
+                      {lang === 'it' ? 'Saldo Disponibile' : 'Available Balance'}:
+                    </span>
+                    <span className="text-lg font-bold text-white">€{creditBalance.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-300">
+                      {lang === 'it' ? 'Costo Servizio' : 'Service Cost'}:
+                    </span>
+                    <span className="text-lg font-bold text-white">€{calculateTotal().toFixed(2)}</span>
+                  </div>
+                  <div className="border-t border-gray-700 my-3"></div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-white font-semibold">
+                      {lang === 'it' ? 'Saldo Dopo' : 'Balance After'}:
+                    </span>
+                    <span className={`text-lg font-bold ${creditBalance >= calculateTotal() ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                      €{(creditBalance - calculateTotal()).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                {paymentError && (
+                  <div className="mb-4 p-3 bg-red-900/20 border border-red-800 rounded text-sm text-red-400">
+                    {paymentError}
+                  </div>
+                )}
+
+                <button
+                  onClick={handlePayment}
+                  disabled={isProcessing || creditBalance < calculateTotal()}
+                  className="w-full bg-white text-black font-bold py-3 px-6 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isProcessing
+                    ? (lang === 'it' ? 'Elaborazione...' : 'Processing...')
+                    : creditBalance < calculateTotal()
+                      ? (lang === 'it' ? 'Credito Insufficiente' : 'Insufficient Credit')
+                      : (lang === 'it' ? `Paga con Credit Wallet` : `Pay with Credit Wallet`)}
+                </button>
+
+                {creditBalance < calculateTotal() && (
+                  <p className="text-xs text-gray-400 text-center mt-4">
+                    {lang === 'it'
+                      ? 'Ricarica il tuo Credit Wallet per completare questa prenotazione'
+                      : 'Recharge your Credit Wallet to complete this booking'}
+                  </p>
+                )}
+              </>
+            ) : null}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </div>
+);
 };
 
 export default CarWashBookingPage;

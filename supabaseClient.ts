@@ -8,23 +8,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Required: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
 }
 
-// ⚠️ Aggressive Fix for Chrome ERR_HTTP2_PROTOCOL_ERROR / ERR_CONNECTION_RESET
-// Forces HTTP/1.1-like behavior by disabling connection reuse and caching
-const customFetch: typeof fetch = (input, init?) => {
-  const headers = new Headers(init?.headers);
-
-  // Force connection close to prevent sticky HTTP/2 pooling
-  headers.set('Connection', 'close');
-
-  return fetch(input, {
-    ...init,
-    headers,
-    keepalive: false,
-    cache: 'no-store', // Prevent browser-side connection caching
-    credentials: 'same-origin', // Limit credential-pooling interference
-  });
-};
-
+// Standard Supabase client without custom fetch wrapper
+// The custom fetch was causing 406 errors
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
@@ -32,8 +17,5 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
   db: {
     schema: 'public',
-  },
-  global: {
-    fetch: customFetch
   }
 });
