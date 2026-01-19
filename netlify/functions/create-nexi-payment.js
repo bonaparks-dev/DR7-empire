@@ -52,10 +52,27 @@ exports.handler = async (event) => {
     // Generate UUID v4 for Correlation-Id (compatible with older Node versions)
     const correlationId = crypto.randomBytes(16).toString('hex').replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
 
+    // Sanitize orderId for Nexi (alphanumeric only, 1-50 chars)
+    // Nexi requires: only letters and numbers, no special characters
+    const sanitizedOrderId = orderId.replace(/[^a-zA-Z0-9]/g, '').substring(0, 50);
+
+    if (!sanitizedOrderId || sanitizedOrderId.length === 0) {
+      console.error('Invalid orderId after sanitization:', orderId);
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          error: 'Invalid orderId format',
+          details: 'OrderId must contain at least one alphanumeric character'
+        }),
+      };
+    }
+
+    console.log('OrderId sanitization:', { original: orderId, sanitized: sanitizedOrderId });
+
     // Prepare request body for Nexi API
     const requestBody = {
       order: {
-        orderId: orderId,
+        orderId: sanitizedOrderId,
         amount: amount.toString(),
         currency: currency,
         customerId: customerEmail || 'guest',
