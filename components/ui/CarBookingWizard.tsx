@@ -369,7 +369,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const fetchEarliestAvailability = async () => {
       try {
         const vehicleIds = item.vehicleIds || [item.id.replace("car-", "")];
-        
+
         const response = await fetch("/.netlify/functions/getEarliestAvailability", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -382,7 +382,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         if (response.ok) {
           const data = await response.json();
           setEarliestAvailability(data);
-          
+
           if (!data.isAvailable && data.earliestAvailableDate) {
             setFormData(prev => ({
               ...prev,
@@ -2018,6 +2018,32 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 </div>
               </div>
             </div>
+
+            {/* Availability Banner - Single Source of Truth */}
+            {earliestAvailability && !earliestAvailability.isAvailable && (
+              <div className="mb-6 bg-yellow-900/30 border-2 border-yellow-500/50 rounded-xl p-6">
+                <div className="flex items-start gap-4">
+                  <svg className="h-8 w-8 text-yellow-400 flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <div className="flex-1">
+                    <h3 className="text-yellow-200 font-bold text-lg mb-2">
+                      ⚠️ This vehicle is available starting from:
+                    </h3>
+                    <p className="text-white text-xl font-semibold mb-3">
+                      {new Date(earliestAvailability.earliestAvailableDate!).toLocaleDateString('it-IT', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                      })} at {earliestAvailability.earliestAvailableTime}
+                    </p>
+                    <p className="text-gray-300 text-sm">
+                      Please select a pickup date and time from this moment onwards.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div>
               <h3 className="text-lg font-semibold text-white mb-4">DATE AND TIME SELECTION</h3>
