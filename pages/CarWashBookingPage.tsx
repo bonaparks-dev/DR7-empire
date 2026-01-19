@@ -6,10 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
 import { SERVICES, Service } from './CarWashServicesPage';
 import { useCarWashAvailability } from '../hooks/useRealtimeBookings';
-import type { Stripe, StripeElements } from '@stripe/stripe-js';
 import { getUserCreditBalance, deductCredits, hasSufficientBalance } from '../utils/creditWallet';
-
-const STRIPE_PUBLISHABLE_KEY = 'pk_live_51S3dDjQcprtTyo8tBfBy5mAZj8PQXkxfZ1RCnWskrWFZ2WEnm1u93ZnE2tBi316Gz2CCrvLV98IjSoiXb0vSDpOQ003fNG69Y2';
 
 const CarWashBookingPage: React.FC = () => {
   const { lang } = useTranslation();
@@ -78,19 +75,14 @@ const CarWashBookingPage: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Stripe payment state
+  // Payment state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [stripe, setStripe] = useState<Stripe | null>(null);
-  const [elements, setElements] = useState<StripeElements | null>(null);
-  const cardElementRef = useRef<HTMLDivElement>(null);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [isClientSecretLoading, setIsClientSecretLoading] = useState(false);
-  const [stripeError, setStripeError] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [pendingBookingData, setPendingBookingData] = useState<any>(null);
 
   // Credit wallet state
-  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'credit'>('stripe');
+  const [paymentMethod, setPaymentMethod] = useState<'nexi' | 'credit'>('nexi');
   const [creditBalance, setCreditBalance] = useState<number>(0);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
 
@@ -130,19 +122,7 @@ const CarWashBookingPage: React.FC = () => {
     }
   }, []);
 
-  // Initialize Stripe
-  useEffect(() => {
-    if ((window as any).Stripe) {
-      if (!STRIPE_PUBLISHABLE_KEY || STRIPE_PUBLISHABLE_KEY.startsWith('YOUR_')) {
-        console.error("Stripe.js has loaded, but the publishable key is not set.");
-        setStripeError("Payment service is not configured correctly. Please contact support.");
-        return;
-      }
-      const stripeInstance = (window as any).Stripe(STRIPE_PUBLISHABLE_KEY);
-      setStripe(stripeInstance);
-      setElements(stripeInstance.elements());
-    }
-  }, []);
+  // Removed Stripe initialization - now using Nexi
 
   useEffect(() => {
     if (!selectedService) {
@@ -263,95 +243,7 @@ const CarWashBookingPage: React.FC = () => {
     }
   }, [formData.appointmentDate]);
 
-  // Create payment intent when modal opens (only for Stripe payment)
-  useEffect(() => {
-    if (showPaymentModal && paymentMethod === 'stripe' && calculateTotal() > 0) {
-      setIsClientSecretLoading(true);
-      setStripeError(null);
-      setClientSecret(null);
-
-      fetch('/.netlify/functions/create-payment-intent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: calculateTotal(), // Amount in euros (backend will convert to cents)
-          currency: 'eur',
-          email: user?.email,
-          purchaseType: 'car-wash',
-          metadata: {
-            bookingType: 'car_wash',
-            serviceName: lang === 'it' ? selectedService?.name : selectedService?.nameEn,
-            appointmentDate: formData.appointmentDate,
-            appointmentTime: formData.appointmentTime,
-            customerEmail: formData.email,
-            customerName: formData.fullName
-          }
-        })
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.error) {
-            setStripeError(data.error);
-          } else {
-            setClientSecret(data.clientSecret);
-          }
-        })
-        .catch(error => {
-          console.error('Failed to fetch client secret:', error);
-          setStripeError('Could not connect to payment server.');
-        })
-        .finally(() => {
-          setIsClientSecretLoading(false);
-        });
-    }
-  }, [showPaymentModal, paymentMethod, user, selectedService, formData.appointmentDate, formData.appointmentTime, lang]);
-
-  // Mount Stripe card element
-  useEffect(() => {
-    if (elements && clientSecret && cardElementRef.current && showPaymentModal) {
-      // Clear any existing card element first
-      const existingCard = elements.getElement('card');
-      if (existingCard) {
-        existingCard.unmount();
-      }
-
-      // Small delay to ensure DOM is ready
-      const timer = setTimeout(() => {
-        if (cardElementRef.current) {
-          const card = elements.create('card', {
-            style: {
-              base: {
-                color: '#ffffff',
-                fontFamily: '"Exo 2", sans-serif',
-                fontSize: '16px',
-                '::placeholder': { color: '#a0aec0' }
-              },
-              invalid: { color: '#ef4444', iconColor: '#ef4444' }
-            }
-          });
-
-          try {
-            card.mount(cardElementRef.current);
-            console.log('Stripe card element mounted successfully');
-            card.on('change', (event) => {
-              setStripeError(event.error ? event.error.message : null);
-            });
-          } catch (error) {
-            console.error('Error mounting Stripe card element:', error);
-            setStripeError('Failed to load payment form. Please refresh the page.');
-          }
-        }
-      }, 100);
-
-      return () => {
-        clearTimeout(timer);
-        const card = elements.getElement('card');
-        if (card) {
-          card.unmount();
-        }
-      };
-    }
-  }, [elements, clientSecret, showPaymentModal]);
+  // Removed Stripe payment intent and card element mounting - now using Nexi redirect
 
   // Validation functions
   const validateCodiceFiscale = (cf: string): boolean => {
@@ -698,7 +590,7 @@ const CarWashBookingPage: React.FC = () => {
     }
 
     setIsProcessing(true);
-    setStripeError(null);
+    setPaymentError(null);
 
     try {
       let bookingDataWithPayment;
@@ -714,7 +606,7 @@ const CarWashBookingPage: React.FC = () => {
         // Check sufficient balance
         const hasBalance = await hasSufficientBalance(user.id, totalAmount);
         if (!hasBalance) {
-          setStripeError(lang === 'it' ? 'Credito insufficiente' : 'Insufficient credit');
+          setPaymentError(lang === 'it' ? 'Credito insufficiente' : 'Insufficient credit');
           setIsProcessing(false);
           return;
         }
@@ -729,7 +621,7 @@ const CarWashBookingPage: React.FC = () => {
         );
 
         if (!deductResult.success) {
-          setStripeError(deductResult.error || 'Failed to deduct credits');
+          setPaymentError(deductResult.error || 'Failed to deduct credits');
           setIsProcessing(false);
           return;
         }
@@ -742,50 +634,54 @@ const CarWashBookingPage: React.FC = () => {
         };
 
       } else {
-        // Stripe card payment
-        if (!stripe || !elements || !clientSecret) {
-          console.log('Missing Stripe data:', { stripe: !!stripe, elements: !!elements, clientSecret: !!clientSecret });
-          return;
+        // Nexi card payment - redirect to Nexi
+        console.log('Creating Nexi payment...');
+
+        // First, save booking as pending
+        const pendingBooking = {
+          ...pendingBookingData,
+          payment_status: 'pending',
+          payment_method: 'nexi'
+        };
+
+        const { data: bookingData, error: bookingError } = await supabase
+          .from('bookings')
+          .insert(pendingBooking)
+          .select()
+          .single();
+
+        if (bookingError) {
+          console.error('Database error:', bookingError);
+          throw bookingError;
         }
 
-        console.log('Getting card element...');
-        const cardElement = elements.getElement('card');
-        if (!cardElement) {
-          throw new Error('Card element not found');
-        }
-
-        console.log('Confirming card payment...');
-        const { error: paymentError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-          payment_method: {
-            card: cardElement,
-            billing_details: {
-              name: formData.fullName,
-              email: formData.email,
-              phone: formData.phone
+        // Create Nexi payment
+        const nexiResponse = await fetch('/.netlify/functions/create-nexi-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: calculateTotal() * 100, // Convert to cents
+            currency: 'EUR',
+            orderId: `CARWASH-${bookingData.id}`,
+            description: `Lavaggio ${lang === 'it' ? selectedService?.name : selectedService?.nameEn}`,
+            customerEmail: formData.email,
+            metadata: {
+              type: 'car-wash',
+              bookingId: bookingData.id,
+              serviceName: lang === 'it' ? selectedService?.name : selectedService?.nameEn
             }
-          }
+          })
         });
 
-        if (paymentError) {
-          console.error('Payment error:', paymentError);
-          setStripeError(paymentError.message || 'Payment failed');
-          setIsProcessing(false);
-          return;
+        const nexiData = await nexiResponse.json();
+
+        if (nexiData.success && nexiData.paymentUrl) {
+          // Redirect to Nexi payment page
+          window.location.href = nexiData.paymentUrl;
+          return; // Stop execution as we're redirecting
+        } else {
+          throw new Error(nexiData.error || 'Failed to create Nexi payment');
         }
-
-        console.log('Payment intent status:', paymentIntent.status);
-
-        if (paymentIntent.status !== 'succeeded') {
-          throw new Error('Payment not completed');
-        }
-
-        // Create booking data for Stripe payment
-        bookingDataWithPayment = {
-          ...pendingBookingData,
-          payment_status: 'paid',
-          stripe_payment_intent_id: paymentIntent.id,
-          payment_method: 'online'
-        };
       }
 
       // Create booking in database (common for both payment methods)
@@ -903,7 +799,7 @@ const CarWashBookingPage: React.FC = () => {
       navigate('/booking-success', { state: { booking: data } });
     } catch (error: any) {
       console.error('Payment error:', error);
-      setStripeError(error.message || 'Payment processing failed');
+      setPaymentError(error.message || 'Payment processing failed');
     } finally {
       setIsProcessing(false);
     }
@@ -912,7 +808,7 @@ const CarWashBookingPage: React.FC = () => {
   const handleCloseModal = () => {
     setShowPaymentModal(false);
     setClientSecret(null);
-    setStripeError(null);
+    setPaymentError(null);
     setPendingBookingData(null);
   };
 
@@ -1389,48 +1285,46 @@ const CarWashBookingPage: React.FC = () => {
                 </div>
               </div>
 
-              {paymentMethod === 'stripe' && isClientSecretLoading ? (
-                <div className="text-center py-8 text-gray-400">
-                  {lang === 'it' ? 'Caricamento...' : 'Loading...'}
-                </div>
-              ) : paymentMethod === 'stripe' && clientSecret ? (
+              {paymentMethod === 'nexi' ? (
                 <>
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      {lang === 'it' ? 'Dettagli Carta' : 'Card Details'}
-                    </label>
-                    <div
-                      ref={cardElementRef}
-                      className="bg-gray-800 border border-gray-700 rounded-md p-3 min-h-[44px]"
-                      style={{ position: 'relative', zIndex: 1 }}
-                    />
-                    <p className="text-xs text-gray-400 mt-2">
-                      {lang === 'it'
-                        ? 'Inserisci i dettagli della tua carta qui sopra'
-                        : 'Enter your card details above'}
-                    </p>
+                  <div className="mb-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <svg className="w-6 h-6 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <h3 className="text-white font-semibold mb-1">
+                          {lang === 'it' ? 'Pagamento Sicuro con Nexi' : 'Secure Payment with Nexi'}
+                        </h3>
+                        <p className="text-gray-400 text-sm">
+                          {lang === 'it'
+                            ? 'Sarai reindirizzato alla pagina di pagamento sicura di Nexi per completare la prenotazione.'
+                            : 'You will be redirected to Nexi\'s secure payment page to complete your booking.'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
-                  {stripeError && (
+                  {paymentError && (
                     <div className="mb-4 p-3 bg-red-900/20 border border-red-800 rounded text-sm text-red-400">
-                      {stripeError}
+                      {paymentError}
                     </div>
                   )}
 
                   <button
                     onClick={handlePayment}
-                    disabled={isProcessing || !stripe}
+                    disabled={isProcessing}
                     className="w-full bg-white text-black font-bold py-3 px-6 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60"
                   >
                     {isProcessing
-                      ? (lang === 'it' ? 'Elaborazione...' : 'Processing...')
-                      : (lang === 'it' ? `Paga €${calculateTotal()}` : `Pay €${calculateTotal()}`)}
+                      ? (lang === 'it' ? 'Reindirizzamento...' : 'Redirecting...')
+                      : (lang === 'it' ? `Procedi al Pagamento €${calculateTotal()}` : `Proceed to Payment €${calculateTotal()}`)}
                   </button>
 
                   <p className="text-xs text-gray-400 text-center mt-4">
                     {lang === 'it'
-                      ? 'Pagamento sicuro elaborato da Stripe'
-                      : 'Secure payment processed by Stripe'}
+                      ? 'Pagamento sicuro elaborato da Nexi'
+                      : 'Secure payment processed by Nexi'}
                   </p>
                 </>
               ) : paymentMethod === 'credit' ? (
@@ -1460,9 +1354,9 @@ const CarWashBookingPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {stripeError && (
+                  {paymentError && (
                     <div className="mb-4 p-3 bg-red-900/20 border border-red-800 rounded text-sm text-red-400">
-                      {stripeError}
+                      {paymentError}
                     </div>
                   )}
 
@@ -1486,10 +1380,6 @@ const CarWashBookingPage: React.FC = () => {
                     </p>
                   )}
                 </>
-              ) : paymentMethod === 'stripe' && stripeError ? (
-                <div className="p-4 bg-red-900/20 border border-red-800 rounded text-sm text-red-400">
-                  {stripeError}
-                </div>
               ) : null}
             </motion.div>
           </motion.div>
