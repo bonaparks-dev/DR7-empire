@@ -123,7 +123,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   // Determine vehicle type
   const vehicleType = useMemo(() => getVehicleType(item, categoryContext), [item, categoryContext]);
-  const isUrbanOrCorporate = vehicleType === 'URBAN' || vehicleType === 'FURGONE' || vehicleType === 'V_CLASS';
+  const isUrbanOrCorporate = vehicleType === 'UTILITARIA' || vehicleType === 'FURGONE' || vehicleType === 'V_CLASS';
 
 
   const [step, setStep] = useState(1);
