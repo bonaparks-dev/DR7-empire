@@ -8,8 +8,22 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Required: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
 }
 
-// Standard Supabase client without custom fetch wrapper
-// The custom fetch was causing 406 errors
+// Custom fetch to fix 406 errors
+const customFetch: typeof fetch = (input, init?) => {
+  const headers = new Headers(init?.headers);
+
+  // Ensure proper Accept header for Supabase
+  if (!headers.has('Accept')) {
+    headers.set('Accept', 'application/json');
+  }
+
+  return fetch(input, {
+    ...init,
+    headers,
+    cache: 'no-store',
+  });
+};
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
@@ -17,5 +31,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
   db: {
     schema: 'public',
+  },
+  global: {
+    fetch: customFetch
   }
 });
