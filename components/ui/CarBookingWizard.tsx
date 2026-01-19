@@ -194,6 +194,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [usageZoneError, setUsageZoneError] = useState<string | null>(null); // Error for resident blocking
   const [showZoneConfirmation, setShowZoneConfirmation] = useState(false); // Zone confirmation modal
 
+  // Single source of truth for availability
+  const [earliestAvailability, setEarliestAvailability] = useState<{
+    isAvailable: boolean;
+    earliestAvailableDate?: string;
+    earliestAvailableTime?: string;
+    earliestAvailableDatetime?: string;
+  } | null>(null);
+
   // Credit wallet state
   const [creditBalance, setCreditBalance] = useState<number>(0);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
@@ -350,6 +358,47 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
 
   // Helper function to get day of week without timezone issues
+
+  // Fetch earliest availability when vehicle is selected (SINGLE SOURCE OF TRUTH)
+  useEffect(() => {
+    if (!item) {
+      setEarliestAvailability(null);
+      return;
+    }
+
+    const fetchEarliestAvailability = async () => {
+      try {
+        const vehicleIds = item.vehicleIds || [item.id.replace("car-", "")];
+        
+        const response = await fetch("/.netlify/functions/getEarliestAvailability", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            vehicleName: item.name,
+            vehicleIds
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setEarliestAvailability(data);
+          
+          if (!data.isAvailable && data.earliestAvailableDate) {
+            setFormData(prev => ({
+              ...prev,
+              pickupDate: data.earliestAvailableDate,
+              pickupTime: data.earliestAvailableTime || "10:30"
+            }));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching earliest availability:", error);
+        setEarliestAvailability({ isAvailable: true });
+      }
+    };
+
+    fetchEarliestAvailability();
+  }, [item]);
   const getDayOfWeek = (dateString: string): number => {
     const [year, month, day] = dateString.split('-').map(Number);
     const date = new Date(year, month - 1, day);
