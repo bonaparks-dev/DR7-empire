@@ -19,6 +19,23 @@ interface Service {
 // Fallback hardcoded services in case database is unavailable
 const FALLBACK_SERVICES: Service[] = [
   {
+    id: 'test-wash',
+    name: 'TEST LAVAGGIO €1',
+    nameEn: 'TEST WASH €1',
+    price: 1,
+    duration: '5 min',
+    description: 'Servizio di test per verificare il pagamento Nexi.',
+    descriptionEn: 'Test service to verify Nexi payment.',
+    features: [
+      'Solo per test pagamento',
+      'Servizio rapido'
+    ],
+    featuresEn: [
+      'Payment test only',
+      'Quick service'
+    ]
+  },
+  {
     id: 'scooter-wash',
     name: 'LAVAGGIO SCOOTER',
     nameEn: 'SCOOTER WASH',
