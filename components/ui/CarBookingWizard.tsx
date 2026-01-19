@@ -1159,11 +1159,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const isUtilitaria = vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS';
     const depositRules = isUtilitaria ? DEPOSIT_RULES.UTILITARIA : DEPOSIT_RULES.SUPERCAR;
 
-    // Use license years from pricing calculation
-    if (licenseYears <= 5) {
-      return depositRules.LICENSE_UP_TO_5;
+    // Use license years from pricing calculation (≥6 years = lower deposit)
+    if (licenseYears >= 6) {
+      return depositRules.LICENSE_6_OR_MORE;
     } else {
-      return depositRules.LICENSE_OVER_5;
+      return depositRules.LICENSE_UNDER_6;
     }
   };
 
@@ -2741,12 +2741,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         ) : (
                           <>
                             <p className="text-sm text-gray-300">
-                              {formData.insuranceOption === 'RCA' && 'Cauzione: 2000€'}
-                              {/* Deposit display - now dynamic based on loyalty and license years */}
-                              {isLoyalCustomer && 'Cauzione: €0 (Cliente Fedele)'}
-                              {!isLoyalCustomer && formData.insuranceOption === 'KASKO_DR7' && 'Cauzione: €0 (Nessun deposito richiesto)'}
-                              {!isLoyalCustomer && formData.insuranceOption !== 'KASKO_DR7' && `Cauzione: ${formatDeposit(getDeposit())}`}
-                              {formData.insuranceOption === 'KASKO_DR7' && 'Cauzione: 0€ (Nessun deposito richiesto)'}
+                              {/* Automatic deposit calculation - single amount based on loyalty, insurance, and license years */}
+                              Cauzione: {formatDeposit(getDeposit())}
+                              {getDeposit() === 0 && isLoyalCustomer && ' (Cliente Fedele)'}
+                              {getDeposit() === 0 && !isLoyalCustomer && formData.insuranceOption === 'KASKO_DR7' && ' (Nessun deposito richiesto)'}
                             </p>
                           </>
                         )}
