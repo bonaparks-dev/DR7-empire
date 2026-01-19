@@ -272,11 +272,33 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           const balance = await getUserCreditBalance(user.id);
           setCreditBalance(balance);
         } catch (error) {
-          console.error('❌ Error fetching credit balance:', {
-            error,
-            errorMessage: (error as Error).message,
+          // Enhanced error logging with full diagnostics
+          const ua = navigator.userAgent;
+          const isChrome = /Chrome/.test(ua) && /Google Inc/.test(navigator.vendor);
+          const isSafari = /Safari/.test(ua) && /Apple Computer/.test(navigator.vendor);
+
+          console.error('❌ Error fetching credit balance (detailed diagnostics):', {
+            // Request info
+            requestUrl: `https://ahpmzjgkfxrrgxyirasa.supabase.co/rest/v1/user_credit_balance?select=balance&user_id=eq.${user.id}`,
             userId: user.id,
+
+            // Error details
+            errorMessage: (error as Error).message,
+            errorName: (error as Error).name,
+            errorStack: (error as Error).stack,
+
+            // Network info
             networkOnline: navigator.onLine,
+
+            // Browser info
+            browser: isChrome ? 'Chrome' : isSafari ? 'Safari' : 'Other',
+            userAgent: ua,
+
+            // Timestamp
+            timestamp: new Date().toISOString(),
+
+            // Error type indicators
+            possibleHTTP2Error: (error as Error).message?.includes('HTTP2') || (error as Error).message?.includes('ERR_'),
           });
           // Safe default: set balance to 0 if fetch fails
           setCreditBalance(0);
@@ -440,11 +462,37 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
         if (error || !customerData) {
           if (error) {
-            console.warn('⚠️ Unable to fetch customer data from customers_extended:', {
-              error: error.message,
-              code: error.code,
+            // Enhanced error logging with full diagnostics
+            const ua = navigator.userAgent;
+            const isChrome = /Chrome/.test(ua) && /Google Inc/.test(navigator.vendor);
+            const isSafari = /Safari/.test(ua) && /Apple Computer/.test(navigator.vendor);
+
+            console.warn('⚠️ Unable to fetch customer data from customers_extended (detailed diagnostics):', {
+              // Request info
+              requestUrl: `https://ahpmzjgkfxrrgxyirasa.supabase.co/rest/v1/customers_extended?select=*&user_id=eq.${user.id}`,
               userId: user.id,
+
+              // Error details
+              errorMessage: error.message,
+              errorName: error.name,
+              errorCode: error.code,
+              errorDetails: error.details,
+              errorHint: error.hint,
+              errorStack: error.stack,
+
+              // Network info
               networkOnline: navigator.onLine,
+
+              // Browser info
+              browser: isChrome ? 'Chrome' : isSafari ? 'Safari' : 'Other',
+              userAgent: ua,
+
+              // Timestamp
+              timestamp: new Date().toISOString(),
+
+              // Error type indicators
+              possibleHTTP2Error: error.message?.includes('HTTP2') || error.message?.includes('ERR_'),
+              possibleCORS: error.message?.includes('CORS') || error.message?.includes('blocked'),
             });
           }
           // If no extended profile, at least try to fill basic info from Auth Context if available
@@ -474,11 +522,33 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         console.log('✅ Autofilled form with user profile data');
 
       } catch (err) {
-        console.error('❌ Error autofilling user data:', {
-          error: err,
-          errorMessage: (err as Error).message,
+        // Enhanced error logging with full diagnostics
+        const ua = navigator.userAgent;
+        const isChrome = /Chrome/.test(ua) && /Google Inc/.test(navigator.vendor);
+        const isSafari = /Safari/.test(ua) && /Apple Computer/.test(navigator.vendor);
+
+        console.error('❌ Error autofilling user data (detailed diagnostics):', {
+          // Request info
+          requestUrl: `https://ahpmzjgkfxrrgxyirasa.supabase.co/rest/v1/customers_extended?select=*&user_id=eq.${user.id}`,
           userId: user.id,
+
+          // Error details
+          errorMessage: (err as Error).message,
+          errorName: (err as Error).name,
+          errorStack: (err as Error).stack,
+
+          // Network info
           networkOnline: navigator.onLine,
+
+          // Browser info
+          browser: isChrome ? 'Chrome' : isSafari ? 'Safari' : 'Other',
+          userAgent: ua,
+
+          // Timestamp
+          timestamp: new Date().toISOString(),
+
+          // Error type indicators
+          possibleHTTP2Error: (err as Error).message?.includes('HTTP2') || (err as Error).message?.includes('ERR_'),
         });
         // Continue with basic auth data even if extended profile fails
         setFormData(prev => ({

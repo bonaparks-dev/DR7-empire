@@ -228,6 +228,21 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   // Fetch vehicles from database if it's a vehicle category
   const { vehicles: fetchedVehicles, loading: vehiclesLoading, error: vehiclesError, usingCache } = useVehicles(vehicleCategory);
 
+  // Chrome-specific debug hint (dev-only)
+  const [showChromeDebugHint, setShowChromeDebugHint] = useState(false);
+
+  useEffect(() => {
+    // Only show in development mode when there's an error
+    if (import.meta.env.DEV && vehiclesError) {
+      const ua = navigator.userAgent;
+      const isChrome = /Chrome/.test(ua) && /Google Inc/.test(navigator.vendor);
+      setShowChromeDebugHint(isChrome);
+    } else {
+      setShowChromeDebugHint(false);
+    }
+  }, [vehiclesError]);
+
+
   // Get the category from static data
   const category = RENTAL_CATEGORIES.find(cat => cat.id === categoryId);
 
@@ -382,6 +397,33 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
 
           </motion.div>
 
+
+          {/* Chrome-specific debug hint (dev-only) */}
+          {showChromeDebugHint && (
+            <div className="mb-4 bg-blue-900/20 border border-blue-500/50 rounded-lg p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3 flex-1">
+                  <svg className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="text-blue-200 text-sm font-medium">
+                      🔧 Dev Note: Chrome Connection Issue Detected
+                    </p>
+                    <p className="text-blue-300/70 text-xs mt-1">
+                      If Chrome fails but Safari works, try: <strong>incognito mode</strong> or <strong>disable browser extensions</strong>. This is a known Chrome HTTP/2 protocol issue with Supabase.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowChromeDebugHint(false)}
+                  className="text-blue-300/70 hover:text-blue-200 text-sm flex-shrink-0"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Non-blocking error/cache banner - shows above vehicles, never blocks them */}
           {(vehiclesError || usingCache) && !vehiclesLoading && (

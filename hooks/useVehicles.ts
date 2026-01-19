@@ -291,38 +291,144 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
         setLoading(false); // Show cached data immediately
       }
 
+      // Helper: Detect browser
+      const getBrowserInfo = () => {
+        const ua = navigator.userAgent;
+        const isChrome = /Chrome/.test(ua) && /Google Inc/.test(navigator.vendor);
+        const isSafari = /Safari/.test(ua) && /Apple Computer/.test(navigator.vendor);
+        return { isChrome, isSafari, userAgent: ua };
+      };
+
+      // Helper: Fetch with timeout and retry
+      const fetchWithRetry = async (attemptNumber = 0): Promise<any> => {
+        const maxAttempts = 3;
+        const timeout = 10000; // 10 seconds
+        const backoffDelay = attemptNumber * 1000; // 0ms, 1000ms, 2000ms
+
+        // Wait for backoff delay before retry
+        if (backoffDelay > 0) {
+          await new Promise(resolve => setTimeout(resolve, backoffDelay));
+        }
+
+        try {
+          // Create timeout promise
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Request timeout after 10s')), timeout);
+          });
+
+          // Build query
+          let query = supabase
+            .from('vehicles')
+            .select('*')
+            .neq('status', 'retired')
+            .order('display_name');
+
+          // Filter by category if specified
+          if (category) {
+            query = query.eq('category', category);
+          }
+
+          // Race between query and timeout
+          const { data, error: fetchError } = await Promise.race([
+            query,
+            timeoutPromise
+          ]) as any;
+
+          if (fetchError) {
+            // Enhanced error logging with full diagnostics
+            const browserInfo = getBrowserInfo();
+            const requestUrl = `https://ahpmzjgkfxrrgxyirasa.supabase.co/rest/v1/vehicles?select=*&status=neq.retired&order=display_name.asc${category ? `&category=eq.${category}` : ''}`;
+
+            console.error('❌ Error fetching vehicles (detailed diagnostics):', {
+              // Request info
+              requestUrl,
+              category,
+              attemptNumber: attemptNumber + 1,
+              maxAttempts,
+
+              // Error details
+              errorMessage: fetchError.message,
+              errorName: fetchError.name,
+              errorCode: fetchError.code,
+              errorDetails: fetchError.details,
+              errorHint: fetchError.hint,
+              errorStack: fetchError.stack,
+
+              // Network info
+              networkOnline: navigator.onLine,
+
+              // Browser info
+              browser: browserInfo.isChrome ? 'Chrome' : browserInfo.isSafari ? 'Safari' : 'Other',
+              userAgent: browserInfo.userAgent,
+
+              // Timestamp
+              timestamp: new Date().toISOString(),
+
+              // CORS/blocking indicators
+              possibleCORS: fetchError.message?.includes('CORS') || fetchError.message?.includes('blocked'),
+              possibleMixedContent: fetchError.message?.includes('mixed content'),
+            });
+
+            // Retry logic
+            if (attemptNumber < maxAttempts - 1) {
+              console.warn(`⚠️ Retrying fetch (attempt ${attemptNumber + 2}/${maxAttempts})...`);
+              return fetchWithRetry(attemptNumber + 1);
+            }
+
+            throw fetchError;
+          }
+
+          return data;
+        } catch (err: any) {
+          // Handle timeout or network errors
+          const browserInfo = getBrowserInfo();
+          const requestUrl = `https://ahpmzjgkfxrrgxyirasa.supabase.co/rest/v1/vehicles?select=*&status=neq.retired&order=display_name.asc${category ? `&category=eq.${category}` : ''}`;
+
+          console.error('❌ Fatal error in fetchVehicles (detailed diagnostics):', {
+            // Request info
+            requestUrl,
+            category,
+            attemptNumber: attemptNumber + 1,
+            maxAttempts,
+
+            // Error details
+            errorMessage: err.message,
+            errorName: err.name,
+            errorStack: err.stack,
+
+            // Network info
+            networkOnline: navigator.onLine,
+
+            // Browser info
+            browser: browserInfo.isChrome ? 'Chrome' : browserInfo.isSafari ? 'Safari' : 'Other',
+            userAgent: browserInfo.userAgent,
+
+            // Timestamp
+            timestamp: new Date().toISOString(),
+
+            // Error type indicators
+            isTimeout: err.message?.includes('timeout'),
+            isNetworkError: err.message?.includes('fetch') || err.message?.includes('network'),
+            possibleHTTP2Error: err.message?.includes('HTTP2') || err.message?.includes('ERR_'),
+          });
+
+          // Retry logic for network errors
+          if (attemptNumber < maxAttempts - 1) {
+            console.warn(`⚠️ Retrying fetch after error (attempt ${attemptNumber + 2}/${maxAttempts})...`);
+            return fetchWithRetry(attemptNumber + 1);
+          }
+
+          throw err;
+        }
+      };
+
       try {
         setError(null);
         setUsingCache(false);
 
-        let query = supabase
-          .from('vehicles')
-          .select('*')
-          .neq('status', 'retired')
-          .order('display_name');
-
-        // Filter by category if specified
-        if (category) {
-          query = query.eq('category', category);
-        }
-
-        const { data, error: fetchError } = await query;
+        const data = await fetchWithRetry();
 
         if (!isMounted) return;
-
-        if (fetchError) {
-          // Enhanced error logging (console only, not user-facing)
-          console.error('❌ Error fetching vehicles:', {
-            message: fetchError.message,
-            code: fetchError.code,
-            details: fetchError.details,
-            hint: fetchError.hint,
-            category,
-            networkOnline: navigator.onLine,
-            timestamp: new Date().toISOString(),
-          });
-          throw fetchError;
-        }
 
         // Transform vehicles to expected format
         const transformedVehicles = (data || []).map(transformVehicle);
