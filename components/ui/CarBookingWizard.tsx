@@ -1801,7 +1801,28 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
   };
 
-  const handleNext = () => validateStep() && setStep(s => s + 1);
+  const handleNext = () => {
+    if (!validateStep()) return;
+
+    // Intercept Step 3 → Step 4 transition for resident zone confirmation
+    if (step === 3 && formData.usageZone === 'CAGLIARI_SUD') {
+      setShowZoneConfirmation(true);
+      return;
+    }
+
+    setStep(s => s + 1);
+  };
+
+  const handleZoneConfirmation = () => {
+    setShowZoneConfirmation(false);
+    setStep(4); // Proceed to payment
+  };
+
+  const handleZoneModification = () => {
+    setShowZoneConfirmation(false);
+    // Stay on Step 3 so user can modify their selection
+  };
+
   const handleBack = () => setStep(s => s - 1);
 
   const steps = [
@@ -2717,6 +2738,76 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Resident Zone Confirmation Modal */}
+      <AnimatePresence>
+        {showZoneConfirmation && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setShowZoneConfirmation(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-gray-900 border-2 border-yellow-500 rounded-lg p-8 max-w-lg w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-yellow-500/20 rounded-full mb-4">
+                  <svg className="w-8 h-8 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-yellow-500 mb-2">
+                  ATTENZIONE – LIMITI DI UTILIZZO DEL VEICOLO
+                </h3>
+              </div>
+
+              <div className="space-y-4 text-white mb-8">
+                <p className="text-lg">
+                  Hai selezionato una <span className="font-bold text-yellow-400">tariffa residente / utilizzo entro perimetro autorizzato</span>.
+                </p>
+                <p className="text-lg font-semibold">
+                  Confermi che non uscirai dal perimetro consentito?
+                </p>
+                <div className="bg-red-900/30 border border-red-500 rounded-lg p-4">
+                  <p className="text-sm text-red-200">
+                    Ti ricordiamo che i veicoli sono dotati di <span className="font-bold">sistema GPS</span>:
+                    in caso di uscita non autorizzata, la vettura potrà essere <span className="font-bold">bloccata automaticamente</span> e
+                    verranno applicate <span className="font-bold">penali e adeguamento tariffario</span>.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  onClick={handleZoneModification}
+                  className="flex-1 px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Modifica prenotazione
+                </button>
+                <button
+                  onClick={handleZoneConfirmation}
+                  className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Confermo
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <canvas ref={canvasRef} className="hidden"></canvas>
 
       <div className="w-full max-w-lg mx-auto mb-12 px-4">
