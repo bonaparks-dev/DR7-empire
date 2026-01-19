@@ -188,15 +188,34 @@ export async function checkVehicleAvailability(
     // Buffer time in milliseconds (1h30 = 90 minutes)
     const BUFFER_TIME_MS = 90 * 60 * 1000;
 
-    // Query all bookings for this vehicle from bookings table (main website + admin)
-    // Admin bookings should ALWAYS block slots regardless of payment/status
-    // We select booking_details to check for specific vehicle_id
-    const { data: bookings, error } = await supabase
+    // Get vehicle plate - this is the most reliable way to match bookings
+    // Targa (license plate) is unique and doesn't have spacing/capitalization issues
+    const { data: vehicleData } = await supabase
+      .from('vehicles')
+      .select('plate')
+      .eq('display_name', vehicleName)
+      .single();
+
+    const vehiclePlate = vehicleData?.plate;
+
+    // Query bookings - prioritize matching by license plate (targa)
+    // Only fall back to name matching if plate is not available
+    let query = supabase
       .from('bookings')
-      .select('pickup_date, dropoff_date, vehicle_name, status, booking_source, booking_details')
-      .eq('vehicle_name', vehicleName)
-      .neq('status', 'cancelled') // Only exclude cancelled bookings
+      .select('pickup_date, dropoff_date, vehicle_name, vehicle_plate, status, booking_source, booking_details')
+      .neq('status', 'cancelled')
       .order('pickup_date', { ascending: true });
+
+    if (vehiclePlate) {
+      // PRIMARY: Match by license plate (most reliable)
+      query = query.eq('vehicle_plate', vehiclePlate);
+    } else {
+      // FALLBACK: Match by name only if no plate available
+      // Use case-insensitive partial matching to handle spacing/capitalization
+      query = query.ilike('vehicle_name', `%${vehicleName.trim()}%`);
+    }
+
+    const { data: bookings, error } = await query;
 
     if (error) {
       console.error('Error checking vehicle availability:', error);
