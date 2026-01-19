@@ -1236,7 +1236,7 @@ const CarWashBookingPage: React.FC = () => {
                   >
                     <div className="text-center">
                       <div className="text-sm font-semibold text-white mb-1">
-                        {lang === 'it' ? 'Carta di Credito' : 'Credit Card'}
+                        {lang === 'it' ? 'Carta' : 'Card'}
                       </div>
                       <div className="text-xs text-gray-400">Visa, Mastercard</div>
                     </div>
