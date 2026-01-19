@@ -1,3 +1,5 @@
+const crypto = require('crypto');
+
 /**
  * Netlify Function to create Nexi XPay payment using API method
  * Uses /orders/hpp endpoint with X-API-KEY authentication
@@ -47,6 +49,9 @@ exports.handler = async (event) => {
     // Get site URL for callbacks
     const siteUrl = process.env.URL || 'https://dr7empire.com';
 
+    // Generate UUID for Correlation-Id
+    const correlationId = crypto.randomUUID();
+
     // Prepare request body for Nexi API
     const requestBody = {
       order: {
@@ -66,7 +71,7 @@ exports.handler = async (event) => {
       },
     };
 
-    console.log('Creating Nexi payment via API:', { orderId, amount, currency });
+    console.log('Creating Nexi payment via API:', { orderId, amount, currency, correlationId });
 
     // Call Nexi API
     const response = await fetch(`${baseUrl}/orders/hpp`, {
@@ -74,7 +79,7 @@ exports.handler = async (event) => {
       headers: {
         'Content-Type': 'application/json',
         'X-API-KEY': nexiConfig.apiKey,
-        'Correlation-Id': orderId, // Required by Nexi API
+        'Correlation-Id': correlationId, // Required UUID format
       },
       body: JSON.stringify(requestBody),
     });
