@@ -1,10 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
-import type { Stripe, StripeElements } from '@stripe/stripe-js';
-import { addCredits } from '../utils/creditWallet';
 
 interface CreditPackage {
   id: string;
@@ -160,252 +158,14 @@ const PackageCard: React.FC<{ pkg: CreditPackage; onSelect: () => void }> = ({ p
   );
 };
 
-const STRIPE_PUBLISHABLE_KEY = 'pk_live_51S3dDjQcprtTyo8tBfBy5mAZj8PQXkxfZ1RCnWskrWFZ2WEnm1u93ZnE2tBi316Gz2CCrvLV98IjSoiXb0vSDpOQ003fNG69Y2';
-
 const CreditWalletPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [selectedSeries, setSelectedSeries] = useState<string>('all');
   const [selectedPackage, setSelectedPackage] = useState<CreditPackage | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [stripe, setStripe] = useState<Stripe | null>(null);
-  const [elements, setElements] = useState<StripeElements | null>(null);
-  const cardElementRef = useRef<HTMLDivElement>(null);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [isClientSecretLoading, setIsClientSecretLoading] = useState(false);
-  const [stripeError, setStripeError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-
-  // Customer info
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    codiceFiscale: '',
-    indirizzo: '',
-    numeroCivico: '',
-    cittaResidenza: '',
-    codicePostale: '',
-    provinciaResidenza: ''
-  });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-
-  // Initialize Stripe
-  useEffect(() => {
-    if ((window as any).Stripe) {
-      if (!STRIPE_PUBLISHABLE_KEY || STRIPE_PUBLISHABLE_KEY.startsWith('YOUR_')) {
-        console.error("Stripe.js has loaded, but the publishable key is not set.");
-        setStripeError("Payment service is not configured correctly. Please contact support.");
-        return;
-      }
-      const stripeInstance = (window as any).Stripe(STRIPE_PUBLISHABLE_KEY);
-      setStripe(stripeInstance);
-      setElements(stripeInstance.elements());
-    }
-  }, []);
-
-  // Pre-fill user data from customers_extended table
-  useEffect(() => {
-    if (user) {
-      const fetchCustomerData = async () => {
-        try {
-          // 1. Try to get customer data from customers_extended table
-          let { data: customerData, error } = await supabase
-            .from('customers_extended')
-            .select('*')
-            .eq('id', user.id)
-            .maybeSingle();
-
-          // 2. If not found, try 'clienti_estesi' (legacy/alternative table)
-          if (!customerData) {
-            const { data: legacyData } = await supabase
-              .from('clienti_estesi')
-              .select('*')
-              .eq('user_id', user.id)
-              .maybeSingle();
-
-            if (legacyData) {
-              customerData = legacyData;
-            }
-          }
-
-          if (customerData) {
-            // Pre-fill all fields from database
-            setFormData({
-              fullName: customerData.tipo_cliente === 'azienda'
-                ? customerData.denominazione || customerData.ragione_sociale || ''
-                : `${customerData.nome || ''} ${customerData.cognome || ''}`.trim(),
-              email: customerData.email || user.email || '',
-              phone: customerData.telefono || user.phone || '',
-              codiceFiscale: customerData.codice_fiscale || customerData.codice_fiscale_pa || customerData.partita_iva || '',
-              indirizzo: customerData.indirizzo || customerData.indirizzo_azienda || '',
-              numeroCivico: customerData.numero_civico || '',
-              cittaResidenza: customerData.citta || customerData.citta_residenza || '',
-              codicePostale: customerData.cap || customerData.codice_postale || '',
-              provinciaResidenza: customerData.provincia || customerData.provincia_residenza || ''
-            });
-
-
-          } else {
-            // Fallback to basic user data from Auth
-            setFormData(prev => ({
-              ...prev,
-              fullName: user.fullName || '',
-              email: user.email || '',
-              phone: user.phone || ''
-            }));
-
-
-          }
-        } catch (err) {
-          console.error('Error fetching customer data:', err);
-          // Fallback to basic user data
-          setFormData(prev => ({
-            ...prev,
-            fullName: user.fullName || '',
-            email: user.email || '',
-            phone: user.phone || ''
-          }));
-
-        }
-      };
-
-      fetchCustomerData();
-    }
-  }, [user]);
-
-  // Create payment intent when modal opens
-  useEffect(() => {
-    if (showPaymentModal && selectedPackage) {
-      setIsClientSecretLoading(true);
-      setStripeError(null);
-      setClientSecret(null);
-
-      fetch('/.netlify/functions/create-payment-intent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: selectedPackage.rechargeAmount,
-          currency: 'eur',
-          email: user?.email,
-          purchaseType: 'credit-wallet',
-          metadata: {
-            packageId: selectedPackage.id,
-            packageName: selectedPackage.name,
-            receivedAmount: selectedPackage.receivedAmount,
-            bonus: selectedPackage.bonus
-          }
-        })
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.error) {
-            setStripeError(data.error);
-          } else {
-            setClientSecret(data.clientSecret);
-          }
-        })
-        .catch(error => {
-          console.error('Failed to fetch client secret:', error);
-          setStripeError('Could not connect to payment server.');
-        })
-        .finally(() => {
-          setIsClientSecretLoading(false);
-        });
-    }
-  }, [showPaymentModal, selectedPackage, user]);
-
-  // Mount Stripe card element
-  useEffect(() => {
-    if (elements && clientSecret && cardElementRef.current && showPaymentModal) {
-      const existingCard = elements.getElement('card');
-      if (existingCard) {
-        existingCard.unmount();
-      }
-
-      const timer = setTimeout(() => {
-        if (cardElementRef.current) {
-          const card = elements.create('card', {
-            style: {
-              base: {
-                color: '#ffffff',
-                fontFamily: '"Exo 2", sans-serif',
-                fontSize: '16px',
-                '::placeholder': { color: '#a0aec0' }
-              },
-              invalid: { color: '#ef4444', iconColor: '#ef4444' }
-            }
-          });
-
-          try {
-            card.mount(cardElementRef.current);
-            card.on('change', (event) => {
-              setStripeError(event.error ? event.error.message : null);
-            });
-          } catch (error) {
-            console.error('Error mounting Stripe card element:', error);
-            setStripeError('Failed to load payment form. Please refresh the page.');
-          }
-        }
-      }, 100);
-
-      return () => {
-        clearTimeout(timer);
-        const card = elements.getElement('card');
-        if (card) {
-          card.unmount();
-        }
-      };
-    }
-  }, [elements, clientSecret, showPaymentModal]);
-
-  // Validation functions
-  const validateCodiceFiscale = (cf: string): boolean => {
-    const cfRegex = /^[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]$/i;
-    return cf.length === 16 && cfRegex.test(cf.toUpperCase());
-  };
-
-  const validateItalianPhone = (phone: string): boolean => {
-    const phoneRegex = /^(\+39|0039)?[\s]?[0-9]{9,13}$/;
-    return phoneRegex.test(phone.replace(/\s/g, ''));
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    let newValue = value;
-
-    if (name === 'codiceFiscale' || name === 'provinciaResidenza') {
-      newValue = value.toUpperCase();
-    }
-
-    setFormData(prev => ({ ...prev, [name]: newValue }));
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  const validate = () => {
-    const newErrors: Record<string, string> = {};
-    if (!formData.fullName) newErrors.fullName = 'Il nome è obbligatorio';
-    if (!formData.email) newErrors.email = 'L\'email è obbligatoria';
-
-    // Phone validation (optional but validated if present)
-    if (formData.phone && !validateItalianPhone(formData.phone)) {
-      newErrors.phone = 'Formato telefono non valido';
-    }
-
-    // Codice Fiscale (Optional for quickcheckout, validated if present)
-    if (formData.codiceFiscale && !validateCodiceFiscale(formData.codiceFiscale)) {
-      newErrors.codiceFiscale = 'Codice Fiscale non valido (16 caratteri)';
-    }
-
-    // Address fields are now optional for credit wallet easy-checkout
-    // They will be empty string if not provided
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   const handleSelectPackage = (packageId: string) => {
     if (user) {
@@ -422,104 +182,48 @@ const CreditWalletPage: React.FC = () => {
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validate()) return;
-    if (!stripe || !elements || !clientSecret || !selectedPackage) {
-      setStripeError("Payment system is not ready.");
+    if (!selectedPackage || !user) {
+      setPaymentError("Informazioni mancanti");
       return;
     }
 
     setIsProcessing(true);
-    setStripeError(null);
+    setPaymentError(null);
 
     try {
-      const cardElement = elements.getElement('card');
-      if (!cardElement) {
-        throw new Error('Card element not found');
-      }
-
-      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: cardElement,
-          billing_details: {
-            name: formData.fullName,
-            email: formData.email,
-            phone: formData.phone
+      // Create Nexi payment
+      const response = await fetch('/.netlify/functions/create-nexi-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: selectedPackage.rechargeAmount * 100, // Convert to cents
+          currency: 'EUR',
+          orderId: `CREDIT-${Date.now()}`,
+          description: `Ricarica ${selectedPackage.name}`,
+          customerEmail: user.email,
+          metadata: {
+            type: 'credit-wallet',
+            userId: user.id,
+            packageId: selectedPackage.id,
+            packageName: selectedPackage.name,
+            receivedAmount: selectedPackage.receivedAmount,
+            bonus: selectedPackage.bonus
           }
-        }
+        })
       });
 
-      if (error) {
-        setStripeError(error.message || 'Payment failed');
-        setIsProcessing(false);
-        return;
-      }
+      const data = await response.json();
 
-      // Save credit wallet purchase to database
-      const { data, error: dbError } = await supabase
-        .from('credit_wallet_purchases')
-        .insert([{
-          user_id: user?.id || null,
-          package_id: selectedPackage.id,
-          package_name: selectedPackage.name,
-          package_series: selectedPackage.series,
-          recharge_amount: selectedPackage.rechargeAmount,
-          received_amount: selectedPackage.receivedAmount,
-          bonus_amount: selectedPackage.bonus,
-          bonus_percentage: selectedPackage.bonusPercentage,
-          payment_intent_id: paymentIntent?.id,
-          payment_status: 'paid',
-          currency: 'EUR',
-          customer_name: formData.fullName,
-          customer_email: formData.email,
-          customer_phone: formData.phone,
-          customer_codice_fiscale: formData.codiceFiscale,
-          customer_indirizzo: formData.indirizzo,
-          customer_numero_civico: formData.numeroCivico,
-          customer_citta: formData.cittaResidenza,
-          customer_cap: formData.codicePostale,
-          customer_provincia: formData.provinciaResidenza,
-          created_at: new Date().toISOString()
-        }])
-        .select()
-        .single();
-
-      if (dbError) {
-        console.error('Database error:', dbError);
-        throw new Error('Failed to save purchase record');
-      }
-
-      // Add credits to user's balance
-      if (user?.id) {
-        const creditResult = await addCredits(
-          user.id,
-          selectedPackage.receivedAmount,
-          `Ricarica ${selectedPackage.name}`,
-          data?.id,
-          'credit_purchase'
-        );
-
-        if (!creditResult.success) {
-          console.error('Failed to add credits:', creditResult.error);
-          throw new Error('Failed to add credits to balance');
-        }
-      }
-
-      // Show success message
-      alert(`Ricarica completata con successo!\n\nHai ricaricato: €${selectedPackage.rechargeAmount}\nRiceverai: €${selectedPackage.receivedAmount}\nBonus: €${selectedPackage.bonus} (+${selectedPackage.bonusPercentage}%)`);
-
-      setShowPaymentModal(false);
-      setSelectedPackage(null);
-      setIsProcessing(false);
-
-      // Redirect to account page
-      if (user?.role === 'business') {
-        navigate('/partner/dashboard');
+      if (data.success && data.paymentUrl) {
+        // Redirect to Nexi payment page
+        window.location.href = data.paymentUrl;
       } else {
-        navigate('/account');
+        setPaymentError(data.error || 'Errore nella creazione del pagamento');
+        setIsProcessing(false);
       }
     } catch (error: any) {
       console.error('Payment error:', error);
-      setStripeError(error.message || 'Payment processing failed');
+      setPaymentError(error.message || 'Errore di connessione');
       setIsProcessing(false);
     }
   };
@@ -777,54 +481,56 @@ const CreditWalletPage: React.FC = () => {
                 <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-gray-400 text-xs">Ricarichi</span>
-                    <span className="text-gray-300 font-semibold">{selectedPackage.rechargeAmount}</span>
+                    <span className="text-gray-300 font-semibold">€{selectedPackage.rechargeAmount}</span>
                   </div>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-gray-400">Bonus (+{selectedPackage.bonusPercentage}%)</span>
-                    <span className="text-white font-bold text-xl">{selectedPackage.bonus}</span>
+                    <span className="text-white font-bold text-xl">€{selectedPackage.bonus}</span>
                   </div>
                   <div className="border-t border-gray-700 my-2"></div>
                   <div className="flex justify-between items-center">
                     <span className="text-white font-semibold text-lg">Ricevi</span>
-                    <span className="text-white font-bold text-3xl">{selectedPackage.receivedAmount}</span>
+                    <span className="text-white font-bold text-3xl">€{selectedPackage.receivedAmount}</span>
                   </div>
                 </div>
 
-                {/* Payment Information */}
-                <div>
-                  <h3 className="text-lg font-bold text-white mb-4">Informazioni di Pagamento</h3>
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 min-h-[56px] flex items-center">
-                    {isClientSecretLoading ? (
-                      <div className="flex items-center text-gray-400 text-sm">
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          className="w-4 h-4 border-2 border-t-white border-gray-600 rounded-full mr-2"
-                        />
-                        <span>Inizializzazione pagamento...</span>
-                      </div>
-                    ) : (
-                      <div ref={cardElementRef} className="w-full" />
-                    )}
+                {/* Payment Info */}
+                <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-6 h-6 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <h3 className="text-white font-semibold mb-1">Pagamento Sicuro con Nexi</h3>
+                      <p className="text-gray-400 text-sm">
+                        Sarai reindirizzato alla pagina di pagamento sicura di Nexi per completare l'acquisto.
+                      </p>
+                    </div>
                   </div>
-                  {stripeError && <p className="text-xs text-red-400 mt-2">{stripeError}</p>}
                 </div>
+
+                {paymentError && (
+                  <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+                    <p className="text-red-400 text-sm">{paymentError}</p>
+                  </div>
+                )}
 
                 {/* Action Buttons */}
                 <div className="flex gap-4">
                   <button
                     type="button"
                     onClick={() => setShowPaymentModal(false)}
-                    className="flex-1 px-6 py-3 bg-gray-800 text-white rounded-full font-bold hover:bg-gray-700 transition-colors"
+                    disabled={isProcessing}
+                    className="flex-1 px-6 py-3 bg-gray-800 text-white rounded-full font-bold hover:bg-gray-700 transition-colors disabled:opacity-50"
                   >
                     Annulla
                   </button>
                   <button
                     type="submit"
-                    disabled={isProcessing || isClientSecretLoading}
+                    disabled={isProcessing}
                     className="flex-1 px-6 py-3 bg-white text-black rounded-full font-bold hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isProcessing ? 'Elaborazione...' : `Paga €${selectedPackage.rechargeAmount}`}
+                    {isProcessing ? 'Reindirizzamento...' : `Procedi al Pagamento €${selectedPackage.rechargeAmount}`}
                   </button>
                 </div>
               </form>
