@@ -634,52 +634,44 @@ const CarWashBookingPage: React.FC = () => {
         };
 
       } else {
-        // Nexi card payment - redirect to Nexi
-        console.log('Creating Nexi payment...');
+        // Nexi card payment - TEMPORARY: Skip database save for testing
+        console.log('Creating Nexi payment (TEST MODE - skipping database)...');
 
-        // First, save booking as pending
-        const pendingBooking = {
-          ...pendingBookingData,
-          payment_status: 'pending',
-          payment_method: 'nexi'
-        };
+        // Generate a temporary booking ID for testing
+        const tempBookingId = `TEST-${Date.now()}`;
 
-        const { data: bookingData, error: bookingError } = await supabase
-          .from('bookings')
-          .insert(pendingBooking)
-          .select()
-          .single();
+        console.log('⚠️ TEST MODE: Skipping database save, going directly to Nexi');
 
-        if (bookingError) {
-          console.error('Database error:', bookingError);
-          throw bookingError;
-        }
-
-        // Create Nexi payment
+        // Create Nexi payment directly
         const nexiResponse = await fetch('/.netlify/functions/create-nexi-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             amount: calculateTotal() * 100, // Convert to cents
             currency: 'EUR',
-            orderId: `CARWASH-${bookingData.id}`,
+            orderId: `CARWASH-${tempBookingId}`,
             description: `Lavaggio ${lang === 'it' ? selectedService?.name : selectedService?.nameEn}`,
             customerEmail: formData.email,
             metadata: {
-              type: 'car-wash',
-              bookingId: bookingData.id,
-              serviceName: lang === 'it' ? selectedService?.name : selectedService?.nameEn
+              type: 'car-wash-test',
+              serviceName: lang === 'it' ? selectedService?.name : selectedService?.nameEn,
+              customerName: formData.fullName,
+              appointmentDate: formData.appointmentDate,
+              appointmentTime: formData.appointmentTime
             }
           })
         });
 
         const nexiData = await nexiResponse.json();
+        console.log('Nexi response:', nexiData);
 
         if (nexiData.success && nexiData.paymentUrl) {
+          console.log('✅ Redirecting to Nexi:', nexiData.paymentUrl);
           // Redirect to Nexi payment page
           window.location.href = nexiData.paymentUrl;
           return; // Stop execution as we're redirecting
         } else {
+          console.error('❌ Nexi payment creation failed:', nexiData);
           throw new Error(nexiData.error || 'Failed to create Nexi payment');
         }
       }
