@@ -64,28 +64,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user) {
         const appUser = mapSupabaseUserToAppUser(session.user);
 
-        // Fetch residency_zone from customers_extended with safe fallback
+        // Fetch residency_zone from Netlify Function with safe fallback
         try {
-          const { data: customerData, error } = await supabase
-            .from('customers_extended')
-            .select('residency_zone')
-            .eq('user_id', session.user.id)
-            .single();
+          const response = await fetch(`/.netlify/functions/getResidencyZone?user_id=${session.user.id}`);
 
-          if (error) {
-            console.warn('⚠️ Unable to fetch residency_zone from customers_extended:', {
-              error: error.message,
-              code: error.code,
+          if (!response.ok) {
+            console.warn('⚠️ Unable to fetch residency_zone from Netlify Function:', {
+              status: response.status,
+              statusText: response.statusText,
               userId: session.user.id,
               networkOnline: navigator.onLine,
             });
             // Safe default: treat as non-resident if fetch fails
             (appUser as any).residencyZone = 'NON_RESIDENTE';
-          } else if (customerData?.residency_zone) {
-            (appUser as any).residencyZone = customerData.residency_zone;
           } else {
-            // No residency_zone in database - default to non-resident
-            (appUser as any).residencyZone = 'NON_RESIDENTE';
+            const data = await response.json();
+            (appUser as any).residencyZone = data.residency_zone || 'NON_RESIDENTE';
           }
         } catch (error) {
           console.error('❌ Error fetching residency zone:', {

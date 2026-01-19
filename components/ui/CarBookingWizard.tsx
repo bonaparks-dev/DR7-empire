@@ -454,11 +454,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       if (!user?.id) return;
 
       try {
-        const { data: customerData, error } = await supabase
-          .from('customers_extended')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
+        // Fetch customer data via Netlify Function
+        const response = await fetch(`/.netlify/functions/getResidencyZone?user_id=${user.id}`);
+        const customerData = response.ok ? await response.json() : null;
+        const error = !response.ok ? new Error(`HTTP ${response.status}`) : null;
 
         if (error || !customerData) {
           if (error) {

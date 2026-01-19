@@ -316,21 +316,23 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
             setTimeout(() => reject(new Error('Request timeout after 10s')), timeout);
           });
 
-          // Build query
-          let query = supabase
-            .from('vehicles')
-            .select('*')
-            .neq('status', 'retired')
-            .order('display_name');
+          // Call Netlify Function instead of direct Supabase REST
+          const url = category
+            ? `/.netlify/functions/getVehicles?category=${category}`
+            : '/.netlify/functions/getVehicles';
 
-          // Filter by category if specified
-          if (category) {
-            query = query.eq('category', category);
-          }
+          // Race between fetch and timeout
+          const fetchPromise = fetch(url).then(async (response) => {
+            if (!response.ok) {
+              const errorBody = await response.json().catch(() => ({ error: 'Unknown error' }));
+              throw new Error(errorBody.error || `HTTP ${response.status}`);
+            }
+            const data = await response.json();
+            return { data, error: null };
+          });
 
-          // Race between query and timeout
           const { data, error: fetchError } = await Promise.race([
-            query,
+            fetchPromise,
             timeoutPromise
           ]) as any;
 

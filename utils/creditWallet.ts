@@ -24,29 +24,24 @@ export interface UserCreditBalance {
 export async function getUserCreditBalance(userId: string): Promise<number> {
   const fetchBalance = async (retryCount = 0): Promise<number> => {
     try {
-      // Force Accept header to prevent 406 Not Acceptable
-      const { data, error } = await supabase
-        .from('user_credit_balance')
-        .select('balance')
-        .eq('user_id', userId)
-        .maybeSingle(); // Use maybeSingle to handle no rows gracefully without error
+      // Fetch balance via Netlify Function instead of direct Supabase REST
+      const response = await fetch(`/.netlify/functions/getCreditBalance?user_id=${userId}`);
 
-      if (error) {
-        // If 406 error and we haven't retried too many times, retry
-        if (error.code === '406' && retryCount < 2) {
-          console.warn(`Got 406 error for balance check, retrying... (${retryCount + 1})`);
+      if (!response.ok) {
+        // If error and we haven't retried too many times, retry
+        if (retryCount < 2) {
+          console.warn(`Got ${response.status} error for balance check, retrying... (${retryCount + 1})`);
           await new Promise(resolve => setTimeout(resolve, 500));
           return fetchBalance(retryCount + 1);
         }
 
-        // If user doesn't have a balance record yet (PGRST116 handled by maybeSingle returning null, but check anyway)
-        if (error.code === 'PGRST116') {
-          return 0;
-        }
-        throw error;
+        // After retries, return 0 as fallback
+        console.warn('Failed to fetch credit balance after retries, returning 0');
+        return 0;
       }
 
-      return data?.balance || 0;
+      const data = await response.json();
+      return data.balance || 0;
     } catch (error) {
       console.error('Error fetching credit balance:', error);
       return 0;
