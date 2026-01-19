@@ -36,7 +36,7 @@ async function testNexiPayment() {
 
     // Test configuration - MAC key is now optional
     const nexiConfig = {
-        alias: 'payment_025153685',
+        alias: 'xpay web', // Correct alias from Nexi backoffice
         macKey: '', // Leave empty to test without MAC
         merchantId: '025153685',
         terminalId: '75703919',

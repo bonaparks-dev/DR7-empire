@@ -88,7 +88,7 @@ exports.handler = async (event) => {
 
     // Prepare request parameters for Nexi X-Pay
     const params = {
-      alias: `payment_${nexiConfig.merchantId}`, // Generate alias from merchant ID
+      alias: 'xpay web', // Alias from Nexi backoffice
       importo: amount.toString(),
       divisa: currency,
       codTrans: orderId,
