@@ -41,8 +41,8 @@ exports.handler = async (event) => {
     // Determine base URL
     const baseUrl =
       nexiConfig.environment === 'production'
-        ? 'https://xpay.nexigroup.com/api/phoenix-0.0'
-        : 'https://int-ecommerce.nexi.it/ecomm/api/phoenix-0.0';
+        ? 'https://xpay.nexigroup.com/api/phoenix-0.0/psp/api/v1'
+        : 'https://xpaysandbox.nexigroup.com/api/phoenix-0.0/psp/api/v1';
 
     // Get site URL for callbacks
     const siteUrl = process.env.URL || 'https://dr7empire.com';
