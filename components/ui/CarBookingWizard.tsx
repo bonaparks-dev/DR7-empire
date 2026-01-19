@@ -2094,7 +2094,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             handleChange(e);
                           }
                         }}
-                        min={today}
+                        min={earliestAvailability?.earliestAvailableDate || today}
                         required
                         className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors cursor-pointer ${errors.pickupDate
                           ? 'border-red-500 focus:border-red-400'
