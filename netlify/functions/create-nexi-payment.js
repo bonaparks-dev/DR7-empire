@@ -74,6 +74,7 @@ exports.handler = async (event) => {
       headers: {
         'Content-Type': 'application/json',
         'X-API-KEY': nexiConfig.apiKey,
+        'Correlation-Id': orderId, // Required by Nexi API
       },
       body: JSON.stringify(requestBody),
     });
