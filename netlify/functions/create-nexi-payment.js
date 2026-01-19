@@ -49,8 +49,8 @@ exports.handler = async (event) => {
     // Get site URL for callbacks
     const siteUrl = process.env.URL || 'https://dr7empire.com';
 
-    // Generate UUID for Correlation-Id
-    const correlationId = crypto.randomUUID();
+    // Generate UUID v4 for Correlation-Id (compatible with older Node versions)
+    const correlationId = crypto.randomBytes(16).toString('hex').replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
 
     // Prepare request body for Nexi API
     const requestBody = {
