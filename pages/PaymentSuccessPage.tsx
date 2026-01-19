@@ -5,7 +5,7 @@ const PaymentSuccessPage: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
-    const orderId = searchParams.get('codTrans') || searchParams.get('orderId');
+    const orderId = searchParams.get('codTrans') || searchParams.get('orderId') || searchParams.get('paymentid');
     const amount = searchParams.get('importo');
     const authCode = searchParams.get('codAut');
 
