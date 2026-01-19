@@ -10,22 +10,26 @@ interface Service {
   nameEn: string;
   price: number;
   duration: string;
-  features: string[];
-  featuresEn: string[];
+  duration: string | number; // Changed to allow number
+  features?: string[]; // Made optional
+  featuresEn?: string[]; // Made optional
   description: string;
   descriptionEn: string;
+  category?: string; // New field
+  isActive?: boolean; // New field
+  displayOrder?: number; // New field
 }
 
 // Fallback hardcoded services in case database is unavailable
 const FALLBACK_SERVICES: Service[] = [
   {
-    id: 'test-wash',
-    name: 'TEST LAVAGGIO €1',
-    nameEn: 'TEST WASH €1',
+    id: 'test-scooter-wash',
+    name: 'LAVAGGIO SCOOTER - TEST €1',
+    nameEn: 'SCOOTER WASH - TEST €1',
     price: 1,
-    duration: '5 min',
-    description: 'Servizio di test per verificare il pagamento Nexi.',
-    descriptionEn: 'Test service to verify Nexi payment.',
+    duration: 15, // Changed to number
+    description: 'Servizio di test per verificare il pagamento Nexi',
+    descriptionEn: 'Test service to verify Nexi payment',
     features: [
       'Solo per test pagamento',
       'Servizio rapido'
@@ -33,7 +37,10 @@ const FALLBACK_SERVICES: Service[] = [
     featuresEn: [
       'Payment test only',
       'Quick service'
-    ]
+    ],
+    category: 'scooter', // New field
+    isActive: true, // New field
+    displayOrder: 0 // New field
   },
   {
     id: 'scooter-wash',
