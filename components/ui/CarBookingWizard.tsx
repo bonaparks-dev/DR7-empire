@@ -1010,9 +1010,23 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
     const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
 
+    console.log('🏠 Usage Zone Auto-Set Check:', {
+      userExists: !!user,
+      userId: user?.id,
+      userResidencyZone,
+      isResident,
+      currentUsageZone: formData.usageZone,
+      willAutoSet: isResident && !formData.usageZone
+    });
+
     // Default to CAGLIARI_SUD for residents if not already set
     if (isResident && !formData.usageZone) {
+      console.log('✅ Auto-setting usageZone to CAGLIARI_SUD for resident user');
       setFormData(prev => ({ ...prev, usageZone: 'CAGLIARI_SUD' }));
+    } else if (!isResident && !formData.usageZone) {
+      console.log('ℹ️ Non-resident user - usageZone will remain empty until manually selected');
+    } else if (formData.usageZone) {
+      console.log(`ℹ️ usageZone already set to: ${formData.usageZone}`);
     }
   }, [user, formData.usageZone]);
 
