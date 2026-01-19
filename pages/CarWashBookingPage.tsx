@@ -786,8 +786,13 @@ const CarWashBookingPage: React.FC = () => {
         // Create Nexi payment
         console.log('Creating Nexi payment for booking:', bookingData.id);
 
-        // Nexi requires orderId to be alphanumeric only (no dashes or special chars)
-        const nexiOrderId = bookingData.id.replace(/-/g, '').substring(0, 50);
+        // Create a simple timestamp-based orderId (guaranteed alphanumeric)
+        // Format: CW + timestamp + random 4 digits
+        const timestamp = Date.now().toString();
+        const random = Math.floor(1000 + Math.random() * 9000).toString();
+        const nexiOrderId = `CW${timestamp}${random}`;
+
+        console.log('Generated Nexi orderId:', nexiOrderId);
 
         const nexiResponse = await fetch('/.netlify/functions/create-nexi-payment', {
           method: 'POST',
