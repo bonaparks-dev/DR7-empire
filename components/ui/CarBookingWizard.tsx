@@ -984,26 +984,37 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   useEffect(() => {
     const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
     const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
+    const vType = getVehicleType(item, categoryContext);
 
     console.log('🏠 Usage Zone Auto-Set Check:', {
       userExists: !!user,
       userId: user?.id,
       userResidencyZone,
       isResident,
+      vehicleType: vType,
       currentUsageZone: formData.usageZone,
       willAutoSet: isResident && !formData.usageZone
     });
 
-    // Default to CAGLIARI_SUD for residents if not already set
-    if (isResident && !formData.usageZone) {
-      console.log('✅ Auto-setting usageZone to CAGLIARI_SUD for resident user');
-      setFormData(prev => ({ ...prev, usageZone: 'CAGLIARI_SUD' }));
-    } else if (!isResident && !formData.usageZone) {
-      console.log('ℹ️ Non-resident user - usageZone will remain empty until manually selected');
-    } else if (formData.usageZone) {
-      console.log(`ℹ️ usageZone already set to: ${formData.usageZone}`);
+    // Auto-set logic based on vehicle type
+    if (vType !== 'SUPERCAR') {
+      // Utility vehicles (UTILITARIA, FURGONE, V_CLASS) always use FUORI_ZONA
+      if (formData.usageZone !== 'FUORI_ZONA') {
+        console.log('✅ Auto-setting usageZone to FUORI_ZONA for utility vehicle');
+        setFormData(prev => ({ ...prev, usageZone: 'FUORI_ZONA' }));
+      }
+    } else {
+      // SUPERCAR: Default to CAGLIARI_SUD for residents if not already set
+      if (isResident && !formData.usageZone) {
+        console.log('✅ Auto-setting usageZone to CAGLIARI_SUD for resident user with supercar');
+        setFormData(prev => ({ ...prev, usageZone: 'CAGLIARI_SUD' }));
+      } else if (!isResident && !formData.usageZone) {
+        console.log('ℹ️ Non-resident user with supercar - usageZone will remain empty until manually selected');
+      } else if (formData.usageZone) {
+        console.log(`ℹ️ usageZone already set to: ${formData.usageZone}`);
+      }
     }
-  }, [user, formData.usageZone]);
+  }, [user, formData.usageZone, item, categoryContext]);
 
   // Force Massimo Runchina settings & Pre-fill Personal Data
   useEffect(() => {
@@ -1316,17 +1327,22 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
     }
     if (step === 3) {
-      // Validate usage zone selection
-      if (!formData.usageZone) {
-        newErrors.usageZone = "Devi selezionare una zona di utilizzo.";
-      }
+      const vType = getVehicleType(item, categoryContext);
 
-      // Block residents from selecting Fuori zona
-      const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
-      const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
+      // Validate usage zone selection ONLY for SUPERCAR vehicles
+      // Utility vehicles (UTILITARIA, FURGONE, V_CLASS) auto-set to FUORI_ZONA
+      if (vType === 'SUPERCAR') {
+        if (!formData.usageZone) {
+          newErrors.usageZone = "Devi selezionare una zona di utilizzo.";
+        }
 
-      if (isResident && formData.usageZone === 'FUORI_ZONA') {
-        newErrors.usageZone = "Con tariffa residente il veicolo è autorizzato solo a Cagliari e Sud Sardegna.";
+        // Block residents from selecting Fuori zona
+        const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
+        const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
+
+        if (isResident && formData.usageZone === 'FUORI_ZONA') {
+          newErrors.usageZone = "Con tariffa residente il veicolo è autorizzato solo a Cagliari e Sud Sardegna.";
+        }
       }
     }
     if (step === 4) {
@@ -1791,7 +1807,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (!validateStep()) return;
 
     // Intercept Step 3 → Step 4 transition for resident zone confirmation
-    if (step === 3 && formData.usageZone === 'CAGLIARI_SUD') {
+    // Only show confirmation modal for SUPERCAR vehicles with CAGLIARI_SUD selection
+    const vType = getVehicleType(item, categoryContext);
+    if (step === 3 && vType === 'SUPERCAR' && formData.usageZone === 'CAGLIARI_SUD') {
       setShowZoneConfirmation(true);
       return;
     }
@@ -2286,108 +2304,113 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               </div>
             </section>
 
+
             {/* KM packages removed - all vehicles now have unlimited KM included */}
 
             {/* === USAGE ZONE SELECTOR === */}
-            <section className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-bold text-white mb-2">C. ZONA DI UTILIZZO *</h3>
-              <p className="text-sm text-gray-400 mb-4">
-                Seleziona dove utilizzerai il veicolo durante il noleggio.
-              </p>
+            {/* Only show for SUPERCAR vehicles - utility vehicles auto-set to FUORI_ZONA */}
+            {vehicleType === 'SUPERCAR' && (
+              <section className="border-t border-gray-700 pt-6">
+                <h3 className="text-lg font-bold text-white mb-2">C. ZONA DI UTILIZZO *</h3>
+                <p className="text-sm text-gray-400 mb-4">
+                  Seleziona dove utilizzerai il veicolo durante il noleggio.
+                </p>
 
-              <div className="space-y-3">
-                {/* Option 1: Cagliari e Sud Sardegna */}
-                <div
-                  className={`p-4 rounded-md border cursor-pointer transition-all ${formData.usageZone === 'CAGLIARI_SUD'
-                    ? 'border-yellow-400 bg-yellow-400/10'
-                    : 'border-gray-700 hover:border-gray-500'
-                    }`}
-                  onClick={() => setFormData(p => ({ ...p, usageZone: 'CAGLIARI_SUD' }))}
-                >
-                  <div className="flex items-center">
-                    <input
-                      type="radio"
-                      name="usageZone"
-                      value="CAGLIARI_SUD"
-                      checked={formData.usageZone === 'CAGLIARI_SUD'}
-                      onChange={() => setFormData(p => ({ ...p, usageZone: 'CAGLIARI_SUD' }))}
-                      className="w-4 h-4 text-yellow-400"
-                    />
-                    <label className="ml-3 text-white font-semibold">
-                      Cagliari e Sud Sardegna
-                    </label>
+                <div className="space-y-3">
+                  {/* Option 1: Cagliari e Sud Sardegna */}
+                  <div
+                    className={`p-4 rounded-md border cursor-pointer transition-all ${formData.usageZone === 'CAGLIARI_SUD'
+                      ? 'border-yellow-400 bg-yellow-400/10'
+                      : 'border-gray-700 hover:border-gray-500'
+                      }`}
+                    onClick={() => setFormData(p => ({ ...p, usageZone: 'CAGLIARI_SUD' }))}
+                  >
+                    <div className="flex items-center">
+                      <input
+                        type="radio"
+                        name="usageZone"
+                        value="CAGLIARI_SUD"
+                        checked={formData.usageZone === 'CAGLIARI_SUD'}
+                        onChange={() => setFormData(p => ({ ...p, usageZone: 'CAGLIARI_SUD' }))}
+                        className="w-4 h-4 text-yellow-400"
+                      />
+                      <label className="ml-3 text-white font-semibold">
+                        Cagliari e Sud Sardegna
+                      </label>
+                    </div>
+                    <p className="ml-7 text-xs text-gray-400 mt-1">
+                      Utilizzo limitato all'area di Cagliari e provincia del Sud Sardegna
+                    </p>
                   </div>
-                  <p className="ml-7 text-xs text-gray-400 mt-1">
-                    Utilizzo limitato all'area di Cagliari e provincia del Sud Sardegna
-                  </p>
-                </div>
 
-                {/* Option 2: Fuori zona */}
-                <div
-                  className={`p-4 rounded-md border transition-all ${formData.usageZone === 'FUORI_ZONA'
-                    ? 'border-yellow-400 bg-yellow-400/10'
-                    : 'border-gray-700 hover:border-gray-500'
-                    } ${usageZoneError ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                  onClick={() => {
-                    const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
-                    const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
+                  {/* Option 2: Fuori zona */}
+                  <div
+                    className={`p-4 rounded-md border transition-all ${formData.usageZone === 'FUORI_ZONA'
+                      ? 'border-yellow-400 bg-yellow-400/10'
+                      : 'border-gray-700 hover:border-gray-500'
+                      } ${usageZoneError ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    onClick={() => {
+                      const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
+                      const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
 
-                    // Allow non-residents to select, block residents
-                    if (!isResident) {
-                      setFormData(p => ({ ...p, usageZone: 'FUORI_ZONA' }));
-                    }
-                  }}
-                >
-                  <div className="flex items-center">
-                    <input
-                      type="radio"
-                      name="usageZone"
-                      value="FUORI_ZONA"
-                      checked={formData.usageZone === 'FUORI_ZONA'}
-                      disabled={!!usageZoneError}
-                      onChange={() => {
-                        const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
-                        const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
-                        if (!isResident) {
-                          setFormData(p => ({ ...p, usageZone: 'FUORI_ZONA' }));
-                        }
-                      }}
-                      className="w-4 h-4 text-yellow-400"
-                    />
-                    <label className="ml-3 text-white font-semibold">
-                      Fuori zona (resto della Sardegna)
-                    </label>
+                      // Allow non-residents to select, block residents
+                      if (!isResident) {
+                        setFormData(p => ({ ...p, usageZone: 'FUORI_ZONA' }));
+                      }
+                    }}
+                  >
+                    <div className="flex items-center">
+                      <input
+                        type="radio"
+                        name="usageZone"
+                        value="FUORI_ZONA"
+                        checked={formData.usageZone === 'FUORI_ZONA'}
+                        disabled={!!usageZoneError}
+                        onChange={() => {
+                          const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
+                          const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
+                          if (!isResident) {
+                            setFormData(p => ({ ...p, usageZone: 'FUORI_ZONA' }));
+                          }
+                        }}
+                        className="w-4 h-4 text-yellow-400"
+                      />
+                      <label className="ml-3 text-white font-semibold">
+                        Fuori zona (resto della Sardegna)
+                      </label>
+                    </div>
+                    <p className="ml-7 text-xs text-gray-400 mt-1">
+                      Utilizzo al di fuori dell'area di Cagliari e Sud Sardegna (solo Sardegna, non Italia continentale)
+                    </p>
+                    {/* Pricing warning for residents */}
+                    {user && (user as any)?.residencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA' && item.priceResidentDaily && item.priceNonresidentDaily && (
+                      <div className="ml-7 mt-2 p-2 bg-yellow-900/20 border border-yellow-600/50 rounded">
+                        <p className="text-yellow-300 text-xs font-semibold">
+                          ⚠️ Selezionando questa opzione, si applica la tariffa non residente: €{item.priceNonresidentDaily}/giorno invece di €{item.priceResidentDaily}/giorno
+                        </p>
+                      </div>
+                    )}
                   </div>
-                  <p className="ml-7 text-xs text-gray-400 mt-1">
-                    Utilizzo al di fuori dell'area di Cagliari e Sud Sardegna (solo Sardegna, non Italia continentale)
-                  </p>
-                  {/* Pricing warning for residents */}
-                  {user && (user as any)?.residencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA' && item.priceResidentDaily && item.priceNonresidentDaily && (
-                    <div className="ml-7 mt-2 p-2 bg-yellow-900/20 border border-yellow-600/50 rounded">
-                      <p className="text-yellow-300 text-xs font-semibold">
-                        ⚠️ Selezionando questa opzione, si applica la tariffa non residente: €{item.priceNonresidentDaily}/giorno invece di €{item.priceResidentDaily}/giorno
+
+                  {/* Error message for residents trying to select Fuori zona */}
+                  {usageZoneError && (
+                    <div className="mt-3 p-4 bg-red-900/30 border-2 border-red-500 rounded-lg">
+                      <p className="text-red-300 font-semibold text-sm">
+                        ⚠️ {usageZoneError}
                       </p>
                     </div>
                   )}
-                </div>
 
-                {/* Error message for residents trying to select Fuori zona */}
-                {usageZoneError && (
-                  <div className="mt-3 p-4 bg-red-900/30 border-2 border-red-500 rounded-lg">
-                    <p className="text-red-300 font-semibold text-sm">
-                      ⚠️ {usageZoneError}
+                  {/* Validation error if no zone selected */}
+                  {errors.usageZone && (
+                    <p className="text-xs text-red-400 mt-2 flex items-center">
+                      <span className="mr-1">⚠️</span> {errors.usageZone}
                     </p>
-                  </div>
-                )}
+                  )}
+                </div>
+              </section>
+            )}
 
-                {/* Validation error if no zone selected */}
-                {errors.usageZone && (
-                  <p className="text-xs text-red-400 mt-2 flex items-center">
-                    <span className="mr-1">⚠️</span> {errors.usageZone}
-                  </p>
-                )}
-              </div>
-            </section>
 
             <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-2">C. SERVIZI AGGIUNTIVI</h3>
