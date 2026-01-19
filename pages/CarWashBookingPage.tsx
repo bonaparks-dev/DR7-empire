@@ -759,7 +759,7 @@ const CarWashBookingPage: React.FC = () => {
         // First, save booking as pending
         const pendingBooking = {
           ...pendingBookingData,
-          payment_status: 'pending',
+          payment_status: 'completed', // Nexi payment is immediate
           payment_method: 'nexi'
         };
 
