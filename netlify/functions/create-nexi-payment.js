@@ -72,6 +72,12 @@ exports.handler = async (event) => {
     };
 
     console.log('Creating Nexi payment via API:', { orderId, amount, currency, correlationId });
+    console.log('Request headers:', {
+      'Content-Type': 'application/json',
+      'X-API-KEY': nexiConfig.apiKey.substring(0, 10) + '...',
+      'Correlation-Id': correlationId,
+    });
+    console.log('Request body:', JSON.stringify(requestBody, null, 2));
 
     // Call Nexi API
     const response = await fetch(`${baseUrl}/orders/hpp`, {
@@ -85,6 +91,9 @@ exports.handler = async (event) => {
     });
 
     const responseData = await response.json();
+
+    console.log('Nexi API response status:', response.status);
+    console.log('Nexi API response:', JSON.stringify(responseData, null, 2));
 
     if (!response.ok) {
       console.error('Nexi API error:', responseData);
