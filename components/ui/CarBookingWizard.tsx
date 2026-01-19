@@ -131,12 +131,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const today = useMemo(() => new Date().toISOString().split('T')[0], []);
 
   const [formData, setFormData] = useState(() => {
-    // Determine initial usage zone based on user residency
-    // This ensures resident pricing is applied from the start
-    const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
-    const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
-    const initialUsageZone = isResident ? 'CAGLIARI_SUD' : '';
-
     return {
       // Step 1
       pickupLocation: PICKUP_LOCATIONS[0].id,
@@ -178,7 +172,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       kmPackageType: 'none' as 'none' | 'unlimited', // 'none' = only free included km
       kmPackageDistance: 100, // default 100km package
       expectedKm: 0, // user's expected distance for recommendation
-      usageZone: initialUsageZone as 'CAGLIARI_SUD' | 'FUORI_ZONA' | '', // Usage zone for residency-based pricing
+      usageZone: '' as 'CAGLIARI_SUD' | 'FUORI_ZONA' | '', // Will be set by useEffect after user data loads
 
       // Step 4
       paymentMethod: 'stripe' as 'stripe' | 'credit',
@@ -187,6 +181,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       confirmsDocuments: false,
     };
   });
+
 
 
 
