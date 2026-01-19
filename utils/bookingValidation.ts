@@ -488,8 +488,9 @@ export async function checkVehiclePartialUnavailability(
       if (requestedPickupTime && typeof requestedPickupTime === 'string') {
         const pickupMinutes = timeToMinutes(requestedPickupTime);
 
-        // If pickup time is before or equal to the vehicle becomes available (including buffer), show warning
-        if (pickupMinutes <= availableAfterMinutes) {
+        // If pickup time is before the vehicle becomes available (including buffer), show warning
+        // Use strict < to allow booking at exactly the available time
+        if (pickupMinutes < availableAfterMinutes) {
           return {
             isPartiallyUnavailable: true,
             unavailableFrom,
@@ -500,7 +501,7 @@ export async function checkVehiclePartialUnavailability(
             availableAfter: availableAfterTime
           };
         }
-        // Pickup time is after vehicle becomes available (with buffer) - no warning needed
+        // Pickup time is at or after vehicle becomes available (with buffer) - no warning needed
         return { isPartiallyUnavailable: false };
       }
 
