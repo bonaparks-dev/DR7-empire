@@ -558,12 +558,17 @@ const CarWashBookingPage: React.FC = () => {
       customer_name: formData.fullName,
       customer_email: formData.email,
       customer_phone: formData.phone,
-      customer_fiscal_code: formData.codiceFiscale,
-      customer_address: formData.indirizzo,
-      customer_civic_number: formData.numeroCivico,
-      customer_city: formData.cittaResidenza,
-      customer_postal_code: formData.codicePostale,
-      customer_province: formData.provinciaResidenza,
+      customer: {
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        codiceFiscale: formData.codiceFiscale,
+        indirizzo: formData.indirizzo,
+        numeroCivico: formData.numeroCivico,
+        cittaResidenza: formData.cittaResidenza,
+        codicePostale: formData.codicePostale,
+        provinciaResidenza: formData.provinciaResidenza
+      },
       appointment_date: adjustedDateTime.toISOString(),
       appointment_time: formData.appointmentTime,
       booking_details: {
