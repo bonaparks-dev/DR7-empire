@@ -898,65 +898,7 @@ const CarWashBookingPage: React.FC = () => {
                 {lang === 'it' ? 'Informazioni Cliente' : 'Customer Information'}
               </h2>
 
-              {/* Existing Client Search - Admin Only */}
-              <div className="mb-6 p-4 bg-gray-800/50 border border-gray-700 rounded-lg">
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  {lang === 'it' ? '🔍 Cerca Cliente Esistente' : '🔍 Search Existing Client'}
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={clientSearchQuery}
-                    onChange={(e) => {
-                      setClientSearchQuery(e.target.value);
-                      setShowClientDropdown(e.target.value.length > 0);
-                    }}
-                    onFocus={() => setShowClientDropdown(clientSearchQuery.length > 0)}
-                    placeholder={lang === 'it' ? 'Cerca per nome, email, codice fiscale...' : 'Search by name, email, tax code...'}
-                    className="w-full bg-gray-800 border-gray-600 rounded-md p-3 text-white placeholder-gray-500"
-                  />
-
-                  {/* Dropdown with filtered clients */}
-                  {showClientDropdown && filteredClients.length > 0 && (
-                    <div className="absolute z-10 w-full mt-2 bg-gray-800 border border-gray-600 rounded-lg shadow-xl max-h-64 overflow-y-auto">
-                      {filteredClients.map((client) => {
-                        const displayName = client.tipo_cliente === 'persona_fisica'
-                          ? `${client.nome || ''} ${client.cognome || ''}`.trim()
-                          : (client.denominazione || client.ragione_sociale || client.ente_ufficio || '');
-
-                        return (
-                          <button
-                            key={client.id}
-                            type="button"
-                            onClick={() => handleClientSelect(client)}
-                            className="w-full text-left px-4 py-3 hover:bg-gray-700 border-b border-gray-700 last:border-b-0 transition-colors"
-                          >
-                            <div className="text-white font-medium">{displayName}</div>
-                            <div className="text-sm text-gray-400">
-                              {client.email} • {client.codice_fiscale || client.partita_iva || 'N/A'}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {client.tipo_cliente === 'persona_fisica' ? '👤 Persona Fisica' :
-                                client.tipo_cliente === 'azienda' ? '🏢 Azienda' : '🏛️ PA'}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {showClientDropdown && clientSearchQuery && filteredClients.length === 0 && (
-                    <div className="absolute z-10 w-full mt-2 bg-gray-800 border border-gray-600 rounded-lg shadow-xl p-4 text-center text-gray-400">
-                      {lang === 'it' ? 'Nessun cliente trovato' : 'No clients found'}
-                    </div>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  {lang === 'it'
-                    ? 'Seleziona un cliente esistente per compilare automaticamente i campi'
-                    : 'Select an existing client to auto-fill the fields'}
-                </p>
-              </div>
+              {/* Client search removed - form auto-fills from logged-in user data */}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
