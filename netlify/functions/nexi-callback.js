@@ -92,61 +92,75 @@ exports.handler = async (event) => {
       process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
     );
 
-    // Update booking/order in database
-    if (esito === 'OK') {
-      console.log(`Payment successful for order ${codTrans}`);
+    // Find booking by order ID
+    // The orderId in Nexi is the sanitized booking ID or custom order ID
+    console.log('Looking for booking with orderId:', codTrans);
 
-      // Update booking status
-      const { error: updateError } = await supabase
-        .from('bookings')
-        .update({
-          payment_status: 'paid',
-          nexi_payment_id: codTrans,
-          nexi_authorization_code: codAut,
-          paid_at: new Date().toISOString(),
-        })
-        .eq('id', codTrans);
+    const { data: bookings, error: fetchError } = await supabase
+      .from('bookings')
+      .select('*')
+      .or(`id.eq.${codTrans},nexi_order_id.eq.${codTrans}`)
+      .limit(1);
 
-      if (updateError) {
-        console.error('Error updating booking:', updateError);
-      } else {
-        console.log('Booking updated successfully');
-      }
-
-      // TODO: Send confirmation email
-      // TODO: Update Google Calendar
-      // TODO: Send WhatsApp notification
-
+    if (fetchError) {
+      console.error('Error fetching booking:', fetchError);
       return {
-        statusCode: 200,
-        body: 'OK',
-      };
-    } else {
-      console.log(`Payment failed for order ${codTrans}: ${messaggio}`);
-
-      // Update booking with failure status
-      const { error: updateError } = await supabase
-        .from('bookings')
-        .update({
-          payment_status: 'failed',
-          nexi_error_message: messaggio || 'Payment failed',
-        })
-        .eq('id', codTrans);
-
-      if (updateError) {
-        console.error('Error updating booking:', updateError);
-      }
-
-      return {
-        statusCode: 200,
-        body: 'Payment failed',
+        statusCode: 500,
+        body: 'Error fetching booking'
       };
     }
+
+    if (!bookings || bookings.length === 0) {
+      console.error('Booking not found for orderId:', codTrans);
+      return {
+        statusCode: 404,
+        body: 'Booking not found'
+      };
+    }
+
+    const booking = bookings[0];
+    console.log('Found booking:', booking.id);
+
+    // Update booking based on payment result
+    const updateData = {
+      payment_status: esito === 'OK' ? 'completed' : 'failed',
+      nexi_transaction_id: codTrans,
+      nexi_authorization_code: codAut || null,
+      payment_completed_at: esito === 'OK' ? new Date().toISOString() : null
+    };
+
+    if (esito !== 'OK') {
+      updateData.payment_error_message = messaggio || 'Payment failed';
+      updateData.status = 'cancelled'; // Cancel booking if payment failed
+    }
+
+    console.log('Updating booking with:', updateData);
+
+    const { error: updateError } = await supabase
+      .from('bookings')
+      .update(updateData)
+      .eq('id', booking.id);
+
+    if (updateError) {
+      console.error('Error updating booking:', updateError);
+      return {
+        statusCode: 500,
+        body: 'Error updating booking'
+      };
+    }
+
+    console.log(`✅ Booking ${booking.id} updated: payment_status=${updateData.payment_status}`);
+
+    // Return success response to Nexi
+    return {
+      statusCode: 200,
+      body: 'OK'
+    };
   } catch (error) {
-    console.error('Nexi callback error:', error);
+    console.error('Callback error:', error);
     return {
       statusCode: 500,
-      body: 'Internal server error',
+      body: 'Internal server error'
     };
   }
 };
