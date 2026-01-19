@@ -60,29 +60,31 @@ exports.handler = async (event) => {
     // Get Nexi configuration
     const macKey = process.env.NEXI_MAC_KEY;
 
-    if (!macKey) {
-      console.error('Missing Nexi MAC key');
-      return {
-        statusCode: 500,
-        body: 'Configuration error',
-      };
+    // Verify MAC only if configured
+    if (macKey && mac) {
+      console.log('Verifying MAC...');
+      const paramsForMAC = { ...params };
+      delete paramsForMAC.mac; // Remove MAC from params before verification
+
+      const calculatedMAC = generateMAC(paramsForMAC, macKey);
+
+      if (calculatedMAC !== mac) {
+        console.error('❌ Invalid MAC - possible fraud attempt');
+        console.error('Expected:', calculatedMAC);
+        console.error('Received:', mac);
+        return {
+          statusCode: 400,
+          body: 'Invalid MAC',
+        };
+      }
+
+      console.log('✅ MAC verified successfully');
+    } else if (!macKey) {
+      console.warn('⚠️  Operating without MAC verification - reduced security');
+      console.warn('⚠️  Accepting callback based on HTTPS only');
+    } else {
+      console.warn('⚠️  No MAC provided in callback');
     }
-
-    // Verify MAC
-    const paramsForMAC = { ...params };
-    delete paramsForMAC.mac; // Remove MAC from params before verification
-
-    const calculatedMAC = generateMAC(paramsForMAC, macKey);
-
-    if (calculatedMAC !== mac) {
-      console.error('Invalid MAC - possible fraud attempt');
-      return {
-        statusCode: 400,
-        body: 'Invalid MAC',
-      };
-    }
-
-    console.log('MAC verified successfully');
 
     // Initialize Supabase
     const supabase = createClient(

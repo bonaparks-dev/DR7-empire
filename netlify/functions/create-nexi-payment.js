@@ -58,8 +58,8 @@ exports.handler = async (event) => {
       environment: process.env.NEXI_ENVIRONMENT || 'production',
     };
 
-    // Validate configuration
-    if (!nexiConfig.apiKey || !nexiConfig.macKey || !nexiConfig.merchantId) {
+    // Validate configuration (MAC key is optional)
+    if (!nexiConfig.apiKey || !nexiConfig.merchantId) {
       console.error('Missing Nexi configuration:', {
         hasApiKey: !!nexiConfig.apiKey,
         hasMacKey: !!nexiConfig.macKey,
@@ -69,6 +69,12 @@ exports.handler = async (event) => {
         statusCode: 500,
         body: JSON.stringify({ error: 'Nexi configuration error' }),
       };
+    }
+
+    // Check if MAC authentication is available
+    const useMac = !!nexiConfig.macKey;
+    if (!useMac) {
+      console.warn('⚠️  Operating without MAC authentication - reduced security');
     }
 
     // Determine base URL
@@ -94,9 +100,14 @@ exports.handler = async (event) => {
       urlback: `${siteUrl}/payment-cancel`,
     };
 
-    // Generate MAC
-    const mac = generateMAC(params, nexiConfig.macKey);
-    params.mac = mac;
+    // Generate MAC only if key is available
+    if (useMac) {
+      const mac = generateMAC(params, nexiConfig.macKey);
+      params.mac = mac;
+      console.log('✅ Using MAC authentication');
+    } else {
+      console.log('ℹ️  Proceeding without MAC parameter');
+    }
 
     // Create payment with Nexi
     console.log('Creating Nexi payment:', { orderId, amount, currency });
@@ -107,7 +118,9 @@ exports.handler = async (event) => {
     const paymentUrl = `${baseUrl}/ecomm/ecomm/DispatcherServlet?${queryString}`;
 
     console.log('Payment URL created:', paymentUrl.substring(0, 100) + '...');
-    console.log('MAC generated:', mac);
+    if (useMac) {
+      console.log('MAC generated and included in request');
+    }
 
     // Return payment URL to frontend
     return {
