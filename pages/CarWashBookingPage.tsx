@@ -1088,34 +1088,26 @@ const CarWashBookingPage: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     {lang === 'it' ? 'Ora' : 'Time'} *
                   </label>
-                  <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
-                    {getAllTimeSlotsWithAvailability().map(slot => (
-                      <button
-                        key={slot.time}
-                        type="button"
-                        disabled={!slot.available}
-                        onClick={() => setFormData(prev => ({ ...prev, appointmentTime: slot.time }))}
-                        className={`
-                          px-4 py-3 rounded-lg font-semibold text-sm transition-all
-                          ${formData.appointmentTime === slot.time
-                            ? 'bg-white text-black ring-2 ring-white'
-                            : slot.available
-                              ? 'bg-gray-700 text-white hover:bg-gray-600 border border-gray-600'
-                              : 'bg-gray-900 text-gray-500 border-2 border-red-500 cursor-not-allowed opacity-60'
-                          }
-                        `}
-                        title={!slot.available ? (lang === 'it' ? `Non disponibile: ${slot.reason}` : `Unavailable: ${slot.reason}`) : ''}
-                      >
-                        {slot.time}
-                        {!slot.available && slot.reason === 'Already booked' && (
-                          <span className="block text-xs mt-1 text-red-400">
-                            {lang === 'it' ? 'Occupato' : 'Booked'}
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                  {errors.appointmentTime && <p className="text-xs text-red-400 mt-1">{errors.appointmentTime}</p>}
+                  <select
+                    name="appointmentTime"
+                    value={formData.appointmentTime}
+                    onChange={handleChange}
+                    required
+                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
+                    style={{ colorScheme: 'dark' }}
+                  >
+                    <option value="">
+                      {lang === 'it' ? 'Seleziona un orario' : 'Select a time'}
+                    </option>
+                    {getAllTimeSlotsWithAvailability()
+                      .filter(slot => slot.available)
+                      .map(slot => (
+                        <option key={slot.time} value={slot.time}>
+                          {slot.time}
+                        </option>
+                      ))}
+                  </select>
+                  {errors.appointmentTime && <p className="text-xs text-red-400 mt-1 font-semibold">{errors.appointmentTime}</p>}
                 </div>
               </div>
             </div>
