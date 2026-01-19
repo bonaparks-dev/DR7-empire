@@ -1332,8 +1332,8 @@ return (
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPaymentMethod('stripe')}
-                  className={`p-4 rounded-lg border-2 transition-all ${paymentMethod === 'stripe'
+                  onClick={() => setPaymentMethod('nexi')}
+                  className={`p-4 rounded-lg border-2 transition-all ${paymentMethod === 'nexi'
                     ? 'border-white bg-white/10'
                     : 'border-gray-700 bg-gray-800 hover:border-gray-600'
                     }`}
