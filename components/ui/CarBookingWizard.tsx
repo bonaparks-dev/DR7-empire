@@ -322,18 +322,20 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
 
       try {
+        // Count only SUPERCAR rentals for loyalty deposit waiver
         const { count, error } = await supabase
           .from('bookings')
           .select('*', { count: 'exact', head: true })
           .eq('booking_details->>email', email)
-          .eq('status', 'completed');
+          .eq('status', 'completed')
+          .eq('category', 'exotic'); // Only count supercar rentals
 
         if (!error && count !== null) {
           setCustomerRentalCount(count);
           setIsLoyalCustomer(count >= DEPOSIT_RULES.LOYAL_CUSTOMER_THRESHOLD);
         }
       } catch (error) {
-        console.error('Error fetching rental count:', error);
+        console.error('Error fetching supercar rental count:', error);
         setCustomerRentalCount(0);
         setIsLoyalCustomer(false);
       }
@@ -1148,15 +1150,25 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   // Calculate deposit based on customer loyalty, license years, and vehicle type
   const getDeposit = () => {
-    // Priority 1: Loyal customers (3+ rentals) get no deposit
-    if (isLoyalCustomer) return 0;
+    // Determine vehicle type
+    const vType = getVehicleType(item, categoryContext);
+    const isUtilitaria = vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS';
+    const isSupercar = !isUtilitaria;
 
-    // Priority 2: KASKO_DR7 insurance always has no deposit
+    // Priority 1: SUPERCAR ONLY - Loyal customers (3+ supercar rentals) OR Gold/Platinum members get no deposit
+    if (isSupercar) {
+      // Check loyalty (3+ supercar rentals)
+      if (isLoyalCustomer) return 0;
+
+      // Check membership tier (Gold or Platinum)
+      const membershipTier = getMembershipTierName(user);
+      if (membershipTier === 'gold' || membershipTier === 'platinum') return 0;
+    }
+
+    // Priority 2: KASKO_DR7 insurance always has no deposit (all vehicle types)
     if (formData.insuranceOption === 'KASKO_DR7') return 0;
 
     // Priority 3: Calculate based on vehicle type and license years
-    const vType = getVehicleType(item, categoryContext);
-    const isUtilitaria = vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS';
     const depositRules = isUtilitaria ? DEPOSIT_RULES.UTILITARIA : DEPOSIT_RULES.SUPERCAR;
 
     // Use license years from pricing calculation (≥5 years = lower deposit)
