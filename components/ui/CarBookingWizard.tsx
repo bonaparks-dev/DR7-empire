@@ -32,7 +32,7 @@ const FUNCTIONS_BASE =
 // Stripe publishable key
 const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
 
-type KaskoTier = 'RCA' | 'KASKO_BASE' | 'KASKO_BLACK' | 'KASKO_SIGNATURE' | 'KASKO_DR7';
+type KaskoTier = 'RCA' | 'KASKO_BASE' | 'KASKO_BLACK' | 'KASKO_SIGNATURE';
 
 // Helper function to determine vehicle type
 // Helper function to determine vehicle type
@@ -1165,8 +1165,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       if (membershipTier === 'gold' || membershipTier === 'platinum') return 0;
     }
 
-    // Priority 2: KASKO BASE or KASKO_DR7 insurance always has no deposit (all vehicle types)
-    if (formData.insuranceOption === 'KASKO_BASE' || formData.insuranceOption === 'KASKO_DR7') return 0;
+    // Priority 2: KASKO BASE insurance always has no deposit (all vehicle types)
+    if (formData.insuranceOption === 'KASKO_BASE') return 0;
 
     // Priority 3: Calculate based on vehicle type and license years
     const depositRules = isUtilitaria ? DEPOSIT_RULES.UTILITARIA : DEPOSIT_RULES.SUPERCAR;
@@ -2756,7 +2756,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                               {/* Automatic deposit calculation - single amount based on loyalty, insurance, and license years */}
                               Cauzione: {formatDeposit(getDeposit())}
                               {getDeposit() === 0 && isLoyalCustomer && ' (Cliente Fedele)'}
-                              {getDeposit() === 0 && !isLoyalCustomer && (formData.insuranceOption === 'KASKO_BASE' || formData.insuranceOption === 'KASKO_DR7') && ' (Nessun deposito richiesto)'}
+                              {getDeposit() === 0 && !isLoyalCustomer && formData.insuranceOption === 'KASKO_BASE' && ' (Nessun deposito richiesto)'}
                             </p>
                           </>
                         )}
