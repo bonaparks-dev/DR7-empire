@@ -182,156 +182,35 @@ export async function checkVehicleAvailability(
   targetVehicleId?: string
 ): Promise<BookingConflict[]> {
   try {
-    const requestedPickup = safeDate(pickupDate);
-    const requestedDropoff = safeDate(dropoffDate);
+    // Call Netlify Function instead of direct Supabase
+    const response = await fetch('/.netlify/functions/checkVehicleAvailability', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        vehicleName,
+        pickupDate,
+        dropoffDate,
+        targetVehicleId,
+      }),
+    });
 
-    // Buffer time in milliseconds (1h30 = 90 minutes)
-    const BUFFER_TIME_MS = 90 * 60 * 1000;
-
-    // Get vehicle plate - this is the most reliable way to match bookings
-    // Targa (license plate) is unique and doesn't have spacing/capitalization issues
-    const { data: vehicleData } = await supabase
-      .from('vehicles')
-      .select('plate')
-      .eq('display_name', vehicleName)
-      .single();
-
-    const vehiclePlate = vehicleData?.plate;
-
-    // Query bookings - prioritize matching by license plate (targa)
-    // Only fall back to name matching if plate is not available
-    let query = supabase
-      .from('bookings')
-      .select('pickup_date, dropoff_date, vehicle_name, vehicle_plate, status, booking_source, booking_details')
-      .neq('status', 'cancelled')
-      .order('pickup_date', { ascending: true });
-
-    if (vehiclePlate) {
-      // PRIMARY: Match by license plate (most reliable)
-      query = query.eq('vehicle_plate', vehiclePlate);
-    } else {
-      // FALLBACK: Match by name only if no plate available
-      // Use case-insensitive partial matching to handle spacing/capitalization
-      query = query.ilike('vehicle_name', `%${vehicleName.trim()}%`);
+    if (!response.ok) {
+      console.error('❌ Availability check failed:', {
+        status: response.status,
+        statusText: response.statusText,
+      });
+      // Return empty conflicts on error to not block user
+      return [];
     }
 
-    const { data: bookings, error } = await query;
-
-    if (error) {
-      console.error('Error checking vehicle availability:', error);
-      throw error;
-    }
-
-    // Query all reservations for this vehicle from reservations table (admin panel)
-    // We need to get the vehicle by matching display_name
-    // Admin reservations are explicitly linked to vehicle_id usually, but here we query by name first?
-    // Actually, Admin reservations rely on vehicle_id in the table 'reservations'.
-    // If we have targetVehicleId, we should use that to filter reservations precisely.
-    // If NOT, we have to look up by name.
-
-    let reservations: any[] = [];
-
-    if (targetVehicleId) {
-      // If we know the ID, we can query reservations directly by vehicle_id
-      const { data: reservationData, error: reservationError } = await supabase
-        .from('reservations')
-        .select('start_at, end_at, vehicle_id, status')
-        .eq('vehicle_id', targetVehicleId)
-        .in('status', ['confirmed', 'pending', 'active'])
-        .order('start_at', { ascending: true });
-
-      if (!reservationError && reservationData) {
-        reservations = reservationData;
-      }
-    } else {
-      // Fallback: look up by name
-      const { data: vehicle } = await supabase
-        .from('vehicles')
-        .select('id')
-        .eq('display_name', vehicleName)
-        .single();
-
-      if (vehicle) {
-        const { data: reservationData, error: reservationError } = await supabase
-          .from('reservations')
-          .select('start_at, end_at, vehicle_id, status')
-          .eq('vehicle_id', vehicle.id)
-          .in('status', ['confirmed', 'pending', 'active'])
-          .order('start_at', { ascending: true });
-
-        if (!reservationError && reservationData) {
-          reservations = reservationData;
-        }
-      }
-    }
-
-    // Check for date conflicts
-    const conflicts: BookingConflict[] = [];
-
-    // Helper function to check if dates overlap (including 1h30 buffer)
-    const hasConflict = (existingStart: Date, existingEnd: Date) => {
-      // Add 1h30 buffer after the existing booking ends
-      const existingEndWithBuffer = new Date(existingEnd.getTime() + BUFFER_TIME_MS);
-
-      return (
-        (requestedPickup >= existingStart && requestedPickup < existingEndWithBuffer) || // Starts during existing + buffer
-        (requestedDropoff > existingStart && requestedDropoff <= existingEndWithBuffer) || // Ends during existing + buffer
-        (requestedPickup <= existingStart && requestedDropoff >= existingEndWithBuffer) // Completely contains existing + buffer
-      );
-    };
-
-    // Check bookings table conflicts
-    if (bookings && bookings.length > 0) {
-      for (const booking of bookings) {
-        // Smart filtering:
-        // If we are checking for a specific vehicle ID (targetVehicleId):
-        // - We ignore bookings that represent a DIFFERENT vehicle ID (bookedId != targetId)
-        // - We MUST count bookings that have NO vehicle ID (legacy/name-only bookings) as conflicts to be safe
-        // - We MUST count bookings that MATCH our ID
-
-        if (targetVehicleId) {
-          // Check if booking has a specific ID stored in details
-          const bookedId = (booking.booking_details as any)?.vehicle_id;
-
-          // If booking has a specific ID and it's DIFFERENT from target, it's NOT a conflict for this specific car
-          if (bookedId && bookedId !== targetVehicleId) {
-            continue;
-          }
-        }
-
-        const existingPickup = safeDate(booking.pickup_date);
-        const existingDropoff = safeDate(booking.dropoff_date);
-
-        if (hasConflict(existingPickup, existingDropoff)) {
-          conflicts.push({
-            pickup_date: booking.pickup_date,
-            dropoff_date: booking.dropoff_date,
-            vehicle_name: booking.vehicle_name,
-          });
-        }
-      }
-    }
-
-    // Check reservations table conflicts (from admin panel)
-    if (reservations.length > 0) {
-      for (const reservation of reservations) {
-        const existingStart = safeDate(reservation.start_at);
-        const existingEnd = safeDate(reservation.end_at);
-
-        if (hasConflict(existingStart, existingEnd)) {
-          conflicts.push({
-            pickup_date: reservation.start_at,
-            dropoff_date: reservation.end_at,
-            vehicle_name: vehicleName,
-          });
-        }
-      }
-    }
-
-    return conflicts;
+    const data = await response.json();
+    return data.conflicts || [];
   } catch (error) {
-    console.error('Error in checkVehicleAvailability:', error);
-    throw error;
+    console.error('❌ Error in checkVehicleAvailability:', error);
+    // Return empty conflicts on error to not block user
+    return [];
   }
 }
 
