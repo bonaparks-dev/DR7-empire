@@ -527,11 +527,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     };
 
     // Office hours with 15-minute intervals
-    // Mon-Fri: Morning 10:30-12:45, Afternoon 17:30-18:30
+    // Mon-Fri: Morning 10:30-12:30, Afternoon 17:30-18:30
     // Saturday: Morning 10:30-13:30, Afternoon 17:30-18:30
     if (dayOfWeek >= 1 && dayOfWeek <= 5) {
       // Monday to Friday
-      addTimes(10 * 60 + 30, 12 * 60 + 45, 15);  // 10:30 to 12:45
+      addTimes(10 * 60 + 30, 12 * 60 + 30, 15);  // 10:30 to 12:30
       addTimes(17 * 60 + 30, 18 * 60 + 30, 15);  // 17:30 to 18:30
     } else if (dayOfWeek === 6) {
       // Saturday - extended morning hours
