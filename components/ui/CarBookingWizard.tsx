@@ -1338,20 +1338,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const isUtilitaria = vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS';
     const isSupercar = !isUtilitaria;
 
-    // Priority 1: SUPERCAR ONLY - Loyal customers (3+ supercar rentals) OR Gold/Platinum members get no deposit
-    if (isSupercar) {
-      // Check loyalty (3+ supercar rentals)
-      if (isLoyalCustomer) return 0;
+    // Rule 1: Fidelizzato (Gold/Platinum) OR 3+ supercar rentals = NO deposit for ANY vehicle
+    const membershipTier = getMembershipTierName(user);
+    if (membershipTier === 'gold' || membershipTier === 'platinum') return 0;
+    if (isLoyalCustomer) return 0; // 3+ supercar rentals
 
-      // Check membership tier (Gold or Platinum)
-      const membershipTier = getMembershipTierName(user);
-      if (membershipTier === 'gold' || membershipTier === 'platinum') return 0;
-    }
-
-    // Priority 2: KASKO BASE insurance always has no deposit (all vehicle types)
-    if (formData.insuranceOption === 'KASKO_BASE') return 0;
-
-    // Priority 3: Calculate based on vehicle type and license years
+    // Rule 2: Standard customer - calculate deposit based on vehicle type and license years
     const depositRules = isUtilitaria ? DEPOSIT_RULES.UTILITARIA : DEPOSIT_RULES.SUPERCAR;
 
     // Use license years from pricing calculation (≥5 years = lower deposit)
@@ -1754,6 +1746,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         stripe_payment_intent_id: paymentIntentId || null,
         booked_at: new Date().toISOString(),
         booking_usage_zone: formData.usageZone || null, // Store usage zone for residency pricing
+        deposit_amount: getDeposit(), // Store calculated deposit for email confirmation
         booking_details: {
           customer: {
             fullName: `${formData.firstName} ${formData.lastName}`,

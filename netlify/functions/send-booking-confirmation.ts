@@ -136,15 +136,10 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       insuranceDisplayName = 'KASKO DR7';
     }
 
-    // Calculate deposit based on insurance type
-    let depositAmount = 'N/A';
-    if (insuranceOption === 'KASKO_BASE') {
-      depositAmount = '500€';
-    } else if (insuranceOption === 'KASKO_BLACK') {
-      depositAmount = '250€';
-    } else if (insuranceOption === 'KASKO_SIGNATURE') {
-      depositAmount = '0€';
-    }
+    // Get deposit from booking data (calculated in frontend based on loyalty/membership)
+    const depositAmount = booking.deposit_amount !== undefined && booking.deposit_amount !== null
+      ? (booking.deposit_amount === 0 ? '0€' : `${booking.deposit_amount}€`)
+      : 'N/A';
 
     // Get pickup location - replace dr7_office with actual address
     let pickupLocation = booking.pickup_location || 'DR7 Office';
