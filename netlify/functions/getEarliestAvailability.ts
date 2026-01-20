@@ -137,7 +137,8 @@ export const handler: Handler = async (event) => {
         // Sort by start time
         allConflicts.sort((a, b) => a.start.getTime() - b.start.getTime());
 
-        // Check if available NOW (no current conflicts)
+
+        // Check if available NOW (no conflicts at all)
         if (allConflicts.length === 0) {
             return {
                 statusCode: 200,
@@ -151,32 +152,49 @@ export const handler: Handler = async (event) => {
             };
         }
 
-        // Check if currently in a conflict
-        const currentConflict = allConflicts.find(c => now >= c.start && now < c.end);
+        // Find the next conflict (either current or upcoming)
+        const nextConflict = allConflicts.find(c => c.end > now);
 
-        if (currentConflict) {
-            // Currently unavailable - return when it becomes available
+        if (!nextConflict) {
+            // All conflicts are in the past - available now
+            return {
+                statusCode: 200,
+                headers,
+                body: JSON.stringify({
+                    isAvailable: true,
+                    earliestAvailableDate: now.toISOString().split('T')[0],
+                    earliestAvailableTime: now.toTimeString().slice(0, 5),
+                    earliestAvailableDatetime: now.toISOString(),
+                }),
+            };
+        }
+
+        // Check if we're currently IN the next conflict
+        if (now >= nextConflict.start && now < nextConflict.end) {
+            // Currently unavailable - show when it becomes available
             return {
                 statusCode: 200,
                 headers,
                 body: JSON.stringify({
                     isAvailable: false,
-                    earliestAvailableDate: currentConflict.end.toISOString().split('T')[0],
-                    earliestAvailableTime: currentConflict.end.toTimeString().slice(0, 5),
-                    earliestAvailableDatetime: currentConflict.end.toISOString(),
+                    earliestAvailableDate: nextConflict.end.toISOString().split('T')[0],
+                    earliestAvailableTime: nextConflict.end.toTimeString().slice(0, 5),
+                    earliestAvailableDatetime: nextConflict.end.toISOString(),
                 }),
             };
         }
 
-        // Not currently in conflict - available now
+        // There's an upcoming conflict but we're not in it yet
+        // Show that vehicle will become unavailable at that time
         return {
             statusCode: 200,
             headers,
             body: JSON.stringify({
-                isAvailable: true,
-                earliestAvailableDate: now.toISOString().split('T')[0],
-                earliestAvailableTime: now.toTimeString().slice(0, 5),
-                earliestAvailableDatetime: now.toISOString(),
+                isAvailable: false,
+                earliestAvailableDate: nextConflict.end.toISOString().split('T')[0],
+                earliestAvailableTime: nextConflict.end.toTimeString().slice(0, 5),
+                earliestAvailableDatetime: nextConflict.end.toISOString(),
+                nextUnavailableFrom: nextConflict.start.toISOString(),
             }),
         };
 
