@@ -189,19 +189,6 @@ const CreditWalletPage: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
 
-  // Initialize Stripe
-  useEffect(() => {
-    if ((window as any).Stripe) {
-      if (!STRIPE_PUBLISHABLE_KEY || STRIPE_PUBLISHABLE_KEY.startsWith('YOUR_')) {
-        console.error("Stripe.js has loaded, but the publishable key is not set.");
-        setPaymentError("Payment service is not configured correctly. Please contact support.");
-        return;
-      }
-      const stripeInstance = (window as any).Stripe(STRIPE_PUBLISHABLE_KEY);
-      setStripe(stripeInstance);
-      setElements(stripeInstance.elements());
-    }
-  }, []);
 
   // Pre-fill user data from customers_extended table
   useEffect(() => {
@@ -274,88 +261,6 @@ const CreditWalletPage: React.FC = () => {
   }, [user]);
 
   // Create payment intent when modal opens
-  useEffect(() => {
-    if (showPaymentModal && selectedPackage) {
-      setIsClientSecretLoading(true);
-      setPaymentError(null);
-      setClientSecret(null);
-
-      fetch('/.netlify/functions/create-payment-intent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: selectedPackage.rechargeAmount,
-          currency: 'eur',
-          email: user?.email,
-          purchaseType: 'credit-wallet',
-          metadata: {
-            packageId: selectedPackage.id,
-            packageName: selectedPackage.name,
-            receivedAmount: selectedPackage.receivedAmount,
-            bonus: selectedPackage.bonus
-          }
-        })
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.error) {
-            setPaymentError(data.error);
-          } else {
-            setClientSecret(data.clientSecret);
-          }
-        })
-        .catch(error => {
-          console.error('Failed to fetch client secret:', error);
-          setPaymentError('Could not connect to payment server.');
-        })
-        .finally(() => {
-          setIsClientSecretLoading(false);
-        });
-    }
-  }, [showPaymentModal, selectedPackage, user]);
-
-  // Mount Stripe card element
-  useEffect(() => {
-    if (elements && clientSecret && cardElementRef.current && showPaymentModal) {
-      const existingCard = elements.getElement('card');
-      if (existingCard) {
-        existingCard.unmount();
-      }
-
-      const timer = setTimeout(() => {
-        if (cardElementRef.current) {
-          const card = elements.create('card', {
-            style: {
-              base: {
-                color: '#ffffff',
-                fontFamily: '"Exo 2", sans-serif',
-                fontSize: '16px',
-                '::placeholder': { color: '#a0aec0' }
-              },
-              invalid: { color: '#ef4444', iconColor: '#ef4444' }
-            }
-          });
-
-          try {
-            card.mount(cardElementRef.current);
-            card.on('change', (event) => {
-              setPaymentError(event.error ? event.error.message : null);
-            });
-          } catch (error) {
-            console.error('Error mounting Stripe card element:', error);
-            setPaymentError('Failed to load payment form. Please refresh the page.');
-          }
-        }
-      }, 100);
-
-      return () => {
-        clearTimeout(timer);
-        const card = elements.getElement('card');
-        if (card) {
-          card.unmount();
-        }
-      };
-    }
   }, [elements, clientSecret, showPaymentModal]);
 
   // Validation functions
