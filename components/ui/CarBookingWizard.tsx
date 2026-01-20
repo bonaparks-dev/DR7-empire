@@ -2195,6 +2195,24 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             return;
                           }
 
+                          // Check if date is within any availability window
+                          if (availabilityWindows.length > 0) {
+                            const selectedDate = new Date(value);
+                            const isInWindow = availabilityWindows.some(w => {
+                              const start = new Date(w.start);
+                              const end = new Date(w.end);
+                              start.setHours(0, 0, 0, 0);
+                              end.setHours(23, 59, 59, 999);
+                              selectedDate.setHours(12, 0, 0, 0); // Noon to avoid timezone issues
+                              return selectedDate >= start && selectedDate <= end;
+                            });
+
+                            if (!isInWindow) {
+                              alert('La data selezionata non è disponibile.\\n\\nPer favore scegli una data all\'interno delle finestre di disponibilità mostrate sopra.');
+                              return;
+                            }
+                          }
+
                           // Auto-Clear Return Date if Pickup > Return or invalid
                           // IMPROVED: Reset return date cleanly to avoid "return date before pickup date" errors
                           const newPickup = value;
@@ -2296,6 +2314,24 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           if (formData.pickupDate && value < formData.pickupDate) {
                             alert('La data di riconsegna non può essere precedente alla data di ritiro.');
                             return;
+                          }
+
+                          // Check if date is within any availability window
+                          if (availabilityWindows.length > 0) {
+                            const selectedDate = new Date(value);
+                            const isInWindow = availabilityWindows.some(w => {
+                              const start = new Date(w.start);
+                              const end = new Date(w.end);
+                              start.setHours(0, 0, 0, 0);
+                              end.setHours(23, 59, 59, 999);
+                              selectedDate.setHours(12, 0, 0, 0);
+                              return selectedDate >= start && selectedDate <= end;
+                            });
+
+                            if (!isInWindow) {
+                              alert('La data selezionata non è disponibile.\\n\\nPer favore scegli una data all\'interno delle finestre di disponibilità mostrate sopra.');
+                              return;
+                            }
                           }
 
                           handleChange(e);
