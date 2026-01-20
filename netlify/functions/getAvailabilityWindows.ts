@@ -119,7 +119,6 @@ export const handler: Handler = async (event) => {
         const freeWindows: TimeWindow[] = [];
         const searchStart = new Date(Math.max(now.getTime(), horizonStart.getTime()));
 
-        // Window before first booking
         if (mergedBusy.length === 0) {
             // No bookings at all - entire horizon is free
             freeWindows.push({
@@ -127,12 +126,21 @@ export const handler: Handler = async (event) => {
                 end: horizonEnd.toISOString()
             });
         } else {
-            // Check if there's a gap before first booking
-            if (searchStart < mergedBusy[0].start) {
-                freeWindows.push({
-                    start: searchStart.toISOString(),
-                    end: mergedBusy[0].start.toISOString()
-                });
+            // Check if we're currently in a booking
+            const currentBooking = mergedBusy.find(b => now >= b.start && now < b.end);
+
+            if (currentBooking) {
+                // Currently in a booking - first free window starts after it ends
+                // Skip to gaps between bookings
+            } else {
+                // Not in a booking - check if there's availability before first booking
+                if (now < mergedBusy[0].start) {
+                    // Available NOW until first booking starts
+                    freeWindows.push({
+                        start: now.toISOString(),
+                        end: mergedBusy[0].start.toISOString()
+                    });
+                }
             }
 
             // Windows between bookings
