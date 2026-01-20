@@ -2474,6 +2474,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       {!formData.pickupDate && (
                         <p className="text-xs text-gray-400 mt-1">Seleziona prima la data di ritiro</p>
                       )}
+                      {formData.pickupDate && !formData.pickupTime && (
+                        <p className="text-xs text-gray-400 mt-1">Seleziona prima l'ora di ritiro</p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
