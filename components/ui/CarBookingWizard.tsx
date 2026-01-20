@@ -1257,6 +1257,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       if (formData.insuranceOption !== 'KASKO_BASE') updates.insuranceOption = 'KASKO_BASE';
       if (formData.kmPackageType !== 'unlimited') updates.kmPackageType = 'unlimited';
 
+      // Auto-select FUORI_ZONA to bypass usage zone selection (VIP unrestricted access)
+      if (formData.usageZone !== 'FUORI_ZONA') updates.usageZone = 'FUORI_ZONA';
+
       // Ensure name is correct if empty (Massimo specific fallback)
       if (!formData.firstName && !updates.firstName) updates.firstName = 'Massimo';
       if (!formData.lastName && !updates.lastName) updates.lastName = 'Runchina';
@@ -1276,7 +1279,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (Object.keys(updates).length > 0) {
       setFormData(prev => ({ ...prev, ...updates }));
     }
-  }, [user, formData.firstName, formData.lastName, formData.email, formData.insuranceOption, formData.kmPackageType]);
+  }, [user, formData.firstName, formData.lastName, formData.email, formData.insuranceOption, formData.kmPackageType, formData.usageZone]);
 
 
 

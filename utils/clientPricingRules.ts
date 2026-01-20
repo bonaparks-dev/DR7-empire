@@ -9,13 +9,10 @@ export const SPECIAL_CLIENTS = {
     MASSIMO_RUNCHINA: {
         email: 'massimorunchina69@gmail.com',
         config: {
-            baseRate: 339,              // Base rate before any discounts
-            // Tiered discount structure based on rental duration
+            baseRate: 305,              // Fixed rate: €305 per day for any supercar
+            // Simple discount: 10% off starting from day 3 onwards
             discountTiers: [
-                { minDays: 7, discount: 0.30 },  // 7+ days: -30%
-                { minDays: 5, discount: 0.25 },  // 5-6 days: -25%
-                { minDays: 4, discount: 0.15 },  // 4 days: -15%
-                { minDays: 1, discount: 0.10 }   // 1-3 days: -10%
+                { minDays: 3, discount: 0.10 }   // 3+ days: -10%
             ],
             includeUnlimitedKm: true,
             includeKaskoBase: true,
@@ -101,9 +98,9 @@ export interface ClientPricingResult {
  */
 const getMassimoDiscount = (days: number): number => {
     const tiers = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.discountTiers;
-    // Find the first tier where days >= minDays (tiers are sorted descending)
+    // Find the first tier where days >= minDays
     const tier = tiers.find(t => days >= t.minDays);
-    return tier ? tier.discount : 0.10; // Default to 10% if no tier matches
+    return tier ? tier.discount : 0; // No discount for 1-2 days, 10% for 3+ days
 };
 
 export const calculateClientPricing = (
