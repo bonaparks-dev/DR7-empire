@@ -2478,16 +2478,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       </select>
                     </div>
                   </div>
-                  <div className="p-4 bg-gray-800 rounded-lg">
-                    <div className="flex items-center justify-center gap-3 mb-3">
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/1280px-Mastercard-logo.svg.png" alt="Mastercard" className="h-6 opacity-70" />
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png" alt="Visa" className="h-6 opacity-70" />
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/PayPal.svg/2560px-PayPal.svg.png" alt="PayPal" className="h-6 opacity-70" />
-                    </div>
-                    <p className="text-gray-400 text-sm text-center">
-                      Sarai reindirizzato a una pagina di pagamento sicura per completare la transazione.
-                    </p>
-                  </div>   {/* Vehicle Availability Check */}
+                  {/* Vehicle Availability Check */}
                   {isCheckingAvailability && (
                     <div className="mt-4 p-3 bg-blue-900/20 border border-blue-600 rounded-lg">
                       <p className="text-blue-300 text-sm">Verifica disponibilità veicolo...</p>
