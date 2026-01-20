@@ -2181,20 +2181,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           const value = e.target.value;
                           if (!value) return;
 
-                          if (getDayOfWeek(value) === 0) {
-                            alert('Non è possibile ritirare il veicolo di domenica. Siamo chiusi la domenica.\n\nPer favore seleziona un altro giorno.');
-                            return;
-                          }
-                          // Specific Check for Jan 1-4 2026 Closure
-                          if (['2026-01-01', '2026-01-02', '2026-01-03', '2026-01-04'].includes(value)) {
-                            alert('Siamo chiusi per ferie. Riapriremo il 5 Gennaio 2026.');
-                            return;
-                          }
-                          if (isHoliday(value)) {
-                            alert('Non è possibile ritirare il veicolo nei giorni festivi.\n\nPer favore seleziona un altro giorno.');
-                            return;
-                          }
-
                           // Check if date is within any availability window
                           if (availabilityWindows.length > 0) {
                             const selectedDate = new Date(value);
@@ -2294,21 +2280,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         onChange={(e) => {
                           const value = e.target.value;
                           if (!value) return;
-
-                          // Check if selected date is Sunday (0 = Sunday)
-                          if (getDayOfWeek(value) === 0) {
-                            alert('Non è possibile riconsegnare il veicolo di domenica. Siamo chiusi la domenica.\n\nPer favorere seleziona un altro giorno.');
-                            return;
-                          }
-                          // Specific Check for Jan 1-4 2026 Closure
-                          if (['2026-01-01', '2026-01-02', '2026-01-03', '2026-01-04'].includes(value)) {
-                            alert('Siamo chiusi per ferie. Riapriremo il 5 Gennaio 2026.');
-                            return;
-                          }
-                          if (isHoliday(value)) {
-                            alert('Non è possibile riconsegnare il veicolo nei giorni festivi.\n\nPer favore seleziona un altro giorno.');
-                            return;
-                          }
 
                           // STRICT VALIDATION: Return Date cannot be before Pickup Date
                           if (formData.pickupDate && value < formData.pickupDate) {
