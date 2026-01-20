@@ -127,7 +127,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
-  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const today = useMemo(() => {
+    // Get today's date in Italy timezone (Europe/Rome)
+    const italyDate = new Date().toLocaleString('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' });
+    return italyDate.split(',')[0]; // Returns YYYY-MM-DD format
+  }, []);
 
   const [formData, setFormData] = useState(() => {
     return {
@@ -2156,7 +2160,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           }
                         }}
                         // FIX: Ensure min date is never in the past, even if availability says so (which we fixed in logic, but safety first)
-                        min={earliestAvailability?.earliestAvailableDate && new Date(earliestAvailability.earliestAvailableDate) > new Date(today)
+                        min={earliestAvailability?.earliestAvailableDate && earliestAvailability.earliestAvailableDate > today
                           ? earliestAvailability.earliestAvailableDate
                           : today}
                         required
