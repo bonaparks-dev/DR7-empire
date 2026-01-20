@@ -128,6 +128,10 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     let insuranceDisplayName = insuranceOption;
     if (insuranceOption === 'RCA' || insuranceOption === 'KASKO_BASE') {
       insuranceDisplayName = 'KASKO BASE';
+    } else if (insuranceOption === 'KASKO_BLACK') {
+      insuranceDisplayName = 'KASKO BLACK';
+    } else if (insuranceOption === 'KASKO_SIGNATURE') {
+      insuranceDisplayName = 'KASKO SIGNATURE';
     } else if (insuranceOption === 'KASKO_DR7') {
       insuranceDisplayName = 'KASKO DR7';
     }
@@ -140,16 +144,6 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       depositAmount = '250€';
     } else if (insuranceOption === 'KASKO_SIGNATURE') {
       depositAmount = '0€';
-    }
-
-    // Format insurance name for display
-    let insuranceDisplayName = insuranceOption;
-    if (insuranceOption === 'KASKO_BASE') {
-      insuranceDisplayName = 'KASKO BASE';
-    } else if (insuranceOption === 'KASKO_BLACK') {
-      insuranceDisplayName = 'KASKO BLACK';
-    } else if (insuranceOption === 'KASKO_SIGNATURE') {
-      insuranceDisplayName = 'KASKO SIGNATURE';
     }
 
     // Get pickup location - replace dr7_office with actual address
