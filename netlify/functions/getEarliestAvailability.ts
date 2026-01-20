@@ -180,12 +180,19 @@ export const handler: Handler = async (event) => {
             }),
         };
 
+
     } catch (error) {
         console.error('Error calculating earliest availability:', error);
-        earliestAvailableDate: now.toISOString().split('T')[0],
-            earliestAvailableTime: now.toTimeString().slice(0, 5),
+        const now = new Date();
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+                isAvailable: true,
+                earliestAvailableDate: now.toISOString().split('T')[0],
+                earliestAvailableTime: now.toTimeString().slice(0, 5),
                 earliestAvailableDatetime: now.toISOString(),
             }),
-};
+        };
     }
 };
