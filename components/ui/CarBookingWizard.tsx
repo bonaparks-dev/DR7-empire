@@ -205,6 +205,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     earliestAvailableDatetime?: string;
   } | null>(null);
 
+  // Availability windows for gap detection
+  interface AvailabilityWindow {
+    start: string; // ISO timestamp
+    end: string;
+  }
+  const [availabilityWindows, setAvailabilityWindows] = useState<AvailabilityWindow[]>([]);
+  const [selectedWindow, setSelectedWindow] = useState<AvailabilityWindow | null>(null);
+  const [isLoadingWindows, setIsLoadingWindows] = useState(false);
+
   // Credit wallet state
   const [creditBalance, setCreditBalance] = useState<number>(0);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
