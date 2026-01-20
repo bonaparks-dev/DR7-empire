@@ -517,11 +517,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
     };
 
-    // Office hours: 9:00-13:00 and 16:00-18:30 (max 18:30 for pickup/dropoff)
+    // Office hours with 15-minute intervals
+    // Morning: 10:30-12:45, Afternoon: 17:30-18:30
     // Same for all weekdays (Mon-Sat)
     if (dayOfWeek >= 1 && dayOfWeek <= 6) {
-      addTimes(9 * 60, 13 * 60, 30);        // 9:00 to 13:00
-      addTimes(16 * 60, 18 * 60 + 30, 30);  // 16:00 to 18:30
+      addTimes(10 * 60 + 30, 12 * 60 + 45, 15);  // 10:30 to 12:45
+      addTimes(17 * 60 + 30, 18 * 60 + 30, 15);  // 17:30 to 18:30
     }
 
     // Filter out past times if the selected date is today
