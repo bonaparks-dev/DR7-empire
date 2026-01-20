@@ -30,7 +30,6 @@ const FUNCTIONS_BASE =
     : window.location.origin);
 
 // Stripe publishable key
-const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
 
 type KaskoTier = 'RCA' | 'KASKO_BASE' | 'KASKO_BLACK' | 'KASKO_SIGNATURE';
 
@@ -212,12 +211,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
 
   // Stripe
-  const cardElementRef = useRef<HTMLDivElement>(null);
+  // Nexi - no card ref
   const [stripe, setStripe] = useState<any>(null);
   const [cardElement, setCardElement] = useState<any>(null);
-  const [stripeError, setStripeError] = useState<string | null>(null);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [isClientSecretLoading, setIsClientSecretLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  // Nexi - no client secret
+  // Nexi - no loading
 
   // Camera
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -620,7 +619,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if ((window as any).Stripe) {
       if (!STRIPE_PUBLISHABLE_KEY || STRIPE_PUBLISHABLE_KEY.startsWith('YOUR_')) {
         console.error("Stripe.js loaded but publishable key is not set.");
-        setStripeError("Payment service is not configured correctly.");
+        setPaymentError("Payment service is not configured correctly.");
         return;
       }
       setStripe((window as any).Stripe(STRIPE_PUBLISHABLE_KEY));
@@ -1043,7 +1042,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (step === 4 && finalTotal > 0) {
       setIsClientSecretLoading(true);
       setClientSecret(null);
-      setStripeError(null);
+      setPaymentError(null);
 
       fetch(`${FUNCTIONS_BASE}/.netlify/functions/create-payment-intent`, {
         method: 'POST',
@@ -1063,12 +1062,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           return res.json();
         })
         .then((data) => {
-          if (data.error) { setStripeError(data.error); }
+          if (data.error) { setPaymentError(data.error); }
           else { setClientSecret(data.clientSecret); }
         })
         .catch(err => {
           console.error('Failed to fetch client secret:', err);
-          setStripeError('Could not connect to payment server.');
+          setPaymentError('Could not connect to payment server.');
         })
         .finally(() => setIsClientSecretLoading(false));
     }
@@ -1094,7 +1093,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       });
       setCardElement(card);
       card.mount(cardElementRef.current);
-      card.on('change', (event: any) => setStripeError(event.error ? event.error.message : null));
+      card.on('change', (event: any) => setPaymentError(event.error ? event.error.message : null));
     }
     return () => { if (card) { card.destroy(); setCardElement(null); } };
   }, [stripe, step, formData.paymentMethod, clientSecret]);
@@ -1703,7 +1702,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     // Credit wallet payment (ATOMIC TRANSACTION)
     if (!user?.id) {
-      setStripeError('User not logged in');
+      setPaymentError('User not logged in');
       setIsProcessing(false);
       return;
     }
@@ -1711,7 +1710,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // Check sufficient balance (Front-check for UX)
     const hasBalance = await hasSufficientBalance(user.id, finalTotal);
     if (!hasBalance) {
-      setStripeError(`Credito insufficiente. Saldo attuale: €${creditBalance.toFixed(2)}, Richiesto: €${finalTotal.toFixed(2)}`);
+      setPaymentError(`Credito insufficiente. Saldo attuale: €${creditBalance.toFixed(2)}, Richiesto: €${finalTotal.toFixed(2)}`);
       setIsProcessing(false);
       return;
     }
@@ -1812,7 +1811,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
         if (error) {
           console.error("RPC Error:", error);
-          setStripeError(error.message);
+          setPaymentError(error.message);
           setIsProcessing(false);
           // Attempt Refund logic if needed? 
           // RPC handles rollback internally, so no manual refund needed!
@@ -1894,19 +1893,19 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         } else {
           // RPC returned but success was not true
           console.warn("RPC returned success: false", data);
-          setStripeError(data?.message || "Booking failed. Please try again or contact support.");
+          setPaymentError(data?.message || "Booking failed. Please try again or contact support.");
           setIsProcessing(false);
         }
 
       } catch (err: any) {
         console.error("Catch Error during booking:", err);
-        setStripeError(err.message || "Unknown error during booking");
+        setPaymentError(err.message || "Unknown error during booking");
         setIsProcessing(false);
       }
     } else if (formData.paymentMethod === 'stripe' && step === 4) {
-      setStripeError(null);
+      setPaymentError(null);
       if (!stripe || !cardElement || !clientSecret) {
-        setStripeError("Payment system is not ready.");
+        setPaymentError("Payment system is not ready.");
         setIsProcessing(false);
         return;
       }
@@ -1923,7 +1922,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       });
 
       if (error) {
-        setStripeError(error.message || "An unexpected error occurred.");
+        setPaymentError(error.message || "An unexpected error occurred.");
         setIsProcessing(false);
         return;
       }
@@ -1931,7 +1930,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
         await finalizeBooking(paymentIntent.id);
       } else {
-        setStripeError("Payment not completed. Status: " + paymentIntent?.status);
+        setPaymentError("Payment not completed. Status: " + paymentIntent?.status);
         setIsProcessing(false);
       }
     }
@@ -2671,9 +2670,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       )}
                     </>
                   )}
-                  {stripeError && (
+                  {paymentError && (
                     <div className="mt-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg">
-                      <p className="text-sm text-red-400 text-center">{stripeError}</p>
+                      <p className="text-sm text-red-400 text-center">{paymentError}</p>
                     </div>
                   )}
                 </div>
@@ -2683,7 +2682,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 min-h-[56px] flex items-center">
                     {isClientSecretLoading ? <div className="text-gray-400 text-sm">Initializing Payment...</div> : <div ref={cardElementRef} className="w-full" />}
                   </div>
-                  {stripeError && <p className="text-xs text-red-400 mt-1">{stripeError}</p>}
+                  {paymentError && <p className="text-xs text-red-400 mt-1">{paymentError}</p>}
                 </>
               )}
             </section>

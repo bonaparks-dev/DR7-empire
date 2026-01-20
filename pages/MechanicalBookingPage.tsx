@@ -5,10 +5,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
 import { MECHANICAL_SERVICES } from './MechanicalServicesPage';
-import type { Stripe, StripeElements } from '@stripe/stripe-js';
 import { getUserCreditBalance, deductCredits, hasSufficientBalance } from '../utils/creditWallet';
 
-const STRIPE_PUBLISHABLE_KEY = 'pk_live_51S3dDjQcprtTyo8tBfBy5mAZj8PQXkxfZ1RCnWskrWFZ2WEnm1u93ZnE2tBi316Gz2CCrvLV98IjSoiXb0vSDpOQ003fNG69Y2';
 
 const MechanicalBookingPage: React.FC = () => {
   const { lang } = useTranslation();
@@ -56,12 +54,12 @@ const MechanicalBookingPage: React.FC = () => {
 
   // Stripe payment state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [stripe, setStripe] = useState<Stripe | null>(null);
-  const [elements, setElements] = useState<StripeElements | null>(null);
-  const cardElementRef = useRef<HTMLDivElement>(null);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [isClientSecretLoading, setIsClientSecretLoading] = useState(false);
-  const [stripeError, setStripeError] = useState<string | null>(null);
+  // Nexi - no stripe
+  // Nexi - no elements
+  // Nexi - no card element
+  // Nexi - no client secret
+  // Nexi - no loading
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [pendingBookingData, setPendingBookingData] = useState<any>(null);
 
@@ -101,7 +99,7 @@ const MechanicalBookingPage: React.FC = () => {
     if ((window as any).Stripe) {
       if (!STRIPE_PUBLISHABLE_KEY || STRIPE_PUBLISHABLE_KEY.startsWith('YOUR_')) {
         console.error("Stripe.js has loaded, but the publishable key is not set.");
-        setStripeError("Payment service is not configured correctly. Please contact support.");
+        setPaymentError("Payment service is not configured correctly. Please contact support.");
         return;
       }
       const stripeInstance = (window as any).Stripe(STRIPE_PUBLISHABLE_KEY);
@@ -150,7 +148,7 @@ const MechanicalBookingPage: React.FC = () => {
   useEffect(() => {
     if (showPaymentModal && paymentMethod === 'stripe' && selectedService && selectedService.price > 0) {
       setIsClientSecretLoading(true);
-      setStripeError(null);
+      setPaymentError(null);
       setClientSecret(null);
 
       fetch('/.netlify/functions/create-payment-intent', {
@@ -171,14 +169,14 @@ const MechanicalBookingPage: React.FC = () => {
         .then(res => res.json())
         .then(data => {
           if (data.error) {
-            setStripeError(data.error);
+            setPaymentError(data.error);
           } else {
             setClientSecret(data.clientSecret);
           }
         })
         .catch(error => {
           console.error('Failed to fetch client secret:', error);
-          setStripeError('Could not connect to payment server.');
+          setPaymentError('Could not connect to payment server.');
         })
         .finally(() => {
           setIsClientSecretLoading(false);
@@ -211,11 +209,11 @@ const MechanicalBookingPage: React.FC = () => {
           try {
             card.mount(cardElementRef.current);
             card.on('change', (event) => {
-              setStripeError(event.error ? event.error.message : null);
+              setPaymentError(event.error ? event.error.message : null);
             });
           } catch (error) {
             console.error('Error mounting Stripe card element:', error);
-            setStripeError('Failed to load payment form. Please refresh the page.');
+            setPaymentError('Failed to load payment form. Please refresh the page.');
           }
         }
       }, 100);
@@ -415,7 +413,7 @@ const MechanicalBookingPage: React.FC = () => {
     }
 
     setIsProcessing(true);
-    setStripeError(null);
+    setPaymentError(null);
 
     try {
       let bookingDataWithPayment;
@@ -431,7 +429,7 @@ const MechanicalBookingPage: React.FC = () => {
         // Check sufficient balance
         const hasBalance = await hasSufficientBalance(user.id, totalAmount);
         if (!hasBalance) {
-          setStripeError(lang === 'it' ? 'Credito insufficiente' : 'Insufficient credit');
+          setPaymentError(lang === 'it' ? 'Credito insufficiente' : 'Insufficient credit');
           setIsProcessing(false);
           return;
         }
@@ -446,7 +444,7 @@ const MechanicalBookingPage: React.FC = () => {
         );
 
         if (!deductResult.success) {
-          setStripeError(deductResult.error || 'Failed to deduct credits');
+          setPaymentError(deductResult.error || 'Failed to deduct credits');
           setIsProcessing(false);
           return;
         }
@@ -481,7 +479,7 @@ const MechanicalBookingPage: React.FC = () => {
         });
 
         if (paymentError) {
-          setStripeError(paymentError.message || 'Payment failed');
+          setPaymentError(paymentError.message || 'Payment failed');
           setIsProcessing(false);
           return;
         }
@@ -601,7 +599,7 @@ const MechanicalBookingPage: React.FC = () => {
       navigate('/booking-success', { state: { booking: data } });
     } catch (error: any) {
       console.error('Payment error:', error);
-      setStripeError(error.message || 'Payment processing failed');
+      setPaymentError(error.message || 'Payment processing failed');
     } finally {
       setIsProcessing(false);
     }
@@ -610,7 +608,7 @@ const MechanicalBookingPage: React.FC = () => {
   const handleCloseModal = () => {
     setShowPaymentModal(false);
     setClientSecret(null);
-    setStripeError(null);
+    setPaymentError(null);
     setPendingBookingData(null);
   };
 
@@ -1099,9 +1097,9 @@ const MechanicalBookingPage: React.FC = () => {
                     </p>
                   </div>
 
-                  {stripeError && (
+                  {paymentError && (
                     <div className="mb-4 p-3 bg-red-900/20 border border-red-800 rounded text-sm text-red-400">
-                      {stripeError}
+                      {paymentError}
                     </div>
                   )}
 
@@ -1148,9 +1146,9 @@ const MechanicalBookingPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {stripeError && (
+                  {paymentError && (
                     <div className="mb-4 p-3 bg-red-900/20 border border-red-800 rounded text-sm text-red-400">
-                      {stripeError}
+                      {paymentError}
                     </div>
                   )}
 
@@ -1174,9 +1172,9 @@ const MechanicalBookingPage: React.FC = () => {
                     </p>
                   )}
                 </>
-              ) : paymentMethod === 'stripe' && stripeError ? (
+              ) : paymentMethod === 'stripe' && paymentError ? (
                 <div className="p-4 bg-red-900/20 border border-red-800 rounded text-sm text-red-400">
-                  {stripeError}
+                  {paymentError}
                 </div>
               ) : null}
             </motion.div>
