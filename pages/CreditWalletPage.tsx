@@ -260,9 +260,6 @@ const CreditWalletPage: React.FC = () => {
     }
   }, [user]);
 
-  // Create payment intent when modal opens
-  }, [elements, clientSecret, showPaymentModal]);
-
   // Validation functions
   const validateCodiceFiscale = (cf: string): boolean => {
     const cfRegex = /^[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]$/i;
@@ -680,24 +677,11 @@ const CreditWalletPage: React.FC = () => {
                 {/* Payment Information */}
                 <div>
                   <h3 className="text-lg font-bold text-white mb-4">Informazioni di Pagamento</h3>
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 min-h-[56px] flex items-center">
-                    {isClientSecretLoading ? (
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
                   <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
                     <p className="text-gray-300 mb-2">Verrai reindirizzato alla pagina di pagamento sicura Nexi</p>
                     <p className="text-gray-400 text-sm">Pagamento protetto e certificato</p>
+                    {paymentError && <p className="text-xs text-red-400 mt-2">{paymentError}</p>}
                   </div>
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
-                  {paymentError && <p className="text-xs text-red-400 mt-2">{paymentError}</p>}
                 </div>
 
                 {/* Action Buttons */}
@@ -711,7 +695,7 @@ const CreditWalletPage: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    disabled={isProcessing || isClientSecretLoading}
+                    disabled={isProcessing}
                     className="flex-1 px-6 py-3 bg-white text-black rounded-full font-bold hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isProcessing ? 'Elaborazione...' : `Paga €${selectedPackage.rechargeAmount}`}
