@@ -2341,26 +2341,28 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             return;
                           }
 
-                          // Check if date is within any availability window
-                          // TEMPORARILY DISABLED - validation is too strict
-                          /*
-                          if (availabilityWindows.length > 0) {
-                            const selectedDate = new Date(value);
-                            const isInWindow = availabilityWindows.some(w => {
+                          // CRITICAL: Check if return crosses availability gap
+                          if (availabilityWindows.length > 0 && formData.pickupDate && formData.pickupTime) {
+                            const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
+                            const returnDt = new Date(`${value}T${formData.returnTime || '10:30'}`);
+
+                            // Find which window contains the pickup
+                            const pickupWindow = availabilityWindows.find(w => {
                               const start = new Date(w.start);
                               const end = new Date(w.end);
-                              start.setHours(0, 0, 0, 0);
-                              end.setHours(23, 59, 59, 999);
-                              selectedDate.setHours(12, 0, 0, 0);
-                              return selectedDate >= start && selectedDate <= end;
+                              return pickup >= start && pickup <= end;
                             });
 
-                            if (!isInWindow) {
-              alert('La data selezionata non è disponibile.\\n\\nPer favore scegli una data all\'interno delle finestre di disponibilità mostrate sopra.');
-                              return;
+                            if (pickupWindow) {
+                              const windowEnd = new Date(pickupWindow.end);
+                              if (returnDt > windowEnd) {
+                                const windowEndStr = windowEnd.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                                const windowEndTime = windowEnd.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+                                alert(`La prenotazione attraversa un periodo non disponibile.\n\nQuesta finestra termina il ${windowEndStr} alle ${windowEndTime}.\n\nPer favore scegli una data di riconsegna entro questa finestra.`);
+                                return;
+                              }
                             }
                           }
-                          */
 
                           handleChange(e);
                         }}
