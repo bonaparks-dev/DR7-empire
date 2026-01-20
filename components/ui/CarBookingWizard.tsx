@@ -276,6 +276,42 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Fetch availability windows for gap detection
+  useEffect(() => {
+    const fetchAvailabilityWindows = async () => {
+      // Only fetch if we have vehicle IDs
+      const vehicleIds = item.vehicleIds || (item.id ? [item.id.replace('car-', '')] : []);
+      if (vehicleIds.length === 0) return;
+
+      setIsLoadingWindows(true);
+      try {
+        const response = await fetch(`${FUNCTIONS_BASE}/.netlify/functions/getAvailabilityWindows`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            vehicleIds,
+            startDate: new Date().toISOString(),
+            endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString()
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setAvailabilityWindows(data.freeWindows || []);
+          console.log('✅ Fetched availability windows:', data);
+        } else {
+          console.error('❌ Failed to fetch availability windows:', response.status);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching availability windows:', error);
+      } finally {
+        setIsLoadingWindows(false);
+      }
+    };
+
+    fetchAvailabilityWindows();
+  }, [item.id, item.vehicleIds]);
+
   // Fetch credit balance with safe fallback
   useEffect(() => {
     const fetchBalance = async () => {
