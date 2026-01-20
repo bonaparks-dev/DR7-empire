@@ -2357,7 +2357,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                               const windowEnd = new Date(pickupWindow.end);
                               if (returnDt > windowEnd) {
                                 const maxReturnStr = windowEnd.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                                alert(`Il veicolo non è disponibile fino a questa data.\n\nData massima di riconsegna: ${maxReturnStr}\n\nDopo questa data c'è un periodo non disponibile.`);
+
+                                // Find next window to show when it's available again
+                                const nextWindow = availabilityWindows.find(w => new Date(w.start) > windowEnd);
+                                let message = `Per questa prenotazione, la riconsegna massima è il ${maxReturnStr}.\n\nC'è un periodo non disponibile dopo questa data.`;
+
+                                if (nextWindow) {
+                                  const nextStart = new Date(nextWindow.start);
+                                  const nextStartStr = nextStart.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                                  message += `\n\nIl veicolo sarà nuovamente disponibile dal ${nextStartStr}.`;
+                                }
+
+                                alert(message);
                                 return;
                               }
                             }
