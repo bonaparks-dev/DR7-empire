@@ -559,6 +559,22 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       });
     }
 
+    // CRITICAL: Filter by availability windows (partial-day support)
+    if (availabilityWindows.length > 0) {
+      return times.filter(time => {
+        const [hours, minutes] = time.split(':').map(Number);
+        const datetime = new Date(date);
+        datetime.setHours(hours, minutes, 0, 0);
+
+        // Check if this datetime falls within ANY availability window
+        return availabilityWindows.some(w => {
+          const windowStart = new Date(w.start);
+          const windowEnd = new Date(w.end);
+          return datetime >= windowStart && datetime <= windowEnd;
+        });
+      });
+    }
+
     return times;
   };
 
@@ -2196,20 +2212,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           const value = e.target.value;
                           if (!value) return;
 
-                          // Check if date is within any availability window
+                          // Check if date has ANY valid pickup times (partial-day support)
                           if (availabilityWindows.length > 0) {
-                            const selectedDate = new Date(value);
-                            const isInWindow = availabilityWindows.some(w => {
-                              const start = new Date(w.start);
-                              const end = new Date(w.end);
-                              start.setHours(0, 0, 0, 0);
-                              end.setHours(23, 59, 59, 999);
-                              selectedDate.setHours(12, 0, 0, 0); // Noon to avoid timezone issues
-                              return selectedDate >= start && selectedDate <= end;
-                            });
+                            const validTimes = getValidPickupTimes(value);
 
-                            if (!isInWindow) {
-                              alert('La data selezionata non è disponibile.\n\nPer favore scegli una data all\'interno delle finestre di disponibilità mostrate sopra.');
+                            if (validTimes.length === 0) {
+                              // No valid times on this date - find next available
+                              const nextAvailable = availabilityWindows[0];
+                              const nextDate = new Date(nextAvailable.start);
+                              const dateStr = nextDate.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                              const timeStr = nextDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+
+                              alert(`Questo veicolo non è disponibile in questa data.\n\nPrima disponibilità: ${dateStr} alle ${timeStr}`);
                               return;
                             }
                           }
