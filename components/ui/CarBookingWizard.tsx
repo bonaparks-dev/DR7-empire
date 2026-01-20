@@ -362,65 +362,87 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   // Helper function to get day of week without timezone issues
 
-  // Fetch earliest availability when vehicle is selected (SINGLE SOURCE OF TRUTH)
+  // Initialize dates from first availability window
   useEffect(() => {
-    if (!item) {
-      setEarliestAvailability(null);
+    if (availabilityWindows.length > 0) {
+      const firstWindow = availabilityWindows[0];
+      const start = new Date(firstWindow.start);
+      const end = new Date(Math.min(
+        new Date(firstWindow.end).getTime(),
+        start.getTime() + 24 * 60 * 60 * 1000 // Default to +1 day
+      ));
+
+      // Only set if not already set or if current dates are invalid
+      if (!formData.pickupDate || formData.pickupDate < start.toISOString().split('T')[0]) {
+        setFormData(prev => ({
+          ...prev,
+          pickupDate: start.toISOString().split('T')[0],
+          pickupTime: start.toTimeString().slice(0, 5),
+          returnDate: end.toISOString().split('T')[0],
+          returnTime: end.toTimeString().slice(0, 5)
+        }));
+      }
+    }
+  }, [availabilityWindows]);
+
+  // Validate return date is after pickup date
+  useEffect(() => {
+    if (formData.pickupDate && formData.returnDate && formData.pickupTime && formData.returnTime) {
+      const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
+      const returnDt = new Date(`${formData.returnDate}T${formData.returnTime}`);
+
+      if (returnDt <= pickup) {
+        // Auto-fix: set return to pickup + 1 day
+        const nextDay = new Date(pickup);
+        nextDay.setDate(nextDay.getDate() + 1);
+        setFormData(prev => ({
+          ...prev,
+          returnDate: nextDay.toISOString().split('T')[0],
+          returnTime: formData.pickupTime
+        }));
+      }
+    }
+  }, [formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime]);
+
+  // Validate dates are within availability windows
+  useEffect(() => {
+    if (availabilityWindows.length === 0) return;
+    if (!formData.pickupDate || !formData.returnDate) return;
+
+    const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime || '10:00'}`);
+    const returnDt = new Date(`${formData.returnDate}T${formData.returnTime || '10:00'}`);
+
+    // Find window that contains pickup
+    const window = availabilityWindows.find(w => {
+      const start = new Date(w.start);
+      const end = new Date(w.end);
+      return pickup >= start && pickup <= end;
+    });
+
+    if (!window) {
+      // Pickup is outside all windows - auto-adjust to first window
+      const firstWindow = availabilityWindows[0];
+      const windowStart = new Date(firstWindow.start);
+      setFormData(prev => ({
+        ...prev,
+        pickupDate: windowStart.toISOString().split('T')[0],
+        pickupTime: windowStart.toTimeString().slice(0, 5)
+      }));
       return;
     }
 
-    const fetchEarliestAvailability = async () => {
-      try {
-        const vehicleIds = item.vehicleIds || [item.id.replace("car-", "")];
+    // Check if return is in same window
+    const windowEnd = new Date(window.end);
+    if (returnDt > windowEnd) {
+      // Return exceeds window - cap it at window end
+      setFormData(prev => ({
+        ...prev,
+        returnDate: windowEnd.toISOString().split('T')[0],
+        returnTime: windowEnd.toTimeString().slice(0, 5)
+      }));
+    }
+  }, [formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime, availabilityWindows]);
 
-        const response = await fetch("/.netlify/functions/getEarliestAvailability", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            vehicleName: item.name,
-            vehicleIds
-          })
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-
-          // CRITICAL FIX: If the earliest available date is today or in the past, 
-          // consider the vehicle IMMEDIATELY AVAILABLE and suppress the warning.
-          let effectiveAvailability = data;
-
-          if (!data.isAvailable && data.earliestAvailableDate) {
-            const availableDate = new Date(data.earliestAvailableDate);
-            const todayDate = new Date();
-            // Reset to midnight for fair comparison
-            availableDate.setHours(0, 0, 0, 0);
-            todayDate.setHours(0, 0, 0, 0);
-
-            if (availableDate <= todayDate) {
-              console.log("Availability Override: Date is today or past, vehicle is available now.");
-              effectiveAvailability = { isAvailable: true };
-            }
-          }
-
-          setEarliestAvailability(effectiveAvailability);
-
-          // Only auto-update form data if it's genuinely a FUTURE unavailability
-          if (!effectiveAvailability.isAvailable && effectiveAvailability.earliestAvailableDate) {
-            setFormData(prev => ({
-              ...prev,
-              pickupDate: effectiveAvailability.earliestAvailableDate,
-              pickupTime: effectiveAvailability.earliestAvailableTime || "10:30"
-            }));
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching earliest availability:", error);
-        setEarliestAvailability({ isAvailable: true });
-      }
-    };
-
-    fetchEarliestAvailability();
-  }, [item]);
   const getDayOfWeek = (dateString: string): number => {
     const [year, month, day] = dateString.split('-').map(Number);
     const date = new Date(year, month - 1, day);
