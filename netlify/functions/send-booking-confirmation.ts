@@ -122,7 +122,15 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     const pickupDate = new Date(booking.pickup_date);
     const dropoffDate = new Date(booking.dropoff_date);
     const customerPhone = booking.customer_phone || booking.booking_details?.customer?.phone || 'N/A';
-    const insuranceOption = booking.insurance_option || booking.booking_details?.insuranceOption || 'Nessuna';
+    const insuranceOption = booking.insurance_option || booking.booking_details?.insuranceOption || 'KASKO_BASE';
+
+    // Map insurance option for display - always show KASKO instead of RCA
+    let insuranceDisplayName = insuranceOption;
+    if (insuranceOption === 'RCA' || insuranceOption === 'KASKO_BASE') {
+      insuranceDisplayName = 'KASKO BASE';
+    } else if (insuranceOption === 'KASKO_DR7') {
+      insuranceDisplayName = 'KASKO DR7';
+    }
 
     // Calculate deposit based on insurance type
     let depositAmount = 'N/A';
