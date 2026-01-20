@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../../hooks/useTranslation';
+import { Link } from 'react-router-dom';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import { isMassimoRunchina, SPECIAL_CLIENTS } from '../../utils/clientPricingRules';
 import { calculateMultiDayPrice } from '../../utils/multiDayPricing';
@@ -8,7 +9,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../supabaseClient';
 import { PICKUP_LOCATIONS, AUTO_INSURANCE, INSURANCE_DEDUCTIBLES, RENTAL_EXTRAS, DEPOSIT_RULES } from '../../constants';
 import type { Booking, RentalItem } from '../../types';
-import { Link } from 'react-router-dom';
 import DocumentUploader from './DocumentUploader';
 import CalendarPicker from './CalendarPicker';
 import {
@@ -209,7 +209,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [customerRentalCount, setCustomerRentalCount] = useState<number>(0);
   const [isLoyalCustomer, setIsLoyalCustomer] = useState<boolean>(false);
 
-
   // Nexi payment state
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
@@ -219,7 +218,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Handle browser back button to go to previous wizard step instead of leaving page
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
       e.preventDefault();
@@ -318,8 +316,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const fetchRentalCount = async () => {
       const email = user?.email || formData.email;
       if (!email) {
-        setCustomerRentalCount(0);
-        setIsLoyalCustomer(false);
         return;
       }
 
@@ -1039,41 +1035,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
   }, [formData.pickupDate]);
 
-  // Client secret (inclut userId/email pour réconciliation)
-  useEffect(() => {
-    if (step === 4 && finalTotal > 0) {
-      setIsClientSecretLoading(true);
-      setClientSecret(null);
-      setPaymentError(null);
-
-      fetch(`${FUNCTIONS_BASE}/.netlify/functions/create-payment-intent`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: finalTotal,
-          currency,
-          userId: user?.id,
-          email: formData.email
-        })
-      })
-        .then(async (res) => {
-          if (!res.ok) {
-            const text = await res.text().catch(() => '');
-            throw new Error(`create-payment-intent ${res.status} ${res.statusText} ${text}`);
-          }
-          return res.json();
-        })
-        .then((data) => {
-          if (data.error) { setPaymentError(data.error); }
-          else { setClientSecret(data.clientSecret); }
-        })
-        .catch(err => {
-          console.error('Failed to fetch client secret:', err);
-          setPaymentError('Could not connect to payment server.');
-        })
-        .finally(() => setIsClientSecretLoading(false));
-    }
-  }, [step, finalTotal, currency, user?.id, formData.email]); // Nexi payment - no card element needed
 
   // Auto-set usage zone for residents to ensure correct pricing
   useEffect(() => {
@@ -1472,7 +1433,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       return;
     }
 
-    // Validate required fields before upload
     if (!formData.pickupDate || !formData.returnDate) {
       setErrors(prev => ({ ...prev, form: "Pickup and return dates are required." }));
       setIsProcessing(false);
@@ -1874,35 +1834,162 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         setPaymentError(err.message || "Unknown error during booking");
         setIsProcessing(false);
       }
-    } else if (formData.paymentMethod === 'stripe' && step === 4) {
+    } else if (formData.paymentMethod === 'nexi' && step === 4) {
       setPaymentError(null);
-      if (!stripe || !cardElement || !clientSecret) {
-        setPaymentError("Payment system is not ready.");
-        setIsProcessing(false);
-        return;
-      }
+      setIsProcessing(true);
 
-      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: cardElement,
-          billing_details: {
-            name: `${formData.firstName} ${formData.lastName}`,
-            email: formData.email,
-            phone: formData.phone
-          }
+      try {
+        if (!user?.id) throw new Error("User must be logged in");
+
+        // 1. Prepare standardized booking payload
+        const { days } = duration;
+
+        // Ensure dates are parsed as Italy/Europe time
+        const createItalyDateTime = (dateStr: string, timeStr: string) => {
+          const dateTimeString = `${dateStr}T${timeStr}:00`;
+          const localDate = new Date(dateTimeString);
+          const italyTimeString = new Date(dateTimeString).toLocaleString('en-US', { timeZone: 'Europe/Rome' });
+          const italyDate = new Date(italyTimeString);
+          const offset = localDate.getTime() - italyDate.getTime();
+          return new Date(localDate.getTime() - offset);
+        };
+
+        const pickupDateTime = createItalyDateTime(formData.pickupDate, formData.pickupTime);
+        const dropoffDateTime = createItalyDateTime(formData.returnDate, formData.returnTime);
+
+        // Upload documents if needed (reusing logic from standard flow if separated, 
+        // but here we might need to duplicate or extract upload logic. 
+        // For safety, let's assume images are already uploaded or we call a helper.
+        // Actually, the main handleBooking function logic above handles uploads.
+        // But wait, the original code had `finalizeBooking` separate from `handleBooking`?
+        // No, `handleBooking` called `stripe.confirmCardPayment` then `finalizeBooking`.
+        // We need to SAVE the booking as 'pending' first, then redirect.
+
+        // Let's implement the "Save Pending Record" pattern directly here.
+
+        // 1a. Upload Images First (Critical)
+        let licenseImageUrl = null;
+        let idImageUrl = null;
+        if (formData.licenseImage) {
+          licenseImageUrl = await uploadToBucket('driver-licenses', user.id, formData.licenseImage, 'license');
+        } else if (hasStoredDocs.licensePath) {
+          licenseImageUrl = hasStoredDocs.licensePath;
         }
-      });
+        if (formData.idImage) {
+          idImageUrl = await uploadToBucket('carta-identita', user.id, formData.idImage, 'id');
+        } else if (hasStoredDocs.idPath) {
+          idImageUrl = hasStoredDocs.idPath;
+        }
 
-      if (error) {
-        setPaymentError(error.message || "An unexpected error occurred.");
-        setIsProcessing(false);
-        return;
-      }
+        const vehicleName = availableVehicleName || item.name;
 
-      if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
-        await finalizeBooking(paymentIntent.id);
-      } else {
-        setPaymentError("Payment not completed. Status: " + paymentIntent?.status);
+        // 2. Insert Pending Booking
+        const bookingData = {
+          user_id: user.id,
+          vehicle_type: item.type || 'car',
+          vehicle_name: vehicleName,
+          vehicle_image_url: item.image,
+          pickup_date: pickupDateTime.toISOString(),
+          dropoff_date: dropoffDateTime.toISOString(),
+          pickup_location: formData.pickupLocation,
+          dropoff_location: formData.returnLocation,
+          price_total: Math.round(finalTotal * 100), // Store in cents
+          currency: 'EUR',
+          status: 'pending',
+          payment_status: 'pending',
+          payment_method: 'nexi',
+          booked_at: new Date().toISOString(),
+          booking_usage_zone: formData.usageZone || null,
+          booking_details: {
+            customer: {
+              fullName: `${formData.firstName} ${formData.lastName}`,
+              firstName: formData.firstName,
+              lastName: formData.lastName,
+              email: formData.email,
+              phone: formData.phone,
+              birthDate: formData.birthDate,
+              age: driverAge,
+              licenseNumber: formData.licenseNumber,
+              licenseIssueDate: formData.licenseIssueDate,
+              licenseYears: licenseYears,
+              isSardinianResident: formData.isSardinianResident,
+            },
+            secondDriver: formData.addSecondDriver ? {
+              fullName: `${formData.secondDriver.firstName} ${formData.secondDriver.lastName}`,
+              firstName: formData.secondDriver.firstName,
+              lastName: formData.secondDriver.lastName,
+              email: formData.secondDriver.email,
+              phone: formData.secondDriver.phone,
+              birthDate: formData.secondDriver.birthDate,
+              licenseNumber: formData.secondDriver.licenseNumber,
+              licenseIssueDate: formData.secondDriver.licenseIssueDate,
+            } : null,
+            duration: `${days} days`,
+            insuranceOption: formData.insuranceOption,
+            extras: formData.extras,
+            kmPackage: {
+              type: recommendedKm.type, // simplified
+              distance: recommendedKm.value,
+              cost: kmPackageCost,
+              includedKm: includedKm,
+              isPremium: isPremiumVehicle(item.name)
+            },
+            vehicle_id: formData.selectedVehicleId,
+            driverLicenseImage: licenseImageUrl,
+            driverIdImage: idImageUrl,
+          }
+        };
+
+        const { data: pendingBooking, error: bookingError } = await supabase
+          .from('bookings')
+          .insert(bookingData)
+          .select()
+          .single();
+
+        if (bookingError) throw bookingError;
+
+        // 3. Generate Nexi Order ID
+        const timestamp = Date.now().toString().substring(5);
+        const random = Math.floor(100 + Math.random() * 900).toString();
+        const nexiOrderId = `${timestamp}${random}`;
+
+        // 4. Update Booking with Nexi Order ID
+        await supabase
+          .from('bookings')
+          .update({ nexi_order_id: nexiOrderId })
+          .eq('id', pendingBooking.id);
+
+        // 5. Initiate Nexi Payment
+        const nexiResponse = await fetch('/.netlify/functions/create-nexi-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: nexiOrderId,
+            amount: Math.round(finalTotal * 100),
+            currency: 'EUR',
+            description: `Noleggio ${vehicleName} - ${days} giorni`,
+            customerEmail: formData.email,
+            customerName: `${formData.firstName} ${formData.lastName}`
+          })
+        });
+
+        const nexiData = await nexiResponse.json();
+
+        if (!nexiResponse.ok) {
+          throw new Error(nexiData.error || "Errore durante l'inizializzazione del pagamento");
+        }
+
+        if (!nexiData.paymentUrl) {
+          throw new Error("URL di pagamento non ricevuto da Nexi");
+        }
+
+        // 6. Redirect to Nexi HPP
+        console.log("Redirecting to Nexi:", nexiData.paymentUrl);
+        window.location.href = nexiData.paymentUrl;
+
+      } catch (err: any) {
+        console.error("Booking Error:", err);
+        setPaymentError(err.message || "Si è verificato un errore durante la prenotazione.");
         setIsProcessing(false);
       }
     }
@@ -2201,8 +2288,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <p className="text-xs text-gray-400 mt-1">Ritiro - 1h30 (automatico)</p>
                     </div>
                   </div>
-
-                  {/* Vehicle Availability Check */}
+                  <div className="p-4 bg-gray-800 rounded-lg">
+                    <div className="flex items-center justify-center gap-3 mb-3">
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/1280px-Mastercard-logo.svg.png" alt="Mastercard" className="h-6 opacity-70" />
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png" alt="Visa" className="h-6 opacity-70" />
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/PayPal.svg/2560px-PayPal.svg.png" alt="PayPal" className="h-6 opacity-70" />
+                    </div>
+                    <p className="text-gray-400 text-sm text-center">
+                      Sarai reindirizzato a una pagina di pagamento sicura per completare la transazione.
+                    </p>
+                  </div>   {/* Vehicle Availability Check */}
                   {isCheckingAvailability && (
                     <div className="mt-4 p-3 bg-blue-900/20 border border-blue-600 rounded-lg">
                       <p className="text-blue-300 text-sm">Verifica disponibilità veicolo...</p>
@@ -2624,46 +2719,54 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 </button>
                 <button
                   type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'stripe' }))}
-                  className={`flex-1 py-2 text-sm font-semibold ${formData.paymentMethod === 'stripe' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}
+                  onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'nexi' }))}
+                  className={`flex-1 py-2 text-sm font-semibold ${formData.paymentMethod === 'nexi' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}
                 >
                   Carta
                 </button>
               </div>
 
-              {formData.paymentMethod === 'credit' ? (
-                <div className="text-center py-6">
-                  {isLoadingBalance ? (
-                    <div className="flex items-center justify-center">
-                      <div className="w-8 h-8 border-2 border-t-white border-gray-600 rounded-full animate-spin"></div>
-                    </div>
-                  ) : (
-                    <>
-                      <p className="text-sm text-gray-400 mb-2">Saldo Disponibile</p>
-                      <p className="text-4xl font-bold text-white mb-4">€{creditBalance.toFixed(2)}</p>
-                      {creditBalance < total ? (
-                        <p className="text-sm text-red-400">Credito insufficiente. Richiesto: €{total.toFixed(2)}</p>
-                      ) : (
-                        <p className="text-sm text-green-400">✓ Saldo sufficiente</p>
-                      )}
-                    </>
-                  )}
-                  {paymentError && (
-                    <div className="mt-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg">
-                      <p className="text-sm text-red-400 text-center">{paymentError}</p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <>
-                  <h4 className="text-base font-semibold text-white mb-3">DATI CARTA DI CREDITO/DEBITO</h4>
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 min-h-[56px] flex items-center">
-                    {isClientSecretLoading ? <div className="text-gray-400 text-sm">Initializing Payment...</div> : <div ref={cardElementRef} className="w-full" />}
+              {
+                formData.paymentMethod === 'credit' ? (
+                  <div className="text-center py-6">
+                    {isLoadingBalance ? (
+                      <div className="flex items-center justify-center">
+                        <div className="w-8 h-8 border-2 border-t-white border-gray-600 rounded-full animate-spin"></div>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-sm text-gray-400 mb-2">Saldo Disponibile</p>
+                        <p className="text-4xl font-bold text-white mb-4">€{creditBalance.toFixed(2)}</p>
+                        {creditBalance < total ? (
+                          <p className="text-sm text-red-400">Credito insufficiente. Richiesto: €{total.toFixed(2)}</p>
+                        ) : (
+                          <p className="text-sm text-green-400">✓ Saldo sufficiente</p>
+                        )}
+                      </>
+                    )}
+                    {paymentError && (
+                      <div className="mt-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg">
+                        <p className="text-sm text-red-400 text-center">{paymentError}</p>
+                      </div>
+                    )}
                   </div>
-                  {paymentError && <p className="text-xs text-red-400 mt-1">{paymentError}</p>}
-                </>
-              )}
-            </section>
+                ) : (
+                  <>
+                    <h4 className="text-base font-semibold text-white mb-3">METODO DI PAGAMENTO</h4>
+                    <div className="p-4 bg-gray-800 rounded-lg">
+                      <div className="flex items-center justify-center gap-3 mb-3">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/1280px-Mastercard-logo.svg.png" alt="Mastercard" className="h-6 opacity-70" />
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png" alt="Visa" className="h-6 opacity-70" />
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/PayPal.svg/2560px-PayPal.svg.png" alt="PayPal" className="h-6 opacity-70" />
+                      </div>
+                      <p className="text-gray-400 text-sm text-center">
+                        Sarai reindirizzato a una pagina di pagamento sicura per completare la transazione.
+                      </p>
+                    </div>
+                  </>
+                )
+              }
+            </section >
 
             <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-4 uppercase">Conferme Finali</h3>
@@ -2822,7 +2925,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 </div>
               </div>
             </section>
-          </div>
+          </div >
         );
       default:
         return null;

@@ -12,6 +12,10 @@ const PaymentSuccessPage: React.FC = () => {
     const amount = searchParams.get('importo');
     const authCode = searchParams.get('codAut');
 
+    // URL base per le Netlify Functions
+    const FUNCTIONS_BASE = import.meta.env.VITE_FUNCTIONS_BASE ?? (window.location.hostname === 'localhost' ? 'http://localhost:8888' : window.location.origin);
+    const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
+
     // Update booking status to completed immediately
     useEffect(() => {
         const updateBookingStatus = async () => {
@@ -64,6 +68,43 @@ const PaymentSuccessPage: React.FC = () => {
                     setUpdateError('Could not update booking status');
                 } else {
                     console.log('✅ Booking marked as completed:', booking.id);
+
+                    // --- SEND NOTIFICATIONS ---
+                    // 1. Email Confirmation
+                    fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ booking: { ...booking, payment_status: 'completed' } }), // ensure status is current
+                    }).catch(e => console.error('Email error', e));
+
+                    // 2. WhatsApp Admin Notification
+                    fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ booking: { ...booking, payment_status: 'completed' } }),
+                    }).catch(e => console.error('WhatsApp error', e));
+
+                    // 3. Prepare Customer WhatsApp Message (for button)
+                    if (booking.booking_details?.customer) {
+                        const bId = booking.id.substring(0, 8).toUpperCase();
+                        const customer = booking.booking_details.customer;
+                        const pDate = new Date(booking.pickup_date);
+                        const dDate = new Date(booking.dropoff_date);
+                        const price = (booking.price_total / 100).toFixed(2);
+
+                        const msg = `Ciao! Ho appena completato il pagamento per la prenotazione.\n\n` +
+                            `📋 *Dettagli Prenotazione*\n` +
+                            `*ID:* DR7-${bId}\n` +
+                            `*Nome:* ${customer.fullName}\n` +
+                            `*Veicolo:* ${booking.vehicle_name}\n` +
+                            `*Ritiro:* ${pDate.toLocaleDateString('it-IT')} ${pDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n` +
+                            `*Riconsegna:* ${dDate.toLocaleDateString('it-IT')} ${dDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n` +
+                            `*Totale:* €${price}\n\n` +
+                            `Grazie!`;
+
+                        const officeNum = '393457905205';
+                        setWhatsappUrl(`https://wa.me/${officeNum}?text=${encodeURIComponent(msg)}`);
+                    }
                 }
             } catch (error) {
                 console.error('Unexpected error:', error);
@@ -143,6 +184,20 @@ const PaymentSuccessPage: React.FC = () => {
                         >
                             Torna alla Home
                         </button>
+
+                        {whatsappUrl && (
+                            <a
+                                href={whatsappUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block w-full bg-[#25D366] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#20bd5a] transition-all flex items-center justify-center gap-2"
+                            >
+                                <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                                    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.592 2.654-.698c1.09.587 2.107.89 3.037.89h.007c3.181 0 5.768-2.587 5.768-5.776 0-1.545-.6-2.994-1.692-4.085-1.096-1.09-2.55-1.693-4.316-1.693l.002.015zm6.814 10.373c-1.045 1.049-2.227 1.58-3.567 1.458-1.5-.138-3.037-1.127-4.436-2.527-1.4-1.4-2.39-2.936-2.527-4.436-.122-1.341.408-2.523 1.458-3.567l.156-.155c.319-.317.76-.325 1.082-.016l1.373 1.346c.321.319.311.751.01.996l-.974.795c-.295.241-.482.72.064 1.266.545.546 1.023.36 1.265.064l.795-.974c.245-.301.677-.311.996.01l1.347 1.373c.31.322.302.763-.017 1.082l-.155.156z" />
+                                </svg>
+                                Conferma su WhatsApp
+                            </a>
+                        )}
 
                         <button
                             onClick={() => navigate('/account/bookings')}
