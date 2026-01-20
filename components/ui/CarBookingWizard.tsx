@@ -297,8 +297,40 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
         if (response.ok) {
           const data = await response.json();
-          setAvailabilityWindows(data.freeWindows || []);
+
+          // Filter out same-day availability windows that start after office hours
+          const now = new Date();
+          const filteredWindows = (data.freeWindows || []).filter(window => {
+            const windowStart = new Date(window.start);
+
+            // Check if window starts today
+            const isToday = windowStart.toDateString() === now.toDateString();
+
+            if (!isToday) {
+              // Future dates are always valid
+              return true;
+            }
+
+            // For same-day windows, check if start time is after office hours
+            const hour = windowStart.getHours();
+            const minute = windowStart.getMinutes();
+            const timeInMinutes = hour * 60 + minute;
+
+            // Office closing time: 18:30 (last pickup time)
+            const officeClosingTime = 18 * 60 + 30; // 18:30
+
+            // If same-day availability starts after office hours, exclude it
+            // (it will show as next-day availability instead)
+            if (timeInMinutes > officeClosingTime) {
+              return false;
+            }
+
+            return true;
+          });
+
+          setAvailabilityWindows(filteredWindows);
           console.log('✅ Fetched availability windows:', data);
+          console.log('✅ Filtered windows (excluded after-hours same-day):', filteredWindows);
         } else {
           console.error('❌ Failed to fetch availability windows:', response.status);
         }

@@ -87,6 +87,13 @@ export const handler: Handler = async (event) => {
 
         if (bookings && Array.isArray(bookings)) {
             bookings.forEach((b: any) => {
+                // CRITICAL: Exclude car wash bookings from availability calculation
+                // The 90-minute buffer after rentals already includes car wash time (45 min)
+                // Including car washes would double-count the buffer
+                if (b.service_type === 'car_wash') {
+                    return; // Skip car wash bookings
+                }
+
                 busyIntervals.push({
                     start: new Date(new Date(b.pickup_date).getTime() - BUFFER_TIME_MS),  // 90 min before pickup
                     end: new Date(new Date(b.dropoff_date).getTime() + BUFFER_TIME_MS)    // 90 min after return
