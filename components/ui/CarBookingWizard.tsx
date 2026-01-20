@@ -578,6 +578,73 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     return times;
   };
 
+  const getValidReturnTimes = (date: string): string[] => {
+    const dayOfWeek = getDayOfWeek(date);
+    if (dayOfWeek === 0 || isHoliday(date)) return []; // Block Sundays & Holidays
+
+    const times: string[] = [];
+    const addTimes = (start: number, end: number, interval: number) => {
+      for (let i = start; i <= end; i += interval) {
+        const hours = Math.floor(i / 60);
+        const minutes = i % 60;
+        times.push(`${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`);
+      }
+    };
+
+    // RETURN (Check-out) hours - DIFFERENT from pickup
+    // Mon-Fri: 09:00-11:00, 16:00-17:00
+    // Saturday: 09:00-12:00
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+      // Monday to Friday
+      addTimes(9 * 60, 11 * 60, 15);   // 09:00 to 11:00
+      addTimes(16 * 60, 17 * 60, 15);  // 16:00 to 17:00
+    } else if (dayOfWeek === 6) {
+      // Saturday
+      addTimes(9 * 60, 12 * 60, 15);   // 09:00 to 12:00
+    }
+
+    // Filter out past times if today
+    const selectedDate = safeDate(date);
+    const now = new Date();
+    const isToday = selectedDate.toDateString() === now.toDateString();
+
+    if (isToday) {
+      const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+      return times.filter(time => {
+        const [hours, minutes] = time.split(':').map(Number);
+        return (hours * 60 + minutes) >= currentTimeInMinutes;
+      });
+    }
+
+    // CRITICAL: Filter by availability windows
+    // Return time must be BEFORE the next booking starts (considering 90-min buffer)
+    if (availabilityWindows.length > 0 && formData.pickupDate && formData.pickupTime) {
+      const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
+
+      // Find the window containing pickup
+      const pickupWindow = availabilityWindows.find(w => {
+        const start = new Date(w.start);
+        const end = new Date(w.end);
+        return pickup >= start && pickup <= end;
+      });
+
+      if (pickupWindow) {
+        const windowEnd = new Date(pickupWindow.end);
+
+        return times.filter(time => {
+          const [hours, minutes] = time.split(':').map(Number);
+          const returnDt = new Date(date);
+          returnDt.setHours(hours, minutes, 0, 0);
+
+          // Return must be within the same availability window
+          return returnDt <= windowEnd && returnDt > pickup;
+        });
+      }
+    }
+
+    return times;
+  };
+
   const [hasStoredDocs, setHasStoredDocs] = useState<{ licensePath: string | null; idPath: string | null }>({ licensePath: null, idPath: null });
   const [checkingDocs, setCheckingDocs] = useState(false);
 
@@ -2387,22 +2454,30 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Ora di riconsegna
-                        <span className="ml-2 text-xs text-gray-400">(calcolata automaticamente)</span>
+                        Ora di riconsegna *
+                        {formData.returnTime && (
+                          <span className="ml-2 text-xs text-green-400">{formData.returnTime}</span>
+                        )}
                       </label>
-                      <div className="relative">
-                        <input
-                          type="time"
-                          name="returnTime"
-                          value={formData.returnTime}
-                          readOnly
-                          className="w-full bg-gray-700 border-2 border-gray-600 rounded-md px-3 py-2 text-white text-sm cursor-not-allowed opacity-75"
-                        />
-                        <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                          <span className="text-gray-400"></span>
-                        </div>
-                      </div>
-                      <p className="text-xs text-gray-400 mt-1">Ritiro - 1h30 (automatico)</p>
+                      <select
+                        name="returnTime"
+                        value={formData.returnTime}
+                        onChange={handleChange}
+                        required
+                        disabled={!formData.returnDate || getValidReturnTimes(formData.returnDate).length === 0}
+                        className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors ${!formData.returnDate || getValidReturnTimes(formData.returnDate).length === 0
+                          ? 'border-gray-700 opacity-50 cursor-not-allowed'
+                          : formData.returnTime
+                            ? 'border-green-500 focus:border-green-400'
+                            : 'border-gray-700 focus:border-white'
+                          }`}
+                      >
+                        {getValidReturnTimes(formData.returnDate).length > 0 ? (
+                          getValidReturnTimes(formData.returnDate).map(time => <option key={time} value={time}>{time}</option>)
+                        ) : (
+                          <option value="">Seleziona prima una data</option>
+                        )}
+                      </select>
                     </div>
                   </div>
                   <div className="p-4 bg-gray-800 rounded-lg">
