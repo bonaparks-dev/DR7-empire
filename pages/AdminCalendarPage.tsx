@@ -3,9 +3,13 @@ import { motion } from 'framer-motion';
 import { supabase } from '../supabaseClient';
 import { useTranslation } from '../hooks/useTranslation';
 import { RENTAL_CATEGORIES } from '../constants';
+import { addCredits } from '../utils/creditWallet';
 
 interface Booking {
   id: string;
+  user_id?: string;
+  payment_method?: string;
+  booked_at?: string;
   service_type: 'car_rental' | 'car_wash';
   service_name?: string;
   vehicle_name: string;
@@ -113,6 +117,42 @@ const AdminCalendarPage: React.FC = () => {
     try {
       // First, get the booking to check if it has a Google Calendar event ID
       const booking = bookings.find(b => b.id === bookingId);
+      if (!booking) return;
+
+      // AUTOMATIC WALLET REFUND LOGIC
+      if (booking.payment_method === 'credit' && booking.user_id && booking.booked_at) {
+        const bookingTime = new Date(booking.booked_at);
+        const now = new Date();
+        const hoursSinceBooking = (now.getTime() - bookingTime.getTime()) / (1000 * 60 * 60);
+
+        if (hoursSinceBooking <= 48) {
+          // Within 48 hours → 95% refund
+          const refundAmount = Math.round((booking.price_total / 100) * 0.95);
+
+          try {
+            const { success, error: refundError } = await addCredits(
+              booking.user_id,
+              refundAmount,
+              `Rimborso cancellazione prenotazione #${booking.id.substring(0, 8)}`,
+              booking.id,
+              'booking_cancellation'
+            );
+
+            if (success) {
+              alert(`✅ Rimborsati €${refundAmount} al wallet del cliente (95% di €${(booking.price_total / 100).toFixed(2)})`);
+            } else {
+              console.error('Errore rimborso:', refundError);
+              alert(`⚠️ Errore durante il rimborso: ${refundError}`);
+            }
+          } catch (refundError) {
+            console.error('Errore rimborso:', refundError);
+            alert(`⚠️ Errore durante il rimborso`);
+          }
+        } else {
+          // After 48 hours → No refund
+          alert('⚠️ Prenotazione oltre le 48 ore: nessun rimborso applicato (policy)');
+        }
+      }
 
       // Try to delete from Google Calendar if event ID exists
       if (booking?.google_event_id) {
