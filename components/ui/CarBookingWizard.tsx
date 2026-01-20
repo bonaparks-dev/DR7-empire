@@ -1415,7 +1415,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
 
       if (!formData.confirmsInformation) newErrors.confirmsInformation = "Devi confermare che le informazioni sono corrette.";
-      if (ly < 2) newErrors.licenseIssueDate = "È richiesta una patente con almeno 2 anni di anzianità.";
+
+      // License requirements: 3 years minimum, 5 years for BMW M4
+      const isBMW_M4 = item.name?.includes('BMW M4') || item.name?.includes('M4 Competition');
+      const requiredYears = isBMW_M4 ? 5 : 3;
+
+      if (ly < requiredYears) {
+        newErrors.licenseIssueDate = isBMW_M4
+          ? "Per la BMW M4 è richiesta una patente con almeno 5 anni di anzianità."
+          : "È richiesta una patente con almeno 3 anni di anzianità.";
+      }
+
       if (formData.addSecondDriver) {
         if (!formData.secondDriver.firstName) newErrors['secondDriver.firstName'] = "Il nome del secondo guidatore è obbligatorio.";
         if (!formData.secondDriver.lastName) newErrors['secondDriver.lastName'] = "Il cognome del secondo guidatore è obbligatorio.";
@@ -2454,7 +2464,21 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 space-y-2">
                 <p>Età conducente: {driverAgeLocal || '--'} anni</p>
                 <p>Anzianità patente: {licenseYearsLocal || '--'} anni</p>
-                {licenseYearsLocal < 2 && formData.licenseIssueDate && <p className="text-red-500 font-bold">ATTENZIONE: È richiesta una patente con almeno 2 anni di anzianità per noleggiare.</p>}
+                {(() => {
+                  const isBMW_M4 = item.name?.includes('BMW M4') || item.name?.includes('M4 Competition');
+                  const requiredYears = isBMW_M4 ? 5 : 3;
+
+                  if (licenseYearsLocal < requiredYears && formData.licenseIssueDate) {
+                    return (
+                      <p className="text-red-500 font-bold">
+                        ATTENZIONE: {isBMW_M4
+                          ? 'Per la BMW M4 è richiesta una patente con almeno 5 anni di anzianità.'
+                          : 'È richiesta una patente con almeno 3 anni di anzianità per noleggiare.'}
+                      </p>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             </section>
 
