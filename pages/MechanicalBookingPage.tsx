@@ -94,19 +94,7 @@ const MechanicalBookingPage: React.FC = () => {
     }
   }
 
-  // Initialize Stripe
-  useEffect(() => {
-    if ((window as any).Stripe) {
-      if (!STRIPE_PUBLISHABLE_KEY || STRIPE_PUBLISHABLE_KEY.startsWith('YOUR_')) {
-        console.error("Stripe.js has loaded, but the publishable key is not set.");
-        setPaymentError("Payment service is not configured correctly. Please contact support.");
-        return;
-      }
-      const stripeInstance = (window as any).Stripe(STRIPE_PUBLISHABLE_KEY);
-      setStripe(stripeInstance);
-      setElements(stripeInstance.elements());
-    }
-  }, []);
+  // Nexi payment - no initialization needed
 
   useEffect(() => {
     if (!selectedService) {
@@ -144,89 +132,9 @@ const MechanicalBookingPage: React.FC = () => {
     fetchBalance();
   }, [user]);
 
-  // Create payment intent when modal opens (only for Stripe payment)
-  useEffect(() => {
-    if (showPaymentModal && paymentMethod === 'stripe' && selectedService && selectedService.price > 0) {
-      setIsClientSecretLoading(true);
-      setPaymentError(null);
-      setClientSecret(null);
+  // Nexi payment - no payment intent needed
 
-      fetch('/.netlify/functions/create-payment-intent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: selectedService.price,
-          currency: 'eur',
-          email: user?.email,
-          purchaseType: 'mechanical-service',
-          metadata: {
-            serviceName: lang === 'it' ? selectedService.name : selectedService.nameEn,
-            appointmentDate: formData.appointmentDate,
-            appointmentTime: formData.appointmentTime
-          }
-        })
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.error) {
-            setPaymentError(data.error);
-          } else {
-            setClientSecret(data.clientSecret);
-          }
-        })
-        .catch(error => {
-          console.error('Failed to fetch client secret:', error);
-          setPaymentError('Could not connect to payment server.');
-        })
-        .finally(() => {
-          setIsClientSecretLoading(false);
-        });
-    }
-  }, [showPaymentModal, paymentMethod, user, selectedService, formData.appointmentDate, formData.appointmentTime, lang]);
-
-  // Mount Stripe card element
-  useEffect(() => {
-    if (elements && clientSecret && cardElementRef.current && showPaymentModal) {
-      const existingCard = elements.getElement('card');
-      if (existingCard) {
-        existingCard.unmount();
-      }
-
-      const timer = setTimeout(() => {
-        if (cardElementRef.current) {
-          const card = elements.create('card', {
-            style: {
-              base: {
-                color: '#ffffff',
-                fontFamily: '"Exo 2", sans-serif',
-                fontSize: '16px',
-                '::placeholder': { color: '#a0aec0' }
-              },
-              invalid: { color: '#ef4444', iconColor: '#ef4444' }
-            }
-          });
-
-          try {
-            card.mount(cardElementRef.current);
-            card.on('change', (event) => {
-              setPaymentError(event.error ? event.error.message : null);
-            });
-          } catch (error) {
-            console.error('Error mounting Stripe card element:', error);
-            setPaymentError('Failed to load payment form. Please refresh the page.');
-          }
-        }
-      }, 100);
-
-      return () => {
-        clearTimeout(timer);
-        const card = elements.getElement('card');
-        if (card) {
-          card.unmount();
-        }
-      };
-    }
-  }, [elements, clientSecret, showPaymentModal]);
+  // Nexi payment - no card element needed
 
   // Validation functions
   const validateCodiceFiscale = (cf: string): boolean => {
@@ -457,44 +365,55 @@ const MechanicalBookingPage: React.FC = () => {
         };
 
       } else {
-        // Stripe card payment
-        if (!stripe || !elements || !clientSecret) {
-          return;
+        // Nexi card payment
+        if (!user?.id) {
+          throw new Error('User not logged in');
         }
 
-        const cardElement = elements.getElement('card');
-        if (!cardElement) {
-          throw new Error('Card element not found');
-        }
+        // 1. Save booking as pending first
+        const { data: pendingBooking, error: bookingError } = await supabase
+          .from('bookings')
+          .insert({
+            ...pendingBookingData,
+            payment_status: 'pending',
+            payment_method: 'nexi'
+          })
+          .select()
+          .single();
 
-        const { error: paymentError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-          payment_method: {
-            card: cardElement,
-            billing_details: {
-              name: formData.fullName,
-              email: formData.email,
-              phone: formData.phone
-            }
-          }
+        if (bookingError) throw bookingError;
+
+        // 2. Generate nexi_order_id
+        const timestamp = Date.now().toString().substring(5);
+        const random = Math.floor(100 + Math.random() * 900).toString();
+        const nexiOrderId = `${timestamp}${random}`;
+
+        // 3. Update with nexi_order_id
+        await supabase
+          .from('bookings')
+          .update({ nexi_order_id: nexiOrderId })
+          .eq('id', pendingBooking.id);
+
+        // 4. Create Nexi payment
+        const nexiResponse = await fetch('/.netlify/functions/create-nexi-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: nexiOrderId,
+            amount: Math.round((selectedService?.price || 0) * 100),
+            currency: 'EUR',
+            description: `Servizio Meccanico - ${lang === 'it' ? selectedService?.name : selectedService?.nameEn}`,
+            customerEmail: formData.email,
+            customerName: formData.fullName
+          })
         });
 
-        if (paymentError) {
-          setPaymentError(paymentError.message || 'Payment failed');
-          setIsProcessing(false);
-          return;
-        }
+        const nexiData = await nexiResponse.json();
+        if (!nexiResponse.ok) throw new Error(nexiData.error || 'Payment failed');
 
-        if (paymentIntent.status !== 'succeeded') {
-          throw new Error('Payment not completed');
-        }
-
-        // Create booking data for Stripe payment
-        bookingDataWithPayment = {
-          ...pendingBookingData,
-          payment_status: 'paid',
-          stripe_payment_intent_id: paymentIntent.id,
-          payment_method: 'online'
-        };
+        // 5. Redirect to Nexi HPP
+        window.location.href = nexiData.paymentUrl;
+        return; // Exit here since we're redirecting
       }
 
       // Create booking in database (common for both payment methods)
@@ -1042,8 +961,8 @@ const MechanicalBookingPage: React.FC = () => {
                     type="button"
                     onClick={() => setPaymentMethod('credit')}
                     className={`p-4 rounded-lg border-2 transition-all ${paymentMethod === 'credit'
-                        ? 'border-white bg-white/10'
-                        : 'border-gray-700 bg-gray-800 hover:border-gray-600'
+                      ? 'border-white bg-white/10'
+                      : 'border-gray-700 bg-gray-800 hover:border-gray-600'
                       }`}
                   >
                     <div className="text-center">
@@ -1061,8 +980,8 @@ const MechanicalBookingPage: React.FC = () => {
                     type="button"
                     onClick={() => setPaymentMethod('stripe')}
                     className={`p-4 rounded-lg border-2 transition-all ${paymentMethod === 'stripe'
-                        ? 'border-white bg-white/10'
-                        : 'border-gray-700 bg-gray-800 hover:border-gray-600'
+                      ? 'border-white bg-white/10'
+                      : 'border-gray-700 bg-gray-800 hover:border-gray-600'
                       }`}
                   >
                     <div className="text-center">
