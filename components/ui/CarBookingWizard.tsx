@@ -2408,8 +2408,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             return;
                           }
 
-                          // Note: Cross-gap validation happens at form submission
-                          // We don't validate here because returnTime might not be set yet
+                          // CRITICAL: Check if this date has ANY valid return times
+                          // This allows Jan 31 (with times before 09:30) but blocks fully booked dates
+                          const validTimesForDate = getValidReturnTimes(value);
+                          if (validTimesForDate.length === 0) {
+                            alert(`Questa opzione di riconsegna non è attualmente disponibile per il veicolo selezionato.\n\nSeleziona una data compatibile con le disponibilità mostrate sopra per proseguire.`);
+                            return;
+                          }
 
                           handleChange(e);
                         }}
