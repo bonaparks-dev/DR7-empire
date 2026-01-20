@@ -29,7 +29,7 @@ const FUNCTIONS_BASE =
     ? 'http://localhost:8888'
     : window.location.origin);
 
-// Stripe publishable key
+// Nexi payment integration
 
 type KaskoTier = 'RCA' | 'KASKO_BASE' | 'KASKO_BLACK' | 'KASKO_SIGNATURE';
 
@@ -174,7 +174,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       usageZone: '' as 'CAGLIARI_SUD' | 'FUORI_ZONA' | '', // Will be set by useEffect after user data loads
 
       // Step 4
-      paymentMethod: 'stripe' as 'stripe' | 'credit',
+      paymentMethod: 'nexi' as 'nexi' | 'credit',
       agreesToTerms: false,
       agreesToPrivacy: false,
       confirmsDocuments: false,
@@ -210,13 +210,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [isLoyalCustomer, setIsLoyalCustomer] = useState<boolean>(false);
 
 
-  // Stripe
-  // Nexi - no card ref
-  const [stripe, setStripe] = useState<any>(null);
-  const [cardElement, setCardElement] = useState<any>(null);
+  // Nexi payment state
   const [paymentError, setPaymentError] = useState<string | null>(null);
-  // Nexi - no client secret
-  // Nexi - no loading
 
   // Camera
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -380,13 +375,32 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
         if (response.ok) {
           const data = await response.json();
-          setEarliestAvailability(data);
+
+          // CRITICAL FIX: If the earliest available date is today or in the past, 
+          // consider the vehicle IMMEDIATELY AVAILABLE and suppress the warning.
+          let effectiveAvailability = data;
 
           if (!data.isAvailable && data.earliestAvailableDate) {
+            const availableDate = new Date(data.earliestAvailableDate);
+            const todayDate = new Date();
+            // Reset to midnight for fair comparison
+            availableDate.setHours(0, 0, 0, 0);
+            todayDate.setHours(0, 0, 0, 0);
+
+            if (availableDate <= todayDate) {
+              console.log("Availability Override: Date is today or past, vehicle is available now.");
+              effectiveAvailability = { isAvailable: true };
+            }
+          }
+
+          setEarliestAvailability(effectiveAvailability);
+
+          // Only auto-update form data if it's genuinely a FUTURE unavailability
+          if (!effectiveAvailability.isAvailable && effectiveAvailability.earliestAvailableDate) {
             setFormData(prev => ({
               ...prev,
-              pickupDate: data.earliestAvailableDate,
-              pickupTime: data.earliestAvailableTime || "10:30"
+              pickupDate: effectiveAvailability.earliestAvailableDate,
+              pickupTime: effectiveAvailability.earliestAvailableTime || "10:30"
             }));
           }
         }
@@ -614,19 +628,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   }, [user?.id, user?.email, user?.fullName, user?.phone]);
 
 
-  // Stripe.js ready
-  useEffect(() => {
-    if ((window as any).Stripe) {
-      if (!STRIPE_PUBLISHABLE_KEY || STRIPE_PUBLISHABLE_KEY.startsWith('YOUR_')) {
-        console.error("Stripe.js loaded but publishable key is not set.");
-        setPaymentError("Payment service is not configured correctly.");
-        return;
-      }
-      setStripe((window as any).Stripe(STRIPE_PUBLISHABLE_KEY));
-    } else {
-      console.error("Stripe.js has not loaded.");
-    }
-  }, []);
+  // Nexi initialization not needed here
 
   // Camera stream binding
   useEffect(() => {
@@ -1071,37 +1073,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         })
         .finally(() => setIsClientSecretLoading(false));
     }
-  }, [step, finalTotal, currency, user?.id, formData.email]);
-
-  // Mount Stripe Card Element (no return_url; 3DS in-page)
-  useEffect(() => {
-    let card: any = null;
-    if (stripe && step === 4 && formData.paymentMethod === 'stripe' && cardElementRef.current && clientSecret) {
-      const elements = stripe.elements();
-      card = elements.create('card', {
-        style: {
-          base: {
-            color: '#ffffff',
-            fontFamily: '"Exo 2", sans-serif',
-            fontSmoothing: 'antialiased',
-            fontSize: '16px',
-            '::placeholder': { color: '#a0aec0' }
-          },
-          invalid: { color: '#ef4444', iconColor: '#ef4444' }
-        },
-        hidePostalCode: true
-      });
-      setCardElement(card);
-      card.mount(cardElementRef.current);
-      card.on('change', (event: any) => setPaymentError(event.error ? event.error.message : null));
-    }
-    return () => { if (card) { card.destroy(); setCardElement(null); } };
-  }, [stripe, step, formData.paymentMethod, clientSecret]);
-
-
-
-  // Insurance is now automatic KASKO_BASE - no eligibility checks needed
-
+  }, [step, finalTotal, currency, user?.id, formData.email]); // Nexi payment - no card element needed
 
   // Auto-set usage zone for residents to ensure correct pricing
   useEffect(() => {
@@ -2019,25 +1991,26 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             </div>
 
             {/* Availability Banner - Single Source of Truth */}
+            {/* Availability Banner - Single Source of Truth */}
             {earliestAvailability && !earliestAvailability.isAvailable && (
-              <div className="mb-6 bg-yellow-900/30 border-2 border-yellow-500/50 rounded-xl p-6">
-                <div className="flex items-start gap-4">
-                  <svg className="h-8 w-8 text-yellow-400 flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
+              <div className="mb-6 bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <div className="bg-blue-500/20 p-2 rounded-full">
+                    <svg className="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
                   <div className="flex-1">
-                    <h3 className="text-yellow-200 font-bold text-lg mb-2">
-                      ⚠️ This vehicle is available starting from:
-                    </h3>
-                    <p className="text-white text-xl font-semibold mb-3">
-                      {new Date(earliestAvailability.earliestAvailableDate!).toLocaleDateString('it-IT', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric'
-                      })} at {earliestAvailability.earliestAvailableTime}
+                    <p className="text-blue-200 text-sm font-medium">
+                      Questo veicolo sarà disponibile dal <span className="text-white font-bold">
+                        {new Date(earliestAvailability.earliestAvailableDate!).toLocaleDateString('it-IT', {
+                          day: 'numeric',
+                          month: 'long'
+                        })}
+                      </span> alle <span className="text-white font-bold">{earliestAvailability.earliestAvailableTime}</span>.
                     </p>
-                    <p className="text-gray-300 text-sm">
-                      Please select a pickup date and time from this moment onwards.
+                    <p className="text-blue-300/70 text-xs mt-0.5">
+                      Seleziona una data successiva per procedere.
                     </p>
                   </div>
                 </div>
@@ -2082,7 +2055,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             return;
                           }
 
-                          // Auto-Clear Return Date if Pickup > Return
+                          // Auto-Clear Return Date if Pickup > Return or invalid
+                          // IMPROVED: Reset return date cleanly to avoid "return date before pickup date" errors
                           const newPickup = value;
                           const currentReturn = formData.returnDate;
 
@@ -2090,10 +2064,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             // Reset return date if it becomes invalid
                             setFormData(prev => ({ ...prev, pickupDate: value, returnDate: '', returnTime: '' }));
                           } else {
+                            // Just update pickup
                             handleChange(e);
                           }
                         }}
-                        min={earliestAvailability?.earliestAvailableDate || today}
+                        // FIX: Ensure min date is never in the past, even if availability says so (which we fixed in logic, but safety first)
+                        min={earliestAvailability?.earliestAvailableDate && new Date(earliestAvailability.earliestAvailableDate) > new Date(today)
+                          ? earliestAvailability.earliestAvailableDate
+                          : today}
                         required
                         className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors cursor-pointer ${errors.pickupDate
                           ? 'border-red-500 focus:border-red-400'
