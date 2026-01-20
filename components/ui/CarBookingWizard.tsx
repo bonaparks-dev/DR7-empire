@@ -2356,7 +2356,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             if (pickupWindow) {
                               const windowEnd = new Date(pickupWindow.end);
                               if (returnDt > windowEnd) {
-                                alert(`La data di riconsegna selezionata attraversa un periodo non disponibile.\n\nPer favore scegli date all'interno delle finestre di disponibilità mostrate sopra.`);
+                                alert(`Questa opzione di riconsegna non è attualmente disponibile per il veicolo selezionato.\n\nSeleziona una data compatibile con le disponibilità mostrate sopra per proseguire.`);
                                 return;
                               }
                             }
