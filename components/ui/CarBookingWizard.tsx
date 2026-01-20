@@ -630,6 +630,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
       if (pickupWindow) {
         const windowEnd = new Date(pickupWindow.end);
+        const windowEndDate = windowEnd.toISOString().split('T')[0]; // YYYY-MM-DD
+
+        // First check: return DATE must not be after window end DATE
+        if (date > windowEndDate) {
+          return []; // Return date is after window ends, no valid times
+        }
 
         return times.filter(time => {
           const [hours, minutes] = time.split(':').map(Number);
