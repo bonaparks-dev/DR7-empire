@@ -88,8 +88,8 @@ export const handler: Handler = async (event) => {
         if (bookings && Array.isArray(bookings)) {
             bookings.forEach((b: any) => {
                 busyIntervals.push({
-                    start: new Date(b.pickup_date),
-                    end: new Date(new Date(b.dropoff_date).getTime() + BUFFER_TIME_MS)
+                    start: new Date(new Date(b.pickup_date).getTime() - BUFFER_TIME_MS),  // 90 min before pickup
+                    end: new Date(new Date(b.dropoff_date).getTime() + BUFFER_TIME_MS)    // 90 min after return
                 });
             });
         }
@@ -97,8 +97,8 @@ export const handler: Handler = async (event) => {
         if (reservations && Array.isArray(reservations)) {
             reservations.forEach((r: any) => {
                 busyIntervals.push({
-                    start: new Date(r.start_at),
-                    end: new Date(new Date(r.end_at).getTime() + BUFFER_TIME_MS)
+                    start: new Date(new Date(r.start_at).getTime() - BUFFER_TIME_MS),  // 90 min before start
+                    end: new Date(new Date(r.end_at).getTime() + BUFFER_TIME_MS)      // 90 min after end
                 });
             });
         }
