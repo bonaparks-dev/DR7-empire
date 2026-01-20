@@ -2408,26 +2408,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             return;
                           }
 
-                          // CRITICAL: Check if return crosses availability gap
-                          if (availabilityWindows.length > 0 && formData.pickupDate && formData.pickupTime) {
-                            const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
-                            const returnDt = new Date(`${value}T${formData.returnTime || '10:30'}`);
-
-                            // Find which window contains the pickup
-                            const pickupWindow = availabilityWindows.find(w => {
-                              const start = new Date(w.start);
-                              const end = new Date(w.end);
-                              return pickup >= start && pickup <= end;
-                            });
-
-                            if (pickupWindow) {
-                              const windowEnd = new Date(pickupWindow.end);
-                              if (returnDt > windowEnd) {
-                                alert(`Questa opzione di riconsegna non è attualmente disponibile per il veicolo selezionato.\n\nSeleziona una data compatibile con le disponibilità mostrate sopra per proseguire.`);
-                                return;
-                              }
-                            }
-                          }
+                          // Note: Cross-gap validation happens at form submission
+                          // We don't validate here because returnTime might not be set yet
 
                           handleChange(e);
                         }}
