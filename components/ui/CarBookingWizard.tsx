@@ -2453,9 +2453,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         Ora di riconsegna *
-                        {formData.returnTime && (
-                          <span className="ml-2 text-xs text-green-400">{formData.returnTime}</span>
-                        )}
                       </label>
                       <select
                         name="returnTime"
