@@ -399,6 +399,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   // Helper function to get day of week without timezone issues
 
   // Initialize dates from first availability window
+  // DISABLED - was auto-resetting dates, confusing users
+  /*
   useEffect(() => {
     if (availabilityWindows.length > 0) {
       const firstWindow = availabilityWindows[0];
@@ -420,8 +422,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
     }
   }, [availabilityWindows]);
+  */
 
   // Validate return date is after pickup date
+  // DISABLED - was auto-adjusting, confusing users
+  /*
   useEffect(() => {
     if (formData.pickupDate && formData.returnDate && formData.pickupTime && formData.returnTime) {
       const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
@@ -439,8 +444,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
     }
   }, [formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime]);
+  */
 
   // Validate dates are within availability windows
+  // DISABLED - was auto-adjusting dates, confusing users
+  /*
   useEffect(() => {
     if (availabilityWindows.length === 0) return;
     if (!formData.pickupDate || !formData.returnDate) return;
@@ -478,6 +486,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }));
     }
   }, [formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime, availabilityWindows]);
+  */
 
   const getDayOfWeek = (dateString: string): number => {
     const [year, month, day] = dateString.split('-').map(Number);
