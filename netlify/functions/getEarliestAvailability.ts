@@ -31,41 +31,48 @@ export const handler: Handler = async (event) => {
     try {
         const { vehicleName, vehicleIds } = JSON.parse(event.body || '{}');
 
-        if (!vehicleName) {
+        if (!vehicleName && (!vehicleIds || vehicleIds.length === 0)) {
             return {
                 statusCode: 400,
                 headers,
-                body: JSON.stringify({ error: 'vehicleName is required' }),
+                body: JSON.stringify({ error: 'vehicleName or vehicleIds is required' }),
             };
         }
 
-        // 1. Resolve Vehicle Plates if IDs are provided
-        // This ensures stricter matching than just name
-        let vehiclePlates: string[] = [];
+        // Query bookings using vehicle_id (strict FK relationship)
+        let bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id&status=neq.cancelled&order=pickup_date.asc`;
+
         if (vehicleIds && vehicleIds.length > 0) {
-            const { data: vehicles, error: vehiclesError } = await fetch(`${SUPABASE_URL}/rest/v1/vehicles?select=plate&id=in.(${vehicleIds.join(',')})`, {
+            // Precise match by vehicle_id (preferred)
+            bookingsUrl += `&vehicle_id=in.(${vehicleIds.join(',')})`;
+        } else {
+            // Fallback: resolve vehicle_id from name first
+            const vehiclesResponse = await fetch(`${SUPABASE_URL}/rest/v1/vehicles?select=id&display_name=eq.${encodeURIComponent(vehicleName)}`, {
                 headers: {
                     'apikey': SUPABASE_SERVICE_ROLE_KEY!,
                     'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
                     'Content-Type': 'application/json',
                 },
-            }).then(r => r.json().then(data => ({ data, error: !r.ok ? data : null })));
+            });
 
-            if (vehicles && vehicles.length > 0) {
-                vehiclePlates = vehicles.map((v: any) => v.plate).filter((p: any) => p);
+            const vehicles = await vehiclesResponse.json();
+            if (!vehicles || vehicles.length === 0) {
+                // No vehicle found - return available to not block
+                const now = new Date();
+                return {
+                    statusCode: 200,
+                    headers,
+                    body: JSON.stringify({
+                        isAvailable: true,
+                        earliestAvailableDate: now.toISOString().split('T')[0],
+                        earliestAvailableTime: now.toTimeString().slice(0, 5),
+                        earliestAvailableDatetime: now.toISOString(),
+                    }),
+                };
             }
-        }
 
-        // 2. Query bookings
-        // Prioritize Plate matching if available, otherwise fallback to Name (but strive for precision)
-        let bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_name,vehicle_plate&status=neq.cancelled&order=dropoff_date.desc`;
-
-        if (vehiclePlates.length > 0) {
-            // Precise match by plate
-            bookingsUrl += `&vehicle_plate=in.(${vehiclePlates.join(',')})`;
-        } else {
-            // Fallback to name match (legacy/fallback behavior)
-            bookingsUrl += `&vehicle_name=ilike.%25${encodeURIComponent(vehicleName)}%25`;
+            const resolvedIds = vehicles.map((v: any) => v.id);
+            bookingsUrl += `&vehicle_id=in.(${resolvedIds.join(',')})`;
         }
 
         const bookingsResponse = await fetch(bookingsUrl, {
@@ -78,10 +85,12 @@ export const handler: Handler = async (event) => {
 
         const bookings = await bookingsResponse.json();
 
-        // 3. Query reservations if we have vehicle IDs
+        // Query reservations if we have vehicle IDs
         let reservations = [];
-        if (vehicleIds && vehicleIds.length > 0) {
-            const reservationsUrl = `${SUPABASE_URL}/rest/v1/reservations?select=start_at,end_at,vehicle_id&vehicle_id=in.(${vehicleIds.join(',')})&status=in.(confirmed,pending,active)&order=end_at.desc`;
+        const idsToCheck = vehicleIds && vehicleIds.length > 0 ? vehicleIds : [];
+
+        if (idsToCheck.length > 0) {
+            const reservationsUrl = `${SUPABASE_URL}/rest/v1/reservations?select=start_at,end_at,vehicle_id&vehicle_id=in.(${idsToCheck.join(',')})&status=in.(confirmed,pending,active)&order=start_at.asc`;
 
             const reservationsResponse = await fetch(reservationsUrl, {
                 headers: {
@@ -94,65 +103,72 @@ export const handler: Handler = async (event) => {
             reservations = await reservationsResponse.json();
         }
 
-        // 4. Find latest conflict
-        let latestEndTime: Date | null = null;
+        // Combine and sort all conflicts by start time
+        const allConflicts: Array<{ start: Date; end: Date }> = [];
         const now = new Date();
 
-        // Check bookings
-        if (bookings && Array.isArray(bookings) && bookings.length > 0) {
-            // Find the MAX end date, not just the first one (since we might have multiple cars in a group)
-            // But usually we just want the latest one that is in the future relative to NOW?
-            // Actually, we want the absolute latest end time.
-
-            for (const b of bookings) {
+        // Add bookings
+        if (bookings && Array.isArray(bookings)) {
+            bookings.forEach((b: any) => {
                 const end = new Date(b.dropoff_date);
-                if (!latestEndTime || end > latestEndTime) {
-                    latestEndTime = end;
+                // Only include future or current bookings
+                if (end >= now) {
+                    allConflicts.push({
+                        start: new Date(b.pickup_date),
+                        end: new Date(end.getTime() + BUFFER_TIME_MS)
+                    });
                 }
-            }
+            });
         }
 
-        // Check reservations
-        if (reservations && Array.isArray(reservations) && reservations.length > 0) {
-            for (const r of reservations) {
+        // Add reservations
+        if (reservations && Array.isArray(reservations)) {
+            reservations.forEach((r: any) => {
                 const end = new Date(r.end_at);
-                if (!latestEndTime || end > latestEndTime) {
-                    latestEndTime = end;
+                if (end >= now) {
+                    allConflicts.push({
+                        start: new Date(r.start_at),
+                        end: new Date(end.getTime() + BUFFER_TIME_MS)
+                    });
                 }
-            }
+            });
         }
 
-        // 5. Determine Availability
-        // If no conflicts OR latest conflict is in the past -> Available Now
-        let isAvailable = true;
-        let earliestDate = now;
+        // Sort by start time
+        allConflicts.sort((a, b) => a.start.getTime() - b.start.getTime());
 
-        if (latestEndTime) {
-            // Add buffer
-            const availableTime = new Date(latestEndTime.getTime() + BUFFER_TIME_MS);
-
-            // If the calculated available time is in the future, then it's currently unavailable
-            if (availableTime > now) {
-                isAvailable = false;
-                earliestDate = availableTime;
-            }
+        // Check if available NOW (no current conflicts)
+        if (allConflicts.length === 0) {
+            return {
+                statusCode: 200,
+                headers,
+                body: JSON.stringify({
+                    isAvailable: true,
+                    earliestAvailableDate: now.toISOString().split('T')[0],
+                    earliestAvailableTime: now.toTimeString().slice(0, 5),
+                    earliestAvailableDatetime: now.toISOString(),
+                }),
+            };
         }
 
-        return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({
-                isAvailable,
-                earliestAvailableDate: earliestDate.toISOString().split('T')[0],
-                earliestAvailableTime: earliestDate.toTimeString().slice(0, 5),
-                earliestAvailableDatetime: earliestDate.toISOString(),
-            }),
-        };
+        // Check if currently in a conflict
+        const currentConflict = allConflicts.find(c => now >= c.start && now < c.end);
 
-    } catch (error) {
-        console.error('Error calculating earliest availability:', error);
-        // Return available on error to not block user
-        const now = new Date();
+        if (currentConflict) {
+            // Currently unavailable - return when it becomes available
+            return {
+                statusCode: 200,
+                headers,
+                body: JSON.stringify({
+                    isAvailable: false,
+                    earliestAvailableDate: currentConflict.end.toISOString().split('T')[0],
+                    earliestAvailableTime: currentConflict.end.toTimeString().slice(0, 5),
+                    earliestAvailableDatetime: currentConflict.end.toISOString(),
+                }),
+            };
+        }
+
+        // Not currently in conflict - available now
         return {
             statusCode: 200,
             headers,
@@ -163,5 +179,13 @@ export const handler: Handler = async (event) => {
                 earliestAvailableDatetime: now.toISOString(),
             }),
         };
+
+    } catch (error) {
+        console.error('Error calculating earliest availability:', error);
+        earliestAvailableDate: now.toISOString().split('T')[0],
+            earliestAvailableTime: now.toTimeString().slice(0, 5),
+                earliestAvailableDatetime: now.toISOString(),
+            }),
+};
     }
 };
