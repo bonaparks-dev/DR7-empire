@@ -48,8 +48,8 @@ export const handler: Handler = async (event) => {
         const horizonStart = startDate ? new Date(startDate) : now;
         const horizonEnd = endDate ? new Date(endDate) : new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
 
-        // Fetch all bookings for these vehicles in the time range
-        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id&vehicle_id=in.(${vehicleIds.join(',')})&status=neq.cancelled&dropoff_date=gte.${horizonStart.toISOString()}&pickup_date=lte.${horizonEnd.toISOString()}`;
+        // Fetch all bookings for these vehicles in the time range (exclude both English and Italian cancelled)
+        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id&vehicle_id=in.(${vehicleIds.join(',')})&status=not.in.(cancelled,annullata)&dropoff_date=gte.${horizonStart.toISOString()}&pickup_date=lte.${horizonEnd.toISOString()}`;
 
         const bookingsResponse = await fetch(bookingsUrl, {
             headers: {
@@ -61,8 +61,8 @@ export const handler: Handler = async (event) => {
 
         const bookings = await bookingsResponse.json();
 
-        // Fetch reservations - exclude only cancelled
-        const reservationsUrl = `${SUPABASE_URL}/rest/v1/reservations?select=start_at,end_at,vehicle_id,status&vehicle_id=in.(${vehicleIds.join(',')})&status=neq.cancelled&end_at=gte.${horizonStart.toISOString()}&start_at=lte.${horizonEnd.toISOString()}`;
+        // Fetch reservations - exclude both English and Italian cancelled
+        const reservationsUrl = `${SUPABASE_URL}/rest/v1/reservations?select=start_at,end_at,vehicle_id,status&vehicle_id=in.(${vehicleIds.join(',')})&status=not.in.(cancelled,annullata)&end_at=gte.${horizonStart.toISOString()}&start_at=lte.${horizonEnd.toISOString()}`;
 
         const reservationsResponse = await fetch(reservationsUrl, {
             headers: {
