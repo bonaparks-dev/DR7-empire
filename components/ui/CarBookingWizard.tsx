@@ -2089,32 +2089,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               </div>
             )}
 
-            {/* Fallback: Show old banner if windows not loaded yet but earliestAvailability exists */}
-            {!isLoadingWindows && availabilityWindows.length === 0 && earliestAvailability && !earliestAvailability.isAvailable && (
-              <div className="mb-6 bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-                <div className="flex items-center gap-3">
-                  <div className="bg-blue-500/20 p-2 rounded-full">
-                    <svg className="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-blue-200 text-sm font-medium">
-                      Questo veicolo sarà disponibile dal <span className="text-white font-bold">
-                        {new Date(earliestAvailability.earliestAvailableDate!).toLocaleDateString('it-IT', {
-                          day: 'numeric',
-                          month: 'long'
-                        })}
-                      </span> alle <span className="text-white font-bold">{earliestAvailability.earliestAvailableTime}</span>.
-                    </p>
-                    <p className="text-blue-300/70 text-xs mt-0.5">
-                      Seleziona una data successiva per procedere.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
             <div>
               <h3 className="text-lg font-semibold text-white mb-4">DATE AND TIME SELECTION</h3>
               <div className="space-y-4">
