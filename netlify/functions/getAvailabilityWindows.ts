@@ -61,8 +61,8 @@ export const handler: Handler = async (event) => {
 
         const bookings = await bookingsResponse.json();
 
-        // Fetch reservations
-        const reservationsUrl = `${SUPABASE_URL}/rest/v1/reservations?select=start_at,end_at,vehicle_id&vehicle_id=in.(${vehicleIds.join(',')})&status=in.(confirmed,pending,active)&end_at=gte.${horizonStart.toISOString()}&start_at=lte.${horizonEnd.toISOString()}`;
+        // Fetch reservations - exclude only cancelled
+        const reservationsUrl = `${SUPABASE_URL}/rest/v1/reservations?select=start_at,end_at,vehicle_id,status&vehicle_id=in.(${vehicleIds.join(',')})&status=neq.cancelled&end_at=gte.${horizonStart.toISOString()}&start_at=lte.${horizonEnd.toISOString()}`;
 
         const reservationsResponse = await fetch(reservationsUrl, {
             headers: {
@@ -73,6 +73,14 @@ export const handler: Handler = async (event) => {
         });
 
         const reservations = await reservationsResponse.json();
+
+        // Debug logging
+        console.log('Availability Windows Debug:', {
+            vehicleIds,
+            bookingsCount: bookings?.length || 0,
+            reservationsCount: reservations?.length || 0,
+            reservations: reservations?.map((r: any) => ({ start: r.start_at, end: r.end_at, status: r.status }))
+        });
 
         // Step 1: Create busy intervals
         const busyIntervals: Array<{ start: Date; end: Date }> = [];
