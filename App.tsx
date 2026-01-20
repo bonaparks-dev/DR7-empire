@@ -4,8 +4,7 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
 import { BookingProvider } from './contexts/BookingContext';
 import { AuthProvider } from './contexts/AuthContext';
-import { Elements } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
+// Nexi payment - no Stripe imports needed
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import HomePage from './pages/HomePage';
@@ -235,7 +234,7 @@ const PageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   );
 };
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
+// Nexi payment - no Stripe promise needed
 
 const MainContent = () => {
   const { isCarWizardOpen, closeCarWizard, selectedCar, wizardCategory } = useBooking();
@@ -301,13 +300,11 @@ const App = () => {
         <BookingProvider>
           <AuthProvider>
             <VerificationProvider>
-              <Elements stripe={stripePromise}>
-                <BrowserRouter>
-                  <ScrollToTop />
-                  <AuthRedirector />
-                  <MainContent />
-                </BrowserRouter>
-              </Elements>
+              <BrowserRouter>
+                <ScrollToTop />
+                <AuthRedirector />
+                <MainContent />
+              </BrowserRouter>
             </VerificationProvider>
           </AuthProvider>
         </BookingProvider>

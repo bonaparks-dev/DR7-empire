@@ -3,7 +3,6 @@ import { motion, Variants, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
-import type { Stripe, StripeElements } from '@stripe/stripe-js';
 import { addCredits } from '../utils/creditWallet';
 
 interface CreditPackage {
@@ -160,7 +159,6 @@ const PackageCard: React.FC<{ pkg: CreditPackage; onSelect: () => void }> = ({ p
   );
 };
 
-const STRIPE_PUBLISHABLE_KEY = 'pk_live_51S3dDjQcprtTyo8tBfBy5mAZj8PQXkxfZ1RCnWskrWFZ2WEnm1u93ZnE2tBi316Gz2CCrvLV98IjSoiXb0vSDpOQ003fNG69Y2';
 
 const CreditWalletPage: React.FC = () => {
   const navigate = useNavigate();
@@ -168,12 +166,12 @@ const CreditWalletPage: React.FC = () => {
   const [selectedSeries, setSelectedSeries] = useState<string>('all');
   const [selectedPackage, setSelectedPackage] = useState<CreditPackage | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [stripe, setStripe] = useState<Stripe | null>(null);
-  const [elements, setElements] = useState<StripeElements | null>(null);
-  const cardElementRef = useRef<HTMLDivElement>(null);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [isClientSecretLoading, setIsClientSecretLoading] = useState(false);
-  const [stripeError, setStripeError] = useState<string | null>(null);
+  // Nexi payment - no stripe needed
+  // Nexi payment - no elements needed
+  // Nexi payment - no card element needed
+  // Nexi payment - no client secret needed
+  // Nexi payment - no loading state needed
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Customer info
@@ -196,7 +194,7 @@ const CreditWalletPage: React.FC = () => {
     if ((window as any).Stripe) {
       if (!STRIPE_PUBLISHABLE_KEY || STRIPE_PUBLISHABLE_KEY.startsWith('YOUR_')) {
         console.error("Stripe.js has loaded, but the publishable key is not set.");
-        setStripeError("Payment service is not configured correctly. Please contact support.");
+        setPaymentError("Payment service is not configured correctly. Please contact support.");
         return;
       }
       const stripeInstance = (window as any).Stripe(STRIPE_PUBLISHABLE_KEY);
@@ -279,7 +277,7 @@ const CreditWalletPage: React.FC = () => {
   useEffect(() => {
     if (showPaymentModal && selectedPackage) {
       setIsClientSecretLoading(true);
-      setStripeError(null);
+      setPaymentError(null);
       setClientSecret(null);
 
       fetch('/.netlify/functions/create-payment-intent', {
@@ -301,14 +299,14 @@ const CreditWalletPage: React.FC = () => {
         .then(res => res.json())
         .then(data => {
           if (data.error) {
-            setStripeError(data.error);
+            setPaymentError(data.error);
           } else {
             setClientSecret(data.clientSecret);
           }
         })
         .catch(error => {
           console.error('Failed to fetch client secret:', error);
-          setStripeError('Could not connect to payment server.');
+          setPaymentError('Could not connect to payment server.');
         })
         .finally(() => {
           setIsClientSecretLoading(false);
@@ -341,11 +339,11 @@ const CreditWalletPage: React.FC = () => {
           try {
             card.mount(cardElementRef.current);
             card.on('change', (event) => {
-              setStripeError(event.error ? event.error.message : null);
+              setPaymentError(event.error ? event.error.message : null);
             });
           } catch (error) {
             console.error('Error mounting Stripe card element:', error);
-            setStripeError('Failed to load payment form. Please refresh the page.');
+            setPaymentError('Failed to load payment form. Please refresh the page.');
           }
         }
       }, 100);
@@ -423,42 +421,20 @@ const CreditWalletPage: React.FC = () => {
     e.preventDefault();
 
     if (!validate()) return;
-    if (!stripe || !elements || !clientSecret || !selectedPackage) {
-      setStripeError("Payment system is not ready.");
+    if (!selectedPackage || !user?.id) {
+      setPaymentError("Payment system is not ready.");
       return;
     }
 
     setIsProcessing(true);
-    setStripeError(null);
+    setPaymentError(null);
 
     try {
-      const cardElement = elements.getElement('card');
-      if (!cardElement) {
-        throw new Error('Card element not found');
-      }
-
-      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: cardElement,
-          billing_details: {
-            name: formData.fullName,
-            email: formData.email,
-            phone: formData.phone
-          }
-        }
-      });
-
-      if (error) {
-        setStripeError(error.message || 'Payment failed');
-        setIsProcessing(false);
-        return;
-      }
-
-      // Save credit wallet purchase to database
+      // 1. Save credit wallet purchase as pending
       const { data, error: dbError } = await supabase
         .from('credit_wallet_purchases')
         .insert([{
-          user_id: user?.id || null,
+          user_id: user.id,
           package_id: selectedPackage.id,
           package_name: selectedPackage.name,
           package_series: selectedPackage.series,
@@ -466,8 +442,8 @@ const CreditWalletPage: React.FC = () => {
           received_amount: selectedPackage.receivedAmount,
           bonus_amount: selectedPackage.bonus,
           bonus_percentage: selectedPackage.bonusPercentage,
-          payment_intent_id: paymentIntent?.id,
-          payment_status: 'paid',
+          payment_status: 'pending',
+          payment_method: 'nexi',
           currency: 'EUR',
           customer_name: formData.fullName,
           customer_email: formData.email,
@@ -488,38 +464,44 @@ const CreditWalletPage: React.FC = () => {
         throw new Error('Failed to save purchase record');
       }
 
-      // Add credits to user's balance
-      if (user?.id) {
-        const creditResult = await addCredits(
-          user.id,
-          selectedPackage.receivedAmount,
-          `Ricarica ${selectedPackage.name}`,
-          data?.id,
-          'credit_purchase'
-        );
+      console.log('✅ Purchase record saved:', data.id);
 
-        if (!creditResult.success) {
-          console.error('Failed to add credits:', creditResult.error);
-          throw new Error('Failed to add credits to balance');
-        }
-      }
+      // 2. Generate nexi_order_id
+      const timestamp = Date.now().toString().substring(5);
+      const random = Math.floor(100 + Math.random() * 900).toString();
+      const nexiOrderId = `${timestamp}${random}`;
 
-      // Show success message
-      alert(`Ricarica completata con successo!\n\nHai ricaricato: €${selectedPackage.rechargeAmount}\nRiceverai: €${selectedPackage.receivedAmount}\nBonus: €${selectedPackage.bonus} (+${selectedPackage.bonusPercentage}%)`);
+      // 3. Update with nexi_order_id
+      await supabase
+        .from('credit_wallet_purchases')
+        .update({ nexi_order_id: nexiOrderId })
+        .eq('id', data.id);
 
-      setShowPaymentModal(false);
-      setSelectedPackage(null);
-      setIsProcessing(false);
+      // 4. Create Nexi payment
+      const nexiResponse = await fetch('/.netlify/functions/create-nexi-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: nexiOrderId,
+          amount: Math.round(selectedPackage.rechargeAmount * 100),
+          currency: 'EUR',
+          description: `Credit Wallet - ${selectedPackage.name}`,
+          customerEmail: formData.email,
+          customerName: formData.fullName
+        })
+      });
 
-      // Redirect to account page
-      if (user?.role === 'business') {
-        navigate('/partner/dashboard');
-      } else {
-        navigate('/account');
-      }
+      const nexiData = await nexiResponse.json();
+      if (!nexiResponse.ok) throw new Error(nexiData.error || 'Failed to create payment');
+
+      console.log('✅ Nexi payment created, redirecting...');
+
+      // 5. Redirect to Nexi HPP
+      window.location.href = nexiData.paymentUrl;
+
     } catch (error: any) {
       console.error('Payment error:', error);
-      setStripeError(error.message || 'Payment processing failed');
+      setPaymentError(error.message || 'Payment processing failed');
       setIsProcessing(false);
     }
   };
@@ -795,19 +777,22 @@ const CreditWalletPage: React.FC = () => {
                   <h3 className="text-lg font-bold text-white mb-4">Informazioni di Pagamento</h3>
                   <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 min-h-[56px] flex items-center">
                     {isClientSecretLoading ? (
-                      <div className="flex items-center text-gray-400 text-sm">
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          className="w-4 h-4 border-2 border-t-white border-gray-600 rounded-full mr-2"
-                        />
-                        <span>Inizializzazione pagamento...</span>
-                      </div>
-                    ) : (
-                      <div ref={cardElementRef} className="w-full" />
-                    )}
+                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
+                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
+                    <p className="text-gray-300 mb-2">Verrai reindirizzato alla pagina di pagamento sicura Nexi</p>
+                    <p className="text-gray-400 text-sm">Pagamento protetto e certificato</p>
                   </div>
-                  {stripeError && <p className="text-xs text-red-400 mt-2">{stripeError}</p>}
+                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
+                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
+                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
+                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
+                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
+                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
+                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
+                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
+                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
+                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
+                  {paymentError && <p className="text-xs text-red-400 mt-2">{paymentError}</p>}
                 </div>
 
                 {/* Action Buttons */}
