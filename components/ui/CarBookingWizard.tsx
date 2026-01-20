@@ -713,71 +713,29 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           setFormData(prev => ({ ...prev, selectedVehicleId: specificId }));
         }
 
+
         if (conflicts.length > 0) {
-          const conflict = conflicts[0];
-          const conflictStartDate = safeDate(conflict.pickup_date);
-          const conflictEndDate = safeDate(conflict.dropoff_date);
+          // Conflicts exist - but we rely on earliestAvailability banner (server-side single source of truth)
+          // No need to set availabilityError here as it creates duplicate messages
+          // The blue banner at the top already shows the earliest available date/time
 
-          // Calculate when vehicle becomes available (end time + 1h30 buffer)
-          const availableTime = new Date(conflictEndDate.getTime() + (90 * 60 * 1000));
-
-          // Check if the conflict is on the same day as requested pickup
-          const requestedPickupDate = safeDate(formData.pickupDate);
-          requestedPickupDate.setHours(0, 0, 0, 0);
-          const conflictEndDateOnly = safeDate(conflictEndDate);
-          conflictEndDateOnly.setHours(0, 0, 0, 0);
-
-          if (requestedPickupDate.getTime() === conflictEndDateOnly.getTime()) {
-            // Same day - show available time only
-            const availableTimeStr = availableTime.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
-
-            // Only show error if the available time is AFTER the requested pickup time
-            // Otherwise, it's just a buffer warning that might be resolved by the user's selection
-            // But wait, if 'conflicts' has items, it implies an overlap.
-            // If we are strictly checking, we should trust the conflict.
-            // However, the user said "It shows available after 17:00" and they selected 18:00.
-            // IF 18:00 > 17:30, it should be VALID.
-            // Why did it return a conflict? Maybe the backend check is overly aggressive on buffer?
-            // Let's add a frontend check:
-            const requestedTime = safeDate(`${formData.pickupDate}T${formData.pickupTime}`);
-            if (requestedTime < availableTime) {
-              setAvailabilityError(`Disponibile dopo le ${availableTimeStr}.`);
-            } else {
-              // Technically no conflict if we respect buffer locally?
-              // But usually we shouldn't get here if backend is correct.
-              // We'll trust the backend mostly, but this check prevents "Disponibile dopo 17:30" when you selected 18:00.
-              // If we are here, backend said NO. So we explain WHY.
-              // But if 18:00 > 17:30, why did backend say NO?
-              // Maybe backend buffer is larger? Or backend timezone diff?
-              setAvailabilityError(`Veicolo non disponibile. Riprova dopo le ${availableTimeStr}.`);
-            }
-          } else {
-            // Different days - show date and time only
-            const availableDateStr = availableTime.toLocaleDateString('it-IT');
-            const availableTimeStr = availableTime.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
-            setAvailabilityError(
-              `Disponibile dal ${availableDateStr} alle ${availableTimeStr}.`
-            );
-          }
-
-          // IMPORTANT: Return early to prevent checking partial unavailability
-          // when there's already a booking conflict. Only one message should show.
-          return;
-        } else {
-          // No booking conflicts - check for partial-day unavailability (e.g., at mechanic)
-          const vehicleNameToCheck = availableVehicle || item.name;
-          const partialInfo = await checkVehiclePartialUnavailability(
-            vehicleNameToCheck,
-            formData.pickupDate,
-            formData.pickupTime
-          );
-
-          if (partialInfo.isPartiallyUnavailable && partialInfo.availableAfter) {
-            setPartialUnavailabilityWarning(
-              `Attenzione: questo veicolo sara disponibile dopo le ${partialInfo.availableAfter}.`
-            );
-          }
+          // Skip to partial unavailability check
         }
+
+        // Check for partial-day unavailability (e.g., at mechanic)
+        const vehicleNameToCheck = availableVehicle || item.name;
+        const partialInfo = await checkVehiclePartialUnavailability(
+          vehicleNameToCheck,
+          formData.pickupDate,
+          formData.pickupTime
+        );
+
+        if (partialInfo.isPartiallyUnavailable && partialInfo.availableAfter) {
+          setPartialUnavailabilityWarning(
+            `Attenzione: questo veicolo sara disponibile dopo le ${partialInfo.availableAfter}.`
+          );
+        }
+
       } catch (error) {
         console.error('Error checking availability:', error);
         // Don't block the user if there's an error checking availability
