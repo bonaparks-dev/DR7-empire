@@ -126,12 +126,22 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
     // Calculate deposit based on insurance type
     let depositAmount = 'N/A';
-    if (insuranceOption === 'RCA') {
-      depositAmount = '2000€';
-    } else if (insuranceOption === 'KASKO_BASE') {
+    if (insuranceOption === 'KASKO_BASE') {
       depositAmount = '500€';
-    } else if (insuranceOption === 'KASKO_DR7') {
+    } else if (insuranceOption === 'KASKO_BLACK') {
+      depositAmount = '250€';
+    } else if (insuranceOption === 'KASKO_SIGNATURE') {
       depositAmount = '0€';
+    }
+
+    // Format insurance name for display
+    let insuranceDisplayName = insuranceOption;
+    if (insuranceOption === 'KASKO_BASE') {
+      insuranceDisplayName = 'KASKO BASE';
+    } else if (insuranceOption === 'KASKO_BLACK') {
+      insuranceDisplayName = 'KASKO BLACK';
+    } else if (insuranceOption === 'KASKO_SIGNATURE') {
+      insuranceDisplayName = 'KASKO SIGNATURE';
     }
 
     // Get pickup location - replace dr7_office with actual address
@@ -163,7 +173,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
           <p><strong>Data e Ora Ritiro:</strong> ${pickupDateFormatted} alle ${pickupTimeFormatted}</p>
           <p><strong>Data e Ora Riconsegna:</strong> ${dropoffDateFormatted} alle ${dropoffTimeFormatted}</p>
           <p><strong>Luogo di Ritiro:</strong> ${pickupLocation}</p>
-          <p><strong>Assicurazione:</strong> ${insuranceOption}</p>
+          <p><strong>Assicurazione:</strong> ${insuranceDisplayName}</p>
           <p><strong>Cauzione:</strong> ${depositAmount}</p>
           <p><strong>Stato Pagamento:</strong> ${booking.payment_status === 'pending' ? 'In attesa' : 'Completato'}</p>
         </div>
