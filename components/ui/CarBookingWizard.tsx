@@ -813,19 +813,44 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
   }, [isCameraOpen, cameraStream]);
 
-  // Return time auto (pickup - 1h30)
+  // Return time auto-calculation (smart: respects availability windows)
   useEffect(() => {
-    if (formData.pickupTime) {
+    if (formData.pickupTime && formData.pickupDate && formData.returnDate) {
+      // Calculate default: pickup - 1h30
       const [hours, minutes] = formData.pickupTime.split(':').map(Number);
       const tempDate = new Date(2000, 0, 1, hours, minutes);
       tempDate.setHours(tempDate.getHours() - 1);
       tempDate.setMinutes(tempDate.getMinutes() - 30);
-      const returnHours = String(tempDate.getHours()).padStart(2, '0');
-      const returnMinutes = String(tempDate.getMinutes()).padStart(2, '0');
-      const newReturnTime = `${returnHours}:${returnMinutes}`;
+      let returnHours = tempDate.getHours();
+      let returnMinutes = tempDate.getMinutes();
+
+      // SMART: Check if this exceeds availability window end
+      if (availabilityWindows.length > 0) {
+        const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
+        const calculatedReturn = new Date(`${formData.returnDate}T${String(returnHours).padStart(2, '0')}:${String(returnMinutes).padStart(2, '0')}`);
+
+        // Find window containing pickup
+        const pickupWindow = availabilityWindows.find(w => {
+          const start = new Date(w.start);
+          const end = new Date(w.end);
+          return pickup >= start && pickup <= end;
+        });
+
+        if (pickupWindow) {
+          const windowEnd = new Date(pickupWindow.end);
+
+          // If calculated return exceeds window end, use window end time instead
+          if (calculatedReturn > windowEnd) {
+            returnHours = windowEnd.getHours();
+            returnMinutes = windowEnd.getMinutes();
+          }
+        }
+      }
+
+      const newReturnTime = `${String(returnHours).padStart(2, '0')}:${String(returnMinutes).padStart(2, '0')}`;
       setFormData(prev => ({ ...prev, returnTime: newReturnTime }));
     }
-  }, [formData.pickupTime]);
+  }, [formData.pickupTime, formData.pickupDate, formData.returnDate, availabilityWindows]);
 
   // Check vehicle availability when dates change
   useEffect(() => {
@@ -2453,6 +2478,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         Ora di riconsegna *
+                        <span className="ml-2 text-xs text-gray-400">(auto-calcolata, modificabile)</span>
                       </label>
                       <select
                         name="returnTime"
@@ -2473,6 +2499,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           <option value="">Seleziona prima una data</option>
                         )}
                       </select>
+                      <p className="text-xs text-gray-400 mt-1">Ritiro - 1h30 (auto), adattato alla disponibilità</p>
                     </div>
                   </div>
                   {/* Vehicle Availability Check */}
