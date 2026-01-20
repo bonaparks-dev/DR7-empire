@@ -409,19 +409,19 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
 
                 <div className="space-y-8">
                   <p className="text-lg md:text-xl text-white font-serif tracking-wide leading-relaxed">
-                    The service is currently in development.
+                    Il servizio è attualmente in fase di sviluppo.
                   </p>
 
                   <p className="text-base md:text-lg text-white/80 font-serif tracking-wide">
-                    For further information, please contact us directly.
+                    Per ulteriori informazioni, contattaci direttamente.
                   </p>
 
                   <div className="pt-8">
                     <button
-                      onClick={() => window.location.href = 'https://wa.me/393517375375?text=Hello%2C%20I%20would%20like%20information%20about%20the%20Yachting%20service'}
+                      onClick={() => window.location.href = 'https://wa.me/393517375375?text=Ciao%2C%20vorrei%20informazioni%20sul%20servizio%20Yachting'}
                       className="text-white/80 hover:text-white text-sm tracking-widest uppercase font-light transition-colors duration-300 border-b border-white/20 hover:border-white/60 pb-1"
                     >
-                      Private Enquiry
+                      Richiesta Privata
                     </button>
                   </div>
                 </div>
