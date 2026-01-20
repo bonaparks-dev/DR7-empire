@@ -640,9 +640,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           return returnDt < windowEnd && returnDt > pickup;
         });
       }
+
+      // If no pickup window found, return empty (can't determine valid times)
+      return [];
     }
 
-    return times;
+    // If no pickup date/time set, return empty array
+    // User must select pickup before selecting return
+    return [];
   };
 
   const [hasStoredDocs, setHasStoredDocs] = useState<{ licensePath: string | null; idPath: string | null }>({ licensePath: null, idPath: null });
