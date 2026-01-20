@@ -2139,11 +2139,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     return (
                       <div key={i} className="text-white text-sm bg-blue-900/30 rounded p-2">
                         <span className="font-semibold">
-                          {start.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })} {start.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                          {start.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
                         </span>
                         {' → '}
                         <span className="font-semibold">
-                          {end.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })} {end.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                          {end.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
                         </span>
                       </div>
                     );
