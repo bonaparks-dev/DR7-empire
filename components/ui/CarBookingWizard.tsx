@@ -642,8 +642,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           const returnDt = new Date(date);
           returnDt.setHours(hours, minutes, 0, 0);
 
-          // Return must be BEFORE the window end (not at or after)
-          return returnDt < windowEnd && returnDt > pickup;
+          // Return must be AT OR BEFORE the window end
+          return returnDt <= windowEnd && returnDt > pickup;
         });
       }
 
