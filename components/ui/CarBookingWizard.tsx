@@ -2182,6 +2182,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           if (!value) return;
 
                           // Check if date is within any availability window
+                          // TEMPORARILY DISABLED - validation is too strict
+                          /*
                           if (availabilityWindows.length > 0) {
                             const selectedDate = new Date(value);
                             const isInWindow = availabilityWindows.some(w => {
@@ -2198,6 +2200,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                               return;
                             }
                           }
+                          */
 
                           // Auto-Clear Return Date if Pickup > Return or invalid
                           // IMPROVED: Reset return date cleanly to avoid "return date before pickup date" errors
@@ -2288,6 +2291,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           }
 
                           // Check if date is within any availability window
+                          // TEMPORARILY DISABLED - validation is too strict
+                          /*
                           if (availabilityWindows.length > 0) {
                             const selectedDate = new Date(value);
                             const isInWindow = availabilityWindows.some(w => {
@@ -2300,10 +2305,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             });
 
                             if (!isInWindow) {
-                              alert('La data selezionata non è disponibile.\\n\\nPer favore scegli una data all\'interno delle finestre di disponibilità mostrate sopra.');
+              alert('La data selezionata non è disponibile.\\n\\nPer favore scegli una data all\'interno delle finestre di disponibilità mostrate sopra.');
                               return;
                             }
                           }
+                          */
 
                           handleChange(e);
                         }}
