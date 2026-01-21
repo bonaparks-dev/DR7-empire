@@ -17,7 +17,7 @@ import CarBookingWizard from './components/ui/CarBookingWizard';
 import CarBookingConfirmationPage from './components/ui/CarBookingConfirmationPage';
 import { useBooking } from './hooks/useBooking';
 import BookingPage from './pages/BookingPage';
-import CommercialOperationPage from './pages/CommercialOperationPage';
+
 import AboutPage from './pages/AboutPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
@@ -55,9 +55,7 @@ import CookieBanner from './components/ui/CookieBanner';
 import { useAuth } from './hooks/useAuth';
 import AuthCallbackPage from './pages/AuthCallbackPage';
 import { DR7AIFloatingButton } from './components/ui/DR7AIChat';
-import CommercialOperationSuccessPage from './pages/CommercialOperationSuccessPage';
-import WinRulesPage from './pages/WinRulesPage';
-import LegalTermsPage from './pages/LegalTermsPage';
+
 import CancellationPolicyPage from './pages/CancellationPolicyPage';
 // import LotteriaPopup from './components/ui/LotteriaPopup';
 import MyTickets from './pages/account/MyTickets';
@@ -142,24 +140,8 @@ const AnimatedRoutes = () => {
         } />
         <Route path="/credit-wallet" element={<CreditWalletPage />} />
         <Route
-          path="/commercial-operation"
-          element={<CommercialOperationPage />}
-        />
-        <Route
-          path="/win-rules"
-          element={<WinRulesPage />}
-        />
-        <Route
-          path="/legal-terms"
-          element={<LegalTermsPage />}
-        />
-        <Route
           path="/cancellation-policy"
           element={<CancellationPolicyPage />}
-        />
-        <Route
-          path="/commercial-operation/success"
-          element={<CommercialOperationSuccessPage />}
         />
         <Route path="/account" element={
           <ProtectedRoute role="personal">

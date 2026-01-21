@@ -179,36 +179,6 @@ const HomePage: React.FC = () => {
     >
       <HeroSection />
 
-      {/* ===== Giveaway Section (fixed tag structure) ===== */}
-      <section className="py-24 relative bg-black">
-        <div className="absolute inset-0 bg-black/70" />
-        <div className="container mx-auto px-6 text-center relative z-10">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.5 }}
-            transition={{ duration: 0.5 }}
-            className="text-4xl font-bold text-white"
-          >
-            {getTranslated(COMMERCIAL_OPERATION_GIVEAWAY.name)}
-          </motion.h2>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.5 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="mt-8"
-          >
-            <Link
-              to="/commercial-operation"
-              className="bg-white text-black px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm hover:bg-gray-200 transition-all duration-300 transform hover:scale-105"
-            >
-              {t('Enter_Now')}
-            </Link>
-          </motion.div>
-        </div>
-      </section>
 
       {/* ===== Categories Section ===== */}
       <section className="py-24 bg-black">

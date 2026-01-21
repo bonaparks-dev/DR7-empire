@@ -15,11 +15,9 @@ const AccountPage = () => {
         { path: '/account/documents', label: t('Documents') },
         { path: '/account/membership', label: t('My_Membership') },
         { path: '/account/bookings', label: t('My_Bookings') },
-        // My Tickets is available for all roles
-        { path: '/account/tickets', label: t('My_Tickets') },
         { path: '/account/notifications', label: t('Notifications') },
     ];
-    
+
     // Normalize path for accurate matching (e.g., /account/ -> /account/profile)
     const currentPath = location.pathname.endsWith('/account') || location.pathname.endsWith('/account/')
         ? '/account/profile'
@@ -45,7 +43,7 @@ const AccountPage = () => {
                                 <NavLink
                                     key={item.path}
                                     to={item.path}
-                                    className={({ isActive }) => 
+                                    className={({ isActive }) =>
                                         `flex items-center p-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0 ` +
                                         (isActive ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50 hover:text-white')
                                     }
@@ -56,15 +54,15 @@ const AccountPage = () => {
                         </nav>
                     </aside>
                     <main className="flex-1">
-                         <motion.div
+                        <motion.div
                             key={location.pathname}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.3 }}
-                         >
+                        >
                             <Outlet />
-                         </motion.div>
+                        </motion.div>
                     </main>
                 </div>
             </div>
