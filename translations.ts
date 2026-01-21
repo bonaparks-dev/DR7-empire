@@ -111,7 +111,7 @@ export const translations: Translations = {
   Select_years: { en: "Select years", it: "Seleziona anni" },
   AGE_MISSING: { en: "Please select your age.", it: "Per favore seleziona la tua età." },
   LIC_MISSING: { en: "Please select your years of driving license.", it: "Per favore seleziona gli anni di patente." },
-  BASE_REQ: { en: "KASKO BASE requires at least 3 years of driving license.", it: "KASKO BASE richiede almeno 3 anni di patente." },
+  BASE_REQ: { en: "KASKO requires at least 3 years of driving license.", it: "KASKO richiede almeno 3 anni di patente." },
   BLACK_REQ: { en: "KASKO BLACK requires age ≥ 25 and license ≥ 5 years.", it: "KASKO BLACK richiede età ≥ 25 anni e patente ≥ 5 anni." },
   SIGNATURE_REQ: { en: "KASKO SIGNATURE requires age ≥ 30 and license ≥ 10 years.", it: "KASKO SIGNATURE richiede età ≥ 30 anni e patente ≥ 10 anni." },
   DRIVING_LICENSE_MANDATORY_FIRST_BOOKING: { en: "For your first car booking, uploading your driver's license is mandatory.", it: "Per la tua prima prenotazione auto, è obbligatorio caricare la patente di guida." },

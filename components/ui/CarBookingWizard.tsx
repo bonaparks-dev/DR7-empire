@@ -31,7 +31,7 @@ const FUNCTIONS_BASE =
 
 // Nexi payment integration
 
-type KaskoTier = 'RCA' | 'KASKO_BASE' | 'KASKO_BLACK' | 'KASKO_SIGNATURE';
+type KaskoTier = 'RCA' | 'KASKO' | 'KASKO_BLACK' | 'KASKO_SIGNATURE';
 
 // Helper function to determine vehicle type
 // Helper function to determine vehicle type
@@ -1096,7 +1096,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
 
     // --- INSURANCE COST ---
-    // KASKO BASE is now INCLUDED in the rental price at NO ADDITIONAL COST
+    // KASKO is now INCLUDED in the rental price at NO ADDITIONAL COST
     // All insurance costs are €0 regardless of vehicle type
     let insuranceDailyPrice = 0;
     const tier = formData.insuranceOption;
@@ -1104,14 +1104,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // Type checking for VehicleType specific logic
     const vType = getVehicleType(item, categoryContext);
 
-    // Insurance pricing - KASKO BASE is now INCLUDED (free)
+    // Insurance pricing - KASKO is now INCLUDED (free)
     // All tiers have €0 cost since insurance is included in the base rental price
     insuranceDailyPrice = 0;
 
     let calculatedInsuranceCost = 0; // Always 0 since insurance is included
 
     if (isMassimo) {
-      // Massimo gets KASKO BASE included (free) - same as everyone else now
+      // Massimo gets KASKO included (free) - same as everyone else now
       calculatedInsuranceCost = 0;
     }
 
@@ -1286,7 +1286,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // 2. Special Rules for Massimo Runchina
     if (isMassimoRunchina(formData.email || user?.email || '')) {
       // Force Pricing/Insurance Settings
-      if (formData.insuranceOption !== 'KASKO_BASE') updates.insuranceOption = 'KASKO_BASE';
+      if (formData.insuranceOption !== 'KASKO') updates.insuranceOption = 'KASKO';
       if (formData.kmPackageType !== 'unlimited') updates.kmPackageType = 'unlimited';
 
       // Auto-select FUORI_ZONA to bypass usage zone selection (VIP unrestricted access)
@@ -2255,7 +2255,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   ];
 
   const renderStepContent = () => {
-    // Insurance is now automatic (KASKO BASE included) - no selection UI needed
+    // Insurance is now automatic (KASKO included) - no selection UI needed
 
 
     switch (step) {
@@ -2724,8 +2724,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const displayVehicleType = getVehicleType(item);
 
         const insuranceDetails: Record<string, { title: string; requirements: string; standard: string }> = {
-          KASKO_BASE: {
-            title: 'KASKO BASE',
+          KASKO: {
+            title: 'KASKO',
             requirements: displayVehicleType === 'UTILITARIA' || displayVehicleType === 'FURGONE' || displayVehicleType === 'V_CLASS'
               ? 'DISPONIBILE SOLO PER CLIENTI CON ALMENO 3 ANNI DI PATENTE'
               : 'DISPONIBILE SOLO PER CLIENTI CON ALMENO 2 ANNI DI PATENTE', // Supercar logic might differ? User said "Minimo 3 anni obbligatori" generally? No, standard is 3 years now. User said "UNDER 5 ANNI PATENTE (Minimo 3 anni...)"
@@ -2755,12 +2755,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
         return (
           <div className="space-y-8">
-            {/* Insurance is now automatic (KASKO BASE included) - no selection UI */}
+            {/* Insurance is now automatic (KASKO included) - no selection UI */}
             <section>
               <h3 className="text-lg font-bold text-white mb-4">A. ASSICURAZIONE INCLUSA</h3>
               <div className="p-4 bg-green-900/20 border border-green-600 rounded-lg">
-                <p className="text-green-300 font-semibold">✅ KASKO BASE inclusa automaticamente nel prezzo</p>
-                <p className="text-sm text-gray-400 mt-2">Copertura completa RCA + KASKO BASE per tutti i veicoli</p>
+                <p className="text-green-300 font-semibold">✅ KASKO inclusa automaticamente nel prezzo</p>
+                <p className="text-sm text-gray-400 mt-2">Copertura completa RCA + KASKO per tutti i veicoli</p>
               </div>
             </section>
 
@@ -3086,7 +3086,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 <div>
                   <p className="font-bold text-base text-white mb-2">ASSICURAZIONE E SERVIZI</p>
                   <hr className="border-gray-600 mb-2" />
-                  <p>Assicurazione: KASKO BASE (inclusa)</p>
+                  <p>Assicurazione: KASKO (inclusa)</p>
                   <p>Lavaggio completo obbligatorio</p>
                   {formData.addSecondDriver && <p>Secondo guidatore</p>}
                 </div>
@@ -3165,7 +3165,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                               {/* Automatic deposit calculation - single amount based on loyalty, insurance, and license years */}
                               Cauzione: {formatDeposit(getDeposit())}
                               {getDeposit() === 0 && isLoyalCustomer && ' (Cliente Fedele)'}
-                              {getDeposit() === 0 && !isLoyalCustomer && formData.insuranceOption === 'KASKO_BASE' && ' (Nessun deposito richiesto)'}
+                              {getDeposit() === 0 && !isLoyalCustomer && formData.insuranceOption === 'KASKO' && ' (Nessun deposito richiesto)'}
                             </p>
                           </>
                         )}

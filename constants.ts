@@ -550,10 +550,10 @@ export const PICKUP_LOCATIONS = [
   { id: 'dr7_office', label: { en: 'DR7 Office (Viale Marconi, 229, 09131 Cagliari CA)', it: 'Viale Marconi, 229, 09131 Cagliari CA' } },
 ];
 
-// Automatic KASKO BASE Insurance - Applied to all bookings
+// Automatic KASKO Insurance - Applied to all bookings
 export const AUTO_INSURANCE = {
-  id: 'KASKO_BASE',
-  name: 'Copertura assicurativa KASKO BASE',
+  id: 'KASKO',
+  name: 'Copertura assicurativa KASKO',
   coverage: [
     'RCA',
     'Furto (solo in caso di restituzione chiave, altrimenti paga il 100% del valore del veicolo)',

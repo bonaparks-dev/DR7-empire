@@ -219,7 +219,7 @@ const MyBookings = () => {
                                 const insurance = booking.insurance_option || booking.booking_details?.insuranceOption;
                                 if (insurance === 'RCA') return '2000€';
                                 // Handle both old KASKO_BASE and new KASKO for backward compatibility
-                                if (insurance === 'KASKO_BASE' || insurance === 'KASKO' || insurance === 'Kasko Base') {
+                                if (insurance === 'KASKO_BASE' || insurance === 'KASKO' || insurance === 'Kasko Base' || insurance === 'Kasko') {
                                   // For new bookings, deposit is dynamic based on license/loyalty
                                   const licenseYears = booking.booking_details?.customer?.licenseYears || 0;
                                   const vehicleName = booking.vehicle_name || '';
