@@ -10,6 +10,7 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  NPM_FLAGS = "--legacy-peer-deps"
 
 [[headers]]
   for = "/assets/*"
