@@ -2791,7 +2791,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
             {/* === USAGE ZONE SELECTOR === */}
             {/* Only show for SUPERCAR vehicles - utility vehicles auto-set to FUORI_ZONA */}
-            {vehicleType === 'SUPERCAR' && (
+            {/* Hide for Massimo Runchina - auto-set to FUORI_ZONA */}
+            {vehicleType === 'SUPERCAR' && !isMassimo && (
               <section className="border-t border-gray-700 pt-6">
                 <h3 className="text-lg font-bold text-white mb-2">C. ZONA DI UTILIZZO *</h3>
                 <p className="text-sm text-gray-400 mb-4">
