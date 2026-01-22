@@ -1622,7 +1622,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
       // Validate usage zone selection ONLY for SUPERCAR vehicles
       // Utility vehicles (UTILITARIA, FURGONE, V_CLASS) auto-set to FUORI_ZONA
-      if (vType === 'SUPERCAR') {
+      // Skip validation for Massimo Runchina - usage zone is auto-set and hidden for him
+      if (vType === 'SUPERCAR' && !isMassimo) {
         if (!formData.usageZone) {
           newErrors.usageZone = "Devi selezionare una zona di utilizzo.";
         }
