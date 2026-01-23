@@ -53,7 +53,7 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
         // Query customers_extended table
         const { data, error } = await supabase
             .from('customers_extended')
-            .select('residency_zone')
+            .select('residency_zone, nome, cognome, email, telefono, data_nascita, metadata, id')
             .eq('user_id', userId)
             .maybeSingle(); // Use maybeSingle to handle no rows gracefully
 

@@ -5,6 +5,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
 import DocumentUploadModal from '../components/ui/DocumentUploadModal';
+import { countries } from '../utils/countries';
+import { AppleStyleSelect } from '../components/ui/AppleStyleSelect';
 
 const PasswordStrengthMeter: React.FC<{ password?: string }> = ({ password = '' }) => {
   const { t } = useTranslation();
@@ -597,23 +599,16 @@ const SignUpPage: React.FC = () => {
                   <div className="border-t border-gray-700 pt-4"></div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Nazione <span className="text-red-500">*</span>
-                    </label>
-                    <select
+                    <AppleStyleSelect
+                      label="Paese"
                       name="nazione"
                       value={formData.nazione}
                       onChange={handleChange}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                      options={countries}
                       required
-                    >
-                      <option value="Italia">Italia</option>
-                      <option value="Francia">Francia</option>
-                      <option value="Germania">Germania</option>
-                      <option value="Spagna">Spagna</option>
-                      <option value="Altro">Altro</option>
-                    </select>
-                    {errors.nazione && <p className="text-xs text-red-400 mt-1">{errors.nazione}</p>}
+                      error={errors.nazione}
+                      className="text-black"
+                    />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">

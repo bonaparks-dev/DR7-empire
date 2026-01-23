@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
+import { countries } from '../utils/countries'
+import { AppleStyleSelect } from './ui/AppleStyleSelect'
 
 interface NewClientModalProps {
   isOpen: boolean
@@ -967,21 +969,14 @@ export default function NewClientModal({ isOpen, onClose, onClientCreated }: New
             <h3 className="font-semibold text-white">Informazioni di Contatto</h3>
 
             <div>
-              <label className="block text-sm font-medium text-white mb-1">
-                Nazione *
-              </label>
-              <select
+              <AppleStyleSelect
+                label="Paese"
                 value={formData.nazione}
                 onChange={(e) => setFormData({ ...formData, nazione: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-white focus:border-white text-white"
-              >
-                <option value="Italia">Italia</option>
-                <option value="Francia">Francia</option>
-                <option value="Germania">Germania</option>
-                <option value="Spagna">Spagna</option>
-                <option value="Altro">Altro</option>
-              </select>
-              {errors.nazione && <p className="text-red-500 text-xs mt-1">{errors.nazione}</p>}
+                options={countries}
+                className="text-black"
+                error={errors.nazione}
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-4">

@@ -1182,7 +1182,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const calculatedTotal = calculatedSubtotal;
 
     // Apply membership discount
-    const discountInfo = calculateDiscountedPrice(calculatedTotal, user, 'car_rental');
+    // Massimo Runchina and Special Clients have their own pricing logic (fixed rates + tiered discounts)
+    // They should NOT receive additional membership discounts on top of their special pricing
+    const discountInfo = isMassimo
+      ? { originalPrice: calculatedTotal, discountPercentage: 0, discountAmount: 0, finalPrice: calculatedTotal, hasDiscount: false }
+      : calculateDiscountedPrice(calculatedTotal, user, 'car_rental');
     const membershipTierName = getMembershipTierName(user);
 
     return {
