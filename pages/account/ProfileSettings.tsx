@@ -84,6 +84,9 @@ const ProfileSettings = () => {
     const [extendedProfile, setExtendedProfile] = useState<CustomerExtended | null>(null);
     const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
+    type ClientStatus = 'Standard' | 'Fidelizzato' | 'Elite';
+    const [clientStatus, setClientStatus] = useState<ClientStatus>('Standard');
+
     useEffect(() => {
         if (user) {
             setFormData({
@@ -152,6 +155,33 @@ const ProfileSettings = () => {
                     // But we don't set a dummy object anymore to ensure we know it's missing
                     setExtendedProfile(null);
                 }
+
+                // --- Client Status Calculation ---
+                // 1. Check Memberships for "Elite"
+                const { data: memberships, error: membershipError } = await supabase
+                    .from('membership_purchases')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .gt('renewal_date', new Date().toISOString());
+
+                const isElite = memberships && memberships.length > 0;
+
+                // 2. Check Bookings for "Fidelizzato"
+                const { count: bookingsCount, error: bookingsError } = await supabase
+                    .from('bookings')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('userId', user.id);
+
+                const isFidelizzato = (bookingsCount || 0) > 3;
+
+                if (isElite) {
+                    setClientStatus('Elite');
+                } else if (isFidelizzato) {
+                    setClientStatus('Fidelizzato');
+                } else {
+                    setClientStatus('Standard');
+                }
+
             } catch (error) {
                 console.error('Error fetching data:', error);
             } finally {
@@ -351,7 +381,15 @@ const ProfileSettings = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-400">Tipo Cliente</label>
-                                    <p className="mt-1 text-white font-semibold capitalize">{extendedProfile.tipo_cliente?.replace('_', ' ')}</p>
+                                    <div className="flex items-center gap-3 mt-1">
+                                        <p className="text-white font-semibold capitalize">{extendedProfile.tipo_cliente?.replace('_', ' ')}</p>
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${clientStatus === 'Elite' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50' :
+                                                clientStatus === 'Fidelizzato' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50' :
+                                                    'bg-gray-700 text-gray-400 border border-gray-600'
+                                            }`}>
+                                            {clientStatus}
+                                        </span>
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-400">Nazione</label>
@@ -440,6 +478,14 @@ const ProfileSettings = () => {
                             <div>
                                 <label htmlFor="fullName" className="block text-sm font-medium text-gray-300">{t('Full_Name')}</label>
                                 <input type="text" name="fullName" id="fullName" value={formData.fullName} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm text-white focus:ring-white focus:border-white" />
+                                <div className="mt-2">
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${clientStatus === 'Elite' ? 'bg-amber-100 text-amber-800' :
+                                        clientStatus === 'Fidelizzato' ? 'bg-blue-100 text-blue-800' :
+                                            'bg-gray-100 text-gray-800'
+                                        }`}>
+                                        {clientStatus}
+                                    </span>
+                                </div>
                             </div>
                             <div>
                                 <label htmlFor="email" className="block text-sm font-medium text-gray-300">{t('Email_Address')}</label>

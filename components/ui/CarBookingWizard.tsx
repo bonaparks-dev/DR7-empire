@@ -1080,7 +1080,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
       // Find applicable discount tier
       const tier = discountTiers.find(t => billingDaysCalc >= t.minDays);
-      const discountPercent = tier ? tier.discount : 0.10;
+      const discountPercent = tier ? tier.discount : 0; // No discount for 1-2 days
 
       const baseRentalCost = billingDaysCalc * baseRate;
       massimoTotalDiscount = roundToTwoDecimals(baseRentalCost * discountPercent);
