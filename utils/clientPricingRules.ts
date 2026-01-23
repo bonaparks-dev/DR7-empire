@@ -10,9 +10,11 @@ export const SPECIAL_CLIENTS = {
         email: 'massimorunchina69@gmail.com',
         config: {
             baseRate: 305,              // Fixed rate: €305 per day for any supercar
-            // Simple discount: 10% off starting from day 3 onwards
+            // Tiered discounts based on rental duration
             discountTiers: [
-                { minDays: 3, discount: 0.10 }   // 3+ days: -10%
+                { minDays: 7, discount: 0.20 },  // 7+ days: -20%
+                { minDays: 4, discount: 0.15 },  // 4-6 days: -15%
+                { minDays: 3, discount: 0.10 }   // 3 days: -10%
             ],
             includeUnlimitedKm: true,
             includeKaskoBase: true,

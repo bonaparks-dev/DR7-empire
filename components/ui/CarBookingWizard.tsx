@@ -1073,8 +1073,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     let massimoTotalDiscount = 0;
 
     if (isMassimo) {
-      // Massimo pricing: UNCHANGED - keep existing tiered discount logic
-      // 1-3 days: -10%, 4 days: -15%, 5 days: -25%, 7+ days: -30%
+      // Massimo pricing: Tiered discount structure
+      // 1-2 days: 0%, 3 days: -10%, 4-6 days: -15%, 7+ days: -20%
       const baseRate = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseRate;
       const discountTiers = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.discountTiers;
 
