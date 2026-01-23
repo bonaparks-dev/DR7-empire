@@ -22,6 +22,23 @@ export const SPECIAL_CLIENTS = {
             useCalendarDays: true,
             noCents: true  // Round to whole euros (no cents)
         }
+    },
+    JEANNE_GIRAUD: {
+        email: 'jeannegiraud92@gmail.com',
+        config: {
+            baseRate: 305,              // Fixed rate: €305 per day for any supercar
+            // Tiered discounts based on rental duration (same as Massimo)
+            discountTiers: [
+                { minDays: 7, discount: 0.20 },  // 7+ days: -20%
+                { minDays: 4, discount: 0.15 },  // 4-6 days: -15%
+                { minDays: 3, discount: 0.10 }   // 3 days: -10%
+            ],
+            includeUnlimitedKm: true,
+            includeKaskoBase: true,
+            excludeCarWash: true,
+            useCalendarDays: true,
+            noCents: true  // Round to whole euros (no cents)
+        }
     }
 };
 
@@ -32,56 +49,77 @@ export const SPECIAL_CLIENTS = {
 import type { User } from '../types';
 
 /**
- * Check if the current user/form data corresponds to Massimo Runchina
+ * Check if the current user/form data corresponds to any special VIP client
  * Checks by Email OR by Name+Surname (from User object or form data)
  */
-export const isMassimoRunchina = (
+export const isSpecialClient = (
     data: { email?: string, firstName?: string, lastName?: string } | string | User | null
 ): boolean => {
     if (!data) return false;
 
     // Handle legacy string call (just email)
     if (typeof data === 'string') {
-        return data.toLowerCase().trim() === SPECIAL_CLIENTS.MASSIMO_RUNCHINA.email;
+        const emailLower = data.toLowerCase().trim();
+        return emailLower === SPECIAL_CLIENTS.MASSIMO_RUNCHINA.email ||
+            emailLower === SPECIAL_CLIENTS.JEANNE_GIRAUD.email;
     }
 
     // Handle User object
     if ('fullName' in data && 'email' in data) {
-        // Check User Email
-        if (data.email?.toLowerCase().trim() === SPECIAL_CLIENTS.MASSIMO_RUNCHINA.email) {
+        // Check User Email against all VIP clients
+        const emailLower = data.email?.toLowerCase().trim();
+        if (emailLower === SPECIAL_CLIENTS.MASSIMO_RUNCHINA.email ||
+            emailLower === SPECIAL_CLIENTS.JEANNE_GIRAUD.email) {
             return true;
         }
-        // Check User Name
+        // Check User Name for Massimo
         if (data.fullName) {
-            const nameParts = data.fullName.toLowerCase().split(' ');
-            // Simple check if it contains both "massimo" and "runchina"
             if (data.fullName.toLowerCase().includes('massimo') && data.fullName.toLowerCase().includes('runchina')) {
                 return true;
             }
+            // Check User Name for Jeanne
+            if (data.fullName.toLowerCase().includes('jeanne') && data.fullName.toLowerCase().includes('giraud')) {
+                return true;
+            }
         }
-        // Fallback: check if metadata (if available on User type extensions elsewhere) matches... 
-        // But types.ts User doesn't have metadata explicitly typed other than fields.
         return false;
     }
 
     // Handle Form Data object
     const { email, firstName, lastName } = data as { email?: string, firstName?: string, lastName?: string };
 
-    // Check email
-    if (email && email.toLowerCase().trim() === SPECIAL_CLIENTS.MASSIMO_RUNCHINA.email) {
-        return true;
+    // Check email against all VIP clients
+    if (email) {
+        const emailLower = email.toLowerCase().trim();
+        if (emailLower === SPECIAL_CLIENTS.MASSIMO_RUNCHINA.email ||
+            emailLower === SPECIAL_CLIENTS.JEANNE_GIRAUD.email) {
+            return true;
+        }
     }
 
     // Check Name + Surname
     if (firstName && lastName) {
         const f = firstName.toLowerCase().trim();
         const l = lastName.toLowerCase().trim();
-        if (f === 'massimo' && l === 'runchina') {
+        if ((f === 'massimo' && l === 'runchina') ||
+            (f === 'jeanne' && l === 'giraud')) {
             return true;
         }
     }
 
     return false;
+};
+
+/**
+ * Check if the current user/form data corresponds to Massimo Runchina or any VIP client
+ * Checks by Email OR by Name+Surname (from User object or form data)
+ * @deprecated Use isSpecialClient instead for checking VIP status
+ */
+export const isMassimoRunchina = (
+    data: { email?: string, firstName?: string, lastName?: string } | string | User | null
+): boolean => {
+    // Now just delegates to the generic special client check
+    return isSpecialClient(data);
 };
 
 /**

@@ -1283,8 +1283,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       updates.email = user.email || '';
     }
 
-    // 2. Special Rules for Massimo Runchina
-    if (isMassimoRunchina(formData.email || user?.email || '')) {
+    // 2. Special Rules for Massimo Runchina & VIPs
+    const emailToCheck = formData.email || user?.email || '';
+    if (isMassimoRunchina(emailToCheck)) {
       // Force Pricing/Insurance Settings
       if (formData.insuranceOption !== 'KASKO') updates.insuranceOption = 'KASKO';
       if (formData.kmPackageType !== 'unlimited') updates.kmPackageType = 'unlimited';
@@ -1292,9 +1293,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // Auto-select FUORI_ZONA to bypass usage zone selection (VIP unrestricted access)
       if (formData.usageZone !== 'FUORI_ZONA') updates.usageZone = 'FUORI_ZONA';
 
-      // Ensure name is correct if empty (Massimo specific fallback)
-      if (!formData.firstName && !updates.firstName) updates.firstName = 'Massimo';
-      if (!formData.lastName && !updates.lastName) updates.lastName = 'Runchina';
+      // Determine which VIP it is for name defaults
+      const isJeanne = emailToCheck.toLowerCase().trim() === 'jeannegiraud92@gmail.com';
+      const defaultFirst = isJeanne ? 'Jeanne' : 'Massimo';
+      const defaultLast = isJeanne ? 'Giraud' : 'Runchina';
+
+      // Ensure name is correct if empty
+      if (!formData.firstName && !updates.firstName) updates.firstName = defaultFirst;
+      if (!formData.lastName && !updates.lastName) updates.lastName = defaultLast;
       if (!formData.phone && !updates.phone) updates.phone = '+39 347 000 0000'; // Placeholder
 
       // Fast Track Defaults for Massimo
