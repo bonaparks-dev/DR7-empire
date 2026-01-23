@@ -71,11 +71,7 @@ const SignUpPage: React.FC = () => {
     codicePostale: '',
     cittaResidenza: '',
     provinciaResidenza: '',
-    tipoPatente: '',
-    numeroPatente: '',
-    patenteEmessaDa: '',
-    patenteDataRilascio: '',
-    patenteScadenza: '',
+
     residencyZone: 'NON_RESIDENTE', // Required residency zone field
     // Pubblica Amministrazione fields
     codiceUnivoco: '',
@@ -204,12 +200,7 @@ const SignUpPage: React.FC = () => {
         // Residency Zone Validation
         if (!formData.residencyZone) newErrors.residencyZone = 'Zona di residenza è obbligatoria';
 
-        // License Validations
-        if (!formData.tipoPatente) newErrors.tipoPatente = 'Tipo patente è obbligatorio';
-        if (!formData.numeroPatente) newErrors.numeroPatente = 'Numero patente è obbligatorio';
-        if (!formData.patenteEmessaDa) newErrors.patenteEmessaDa = 'Ente emissione patente è obbligatorio';
-        if (!formData.patenteDataRilascio) newErrors.patenteDataRilascio = 'Data rilascio patente è obbligatoria';
-        if (!formData.patenteScadenza) newErrors.patenteScadenza = 'Scadenza patente è obbligatoria';
+        // License Validations removed
       }
 
       // Pubblica Amministrazione specific
@@ -291,17 +282,7 @@ const SignUpPage: React.FC = () => {
         customerData.citta_residenza = formData.cittaResidenza;
         customerData.provincia_residenza = formData.provinciaResidenza;
 
-        // Residency Zone
         customerData.residency_zone = formData.residencyZone || 'NON_RESIDENTE';
-
-        // License Metadata
-        customerData.metadata = {
-          tipo_patente: formData.tipoPatente,
-          numero_patente: formData.numeroPatente,
-          patente_emessa_da: formData.patenteEmessaDa,
-          patente_data_rilascio: formData.patenteDataRilascio,
-          patente_scadenza: formData.patenteScadenza
-        };
       } else if (tipoCliente === 'pubblica_amministrazione') {
         customerData.codice_univoco = formData.codiceUnivoco;
         customerData.ente_ufficio = formData.enteUfficio;
@@ -869,47 +850,7 @@ const SignUpPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Patente Section */}
-                  <div className="border-t border-gray-700 pt-4 mt-4">
-                    <h3 className="text-lg font-semibold text-white mb-3">Patente di Guida</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Tipo <span className="text-red-500">*</span></label>
-                        <select name="tipoPatente" value={formData.tipoPatente} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" required>
-                          <option value="">Seleziona...</option>
-                          <option value="A">A - Motocicli</option>
-                          <option value="B">B - Autoveicoli</option>
-                          <option value="C">C - Autocarri</option>
-                          <option value="D">D - Autobus</option>
-                        </select>
-                        {errors.tipoPatente && <p className="text-xs text-red-400 mt-1">{errors.tipoPatente}</p>}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Numero <span className="text-red-500">*</span></label>
-                        <input type="text" name="numeroPatente" value={formData.numeroPatente} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase" required />
-                        {errors.numeroPatente && <p className="text-xs text-red-400 mt-1">{errors.numeroPatente}</p>}
-                      </div>
-                    </div>
 
-                    <div className="mt-4">
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Emessa da <span className="text-red-500">*</span></label>
-                      <input type="text" name="patenteEmessaDa" value={formData.patenteEmessaDa} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" placeholder="MIT UCO" required />
-                      {errors.patenteEmessaDa && <p className="text-xs text-red-400 mt-1">{errors.patenteEmessaDa}</p>}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 mt-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Data Rilascio <span className="text-red-500">*</span></label>
-                        <input type="date" name="patenteDataRilascio" value={formData.patenteDataRilascio} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" required />
-                        {errors.patenteDataRilascio && <p className="text-xs text-red-400 mt-1">{errors.patenteDataRilascio}</p>}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Scadenza <span className="text-red-500">*</span></label>
-                        <input type="date" name="patenteScadenza" value={formData.patenteScadenza} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" required />
-                        {errors.patenteScadenza && <p className="text-xs text-red-400 mt-1">{errors.patenteScadenza}</p>}
-                      </div>
-                    </div>
-                  </div>
 
                   <div className="grid grid-cols-2 gap-4 mt-4">
                     <div>
@@ -1173,17 +1114,19 @@ const SignUpPage: React.FC = () => {
       `}</style>
 
       {/* Document Upload Modal */}
-      {showDocumentModal && newUserId && (
-        <DocumentUploadModal
-          isOpen={showDocumentModal}
-          onClose={() => {
-            setShowDocumentModal(false);
-            navigate('/check-email');
-          }}
-          userId={newUserId}
-        />
-      )}
-    </motion.div>
+      {
+        showDocumentModal && newUserId && (
+          <DocumentUploadModal
+            isOpen={showDocumentModal}
+            onClose={() => {
+              setShowDocumentModal(false);
+              navigate('/check-email');
+            }}
+            userId={newUserId}
+          />
+        )
+      }
+    </motion.div >
   );
 };
 

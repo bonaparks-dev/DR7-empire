@@ -24,15 +24,11 @@ interface ClientFormData {
   cap: string
   citta_residenza: string
   provincia_residenza: string
+
   sesso: string
   data_nascita: string
   citta_nascita: string
   provincia_nascita: string
-  tipo_patente: string
-  numero_patente: string
-  patente_emessa_da: string
-  patente_data_rilascio: string
-  patente_scadenza: string
   pec_persona: string
 
   // Azienda
@@ -80,11 +76,7 @@ export default function NewClientModal({ isOpen, onClose, onClientCreated }: New
     data_nascita: '',
     citta_nascita: '',
     provincia_nascita: '',
-    tipo_patente: '',
-    numero_patente: '',
-    patente_emessa_da: '',
-    patente_data_rilascio: '',
-    patente_scadenza: '',
+
     pec_persona: '',
     denominazione: '',
     partita_iva: '',
@@ -192,13 +184,6 @@ export default function NewClientModal({ isOpen, onClose, onClientCreated }: New
       if (!formData.data_nascita) newErrors.data_nascita = 'Data di nascita obbligatoria'
       if (!formData.citta_nascita) newErrors.citta_nascita = 'Città di nascita obbligatoria'
       if (!formData.provincia_nascita) newErrors.provincia_nascita = 'Provincia di nascita obbligatoria'
-
-      // Driving license (all fields required)
-      if (!formData.tipo_patente) newErrors.tipo_patente = 'Tipo patente obbligatorio'
-      if (!formData.numero_patente) newErrors.numero_patente = 'Numero patente obbligatorio'
-      if (!formData.patente_emessa_da) newErrors.patente_emessa_da = 'Emessa da obbligatorio'
-      if (!formData.patente_data_rilascio) newErrors.patente_data_rilascio = 'Data rilascio obbligatoria'
-      if (!formData.patente_scadenza) newErrors.patente_scadenza = 'Scadenza patente obbligatoria'
     }
 
     if (formData.tipo_cliente === 'azienda') {
@@ -263,17 +248,6 @@ export default function NewClientModal({ isOpen, onClose, onClientCreated }: New
         customerData.citta_nascita = formData.citta_nascita
         customerData.provincia_nascita = formData.provincia_nascita.toUpperCase()
         if (formData.pec_persona) customerData.pec = formData.pec_persona
-
-        // Driver's license info in metadata
-        if (formData.tipo_patente || formData.numero_patente) {
-          customerData.metadata = {
-            tipo_patente: formData.tipo_patente,
-            numero_patente: formData.numero_patente,
-            patente_emessa_da: formData.patente_emessa_da,
-            patente_data_rilascio: formData.patente_data_rilascio,
-            patente_scadenza: formData.patente_scadenza
-          }
-        }
       } else if (formData.tipo_cliente === 'azienda') {
         customerData.denominazione = formData.denominazione
         customerData.ragione_sociale = formData.denominazione
@@ -367,11 +341,7 @@ export default function NewClientModal({ isOpen, onClose, onClientCreated }: New
       data_nascita: '',
       citta_nascita: '',
       provincia_nascita: '',
-      tipo_patente: '',
-      numero_patente: '',
-      patente_emessa_da: '',
-      patente_data_rilascio: '',
-      patente_scadenza: '',
+
       pec_persona: '',
       denominazione: '',
       partita_iva: '',
@@ -645,83 +615,7 @@ export default function NewClientModal({ isOpen, onClose, onClientCreated }: New
                 </div>
               </div>
 
-              {/* Driver's License Section */}
-              <div className="pt-4 border-t border-gray-700">
-                <h3 className="text-lg font-semibold text-white mb-3">Patente di Guida *</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-white mb-1">
-                      Tipo Patente *
-                    </label>
-                    <select
-                      value={formData.tipo_patente}
-                      onChange={(e) => setFormData({ ...formData, tipo_patente: e.target.value })}
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-white focus:border-white text-white"
-                    >
-                      <option value="">Seleziona...</option>
-                      <option value="A">A - Motocicli</option>
-                      <option value="B">B - Autoveicoli</option>
-                      <option value="C">C - Autocarri</option>
-                      <option value="D">D - Autobus</option>
-                      <option value="BE">BE - Auto + rimorchio</option>
-                    </select>
-                    {errors.tipo_patente && <p className="text-red-500 text-xs mt-1">{errors.tipo_patente}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-white mb-1">
-                      Numero Patente *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.numero_patente}
-                      onChange={(e) => setFormData({ ...formData, numero_patente: e.target.value.toUpperCase() })}
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-white focus:border-white uppercase text-white"
-                      placeholder="AB1234567"
-                    />
-                    {errors.numero_patente && <p className="text-red-500 text-xs mt-1">{errors.numero_patente}</p>}
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-3 gap-4 mt-4">
-                  <div>
-                    <label className="block text-sm font-medium text-white mb-1">
-                      Emessa da *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.patente_emessa_da}
-                      onChange={(e) => setFormData({ ...formData, patente_emessa_da: e.target.value })}
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-white focus:border-white text-white"
-                      placeholder="MIT UCO Milano"
-                    />
-                    {errors.patente_emessa_da && <p className="text-red-500 text-xs mt-1">{errors.patente_emessa_da}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-white mb-1">
-                      Data Rilascio *
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.patente_data_rilascio}
-                      onChange={(e) => setFormData({ ...formData, patente_data_rilascio: e.target.value })}
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-white focus:border-white text-white"
-                    />
-                    {errors.patente_data_rilascio && <p className="text-red-500 text-xs mt-1">{errors.patente_data_rilascio}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-white mb-1">
-                      Scadenza *
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.patente_scadenza}
-                      onChange={(e) => setFormData({ ...formData, patente_scadenza: e.target.value })}
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-white focus:border-white text-white"
-                    />
-                    {errors.patente_scadenza && <p className="text-red-500 text-xs mt-1">{errors.patente_scadenza}</p>}
-                  </div>
-                </div>
-              </div>
 
               <div>
                 <label className="block text-sm font-medium text-white mb-1">
@@ -1133,17 +1027,16 @@ export default function NewClientModal({ isOpen, onClose, onClientCreated }: New
             <button
               onClick={handleSave}
               disabled={isSaveDisabled() || isSaving}
-              className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                isSaveDisabled() || isSaving
-                  ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                  : 'bg-white text-black hover:bg-gray-200'
-              }`}
+              className={`px-6 py-2 rounded-lg font-medium transition-colors ${isSaveDisabled() || isSaving
+                ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                : 'bg-white text-black hover:bg-gray-200'
+                }`}
             >
               {isSaving ? 'Salvataggio...' : 'Salva'}
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </div >
   )
 }
