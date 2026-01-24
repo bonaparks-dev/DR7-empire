@@ -21,6 +21,7 @@
     "framer-motion": "^12.23.12",
     "googleapis": "^144.0.0",
     "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.468.0",
     "nodemailer": "^7.0.6",
     "pdfkit": "^0.17.2",
     "qrcode": "^1.5.4",
