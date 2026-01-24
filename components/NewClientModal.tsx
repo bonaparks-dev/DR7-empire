@@ -558,21 +558,17 @@ export default function NewClientModal({ isOpen, onClose, onClientCreated }: New
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-white mb-1">
-                    Sesso *
-                  </label>
-                  <select
-                    value={formData.sesso}
-                    onChange={(e) => setFormData({ ...formData, sesso: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-white focus:border-white text-white"
-                  >
-                    <option value="">Seleziona...</option>
-                    <option value="M">Maschio</option>
-                    <option value="F">Femmina</option>
-                  </select>
-                  {errors.sesso && <p className="text-red-500 text-xs mt-1">{errors.sesso}</p>}
-                </div>
+                <AppleStyleSelect
+                  label="Sesso"
+                  value={formData.sesso === 'M' ? 'Maschio' : formData.sesso === 'F' ? 'Femmina' : ''}
+                  onChange={(e) => {
+                    const displayValue = e.target.value;
+                    const dbValue = displayValue === 'Maschio' ? 'M' : displayValue === 'Femmina' ? 'F' : '';
+                    setFormData({ ...formData, sesso: dbValue });
+                  }}
+                  options={['Maschio', 'Femmina']}
+                  error={errors.sesso}
+                />
                 <div>
                   <label className="block text-sm font-medium text-white mb-1">
                     Data di Nascita *
@@ -795,21 +791,12 @@ export default function NewClientModal({ isOpen, onClose, onClientCreated }: New
               <div className="pt-4 border-t border-gray-700">
                 <h3 className="text-lg font-semibold text-white mb-3">Documento d'Identità del Rappresentante</h3>
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-white mb-1">
-                      Tipo Documento *
-                    </label>
-                    <select
-                      value={formData.documento_tipo}
-                      onChange={(e) => setFormData({ ...formData, documento_tipo: e.target.value })}
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-white focus:border-white text-white"
-                    >
-                      <option value="">Seleziona...</option>
-                      <option value="Carta d'Identità">Carta d'Identità</option>
-                      <option value="Passaporto">Passaporto</option>
-                      <option value="Patente">Patente</option>
-                    </select>
-                  </div>
+                  <AppleStyleSelect
+                    label="Tipo Documento"
+                    value={formData.documento_tipo}
+                    onChange={(e) => setFormData({ ...formData, documento_tipo: e.target.value })}
+                    options={["Carta d'Identità", "Passaporto", "Patente"]}
+                  />
                   <div>
                     <label className="block text-sm font-medium text-white mb-1">
                       Numero Documento *

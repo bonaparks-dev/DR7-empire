@@ -2,17 +2,27 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import ReviewsSection from '../../sections/ReviewsSection';
+import MarketingConsentModal from '../ui/MarketingConsentModal';
 
 const Footer: React.FC = () => {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
+  const [showConsentModal, setShowConsentModal] = useState(false);
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
     if (email) {
-      alert(`Subscribed with ${email}`);
-      setEmail('');
+      setShowConsentModal(true);
     }
+  };
+
+  const handleConfirmSubscription = () => {
+    // Here we would typically save the consent to the database
+    // For guests, this would create a lead/subscriber record
+    // For now, we simulate the success as per previous behavior
+    alert(`Subscribed with ${email}`);
+    setEmail('');
+    setShowConsentModal(false);
   };
 
   const scrollToTop = () => {
@@ -126,6 +136,12 @@ const Footer: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <MarketingConsentModal
+        isOpen={showConsentModal}
+        onClose={() => setShowConsentModal(false)}
+        onConfirm={handleConfirmSubscription}
+      />
     </footer>
   );
 };

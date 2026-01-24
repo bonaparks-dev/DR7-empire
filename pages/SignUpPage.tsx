@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
 import DocumentUploadModal from '../components/ui/DocumentUploadModal';
+import MarketingConsentModal from '../components/ui/MarketingConsentModal';
 import { countries } from '../utils/countries';
 import { AppleStyleSelect } from '../components/ui/AppleStyleSelect';
 
@@ -39,7 +40,7 @@ const SignUpPage: React.FC = () => {
   const { signup, user } = useAuth();
   const navigate = useNavigate();
 
-  const [tipoCliente, setTipoCliente] = useState<'azienda' | 'persona_fisica' | 'pubblica_amministrazione' | ''>('');
+  const [tipoCliente, setTipoCliente] = useState<'azienda' | 'persona_fisica' | 'pubblica_amministrazione' | ''>('persona_fisica');
   const [formData, setFormData] = useState({
     // Common fields
     nazione: 'Italia',
@@ -90,6 +91,7 @@ const SignUpPage: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState('');
   const [showDocumentModal, setShowDocumentModal] = useState(false);
+  const [showMarketingModal, setShowMarketingModal] = useState(false);
   const [newUserId, setNewUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -365,24 +367,28 @@ const SignUpPage: React.FC = () => {
 
             <form className="space-y-6" onSubmit={handleSignUp} noValidate>
               {/* Client Type Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Tipo Cliente <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="tipoCliente"
-                  value={tipoCliente}
-                  onChange={(e) => setTipoCliente(e.target.value as any)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white focus:outline-none focus:border-yellow-500"
-                  required
-                >
-                  <option value="">Seleziona tipo cliente...</option>
-                  <option value="azienda">Azienda</option>
-                  <option value="persona_fisica">Persona Fisica</option>
-                  <option value="pubblica_amministrazione">Pubblica Amministrazione</option>
-                </select>
-                {errors.tipoCliente && <p className="text-xs text-red-400 mt-1">{errors.tipoCliente}</p>}
-              </div>
+              <AppleStyleSelect
+                label="Tipo Cliente"
+                name="tipoCliente"
+                value={
+                  tipoCliente === 'azienda' ? 'Azienda' :
+                    tipoCliente === 'persona_fisica' ? 'Persona Fisica' :
+                      tipoCliente === 'pubblica_amministrazione' ? 'Pubblica Amministrazione' :
+                        ''
+                }
+                onChange={(e) => {
+                  const displayValue = e.target.value;
+                  const dbValue =
+                    displayValue === 'Azienda' ? 'azienda' :
+                      displayValue === 'Persona Fisica' ? 'persona_fisica' :
+                        displayValue === 'Pubblica Amministrazione' ? 'pubblica_amministrazione' :
+                          '';
+                  setTipoCliente(dbValue as any);
+                }}
+                options={['Azienda', 'Persona Fisica', 'Pubblica Amministrazione']}
+                required
+                error={errors.tipoCliente}
+              />
 
               {/* AZIENDA FIELDS */}
               {tipoCliente === 'azienda' && (
@@ -561,16 +567,15 @@ const SignUpPage: React.FC = () => {
                     {/* Documento Rappresentante */}
                     <h4 className="text-md font-medium text-gray-300 mt-4 mb-2">Documento di Identità</h4>
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Tipo <span className="text-red-500">*</span></label>
-                        <select name="documentoTipo" value={formData.documentoTipo} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" required>
-                          <option value="">Seleziona...</option>
-                          <option value="Carta d'Identità">Carta d'Identità</option>
-                          <option value="Passaporto">Passaporto</option>
-                          <option value="Patente">Patente</option>
-                        </select>
-                        {errors.documentoTipo && <p className="text-xs text-red-400 mt-1">{errors.documentoTipo}</p>}
-                      </div>
+                      <AppleStyleSelect
+                        label="Tipo"
+                        name="documentoTipo"
+                        value={formData.documentoTipo}
+                        onChange={handleChange}
+                        options={["Carta d'Identità", "Passaporto", "Patente"]}
+                        required
+                        error={errors.documentoTipo}
+                      />
                       <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">Numero <span className="text-red-500">*</span></label>
                         <input type="text" name="documentoNumero" value={formData.documentoNumero} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" required />
@@ -666,17 +671,18 @@ const SignUpPage: React.FC = () => {
                   )}
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Sesso <span className="text-red-500">*</span>
-                      </label>
-                      <select name="sesso" value={formData.sesso} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white">
-                        <option value="">Seleziona...</option>
-                        <option value="M">Maschio</option>
-                        <option value="F">Femmina</option>
-                      </select>
-                      {errors.sesso && <p className="text-xs text-red-400 mt-1">{errors.sesso}</p>}
-                    </div>
+                    <AppleStyleSelect
+                      label="Sesso"
+                      name="sesso"
+                      value={formData.sesso === 'M' ? 'Maschio' : formData.sesso === 'F' ? 'Femmina' : ''}
+                      onChange={(e) => {
+                        const displayValue = e.target.value;
+                        const dbValue = displayValue === 'Maschio' ? 'M' : displayValue === 'Femmina' ? 'F' : '';
+                        handleChange({ target: { name: 'sesso', value: dbValue } } as any);
+                      }}
+                      options={['Maschio', 'Femmina']}
+                      error={errors.sesso}
+                    />
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         Data di Nascita <span className="text-red-500">*</span>
@@ -1115,9 +1121,52 @@ const SignUpPage: React.FC = () => {
             isOpen={showDocumentModal}
             onClose={() => {
               setShowDocumentModal(false);
+              // Open marketing modal after document modal closes (whether uploaded or skipped)
+              setShowMarketingModal(true);
+            }}
+            userId={newUserId || ''}
+          />
+        )
+      }
+
+      {/* Marketing Consent Modal */}
+      {
+        showMarketingModal && newUserId && (
+          <MarketingConsentModal
+            isOpen={showMarketingModal}
+            onClose={() => {
+              setShowMarketingModal(false);
               navigate('/check-email');
             }}
-            userId={newUserId}
+            onConfirm={async () => {
+              try {
+                // Update user consent in database
+                // Since user is not fully signed in context yet (it might be, but safer to use supabase admin or client if allowed)
+                // But we are in SignUpPage, we might have session or not.
+                // However, handleSignUp did: await supabase.auth.signInWithPassword(...)
+
+                if (newUserId) {
+                  const { error } = await supabase
+                    .from('customers_extended')
+                    .update({
+                      notifications: {
+                        bookingConfirmations: true, // Default
+                        specialOffers: true,    // Consent given
+                        newsletter: true,       // Consent given
+                        marketingConsent: true  // Specific flag
+                      }
+                    })
+                    .eq('id', newUserId);
+
+                  if (error) console.error('Error updating consent:', error);
+                }
+              } catch (err) {
+                console.error('Error in consent update:', err);
+              } finally {
+                setShowMarketingModal(false);
+                navigate('/check-email');
+              }
+            }}
           />
         )
       }

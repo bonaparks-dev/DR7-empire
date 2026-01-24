@@ -108,6 +108,7 @@ export interface User {
     bookingConfirmations: boolean;
     specialOffers: boolean;
     newsletter: boolean;
+    marketingConsent?: boolean;
   };
   paymentMethods: {
     id: string;

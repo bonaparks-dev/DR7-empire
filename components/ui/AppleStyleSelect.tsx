@@ -25,11 +25,11 @@ export const AppleStyleSelect: React.FC<AppleStyleSelectProps> = ({
     return (
         <div className={`relative ${className}`}>
             <div className={`
-        relative w-full rounded-2xl border bg-white
-        ${error ? 'border-red-500' : 'border-gray-300 hover:border-gray-400'}
-        transition-colors duration-200
+        relative w-full rounded-xl border bg-gray-800/50
+        ${error ? 'border-red-500' : 'border-gray-600 hover:border-gray-500'}
+        transition-colors duration-200 backdrop-blur-sm
       `}>
-                <div className="absolute top-2 left-4 text-xs text-gray-500 z-10 pointer-events-none">
+                <div className="absolute top-2 left-4 text-xs text-gray-400 z-10 pointer-events-none">
                     {label}
                 </div>
 
@@ -41,14 +41,14 @@ export const AppleStyleSelect: React.FC<AppleStyleSelectProps> = ({
                     className="
             w-full bg-transparent appearance-none
             pt-6 pb-2 px-4
-            text-base text-gray-900 font-normal
-            rounded-2xl border-none focus:ring-0 focus:outline-none highlight-none
+            text-base text-white font-normal
+            rounded-xl border-none focus:ring-0 focus:outline-none
             cursor-pointer
           "
                 >
-                    <option value="" disabled hidden className="text-gray-400">Seleziona...</option>
+                    <option value="" disabled hidden className="text-gray-500 bg-gray-800">Seleziona...</option>
                     {options.map((option) => (
-                        <option key={option} value={option}>
+                        <option key={option} value={option} className="bg-gray-800 text-white">
                             {option}
                         </option>
                     ))}
