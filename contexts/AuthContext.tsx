@@ -228,27 +228,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteAccount = useCallback(async () => {
     try {
-      // Get any token we can find
+      // Get any token we can find - try multiple methods
       let token = '';
 
+      // Method 1: getSession API
       try {
         const { data } = await supabase.auth.getSession();
         token = data?.session?.access_token || '';
+        console.log('Method 1 (getSession):', token ? 'got token' : 'no token');
       } catch (e) {
         console.log('getSession failed:', e);
       }
 
+      // Method 2: refreshSession API
       if (!token) {
         try {
           const { data } = await supabase.auth.refreshSession();
           token = data?.session?.access_token || '';
+          console.log('Method 2 (refreshSession):', token ? 'got token' : 'no token');
         } catch (e) {
           console.log('refreshSession failed:', e);
         }
       }
 
+      // Method 3: Read directly from localStorage (fallback for connectivity issues)
       if (!token) {
-        throw new Error('No session. Please log in.');
+        try {
+          const storageKey = 'sb-ahpmzjgkfxrrgxyirasa-auth-token';
+          const stored = localStorage.getItem(storageKey);
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            token = parsed?.access_token || '';
+            console.log('Method 3 (localStorage):', token ? 'got token' : 'no token');
+          }
+        } catch (e) {
+          console.log('localStorage read failed:', e);
+        }
+      }
+
+      if (!token) {
+        throw new Error('No session found. Please log out and log in again.');
       }
 
       console.log('Calling delete API with token length:', token.length);
