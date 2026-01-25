@@ -16,6 +16,7 @@ const SecuritySettings = () => {
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteSuccess, setDeleteSuccess] = useState(false);
     const [deletePassword, setDeletePassword] = useState('');
+    const [deleteEmail, setDeleteEmail] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -57,8 +58,8 @@ const SecuritySettings = () => {
     };
 
     const handleDeleteAccount = async () => {
-        if (!deletePassword) {
-            setError('Please enter your password');
+        if (!deleteEmail || !deletePassword) {
+            setError('Please enter your email and password');
             return;
         }
 
@@ -70,7 +71,7 @@ const SecuritySettings = () => {
             const response = await fetch('/.netlify/functions/delete-account', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: user!.email, password: deletePassword })
+                body: JSON.stringify({ email: deleteEmail, password: deletePassword })
             });
 
             const result = await response.json();
@@ -163,7 +164,15 @@ const SecuritySettings = () => {
                                     This will permanently delete your account and all your data.
                                 </p>
                                 <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">Enter your password to confirm</label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">Your email</label>
+                                    <input
+                                        type="email"
+                                        value={deleteEmail}
+                                        onChange={e => setDeleteEmail(e.target.value)}
+                                        placeholder="your@email.com"
+                                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white mb-3"
+                                    />
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">Your password</label>
                                     <input
                                         type="password"
                                         value={deletePassword}
@@ -178,6 +187,7 @@ const SecuritySettings = () => {
                                         onClick={() => {
                                             setShowDeleteModal(false);
                                             setError('');
+                                            setDeleteEmail('');
                                             setDeletePassword('');
                                         }}
                                         disabled={isDeleting}
@@ -187,7 +197,7 @@ const SecuritySettings = () => {
                                     </button>
                                     <button
                                         onClick={handleDeleteAccount}
-                                        disabled={isDeleting || !deletePassword}
+                                        disabled={isDeleting || !deleteEmail || !deletePassword}
                                         className="flex-1 px-5 py-2.5 bg-red-600 text-white font-bold rounded-full hover:bg-red-700 transition-colors text-sm disabled:opacity-50"
                                     >
                                         {isDeleting ? 'Deleting...' : 'Delete'}
