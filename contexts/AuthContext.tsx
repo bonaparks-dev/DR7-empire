@@ -228,22 +228,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteAccount = useCallback(async () => {
     try {
+      // TODO: Re-enable after SMTP is configured
       // Send confirmation email before deletion
-      if (user?.email && user?.fullName) {
-        try {
-          await fetch('/.netlify/functions/send-deletion-confirmation', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: user.email,
-              fullName: user.fullName,
-            }),
-          });
-        } catch (emailError) {
-          console.error('Failed to send deletion confirmation email:', emailError);
-          // Continue with deletion even if email fails
-        }
-      }
+      // if (user?.email && user?.fullName) {
+      //   try {
+      //     await fetch('/.netlify/functions/send-deletion-confirmation', {
+      //       method: 'POST',
+      //       headers: { 'Content-Type': 'application/json' },
+      //       body: JSON.stringify({
+      //         email: user.email,
+      //         fullName: user.fullName,
+      //       }),
+      //     });
+      //   } catch (emailError) {
+      //     console.error('Failed to send deletion confirmation email:', emailError);
+      //     // Continue with deletion even if email fails
+      //   }
+      // }
+
 
       // Delete user from Supabase Auth - this will cascade delete from database via ON DELETE CASCADE
       const { error } = await supabase.rpc('delete_user');
