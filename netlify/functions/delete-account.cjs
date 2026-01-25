@@ -1,5 +1,13 @@
 const { createClient } = require('@supabase/supabase-js');
 
+// Common CORS headers for all responses
+const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Content-Type': 'application/json'
+};
+
 exports.handler = async (event, context) => {
     // IMMEDIATE LOGGING: Check if function even starts
     console.log('[DeleteAccount] Function started');
@@ -9,18 +17,14 @@ exports.handler = async (event, context) => {
     if (event.httpMethod === 'OPTIONS') {
         return {
             statusCode: 200,
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS'
-            },
+            headers: corsHeaders,
             body: ''
         };
     }
 
     // Only allow POST requests
     if (event.httpMethod !== 'POST') {
-        return { statusCode: 405, body: 'Method Not Allowed' };
+        return { statusCode: 405, headers: corsHeaders, body: JSON.stringify({ error: 'Method Not Allowed' }) };
     }
 
     try {
@@ -34,8 +38,8 @@ exports.handler = async (event, context) => {
             console.error('[DeleteAccount] Missing Supabase environment variables');
             return {
                 statusCode: 500,
-                body: JSON.stringify({ error: 'Server configuration error (Missing Env)' }),
-                headers: { 'Content-Type': 'application/json' }
+                headers: corsHeaders,
+                body: JSON.stringify({ error: 'Server configuration error (Missing Env)' })
             };
         }
 
@@ -45,8 +49,8 @@ exports.handler = async (event, context) => {
             console.error('[DeleteAccount] Missing Authorization header');
             return {
                 statusCode: 401,
-                body: JSON.stringify({ error: 'No authorization header' }),
-                headers: { 'Content-Type': 'application/json' }
+                headers: corsHeaders,
+                body: JSON.stringify({ error: 'No authorization header' })
             };
         }
 
@@ -76,8 +80,8 @@ exports.handler = async (event, context) => {
         if (userError || !user) {
             return {
                 statusCode: 401,
-                body: JSON.stringify({ error: 'User not found or invalid token' }),
-                headers: { 'Content-Type': 'application/json' }
+                headers: corsHeaders,
+                body: JSON.stringify({ error: 'User not found or invalid token' })
             };
         }
 
@@ -121,23 +125,23 @@ exports.handler = async (event, context) => {
             console.error('[DeleteAccount] Delete user error:', error);
             return {
                 statusCode: 500,
-                body: JSON.stringify({ error: error.message || 'Database error during deletion' }),
-                headers: { 'Content-Type': 'application/json' }
+                headers: corsHeaders,
+                body: JSON.stringify({ error: error.message || 'Database error during deletion' })
             };
         }
 
         console.log('[DeleteAccount] Deletion successful');
         return {
             statusCode: 200,
-            body: JSON.stringify({ message: 'Account deleted successfully' }),
-            headers: { 'Content-Type': 'application/json' }
+            headers: corsHeaders,
+            body: JSON.stringify({ message: 'Account deleted successfully' })
         };
     } catch (error) {
         console.error('[DeleteAccount] Critical Server error:', error);
         return {
             statusCode: 500,
-            body: JSON.stringify({ error: error.message || 'Internal Server Error' }),
-            headers: { 'Content-Type': 'application/json' }
+            headers: corsHeaders,
+            body: JSON.stringify({ error: error.message || 'Internal Server Error' })
         };
     }
 };

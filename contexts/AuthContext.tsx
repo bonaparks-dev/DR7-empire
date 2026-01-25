@@ -239,22 +239,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
         },
       });
 
       if (!response.ok) {
         let errorMessage = 'Failed to delete account';
         try {
-          const text = await response.text();
-          try {
-            const error = JSON.parse(text);
-            errorMessage = error.error || errorMessage;
-          } catch {
-            console.warn('Non-JSON error response from delete-account:', text);
-            errorMessage += ` (${response.status}): ${text.substring(0, 50)}`;
+          // Clone the response to avoid "body stream already read" error
+          const responseClone = response.clone();
+          const text = await responseClone.text();
+          if (text) {
+            try {
+              const error = JSON.parse(text);
+              errorMessage = error.error || errorMessage;
+            } catch {
+              console.warn('Non-JSON error response from delete-account:', text);
+              errorMessage += ` (${response.status}): ${text.substring(0, 100)}`;
+            }
+          } else {
+            errorMessage += ` (${response.status})`;
           }
         } catch (e) {
-          // If even reading text fails
+          // If even reading text fails, just use status code
+          console.warn('Could not read error response body:', e);
           errorMessage += ` (${response.status})`;
         }
         throw new Error(errorMessage);
