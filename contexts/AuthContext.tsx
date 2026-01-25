@@ -19,6 +19,7 @@ interface AuthContextType {
   sendPasswordResetEmail: (email: string) => Promise<{ data: {}; error: AuthError | null; }>;
   updateUserPassword: (password: string) => Promise<UserResponse>;
   updateUser: (updates: Partial<AppUser>) => Promise<{ data: AppUser | null; error: Error | null }>;
+  deleteAccount: () => Promise<{ error: Error | null }>;
   isSessionActive: () => Promise<boolean>;
   // FIX: Removed OtpVerificationError from the return type
   verifyEmailOtp: (token: string) => Promise<{ data: { user: SupabaseUser | null; session: Session | null; }; error: AuthError | null; }>;
@@ -225,6 +226,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return supabase.auth.verifyOtp({ token_hash: token, type: 'signup' });
   }, []);
 
+  const deleteAccount = useCallback(async () => {
+    try {
+      // Delete user from Supabase Auth - this will cascade delete from database via ON DELETE CASCADE
+      const { error } = await supabase.rpc('delete_user');
+
+      if (error) throw error;
+
+      // Clear local state and redirect
+      setUser(null);
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.replace('/');
+
+      return { error: null };
+    } catch (error) {
+      console.error('Delete account error:', error);
+      return { error: error as Error };
+    }
+  }, []);
+
   const isSessionActive = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     return !!session;
@@ -232,9 +253,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const value = useMemo(() => ({
     user, loading, authEvent, isFirstSignIn, login, signup, logout, signInWithGoogle,
-    sendPasswordResetEmail, updateUserPassword, updateUser, verifyEmailOtp, isSessionActive,
+    sendPasswordResetEmail, updateUserPassword, updateUser, deleteAccount, verifyEmailOtp, isSessionActive,
   }), [user, loading, authEvent, isFirstSignIn, login, signup, logout, signInWithGoogle,
-    sendPasswordResetEmail, updateUserPassword, updateUser, verifyEmailOtp, isSessionActive]);
+    sendPasswordResetEmail, updateUserPassword, updateUser, deleteAccount, verifyEmailOtp, isSessionActive]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

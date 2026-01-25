@@ -4,7 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 
 const SecuritySettings = () => {
     const { t } = useTranslation();
-    const { user, updateUserPassword, login } = useAuth();
+    const { user, updateUserPassword, login, deleteAccount } = useAuth();
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -65,9 +65,9 @@ const SecuritySettings = () => {
 
         setIsDeleting(true);
         try {
-            const { error } = await user?.deleteAccount();
+            const { error } = await deleteAccount();
             if (error) throw error;
-            // User will be logged out automatically
+            // User will be logged out and redirected automatically
         } catch (err: any) {
             setError(err.message || 'Failed to delete account');
             setIsDeleting(false);
@@ -158,7 +158,7 @@ const SecuritySettings = () => {
                                 disabled={isDeleting || deleteConfirmText !== 'DELETE'}
                                 className="flex-1 px-5 py-2.5 bg-red-600 text-white font-bold rounded-full hover:bg-red-700 transition-colors text-sm disabled:opacity-50"
                             >
-                                {isDeleting ? 'Deleting...' : 'Delete Forever'}
+                                {isDeleting ? 'Deleting...' : 'Delete'}
                             </button>
                         </div>
                     </div>
