@@ -769,8 +769,12 @@ const SignUpPage: React.FC = () => {
                             value="RESIDENTE"
                             checked={formData.residencyZone?.startsWith('RESIDENTE_')}
                             onChange={(e) => {
-                              // Reset to default resident value when switching to resident
-                              setFormData(prev => ({ ...prev, residencyZone: 'RESIDENTE_CA' }));
+                              // Set both residencyZone and provinciaResidenza to CA by default
+                              setFormData(prev => ({
+                                ...prev,
+                                residencyZone: 'RESIDENTE_CA',
+                                provinciaResidenza: 'CA'
+                              }));
                             }}
                             className="h-4 w-4 text-yellow-500 bg-gray-700 border-gray-600 focus:ring-yellow-500"
                           />
