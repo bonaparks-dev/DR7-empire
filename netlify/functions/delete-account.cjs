@@ -1,6 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-js');
 
-export const handler = async (event, context) => {
+exports.handler = async (event, context) => {
     // IMMEDIATE LOGGING: Check if function even starts
     console.log('[DeleteAccount] Function started');
     console.log('[DeleteAccount] Method:', event.httpMethod);
