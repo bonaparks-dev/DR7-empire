@@ -239,7 +239,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify({ token: session.access_token }),
       });
 
-      const result = await res.json();
+      const text = await res.text();
+
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch {
+        console.error('Response was not JSON:', text.substring(0, 500));
+        throw new Error('Server error - please try again');
+      }
 
       if (!result.success) {
         throw new Error(result.message || 'Delete failed');
