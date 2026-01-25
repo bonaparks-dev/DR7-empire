@@ -245,12 +245,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!response.ok) {
         let errorMessage = 'Failed to delete account';
         try {
-          const error = await response.json();
-          errorMessage = error.error || errorMessage;
-        } catch {
-          // Fallback if response is not JSON (e.g. 500 HTML or empty)
           const text = await response.text();
-          console.warn('Non-JSON error response from delete-account:', text);
+          try {
+            const error = JSON.parse(text);
+            errorMessage = error.error || errorMessage;
+          } catch {
+            console.warn('Non-JSON error response from delete-account:', text);
+            errorMessage += ` (${response.status}): ${text.substring(0, 50)}`;
+          }
+        } catch (e) {
+          // If even reading text fails
           errorMessage += ` (${response.status})`;
         }
         throw new Error(errorMessage);
