@@ -4,11 +4,14 @@ import { useTranslation } from '../../hooks/useTranslation';
 import MarketingConsentModal from '../../components/ui/MarketingConsentModal';
 
 const Switch: React.FC<{ checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean }> = ({ checked, onChange, disabled }) => (
-    <div className="relative">
-        <input type="checkbox" className="sr-only" checked={checked} onChange={(e) => onChange(e.target.checked)} disabled={disabled} />
-        <div className={`block w-12 h-6 rounded-full transition-colors ${checked ? 'bg-white' : 'bg-gray-700'}`}></div>
-        <div className={`dot absolute left-1 top-1 bg-black w-4 h-4 rounded-full transition-transform ${checked ? 'translate-x-6' : ''}`}></div>
-    </div>
+    <button
+        type="button"
+        onClick={() => !disabled && onChange(!checked)}
+        disabled={disabled}
+        className={`relative w-12 h-6 rounded-full transition-colors ${checked ? 'bg-white' : 'bg-gray-700'} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+    >
+        <div className={`absolute left-1 top-1 bg-black w-4 h-4 rounded-full transition-transform ${checked ? 'translate-x-6' : ''}`}></div>
+    </button>
 );
 
 const NotificationSettings = () => {
@@ -25,8 +28,13 @@ const NotificationSettings = () => {
     const [showConsentModal, setShowConsentModal] = useState(false);
 
     useEffect(() => {
-        if (user) {
-            setPrefs(user.notifications);
+        if (user?.notifications) {
+            setPrefs({
+                bookingConfirmations: user.notifications.bookingConfirmations ?? true,
+                specialOffers: user.notifications.specialOffers ?? false,
+                newsletter: user.notifications.newsletter ?? false,
+                marketingConsent: user.notifications.marketingConsent ?? false,
+            });
         }
     }, [user]);
 
@@ -94,8 +102,8 @@ const NotificationSettings = () => {
             {/* Marketing Consent Modal */}
             <MarketingConsentModal
                 isOpen={showConsentModal}
-                onAccept={handleConsentAccept}
-                onDecline={handleConsentDecline}
+                onConfirm={handleConsentAccept}
+                onClose={handleConsentDecline}
             />
         </>
     );
