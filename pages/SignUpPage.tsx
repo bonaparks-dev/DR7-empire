@@ -316,7 +316,22 @@ const SignUpPage: React.FC = () => {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || t('Something_went_wrong'));
+        console.error('Registration failed:', result);
+        console.error('Error details:', {
+          error: result.error,
+          code: result.code,
+          details: result.details,
+          hint: result.hint,
+          dbDetails: result.dbDetails
+        });
+
+        // Build a detailed error message
+        let errorMessage = result.error || t('Something_went_wrong');
+        if (result.code) errorMessage += ` (Code: ${result.code})`;
+        if (result.hint) errorMessage += `\n${result.hint}`;
+        if (result.dbDetails) errorMessage += `\nDetails: ${result.dbDetails}`;
+
+        throw new Error(errorMessage);
       }
 
       // Success - now handle post-signup flow

@@ -96,7 +96,15 @@ exports.handler = async (event) => {
             console.error('Auth creation error:', authError);
             console.error('Auth error details:', JSON.stringify(authError, null, 2));
             console.error('Email attempted:', email);
-            return { statusCode: 400, body: JSON.stringify({ error: authError.message }) };
+            return {
+                statusCode: 400,
+                body: JSON.stringify({
+                    error: authError.message,
+                    code: authError.code,
+                    details: authError.details,
+                    hint: authError.hint
+                })
+            };
         }
 
         const userId = authData.user.id;
@@ -147,7 +155,10 @@ exports.handler = async (event) => {
                         body: JSON.stringify({
                             error: 'Account created but failed to save profile data. Please contact support.',
                             userId: userId,
-                            details: profileError.message
+                            details: profileError.message,
+                            code: profileError.code,
+                            hint: profileError.hint,
+                            dbDetails: profileError.details
                         })
                     };
                 }
