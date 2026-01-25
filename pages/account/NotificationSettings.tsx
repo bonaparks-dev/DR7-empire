@@ -27,6 +27,7 @@ const NotificationSettings = () => {
     });
 
     const [showConsentModal, setShowConsentModal] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
 
     useEffect(() => {
         if (user?.notifications) {
@@ -123,15 +124,21 @@ const NotificationSettings = () => {
 
             if (error) {
                 console.error('Marketing consent save error:', error);
+                setSuccessMessage('Errore: ' + error.message);
             } else {
                 console.log('Marketing consent saved successfully:', data);
+                setSuccessMessage('Consenso salvato con successo!');
             }
         } catch (e) {
             console.error('Failed to save marketing consent:', e);
+            setSuccessMessage('Errore: ' + (e as Error).message);
         }
 
         setPendingPref(null);
         setShowConsentModal(false);
+
+        // Clear message after 4 seconds
+        setTimeout(() => setSuccessMessage(''), 4000);
     };
 
     const handleConsentDecline = () => {
@@ -143,6 +150,13 @@ const NotificationSettings = () => {
 
     return (
         <>
+            {/* Success/Error Message */}
+            {successMessage && (
+                <div className={`mb-4 p-4 rounded-lg text-center font-medium ${successMessage.includes('Errore') ? 'bg-red-900/50 text-red-300 border border-red-700' : 'bg-green-900/50 text-green-300 border border-green-700'}`}>
+                    {successMessage}
+                </div>
+            )}
+
             <div className="bg-gray-900/50 border border-gray-800 rounded-lg">
                 <div className="p-6 border-b border-gray-800">
                     <h2 className="text-xl font-bold text-white">{t('Notification_Preferences')}</h2>
