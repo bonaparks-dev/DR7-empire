@@ -38,8 +38,12 @@ exports.handler = async (event) => {
 
         const { data: userData, error: userError } = await userClient.auth.getUser();
 
-        if (userError || !userData?.user) {
-            return { statusCode: 401, headers, body: JSON.stringify({ error: 'Invalid session' }) };
+        if (userError) {
+            return { statusCode: 401, headers, body: JSON.stringify({ error: 'Auth error: ' + userError.message }) };
+        }
+
+        if (!userData?.user) {
+            return { statusCode: 401, headers, body: JSON.stringify({ error: 'User not found' }) };
         }
 
         const userId = userData.user.id;

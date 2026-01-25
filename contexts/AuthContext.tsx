@@ -229,7 +229,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const deleteAccount = useCallback(async () => {
     try {
       // Force refresh the session to get a fresh token
-      const { data: sessionData, error: sessionError } = await supabase.auth.refreshSession();
+      const { data: sessionData } = await supabase.auth.refreshSession();
 
       let token = sessionData?.session?.access_token;
 
@@ -240,7 +240,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (!token) {
-        throw new Error('Session expired. Please log in again.');
+        throw new Error('Session expired. Please log out and log in again.');
+      }
+
+      // Check for corrupted token (should be ~1000 chars, not 300k)
+      if (token.length > 5000) {
+        // Clear corrupted session
+        localStorage.clear();
+        sessionStorage.clear();
+        await supabase.auth.signOut();
+        throw new Error('Session corrupted. Please refresh the page and log in again.');
       }
 
       const response = await fetch('/.netlify/functions/delete-account', {
@@ -249,7 +258,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify({ token })
       });
 
-      const data = await response.json();
+      const text = await response.text();
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error('Server error');
+      }
 
       if (!response.ok || !data.success) {
         throw new Error(data.error || 'Delete failed');
