@@ -12,8 +12,8 @@ const SecuritySettings = () => {
     const [successMessage, setSuccessMessage] = useState('');
     const [error, setError] = useState('');
     const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [deleteConfirmText, setDeleteConfirmText] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteSuccess, setDeleteSuccess] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -31,17 +31,14 @@ const SecuritySettings = () => {
 
         setIsSubmitting(true);
         try {
-            // Re-authenticate user
             const { error: loginError } = await login(user!.email, currentPassword);
             if (loginError) {
-                // Use a more specific error message if possible
                 if (loginError.message.includes('Invalid login credentials')) {
                     throw new Error("The current password you entered is incorrect.");
                 }
                 throw loginError;
             }
 
-            // If re-authentication is successful, update the password
             const { error: updateError } = await updateUserPassword(newPassword);
             if (updateError) throw updateError;
 
@@ -58,16 +55,14 @@ const SecuritySettings = () => {
     };
 
     const handleDeleteAccount = async () => {
-        if (deleteConfirmText !== 'DELETE') {
-            setError('Please type DELETE to confirm');
-            return;
-        }
-
         setIsDeleting(true);
+        setError('');
+
         try {
             const { error } = await deleteAccount();
             if (error) throw error;
-            // User will be logged out and redirected automatically
+            setDeleteSuccess(true);
+            // User will be redirected automatically
         } catch (err: any) {
             setError(err.message || 'Failed to delete account');
             setIsDeleting(false);
@@ -83,7 +78,7 @@ const SecuritySettings = () => {
                 </div>
                 <form onSubmit={handleSubmit}>
                     <div className="p-6 space-y-4">
-                        {error && <p className="text-sm text-red-400 bg-red-900/20 p-3 rounded-md">{error}</p>}
+                        {error && !showDeleteModal && <p className="text-sm text-red-400 bg-red-900/20 p-3 rounded-md">{error}</p>}
                         <div>
                             <label className="block text-sm font-medium text-gray-300">{t('Current_Password')}</label>
                             <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm text-white" />
@@ -115,7 +110,7 @@ const SecuritySettings = () => {
                 <div className="p-6">
                     <button
                         onClick={() => setShowDeleteModal(true)}
-                        className="px-5 py-2.5 bg-gray-800 text-white font-bold rounded-full hover:bg-gray-700 transition-colors text-sm border border-gray-700"
+                        className="px-5 py-2.5 bg-red-600 text-white font-bold rounded-full hover:bg-red-700 transition-colors text-sm"
                     >
                         Delete My Account
                     </button>
@@ -125,42 +120,45 @@ const SecuritySettings = () => {
             {/* Delete Confirmation Modal */}
             {showDeleteModal && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-                    <div className="bg-gray-900 border border-red-900/50 rounded-lg max-w-md w-full p-6">
-                        <h3 className="text-2xl font-bold text-red-400 mb-4">Delete Account?</h3>
-                        <p className="text-gray-300 mb-4">
-                            This action cannot be undone. All your data will be permanently deleted.
-                        </p>
-                        <p className="text-sm text-gray-400 mb-4">
-                            Type <span className="font-mono bg-gray-800 px-2 py-1 rounded">DELETE</span> to confirm:
-                        </p>
-                        <input
-                            type="text"
-                            value={deleteConfirmText}
-                            onChange={(e) => setDeleteConfirmText(e.target.value)}
-                            className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white mb-4"
-                            placeholder="Type DELETE"
-                        />
-                        {error && <p className="text-sm text-red-400 mb-4">{error}</p>}
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => {
-                                    setShowDeleteModal(false);
-                                    setDeleteConfirmText('');
-                                    setError('');
-                                }}
-                                disabled={isDeleting}
-                                className="flex-1 px-5 py-2.5 bg-gray-800 text-white font-bold rounded-full hover:bg-gray-700 transition-colors text-sm disabled:opacity-50"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleDeleteAccount}
-                                disabled={isDeleting || deleteConfirmText !== 'DELETE'}
-                                className="flex-1 px-5 py-2.5 bg-red-600 text-white font-bold rounded-full hover:bg-red-700 transition-colors text-sm disabled:opacity-50"
-                            >
-                                {isDeleting ? 'Deleting...' : 'Delete'}
-                            </button>
-                        </div>
+                    <div className="bg-gray-900 border border-gray-700 rounded-lg max-w-md w-full p-6">
+                        {deleteSuccess ? (
+                            <>
+                                <h3 className="text-2xl font-bold text-green-400 mb-4">Account Deleted</h3>
+                                <p className="text-gray-300 mb-4">
+                                    Your account has been successfully deleted. A confirmation email has been sent.
+                                </p>
+                                <p className="text-gray-400 text-sm">
+                                    Redirecting you to the home page...
+                                </p>
+                            </>
+                        ) : (
+                            <>
+                                <h3 className="text-2xl font-bold text-white mb-4">Delete Account?</h3>
+                                <p className="text-gray-300 mb-6">
+                                    This will permanently delete your account and all your data including bookings, credits, and membership.
+                                </p>
+                                {error && <p className="text-sm text-red-400 bg-red-900/20 p-3 rounded-md mb-4">{error}</p>}
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => {
+                                            setShowDeleteModal(false);
+                                            setError('');
+                                        }}
+                                        disabled={isDeleting}
+                                        className="flex-1 px-5 py-2.5 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors text-sm disabled:opacity-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleDeleteAccount}
+                                        disabled={isDeleting}
+                                        className="flex-1 px-5 py-2.5 bg-red-600 text-white font-bold rounded-full hover:bg-red-700 transition-colors text-sm disabled:opacity-50"
+                                    >
+                                        {isDeleting ? 'Deleting...' : 'Yes, Delete'}
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}
