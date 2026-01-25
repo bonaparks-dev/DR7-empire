@@ -53,13 +53,22 @@ exports.handler = async (event, context) => {
         console.log('[DeleteAccount] Creating Supabase client...');
 
         // Create Supabase client with user's token
+        // We must strip 'Bearer ' to get the raw token for potential manual verification or specialized usage,
+        // BUT for standard supabase-js initialization with global headers, passing the full header 'Authorization: Bearer ...' is actually correct if done in the headers config.
+        // HOWEVER, the error "invalid JWT" suggests Supabase might be trying to parse the header value as a token if we are not careful,
+        // or there is a mismatch.
+        // SAFETY FIX: Explicitly set the access token if possible, OR just rely on the headers.
+        // Better approach for server-side auth acting as user:
+
+        const token = authHeader.replace(/^Bearer\s+/i, '');
+
         const supabase = createClient(
             supabaseUrl,
             supabaseKey,
             {
                 global: {
                     headers: {
-                        Authorization: authHeader,
+                        Authorization: `Bearer ${token}`, // Explicitly reconstruct to ensure no double-Bearer or whitespace issues
                     },
                 },
             }
