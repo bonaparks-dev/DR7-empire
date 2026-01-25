@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../hooks/useTranslation';
 import MarketingConsentModal from '../../components/ui/MarketingConsentModal';
+import { supabase } from '../../supabaseClient';
 
 const Switch: React.FC<{ checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean }> = ({ checked, onChange, disabled }) => (
     <button
@@ -46,6 +47,25 @@ const NotificationSettings = () => {
         }
 
         const newPrefs = { ...prefs, [key]: value };
+
+        // If turning off newsletter, also revoke marketing consent
+        if (key === 'newsletter' && !value) {
+            newPrefs.marketingConsent = false;
+
+            // Update marketing_consents table
+            try {
+                await supabase.from('marketing_consents').upsert({
+                    user_id: user!.id,
+                    email: user!.email,
+                    consented: false,
+                    consented_at: new Date().toISOString(),
+                    source: 'website_settings_revoked'
+                }, { onConflict: 'user_id' });
+            } catch (e) {
+                console.error('Failed to update marketing consent:', e);
+            }
+        }
+
         setPrefs(newPrefs);
         await updateUser({ notifications: newPrefs });
     };
@@ -57,7 +77,24 @@ const NotificationSettings = () => {
             marketingConsent: true
         };
         setPrefs(newPrefs);
+
+        // Save to user metadata
         await updateUser({ notifications: newPrefs });
+
+        // Save to marketing_consents table for GDPR compliance
+        try {
+            await supabase.from('marketing_consents').upsert({
+                user_id: user.id,
+                email: user.email,
+                consented: true,
+                consented_at: new Date().toISOString(),
+                consent_text: 'Acconsento a ricevere comunicazioni di marketing (promo, offerte, novità) da DR7 tramite email, SMS/telefono, WhatsApp e notifiche push.',
+                source: 'website_settings'
+            }, { onConflict: 'user_id' });
+        } catch (e) {
+            console.error('Failed to save marketing consent:', e);
+        }
+
         setShowConsentModal(false);
     };
 
