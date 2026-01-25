@@ -228,29 +228,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteAccount = useCallback(async () => {
     try {
-      // TODO: Re-enable after SMTP is configured
-      // Send confirmation email before deletion
-      // if (user?.email && user?.fullName) {
-      //   try {
-      //     await fetch('/.netlify/functions/send-deletion-confirmation', {
-      //       method: 'POST',
-      //       headers: { 'Content-Type': 'application/json' },
-      //       body: JSON.stringify({
-      //         email: user.email,
-      //         fullName: user.fullName,
-      //       }),
-      //     });
-      //   } catch (emailError) {
-      //     console.error('Failed to send deletion confirmation email:', emailError);
-      //     // Continue with deletion even if email fails
-      //   }
-      // }
+      // Get current session for auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
 
+      // Call Netlify function to delete account (server-side)
+      const response = await fetch('/.netlify/functions/delete-account', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
 
-      // Delete user from Supabase Auth - this will cascade delete from database via ON DELETE CASCADE
-      const { error } = await supabase.rpc('delete_user');
-
-      if (error) throw error;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete account');
+      }
 
       // Clear local state and redirect
       setUser(null);
@@ -263,7 +258,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Delete account error:', error);
       return { error: error as Error };
     }
-  }, [user]);
+  }, []);
 
   const isSessionActive = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
