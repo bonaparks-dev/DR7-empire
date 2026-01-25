@@ -769,32 +769,11 @@ const SignUpPage: React.FC = () => {
                         </label>
                       </div>
 
-                      {/* Step 2: Province Selection (only if Resident) */}
+                      {/* Info text for residents */}
                       {formData.residencyZone?.startsWith('RESIDENTE_') && (
-                        <div className="mt-4 pl-4 border-l-2 border-yellow-500">
-                          <AppleStyleSelect
-                            label="Provincia di Residenza"
-                            name="residencyProvince"
-                            value={
-                              formData.residencyZone === 'RESIDENTE_CA' ? 'Cagliari (CA)' :
-                                formData.residencyZone === 'RESIDENTE_SU' ? 'Sud Sardegna (SU)' :
-                                  ''
-                            }
-                            onChange={(e) => {
-                              const displayValue = e.target.value;
-                              const dbValue =
-                                displayValue === 'Cagliari (CA)' ? 'RESIDENTE_CA' :
-                                  displayValue === 'Sud Sardegna (SU)' ? 'RESIDENTE_SU' :
-                                    'RESIDENTE_CA'; // default
-                              setFormData(prev => ({ ...prev, residencyZone: dbValue }));
-                            }}
-                            options={['Cagliari (CA)', 'Sud Sardegna (SU)']}
-                            required
-                          />
-                          <p className="text-xs text-gray-400 mt-2">
-                            Sud Sardegna include: Carbonia-Iglesias, Medio Campidano, Ogliastra
-                          </p>
-                        </div>
+                        <p className="text-xs text-gray-400 mt-2">
+                          {formData.residencyZone === 'RESIDENTE_SU' && 'Sud Sardegna include: Carbonia-Iglesias, Medio Campidano, Ogliastra'}
+                        </p>
                       )}
 
                       {errors.residencyZone && <p className="text-xs text-red-400 mt-1">{errors.residencyZone}</p>}
@@ -873,16 +852,39 @@ const SignUpPage: React.FC = () => {
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         Provincia <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        type="text"
-                        name="provinciaResidenza"
-                        value={formData.provinciaResidenza}
-                        onChange={handleChange}
-                        placeholder="MI"
-                        maxLength={2}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
-                        required
-                      />
+                      {formData.nazione === 'Italia' && formData.residencyZone?.startsWith('RESIDENTE_') ? (
+                        <AppleStyleSelect
+                          label="Provincia"
+                          name="provinciaResidenza"
+                          value={
+                            formData.residencyZone === 'RESIDENTE_CA' ? 'CA' :
+                              formData.residencyZone === 'RESIDENTE_SU' ? 'SU' :
+                                formData.provinciaResidenza
+                          }
+                          onChange={(e) => {
+                            const province = e.target.value;
+                            // Update both provinciaResidenza and residencyZone
+                            setFormData(prev => ({
+                              ...prev,
+                              provinciaResidenza: province,
+                              residencyZone: province === 'CA' ? 'RESIDENTE_CA' : province === 'SU' ? 'RESIDENTE_SU' : prev.residencyZone
+                            }));
+                          }}
+                          options={['CA', 'SU']}
+                          required
+                        />
+                      ) : (
+                        <input
+                          type="text"
+                          name="provinciaResidenza"
+                          value={formData.provinciaResidenza}
+                          onChange={handleChange}
+                          placeholder="MI"
+                          maxLength={2}
+                          className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
+                          required
+                        />
+                      )}
                       {errors.provinciaResidenza && <p className="text-xs text-red-400 mt-1">{errors.provinciaResidenza}</p>}
                     </div>
                   </div>
