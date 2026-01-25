@@ -228,10 +228,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteAccount = useCallback(async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Not authenticated');
+      // Get fresh session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        throw new Error('Session error: ' + sessionError.message);
       }
+
+      if (!session?.access_token) {
+        console.error('No valid session found');
+        throw new Error('Not authenticated - please log in again');
+      }
+
+      // Validate token format (should have 3 parts)
+      const tokenParts = session.access_token.split('.');
+      if (tokenParts.length !== 3) {
+        console.error('Invalid token format:', tokenParts.length, 'parts');
+        throw new Error('Invalid session token - please log in again');
+      }
+
+      console.log('Sending delete request with valid token');
 
       const response = await fetch('/.netlify/functions/delete-account', {
         method: 'POST',
@@ -241,10 +258,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         },
       });
 
-      const data = await response.json().catch(() => ({}));
+      let data = {};
+      try {
+        data = await response.json();
+      } catch (e) {
+        console.warn('Could not parse response as JSON');
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || `Failed to delete account (${response.status})`);
+        throw new Error((data as any).error || `Failed to delete account (${response.status})`);
       }
 
       setUser(null);

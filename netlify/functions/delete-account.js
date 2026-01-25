@@ -1,6 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
 
-// CORS headers for all responses
 const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Authorization, Content-Type',
@@ -8,111 +7,105 @@ const headers = {
     'Content-Type': 'application/json'
 };
 
-// Helper to create response
-const response = (statusCode, body) => ({
+const respond = (statusCode, body) => ({
     statusCode,
     headers,
     body: JSON.stringify(body)
 });
 
 exports.handler = async (event) => {
-    console.log('[DeleteAccount] Starting - Method:', event.httpMethod);
-
-    // Handle CORS preflight
+    // CORS preflight
     if (event.httpMethod === 'OPTIONS') {
         return { statusCode: 204, headers, body: '' };
     }
 
-    // Only POST allowed
     if (event.httpMethod !== 'POST') {
-        return response(405, { error: 'Method not allowed' });
+        return respond(405, { error: 'Method not allowed' });
     }
 
     try {
-        // Get Supabase config
+        // Log env vars availability (not values)
+        console.log('[DeleteAccount] Env check:', {
+            hasSupabaseUrl: !!(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL),
+            hasAnonKey: !!(process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY),
+            hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+        });
+
         const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        const anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-        if (!supabaseUrl || !supabaseServiceKey) {
-            console.error('[DeleteAccount] Missing env vars');
-            return response(500, { error: 'Server configuration error' });
+        if (!supabaseUrl) {
+            return respond(500, { error: 'Missing SUPABASE_URL' });
+        }
+        if (!anonKey) {
+            return respond(500, { error: 'Missing SUPABASE_ANON_KEY' });
+        }
+        if (!serviceKey) {
+            return respond(500, { error: 'Missing SUPABASE_SERVICE_ROLE_KEY' });
         }
 
-        // Get auth token
         const authHeader = event.headers.authorization || event.headers.Authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            console.error('[DeleteAccount] No auth header');
-            return response(401, { error: 'Not authenticated' });
+        if (!authHeader) {
+            return respond(401, { error: 'No authorization header' });
         }
 
-        const token = authHeader.replace('Bearer ', '');
+        console.log('[DeleteAccount] Creating user client...');
 
-        // Create client with user token to get user info
-        const userClient = createClient(supabaseUrl, process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY, {
+        const userClient = createClient(supabaseUrl, anonKey, {
             global: { headers: { Authorization: authHeader } }
         });
 
-        // Get user
-        const { data: { user }, error: userError } = await userClient.auth.getUser();
+        const { data, error: userError } = await userClient.auth.getUser();
 
-        if (userError || !user) {
-            console.error('[DeleteAccount] User error:', userError?.message);
-            return response(401, { error: 'Invalid session' });
+        if (userError) {
+            console.error('[DeleteAccount] getUser error:', userError.message);
+            return respond(401, { error: 'Auth error: ' + userError.message });
         }
 
-        console.log('[DeleteAccount] Deleting user:', user.id, user.email);
+        if (!data?.user) {
+            return respond(401, { error: 'No user found' });
+        }
 
-        // Use service role client to delete user (has admin privileges)
-        const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+        const user = data.user;
+        console.log('[DeleteAccount] User:', user.id, user.email);
+
+        const adminClient = createClient(supabaseUrl, serviceKey, {
             auth: { autoRefreshToken: false, persistSession: false }
         });
 
-        // Delete related data first
-        try {
-            // Delete bookings
-            await adminClient.from('bookings').delete().eq('userId', user.id);
-            console.log('[DeleteAccount] Deleted bookings');
-        } catch (e) {
-            console.log('[DeleteAccount] No bookings to delete or error:', e.message);
+        // Delete related data (ignore errors for tables that might not exist)
+        const tables = [
+            { name: 'bookings', column: 'userId' },
+            { name: 'credit_transactions', column: 'user_id' },
+            { name: 'membership_purchases', column: 'user_id' },
+            { name: 'customers_extended', column: 'id' }
+        ];
+
+        for (const table of tables) {
+            try {
+                const { error } = await adminClient.from(table.name).delete().eq(table.column, user.id);
+                if (error) console.log(`[DeleteAccount] ${table.name}:`, error.message);
+                else console.log(`[DeleteAccount] Deleted from ${table.name}`);
+            } catch (e) {
+                console.log(`[DeleteAccount] ${table.name} skip:`, e.message);
+            }
         }
 
-        try {
-            // Delete credit transactions
-            await adminClient.from('credit_transactions').delete().eq('user_id', user.id);
-            console.log('[DeleteAccount] Deleted credit transactions');
-        } catch (e) {
-            console.log('[DeleteAccount] No credit transactions or error:', e.message);
-        }
-
-        try {
-            // Delete membership purchases
-            await adminClient.from('membership_purchases').delete().eq('user_id', user.id);
-            console.log('[DeleteAccount] Deleted membership purchases');
-        } catch (e) {
-            console.log('[DeleteAccount] No membership purchases or error:', e.message);
-        }
-
-        try {
-            // Delete customers_extended
-            await adminClient.from('customers_extended').delete().eq('id', user.id);
-            console.log('[DeleteAccount] Deleted customers_extended');
-        } catch (e) {
-            console.log('[DeleteAccount] No customers_extended or error:', e.message);
-        }
-
-        // Finally delete the auth user
+        // Delete the user
+        console.log('[DeleteAccount] Deleting auth user...');
         const { error: deleteError } = await adminClient.auth.admin.deleteUser(user.id);
 
         if (deleteError) {
-            console.error('[DeleteAccount] Delete error:', deleteError.message);
-            return response(500, { error: 'Failed to delete account: ' + deleteError.message });
+            console.error('[DeleteAccount] Delete failed:', deleteError.message);
+            return respond(500, { error: 'Delete failed: ' + deleteError.message });
         }
 
-        console.log('[DeleteAccount] Success - User deleted:', user.id);
-        return response(200, { message: 'Account deleted successfully' });
+        console.log('[DeleteAccount] Success');
+        return respond(200, { message: 'Account deleted' });
 
     } catch (error) {
-        console.error('[DeleteAccount] Error:', error.message);
-        return response(500, { error: 'Server error: ' + error.message });
+        console.error('[DeleteAccount] Crash:', error);
+        return respond(500, { error: 'Server error: ' + (error.message || 'Unknown') });
     }
 };
