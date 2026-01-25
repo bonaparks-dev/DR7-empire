@@ -228,62 +228,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteAccount = useCallback(async () => {
     try {
-      // Get session
-      const { data: { session } } = await supabase.auth.getSession();
+      // Force refresh session first
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
 
-      if (!session?.access_token) {
-        throw new Error('Please log in again');
+      if (refreshError || !refreshData?.session?.access_token) {
+        // Try getting existing session
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+          throw new Error('Please log in again');
+        }
+
+        // Use existing session token
+        const token = session.access_token;
+        if (token.length > 5000) {
+          await supabase.auth.signOut();
+          localStorage.clear();
+          sessionStorage.clear();
+          throw new Error('Session issue. Please log in again.');
+        }
+
+        return await callDeleteApi(token);
       }
 
-      // Validate token size
-      if (session.access_token.length > 10000) {
-        // Token corrupted - clear and ask to re-login
-        localStorage.clear();
-        sessionStorage.clear();
-        throw new Error('Session corrupted. Please refresh and log in again.');
-      }
+      // Use refreshed token
+      const token = refreshData.session.access_token;
+      return await callDeleteApi(token);
 
-      // Make request
+    } catch (error) {
+      console.error('Delete error:', error);
+      return { error: error as Error };
+    }
+
+    async function callDeleteApi(token: string) {
       const res = await fetch('/.netlify/functions/delete-account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: session.access_token }),
+        body: JSON.stringify({ token }),
       });
 
-      // Read as text first
       const text = await res.text();
 
-      // Check Content-Type
-      const contentType = res.headers.get('Content-Type') || '';
-      if (!contentType.includes('application/json')) {
-        console.error('Non-JSON response:', text.substring(0, 500));
-        throw new Error('Server error. Please try again.');
-      }
-
-      // Parse JSON
       let result;
       try {
         result = JSON.parse(text);
       } catch {
-        console.error('Invalid JSON:', text.substring(0, 500));
-        throw new Error('Server error. Please try again.');
+        throw new Error('Server error');
       }
 
-      // Check success
       if (!result.success) {
         throw new Error(result.message || 'Delete failed');
       }
 
-      // Success - clear and redirect
       setUser(null);
       localStorage.clear();
       sessionStorage.clear();
       window.location.replace('/');
       return { error: null };
-
-    } catch (error) {
-      console.error('Delete error:', error);
-      return { error: error as Error };
     }
   }, []);
 
