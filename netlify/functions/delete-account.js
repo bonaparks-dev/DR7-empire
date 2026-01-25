@@ -63,19 +63,22 @@ exports.handler = async (event, context) => {
             console.error('Delete user error:', error);
             return {
                 statusCode: 500,
-                body: JSON.stringify({ error: error.message }),
+                body: JSON.stringify({ error: error.message || 'Database error' }),
+                headers: { 'Content-Type': 'application/json' }
             };
         }
 
         return {
             statusCode: 200,
             body: JSON.stringify({ message: 'Account deleted successfully' }),
+            headers: { 'Content-Type': 'application/json' }
         };
     } catch (error) {
         console.error('Server error:', error);
         return {
             statusCode: 500,
-            body: JSON.stringify({ error: 'Failed to delete account' }),
+            body: JSON.stringify({ error: error.message || 'Internal Server Error' }),
+            headers: { 'Content-Type': 'application/json' }
         };
     }
 };
