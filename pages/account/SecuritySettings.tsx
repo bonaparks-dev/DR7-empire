@@ -107,24 +107,15 @@ const SecuritySettings = () => {
             </div>
 
             {/* Delete Account Section */}
-            <div className="bg-red-900/10 border border-red-900/50 rounded-lg mt-6">
-                <div className="p-6 border-b border-red-900/50">
-                    <h2 className="text-xl font-bold text-red-400">Danger Zone</h2>
-                    <p className="text-sm text-gray-400 mt-1">Permanently delete your account and all associated data</p>
+            <div className="bg-gray-900/50 border border-gray-800 rounded-lg mt-6">
+                <div className="p-6 border-b border-gray-800">
+                    <h2 className="text-xl font-bold text-white">Delete Account</h2>
+                    <p className="text-sm text-gray-400 mt-1">Permanently remove your account and all data</p>
                 </div>
                 <div className="p-6">
-                    <p className="text-sm text-gray-300 mb-4">
-                        Once you delete your account, there is no going back. This will permanently delete:
-                    </p>
-                    <ul className="text-sm text-gray-400 list-disc list-inside space-y-1 mb-6">
-                        <li>Your profile and personal information</li>
-                        <li>All bookings and rental history</li>
-                        <li>Membership status and benefits</li>
-                        <li>Credit wallet balance</li>
-                    </ul>
                     <button
                         onClick={() => setShowDeleteModal(true)}
-                        className="px-5 py-2.5 bg-red-600 text-white font-bold rounded-full hover:bg-red-700 transition-colors text-sm"
+                        className="px-5 py-2.5 bg-gray-800 text-white font-bold rounded-full hover:bg-gray-700 transition-colors text-sm border border-gray-700"
                     >
                         Delete My Account
                     </button>
