@@ -27,8 +27,11 @@ exports.handler = async (event) => {
         }
 
         if (!token) {
+            console.log('No token in body');
             return { statusCode: 401, headers, body: JSON.stringify({ error: 'Token required' }) };
         }
+
+        console.log('Token received, length:', token.length);
 
         const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
         const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -48,14 +51,17 @@ exports.handler = async (event) => {
         }
 
         // Get user from token
+        console.log('Creating Supabase client...');
         const userClient = createClient(supabaseUrl, anonKey, {
             global: { headers: { Authorization: `Bearer ${token}` } }
         });
 
+        console.log('Calling getUser...');
         const { data: userData, error: userError } = await userClient.auth.getUser();
+        console.log('getUser result:', { hasData: !!userData, hasUser: !!userData?.user, hasError: !!userError });
 
         if (userError) {
-            console.error('Auth error:', userError);
+            console.error('Auth error:', userError.message);
             return { statusCode: 401, headers, body: JSON.stringify({ error: userError.message }) };
         }
 
