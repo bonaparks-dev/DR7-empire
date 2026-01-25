@@ -228,70 +228,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteAccount = useCallback(async () => {
     try {
-      // Get any token we can find - try multiple methods
-      let token = '';
+      // Get token from localStorage directly
+      const storageKey = 'sb-ahpmzjgkfxrrgxyirasa-auth-token';
+      const stored = localStorage.getItem(storageKey);
 
-      // Method 1: getSession API
-      try {
-        const { data } = await supabase.auth.getSession();
-        token = data?.session?.access_token || '';
-        console.log('Method 1 (getSession):', token ? 'got token' : 'no token');
-      } catch (e) {
-        console.log('getSession failed:', e);
+      if (!stored) {
+        throw new Error('Please log in again');
       }
 
-      // Method 2: refreshSession API
-      if (!token) {
-        try {
-          const { data } = await supabase.auth.refreshSession();
-          token = data?.session?.access_token || '';
-          console.log('Method 2 (refreshSession):', token ? 'got token' : 'no token');
-        } catch (e) {
-          console.log('refreshSession failed:', e);
-        }
-      }
-
-      // Method 3: Read directly from localStorage (fallback for connectivity issues)
-      if (!token) {
-        try {
-          const storageKey = 'sb-ahpmzjgkfxrrgxyirasa-auth-token';
-          const stored = localStorage.getItem(storageKey);
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            token = parsed?.access_token || '';
-            console.log('Method 3 (localStorage):', token ? 'got token' : 'no token');
-          }
-        } catch (e) {
-          console.log('localStorage read failed:', e);
-        }
-      }
+      const parsed = JSON.parse(stored);
+      const token = parsed?.access_token;
 
       if (!token) {
-        throw new Error('No session found. Please log out and log in again.');
+        throw new Error('Please log in again');
       }
 
-      console.log('Calling delete API with token length:', token.length);
-
-      // Call API regardless of token size - let backend handle it
-      const res = await fetch('/.netlify/functions/delete-account', {
+      const response = await fetch('/.netlify/functions/delete-account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ token })
       });
 
-      console.log('Response status:', res.status);
-      const text = await res.text();
-      console.log('Response:', text.substring(0, 200));
+      const data = await response.json();
 
-      let result;
-      try {
-        result = JSON.parse(text);
-      } catch {
-        throw new Error('Server returned invalid response');
-      }
-
-      if (!result.success) {
-        throw new Error(result.message || 'Delete failed');
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Delete failed');
       }
 
       setUser(null);
@@ -301,7 +262,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { error: null };
 
     } catch (error) {
-      console.error('Delete error:', error);
       return { error: error as Error };
     }
   }, []);
