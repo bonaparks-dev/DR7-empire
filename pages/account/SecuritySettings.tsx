@@ -115,7 +115,7 @@ const SecuritySettings = () => {
                 <div className="p-6">
                     <button
                         onClick={() => setShowDeleteModal(true)}
-                        className="px-5 py-2.5 bg-gray-800 text-white font-bold rounded-full hover:bg-gray-700 transition-colors text-sm border border-gray-700"
+                        className="px-8 py-3 bg-gray-800 text-white font-bold rounded-full hover:bg-gray-700 transition-colors text-base border border-gray-700"
                     >
                         Delete My Account
                     </button>
