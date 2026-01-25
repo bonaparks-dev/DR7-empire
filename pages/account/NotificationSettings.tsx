@@ -92,16 +92,24 @@ const NotificationSettings = () => {
 
         // Save to marketing_consents table for GDPR compliance
         try {
-            await supabase.from('marketing_consents').upsert({
+            const { data, error } = await supabase.from('marketing_consents').upsert({
                 user_id: user.id,
                 email: user.email,
                 consented: true,
                 consented_at: new Date().toISOString(),
                 consent_text: 'Acconsento a ricevere comunicazioni di marketing (promo, offerte, novità) da DR7 tramite email, SMS/telefono, WhatsApp e notifiche push.',
                 source: 'website_settings'
-            }, { onConflict: 'user_id' });
+            }, { onConflict: 'user_id' }).select();
+
+            if (error) {
+                console.error('Marketing consent save error:', error);
+                alert('Errore nel salvare il consenso: ' + error.message);
+            } else {
+                console.log('Marketing consent saved:', data);
+            }
         } catch (e) {
             console.error('Failed to save marketing consent:', e);
+            alert('Errore: ' + (e as Error).message);
         }
 
         setPendingPref(null);
