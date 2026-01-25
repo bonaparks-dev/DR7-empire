@@ -229,43 +229,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const deleteAccount = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-
       if (!session?.access_token) {
         throw new Error('Please log in again');
       }
 
-      console.log('Calling delete-account with token length:', session.access_token.length);
-
-      const response = await fetch('/.netlify/functions/delete-account', {
+      const res = await fetch('/.netlify/functions/delete-account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: session.access_token }),
       });
 
-      console.log('Response status:', response.status);
+      const result = await res.json();
 
-      const text = await response.text();
-      console.log('Response body:', text.substring(0, 200));
-
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        throw new Error('Server returned invalid response: ' + text.substring(0, 100));
-      }
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete account');
+      if (!result.success) {
+        throw new Error(result.message || 'Delete failed');
       }
 
       setUser(null);
       localStorage.clear();
       sessionStorage.clear();
       window.location.replace('/');
-
       return { error: null };
     } catch (error) {
-      console.error('Delete account error:', error);
+      console.error('Delete error:', error);
       return { error: error as Error };
     }
   }, []);
