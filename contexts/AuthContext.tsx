@@ -234,13 +234,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Please log in again');
       }
 
+      console.log('Calling delete-account with token length:', session.access_token.length);
+
       const response = await fetch('/.netlify/functions/delete-account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: session.access_token }),
       });
 
-      const data = await response.json();
+      console.log('Response status:', response.status);
+
+      const text = await response.text();
+      console.log('Response body:', text.substring(0, 200));
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        throw new Error('Server returned invalid response: ' + text.substring(0, 100));
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to delete account');
