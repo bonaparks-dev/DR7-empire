@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../hooks/useAuth';
-import { supabase } from '../../supabaseClient';
 
 const SecuritySettings = () => {
     const { t } = useTranslation();
@@ -15,8 +14,6 @@ const SecuritySettings = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteSuccess, setDeleteSuccess] = useState(false);
-    const [deletePassword, setDeletePassword] = useState('');
-    const [deleteEmail, setDeleteEmail] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -58,20 +55,14 @@ const SecuritySettings = () => {
     };
 
     const handleDeleteAccount = async () => {
-        if (!deleteEmail || !deletePassword) {
-            setError('Please enter your email and password');
-            return;
-        }
-
         setIsDeleting(true);
         setError('');
 
         try {
-            // Send email + password to backend - it handles auth there
             const response = await fetch('/.netlify/functions/delete-account', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: deleteEmail, password: deletePassword })
+                body: JSON.stringify({ userId: user?.id })
             });
 
             const result = await response.json();
@@ -81,8 +72,6 @@ const SecuritySettings = () => {
             }
 
             setDeleteSuccess(true);
-
-            // Clear everything and redirect
             setTimeout(() => {
                 localStorage.clear();
                 sessionStorage.clear();
@@ -127,7 +116,6 @@ const SecuritySettings = () => {
                 </form>
             </div>
 
-            {/* Delete Account Section */}
             <div className="bg-gray-900/50 border border-gray-800 rounded-lg mt-6">
                 <div className="p-6 border-b border-gray-800">
                     <h2 className="text-xl font-bold text-white">Delete Account</h2>
@@ -143,53 +131,22 @@ const SecuritySettings = () => {
                 </div>
             </div>
 
-            {/* Delete Confirmation Modal */}
             {showDeleteModal && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
                     <div className="bg-gray-900 border border-gray-700 rounded-lg max-w-md w-full p-6">
                         {deleteSuccess ? (
                             <>
                                 <h3 className="text-2xl font-bold text-green-400 mb-4">Account Deleted</h3>
-                                <p className="text-gray-300 mb-4">
-                                    Your account has been successfully deleted.
-                                </p>
-                                <p className="text-gray-400 text-sm">
-                                    Redirecting you to the home page...
-                                </p>
+                                <p className="text-gray-300">Redirecting...</p>
                             </>
                         ) : (
                             <>
                                 <h3 className="text-2xl font-bold text-white mb-4">Delete Account?</h3>
-                                <p className="text-gray-300 mb-4">
-                                    This will permanently delete your account and all your data.
-                                </p>
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">Your email</label>
-                                    <input
-                                        type="email"
-                                        value={deleteEmail}
-                                        onChange={e => setDeleteEmail(e.target.value)}
-                                        placeholder="your@email.com"
-                                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white mb-3"
-                                    />
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">Your password</label>
-                                    <input
-                                        type="password"
-                                        value={deletePassword}
-                                        onChange={e => setDeletePassword(e.target.value)}
-                                        placeholder="Your password"
-                                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                                    />
-                                </div>
+                                <p className="text-gray-300 mb-6">This will permanently delete your account and all data.</p>
                                 {error && <p className="text-sm text-red-400 bg-red-900/20 p-3 rounded-md mb-4">{error}</p>}
                                 <div className="flex gap-3">
                                     <button
-                                        onClick={() => {
-                                            setShowDeleteModal(false);
-                                            setError('');
-                                            setDeleteEmail('');
-                                            setDeletePassword('');
-                                        }}
+                                        onClick={() => { setShowDeleteModal(false); setError(''); }}
                                         disabled={isDeleting}
                                         className="flex-1 px-5 py-2.5 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors text-sm disabled:opacity-50"
                                     >
@@ -197,10 +154,10 @@ const SecuritySettings = () => {
                                     </button>
                                     <button
                                         onClick={handleDeleteAccount}
-                                        disabled={isDeleting || !deleteEmail || !deletePassword}
+                                        disabled={isDeleting}
                                         className="flex-1 px-5 py-2.5 bg-red-600 text-white font-bold rounded-full hover:bg-red-700 transition-colors text-sm disabled:opacity-50"
                                     >
-                                        {isDeleting ? 'Deleting...' : 'Delete'}
+                                        {isDeleting ? 'Deleting...' : 'Yes, Delete'}
                                     </button>
                                 </div>
                             </>
