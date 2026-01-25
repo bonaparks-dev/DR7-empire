@@ -42,7 +42,13 @@ exports.handler = async (event, context) => {
         // Send confirmation email BEFORE deletion (while we still have user data)
         if (user.email && user.user_metadata?.full_name) {
             try {
-                await fetch(`${process.env.URL}/.netlify/functions/send-deletion-confirmation`, {
+                // Determine site URL robustly - prefer DEPLOY_URL in Netlify context
+                const siteUrl = process.env.DEPLOY_URL || process.env.URL || 'http://localhost:8888';
+                const emailFunctionUrl = `${siteUrl}/.netlify/functions/send-deletion-confirmation`;
+
+                console.log(`Sending deletion email to ${user.email} via ${emailFunctionUrl}`);
+
+                await fetch(emailFunctionUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
