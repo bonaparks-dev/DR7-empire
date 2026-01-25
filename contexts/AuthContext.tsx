@@ -233,9 +233,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Please log in again');
       }
 
-      const res = await fetch('/.netlify/functions/delete-account', {
+      const res = await fetch(`/.netlify/functions/delete-account?t=${Date.now()}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache'
+        },
         body: JSON.stringify({ token: session.access_token }),
       });
 
