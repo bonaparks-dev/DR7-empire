@@ -228,19 +228,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteAccount = useCallback(async () => {
     try {
-      // Get token from localStorage directly
-      const storageKey = 'sb-ahpmzjgkfxrrgxyirasa-auth-token';
-      const stored = localStorage.getItem(storageKey);
+      // Force refresh the session to get a fresh token
+      const { data: sessionData, error: sessionError } = await supabase.auth.refreshSession();
 
-      if (!stored) {
-        throw new Error('Please log in again');
+      let token = sessionData?.session?.access_token;
+
+      // If refresh failed, try getSession
+      if (!token) {
+        const { data } = await supabase.auth.getSession();
+        token = data?.session?.access_token;
       }
 
-      const parsed = JSON.parse(stored);
-      const token = parsed?.access_token;
-
       if (!token) {
-        throw new Error('Please log in again');
+        throw new Error('Session expired. Please log in again.');
       }
 
       const response = await fetch('/.netlify/functions/delete-account', {
