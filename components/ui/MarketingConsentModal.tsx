@@ -17,7 +17,7 @@ const MarketingConsentModal: React.FC<MarketingConsentModalProps> = ({ isOpen, o
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                        className="absolute inset-0 bg-black/90 backdrop-blur-sm"
                         onClick={onClose}
                     />
 
@@ -25,7 +25,7 @@ const MarketingConsentModal: React.FC<MarketingConsentModalProps> = ({ isOpen, o
                         initial={{ opacity: 0, scale: 0.9, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        className="relative bg-gray-900 border border-gray-800 rounded-xl shadow-2xl max-w-lg w-full overflow-hidden"
+                        className="relative bg-black border border-gray-700 rounded-xl shadow-2xl max-w-lg w-full overflow-hidden"
                     >
                         <button
                             onClick={onClose}
@@ -37,9 +37,9 @@ const MarketingConsentModal: React.FC<MarketingConsentModalProps> = ({ isOpen, o
 
                         <div className="p-8">
                             <div className="text-center mb-6">
-                                <div className="w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-yellow-500/30">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/30">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                     </svg>
                                 </div>
                                 <h2 className="text-2xl font-bold text-white mb-2">Rimani Aggiornato</h2>
@@ -48,16 +48,16 @@ const MarketingConsentModal: React.FC<MarketingConsentModalProps> = ({ isOpen, o
                                 </p>
                             </div>
 
-                            <div className="bg-gray-800/50 rounded-lg p-4 mb-6 border border-gray-700">
+                            <div className="bg-gray-900/50 rounded-lg p-4 mb-6 border border-gray-800">
                                 <p className="text-gray-300 text-sm leading-relaxed text-center">
-                                    "Acconsento a ricevere comunicazioni di marketing (promo, offerte, novità) da DR7 tramite email, SMS/telefono, WhatsApp e notifiche push. Consenso facoltativo, revocabile in qualsiasi momento. Ho letto l’Informativa Privacy."
+                                    "Acconsento a ricevere comunicazioni di marketing (promo, offerte, novità) da DR7 tramite email, SMS/telefono, WhatsApp e notifiche push. Consenso facoltativo, revocabile in qualsiasi momento. Ho letto l'Informativa Privacy."
                                 </p>
                             </div>
 
                             <div className="flex flex-col gap-3">
                                 <button
                                     onClick={onConfirm}
-                                    className="w-full py-3.5 bg-yellow-500 text-black font-bold rounded-lg hover:bg-yellow-400 transition-colors shadow-lg shadow-yellow-500/20"
+                                    className="w-full py-3.5 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors"
                                 >
                                     Acconsento
                                 </button>
