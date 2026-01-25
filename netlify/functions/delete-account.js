@@ -30,12 +30,21 @@ exports.handler = async (event) => {
             return { statusCode: 401, headers, body: JSON.stringify({ error: 'Token required' }) };
         }
 
-        const supabaseUrl = process.env.SUPABASE_URL;
+        const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
         const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-        const anonKey = process.env.SUPABASE_ANON_KEY;
+        const anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+        console.log('Env check:', { url: !!supabaseUrl, service: !!serviceKey, anon: !!anonKey });
 
         if (!supabaseUrl || !serviceKey || !anonKey) {
-            return { statusCode: 500, headers, body: JSON.stringify({ error: 'Server not configured' }) };
+            return { statusCode: 500, headers, body: JSON.stringify({
+                error: 'Missing env vars',
+                missing: {
+                    url: !supabaseUrl,
+                    serviceKey: !serviceKey,
+                    anonKey: !anonKey
+                }
+            })};
         }
 
         // Get user from token
