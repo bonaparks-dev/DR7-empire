@@ -733,18 +733,23 @@ const SignUpPage: React.FC = () => {
 
                   {/* Residency Zone Section - Only for Italia */}
                   {formData.nazione === 'Italia' && (
-                    <div>
+                    <div className="space-y-4">
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         Zona di Residenza <span className="text-red-500">*</span>
                       </label>
+
+                      {/* Step 1: Resident or Non-Resident */}
                       <div className="space-y-2">
                         <label className="flex items-center p-3 bg-gray-800 border border-gray-700 rounded-md cursor-pointer hover:border-yellow-500 transition-colors">
                           <input
                             type="radio"
-                            name="residencyZone"
-                            value="RESIDENTE_CAGLIARI_SUD_SARDEGNA"
-                            checked={formData.residencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA'}
-                            onChange={handleChange}
+                            name="residencyType"
+                            value="RESIDENTE"
+                            checked={formData.residencyZone?.startsWith('RESIDENTE_')}
+                            onChange={(e) => {
+                              // Reset to default resident value when switching to resident
+                              setFormData(prev => ({ ...prev, residencyZone: 'RESIDENTE_CA' }));
+                            }}
                             className="h-4 w-4 text-yellow-500 bg-gray-700 border-gray-600 focus:ring-yellow-500"
                           />
                           <span className="ml-3 text-white">RESIDENTE CAGLIARI–SUD SARDEGNA</span>
@@ -752,15 +757,46 @@ const SignUpPage: React.FC = () => {
                         <label className="flex items-center p-3 bg-gray-800 border border-gray-700 rounded-md cursor-pointer hover:border-yellow-500 transition-colors">
                           <input
                             type="radio"
-                            name="residencyZone"
+                            name="residencyType"
                             value="NON_RESIDENTE"
                             checked={formData.residencyZone === 'NON_RESIDENTE'}
-                            onChange={handleChange}
+                            onChange={(e) => {
+                              setFormData(prev => ({ ...prev, residencyZone: 'NON_RESIDENTE' }));
+                            }}
                             className="h-4 w-4 text-yellow-500 bg-gray-700 border-gray-600 focus:ring-yellow-500"
                           />
                           <span className="ml-3 text-white">NON RESIDENTE</span>
                         </label>
                       </div>
+
+                      {/* Step 2: Province Selection (only if Resident) */}
+                      {formData.residencyZone?.startsWith('RESIDENTE_') && (
+                        <div className="mt-4 pl-4 border-l-2 border-yellow-500">
+                          <AppleStyleSelect
+                            label="Provincia di Residenza"
+                            name="residencyProvince"
+                            value={
+                              formData.residencyZone === 'RESIDENTE_CA' ? 'Cagliari (CA)' :
+                                formData.residencyZone === 'RESIDENTE_SU' ? 'Sud Sardegna (SU)' :
+                                  ''
+                            }
+                            onChange={(e) => {
+                              const displayValue = e.target.value;
+                              const dbValue =
+                                displayValue === 'Cagliari (CA)' ? 'RESIDENTE_CA' :
+                                  displayValue === 'Sud Sardegna (SU)' ? 'RESIDENTE_SU' :
+                                    'RESIDENTE_CA'; // default
+                              setFormData(prev => ({ ...prev, residencyZone: dbValue }));
+                            }}
+                            options={['Cagliari (CA)', 'Sud Sardegna (SU)']}
+                            required
+                          />
+                          <p className="text-xs text-gray-400 mt-2">
+                            Sud Sardegna include: Carbonia-Iglesias, Medio Campidano, Ogliastra
+                          </p>
+                        </div>
+                      )}
+
                       {errors.residencyZone && <p className="text-xs text-red-400 mt-1">{errors.residencyZone}</p>}
                     </div>
                   )}

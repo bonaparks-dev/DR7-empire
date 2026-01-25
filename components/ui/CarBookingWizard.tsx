@@ -1003,7 +1003,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (item.priceResidentDaily && item.priceNonresidentDaily) {
       // Dual pricing available for this vehicle
       const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
-      const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
+      const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA' || userResidencyZone === 'RESIDENTE_CA' || userResidencyZone === 'RESIDENTE_SU';
 
       // Debug logging for pricing
       console.log('🏷️ Pricing Debug:', {
@@ -1238,7 +1238,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   // Auto-set usage zone for residents to ensure correct pricing
   useEffect(() => {
     const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
-    const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
+    const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA' || userResidencyZone === 'RESIDENTE_CA' || userResidencyZone === 'RESIDENTE_SU';
     const vType = getVehicleType(item, categoryContext);
 
     console.log('🏠 Usage Zone Auto-Set Check:', {
@@ -1640,7 +1640,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
         // Block residents from selecting Fuori zona
         const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
-        const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
+        const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA' || userResidencyZone === 'RESIDENTE_CA' || userResidencyZone === 'RESIDENTE_SU';
 
         if (isResident && formData.usageZone === 'FUORI_ZONA') {
           newErrors.usageZone = "Con tariffa residente il veicolo è autorizzato solo a Cagliari e Sud Sardegna.";
@@ -2845,7 +2845,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       } ${usageZoneError ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                     onClick={() => {
                       const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
-                      const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
+                      const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA' || userResidencyZone === 'RESIDENTE_CA' || userResidencyZone === 'RESIDENTE_SU';
 
                       // Allow non-residents to select, block residents
                       if (!isResident) {
@@ -2862,7 +2862,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         disabled={!!usageZoneError}
                         onChange={() => {
                           const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
-                          const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
+                          const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA' || userResidencyZone === 'RESIDENTE_CA' || userResidencyZone === 'RESIDENTE_SU';
                           if (!isResident) {
                             setFormData(p => ({ ...p, usageZone: 'FUORI_ZONA' }));
                           }
@@ -2877,7 +2877,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       Utilizzo al di fuori dell'area di Cagliari e Sud Sardegna (solo Sardegna, non Italia continentale)
                     </p>
                     {/* Pricing warning for residents */}
-                    {user && (user as any)?.residencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA' && item.priceResidentDaily && item.priceNonresidentDaily && (
+                    {user && ((user as any)?.residencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA' || (user as any)?.residencyZone === 'RESIDENTE_CA' || (user as any)?.residencyZone === 'RESIDENTE_SU') && item.priceResidentDaily && item.priceNonresidentDaily && (
                       <div className="ml-7 mt-2 p-2 bg-yellow-900/20 border border-yellow-600/50 rounded">
                         <p className="text-yellow-300 text-xs font-semibold">
                           ⚠️ Selezionando questa opzione, si applica la tariffa non residente: €{item.priceNonresidentDaily}/giorno invece di €{item.priceResidentDaily}/giorno

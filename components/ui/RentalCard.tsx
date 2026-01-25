@@ -35,7 +35,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
 
   // Determine user's residency zone (treat null as NON_RESIDENTE)
   const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
-  const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA';
+  const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA' || userResidencyZone === 'RESIDENTE_CA' || userResidencyZone === 'RESIDENTE_SU';
 
   // Check if dual pricing is available for this vehicle
   const hasDualPricing = isCar && item.priceResidentDaily && item.priceNonresidentDaily;

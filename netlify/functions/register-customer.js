@@ -85,6 +85,8 @@ exports.handler = async (event) => {
 
         if (authError) {
             console.error('Auth creation error:', authError);
+            console.error('Auth error details:', JSON.stringify(authError, null, 2));
+            console.error('Email attempted:', email);
             return { statusCode: 400, body: JSON.stringify({ error: authError.message }) };
         }
 
