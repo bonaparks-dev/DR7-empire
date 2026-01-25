@@ -49,7 +49,9 @@ exports.handler = async (event) => {
         }
 
         const userId = data.user.id;
-        console.log('DELETE USER:', userId);
+        const userEmail = data.user.email;
+        const userName = data.user.user_metadata?.full_name || 'Customer';
+        console.log('DELETE USER:', userId, userEmail);
 
         // Admin client
         const admin = createClient(SUPABASE_URL, serviceKey);
@@ -65,6 +67,20 @@ exports.handler = async (event) => {
 
         if (delErr) {
             return reply(false, delErr.message);
+        }
+
+        // Send confirmation email
+        try {
+            const siteUrl = process.env.URL || 'https://dr7empire.com';
+            await fetch(`${siteUrl}/.netlify/functions/send-deletion-confirmation`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: userEmail, fullName: userName })
+            });
+            console.log('Confirmation email sent to:', userEmail);
+        } catch (emailErr) {
+            console.error('Email error:', emailErr);
+            // Continue even if email fails
         }
 
         return reply(true, 'Account deleted');
