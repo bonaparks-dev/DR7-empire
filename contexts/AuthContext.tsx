@@ -228,51 +228,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteAccount = useCallback(async () => {
     try {
-      // Force refresh session first
-      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      // Get any token we can find
+      let token = '';
 
-      if (refreshError || !refreshData?.session?.access_token) {
-        // Try getting existing session
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.access_token) {
-          throw new Error('Please log in again');
-        }
-
-        // Use existing session token
-        const token = session.access_token;
-        if (token.length > 5000) {
-          await supabase.auth.signOut();
-          localStorage.clear();
-          sessionStorage.clear();
-          throw new Error('Session issue. Please log in again.');
-        }
-
-        return await callDeleteApi(token);
+      try {
+        const { data } = await supabase.auth.getSession();
+        token = data?.session?.access_token || '';
+      } catch (e) {
+        console.log('getSession failed:', e);
       }
 
-      // Use refreshed token
-      const token = refreshData.session.access_token;
-      return await callDeleteApi(token);
+      if (!token) {
+        try {
+          const { data } = await supabase.auth.refreshSession();
+          token = data?.session?.access_token || '';
+        } catch (e) {
+          console.log('refreshSession failed:', e);
+        }
+      }
 
-    } catch (error) {
-      console.error('Delete error:', error);
-      return { error: error as Error };
-    }
+      if (!token) {
+        throw new Error('No session. Please log in.');
+      }
 
-    async function callDeleteApi(token: string) {
+      console.log('Calling delete API with token length:', token.length);
+
+      // Call API regardless of token size - let backend handle it
       const res = await fetch('/.netlify/functions/delete-account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token }),
       });
 
+      console.log('Response status:', res.status);
       const text = await res.text();
+      console.log('Response:', text.substring(0, 200));
 
       let result;
       try {
         result = JSON.parse(text);
       } catch {
-        throw new Error('Server error');
+        throw new Error('Server returned invalid response');
       }
 
       if (!result.success) {
@@ -284,6 +280,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       sessionStorage.clear();
       window.location.replace('/');
       return { error: null };
+
+    } catch (error) {
+      console.error('Delete error:', error);
+      return { error: error as Error };
     }
   }, []);
 
