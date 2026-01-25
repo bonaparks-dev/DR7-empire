@@ -54,8 +54,13 @@ exports.handler = async (event) => {
 
         const { data: userData, error: userError } = await userClient.auth.getUser();
 
-        if (userError || !userData?.user) {
-            return { statusCode: 401, headers, body: JSON.stringify({ error: 'Invalid token' }) };
+        if (userError) {
+            console.error('Auth error:', userError);
+            return { statusCode: 401, headers, body: JSON.stringify({ error: userError.message }) };
+        }
+
+        if (!userData?.user) {
+            return { statusCode: 401, headers, body: JSON.stringify({ error: 'No user found' }) };
         }
 
         const userId = userData.user.id;
