@@ -39,30 +39,38 @@ const NotificationSettings = () => {
         }
     }, [user]);
 
+    const [pendingPref, setPendingPref] = useState<'newsletter' | 'specialOffers' | null>(null);
+
     const handlePrefChange = async (key: keyof typeof prefs, value: boolean) => {
-        // If trying to enable newsletter and no marketing consent yet, show modal
-        if (key === 'newsletter' && value && !prefs.marketingConsent) {
+        // If trying to enable newsletter or specialOffers and no marketing consent yet, show modal
+        if ((key === 'newsletter' || key === 'specialOffers') && value && !prefs.marketingConsent) {
+            setPendingPref(key);
             setShowConsentModal(true);
             return;
         }
 
         const newPrefs = { ...prefs, [key]: value };
 
-        // If turning off newsletter, also revoke marketing consent
-        if (key === 'newsletter' && !value) {
-            newPrefs.marketingConsent = false;
+        // If turning off newsletter or specialOffers, check if both are off to revoke consent
+        if ((key === 'newsletter' || key === 'specialOffers') && !value) {
+            const otherKey = key === 'newsletter' ? 'specialOffers' : 'newsletter';
+            const bothOff = !value && !prefs[otherKey];
 
-            // Update marketing_consents table
-            try {
-                await supabase.from('marketing_consents').upsert({
-                    user_id: user!.id,
-                    email: user!.email,
-                    consented: false,
-                    consented_at: new Date().toISOString(),
-                    source: 'website_settings_revoked'
-                }, { onConflict: 'user_id' });
-            } catch (e) {
-                console.error('Failed to update marketing consent:', e);
+            if (bothOff) {
+                newPrefs.marketingConsent = false;
+
+                // Update marketing_consents table
+                try {
+                    await supabase.from('marketing_consents').upsert({
+                        user_id: user!.id,
+                        email: user!.email,
+                        consented: false,
+                        consented_at: new Date().toISOString(),
+                        source: 'website_settings_revoked'
+                    }, { onConflict: 'user_id' });
+                } catch (e) {
+                    console.error('Failed to update marketing consent:', e);
+                }
             }
         }
 
@@ -73,8 +81,9 @@ const NotificationSettings = () => {
     const handleConsentAccept = async () => {
         const newPrefs = {
             ...prefs,
-            newsletter: true,
-            marketingConsent: true
+            marketingConsent: true,
+            ...(pendingPref === 'newsletter' && { newsletter: true }),
+            ...(pendingPref === 'specialOffers' && { specialOffers: true }),
         };
         setPrefs(newPrefs);
 
@@ -95,10 +104,12 @@ const NotificationSettings = () => {
             console.error('Failed to save marketing consent:', e);
         }
 
+        setPendingPref(null);
         setShowConsentModal(false);
     };
 
     const handleConsentDecline = () => {
+        setPendingPref(null);
         setShowConsentModal(false);
     };
 
