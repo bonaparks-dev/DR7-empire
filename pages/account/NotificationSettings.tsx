@@ -92,9 +92,29 @@ const NotificationSettings = () => {
 
         // Save to marketing_consents table for GDPR compliance
         try {
+            // Get userId - try user object first, then localStorage
+            let userId = user.id;
+            let userEmail = user.email;
+
+            if (!userId) {
+                const stored = localStorage.getItem('sb-ahpmzjgkfxrrgxyirasa-auth-token');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    userId = parsed?.user?.id;
+                    userEmail = parsed?.user?.email || userEmail;
+                }
+            }
+
+            console.log('Saving consent for userId:', userId, 'email:', userEmail);
+
+            if (!userId) {
+                console.error('No user ID found');
+                return;
+            }
+
             const { data, error } = await supabase.from('marketing_consents').upsert({
-                user_id: user.id,
-                email: user.email,
+                user_id: userId,
+                email: userEmail,
                 consented: true,
                 consented_at: new Date().toISOString(),
                 consent_text: 'Acconsento a ricevere comunicazioni di marketing (promo, offerte, novità) da DR7 tramite email, SMS/telefono, WhatsApp e notifiche push.',
@@ -103,13 +123,11 @@ const NotificationSettings = () => {
 
             if (error) {
                 console.error('Marketing consent save error:', error);
-                alert('Errore nel salvare il consenso: ' + error.message);
             } else {
-                console.log('Marketing consent saved:', data);
+                console.log('Marketing consent saved successfully:', data);
             }
         } catch (e) {
             console.error('Failed to save marketing consent:', e);
-            alert('Errore: ' + (e as Error).message);
         }
 
         setPendingPref(null);
