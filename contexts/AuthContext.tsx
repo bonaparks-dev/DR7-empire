@@ -228,10 +228,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteAccount = useCallback(async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Getting session...');
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        throw new Error('Session error: ' + sessionError.message);
+      }
+
       if (!session?.access_token) {
+        console.error('No session or token');
         throw new Error('Please log in again');
       }
+
+      console.log('Token length:', session.access_token.length);
+      console.log('Calling delete function...');
 
       const res = await fetch(`/.netlify/functions/delete-account?t=${Date.now()}`, {
         method: 'POST',
@@ -242,13 +253,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify({ token: session.access_token }),
       });
 
+      console.log('Response status:', res.status);
       const text = await res.text();
+      console.log('Response text:', text.substring(0, 200));
 
       let result;
       try {
         result = JSON.parse(text);
-      } catch {
-        console.error('Response was not JSON:', text.substring(0, 500));
+      } catch (e) {
+        console.error('JSON parse failed. Full response:', text);
         throw new Error('Server error - please try again');
       }
 
