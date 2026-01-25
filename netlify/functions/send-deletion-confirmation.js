@@ -1,31 +1,39 @@
-const nodemailer = require('nodemailer');
+import nodemailer from 'nodemailer';
 
-exports.handler = async (event) => {
-    // Only allow POST requests
-    if (event.httpMethod !== 'POST') {
-        return { statusCode: 405, body: 'Method Not Allowed' };
+export const handler = async (event) => {
+  // Only allow POST requests
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: 'Method Not Allowed' };
+  }
+
+  try {
+    const body = event.body ? JSON.parse(event.body) : {};
+    const { email, fullName } = body;
+
+    if (!email) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Email is required' }),
+      };
     }
 
-    try {
-        const { email, fullName } = JSON.parse(event.body);
+    // Create transporter
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_PORT === '465',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
 
-        // Create transporter
-        const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: parseInt(process.env.SMTP_PORT || '587'),
-            secure: process.env.SMTP_PORT === '465',
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS,
-            },
-        });
-
-        // Email content
-        const mailOptions = {
-            from: `"DR7 Empire" <${process.env.SMTP_USER}>`,
-            to: email,
-            subject: 'Account Deletion Confirmation - DR7 Empire',
-            html: `
+    // Email content
+    const mailOptions = {
+      from: `"DR7 Empire" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: 'Account Deletion Confirmation - DR7 Empire',
+      html: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -65,20 +73,20 @@ exports.handler = async (event) => {
         </body>
         </html>
       `,
-        };
+    };
 
-        // Send email
-        await transporter.sendMail(mailOptions);
+    // Send email
+    await transporter.sendMail(mailOptions);
 
-        return {
-            statusCode: 200,
-            body: JSON.stringify({ message: 'Deletion confirmation email sent' }),
-        };
-    } catch (error) {
-        console.error('Error sending deletion confirmation email:', error);
-        return {
-            statusCode: 500,
-            body: JSON.stringify({ error: 'Failed to send email' }),
-        };
-    }
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ message: 'Deletion confirmation email sent' }),
+    };
+  } catch (error) {
+    console.error('Error sending deletion confirmation email:', error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Failed to send email' }),
+    };
+  }
 };
