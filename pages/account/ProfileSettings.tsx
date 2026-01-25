@@ -314,12 +314,35 @@ const ProfileSettings = () => {
                                     <p className="text-sm text-gray-400 mb-1">Saldo Disponibile</p>
                                     <p className="text-4xl font-bold text-white">€{creditBalance.toFixed(2)}</p>
                                 </div>
-                                <button
-                                    onClick={() => navigate('/credit-wallet')}
-                                    className="px-6 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors"
-                                >
-                                    Ricarica
-                                </button>
+                                <div className="flex items-center gap-3">
+                                    {/* Client Status Badge */}
+                                    <div className={`px-5 py-3 rounded-full font-bold text-sm flex items-center gap-2 ${
+                                        clientStatus === 'Elite'
+                                            ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black'
+                                            : clientStatus === 'Fidelizzato'
+                                                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
+                                                : 'bg-gray-700 text-gray-300'
+                                    }`}>
+                                        {clientStatus === 'Elite' && (
+                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                            </svg>
+                                        )}
+                                        {clientStatus === 'Fidelizzato' && (
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        )}
+                                        {clientStatus}
+                                    </div>
+                                    {/* Ricarica Button */}
+                                    <button
+                                        onClick={() => navigate('/credit-wallet')}
+                                        className="px-6 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors"
+                                    >
+                                        Ricarica
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Recent Transactions */}
@@ -377,62 +400,6 @@ const ProfileSettings = () => {
                         <div className="text-center py-4 text-gray-400">Caricamento dati profilo...</div>
                     ) : extendedProfile ? (
                         <>
-                            {/* --- CLIENT STATUS BANNER --- */}
-                            <div className={`rounded-xl p-6 border ${
-                                clientStatus === 'Elite'
-                                    ? 'bg-gradient-to-r from-amber-900/30 to-amber-800/10 border-amber-500/50'
-                                    : clientStatus === 'Fidelizzato'
-                                        ? 'bg-gradient-to-r from-blue-900/30 to-blue-800/10 border-blue-500/50'
-                                        : 'bg-gradient-to-r from-gray-800/50 to-gray-900/50 border-gray-700'
-                            }`}>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm text-gray-400 mb-1">Il tuo Status</p>
-                                        <div className="flex items-center gap-3">
-                                            <h3 className={`text-2xl font-bold ${
-                                                clientStatus === 'Elite'
-                                                    ? 'text-amber-400'
-                                                    : clientStatus === 'Fidelizzato'
-                                                        ? 'text-blue-400'
-                                                        : 'text-white'
-                                            }`}>
-                                                {clientStatus === 'Elite' && '★ '}
-                                                {clientStatus}
-                                                {clientStatus === 'Elite' && ' Member'}
-                                            </h3>
-                                        </div>
-                                        <p className="text-xs text-gray-500 mt-2">
-                                            {clientStatus === 'Elite'
-                                                ? 'Membership attiva - Vantaggi esclusivi su cauzioni, wallet e policy'
-                                                : clientStatus === 'Fidelizzato'
-                                                    ? 'Cliente fedele - Condizioni agevolate disponibili'
-                                                    : 'Completa più noleggi per sbloccare vantaggi esclusivi'}
-                                        </p>
-                                    </div>
-                                    <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
-                                        clientStatus === 'Elite'
-                                            ? 'bg-amber-500/20 border-2 border-amber-500/50'
-                                            : clientStatus === 'Fidelizzato'
-                                                ? 'bg-blue-500/20 border-2 border-blue-500/50'
-                                                : 'bg-gray-700/50 border-2 border-gray-600'
-                                    }`}>
-                                        {clientStatus === 'Elite' ? (
-                                            <svg className="w-8 h-8 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                            </svg>
-                                        ) : clientStatus === 'Fidelizzato' ? (
-                                            <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                        ) : (
-                                            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                            </svg>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
                             {/* --- Basic Info Section --- */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
@@ -521,63 +488,7 @@ const ProfileSettings = () => {
                             </div>
                         </>
                     ) : (
-                        <div className="space-y-6">
-                            {/* --- CLIENT STATUS BANNER (Fallback) --- */}
-                            <div className={`rounded-xl p-6 border ${
-                                clientStatus === 'Elite'
-                                    ? 'bg-gradient-to-r from-amber-900/30 to-amber-800/10 border-amber-500/50'
-                                    : clientStatus === 'Fidelizzato'
-                                        ? 'bg-gradient-to-r from-blue-900/30 to-blue-800/10 border-blue-500/50'
-                                        : 'bg-gradient-to-r from-gray-800/50 to-gray-900/50 border-gray-700'
-                            }`}>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm text-gray-400 mb-1">Il tuo Status</p>
-                                        <div className="flex items-center gap-3">
-                                            <h3 className={`text-2xl font-bold ${
-                                                clientStatus === 'Elite'
-                                                    ? 'text-amber-400'
-                                                    : clientStatus === 'Fidelizzato'
-                                                        ? 'text-blue-400'
-                                                        : 'text-white'
-                                            }`}>
-                                                {clientStatus === 'Elite' && '★ '}
-                                                {clientStatus}
-                                                {clientStatus === 'Elite' && ' Member'}
-                                            </h3>
-                                        </div>
-                                        <p className="text-xs text-gray-500 mt-2">
-                                            {clientStatus === 'Elite'
-                                                ? 'Membership attiva - Vantaggi esclusivi su cauzioni, wallet e policy'
-                                                : clientStatus === 'Fidelizzato'
-                                                    ? 'Cliente fedele - Condizioni agevolate disponibili'
-                                                    : 'Completa più noleggi per sbloccare vantaggi esclusivi'}
-                                        </p>
-                                    </div>
-                                    <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
-                                        clientStatus === 'Elite'
-                                            ? 'bg-amber-500/20 border-2 border-amber-500/50'
-                                            : clientStatus === 'Fidelizzato'
-                                                ? 'bg-blue-500/20 border-2 border-blue-500/50'
-                                                : 'bg-gray-700/50 border-2 border-gray-600'
-                                    }`}>
-                                        {clientStatus === 'Elite' ? (
-                                            <svg className="w-8 h-8 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                            </svg>
-                                        ) : clientStatus === 'Fidelizzato' ? (
-                                            <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                        ) : (
-                                            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                            </svg>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
+                        <div className="space-y-4">
                             {/* Fallback to basic form if no extended profile found */}
                             <div>
                                 <label htmlFor="fullName" className="block text-sm font-medium text-gray-300">{t('Full_Name')}</label>
