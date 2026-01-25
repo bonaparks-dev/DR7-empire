@@ -66,26 +66,11 @@ const SecuritySettings = () => {
         setError('');
 
         try {
-            // Re-authenticate with password to get fresh token
-            const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-                email: user!.email,
-                password: deletePassword
-            });
-
-            if (authError) {
-                throw new Error('Incorrect password');
-            }
-
-            const token = authData.session?.access_token;
-            if (!token) {
-                throw new Error('Authentication failed');
-            }
-
-            // Call delete API
+            // Send email + password to backend - it handles auth there
             const response = await fetch('/.netlify/functions/delete-account', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token })
+                body: JSON.stringify({ email: user!.email, password: deletePassword })
             });
 
             const result = await response.json();
