@@ -228,13 +228,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteAccount = useCallback(async () => {
     try {
-      // Get current session for auth token
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error('Not authenticated');
       }
 
-      // Call Netlify function to delete account (server-side)
       const response = await fetch('/.netlify/functions/delete-account', {
         method: 'POST',
         headers: {
@@ -243,32 +241,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         },
       });
 
+      const data = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        let errorMessage = 'Failed to delete account';
-        try {
-          // Clone the response to avoid "body stream already read" error
-          const responseClone = response.clone();
-          const text = await responseClone.text();
-          if (text) {
-            try {
-              const error = JSON.parse(text);
-              errorMessage = error.error || errorMessage;
-            } catch {
-              console.warn('Non-JSON error response from delete-account:', text);
-              errorMessage += ` (${response.status}): ${text.substring(0, 100)}`;
-            }
-          } else {
-            errorMessage += ` (${response.status})`;
-          }
-        } catch (e) {
-          // If even reading text fails, just use status code
-          console.warn('Could not read error response body:', e);
-          errorMessage += ` (${response.status})`;
-        }
-        throw new Error(errorMessage);
+        throw new Error(data.error || `Failed to delete account (${response.status})`);
       }
 
-      // Clear local state and redirect
       setUser(null);
       localStorage.clear();
       sessionStorage.clear();
