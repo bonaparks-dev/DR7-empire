@@ -34,7 +34,7 @@ exports.handler = async (event) => {
         try { await admin.from('bookings').delete().eq('userId', userId); } catch(e) {}
         try { await admin.from('credit_transactions').delete().eq('user_id', userId); } catch(e) {}
         try { await admin.from('membership_purchases').delete().eq('user_id', userId); } catch(e) {}
-        try { await admin.from('customers_extended').delete().eq('id', userId); } catch(e) {}
+        try { await admin.from('customers_extended').delete().eq('user_id', userId); } catch(e) {}
         try { await admin.from('user_credit_balance').delete().eq('user_id', userId); } catch(e) {}
         try { await admin.from('user_documents').delete().eq('user_id', userId); } catch(e) {}
         try { await admin.from('aviation_quotes').delete().eq('user_id', userId); } catch(e) {}
