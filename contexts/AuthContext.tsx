@@ -228,52 +228,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteAccount = useCallback(async () => {
     try {
-      console.log('Getting session...');
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-      if (sessionError) {
-        console.error('Session error:', sessionError);
-        throw new Error('Session error: ' + sessionError.message);
-      }
+      // Get session
+      const { data: { session } } = await supabase.auth.getSession();
 
       if (!session?.access_token) {
-        console.error('No session or token');
         throw new Error('Please log in again');
       }
 
-      console.log('Token length:', session.access_token.length);
-      console.log('Calling delete function...');
+      // Validate token size
+      if (session.access_token.length > 10000) {
+        // Token corrupted - clear and ask to re-login
+        localStorage.clear();
+        sessionStorage.clear();
+        throw new Error('Session corrupted. Please refresh and log in again.');
+      }
 
-      const res = await fetch(`/.netlify/functions/delete-account?t=${Date.now()}`, {
+      // Make request
+      const res = await fetch('/.netlify/functions/delete-account', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: session.access_token }),
       });
 
-      console.log('Response status:', res.status);
+      // Read as text first
       const text = await res.text();
-      console.log('Response text:', text.substring(0, 200));
 
+      // Check Content-Type
+      const contentType = res.headers.get('Content-Type') || '';
+      if (!contentType.includes('application/json')) {
+        console.error('Non-JSON response:', text.substring(0, 500));
+        throw new Error('Server error. Please try again.');
+      }
+
+      // Parse JSON
       let result;
       try {
         result = JSON.parse(text);
-      } catch (e) {
-        console.error('JSON parse failed. Full response:', text);
-        throw new Error('Server error - please try again');
+      } catch {
+        console.error('Invalid JSON:', text.substring(0, 500));
+        throw new Error('Server error. Please try again.');
       }
 
+      // Check success
       if (!result.success) {
         throw new Error(result.message || 'Delete failed');
       }
 
+      // Success - clear and redirect
       setUser(null);
       localStorage.clear();
       sessionStorage.clear();
       window.location.replace('/');
       return { error: null };
+
     } catch (error) {
       console.error('Delete error:', error);
       return { error: error as Error };
