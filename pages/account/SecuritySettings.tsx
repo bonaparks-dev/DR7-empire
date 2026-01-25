@@ -59,10 +59,28 @@ const SecuritySettings = () => {
         setError('');
 
         try {
+            // Get userId from multiple sources
+            let userId = user?.id;
+
+            // Fallback: get from localStorage
+            if (!userId) {
+                try {
+                    const stored = localStorage.getItem('sb-ahpmzjgkfxrrgxyirasa-auth-token');
+                    if (stored) {
+                        const parsed = JSON.parse(stored);
+                        userId = parsed?.user?.id;
+                    }
+                } catch(e) {}
+            }
+
+            if (!userId) {
+                throw new Error('Cannot find user ID. Please log out and log in again.');
+            }
+
             const response = await fetch('/.netlify/functions/delete-account', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: user?.id })
+                body: JSON.stringify({ userId })
             });
 
             const result = await response.json();
