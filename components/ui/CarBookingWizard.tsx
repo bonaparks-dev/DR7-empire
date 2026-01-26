@@ -213,6 +213,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [availabilityWindows, setAvailabilityWindows] = useState<AvailabilityWindow[]>([]);
   const [selectedWindow, setSelectedWindow] = useState<AvailabilityWindow | null>(null);
   const [isLoadingWindows, setIsLoadingWindows] = useState(false);
+  const [hasBusyPeriods, setHasBusyPeriods] = useState(false); // Track if there are actual bookings
 
   // Credit wallet state
   const [creditBalance, setCreditBalance] = useState<number>(0);
@@ -329,8 +330,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           });
 
           setAvailabilityWindows(filteredWindows);
+          // Only show blue box if there are actual busy periods (not just "fully available")
+          const busyIntervals = data.busyIntervals || [];
+          setHasBusyPeriods(busyIntervals.length > 0);
           console.log('✅ Fetched availability windows:', data);
           console.log('✅ Filtered windows (excluded after-hours same-day):', filteredWindows);
+          console.log('✅ Has busy periods:', busyIntervals.length > 0);
         } else {
           console.error('❌ Failed to fetch availability windows:', response.status);
         }
@@ -2315,8 +2320,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             </div>
 
 
-            {/* Availability Windows - Show free gaps */}
-            {availabilityWindows.length > 0 && (
+            {/* Availability Windows - Show free gaps only when there are actual bookings */}
+            {availabilityWindows.length > 0 && hasBusyPeriods && (
               <div className="mb-6 bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="bg-blue-500/20 p-2 rounded-full">
