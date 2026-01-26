@@ -37,21 +37,25 @@ const MarketingConsentModal: React.FC<MarketingConsentModalProps> = ({ isOpen, o
 
                         <div className="p-8">
                             <div className="text-center mb-6">
-                                <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/30">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                    </svg>
-                                </div>
-                                <h2 className="text-2xl font-bold text-white mb-2">Rimani Aggiornato</h2>
-                                <p className="text-gray-400 text-sm">
-                                    Non perdere le nostre offerte esclusive e novità.
+                                <h2 className="text-2xl font-bold text-white mb-4">Rimani Aggiornato</h2>
+                            </div>
+
+                            <div className="bg-gray-900/50 rounded-lg p-4 mb-4 border border-gray-800">
+                                <p className="text-gray-300 text-sm leading-relaxed">
+                                    Acconsento a ricevere offerte e comunicazioni promozionali da partner selezionati da DR7 tramite email, telefono, SMS o WhatsApp.
+                                </p>
+                                <p className="text-gray-400 text-xs mt-2">
+                                    Consenso facoltativo e revocabile in qualsiasi momento. <a href="/privacy-policy" className="text-white underline hover:text-gray-300">Privacy Policy</a>
                                 </p>
                             </div>
 
                             <div className="bg-gray-900/50 rounded-lg p-4 mb-6 border border-gray-800">
-                                <p className="text-gray-300 text-sm leading-relaxed text-center">
-                                    "Acconsento a ricevere comunicazioni di marketing (promo, offerte, novità) da DR7 tramite email, SMS/telefono, WhatsApp e notifiche push. Consenso facoltativo, revocabile in qualsiasi momento. Ho letto l'Informativa Privacy."
-                                </p>
+                                <p className="text-white font-semibold text-sm mb-3">Vantaggi immediati:</p>
+                                <ul className="text-gray-300 text-sm space-y-2">
+                                    <li>Credito immediato di 10-20 EUR da utilizzare sulla piattaforma</li>
+                                    <li>Accesso a premi ed estrazioni riservate</li>
+                                    <li>Sconti esclusivi e priorita sulle offerte</li>
+                                </ul>
                             </div>
 
                             <div className="flex flex-col gap-3">
