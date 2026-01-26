@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useAuth } from '../../hooks/useAuth';
 import ReviewsSection from '../../sections/ReviewsSection';
 import MarketingConsentModal from '../ui/MarketingConsentModal';
 
 const Footer: React.FC = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [email, setEmail] = useState('');
   const [showConsentModal, setShowConsentModal] = useState(false);
 
@@ -139,6 +141,7 @@ const Footer: React.FC = () => {
 
       <MarketingConsentModal
         isOpen={showConsentModal}
+        userId={user?.id}
         onClose={() => setShowConsentModal(false)}
         onConfirm={handleConfirmSubscription}
       />

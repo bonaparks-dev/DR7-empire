@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XIcon } from '../icons/Icons';
 
@@ -6,9 +6,52 @@ interface MarketingConsentModalProps {
     isOpen: boolean;
     onClose: () => void;
     onConfirm: () => void;
+    userId?: string;
 }
 
-const MarketingConsentModal: React.FC<MarketingConsentModalProps> = ({ isOpen, onClose, onConfirm }) => {
+const CONSENT_TEXT = "Acconsento a ricevere offerte e comunicazioni promozionali da partner selezionati da DR7 tramite email, telefono, SMS o WhatsApp.";
+
+const MarketingConsentModal: React.FC<MarketingConsentModalProps> = ({ isOpen, onClose, onConfirm, userId }) => {
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleConfirm = async () => {
+        if (!userId) {
+            console.warn('[MarketingConsentModal] No userId provided, skipping GDPR consent save');
+            onConfirm();
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            // Call the Netlify function to save consent with IP address and user agent
+            const response = await fetch('/.netlify/functions/save-consent', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    consent_type: 'marketing_partner',
+                    consent_text: CONSENT_TEXT,
+                    source: 'web',
+                }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                console.error('[MarketingConsentModal] Failed to save consent:', error);
+            } else {
+                const result = await response.json();
+                console.log('[MarketingConsentModal] Consent saved successfully:', result);
+            }
+        } catch (error) {
+            console.error('[MarketingConsentModal] Error saving consent:', error);
+        } finally {
+            setIsSaving(false);
+            onConfirm();
+        }
+    };
+
     return (
         <AnimatePresence>
             {isOpen && (
@@ -60,10 +103,11 @@ const MarketingConsentModal: React.FC<MarketingConsentModalProps> = ({ isOpen, o
 
                             <div className="flex flex-col gap-3">
                                 <button
-                                    onClick={onConfirm}
-                                    className="w-full py-3.5 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors"
+                                    onClick={handleConfirm}
+                                    disabled={isSaving}
+                                    className="w-full py-3.5 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                                 >
-                                    Acconsento
+                                    {isSaving ? 'Salvataggio...' : 'Acconsento'}
                                 </button>
                                 <button
                                     onClick={onClose}

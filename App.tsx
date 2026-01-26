@@ -55,6 +55,8 @@ import CookieBanner from './components/ui/CookieBanner';
 import { useAuth } from './hooks/useAuth';
 import AuthCallbackPage from './pages/AuthCallbackPage';
 import { DR7AIFloatingButton } from './components/ui/DR7AIChat';
+import MarketingConsentModal from './components/ui/MarketingConsentModal';
+import { supabase } from './supabaseClient';
 
 import CancellationPolicyPage from './pages/CancellationPolicyPage';
 // import LotteriaPopup from './components/ui/LotteriaPopup';
@@ -99,6 +101,112 @@ const AuthRedirector: React.FC = () => {
   }, [user, authEvent, navigate, location.pathname]);
 
   return null;
+};
+
+// Marketing Consent Popup Manager - shows popup to logged-in users who haven't consented yet
+const ConsentPopupManager: React.FC = () => {
+  const { user, updateUser } = useAuth();
+  const [showConsentModal, setShowConsentModal] = React.useState(false);
+  const [hasCheckedConsent, setHasCheckedConsent] = React.useState(false);
+
+  useEffect(() => {
+    const checkConsent = async () => {
+      if (!user?.id || hasCheckedConsent) return;
+
+      // Check if user already has marketing consent in their metadata
+      if (user.notifications?.marketingConsent === true) {
+        setHasCheckedConsent(true);
+        return;
+      }
+
+      // Check if user has an active consent in user_consents table
+      try {
+        const { data: existingConsent } = await supabase
+          .from('user_consents')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('consent_type', 'marketing_partner')
+          .eq('status', 'active')
+          .single();
+
+        if (existingConsent) {
+          // User has consent, update metadata to sync
+          setHasCheckedConsent(true);
+          return;
+        }
+
+        // Check session storage to avoid showing popup multiple times in same session
+        const dismissedThisSession = sessionStorage.getItem('consent_popup_dismissed');
+        if (dismissedThisSession) {
+          setHasCheckedConsent(true);
+          return;
+        }
+
+        // No consent found, show popup after a short delay
+        setTimeout(() => {
+          setShowConsentModal(true);
+        }, 2000);
+
+      } catch (error) {
+        // Table might not exist yet or other error, don't show popup
+        console.log('[ConsentPopup] Could not check consent:', error);
+      }
+
+      setHasCheckedConsent(true);
+    };
+
+    checkConsent();
+  }, [user, hasCheckedConsent]);
+
+  const handleConfirm = async () => {
+    // Update user metadata for quick checks
+    if (user) {
+      await updateUser({
+        notifications: {
+          ...user.notifications,
+          marketingConsent: true,
+          specialOffers: true,
+          newsletter: true,
+        }
+      });
+
+      // Also update customers_extended for backward compatibility
+      try {
+        await supabase
+          .from('customers_extended')
+          .update({
+            notifications: {
+              bookingConfirmations: true,
+              specialOffers: true,
+              newsletter: true,
+              marketingConsent: true
+            }
+          })
+          .eq('id', user.id);
+      } catch (e) {
+        console.error('Error updating customers_extended:', e);
+      }
+    }
+
+    setShowConsentModal(false);
+  };
+
+  const handleClose = () => {
+    // Mark as dismissed for this session so we don't annoy the user
+    sessionStorage.setItem('consent_popup_dismissed', 'true');
+    setShowConsentModal(false);
+  };
+
+  if (!user) return null;
+
+  return (
+    <MarketingConsentModal
+      isOpen={showConsentModal}
+      userId={user.id}
+      onConfirm={handleConfirm}
+      onClose={handleClose}
+    />
+  );
 };
 
 const AnimatedRoutes = () => {
@@ -239,6 +347,7 @@ const MainContent = () => {
         <BookingModal />
         <VerificationModal />
         <CookieBanner />
+        <ConsentPopupManager />
         {/* <LotteriaPopup /> */}
         <DR7AIFloatingButton />
         <AnimatePresence>

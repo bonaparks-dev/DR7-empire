@@ -1198,31 +1198,28 @@ const SignUpPage: React.FC = () => {
         showMarketingModal && newUserId && (
           <MarketingConsentModal
             isOpen={showMarketingModal}
+            userId={newUserId}
             onClose={() => {
               setShowMarketingModal(false);
               navigate('/check-email');
             }}
             onConfirm={async () => {
               try {
-                // Update user consent in database
-                // Since user is not fully signed in context yet (it might be, but safer to use supabase admin or client if allowed)
-                // But we are in SignUpPage, we might have session or not.
-                // However, handleSignUp did: await supabase.auth.signInWithPassword(...)
-
+                // Update customers_extended for backward compatibility
                 if (newUserId) {
                   const { error } = await supabase
                     .from('customers_extended')
                     .update({
                       notifications: {
-                        bookingConfirmations: true, // Default
-                        specialOffers: true,    // Consent given
-                        newsletter: true,       // Consent given
-                        marketingConsent: true  // Specific flag
+                        bookingConfirmations: true,
+                        specialOffers: true,
+                        newsletter: true,
+                        marketingConsent: true
                       }
                     })
                     .eq('id', newUserId);
 
-                  if (error) console.error('Error updating consent:', error);
+                  if (error) console.error('Error updating customers_extended:', error);
                 }
               } catch (err) {
                 console.error('Error in consent update:', err);

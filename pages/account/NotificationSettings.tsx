@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../hooks/useTranslation';
 import MarketingConsentModal from '../../components/ui/MarketingConsentModal';
-import { supabase } from '../../supabaseClient';
 
 const Switch: React.FC<{ checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean }> = ({ checked, onChange, disabled }) => (
     <button
@@ -60,17 +59,25 @@ const NotificationSettings = () => {
             if (bothOff) {
                 newPrefs.marketingConsent = false;
 
-                // Update marketing_consents table
+                // Revoke consent via Netlify function (GDPR-compliant)
                 try {
-                    await supabase.from('marketing_consents').upsert({
-                        user_id: user!.id,
-                        email: user!.email,
-                        consented: false,
-                        consented_at: new Date().toISOString(),
-                        source: 'website_settings_revoked'
-                    }, { onConflict: 'user_id' });
+                    const response = await fetch('/.netlify/functions/revoke-consent', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: user!.id,
+                            consent_type: 'marketing_partner',
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        console.error('Failed to revoke consent:', error);
+                    } else {
+                        console.log('Consent revoked successfully');
+                    }
                 } catch (e) {
-                    console.error('Failed to update marketing consent:', e);
+                    console.error('Failed to revoke marketing consent:', e);
                 }
             }
         }
@@ -91,48 +98,9 @@ const NotificationSettings = () => {
         // Save to user metadata
         await updateUser({ notifications: newPrefs });
 
-        // Save to marketing_consents table for GDPR compliance
-        try {
-            // Get userId - try user object first, then localStorage
-            let userId = user.id;
-            let userEmail = user.email;
-
-            if (!userId) {
-                const stored = localStorage.getItem('sb-ahpmzjgkfxrrgxyirasa-auth-token');
-                if (stored) {
-                    const parsed = JSON.parse(stored);
-                    userId = parsed?.user?.id;
-                    userEmail = parsed?.user?.email || userEmail;
-                }
-            }
-
-            console.log('Saving consent for userId:', userId, 'email:', userEmail);
-
-            if (!userId) {
-                console.error('No user ID found');
-                return;
-            }
-
-            const { data, error } = await supabase.from('marketing_consents').upsert({
-                user_id: userId,
-                email: userEmail,
-                consented: true,
-                consented_at: new Date().toISOString(),
-                consent_text: 'Acconsento a ricevere comunicazioni di marketing (promo, offerte, novità) da DR7 tramite email, SMS/telefono, WhatsApp e notifiche push.',
-                source: 'website_settings'
-            }, { onConflict: 'user_id' }).select();
-
-            if (error) {
-                console.error('Marketing consent save error:', error);
-                setSuccessMessage('Errore: ' + error.message);
-            } else {
-                console.log('Marketing consent saved successfully:', data);
-                setSuccessMessage('Consenso salvato con successo!');
-            }
-        } catch (e) {
-            console.error('Failed to save marketing consent:', e);
-            setSuccessMessage('Errore: ' + (e as Error).message);
-        }
+        // Note: GDPR-compliant consent is now saved by the MarketingConsentModal
+        // via the save-consent Netlify function (with IP address and user agent)
+        setSuccessMessage('Consenso salvato con successo!');
 
         setPendingPref(null);
         setShowConsentModal(false);
@@ -190,6 +158,7 @@ const NotificationSettings = () => {
             {/* Marketing Consent Modal */}
             <MarketingConsentModal
                 isOpen={showConsentModal}
+                userId={user.id}
                 onConfirm={handleConsentAccept}
                 onClose={handleConsentDecline}
             />
