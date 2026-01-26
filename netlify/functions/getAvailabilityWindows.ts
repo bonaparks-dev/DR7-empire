@@ -9,9 +9,60 @@ interface TimeWindow {
     end: string;   // ISO timestamp
 }
 
+interface Interval {
+    start: Date;
+    end: Date;
+}
+
+// Helper: Merge overlapping intervals
+function mergeIntervals(intervals: Interval[]): Interval[] {
+    if (intervals.length === 0) return [];
+
+    const sorted = [...intervals].sort((a, b) => a.start.getTime() - b.start.getTime());
+    const merged: Interval[] = [sorted[0]];
+
+    for (let i = 1; i < sorted.length; i++) {
+        const last = merged[merged.length - 1];
+        const current = sorted[i];
+
+        if (current.start <= last.end) {
+            last.end = new Date(Math.max(last.end.getTime(), current.end.getTime()));
+        } else {
+            merged.push(current);
+        }
+    }
+
+    return merged;
+}
+
+// Helper: Intersect two interval lists (when BOTH lists have a busy period)
+function intersectIntervalLists(list1: Interval[], list2: Interval[]): Interval[] {
+    const result: Interval[] = [];
+    let i = 0, j = 0;
+
+    while (i < list1.length && j < list2.length) {
+        const start = new Date(Math.max(list1[i].start.getTime(), list2[j].start.getTime()));
+        const end = new Date(Math.min(list1[i].end.getTime(), list2[j].end.getTime()));
+
+        if (start < end) {
+            result.push({ start, end });
+        }
+
+        // Move the pointer that ends first
+        if (list1[i].end.getTime() < list2[j].end.getTime()) {
+            i++;
+        } else {
+            j++;
+        }
+    }
+
+    return result;
+}
+
 /**
  * Compute free availability windows (gaps) between bookings
- * Returns array of time windows where vehicle can be booked
+ * For multiple vehicles (e.g., 3 Panda White), only shows unavailable when ALL are busy
+ * Returns array of time windows where at least one vehicle can be booked
  */
 export const handler: Handler = async (event) => {
     const headers = {
@@ -48,7 +99,7 @@ export const handler: Handler = async (event) => {
         const horizonStart = startDate ? new Date(startDate) : now;
         const horizonEnd = endDate ? new Date(endDate) : new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
 
-        // Fetch all bookings for these vehicles in the time range (exclude both English and Italian cancelled)
+        // Fetch all bookings for these vehicles in the time range
         const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,service_type&vehicle_id=in.(${vehicleIds.join(',')})&status=not.in.(cancelled,annullata)&dropoff_date=gte.${horizonStart.toISOString()}&pickup_date=lte.${horizonEnd.toISOString()}`;
 
         const bookingsResponse = await fetch(bookingsUrl, {
@@ -61,7 +112,7 @@ export const handler: Handler = async (event) => {
 
         const bookings = await bookingsResponse.json();
 
-        // Fetch reservations - exclude both English and Italian cancelled
+        // Fetch reservations
         const reservationsUrl = `${SUPABASE_URL}/rest/v1/reservations?select=start_at,end_at,vehicle_id,status&vehicle_id=in.(${vehicleIds.join(',')})&status=not.in.(cancelled,annullata)&end_at=gte.${horizonStart.toISOString()}&start_at=lte.${horizonEnd.toISOString()}`;
 
         const reservationsResponse = await fetch(reservationsUrl, {
@@ -79,91 +130,98 @@ export const handler: Handler = async (event) => {
             vehicleIds,
             bookingsCount: bookings?.length || 0,
             reservationsCount: reservations?.length || 0,
-            reservations: reservations?.map((r: any) => ({ start: r.start_at, end: r.end_at, status: r.status }))
         });
 
-        // Step 1: Create busy intervals
-        const busyIntervals: Array<{ start: Date; end: Date }> = [];
+        // Step 1: Build busy intervals PER VEHICLE
+        const busyByVehicle: Map<string, Interval[]> = new Map();
 
+        // Initialize all vehicles with empty intervals
+        for (const vehicleId of vehicleIds) {
+            busyByVehicle.set(vehicleId, []);
+        }
+
+        // Add bookings to respective vehicles
         if (bookings && Array.isArray(bookings)) {
             bookings.forEach((b: any) => {
-                // CRITICAL: Exclude car wash bookings from availability calculation
-                // The 90-minute buffer after rentals already includes car wash time (45 min)
-                // Including car washes would double-count the buffer
-                if (b.service_type === 'car_wash') {
-                    return; // Skip car wash bookings
-                }
+                // Skip car wash bookings
+                if (b.service_type === 'car_wash') return;
+                if (!b.vehicle_id) return;
 
-                busyIntervals.push({
-                    start: new Date(new Date(b.pickup_date).getTime() - BUFFER_TIME_MS),  // 90 min before pickup
-                    end: new Date(new Date(b.dropoff_date).getTime() + BUFFER_TIME_MS)    // 90 min after return
+                const vehicleBusy = busyByVehicle.get(b.vehicle_id) || [];
+                vehicleBusy.push({
+                    start: new Date(new Date(b.pickup_date).getTime() - BUFFER_TIME_MS),
+                    end: new Date(new Date(b.dropoff_date).getTime() + BUFFER_TIME_MS)
                 });
+                busyByVehicle.set(b.vehicle_id, vehicleBusy);
             });
         }
 
+        // Add reservations to respective vehicles
         if (reservations && Array.isArray(reservations)) {
             reservations.forEach((r: any) => {
-                busyIntervals.push({
-                    start: new Date(new Date(r.start_at).getTime() - BUFFER_TIME_MS),  // 90 min before start
-                    end: new Date(new Date(r.end_at).getTime() + BUFFER_TIME_MS)      // 90 min after end
+                if (!r.vehicle_id) return;
+
+                const vehicleBusy = busyByVehicle.get(r.vehicle_id) || [];
+                vehicleBusy.push({
+                    start: new Date(new Date(r.start_at).getTime() - BUFFER_TIME_MS),
+                    end: new Date(new Date(r.end_at).getTime() + BUFFER_TIME_MS)
                 });
+                busyByVehicle.set(r.vehicle_id, vehicleBusy);
             });
         }
 
-        // Step 2: Sort by start time
-        busyIntervals.sort((a, b) => a.start.getTime() - b.start.getTime());
+        // Step 2: Merge intervals for each vehicle
+        for (const [vehicleId, intervals] of busyByVehicle.entries()) {
+            busyByVehicle.set(vehicleId, mergeIntervals(intervals));
+        }
 
-        // Step 3: Merge overlapping/touching intervals
-        const mergedBusy: Array<{ start: Date; end: Date }> = [];
+        // Step 3: Find when ALL vehicles are busy (intersection)
+        // The group is only unavailable when ALL vehicles are simultaneously busy
+        let allBusyIntervals: Interval[] = [];
 
-        for (const interval of busyIntervals) {
-            if (mergedBusy.length === 0) {
-                mergedBusy.push(interval);
-            } else {
-                const last = mergedBusy[mergedBusy.length - 1];
-                // If current interval starts before or at the end of last interval, merge
-                if (interval.start <= last.end) {
-                    last.end = new Date(Math.max(last.end.getTime(), interval.end.getTime()));
-                } else {
-                    mergedBusy.push(interval);
-                }
+        const vehicleIntervalsList = Array.from(busyByVehicle.values());
+
+        if (vehicleIntervalsList.length === 0) {
+            // No vehicles - nothing busy
+            allBusyIntervals = [];
+        } else if (vehicleIntervalsList.length === 1) {
+            // Single vehicle - its busy times are the group's busy times
+            allBusyIntervals = vehicleIntervalsList[0];
+        } else {
+            // Multiple vehicles - find intersection (when ALL are busy)
+            // Start with the first vehicle's busy times
+            allBusyIntervals = vehicleIntervalsList[0];
+
+            // Intersect with each subsequent vehicle's busy times
+            for (let i = 1; i < vehicleIntervalsList.length; i++) {
+                allBusyIntervals = intersectIntervalLists(allBusyIntervals, vehicleIntervalsList[i]);
             }
         }
 
-        // Step 4: Compute free windows (gaps)
+        // Step 4: Compute free windows (complement of allBusyIntervals)
         const freeWindows: TimeWindow[] = [];
         const searchStart = new Date(Math.max(now.getTime(), horizonStart.getTime()));
 
-        if (mergedBusy.length === 0) {
-            // No bookings at all - entire horizon is free
+        if (allBusyIntervals.length === 0) {
+            // No time when ALL vehicles are busy - entire horizon is free
             freeWindows.push({
                 start: searchStart.toISOString(),
                 end: horizonEnd.toISOString()
             });
         } else {
-            // Check if we're currently in a booking
-            const currentBooking = mergedBusy.find(b => now >= b.start && now < b.end);
-
-            if (currentBooking) {
-                // Currently in a booking - first free window starts after it ends
-                // Skip to gaps between bookings
-            } else {
-                // Not in a booking - check if there's availability before first booking
-                if (now < mergedBusy[0].start) {
-                    // Available NOW until first booking starts
-                    freeWindows.push({
-                        start: now.toISOString(),
-                        end: mergedBusy[0].start.toISOString()
-                    });
-                }
+            // Check availability before first all-busy period
+            if (searchStart < allBusyIntervals[0].start) {
+                freeWindows.push({
+                    start: searchStart.toISOString(),
+                    end: allBusyIntervals[0].start.toISOString()
+                });
             }
 
-            // Windows between bookings
-            for (let i = 0; i < mergedBusy.length - 1; i++) {
-                const gapStart = mergedBusy[i].end;
-                const gapEnd = mergedBusy[i + 1].start;
+            // Windows between all-busy periods
+            for (let i = 0; i < allBusyIntervals.length - 1; i++) {
+                const gapStart = allBusyIntervals[i].end;
+                const gapEnd = allBusyIntervals[i + 1].start;
 
-                // Only include if gap is meaningful (> 1 hour)
                 if (gapEnd.getTime() - gapStart.getTime() > 60 * 60 * 1000) {
                     freeWindows.push({
                         start: gapStart.toISOString(),
@@ -172,8 +230,8 @@ export const handler: Handler = async (event) => {
                 }
             }
 
-            // Window after last booking
-            const lastEnd = mergedBusy[mergedBusy.length - 1].end;
+            // Window after last all-busy period
+            const lastEnd = allBusyIntervals[allBusyIntervals.length - 1].end;
             if (lastEnd < horizonEnd) {
                 freeWindows.push({
                     start: lastEnd.toISOString(),
@@ -187,11 +245,11 @@ export const handler: Handler = async (event) => {
             headers,
             body: JSON.stringify({
                 freeWindows,
-                busyIntervals: mergedBusy.map(b => ({
+                busyIntervals: allBusyIntervals.map(b => ({
                     start: b.start.toISOString(),
                     end: b.end.toISOString()
                 })),
-                totalBookings: busyIntervals.length,
+                totalVehicles: vehicleIds.length,
                 totalFreeWindows: freeWindows.length
             }),
         };

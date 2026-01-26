@@ -3,12 +3,61 @@ import { Handler } from '@netlify/functions';
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+interface Interval {
+    start: Date;
+    end: Date;
+}
+
+// Helper: Merge overlapping intervals
+function mergeIntervals(intervals: Interval[]): Interval[] {
+    if (intervals.length === 0) return [];
+
+    const sorted = [...intervals].sort((a, b) => a.start.getTime() - b.start.getTime());
+    const merged: Interval[] = [sorted[0]];
+
+    for (let i = 1; i < sorted.length; i++) {
+        const last = merged[merged.length - 1];
+        const current = sorted[i];
+
+        if (current.start <= last.end) {
+            last.end = new Date(Math.max(last.end.getTime(), current.end.getTime()));
+        } else {
+            merged.push(current);
+        }
+    }
+
+    return merged;
+}
+
+// Helper: Intersect two interval lists
+function intersectIntervalLists(list1: Interval[], list2: Interval[]): Interval[] {
+    const result: Interval[] = [];
+    let i = 0, j = 0;
+
+    while (i < list1.length && j < list2.length) {
+        const start = new Date(Math.max(list1[i].start.getTime(), list2[j].start.getTime()));
+        const end = new Date(Math.min(list1[i].end.getTime(), list2[j].end.getTime()));
+
+        if (start < end) {
+            result.push({ start, end });
+        }
+
+        if (list1[i].end.getTime() < list2[j].end.getTime()) {
+            i++;
+        } else {
+            j++;
+        }
+    }
+
+    return result;
+}
+
 /**
  * Netlify Function to check vehicle availability
- * Proxies requests to Supabase to avoid browser HTTP/2 errors
+ * For multiple vehicles with same name (e.g., 3 Panda White), returns conflicts only
+ * when ALL vehicles are busy during the requested period
  */
 export const handler: Handler = async (event) => {
-    // CORS headers
     const headers = {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type',
@@ -16,7 +65,6 @@ export const handler: Handler = async (event) => {
         'Content-Type': 'application/json',
     };
 
-    // Handle preflight
     if (event.httpMethod === 'OPTIONS') {
         return { statusCode: 204, headers, body: '' };
     }
@@ -40,9 +88,13 @@ export const handler: Handler = async (event) => {
             };
         }
 
-        // Get vehicle plate for reliable matching
-        const vehicleResponse = await fetch(
-            `${SUPABASE_URL}/rest/v1/vehicles?select=plate&display_name=eq.${encodeURIComponent(vehicleName)}`,
+        const BUFFER_TIME_MS = 90 * 60 * 1000;
+        const requestedPickup = new Date(pickupDate);
+        const requestedDropoff = new Date(dropoffDate);
+
+        // Get ALL vehicles with this name (not just the first one!)
+        const vehiclesResponse = await fetch(
+            `${SUPABASE_URL}/rest/v1/vehicles?select=id,plate&display_name=eq.${encodeURIComponent(vehicleName)}`,
             {
                 headers: {
                     'apikey': SUPABASE_SERVICE_ROLE_KEY!,
@@ -52,17 +104,24 @@ export const handler: Handler = async (event) => {
             }
         );
 
-        const vehicleData = await vehicleResponse.json();
-        const vehiclePlate = vehicleData?.[0]?.plate;
+        const vehicles = await vehiclesResponse.json();
 
-        // Query bookings
-        let bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_name,vehicle_plate,status,booking_source,booking_details&status=neq.cancelled&order=pickup_date.asc`;
-
-        if (vehiclePlate) {
-            bookingsUrl += `&vehicle_plate=eq.${encodeURIComponent(vehiclePlate)}`;
-        } else {
-            bookingsUrl += `&vehicle_name=ilike.%25${encodeURIComponent(vehicleName)}%25`;
+        if (!vehicles || vehicles.length === 0) {
+            // No vehicles found - no conflicts
+            return {
+                statusCode: 200,
+                headers,
+                body: JSON.stringify({ conflicts: [] }),
+            };
         }
+
+        // If targetVehicleId specified, only check that one vehicle
+        const vehicleIds = targetVehicleId
+            ? [targetVehicleId]
+            : vehicles.map((v: any) => v.id);
+
+        // Fetch bookings for ALL these vehicles
+        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_name&status=neq.cancelled&vehicle_id=in.(${vehicleIds.join(',')})&order=pickup_date.asc`;
 
         const bookingsResponse = await fetch(bookingsUrl, {
             headers: {
@@ -74,94 +133,107 @@ export const handler: Handler = async (event) => {
 
         const bookings = await bookingsResponse.json();
 
-        // Get vehicle ID for reservations query
-        const vehicleIdResponse = await fetch(
-            `${SUPABASE_URL}/rest/v1/vehicles?select=id&display_name=eq.${encodeURIComponent(vehicleName)}`,
-            {
-                headers: {
-                    'apikey': SUPABASE_SERVICE_ROLE_KEY!,
-                    'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-                    'Content-Type': 'application/json',
-                },
-            }
-        );
+        // Fetch reservations for ALL these vehicles
+        const reservationsUrl = `${SUPABASE_URL}/rest/v1/reservations?select=start_at,end_at,vehicle_id&vehicle_id=in.(${vehicleIds.join(',')})&status=in.(confirmed,pending,active)&order=start_at.asc`;
 
-        const vehicleIdData = await vehicleIdResponse.json();
-        const vehicleId = targetVehicleId || vehicleIdData?.[0]?.id;
+        const reservationsResponse = await fetch(reservationsUrl, {
+            headers: {
+                'apikey': SUPABASE_SERVICE_ROLE_KEY!,
+                'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                'Content-Type': 'application/json',
+            },
+        });
 
-        let reservations = [];
-        if (vehicleId) {
-            const reservationsResponse = await fetch(
-                `${SUPABASE_URL}/rest/v1/reservations?select=start_at,end_at,vehicle_id,status&vehicle_id=eq.${vehicleId}&status=in.(confirmed,pending,active)&order=start_at.asc`,
-                {
-                    headers: {
-                        'apikey': SUPABASE_SERVICE_ROLE_KEY!,
-                        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-                        'Content-Type': 'application/json',
-                    },
-                }
-            );
-            reservations = await reservationsResponse.json();
+        const reservations = await reservationsResponse.json();
+
+        // Build busy intervals PER VEHICLE
+        const busyByVehicle: Map<string, Interval[]> = new Map();
+
+        // Initialize all vehicles with empty intervals
+        for (const vehicleId of vehicleIds) {
+            busyByVehicle.set(vehicleId, []);
         }
 
-        // Process conflicts (same logic as bookingValidation.ts)
-        const BUFFER_TIME_MS = 90 * 60 * 1000;
-        const requestedPickup = new Date(pickupDate);
-        const requestedDropoff = new Date(dropoffDate);
-        const conflicts = [];
-
-        const hasConflict = (existingStart: Date, existingEnd: Date) => {
-            const existingEndWithBuffer = new Date(existingEnd.getTime() + BUFFER_TIME_MS);
-            return (
-                (requestedPickup >= existingStart && requestedPickup < existingEndWithBuffer) ||
-                (requestedDropoff > existingStart && requestedDropoff <= existingEndWithBuffer) ||
-                (requestedPickup <= existingStart && requestedDropoff >= existingEndWithBuffer)
-            );
-        };
-
-        // Check bookings
+        // Add bookings to respective vehicles
         if (bookings && Array.isArray(bookings)) {
             for (const booking of bookings) {
-                if (targetVehicleId) {
-                    const bookedId = booking.booking_details?.vehicle_id;
-                    if (bookedId && bookedId !== targetVehicleId) {
-                        continue;
-                    }
-                }
+                if (!booking.vehicle_id) continue;
 
-                const existingPickup = new Date(booking.pickup_date);
-                const existingDropoff = new Date(booking.dropoff_date);
-
-                if (hasConflict(existingPickup, existingDropoff)) {
-                    conflicts.push({
-                        pickup_date: booking.pickup_date,
-                        dropoff_date: booking.dropoff_date,
-                        vehicle_name: booking.vehicle_name,
-                    });
-                }
+                const vehicleBusy = busyByVehicle.get(booking.vehicle_id) || [];
+                vehicleBusy.push({
+                    start: new Date(booking.pickup_date),
+                    end: new Date(new Date(booking.dropoff_date).getTime() + BUFFER_TIME_MS)
+                });
+                busyByVehicle.set(booking.vehicle_id, vehicleBusy);
             }
         }
 
-        // Check reservations
+        // Add reservations to respective vehicles
         if (reservations && Array.isArray(reservations)) {
             for (const reservation of reservations) {
-                const existingStart = new Date(reservation.start_at);
-                const existingEnd = new Date(reservation.end_at);
+                if (!reservation.vehicle_id) continue;
 
-                if (hasConflict(existingStart, existingEnd)) {
-                    conflicts.push({
-                        pickup_date: reservation.start_at,
-                        dropoff_date: reservation.end_at,
-                        vehicle_name: vehicleName,
-                    });
-                }
+                const vehicleBusy = busyByVehicle.get(reservation.vehicle_id) || [];
+                vehicleBusy.push({
+                    start: new Date(reservation.start_at),
+                    end: new Date(new Date(reservation.end_at).getTime() + BUFFER_TIME_MS)
+                });
+                busyByVehicle.set(reservation.vehicle_id, vehicleBusy);
+            }
+        }
+
+        // Merge intervals for each vehicle
+        for (const [vehicleId, intervals] of busyByVehicle.entries()) {
+            busyByVehicle.set(vehicleId, mergeIntervals(intervals));
+        }
+
+        // Find when ALL vehicles are busy (intersection)
+        let allBusyIntervals: Interval[] = [];
+
+        const vehicleIntervalsList = Array.from(busyByVehicle.values());
+
+        if (vehicleIntervalsList.length === 0) {
+            allBusyIntervals = [];
+        } else if (vehicleIntervalsList.length === 1) {
+            allBusyIntervals = vehicleIntervalsList[0];
+        } else {
+            // Multiple vehicles - find intersection (when ALL are busy)
+            allBusyIntervals = vehicleIntervalsList[0];
+
+            for (let i = 1; i < vehicleIntervalsList.length; i++) {
+                allBusyIntervals = intersectIntervalLists(allBusyIntervals, vehicleIntervalsList[i]);
+            }
+        }
+
+        // Check if requested period overlaps with any all-busy period
+        const conflicts: any[] = [];
+
+        for (const busyPeriod of allBusyIntervals) {
+            const hasConflict =
+                (requestedPickup >= busyPeriod.start && requestedPickup < busyPeriod.end) ||
+                (requestedDropoff > busyPeriod.start && requestedDropoff <= busyPeriod.end) ||
+                (requestedPickup <= busyPeriod.start && requestedDropoff >= busyPeriod.end);
+
+            if (hasConflict) {
+                conflicts.push({
+                    pickup_date: busyPeriod.start.toISOString(),
+                    dropoff_date: busyPeriod.end.toISOString(),
+                    vehicle_name: vehicleName,
+                    all_vehicles_busy: true
+                });
             }
         }
 
         return {
             statusCode: 200,
             headers,
-            body: JSON.stringify({ conflicts }),
+            body: JSON.stringify({
+                conflicts,
+                totalVehicles: vehicleIds.length,
+                message: conflicts.length === 0
+                    ? `At least 1 of ${vehicleIds.length} ${vehicleName} is available`
+                    : `All ${vehicleIds.length} ${vehicleName} are busy during requested period`
+            }),
         };
 
     } catch (error) {
@@ -171,7 +243,7 @@ export const handler: Handler = async (event) => {
             headers,
             body: JSON.stringify({
                 error: 'Internal server error',
-                conflicts: [] // Return empty conflicts on error to not block user
+                conflicts: []
             }),
         };
     }
