@@ -193,6 +193,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
   const [partialUnavailabilityWarning, setPartialUnavailabilityWarning] = useState<string | null>(null);
+  const [shortSlotWarning, setShortSlotWarning] = useState<string | null>(null); // Warning for short availability slots
   const [availableVehicleName, setAvailableVehicleName] = useState<string | null>(null);
   const [usageZoneError, setUsageZoneError] = useState<string | null>(null); // Error for resident blocking
   const [showZoneConfirmation, setShowZoneConfirmation] = useState(false); // Zone confirmation modal
@@ -895,12 +896,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       if (!item || !formData.pickupDate || !formData.returnDate || !formData.pickupTime || !formData.returnTime) {
         setAvailabilityError(null);
         setPartialUnavailabilityWarning(null);
+        setShortSlotWarning(null);
         return;
       }
 
       setIsCheckingAvailability(true);
       setAvailabilityError(null);
       setPartialUnavailabilityWarning(null);
+      setShortSlotWarning(null);
 
       try {
         const pickupDateTime = `${formData.pickupDate}T${formData.pickupTime}:00`;
@@ -1528,8 +1531,48 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const dayLength = 22.5;
         const rentalDays = diffHours / dayLength;
 
+        // Check if rental is less than 1 day
         if (rentalDays < 0.99) {
-          newErrors.date = "Il noleggio minimo è di 1 giorno.";
+          // Check if this is a constrained availability window (less than 24 hours between bookings)
+          let isConstrainedSlot = false;
+          let windowDurationHours = 0;
+
+          if (availabilityWindows.length > 0 && hasBusyPeriods) {
+            // Find the window containing the pickup
+            const pickupWindow = availabilityWindows.find(w => {
+              const start = new Date(w.start);
+              const end = new Date(w.end);
+              return pickup >= start && pickup <= end;
+            });
+
+            if (pickupWindow) {
+              const windowStart = new Date(pickupWindow.start);
+              const windowEnd = new Date(pickupWindow.end);
+              windowDurationHours = (windowEnd.getTime() - windowStart.getTime()) / (1000 * 60 * 60);
+
+              // If the window itself is less than 24 hours, allow the short rental
+              if (windowDurationHours < 24) {
+                isConstrainedSlot = true;
+                // Set warning instead of error
+                const startStr = windowStart.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+                const endStr = windowEnd.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+                const startDateStr = windowStart.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+                const endDateStr = windowEnd.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+                setShortSlotWarning(
+                  `Attenzione: questo veicolo è disponibile solo per questo slot ridotto (${startDateStr} ${startStr} → ${endDateStr} ${endStr}).`
+                );
+              }
+            }
+          }
+
+          // Only show minimum 1 day error if NOT a constrained slot
+          if (!isConstrainedSlot) {
+            newErrors.date = "Il noleggio minimo è di 1 giorno.";
+            setShortSlotWarning(null);
+          }
+        } else {
+          // Clear short slot warning if rental is 1+ days
+          setShortSlotWarning(null);
         }
 
         // Check minimum rental duration of 2 hours for airport drop-offs
@@ -2563,6 +2606,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {partialUnavailabilityWarning && !availabilityError && (
                     <div className="mt-4 p-4 bg-yellow-900/30 border-2 border-yellow-500 rounded-lg">
                       <p className="text-yellow-200 font-semibold">{partialUnavailabilityWarning}</p>
+                    </div>
+                  )}
+                  {shortSlotWarning && !availabilityError && (
+                    <div className="mt-4 p-4 bg-amber-900/30 border-2 border-amber-500 rounded-lg">
+                      <p className="text-amber-200 font-semibold">{shortSlotWarning}</p>
                     </div>
                   )}
                 </div>
