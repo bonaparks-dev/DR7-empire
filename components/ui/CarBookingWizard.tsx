@@ -124,6 +124,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const vehicleType = useMemo(() => getVehicleType(item, categoryContext), [item, categoryContext]);
   const isUrbanOrCorporate = vehicleType === 'UTILITARIA' || vehicleType === 'FURGONE' || vehicleType === 'V_CLASS';
 
+  // Utilitarie availability deadline - only bookable until April 1st
+  const UTILITARIE_MAX_DATE = '2025-04-01';
+  const isUtilitaria = vehicleType === 'UTILITARIA';
+
 
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -2363,6 +2367,27 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             </div>
 
 
+            {/* Utilitarie deadline notice */}
+            {isUtilitaria && (
+              <div className="mb-6 bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <div className="bg-blue-500/20 p-2 rounded-full">
+                    <svg className="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-blue-200 text-sm font-medium">
+                      Disponibilità fino al 1° Aprile 2025
+                    </p>
+                    <p className="text-blue-300/70 text-xs mt-1">
+                      Le utilitarie sono prenotabili fino a nuova disposizione solo entro questa data.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Availability Windows - Show free gaps only when there are actual bookings */}
             {availabilityWindows.length > 0 && hasBusyPeriods && (
               <div className="mb-6 bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
@@ -2460,6 +2485,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         min={earliestAvailability?.earliestAvailableDate && earliestAvailability.earliestAvailableDate > today
                           ? earliestAvailability.earliestAvailableDate
                           : today}
+                        max={isUtilitaria ? UTILITARIE_MAX_DATE : undefined}
                         required
                         className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors cursor-pointer ${errors.pickupDate
                           ? 'border-red-500 focus:border-red-400'
@@ -2542,6 +2568,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           handleChange(e);
                         }}
                         min={formData.pickupDate || today}
+                        max={isUtilitaria ? UTILITARIE_MAX_DATE : undefined}
                         disabled={!formData.pickupDate || !formData.pickupTime}
                         required
                         className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors ${!formData.pickupDate || !formData.pickupTime
