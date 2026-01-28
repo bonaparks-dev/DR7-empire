@@ -170,15 +170,17 @@ exports.handler = async (event) => {
     // Send email
     console.log('[Manual Ticket PDF] Sending email...');
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: process.env.SMTP_HOST || 'smtp.secureserver.net',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_SECURE === 'true',
       auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASSWORD,
       },
     });
 
     await transporter.sendMail({
-      from: `"DR7 Empire" <${process.env.GMAIL_USER}>`,
+      from: '"DR7 Empire" <info@dr7.app>',
       to: email,
       subject: 'Il Tuo Biglietto - LOTTERIA',
       html: `
@@ -262,8 +264,8 @@ exports.handler = async (event) => {
     // Send admin email notification
     try {
       await transporter.sendMail({
-        from: `"DR7 Empire" <${process.env.GMAIL_USER}>`,
-        to: 'dubai.rent7.0srl@gmail.com',
+        from: '"DR7 Empire" <info@dr7.app>',
+        to: 'info@dr7.app',
         subject: `Vendita Manuale Biglietto - #${String(ticketNumber).padStart(4, '0')} - ${fullName}`,
         html: `
           <h2>Vendita Manuale Biglietto LOTTERIA</h2>

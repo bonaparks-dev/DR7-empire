@@ -30,23 +30,23 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     payment_status: booking.payment_status
   });
 
-  // Check Gmail credentials
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-    console.error('❌ Missing Gmail credentials in environment variables');
+  // Check SMTP credentials
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+    console.error('❌ Missing SMTP credentials in environment variables');
     return {
       statusCode: 500,
       body: JSON.stringify({ message: 'Email service not configured' }),
     };
   }
 
-  console.log('✅ Gmail credentials found, creating transporter...');
+  console.log('✅ SMTP credentials found, creating transporter...');
   const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // false for port 587 (STARTTLS)
+    host: process.env.SMTP_HOST || 'smtp.secureserver.net',
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: process.env.SMTP_SECURE === 'true',
     auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD,
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASSWORD,
     },
   });
 

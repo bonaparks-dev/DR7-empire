@@ -198,8 +198,8 @@ exports.handler = async (event) => {
     return createResponse(405, { success: false, error: 'Method Not Allowed' });
   }
 
-  if (!process.env.STRIPE_SECRET_KEY || !process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-    console.error('Missing Stripe or Gmail environment variables.');
+  if (!process.env.STRIPE_SECRET_KEY || !process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+    console.error('Missing Stripe or SMTP environment variables.');
     return createResponse(500, { success: false, error: 'Server configuration error.' });
   }
 
@@ -341,16 +341,18 @@ exports.handler = async (event) => {
     console.log(`[Tickets] Preparing to send email to ${email}`);
     try {
       const transporter = nodemailer.createTransport({
-        service: 'gmail',
+        host: process.env.SMTP_HOST || 'smtp.secureserver.net',
+        port: parseInt(process.env.SMTP_PORT || '587'),
+        secure: process.env.SMTP_SECURE === 'true',
         auth: {
-          user: process.env.GMAIL_USER,
-          pass: process.env.GMAIL_APP_PASSWORD,
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASSWORD,
         },
       });
 
       console.log(`[Tickets] Transporter created, sending email...`);
       await transporter.sendMail({
-        from: `"DR7 Empire" <${process.env.GMAIL_USER}>`,
+        from: '"DR7 Empire" <info@dr7.app>',
         to: email,
         subject: 'I Tuoi Biglietti - LOTTERIA',
         text: `Ciao ${fullName},\n\nGrazie per il tuo acquisto! I tuoi ${qty} bigliett${qty > 1 ? 'i' : 'o'} della LOTTERIA sono allegat${qty > 1 ? 'i' : 'o'} a questa email in formato PDF.\n\nEstrazione: 24 Gennaio 2026, ore 10:00\nSolo 2.000 biglietti disponibili!\n\nIn bocca al lupo!\n\nIl Team DR7 Empire`,
@@ -438,8 +440,8 @@ exports.handler = async (event) => {
       // Send admin notification
       try {
         await transporter.sendMail({
-          from: `"DR7 Empire" <${process.env.GMAIL_USER}>`,
-          to: 'dubai.rent7.0srl@gmail.com',
+          from: '"DR7 Empire" <info@dr7.app>',
+          to: 'info@dr7.app',
           subject: `Nuovo Acquisto Biglietti - ${qty} biglietto/i - ${fullName}`,
           html: `
             <h2>🎟️ Nuovo Acquisto Operazione Commerciale</h2>

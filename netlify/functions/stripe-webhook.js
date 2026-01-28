@@ -98,10 +98,12 @@ const generateVoucherPDF = async (voucherData) => {
 // Create and send gift card for commercial operation
 const createAndSendGiftCard = async ({ email, bookingId, ticketQuantity, purchaseDate }) => {
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: process.env.SMTP_HOST || 'smtp.secureserver.net',
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: process.env.SMTP_SECURE === 'true',
     auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD,
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASSWORD,
     },
   });
 
@@ -152,7 +154,7 @@ const createAndSendGiftCard = async ({ email, bookingId, ticketQuantity, purchas
     });
 
     await transporter.sendMail({
-      from: `"DR7 Empire" <${process.env.GMAIL_USER}>`,
+      from: '"DR7 Empire" <info@dr7.app>',
       to: email,
       subject: '🎁 Il tuo Regalo DR7 – Gift Card da €25 / Your DR7 Gift – €25 Gift Card',
       html: `
@@ -236,12 +238,14 @@ const createAndSendGiftCard = async ({ email, bookingId, ticketQuantity, purchas
 
 // Core logic for creating and sending a voucher
 const createAndSendVoucher = async ({ email, paid_cents, stripe_object_id, value_cents }) => {
-  // Set up Nodemailer with Gmail
+  // Set up Nodemailer with SMTP
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: process.env.SMTP_HOST || 'smtp.secureserver.net',
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: process.env.SMTP_SECURE === 'true',
     auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD,
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASSWORD,
     },
   });
 
@@ -307,7 +311,7 @@ const createAndSendVoucher = async ({ email, paid_cents, stripe_object_id, value
 
     // 9. Send Email with Nodemailer
     await transporter.sendMail({
-      from: `"DR7 Empire" <${process.env.GMAIL_USER}>`,
+      from: '"DR7 Empire" <info@dr7.app>',
       to: email,
       subject: 'Your DR7 Gift Card – €25 value',
       html: `<h1>Thank you for your purchase!</h1>

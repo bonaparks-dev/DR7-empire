@@ -121,10 +121,12 @@ exports.handler = async (event) => {
     }
 
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: process.env.SMTP_HOST || 'smtp.secureserver.net',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_SECURE === 'true',
       auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASSWORD,
       },
     });
 
@@ -164,7 +166,7 @@ exports.handler = async (event) => {
 
         // Send email
         await transporter.sendMail({
-          from: `"DR7 Empire" <${process.env.GMAIL_USER}>`,
+          from: '"DR7 Empire" <info@dr7.app>',
           to: customer.email,
           subject: 'AGGIORNAMENTO - I Tuoi Biglietti LOTTERIA',
           html: `

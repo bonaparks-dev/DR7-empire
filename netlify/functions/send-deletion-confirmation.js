@@ -19,18 +19,18 @@ exports.handler = async (event) => {
 
         // Create transporter
         const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
+            host: process.env.SMTP_HOST || 'smtp.secureserver.net',
             port: parseInt(process.env.SMTP_PORT || '587'),
-            secure: process.env.SMTP_PORT === '465',
+            secure: process.env.SMTP_SECURE === 'true',
             auth: {
                 user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS,
+                pass: process.env.SMTP_PASSWORD,
             },
         });
 
         // Email content
         const mailOptions = {
-            from: `"DR7 Empire" <${process.env.SMTP_USER}>`,
+            from: '"DR7 Empire" <info@dr7.app>',
             to: email,
             subject: 'Account Deletion Confirmation - DR7 Empire',
             html: `
