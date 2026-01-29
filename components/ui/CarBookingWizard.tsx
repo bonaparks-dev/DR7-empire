@@ -147,7 +147,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           </button>
           <h2 className="text-2xl font-bold text-white mb-4">Prenotazione Non Disponibile</h2>
           <p className="text-gray-300 mb-6">
-            La BMW M4 è temporaneamente non disponibile per le prenotazioni online.
+            La BMW M4 è temporaneamente non disponibile per le prenotazioni.
           </p>
           <button
             onClick={onClose}
