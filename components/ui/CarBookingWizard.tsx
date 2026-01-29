@@ -2761,21 +2761,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             </section>
 
             {/* Second Driver */}
-            <section className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-bold text-white mb-4">D. SECOND DRIVER (OPTIONAL)</h3>
-              <div className="flex items-center">
-                <input type="checkbox" name="addSecondDriver" checked={formData.addSecondDriver} onChange={handleChange} id="add-second-driver" className="h-4 w-4 text-white bg-gray-700 border-gray-600 rounded focus:ring-white" />
-                <label htmlFor="add-second-driver" className="ml-2 text-white">Aggiungi secondo guidatore (gratuito)</label>
-              </div>
-              <AnimatePresence>
-                {formData.addSecondDriver && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-4 pl-4 border-l-2 border-gray-700">
-                    {renderDriverForm('second')}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </section>
-
             {/* Security Deposit - Sixt Style */}
             <section className="border-t border-gray-700 pt-6">
               {!isUrbanOrCorporate && (
