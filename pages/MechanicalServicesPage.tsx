@@ -256,17 +256,17 @@ const MechanicalServicesPage: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="text-center mb-12 md:mb-16"
         >
-          <h1 className="text-6xl md:text-8xl font-bold text-white mb-6">
-            🔧 DR7 RAPID SERVICE
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 md:mb-6">
+            DR7 RAPID SERVICE
           </h1>
-          <p className="text-xl md:text-2xl text-gray-400 mb-4">
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-400 mb-3 md:mb-4">
             {lang === 'it'
               ? 'Meccanica rapida senza appuntamenti lunghi'
               : 'Fast mechanical service without long appointments'}
           </p>
-          <p className="text-lg text-gray-500">
+          <p className="text-sm sm:text-base md:text-lg text-gray-500">
             {lang === 'it'
               ? 'Solo lavori rapidi — Prenota online e vieni quando vuoi'
               : 'Quick jobs only — Book online and come when you want'}
@@ -285,31 +285,31 @@ const MechanicalServicesPage: React.FC = () => {
             <h2 className="text-3xl font-bold text-white mb-6 border-b border-gray-800 pb-3">
               {category}
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {services.map((service) => (
                 <motion.div
                   key={service.id}
                   whileHover={{ scale: 1.02 }}
-                  className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 hover:border-white transition-all cursor-pointer"
+                  className="bg-gray-900/50 border border-gray-800 rounded-lg p-4 md:p-6 hover:border-white transition-all cursor-pointer flex flex-col h-full"
                   onClick={() => handleBookService(service.id)}
                 >
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-xl font-bold text-white flex-1">
+                  <div className="flex justify-between items-start mb-2 md:mb-3">
+                    <h3 className="text-base sm:text-lg md:text-xl font-bold text-white flex-1">
                       {lang === 'it' ? service.name : service.nameEn}
                     </h3>
                   </div>
-                  <p className="text-gray-400 text-sm mb-4">
+                  <p className="text-gray-400 text-xs sm:text-sm mb-3 md:mb-4 flex-grow">
                     {lang === 'it' ? service.description : service.descriptionEn}
                   </p>
-                  <div className="flex justify-between items-center">
-                    <div className="text-gray-500 text-sm">
+                  <div className="flex justify-between items-center mb-3 md:mb-4">
+                    <div className="text-gray-500 text-xs sm:text-sm">
                       {lang === 'it' ? service.duration : service.durationEn}
                     </div>
-                    <div className="text-3xl font-bold text-white">
+                    <div className="text-2xl md:text-3xl font-bold text-white">
                       €{service.price}
                     </div>
                   </div>
-                  <button className="w-full mt-4 bg-white text-black font-bold py-3 px-6 rounded-full hover:bg-gray-200 transition-colors">
+                  <button className="w-full bg-white text-black font-bold py-2 md:py-3 px-4 md:px-6 rounded-full hover:bg-gray-200 transition-colors text-sm md:text-base mt-auto">
                     {lang === 'it' ? 'PRENOTA ORA' : 'BOOK NOW'}
                   </button>
                 </motion.div>
@@ -369,8 +369,8 @@ const MechanicalServicesPage: React.FC = () => {
           transition={{ duration: 0.6, delay: 0.5 }}
           className="mt-8 bg-gray-900/50 border border-gray-800 rounded-lg p-8 text-center"
         >
-          <h3 className="text-xl font-bold text-white mb-4">
-            {lang === 'it' ? '🕒 Orari di Apertura' : '🕒 Opening Hours'}
+          <h3 className="text-lg md:text-xl font-bold text-white mb-4">
+            {lang === 'it' ? 'Orari di Apertura' : 'Opening Hours'}
           </h3>
           <p className="text-gray-400">
             {lang === 'it' ? 'Lunedì - Sabato: 9:00 - 19:00' : 'Monday - Saturday: 9:00 AM - 7:00 PM'}
