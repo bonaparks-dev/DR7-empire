@@ -23,26 +23,6 @@ interface Service {
 // Fallback hardcoded services in case database is unavailable
 const FALLBACK_SERVICES: Service[] = [
   {
-    id: 'test-scooter-wash',
-    name: 'LAVAGGIO SCOOTER - TEST €1',
-    nameEn: 'SCOOTER WASH - TEST €1',
-    price: 1,
-    duration: 15, // Changed to number
-    description: 'Servizio di test per verificare il pagamento Nexi',
-    descriptionEn: 'Test service to verify Nexi payment',
-    features: [
-      'Solo per test pagamento',
-      'Servizio rapido'
-    ],
-    featuresEn: [
-      'Payment test only',
-      'Quick service'
-    ],
-    category: 'scooter', // New field
-    isActive: true, // New field
-    displayOrder: 0 // New field
-  },
-  {
     id: 'scooter-wash',
     name: 'LAVAGGIO SCOOTER',
     nameEn: 'SCOOTER WASH',
