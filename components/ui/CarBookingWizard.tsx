@@ -145,13 +145,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-          <h2 className="text-2xl font-bold text-white mb-4">Prenotazione Non Disponibile</h2>
-          <p className="text-gray-300 mb-6">
+          <p className="text-white text-lg mb-6">
             La BMW M4 è temporaneamente non disponibile per le prenotazioni.
           </p>
           <button
             onClick={onClose}
-            className="px-8 py-3 bg-dr7-gold text-black font-bold rounded-full hover:bg-yellow-500 transition-colors"
+            className="px-8 py-3 bg-black text-white font-bold rounded-full border border-white hover:bg-white hover:text-black transition-colors"
           >
             Chiudi
           </button>
