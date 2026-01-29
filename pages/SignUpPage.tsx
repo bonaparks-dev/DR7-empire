@@ -651,7 +651,7 @@ const SignUpPage: React.FC = () => {
                   {formData.nazione === 'Italia' && (
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Codice Fiscale <span className="text-red-500">*</span>
+                        Codice Fiscale
                       </label>
                       <input
                         type="text"
@@ -661,7 +661,6 @@ const SignUpPage: React.FC = () => {
                         placeholder="RSSMRA80A01H501U"
                         maxLength={16}
                         className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
-                        required
                       />
                       {errors.codiceFiscale && <p className="text-xs text-red-400 mt-1">{errors.codiceFiscale}</p>}
                     </div>
@@ -682,7 +681,7 @@ const SignUpPage: React.FC = () => {
                     />
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Data di Nascita <span className="text-red-500">*</span>
+                        Data di Nascita
                       </label>
                       <input
                         type="date"
@@ -690,7 +689,6 @@ const SignUpPage: React.FC = () => {
                         value={formData.dataNascita}
                         onChange={handleChange}
                         className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                        required
                       />
                       {errors.dataNascita && <p className="text-xs text-red-400 mt-1">{errors.dataNascita}</p>}
                     </div>
@@ -699,7 +697,7 @@ const SignUpPage: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Città di Nascita <span className="text-red-500">*</span>
+                        Città di Nascita
                       </label>
                       <input
                         type="text"
@@ -707,13 +705,12 @@ const SignUpPage: React.FC = () => {
                         value={formData.cittaNascita}
                         onChange={handleChange}
                         className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                        required
                       />
                       {errors.cittaNascita && <p className="text-xs text-red-400 mt-1">{errors.cittaNascita}</p>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Provincia di Nascita <span className="text-red-500">*</span>
+                        Provincia di Nascita
                       </label>
                       <input
                         type="text"
@@ -722,7 +719,6 @@ const SignUpPage: React.FC = () => {
                         onChange={handleChange}
                         maxLength={2}
                         className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
-                        required
                       />
                       {errors.provinciaNascita && <p className="text-xs text-red-400 mt-1">{errors.provinciaNascita}</p>}
                     </div>
@@ -784,7 +780,7 @@ const SignUpPage: React.FC = () => {
                   <div className="grid grid-cols-3 gap-4">
                     <div className="col-span-2">
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Indirizzo <span className="text-red-500">*</span>
+                        Indirizzo
                       </label>
                       <input
                         type="text"
@@ -793,14 +789,13 @@ const SignUpPage: React.FC = () => {
                         onChange={handleChange}
                         placeholder="Via Roma"
                         className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                        required
                       />
                       {errors.indirizzo && <p className="text-xs text-red-400 mt-1">{errors.indirizzo}</p>}
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Numero Civico <span className="text-red-500">*</span>
+                        Numero Civico
                       </label>
                       <input
                         type="text"
@@ -809,7 +804,6 @@ const SignUpPage: React.FC = () => {
                         onChange={handleChange}
                         placeholder="123"
                         className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                        required
                       />
                       {errors.numeroCivico && <p className="text-xs text-red-400 mt-1">{errors.numeroCivico}</p>}
                     </div>
@@ -818,7 +812,7 @@ const SignUpPage: React.FC = () => {
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Città di Residenza <span className="text-red-500">*</span>
+                        Città di Residenza
                       </label>
                       <input
                         type="text"
@@ -827,14 +821,13 @@ const SignUpPage: React.FC = () => {
                         onChange={handleChange}
                         placeholder="Milano"
                         className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                        required
                       />
                       {errors.cittaResidenza && <p className="text-xs text-red-400 mt-1">{errors.cittaResidenza}</p>}
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        CAP <span className="text-red-500">*</span>
+                        CAP
                       </label>
                       <input
                         type="text"
@@ -844,14 +837,13 @@ const SignUpPage: React.FC = () => {
                         placeholder="20100"
                         maxLength={5}
                         className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
-                        required
                       />
                       {errors.codicePostale && <p className="text-xs text-red-400 mt-1">{errors.codicePostale}</p>}
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Provincia <span className="text-red-500">*</span>
+                        Provincia
                       </label>
                       {formData.nazione === 'Italia' && formData.residencyZone?.startsWith('RESIDENTE_') ? (
                         <AppleStyleSelect

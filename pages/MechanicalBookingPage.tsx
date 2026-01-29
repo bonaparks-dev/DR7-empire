@@ -650,7 +650,7 @@ const MechanicalBookingPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {lang === 'it' ? 'Codice Fiscale' : 'Tax Code'} *
+                    {lang === 'it' ? 'Codice Fiscale' : 'Tax Code'}
                   </label>
                   <input
                     type="text"
@@ -665,7 +665,7 @@ const MechanicalBookingPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {lang === 'it' ? 'Indirizzo' : 'Address'} *
+                    {lang === 'it' ? 'Indirizzo' : 'Address'}
                   </label>
                   <input
                     type="text"
@@ -692,7 +692,7 @@ const MechanicalBookingPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {lang === 'it' ? 'Città di Residenza' : 'City'} *
+                    {lang === 'it' ? 'Città di Residenza' : 'City'}
                   </label>
                   <input
                     type="text"
@@ -706,7 +706,7 @@ const MechanicalBookingPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {lang === 'it' ? 'CAP' : 'Postal Code'} *
+                    {lang === 'it' ? 'CAP' : 'Postal Code'}
                   </label>
                   <input
                     type="text"
@@ -721,7 +721,7 @@ const MechanicalBookingPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {lang === 'it' ? 'Provincia' : 'Province'} *
+                    {lang === 'it' ? 'Provincia' : 'Province'}
                   </label>
                   <input
                     type="text"
