@@ -1,11 +1,12 @@
 import type { Handler } from "@netlify/functions";
 
-const CALLMEBOT_PHONE = process.env.CALLMEBOT_PHONE; // Your phone number for CallMeBot
-const CALLMEBOT_API_KEY = "6526748";
+const GREEN_API_INSTANCE_ID = process.env.GREEN_API_INSTANCE_ID;
+const GREEN_API_TOKEN = process.env.GREEN_API_TOKEN;
+const NOTIFICATION_PHONE = process.env.NOTIFICATION_PHONE || "393457905205"; // Your phone to receive notifications
 
 /**
- * Sends WhatsApp notification for new bookings, tickets, and other events
- * Uses CallMeBot API only
+ * Sends WhatsApp notification using Green API
+ * More reliable than CallMeBot
  */
 const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -15,28 +16,35 @@ const handler: Handler = async (event) => {
     };
   }
 
-  const { booking, ticket, type } = JSON.parse(event.body || '{}');
+  const { booking, ticket, type, customMessage, customPhone } = JSON.parse(event.body || '{}');
 
-  if (!booking && !ticket) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ message: 'Booking or ticket data is required' }),
-    };
-  }
-
-  // Check if CallMeBot is configured
-  if (!CALLMEBOT_PHONE) {
-    console.error('CallMeBot phone number not configured');
+  // Check if Green API is configured
+  if (!GREEN_API_INSTANCE_ID || !GREEN_API_TOKEN) {
+    console.error('Green API not configured. Set GREEN_API_INSTANCE_ID and GREEN_API_TOKEN in environment variables.');
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'CallMeBot phone number not configured' }),
+      body: JSON.stringify({ message: 'Green API not configured' }),
     };
   }
 
   let message = '';
+  let targetPhone = customPhone || NOTIFICATION_PHONE;
 
+  // Clean phone number - Green API format: 393457905205 (no + or spaces)
+  targetPhone = targetPhone.replace(/[\s\-\+]/g, '');
+  if (targetPhone.startsWith('0')) {
+    targetPhone = '39' + targetPhone.substring(1);
+  }
+  if (!targetPhone.startsWith('39') && targetPhone.length === 10) {
+    targetPhone = '39' + targetPhone;
+  }
+
+  // Handle custom message (for birthdays, marketing, etc.)
+  if (customMessage) {
+    message = customMessage;
+  }
   // Handle ticket purchase notifications
-  if (ticket || type === 'ticket') {
+  else if (ticket || type === 'ticket') {
     const ticketData = ticket || {};
     const customerName = ticketData.customer_name || ticketData.name || 'Cliente';
     const customerEmail = ticketData.customer_email || ticketData.email;
@@ -66,91 +74,140 @@ const handler: Handler = async (event) => {
     const customerPhone = booking.customer_phone;
     const bookingId = booking.id.substring(0, 8).toUpperCase();
     const totalPrice = (booking.price_total / 100).toFixed(2);
-    const currency = booking.currency || 'EUR';
 
     if (serviceType === 'car_wash') {
-    // Car Wash Booking
-    const appointmentDate = new Date(booking.appointment_date);
-    const serviceName = booking.service_name;
-    const additionalService = booking.booking_details?.additionalService;
-    const notes = booking.booking_details?.notes;
+      // Car Wash Booking
+      const appointmentDate = new Date(booking.appointment_date);
+      const serviceName = booking.service_name;
+      const additionalService = booking.booking_details?.additionalService;
+      const notes = booking.booking_details?.notes;
 
-    // Format date and time in Europe/Rome timezone
-    const formattedDate = appointmentDate.toLocaleDateString('it-IT', {
-      weekday: 'long',
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-      timeZone: 'Europe/Rome'
-    });
-    const formattedTime = appointmentDate.toLocaleTimeString('it-IT', {
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'Europe/Rome'
-    });
+      const formattedDate = appointmentDate.toLocaleDateString('it-IT', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'Europe/Rome'
+      });
+      const formattedTime = appointmentDate.toLocaleTimeString('it-IT', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Europe/Rome'
+      });
 
-    message = `🚗 *NUOVA PRENOTAZIONE AUTOLAVAGGIO*\n\n`;
-    message += `*ID:* DR7-${bookingId}\n`;
-    message += `*Cliente:* ${customerName}\n`;
-    message += `*Email:* ${customerEmail}\n`;
-    message += `*Telefono:* ${customerPhone}\n`;
-    message += `*Servizio:* ${serviceName}\n`;
-    message += `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n`;
-    if (additionalService) {
-      message += `*Servizio Aggiuntivo:* ${additionalService}\n`;
+      message = `🚗 *NUOVA PRENOTAZIONE AUTOLAVAGGIO*\n\n`;
+      message += `*ID:* DR7-${bookingId}\n`;
+      message += `*Cliente:* ${customerName}\n`;
+      message += `*Email:* ${customerEmail}\n`;
+      message += `*Telefono:* ${customerPhone}\n`;
+      message += `*Servizio:* ${serviceName}\n`;
+      message += `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n`;
+      if (additionalService) {
+        message += `*Servizio Aggiuntivo:* ${additionalService}\n`;
+      }
+      if (notes) {
+        message += `*Note:* ${notes}\n`;
+      }
+      message += `*Totale:* €${totalPrice}\n`;
+      message += `*Stato Pagamento:* ${booking.payment_status === 'paid' ? '✅ Pagato' : '⏳ In attesa'}`;
+    } else if (serviceType === 'mechanical') {
+      // Mechanical Booking
+      const appointmentDate = new Date(booking.appointment_date);
+      const serviceName = booking.service_name || 'Servizio Meccanica';
+      const vehicleInfo = booking.booking_details?.vehicle || {};
+      const notes = booking.booking_details?.notes;
+
+      const formattedDate = appointmentDate.toLocaleDateString('it-IT', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'Europe/Rome'
+      });
+      const formattedTime = appointmentDate.toLocaleTimeString('it-IT', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Europe/Rome'
+      });
+
+      message = `🔧 *NUOVA PRENOTAZIONE MECCANICA*\n\n`;
+      message += `*ID:* DR7-${bookingId}\n`;
+      message += `*Cliente:* ${customerName}\n`;
+      message += `*Email:* ${customerEmail}\n`;
+      message += `*Telefono:* ${customerPhone}\n`;
+      message += `*Servizio:* ${serviceName}\n`;
+      if (vehicleInfo.brand || vehicleInfo.model) {
+        message += `*Veicolo:* ${vehicleInfo.brand || ''} ${vehicleInfo.model || ''}\n`;
+      }
+      message += `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n`;
+      if (notes) {
+        message += `*Note:* ${notes}\n`;
+      }
+      message += `*Stato Pagamento:* ${booking.payment_status === 'paid' ? '✅ Pagato' : '⏳ In attesa'}`;
+    } else {
+      // Car Rental Booking
+      const vehicleName = booking.vehicle_name;
+      const pickupDate = new Date(booking.pickup_date);
+      const dropoffDate = new Date(booking.dropoff_date);
+      const pickupLocation = booking.pickup_location;
+      const insuranceOption = booking.insurance_option || booking.booking_details?.insuranceOption || 'Nessuna';
+
+      const pickupDateFormatted = pickupDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' });
+      const pickupTimeFormatted = pickupDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
+      const dropoffDateFormatted = dropoffDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' });
+      const dropoffTimeFormatted = dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
+
+      message = `🚘 *NUOVA PRENOTAZIONE NOLEGGIO*\n\n`;
+      message += `*ID:* DR7-${bookingId}\n`;
+      message += `*Cliente:* ${customerName}\n`;
+      message += `*Email:* ${customerEmail}\n`;
+      message += `*Telefono:* ${customerPhone}\n`;
+      message += `*Veicolo:* ${vehicleName}\n`;
+      message += `*Ritiro:* ${pickupDateFormatted} alle ${pickupTimeFormatted}\n`;
+      message += `*Riconsegna:* ${dropoffDateFormatted} alle ${dropoffTimeFormatted}\n`;
+      message += `*Luogo Ritiro:* ${pickupLocation}\n`;
+      message += `*Assicurazione:* ${insuranceOption}\n`;
+      message += `*Totale:* €${totalPrice}\n`;
+      message += `*Stato Pagamento:* ${booking.payment_status === 'paid' ? '✅ Pagato' : '⏳ In attesa'}`;
     }
-    if (notes) {
-      message += `*Note:* ${notes}\n`;
-    }
-    message += `*Totale:* €${totalPrice}\n`;
-    message += `*Stato Pagamento:* ${booking.payment_status === 'paid' ? '✅ Pagato' : '⏳ In attesa'}`;
   } else {
-    // Car Rental Booking
-    const vehicleName = booking.vehicle_name;
-    const pickupDate = new Date(booking.pickup_date);
-    const dropoffDate = new Date(booking.dropoff_date);
-    const pickupLocation = booking.pickup_location;
-    const insuranceOption = booking.insurance_option || booking.booking_details?.insuranceOption || 'Nessuna';
-
-    // Format dates and times in Europe/Rome timezone
-    const pickupDateFormatted = pickupDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' });
-    const pickupTimeFormatted = pickupDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
-    const dropoffDateFormatted = dropoffDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' });
-    const dropoffTimeFormatted = dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
-
-    message = `🚘 *NUOVA PRENOTAZIONE NOLEGGIO*\n\n`;
-    message += `*ID:* DR7-${bookingId}\n`;
-    message += `*Cliente:* ${customerName}\n`;
-    message += `*Email:* ${customerEmail}\n`;
-    message += `*Telefono:* ${customerPhone}\n`;
-    message += `*Veicolo:* ${vehicleName}\n`;
-    message += `*Ritiro:* ${pickupDateFormatted} alle ${pickupTimeFormatted}\n`;
-    message += `*Riconsegna:* ${dropoffDateFormatted} alle ${dropoffTimeFormatted}\n`;
-    message += `*Luogo Ritiro:* ${pickupLocation}\n`;
-    message += `*Assicurazione:* ${insuranceOption}\n`;
-    message += `*Totale:* €${totalPrice}\n`;
-    message += `*Stato Pagamento:* ${booking.payment_status === 'paid' ? '✅ Pagato' : '⏳ In attesa'}`;
-    }
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ message: 'No booking, ticket, or custom message provided' }),
+    };
   }
 
   try {
-    // Send via CallMeBot
-    const encodedMessage = encodeURIComponent(message);
-    const callmebotUrl = `https://api.callmebot.com/whatsapp.php?phone=${CALLMEBOT_PHONE}&text=${encodedMessage}&apikey=${CALLMEBOT_API_KEY}`;
+    // Send via Green API
+    const greenApiUrl = `https://api.green-api.com/waInstance${GREEN_API_INSTANCE_ID}/sendMessage/${GREEN_API_TOKEN}`;
 
-    const response = await fetch(callmebotUrl);
+    const response = await fetch(greenApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        chatId: `${targetPhone}@c.us`,
+        message: message,
+      }),
+    });
 
-    if (!response.ok) {
-      const error = await response.text();
-      console.error('CallMeBot API error:', error);
-      throw new Error(`CallMeBot API error: ${error}`);
+    const result = await response.json();
+
+    if (!response.ok || result.error) {
+      console.error('Green API error:', result);
+      throw new Error(result.error || 'Green API error');
     }
 
-    console.log('✅ WhatsApp notification sent via CallMeBot');
+    console.log('✅ WhatsApp notification sent via Green API:', result.idMessage);
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: 'WhatsApp notification sent via CallMeBot', success: true }),
+      body: JSON.stringify({
+        message: 'WhatsApp notification sent via Green API',
+        success: true,
+        messageId: result.idMessage
+      }),
     };
   } catch (error: any) {
     console.error('Error sending WhatsApp notification:', error);
