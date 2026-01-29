@@ -128,37 +128,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const UTILITARIE_MAX_DATE = '2026-04-01';
   const isUtilitaria = vehicleType === 'UTILITARIA';
 
-  // Check if this is the M4 - currently not bookable
-  const isM4Vehicle = item.name?.toLowerCase().includes('m4') || item.name?.toLowerCase().includes('m4 competition');
-
-  // Block M4 booking - show unavailable message
-  if (isM4Vehicle) {
-    return (
-      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-        <div className="bg-gray-900 p-8 rounded-lg border border-gray-700 max-w-md text-center relative">
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-white"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-          <p className="text-white text-lg mb-6">
-            La BMW M4 è temporaneamente non disponibile per le prenotazioni.
-          </p>
-          <button
-            onClick={onClose}
-            className="px-8 py-3 bg-black text-white font-bold rounded-full border border-white hover:bg-white hover:text-black transition-colors"
-          >
-            Chiudi
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const today = useMemo(() => {
