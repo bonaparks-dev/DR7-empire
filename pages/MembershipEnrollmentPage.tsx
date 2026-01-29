@@ -67,7 +67,10 @@ const MembershipEnrollmentPage: React.FC = () => {
                 .select()
                 .single();
 
-            if (dbError) throw new Error('Failed to save purchase record');
+            if (dbError) {
+                console.error('Supabase error:', dbError);
+                throw new Error(`Failed to save purchase record: ${dbError.message}`);
+            }
 
             // 2. Generate nexi_order_id
             const timestamp = Date.now().toString().substring(5);
