@@ -1649,7 +1649,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       if (!formData.lastName) newErrors.lastName = "Il cognome è obbligatorio.";
       if (!formData.email) newErrors.email = "L'email è obbligatoria.";
       if (!formData.phone) newErrors.phone = "Il telefono è obbligatorio.";
-      if (!formData.birthDate) newErrors.birthDate = "La data di nascita è obbligatoria.";
+      if (!formData.birthDate) {
+        newErrors.birthDate = "La data di nascita è obbligatoria.";
+      } else {
+        // Age verification - must be at least 18 years old
+        const driverAge = calculateAgeFromDDMMYYYY(formData.birthDate);
+        if (driverAge < 18) {
+          newErrors.birthDate = "Devi avere almeno 18 anni per noleggiare un veicolo.";
+        }
+      }
       if (!formData.licenseNumber) newErrors.licenseNumber = "Il numero di patente è obbligatorio.";
       if (!formData.licenseIssueDate) newErrors.licenseIssueDate = "La data di rilascio della patente è obbligatoria.";
 

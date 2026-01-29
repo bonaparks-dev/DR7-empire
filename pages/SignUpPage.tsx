@@ -171,40 +171,15 @@ const SignUpPage: React.FC = () => {
         if (!formData.documentoLuogoRilascio) newErrors.documentoLuogoRilascio = 'Luogo rilascio documento è obbligatorio';
       }
 
-      // Persona Fisica specific
+      // Persona Fisica specific - Only require: Nome, Telefono, Email
       if (tipoCliente === 'persona_fisica') {
         if (!formData.nome) newErrors.nome = 'Nome è obbligatorio';
-        if (!formData.cognome) newErrors.cognome = 'Cognome è obbligatorio';
-
-        // Codice Fiscale is only required for Italian nationals
-        if (formData.nazione === 'Italia') {
-          if (!formData.codiceFiscale) {
-            newErrors.codiceFiscale = 'Codice Fiscale è obbligatorio';
-          } else if (!validateCodiceFiscale(formData.codiceFiscale)) {
-            newErrors.codiceFiscale = 'Codice Fiscale non valido (16 caratteri)';
-          }
-        }
-
         if (!formData.telefono) {
           newErrors.telefono = 'Telefono è obbligatorio';
         } else if (!validateItalianPhone(formData.telefono)) {
           newErrors.telefono = 'Formato telefono non valido';
         }
-        if (!formData.indirizzo) newErrors.indirizzo = 'Indirizzo è obbligatorio';
-        if (!formData.numeroCivico) newErrors.numeroCivico = 'Numero Civico è obbligatorio';
-        if (!formData.cittaResidenza) newErrors.cittaResidenza = 'Città è obbligatoria';
-        if (!formData.codicePostale) newErrors.codicePostale = 'CAP è obbligatorio';
-        if (!formData.provinciaResidenza) newErrors.provinciaResidenza = 'Provincia è obbligatoria';
-
-        if (!formData.sesso) newErrors.sesso = 'Sesso è obbligatorio';
-        if (!formData.dataNascita) newErrors.dataNascita = 'Data di nascita è obbligatoria';
-        if (!formData.cittaNascita) newErrors.cittaNascita = 'Città di nascita è obbligatoria';
-        if (!formData.provinciaNascita) newErrors.provinciaNascita = 'Provincia di nascita è obbligatoria';
-
-        // Residency Zone Validation
-        if (!formData.residencyZone) newErrors.residencyZone = 'Zona di residenza è obbligatoria';
-
-        // License Validations removed
+        // Email is already validated in common validations above
       }
 
       // Pubblica Amministrazione specific

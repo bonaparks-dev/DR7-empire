@@ -463,6 +463,7 @@ const CarWashBookingPage: React.FC = () => {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
+    // Required: Nome e cognome, Telefono, Email
     if (!formData.fullName) newErrors.fullName = lang === 'it' ? 'Il nome è obbligatorio' : 'Name is required';
     if (!formData.email) newErrors.email = lang === 'it' ? 'L\'email è obbligatoria' : 'Email is required';
     if (!formData.phone) {
@@ -470,15 +471,7 @@ const CarWashBookingPage: React.FC = () => {
     } else if (!validateItalianPhone(formData.phone)) {
       newErrors.phone = lang === 'it' ? 'Formato telefono non valido' : 'Invalid phone format';
     }
-    if (!formData.codiceFiscale) {
-      newErrors.codiceFiscale = lang === 'it' ? 'Codice Fiscale è obbligatorio' : 'Tax code is required';
-    } else if (!validateCodiceFiscale(formData.codiceFiscale)) {
-      newErrors.codiceFiscale = lang === 'it' ? 'Codice Fiscale non valido (16 caratteri)' : 'Invalid tax code (16 characters)';
-    }
-    if (!formData.indirizzo) newErrors.indirizzo = lang === 'it' ? 'Indirizzo è obbligatorio' : 'Address is required';
-    if (!formData.cittaResidenza) newErrors.cittaResidenza = lang === 'it' ? 'Città è obbligatoria' : 'City is required';
-    if (!formData.codicePostale) newErrors.codicePostale = lang === 'it' ? 'CAP è obbligatorio' : 'Postal code is required';
-    if (!formData.provinciaResidenza) newErrors.provinciaResidenza = lang === 'it' ? 'Provincia è obbligatoria' : 'Province is required';
+    // Codice Fiscale, indirizzo, etc. are now optional
     if (!formData.appointmentDate) newErrors.appointmentDate = lang === 'it' ? 'La data è obbligatoria' : 'Date is required';
     if (!formData.appointmentTime) newErrors.appointmentTime = lang === 'it' ? 'L\'ora è obbligatoria' : 'Time is required';
 
