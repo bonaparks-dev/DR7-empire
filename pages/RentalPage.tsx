@@ -310,7 +310,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
                 </div>
               </div>
               <button
-                onClick={() => navigate('/jets/quote')}
+                onClick={() => window.open('https://wa.me/393457905205?text=' + encodeURIComponent('Ciao, vorrei richiedere un preventivo per un Jet Privato.'), '_blank')}
                 className="w-full bg-white text-black px-6 py-4 rounded-full font-bold uppercase tracking-wider text-sm hover:bg-gray-200 transition-all duration-300 transform hover:scale-105"
               >
                 Richiedi Preventivo Jet
@@ -346,7 +346,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
                 </div>
               </div>
               <button
-                onClick={() => navigate('/helicopters/quote')}
+                onClick={() => window.open('https://wa.me/393457905205?text=' + encodeURIComponent('Ciao, vorrei richiedere un preventivo per un Elicottero.'), '_blank')}
                 className="w-full bg-white text-black px-6 py-4 rounded-full font-bold uppercase tracking-wider text-sm hover:bg-gray-200 transition-all duration-300 transform hover:scale-105"
               >
                 Richiedi Preventivo Elicottero
