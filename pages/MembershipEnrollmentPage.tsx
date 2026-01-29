@@ -6,7 +6,7 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { useAuth } from '../hooks/useAuth';
 import { MEMBERSHIP_TIERS, CRYPTO_ADDRESSES } from '../constants';
 // Nexi payment - no Stripe imports needed
-import { getUserCreditBalance, deductCredits, hasSufficientBalance } from '../utils/creditWallet';
+// Credit wallet disabled for membership purchases - card only
 import { supabase } from '../supabaseClient';
 
 // Nexi payment - no publishable key needed
@@ -21,40 +21,16 @@ const MembershipEnrollmentPage: React.FC = () => {
     const { user, updateUser } = useAuth();
 
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>(searchParams.get('billing') === 'monthly' ? 'monthly' : 'annually');
-    const [paymentMethod, setPaymentMethod] = useState<'nexi' | 'crypto' | 'credit'>('nexi');
     const [isProcessing, setIsProcessing] = useState(false);
     const [isConfirmed, setIsConfirmed] = useState(false);
-
     const [paymentError, setPaymentError] = useState<string | null>(null);
-    const [selectedCrypto, setSelectedCrypto] = useState('btc');
-
-    // Credit wallet state
-    const [creditBalance, setCreditBalance] = useState<number>(0);
-    const [isLoadingBalance, setIsLoadingBalance] = useState(true);
 
     const tier = useMemo(() => MEMBERSHIP_TIERS.find(t => t.id === tierId), [tierId]);
     const price = useMemo(() => tier?.price[billingCycle][currency] || 0, [tier, billingCycle, currency]);
 
     // Nexi payment - no initialization needed
 
-    // Fetch credit balance
-    useEffect(() => {
-        const fetchBalance = async () => {
-            if (user?.id) {
-                setIsLoadingBalance(true);
-                try {
-                    const balance = await getUserCreditBalance(user.id);
-                    setCreditBalance(balance);
-                } catch (error) {
-                    console.error('Error fetching credit balance:', error);
-                } finally {
-                    setIsLoadingBalance(false);
-                }
-            }
-        };
-
-        fetchBalance();
-    }, [user]);
+    // Membership purchases are card-only (no credit wallet)
 
     // Nexi payment - no payment intent needed
 
@@ -66,103 +42,66 @@ const MembershipEnrollmentPage: React.FC = () => {
         e.preventDefault();
         setIsProcessing(true);
 
-        if (paymentMethod === 'credit') {
-            // Credit wallet payment
-            if (!user?.id) {
-                setPaymentError('User not logged in');
-                setIsProcessing(false);
-                return;
-            }
+        // Card payment only (Nexi)
+        if (!tier || !user?.id) {
+            setPaymentError("Payment system is not ready.");
+            setIsProcessing(false);
+            return;
+        }
 
-            // Check sufficient balance
-            const hasBalance = await hasSufficientBalance(user.id, price);
-            if (!hasBalance) {
-                setPaymentError(`Credito insufficiente. Saldo attuale: €${creditBalance.toFixed(2)}, Richiesto: €${price.toFixed(2)}`);
-                setIsProcessing(false);
-                return;
-            }
+        try {
+            // 1. Save membership purchase as pending
+            const { data: purchaseData, error: dbError } = await supabase
+                .from('membership_purchases')
+                .insert({
+                    user_id: user.id,
+                    tier_id: tier.id,
+                    tier_name: tier.name[lang],
+                    billing_cycle: billingCycle,
+                    price: price,
+                    currency: currency.toUpperCase(),
+                    payment_method: 'nexi',
+                    payment_status: 'pending',
+                    renewal_date: new Date(Date.now() + (billingCycle === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000).toISOString()
+                })
+                .select()
+                .single();
 
-            // Deduct credits
-            const deductResult = await deductCredits(
-                user.id,
-                price,
-                `Membership ${tier?.name[lang]} - ${billingCycle === 'monthly' ? 'Mensile' : 'Annuale'}`,
-                undefined,
-                'membership_purchase'
-            );
+            if (dbError) throw new Error('Failed to save purchase record');
 
-            if (!deductResult.success) {
-                setPaymentError(deductResult.error || 'Failed to deduct credits');
-                setIsProcessing(false);
-                return;
-            }
+            // 2. Generate nexi_order_id
+            const timestamp = Date.now().toString().substring(5);
+            const random = Math.floor(100 + Math.random() * 900).toString();
+            const nexiOrderId = `${timestamp}${random}`;
 
-            await finalizeEnrollment();
-        } else if (paymentMethod === 'nexi') {
-            // Nexi redirect payment
-            if (!tier || !user?.id) {
-                setPaymentError("Payment system is not ready.");
-                setIsProcessing(false);
-                return;
-            }
+            // 3. Update with nexi_order_id
+            await supabase
+                .from('membership_purchases')
+                .update({ nexi_order_id: nexiOrderId })
+                .eq('id', purchaseData.id);
 
-            try {
-                // 1. Save membership purchase as pending
-                const { data: purchaseData, error: dbError } = await supabase
-                    .from('membership_purchases')
-                    .insert({
-                        user_id: user.id,
-                        tier_id: tier.id,
-                        tier_name: tier.name[lang],
-                        billing_cycle: billingCycle,
-                        price: price,
-                        currency: currency.toUpperCase(),
-                        payment_method: 'nexi',
-                        payment_status: 'pending',
-                        renewal_date: new Date(Date.now() + (billingCycle === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000).toISOString()
-                    })
-                    .select()
-                    .single();
+            // 4. Create Nexi payment
+            const nexiResponse = await fetch('/.netlify/functions/create-nexi-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    orderId: nexiOrderId,
+                    amount: Math.round(price * 100),
+                    currency: 'EUR',
+                    description: `Membership ${tier.name[lang]} - ${billingCycle}`,
+                    customerEmail: user.email,
+                    customerName: user.fullName
+                })
+            });
 
-                if (dbError) throw new Error('Failed to save purchase record');
+            const nexiData = await nexiResponse.json();
+            if (!nexiResponse.ok) throw new Error(nexiData.error || 'Failed to create payment');
 
-                // 2. Generate nexi_order_id
-                const timestamp = Date.now().toString().substring(5);
-                const random = Math.floor(100 + Math.random() * 900).toString();
-                const nexiOrderId = `${timestamp}${random}`;
-
-                // 3. Update with nexi_order_id
-                await supabase
-                    .from('membership_purchases')
-                    .update({ nexi_order_id: nexiOrderId })
-                    .eq('id', purchaseData.id);
-
-                // 4. Create Nexi payment
-                const nexiResponse = await fetch('/.netlify/functions/create-nexi-payment', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        orderId: nexiOrderId,
-                        amount: Math.round(price * 100),
-                        currency: 'EUR',
-                        description: `Membership ${tier.name[lang]} - ${billingCycle}`,
-                        customerEmail: user.email,
-                        customerName: user.fullName
-                    })
-                });
-
-                const nexiData = await nexiResponse.json();
-                if (!nexiResponse.ok) throw new Error(nexiData.error || 'Failed to create payment');
-
-                // 5. Redirect to Nexi HPP
-                window.location.href = nexiData.paymentUrl;
-            } catch (error: any) {
-                setPaymentError(error.message || 'Payment failed');
-                setIsProcessing(false);
-            }
-        } else {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            await finalizeEnrollment();
+            // 5. Redirect to Nexi HPP
+            window.location.href = nexiData.paymentUrl;
+        } catch (error: any) {
+            setPaymentError(error.message || 'Payment failed');
+            setIsProcessing(false);
         }
     };
 
@@ -191,7 +130,7 @@ const MembershipEnrollmentPage: React.FC = () => {
                 billing_cycle: billingCycle,
                 price: price,
                 currency: currency.toUpperCase(),
-                payment_method: paymentMethod,
+                payment_method: 'nexi',
                 payment_status: 'completed',
                 renewal_date: renewalDate.toISOString()
             });
@@ -260,40 +199,13 @@ const MembershipEnrollmentPage: React.FC = () => {
                     </div>
                     <form onSubmit={handleConfirm} className="bg-gray-900/50 p-6 rounded-lg border border-gray-800">
                         <h2 className="text-xl font-bold text-white mb-4">{t('Payment')}</h2>
-                        <div className="flex border-b border-gray-700 mb-6">
-                            <button type="button" onClick={() => setPaymentMethod('credit')} className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 ${paymentMethod === 'credit' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}>
-                                Credit Wallet
-                            </button>
-                            <button type="button" onClick={() => setPaymentMethod('nexi')} className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 ${paymentMethod === 'nexi' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}>Carta</button>
+                        <div className="mb-6">
+                            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
+                                <p className="text-gray-300 mb-2">Verrai reindirizzato alla pagina di pagamento sicura Nexi</p>
+                                <p className="text-gray-400 text-sm">Pagamento protetto e certificato</p>
+                            </div>
+                            {paymentError && <p className="text-xs text-red-400 mt-2">{paymentError}</p>}
                         </div>
-
-                        {paymentMethod === 'credit' ? (
-                            <div className="text-center py-6">
-                                {isLoadingBalance ? (
-                                    <div className="flex items-center justify-center">
-                                        <div className="w-8 h-8 border-2 border-t-white border-gray-600 rounded-full animate-spin"></div>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <p className="text-sm text-gray-400 mb-2">Saldo Disponibile</p>
-                                        <p className="text-4xl font-bold text-white mb-4">€{creditBalance.toFixed(2)}</p>
-                                        {creditBalance < price ? (
-                                            <p className="text-sm text-red-400">Credito insufficiente. Richiesto: €{price.toFixed(2)}</p>
-                                        ) : (
-                                            <p className="text-sm text-green-400">✓ Saldo sufficiente</p>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        ) : (
-                            <div>
-                                <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
-                                    <p className="text-gray-300 mb-2">Verrai reindirizzato alla pagina di pagamento sicura Nexi</p>
-                                    <p className="text-gray-400 text-sm">Pagamento protetto e certificato</p>
-                                </div>
-                                {paymentError && <p className="text-xs text-red-400 mt-2">{paymentError}</p>}
-                            </div>
-                        )}
 
                         <button type="submit" disabled={isProcessing} className="w-full mt-6 bg-white text-black font-bold py-3 px-4 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60">
                             {isProcessing ? t('Processing') : t('Confirm_and_Pay')}
