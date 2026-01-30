@@ -528,6 +528,12 @@ const CarWashBookingPage: React.FC = () => {
       return;
     }
 
+    // Block scooter wash from using birthday discount
+    if (serviceId === 'scooter-wash') {
+      setDiscountCodeError('Il codice sconto compleanno non è applicabile al lavaggio scooter');
+      return;
+    }
+
     // Check if user is logged in
     if (!user) {
       setDiscountCodeError('Devi effettuare il login per utilizzare un codice sconto');
@@ -1253,7 +1259,8 @@ const CarWashBookingPage: React.FC = () => {
               />
             </div>
 
-            {/* Codice Sconto */}
+            {/* Codice Sconto - Hidden for scooter wash */}
+            {serviceId !== 'scooter-wash' && (
             <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
               <h2 className="text-2xl font-bold text-white mb-6">
                 {lang === 'it' ? 'Codice Sconto' : 'Discount Code'}
@@ -1295,6 +1302,7 @@ const CarWashBookingPage: React.FC = () => {
                 <p className="text-red-400 text-sm mt-3">{discountCodeError}</p>
               )}
             </div>
+            )}
 
             {/* Total & Submit */}
             <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
