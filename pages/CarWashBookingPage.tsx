@@ -538,7 +538,7 @@ const CarWashBookingPage: React.FC = () => {
     setDiscountCodeError(null);
 
     try {
-      const response = await fetch('https://dr7-empire-admin.netlify.app/.netlify/functions/validate-discount-code', {
+      const response = await fetch('https://admin.dr7empire.com/.netlify/functions/validate-discount-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -611,7 +611,7 @@ const CarWashBookingPage: React.FC = () => {
     if (!appliedDiscount?.code) return;
 
     try {
-      await fetch('https://dr7-empire-admin.netlify.app/.netlify/functions/validate-discount-code', {
+      await fetch('https://admin.dr7empire.com/.netlify/functions/validate-discount-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
