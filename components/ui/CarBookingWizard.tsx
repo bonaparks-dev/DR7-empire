@@ -1946,6 +1946,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       return;
     }
 
+    // Check if user is logged in
+    if (!user) {
+      setDiscountCodeError('Devi effettuare il login per utilizzare un codice sconto');
+      return;
+    }
+
     setIsValidatingCode(true);
     setDiscountCodeError(null);
 
@@ -1977,7 +1983,27 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         return;
       }
 
-      // Code is valid - apply the rental discount
+      // Verify the logged-in user matches the code's customer (by email or phone)
+      const userEmail = user.email?.toLowerCase().trim();
+      const userPhone = user.phone?.replace(/[\s\-\+]/g, '');
+      const codeCustomerPhone = result.customer_phone?.replace(/[\s\-\+]/g, '');
+
+      // Check if user's email or phone matches the code's customer
+      const emailMatch = userEmail && result.customer_email && userEmail === result.customer_email.toLowerCase().trim();
+      const phoneMatch = userPhone && codeCustomerPhone && (
+        userPhone === codeCustomerPhone ||
+        userPhone.endsWith(codeCustomerPhone.slice(-9)) ||
+        codeCustomerPhone.endsWith(userPhone.slice(-9))
+      );
+
+      if (!emailMatch && !phoneMatch) {
+        setDiscountCodeError('Questo codice sconto è riservato a un altro cliente. Verifica di aver effettuato il login con lo stesso account.');
+        setDiscountCodeValid(false);
+        setAppliedDiscount(null);
+        return;
+      }
+
+      // Code is valid and matches user - apply the rental discount
       setDiscountCodeValid(true);
       setAppliedDiscount({
         code: result.code,
