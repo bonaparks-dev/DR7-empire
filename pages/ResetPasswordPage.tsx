@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { useAuth } from '../hooks/useAuth';
@@ -7,7 +7,7 @@ import { supabase } from '../supabaseClient';
 
 const ResetPasswordPage: React.FC = () => {
     const { t } = useTranslation();
-    const { updateUserPassword, authEvent } = useAuth();
+    const { updateUserPassword } = useAuth();
     const navigate = useNavigate();
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -15,46 +15,22 @@ const ResetPasswordPage: React.FC = () => {
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
-    const [isValidSession, setIsValidSession] = useState(false);
-    const [isCheckingSession, setIsCheckingSession] = useState(true);
+    const [hasSession, setHasSession] = useState<boolean | null>(null);
 
-    // Check if user has a valid recovery session
+    // Check for active session on mount
     useEffect(() => {
         const checkSession = async () => {
-            // Check URL hash for recovery tokens
-            const hashParams = new URLSearchParams(window.location.hash.substring(1));
-            const accessToken = hashParams.get('access_token');
-            const type = hashParams.get('type');
-
-            // If there's a recovery token in the URL, Supabase will handle it
-            if (accessToken && type === 'recovery') {
-                // Wait a bit for Supabase to process the token
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-
-            // Check if we have an active session
             const { data: { session } } = await supabase.auth.getSession();
+            setHasSession(!!session);
 
-            if (session) {
-                setIsValidSession(true);
-            } else if (!accessToken) {
-                // No session and no token - invalid access
+            if (!session) {
+                // No session - user accessed this page directly without a valid link
                 setError(t('Invalid_or_expired_reset_link'));
             }
-
-            setIsCheckingSession(false);
         };
 
         checkSession();
     }, [t]);
-
-    // Also listen for auth event changes
-    useEffect(() => {
-        if (authEvent === 'PASSWORD_RECOVERY') {
-            setIsValidSession(true);
-            setIsCheckingSession(false);
-        }
-    }, [authEvent]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -82,46 +58,44 @@ const ResetPasswordPage: React.FC = () => {
             setIsSubmitting(false);
         }
     };
-    
+
     // Show loading while checking session
-    if (isCheckingSession) {
+    if (hasSession === null) {
         return (
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5 }}
-                className="min-h-screen flex items-center justify-center pt-24 pb-12 px-4 sm:px-6 lg:px-8"
+                className="min-h-screen flex items-center justify-center pt-24 pb-12 px-4"
             >
-                <div className="w-full max-w-md space-y-8">
-                    <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg shadow-2xl shadow-black/50 p-8 text-center">
+                <div className="w-full max-w-md">
+                    <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg p-8 text-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mx-auto mb-4"></div>
-                        <p className="text-gray-400">{t('Verifying_your_link')}</p>
+                        <p className="text-gray-400">{t('Please_wait')}</p>
                     </div>
                 </div>
             </motion.div>
         );
     }
 
-    // Show error if no valid session
-    if (!isValidSession && error) {
+    // No session - show error
+    if (!hasSession) {
         return (
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5 }}
-                className="min-h-screen flex items-center justify-center pt-24 pb-12 px-4 sm:px-6 lg:px-8"
+                className="min-h-screen flex items-center justify-center pt-24 pb-12 px-4"
             >
-                <div className="w-full max-w-md space-y-8">
-                    <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg shadow-2xl shadow-black/50 p-8 space-y-6">
+                <div className="w-full max-w-md">
+                    <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg p-8 space-y-6">
                         <div className="text-center">
                             <h2 className="text-3xl font-bold text-white">{t('Link_Invalid')}</h2>
                         </div>
-                        <p className="text-sm text-red-400 bg-red-900/20 border border-red-800 rounded p-3">{error}</p>
+                        <p className="text-sm text-red-400 bg-red-900/20 border border-red-800 rounded p-3">
+                            {error || t('Invalid_or_expired_reset_link')}
+                        </p>
                         <button
                             onClick={() => navigate('/forgot-password')}
-                            className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-black bg-white hover:bg-gray-200"
+                            className="w-full py-3 px-4 text-sm font-medium rounded-md text-black bg-white hover:bg-gray-200"
                         >
                             {t('Request_New_Link')}
                         </button>

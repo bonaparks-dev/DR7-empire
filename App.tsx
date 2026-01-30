@@ -65,6 +65,7 @@ import MyBookings from './pages/account/MyBookings';
 import ConfirmationSuccessPage from './pages/ConfirmationSuccessPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import AuthVerifyPage from './pages/AuthVerifyPage';
 import CheckEmailPage from './pages/CheckEmailPage';
 import CarWashServicesPage from './pages/CarWashServicesPage';
 import CarWashBookingPage from './pages/CarWashBookingPage';
@@ -295,6 +296,7 @@ const AnimatedRoutes = () => {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/check-email" element={<CheckEmailPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
+        <Route path="/auth/v1/verify" element={<AuthVerifyPage />} />
         <Route path="/confirmation-success" element={<ConfirmationSuccessPage />} />
         <Route path="/car-booking-success" element={<CarBookingConfirmationPage />} />
         <Route path="/booking-success" element={<ConfirmationSuccessPage />} />
