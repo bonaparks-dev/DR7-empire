@@ -86,6 +86,17 @@ const CarWashBookingPage: React.FC = () => {
   const [creditBalance, setCreditBalance] = useState<number>(0);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
 
+  // Birthday discount code state
+  const [discountCode, setDiscountCode] = useState<string>('');
+  const [discountCodeError, setDiscountCodeError] = useState<string | null>(null);
+  const [discountCodeValid, setDiscountCodeValid] = useState<boolean>(false);
+  const [isValidatingCode, setIsValidatingCode] = useState<boolean>(false);
+  const [appliedDiscount, setAppliedDiscount] = useState<{
+    code: string;
+    amount: number;
+    type: 'rental' | 'car_wash';
+  } | null>(null);
+
   // Use the real-time hook for bookings
   const { bookings: existingBookings, loading: bookingsLoading } = useCarWashAvailability(formData.appointmentDate);
 
@@ -503,7 +514,90 @@ const CarWashBookingPage: React.FC = () => {
   };
 
   const calculateTotal = () => {
-    return selectedService?.price || 0;
+    const basePrice = selectedService?.price || 0;
+    const discount = appliedDiscount?.type === 'car_wash' ? Math.min(appliedDiscount.amount, basePrice) : 0;
+    return Math.max(0, basePrice - discount);
+  };
+
+  const birthdayDiscountAmount = appliedDiscount?.type === 'car_wash' ? Math.min(appliedDiscount.amount, selectedService?.price || 0) : 0;
+
+  // Validate birthday discount code
+  const validateDiscountCode = async () => {
+    if (!discountCode.trim()) {
+      setDiscountCodeError('Inserisci un codice sconto');
+      return;
+    }
+
+    setIsValidatingCode(true);
+    setDiscountCodeError(null);
+
+    try {
+      const response = await fetch('https://dr7-empire-admin.netlify.app/.netlify/functions/validate-discount-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'validate',
+          code: discountCode.trim().toUpperCase()
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.valid) {
+        setDiscountCodeError(result.error || 'Codice non valido');
+        setDiscountCodeValid(false);
+        setAppliedDiscount(null);
+        return;
+      }
+
+      if (result.car_wash_used) {
+        setDiscountCodeError('Lo sconto lavaggio di questo codice è già stato utilizzato');
+        setDiscountCodeValid(false);
+        setAppliedDiscount(null);
+        return;
+      }
+
+      setDiscountCodeValid(true);
+      setAppliedDiscount({
+        code: result.code,
+        amount: result.car_wash_discount || 10,
+        type: 'car_wash'
+      });
+      setDiscountCodeError(null);
+
+    } catch (error: any) {
+      console.error('Error validating discount code:', error);
+      setDiscountCodeError('Errore nella verifica del codice');
+      setDiscountCodeValid(false);
+    } finally {
+      setIsValidatingCode(false);
+    }
+  };
+
+  const removeDiscount = () => {
+    setDiscountCode('');
+    setDiscountCodeValid(false);
+    setAppliedDiscount(null);
+    setDiscountCodeError(null);
+  };
+
+  const markDiscountCodeAsUsed = async (bookingId: string) => {
+    if (!appliedDiscount?.code) return;
+
+    try {
+      await fetch('https://dr7-empire-admin.netlify.app/.netlify/functions/validate-discount-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'apply_car_wash',
+          code: appliedDiscount.code,
+          booking_id: bookingId
+        })
+      });
+      console.log('Discount code marked as used:', appliedDiscount.code);
+    } catch (error) {
+      console.error('Error marking discount code as used:', error);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -741,6 +835,11 @@ const CarWashBookingPage: React.FC = () => {
         setTimeout(() => {
           window.open(whatsappUrl, '_blank');
         }, 1000);
+
+        // Mark birthday discount code as used
+        if (appliedDiscount && data.id) {
+          await markDiscountCodeAsUsed(data.id);
+        }
 
         // Navigate to success page
         navigate('/booking-success', { state: { booking: data } });
@@ -1129,8 +1228,63 @@ const CarWashBookingPage: React.FC = () => {
               />
             </div>
 
+            {/* Codice Sconto */}
+            <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
+              <h2 className="text-2xl font-bold text-white mb-6">
+                {lang === 'it' ? 'Codice Sconto' : 'Discount Code'}
+              </h2>
+              {appliedDiscount ? (
+                <div className="flex items-center justify-between p-4 bg-green-900/30 border border-green-500/50 rounded-lg">
+                  <div>
+                    <p className="text-green-400 font-bold">{appliedDiscount.code}</p>
+                    <p className="text-green-300 text-sm">Sconto di €{appliedDiscount.amount} applicato</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={removeDiscount}
+                    className="text-red-400 hover:text-red-300 text-sm underline"
+                  >
+                    Rimuovi
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    value={discountCode}
+                    onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                    placeholder="Inserisci codice (es. BDAY-XXXX-XXXX)"
+                    className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 uppercase"
+                  />
+                  <button
+                    type="button"
+                    onClick={validateDiscountCode}
+                    disabled={isValidatingCode || !discountCode.trim()}
+                    className="px-6 py-3 bg-white text-black font-bold rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isValidatingCode ? 'Verifica...' : 'Applica'}
+                  </button>
+                </div>
+              )}
+              {discountCodeError && (
+                <p className="text-red-400 text-sm mt-3">{discountCodeError}</p>
+              )}
+            </div>
+
             {/* Total & Submit */}
             <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
+              {birthdayDiscountAmount > 0 && (
+                <div className="flex justify-between items-center mb-3 text-gray-400">
+                  <span>Prezzo originale</span>
+                  <span className="line-through">€{selectedService?.price || 0}</span>
+                </div>
+              )}
+              {birthdayDiscountAmount > 0 && (
+                <div className="flex justify-between items-center mb-3 text-yellow-400">
+                  <span>Sconto ({appliedDiscount?.code})</span>
+                  <span>-€{birthdayDiscountAmount}</span>
+                </div>
+              )}
               <div className="flex justify-between items-center mb-6">
                 <span className="text-2xl font-bold text-white">
                   {lang === 'it' ? 'Totale' : 'Total'}
