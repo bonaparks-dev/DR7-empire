@@ -230,6 +230,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   // Nexi payment state
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
+  // Birthday discount code state
+  const [discountCode, setDiscountCode] = useState<string>('');
+  const [discountCodeError, setDiscountCodeError] = useState<string | null>(null);
+  const [discountCodeValid, setDiscountCodeValid] = useState<boolean>(false);
+  const [isValidatingCode, setIsValidatingCode] = useState<boolean>(false);
+  const [appliedDiscount, setAppliedDiscount] = useState<{
+    code: string;
+    amount: number;
+    type: 'rental' | 'car_wash';
+  } | null>(null);
+
   // Camera
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
@@ -1235,6 +1246,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     item, currency, user, isUrbanOrCorporate, categoryContext
   ]);
 
+  // Calculate final price including birthday discount code
+  const birthdayDiscountAmount = appliedDiscount?.type === 'rental' ? Math.min(appliedDiscount.amount, finalTotal) : 0;
+  const finalPriceWithBirthdayDiscount = Math.max(0, finalTotal - birthdayDiscountAmount);
+
   // Forcer horaires valides et pas de dimanche
   useEffect(() => {
     const validTimes = getValidPickupTimes(formData.pickupDate);
@@ -1910,12 +1925,101 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         }, 1000);
       }
 
+      // Mark birthday discount code as used
+      if (appliedDiscount && data.id) {
+        await markDiscountCodeAsUsed(data.id);
+      }
+
       onBookingComplete(data);
       setIsProcessing(false);
 
     } catch (e: any) {
       setErrors(prev => ({ ...prev, form: `Booking failed: ${e.message}` }));
       setIsProcessing(false);
+    }
+  };
+
+  // Validate birthday discount code
+  const validateDiscountCode = async () => {
+    if (!discountCode.trim()) {
+      setDiscountCodeError('Inserisci un codice sconto');
+      return;
+    }
+
+    setIsValidatingCode(true);
+    setDiscountCodeError(null);
+
+    try {
+      // Call the admin API to validate the code
+      const response = await fetch('https://dr7-empire-admin.netlify.app/.netlify/functions/validate-discount-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'validate',
+          code: discountCode.trim().toUpperCase()
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.valid) {
+        setDiscountCodeError(result.error || 'Codice non valido');
+        setDiscountCodeValid(false);
+        setAppliedDiscount(null);
+        return;
+      }
+
+      // Check if rental credit is already used
+      if (result.rental_used) {
+        setDiscountCodeError('Il credito noleggio di questo codice è già stato utilizzato');
+        setDiscountCodeValid(false);
+        setAppliedDiscount(null);
+        return;
+      }
+
+      // Code is valid - apply the rental discount
+      setDiscountCodeValid(true);
+      setAppliedDiscount({
+        code: result.code,
+        amount: result.rental_credit || 100,
+        type: 'rental'
+      });
+      setDiscountCodeError(null);
+
+    } catch (error: any) {
+      console.error('Error validating discount code:', error);
+      setDiscountCodeError('Errore nella verifica del codice');
+      setDiscountCodeValid(false);
+    } finally {
+      setIsValidatingCode(false);
+    }
+  };
+
+  // Remove applied discount
+  const removeDiscount = () => {
+    setDiscountCode('');
+    setDiscountCodeValid(false);
+    setAppliedDiscount(null);
+    setDiscountCodeError(null);
+  };
+
+  // Mark discount code as used after successful booking
+  const markDiscountCodeAsUsed = async (bookingId: string) => {
+    if (!appliedDiscount?.code) return;
+
+    try {
+      await fetch('https://dr7-empire-admin.netlify.app/.netlify/functions/validate-discount-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'apply_rental',
+          code: appliedDiscount.code,
+          booking_id: bookingId
+        })
+      });
+      console.log('Discount code marked as used:', appliedDiscount.code);
+    } catch (error) {
+      console.error('Error marking discount code as used:', error);
     }
   };
 
@@ -1933,9 +2037,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
 
     // Check sufficient balance (Front-check for UX)
-    const hasBalance = await hasSufficientBalance(user.id, finalTotal);
+    const hasBalance = await hasSufficientBalance(user.id, finalPriceWithBirthdayDiscount);
     if (!hasBalance) {
-      setPaymentError(`Credito insufficiente. Saldo attuale: €${creditBalance.toFixed(2)}, Richiesto: €${finalTotal.toFixed(2)}`);
+      setPaymentError(`Credito insufficiente. Saldo attuale: €${creditBalance.toFixed(2)}, Richiesto: €${finalPriceWithBirthdayDiscount.toFixed(2)}`);
       setIsProcessing(false);
       return;
     }
@@ -1981,7 +2085,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           dropoff_date: dropoffDateTime.toISOString(),
           pickup_location: formData.pickupLocation,
           dropoff_location: formData.returnLocation,
-          price_total: Math.round(finalTotal * 100),
+          price_total: Math.round(finalPriceWithBirthdayDiscount * 100),
           currency: currency.toUpperCase(),
           booking_source: 'website',
           booking_details: {
@@ -2025,10 +2129,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         };
 
         // 3. Call Atomic RPC
-        console.log("Starting credit booking RPC call...", { user: user.id, amount: Math.round(finalTotal * 100), vehicle: item.name });
+        console.log("Starting credit booking RPC call...", { user: user.id, amount: Math.round(finalPriceWithBirthdayDiscount * 100), vehicle: item.name });
         const { data, error } = await supabase.rpc('book_with_credits', {
           p_user_id: user.id,
-          p_amount_cents: Math.round(finalTotal * 100),
+          p_amount_cents: Math.round(finalPriceWithBirthdayDiscount * 100),
           p_vehicle_name: item.name,
           p_booking_payload: bookingPayload
         });
@@ -2090,6 +2194,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             body: JSON.stringify({ booking: finalBookingData }),
           }).catch(e => console.error('WhatsApp error', e));
 
+          // Mark birthday discount code as used
+          if (appliedDiscount) {
+            await markDiscountCodeAsUsed(data.booking_id);
+          }
+
           // Completed - Pass the full object with ID so UI can redirect
           onBookingComplete(finalBookingData);
 
@@ -2097,7 +2206,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           const bookingId = data.booking_id.substring(0, 8).toUpperCase();
           const customerName = `${formData.firstName} ${formData.lastName}`;
           const customerPhone = formData.phone;
-          const totalPrice = finalTotal.toFixed(2);
+          const totalPrice = finalPriceWithBirthdayDiscount.toFixed(2);
 
           const whatsappMessage = `Ciao! Ho appena completato una prenotazione con Credito DR7.\n\n` +
             `📋 *Dettagli Prenotazione*\n` +
@@ -2186,7 +2295,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           dropoff_date: dropoffDateTime.toISOString(),
           pickup_location: formData.pickupLocation,
           dropoff_location: formData.returnLocation,
-          price_total: Math.round(finalTotal * 100), // Store in cents
+          price_total: Math.round(finalPriceWithBirthdayDiscount * 100), // Store in cents
           currency: 'EUR',
           status: 'pending',
           payment_status: 'pending',
@@ -2258,7 +2367,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             orderId: nexiOrderId,
-            amount: Math.round(finalTotal * 100),
+            amount: Math.round(finalPriceWithBirthdayDiscount * 100),
             currency: 'EUR',
             description: `Noleggio ${vehicleName} - ${days} giorni`,
             customerEmail: formData.email,
@@ -3212,10 +3321,68 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         <span>Sconto {membershipTier} ({(membershipDiscount / originalTotal * 100).toFixed(0)}%)</span>
                         <span>-{formatPrice(membershipDiscount)}</span>
                       </div>
-                      <div className="flex justify-between font-bold text-lg text-white"><span>TOTALE</span> <span>{formatPrice(finalTotal)}</span></div>
+                      {birthdayDiscountAmount > 0 && (
+                        <div className="flex justify-between text-yellow-400 text-sm">
+                          <span>Codice Sconto ({appliedDiscount?.code})</span>
+                          <span>-{formatPrice(birthdayDiscountAmount)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between font-bold text-lg text-white"><span>TOTALE</span> <span>{formatPrice(finalPriceWithBirthdayDiscount)}</span></div>
                     </>
                   ) : (
-                    <div className="flex justify-between font-bold text-lg"><span>TOTALE</span> <span>{formatPrice(total)}</span></div>
+                    <>
+                      {birthdayDiscountAmount > 0 && (
+                        <>
+                          <div className="flex justify-between text-gray-400"><span>Subtotale</span> <span>{formatPrice(total)}</span></div>
+                          <div className="flex justify-between text-yellow-400 text-sm">
+                            <span>Codice Sconto ({appliedDiscount?.code})</span>
+                            <span>-{formatPrice(birthdayDiscountAmount)}</span>
+                          </div>
+                        </>
+                      )}
+                      <div className="flex justify-between font-bold text-lg"><span>TOTALE</span> <span>{formatPrice(finalPriceWithBirthdayDiscount)}</span></div>
+                    </>
+                  )}
+                </div>
+
+                {/* Codice Sconto Compleanno */}
+                <div className="border-t border-gray-600 pt-4">
+                  <p className="font-bold text-base text-white mb-3">CODICE SCONTO</p>
+                  {appliedDiscount ? (
+                    <div className="flex items-center justify-between p-3 bg-green-900/30 border border-green-500/50 rounded-lg">
+                      <div>
+                        <p className="text-green-400 font-bold">{appliedDiscount.code}</p>
+                        <p className="text-green-300 text-sm">Credito di €{appliedDiscount.amount} applicato</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removeDiscount}
+                        className="text-red-400 hover:text-red-300 text-sm underline"
+                      >
+                        Rimuovi
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={discountCode}
+                        onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                        placeholder="Inserisci codice (es. BDAY-XXXX-XXXX)"
+                        className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 text-sm uppercase"
+                      />
+                      <button
+                        type="button"
+                        onClick={validateDiscountCode}
+                        disabled={isValidatingCode || !discountCode.trim()}
+                        className="px-4 py-2 bg-white text-black font-bold rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                      >
+                        {isValidatingCode ? 'Verifica...' : 'Applica'}
+                      </button>
+                    </div>
+                  )}
+                  {discountCodeError && (
+                    <p className="text-red-400 text-sm mt-2">{discountCodeError}</p>
                   )}
                 </div>
 
@@ -3443,10 +3610,24 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             <span>Sconto {membershipTier}</span>
                             <span>-{formatPrice(membershipDiscount)}</span>
                           </div>
-                          <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(finalTotal)}</span></div>
+                          {birthdayDiscountAmount > 0 && (
+                            <div className="flex justify-between text-yellow-400 text-sm">
+                              <span>Codice Sconto</span>
+                              <span>-{formatPrice(birthdayDiscountAmount)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(finalPriceWithBirthdayDiscount)}</span></div>
                         </>
                       ) : (
-                        <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(total)}</span></div>
+                        <>
+                          {birthdayDiscountAmount > 0 && (
+                            <div className="flex justify-between text-yellow-400 text-sm">
+                              <span>Codice Sconto</span>
+                              <span>-{formatPrice(birthdayDiscountAmount)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(finalPriceWithBirthdayDiscount)}</span></div>
+                        </>
                       )}
                     </div>
                   </div>
