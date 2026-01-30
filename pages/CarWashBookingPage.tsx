@@ -955,7 +955,6 @@ const CarWashBookingPage: React.FC = () => {
 
   const handleCloseModal = () => {
     setShowPaymentModal(false);
-    setClientSecret(null);
     setPaymentError(null);
     setPendingBookingData(null);
   };
