@@ -197,10 +197,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const sendPasswordResetEmail = useCallback(async (email: string) => {
-    // Redirect to the app root. The AuthRedirector will handle routing
-    // to the reset password page once the user is signed in.
+    // Redirect directly to the reset password page
     return supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/`,
+      redirectTo: `${window.location.origin}/reset-password`,
     });
   }, []);
 
