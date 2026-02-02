@@ -663,8 +663,8 @@ const CarWashServicesPage: React.FC = () => {
               <div className="px-6 pt-6 pb-4 flex-grow flex flex-col">
                 <div className="mt-auto space-y-2">
                   <div>
-                    <span className="text-2xl font-bold text-white">€{service.price.toFixed(2)}</span>
-                    {service.priceUnit && <span className="text-sm text-gray-400 ml-1">{service.priceUnit}</span>}
+                    <span className="text-lg font-bold text-white">€{service.price.toFixed(2)}</span>
+                    {service.priceUnit && <span className="text-xs text-gray-400 ml-1">{service.priceUnit}</span>}
                   </div>
                 </div>
 
