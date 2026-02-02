@@ -111,6 +111,18 @@ const FALLBACK_SERVICES: Service[] = [
     image: '/completo.jpeg'
   },
   {
+    id: 'full-clean-2',
+    name: 'LAVAGGIO FULL CLEAN N2',
+    nameEn: 'FULL CLEAN N2',
+    price: 34.90,
+    duration: '1 ora',
+    description: 'Lavaggio completo avanzato con trattamenti extra.',
+    descriptionEn: 'Advanced full clean with extra treatments.',
+    features: [],
+    featuresEn: [],
+    image: '/completo2.jpeg'
+  },
+  {
     id: 'top-shine',
     name: 'LAVAGGIO TOP',
     nameEn: 'TOP SHINE',
