@@ -27,8 +27,8 @@ const FALLBACK_SERVICES: Service[] = [
     id: 'scooter-wash',
     name: 'LAVAGGIO MOTO',
     nameEn: 'MOTORCYCLE WASH',
-    price: 10,
-    duration: '15 min',
+    price: 9.90,
+    duration: '20 min',
     description: 'Lavaggio rapido ed efficace per la tua moto.',
     descriptionEn: 'Quick and effective wash for your motorcycle.',
     features: [
