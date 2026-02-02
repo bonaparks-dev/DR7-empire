@@ -11,7 +11,7 @@ const DISPLAY_TITLE: Record<string, string> = {
   'corporate-fleet': 'DR7 Corporate & Utility Fleet Division',
   yachts: 'DR7 Yachting Division',
   jets: 'DR7 Aviation Division',
-  'car-wash-services': 'DR7 Luxury Care Services',
+  'car-wash-services': 'Prime Wash',
   'mechanical-services': 'DR7 Rapid Response Services',
   membership: 'DR7 Exclusive Members Club',
   'credit-wallet': 'DR7 Credit Wallet',

@@ -180,7 +180,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                     <span>Aviation Division</span>
                   </NavLink>
                   <NavLink to="/car-wash-services" onClick={onClose} className={navLinkClasses}>
-                    <span>Luxury Care Services</span>
+                    <span>Prime Wash</span>
                   </NavLink>
                   <NavLink to="/mechanical-services" onClick={onClose} className={navLinkClasses}>
                     <span>Rapid Response Services</span>

@@ -411,7 +411,7 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
   },
   {
     id: 'car-wash-services',
-    label: { en: 'DR7 Luxury Care Services', it: 'DR7 Luxury Care Services' },
+    label: { en: 'Prime Wash', it: 'Prime Wash' },
     data: [],
     icon: SparklesIcon,
   },
