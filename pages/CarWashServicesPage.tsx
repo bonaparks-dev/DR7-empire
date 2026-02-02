@@ -129,7 +129,8 @@ const FALLBACK_SERVICES: Service[] = [
       'Fast polish treatment (protective cream)',
       'Extra detail on interior plastics',
       'DR7 luxury water included'
-    ]
+    ],
+    image: '/top.jpeg'
   },
   {
     id: 'vip',
