@@ -8,6 +8,14 @@ import { SERVICES, Service } from './CarWashServicesPage';
 import { useCarWashAvailability } from '../hooks/useRealtimeBookings';
 import { getUserCreditBalance, deductCredits, hasSufficientBalance } from '../utils/creditWallet';
 
+interface CartItem {
+  serviceId: string;
+  serviceName: string;
+  price: number;
+  quantity: number;
+  option?: string;
+}
+
 const CarWashBookingPage: React.FC = () => {
   const { lang } = useTranslation();
   const navigate = useNavigate();
@@ -19,15 +27,27 @@ const CarWashBookingPage: React.FC = () => {
   const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [showClientDropdown, setShowClientDropdown] = useState(false);
 
-  const serviceId = (location.state as any)?.serviceId;
-  const selectedService = SERVICES.find(s => s.id === serviceId);
+  // Support both single serviceId (legacy) and cartItems (new multi-service)
+  const locationState = location.state as any;
+  const cartItems: CartItem[] = locationState?.cartItems || [];
+  const cartTotal: number = locationState?.total || 0;
+
+  // Legacy single service support
+  const serviceId = locationState?.serviceId;
+  const selectedService = serviceId ? SERVICES.find(s => s.id === serviceId) : null;
+
+  // Determine if we have valid booking data
+  const hasCartItems = cartItems.length > 0;
+  const hasSelectedService = !!selectedService;
+  const hasValidBooking = hasCartItems || hasSelectedService;
 
   // Debug logging
   useEffect(() => {
+    console.log('CarWashBookingPage - cartItems:', cartItems);
+    console.log('CarWashBookingPage - cartTotal:', cartTotal);
     console.log('CarWashBookingPage - serviceId:', serviceId);
     console.log('CarWashBookingPage - selectedService:', selectedService);
-    console.log('CarWashBookingPage - SERVICES:', SERVICES);
-  }, [serviceId, selectedService]);
+  }, [cartItems, cartTotal, serviceId, selectedService]);
 
   // Get today's date in YYYY-MM-DD format - always get fresh current date
   const getTodayDate = () => {
@@ -136,10 +156,10 @@ const CarWashBookingPage: React.FC = () => {
   // Removed Stripe initialization - now using Nexi
 
   useEffect(() => {
-    if (!selectedService) {
+    if (!hasValidBooking) {
       navigate('/car-wash-services');
     }
-  }, [selectedService, navigate]);
+  }, [hasValidBooking, navigate]);
 
   useEffect(() => {
     if (user) {
@@ -514,12 +534,17 @@ const CarWashBookingPage: React.FC = () => {
   };
 
   const calculateTotal = () => {
-    const basePrice = selectedService?.price || 0;
+    // Use cart total if we have cart items, otherwise use selected service price
+    const basePrice = hasCartItems ? cartTotal : (selectedService?.price || 0);
     const discount = appliedDiscount?.type === 'car_wash' ? Math.min(appliedDiscount.amount, basePrice) : 0;
     return Math.max(0, basePrice - discount);
   };
 
-  const birthdayDiscountAmount = appliedDiscount?.type === 'car_wash' ? Math.min(appliedDiscount.amount, selectedService?.price || 0) : 0;
+  const getBasePrice = () => {
+    return hasCartItems ? cartTotal : (selectedService?.price || 0);
+  };
+
+  const birthdayDiscountAmount = appliedDiscount?.type === 'car_wash' ? Math.min(appliedDiscount.amount, getBasePrice()) : 0;
 
   // Validate birthday discount code
   const validateDiscountCode = async () => {
@@ -638,8 +663,8 @@ const CarWashBookingPage: React.FC = () => {
     console.log('selectedService:', selectedService);
     console.log('validation result:', validate());
 
-    if (!validate() || !selectedService) {
-      console.log('Validation failed or no selected service');
+    if (!validate() || !hasValidBooking) {
+      console.log('Validation failed or no valid booking data');
       return;
     }
 
@@ -665,13 +690,33 @@ const CarWashBookingPage: React.FC = () => {
     // Create ISO string with explicit Italy timezone offset
     const adjustedDateTime = new Date(`${formData.appointmentDate}T${formData.appointmentTime}:00${timezoneOffset}`);
 
+    // Build service name and ID based on cart items or single service
+    const getServiceNames = () => {
+      if (hasCartItems) {
+        return cartItems.map(item => {
+          const name = item.serviceName;
+          const qty = item.quantity > 1 ? ` x${item.quantity}` : '';
+          const opt = item.option ? ` (${item.option})` : '';
+          return `${name}${qty}${opt}`;
+        }).join(', ');
+      }
+      return lang === 'it' ? selectedService!.name : selectedService!.nameEn;
+    };
+
+    const getServiceIds = () => {
+      if (hasCartItems) {
+        return cartItems.map(item => item.serviceId).join(',');
+      }
+      return selectedService!.id;
+    };
+
     const bookingData = {
       user_id: user?.id || null,
       vehicle_type: 'car',
       vehicle_name: 'Car Wash Service',
       service_type: 'car_wash',
-      service_name: lang === 'it' ? selectedService.name : selectedService.nameEn,
-      service_id: selectedService.id,
+      service_name: getServiceNames(),
+      service_id: getServiceIds(),
       price_total: Math.round(calculateTotal() * 100), // in cents
       currency: 'EUR',
       customer_name: formData.fullName,
@@ -688,6 +733,7 @@ const CarWashBookingPage: React.FC = () => {
         codicePostale: formData.codicePostale,
         provinciaResidenza: formData.provinciaResidenza
       },
+      cart_items: hasCartItems ? cartItems : null, // Store cart items for reference
       appointment_date: adjustedDateTime.toISOString(),
       appointment_time: formData.appointmentTime,
       booking_details: {
@@ -736,10 +782,13 @@ const CarWashBookingPage: React.FC = () => {
         }
 
         // Deduct credits
+        const serviceName = hasCartItems
+          ? cartItems.map(i => i.serviceName).join(', ')
+          : (lang === 'it' ? selectedService?.name : selectedService?.nameEn);
         const deductResult = await deductCredits(
           user.id,
           totalAmount,
-          `Lavaggio ${lang === 'it' ? selectedService?.name : selectedService?.nameEn}`,
+          `Lavaggio ${serviceName}`,
           undefined,
           'car_wash_booking'
         );
@@ -918,6 +967,10 @@ const CarWashBookingPage: React.FC = () => {
 
         console.log('Generated Nexi orderId:', nexiOrderId, 'Length:', nexiOrderId.length);
 
+        const nexiServiceName = hasCartItems
+          ? cartItems.map(i => i.serviceName).join(', ')
+          : (lang === 'it' ? selectedService?.name : selectedService?.nameEn);
+
         const nexiResponse = await fetch('/.netlify/functions/create-nexi-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -925,12 +978,12 @@ const CarWashBookingPage: React.FC = () => {
             amount: calculateTotal() * 100, // Convert to cents
             currency: 'EUR',
             orderId: nexiOrderId,
-            description: `Lavaggio ${lang === 'it' ? selectedService?.name : selectedService?.nameEn}`,
+            description: `Lavaggio ${nexiServiceName}`,
             customerEmail: formData.email,
             metadata: {
               type: 'car-wash',
               bookingId: bookingData.id,
-              serviceName: lang === 'it' ? selectedService?.name : selectedService?.nameEn
+              serviceName: nexiServiceName
             }
           })
         });
@@ -965,7 +1018,7 @@ const CarWashBookingPage: React.FC = () => {
     setPendingBookingData(null);
   };
 
-  if (!selectedService) {
+  if (!hasValidBooking) {
     return (
       <div className="min-h-screen bg-black pt-32 pb-16 px-6 flex items-center justify-center">
         <div className="text-center">
@@ -1040,9 +1093,31 @@ const CarWashBookingPage: React.FC = () => {
           <h1 className="text-4xl font-bold text-white mb-2">
             {lang === 'it' ? 'Prenota il Servizio' : 'Book Service'}
           </h1>
-          <p className="text-gray-400 mb-8">
-            {lang === 'it' ? selectedService.name : selectedService.nameEn} - €{selectedService.price}
-          </p>
+          {hasCartItems ? (
+            <div className="mb-8">
+              <p className="text-gray-400 mb-3">{lang === 'it' ? 'Il tuo carrello:' : 'Your cart:'}</p>
+              <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4 space-y-2">
+                {cartItems.map((item, index) => (
+                  <div key={index} className="flex justify-between items-center text-white">
+                    <span>
+                      {item.serviceName}
+                      {item.option && <span className="text-gray-400 text-sm ml-2">({item.option})</span>}
+                      {item.quantity > 1 && <span className="text-gray-400 text-sm ml-2">x{item.quantity}</span>}
+                    </span>
+                    <span className="font-bold">€{(item.price * item.quantity).toFixed(2)}</span>
+                  </div>
+                ))}
+                <div className="border-t border-gray-700 pt-2 mt-2 flex justify-between items-center">
+                  <span className="text-white font-bold">{lang === 'it' ? 'Totale' : 'Total'}</span>
+                  <span className="text-white font-bold text-xl">€{cartTotal.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          ) : selectedService ? (
+            <p className="text-gray-400 mb-8">
+              {lang === 'it' ? selectedService.name : selectedService.nameEn} - €{selectedService.price}
+            </p>
+          ) : null}
 
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Customer Info */}
@@ -1309,7 +1384,7 @@ const CarWashBookingPage: React.FC = () => {
               {birthdayDiscountAmount > 0 && (
                 <div className="flex justify-between items-center mb-3 text-gray-400">
                   <span>Prezzo originale</span>
-                  <span className="line-through">€{selectedService?.price || 0}</span>
+                  <span className="line-through">€{getBasePrice().toFixed(2)}</span>
                 </div>
               )}
               {birthdayDiscountAmount > 0 && (
@@ -1373,12 +1448,30 @@ const CarWashBookingPage: React.FC = () => {
               </div>
 
               <div className="mb-6 p-4 bg-gray-800 rounded-lg">
-                <div className="flex justify-between text-sm text-gray-300 mb-2">
-                  <span>{lang === 'it' ? 'Servizio' : 'Service'}:</span>
-                  <span className="text-white font-semibold">
-                    {lang === 'it' ? selectedService?.name : selectedService?.nameEn}
-                  </span>
-                </div>
+                {hasCartItems ? (
+                  <>
+                    <div className="text-sm text-gray-300 mb-2">{lang === 'it' ? 'Servizi:' : 'Services:'}</div>
+                    <div className="space-y-1 mb-3">
+                      {cartItems.map((item, index) => (
+                        <div key={index} className="flex justify-between text-sm">
+                          <span className="text-white">
+                            {item.serviceName}
+                            {item.option && <span className="text-gray-400 ml-1">({item.option})</span>}
+                            {item.quantity > 1 && <span className="text-gray-400 ml-1">x{item.quantity}</span>}
+                          </span>
+                          <span className="text-white">€{(item.price * item.quantity).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex justify-between text-sm text-gray-300 mb-2">
+                    <span>{lang === 'it' ? 'Servizio' : 'Service'}:</span>
+                    <span className="text-white font-semibold">
+                      {lang === 'it' ? selectedService?.name : selectedService?.nameEn}
+                    </span>
+                  </div>
+                )}
                 <div className="border-t border-gray-700 my-3"></div>
                 <div className="flex justify-between text-lg font-bold text-white">
                   <span>{lang === 'it' ? 'Totale' : 'Total'}:</span>
