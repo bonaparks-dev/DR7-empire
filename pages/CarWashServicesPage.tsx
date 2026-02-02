@@ -264,12 +264,12 @@ const CarWashServicesPage: React.FC = () => {
               transition={{ duration: 0.6, delay: index * 0.1 }}
               className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg overflow-hidden group transition-all duration-300 hover:border-white/50 hover:shadow-2xl hover:shadow-white/10 flex flex-col"
             >
-              {/* Image Section */}
+              {/* Image Section - larger when has image */}
               <div className="relative overflow-hidden">
                 <img
                   src={service.image || '/carwash-default.jpg'}
                   alt={lang === 'it' ? service.name : service.nameEn}
-                  className="w-full aspect-[4/3] object-cover transition-transform duration-500 group-hover:scale-105"
+                  className={`w-full object-cover transition-transform duration-500 group-hover:scale-105 ${service.image ? 'aspect-[3/4]' : 'aspect-[4/3]'}`}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
                 {/* Price badge */}
@@ -279,39 +279,45 @@ const CarWashServicesPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Content Section - simplified when image exists */}
-              <div className="p-6 flex-grow flex flex-col">
-                {/* Only show name/description/features if NO image */}
-                {!service.image && (
-                  <>
-                    <h3 className="text-xl font-bold text-white mb-2">
-                      {lang === 'it' ? service.name : service.nameEn}
-                    </h3>
-                    <p className="text-gray-400 text-sm mb-4">
-                      {lang === 'it' ? service.description : service.descriptionEn}
-                    </p>
+              {/* Content Section - minimal when image exists */}
+              {service.image ? (
+                <div className="p-4">
+                  <button
+                    onClick={() => handleBookService(service.id)}
+                    className="w-full bg-transparent border-2 border-white text-white py-3 px-6 rounded-full font-semibold text-sm transform transition-all duration-300 group-hover:bg-white group-hover:text-black"
+                  >
+                    {lang === 'it' ? 'PRENOTA ORA' : 'BOOK NOW'}
+                  </button>
+                </div>
+              ) : (
+                <div className="p-6 flex-grow flex flex-col">
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    {lang === 'it' ? service.name : service.nameEn}
+                  </h3>
+                  <p className="text-gray-400 text-sm mb-4">
+                    {lang === 'it' ? service.description : service.descriptionEn}
+                  </p>
 
-                    <div className="space-y-2 mb-6 flex-grow">
-                      {(lang === 'it' ? service.features : service.featuresEn)?.slice(0, 4).map((feature, idx) => (
-                        <div key={idx} className="flex items-start">
-                          <span className="text-white mr-2 text-xs">•</span>
-                          <span className="text-gray-300 text-xs">{feature}</span>
-                        </div>
-                      ))}
-                      {(lang === 'it' ? service.features : service.featuresEn)?.length > 4 && (
-                        <span className="text-gray-500 text-xs">+{(lang === 'it' ? service.features : service.featuresEn).length - 4} altri</span>
-                      )}
-                    </div>
-                  </>
-                )}
+                  <div className="space-y-2 mb-6 flex-grow">
+                    {(lang === 'it' ? service.features : service.featuresEn)?.slice(0, 4).map((feature, idx) => (
+                      <div key={idx} className="flex items-start">
+                        <span className="text-white mr-2 text-xs">•</span>
+                        <span className="text-gray-300 text-xs">{feature}</span>
+                      </div>
+                    ))}
+                    {(lang === 'it' ? service.features : service.featuresEn)?.length > 4 && (
+                      <span className="text-gray-500 text-xs">+{(lang === 'it' ? service.features : service.featuresEn).length - 4} altri</span>
+                    )}
+                  </div>
 
-                <button
-                  onClick={() => handleBookService(service.id)}
-                  className={`w-full bg-transparent border-2 border-white text-white py-3 px-6 rounded-full font-semibold text-sm transform transition-all duration-300 group-hover:bg-white group-hover:text-black ${service.image ? 'mt-auto' : ''}`}
-                >
-                  {lang === 'it' ? 'PRENOTA ORA' : 'BOOK NOW'}
-                </button>
-              </div>
+                  <button
+                    onClick={() => handleBookService(service.id)}
+                    className="w-full bg-transparent border-2 border-white text-white py-3 px-6 rounded-full font-semibold text-sm transform transition-all duration-300 group-hover:bg-white group-hover:text-black"
+                  >
+                    {lang === 'it' ? 'PRENOTA ORA' : 'BOOK NOW'}
+                  </button>
+                </div>
+              )}
             </motion.div>
           ))}
         </div>
