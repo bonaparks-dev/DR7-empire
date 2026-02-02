@@ -41,7 +41,7 @@ const MOTO_SERVICES: WashService[] = [
     descriptionEn: 'Pre-wash, exterior wash with safe detergents, accessible areas cleaning, hand drying.',
     features: ['Prelavaggio', 'Lavaggio parti esterne con detergenti safe', 'Pulizia zone accessibili', 'Asciugatura a mano'],
     featuresEn: ['Pre-wash', 'Exterior wash with safe detergents', 'Accessible areas cleaning', 'Hand drying'],
-    image: '/services/moto.jpeg',
+    image: '/moto.jpeg',
   }
 ];
 
@@ -57,7 +57,7 @@ const URBAN_SERVICES: WashService[] = [
     descriptionEn: 'Presentable, clean, tidy car.',
     features: ['Prelavaggio', 'Lavaggio carrozzeria', 'Vetri esterni', 'Cerchi rapidi', 'Asciugatura a mano'],
     featuresEn: ['Pre-wash', 'Body wash', 'Exterior glass', 'Quick wheels', 'Hand drying'],
-    image: '/services/exterior.jpeg',
+    image: '/exterior.jpeg',
   },
   {
     id: 'urban-interior',
@@ -69,7 +69,7 @@ const URBAN_SERVICES: WashService[] = [
     descriptionEn: 'Clean cabin, better air, immediate comfort.',
     features: ['Aspirazione completa (sedili, moquette, tappetini)', 'Pulizia superfici interne', 'Vetri interni anti-aloni', 'Rifinitura plastiche'],
     featuresEn: ['Complete vacuuming (seats, carpet, mats)', 'Interior surfaces cleaning', 'Anti-halo interior glass', 'Plastic finishing'],
-    image: '/services/interior.jpeg',
+    image: '/interior.jpeg',
   },
   {
     id: 'urban-full',
@@ -81,7 +81,7 @@ const URBAN_SERVICES: WashService[] = [
     descriptionEn: 'Clean inside and out, no half measures.',
     features: ['Interni + esterni completi', 'Schiuma profumata', 'Cerchi/Passaruota/Vetri', 'Aspirazione profonda', 'Asciugatura e rifinitura'],
     featuresEn: ['Complete interior + exterior', 'Scented foam', 'Wheels/Wheel arches/Glass', 'Deep vacuuming', 'Drying and finishing'],
-    image: '/services/full.jpeg',
+    image: '/completo.jpeg',
   },
   {
     id: 'urban-full-n2',
@@ -93,7 +93,7 @@ const URBAN_SERVICES: WashService[] = [
     descriptionEn: 'Clean air, odors eliminated at the root.',
     features: ['Tutto il Full Clean', 'Sanificazione abitacolo all\'azoto'],
     featuresEn: ['Everything from Full Clean', 'Nitrogen cabin sanitization'],
-    image: '/services/full-n2.jpeg',
+    image: '/completo2.jpeg',
   },
   {
     id: 'urban-top-shine',
@@ -105,7 +105,7 @@ const URBAN_SERVICES: WashService[] = [
     descriptionEn: 'More shine, more protection, more presence.',
     features: ['Full Clean + trattamento lucidante veloce', 'Rifinitura extra plastiche e bocchette', 'Dettagli più curati', 'Acqua Prime Luxury'],
     featuresEn: ['Full Clean + quick polish treatment', 'Extra plastic and vent finishing', 'More detailed care', 'Prime Luxury Water'],
-    image: '/services/topshine.jpeg',
+    image: '/top.jpeg',
   },
   {
     id: 'urban-vip',
@@ -117,7 +117,7 @@ const URBAN_SERVICES: WashService[] = [
     descriptionEn: 'Regenerated car, not just clean.',
     features: ['Top Shine + decontaminazione carrozzeria', 'Pulizia e igienizzazione sedili pelle', 'Sanificazione all\'azoto', 'Sigillante premium', 'Profumo premium + omaggio', 'Acqua Prime Luxury'],
     featuresEn: ['Top Shine + body decontamination', 'Leather seat cleaning and sanitization', 'Nitrogen sanitization', 'Premium sealant', 'Premium perfume + gift', 'Prime Luxury Water'],
-    image: '/services/vip.jpeg',
+    image: '/luxurywash.jpeg',
   },
   {
     id: 'urban-luxury',
@@ -129,7 +129,7 @@ const URBAN_SERVICES: WashService[] = [
     descriptionEn: 'Dealership effect. Period.',
     features: ['VIP Experience + igienizzazione totale dettagli', 'Sedili (tessuto o pelle), moquette e tappetini', 'Cielo interno', 'Vano motore con prodotti specifici', 'Profumo premium + Acqua Prime Luxury'],
     featuresEn: ['VIP Experience + total detail sanitization', 'Seats (fabric or leather), carpet and mats', 'Headliner', 'Engine bay with specific products', 'Premium perfume + Prime Luxury Water'],
-    image: '/services/luxury.jpeg',
+    image: '/luxury.jpeg',
   }
 ];
 
@@ -145,7 +145,7 @@ const MAXI_SERVICES: WashService[] = [
     descriptionEn: 'Big car, big impact.',
     features: ['Prelavaggio, lavaggio carrozzeria', 'Vetri, cerchi rapidi', 'Asciugatura a mano'],
     featuresEn: ['Pre-wash, body wash', 'Glass, quick wheels', 'Hand drying'],
-    image: '/services/maxi-exterior.jpeg',
+    image: '/exterior.jpeg',
   },
   {
     id: 'maxi-interior',
@@ -157,7 +157,7 @@ const MAXI_SERVICES: WashService[] = [
     descriptionEn: 'Real order, no "skipped" areas.',
     features: ['Aspirazione completa (volumi grandi)', 'Pulizia superfici', 'Vetri interni', 'Rifinitura plastiche'],
     featuresEn: ['Complete vacuuming (large volumes)', 'Surface cleaning', 'Interior glass', 'Plastic finishing'],
-    image: '/services/maxi-interior.jpeg',
+    image: '/interior.jpeg',
   },
   {
     id: 'maxi-full',
@@ -169,7 +169,7 @@ const MAXI_SERVICES: WashService[] = [
     descriptionEn: 'Total, visible cleaning.',
     features: ['Interni + esterni completi', 'Schiuma profumata', 'Cerchi/passaruota/vetri', 'Aspirazione e rifinitura'],
     featuresEn: ['Complete interior + exterior', 'Scented foam', 'Wheels/wheel arches/glass', 'Vacuuming and finishing'],
-    image: '/services/maxi-full.jpeg',
+    image: '/completo.jpeg',
   },
   {
     id: 'maxi-full-n2',
@@ -181,7 +181,7 @@ const MAXI_SERVICES: WashService[] = [
     descriptionEn: 'Deep hygiene for families and travel.',
     features: ['Maxi Full Clean + sanificazione all\'azoto'],
     featuresEn: ['Maxi Full Clean + nitrogen sanitization'],
-    image: '/services/maxi-full-n2.jpeg',
+    image: '/completo2.jpeg',
   },
   {
     id: 'maxi-top-shine',
@@ -193,7 +193,7 @@ const MAXI_SERVICES: WashService[] = [
     descriptionEn: 'Premium presence.',
     features: ['Maxi Full Clean + lucidante veloce', 'Rifiniture extra', 'Dettagli curati', 'Acqua Prime Luxury'],
     featuresEn: ['Maxi Full Clean + quick polish', 'Extra finishing', 'Detailed care', 'Prime Luxury Water'],
-    image: '/services/maxi-topshine.jpeg',
+    image: '/top.jpeg',
   },
   {
     id: 'maxi-vip',
@@ -205,7 +205,7 @@ const MAXI_SERVICES: WashService[] = [
     descriptionEn: '"Like new", even on large vehicles.',
     features: ['Top Shine Maxi + decontaminazione', 'Sedili pelle', 'Sanificazione all\'azoto', 'Sigillante premium', 'Profumo premium + omaggio', 'Acqua Prime Luxury'],
     featuresEn: ['Top Shine Maxi + decontamination', 'Leather seats', 'Nitrogen sanitization', 'Premium sealant', 'Premium perfume + gift', 'Prime Luxury Water'],
-    image: '/services/maxi-vip.jpeg',
+    image: '/luxurywash.jpeg',
   },
   {
     id: 'maxi-luxury',
@@ -217,7 +217,7 @@ const MAXI_SERVICES: WashService[] = [
     descriptionEn: 'Complete regeneration.',
     features: ['VIP Maxi + igienizzazione totale', 'Sedili (tessuto/pelle)', 'Moquette/tappetini', 'Cielo', 'Vano motore', 'Profumo premium + Acqua Prime Luxury'],
     featuresEn: ['VIP Maxi + total sanitization', 'Seats (fabric/leather)', 'Carpet/mats', 'Headliner', 'Engine bay', 'Premium perfume + Prime Luxury Water'],
-    image: '/services/maxi-luxury.jpeg',
+    image: '/luxury.jpeg',
   }
 ];
 
@@ -652,7 +652,7 @@ const CarWashServicesPage: React.FC = () => {
               {/* Service Image - matching car rental aspect ratio */}
               <div className="relative overflow-hidden">
                 <img
-                  src={service.image || '/services/default-wash.jpg'}
+                  src={service.image || '/luxurywash.jpeg'}
                   alt={lang === 'it' ? service.name : service.nameEn}
                   className="w-full aspect-[9/16] object-cover transition-transform duration-500"
                 />
