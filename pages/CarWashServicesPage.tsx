@@ -1,820 +1,698 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { useNavigate } from 'react-router-dom';
 
-interface Service {
+interface WashService {
   id: string;
   name: string;
   nameEn: string;
   price: number;
-  duration: string | number;
-  features?: string[];
-  featuresEn?: string[];
-  description: string;
-  descriptionEn: string;
-  category?: string;
-  isActive?: boolean;
-  displayOrder?: number;
-  image?: string;
-}
-
-interface MechanicalService {
-  id: string;
-  name: string;
-  nameEn: string;
-  price: number;
-  category: string;
-  categoryEn: string;
-  description: string;
-  descriptionEn: string;
   duration: string;
-  durationEn: string;
+  description: string;
+  descriptionEn: string;
+  features: string[];
+  featuresEn: string[];
+  image?: string;
+  priceUnit?: string; // e.g., "a sedile", "per 4 cerchi"
+  priceOptions?: { label: string; price: number }[]; // For services with multiple price tiers
 }
 
-// Wash services
-const FALLBACK_SERVICES: Service[] = [
+interface CartItem {
+  service: WashService;
+  quantity: number;
+  selectedOption?: { label: string; price: number };
+}
+
+// PRIME MOTO EXPERIENCE
+const MOTO_SERVICES: WashService[] = [
   {
-    id: 'scooter-wash',
-    name: 'LAVAGGIO MOTO',
-    nameEn: 'MOTORCYCLE WASH',
+    id: 'moto-essential',
+    name: 'PRIME MOTO ESSENTIAL',
+    nameEn: 'PRIME MOTO ESSENTIAL',
     price: 9.90,
     duration: '20 min',
-    description: 'Lavaggio rapido ed efficace per la tua moto.',
-    descriptionEn: 'Quick and effective wash for your motorcycle.',
-    features: [
-      'Lavaggio esterno completo',
-      'Pulizia sella',
-      'Pulizia cerchi e pneumatici',
-      'Asciugatura'
-    ],
-    featuresEn: [
-      'Complete exterior wash',
-      'Seat cleaning',
-      'Wheel and tire cleaning',
-      'Drying'
-    ],
-    image: '/moto.jpeg'
-  },
+    description: 'Prelavaggio, lavaggio parti esterne con detergenti safe, pulizia zone accessibili, asciugatura a mano.',
+    descriptionEn: 'Pre-wash, exterior wash with safe detergents, accessible areas cleaning, hand drying.',
+    features: ['Prelavaggio', 'Lavaggio parti esterne con detergenti safe', 'Pulizia zone accessibili', 'Asciugatura a mano'],
+    featuresEn: ['Pre-wash', 'Exterior wash with safe detergents', 'Accessible areas cleaning', 'Hand drying'],
+  }
+];
+
+// PRIME URBAN CLASS
+const URBAN_SERVICES: WashService[] = [
   {
-    id: 'exterior-only',
-    name: 'LAVAGGIO SOLO ESTERNO',
-    nameEn: 'EXTERIOR ONLY',
+    id: 'urban-exterior',
+    name: 'PRIME EXTERIOR CLEAN',
+    nameEn: 'PRIME EXTERIOR CLEAN',
     price: 14.90,
     duration: '15 min',
-    description: 'Lavaggio esterno rapido per una carrozzeria brillante.',
-    descriptionEn: 'Quick exterior wash for a shiny body.',
-    features: [
-      'Lavaggio carrozzeria completo',
-      'Schiuma colorata profumata',
-      'Pulizia cerchi e vetri esterni',
-      'Asciugatura'
-    ],
-    featuresEn: [
-      'Complete body wash',
-      'Scented colored foam',
-      'Wheel and exterior glass cleaning',
-      'Drying'
-    ],
-    image: '/exterior.jpeg'
+    description: 'Auto presentabile, pulita, ordinata.',
+    descriptionEn: 'Presentable, clean, tidy car.',
+    features: ['Prelavaggio', 'Lavaggio carrozzeria', 'Vetri esterni', 'Cerchi rapidi', 'Asciugatura a mano'],
+    featuresEn: ['Pre-wash', 'Body wash', 'Exterior glass', 'Quick wheels', 'Hand drying'],
   },
   {
-    id: 'interior-only',
-    name: 'LAVAGGIO SOLO INTERNO',
-    nameEn: 'INTERIOR ONLY',
+    id: 'urban-interior',
+    name: 'PRIME INTERIOR CLEAN',
+    nameEn: 'PRIME INTERIOR CLEAN',
     price: 19.90,
     duration: '30 min',
-    description: 'Pulizia approfondita degli interni per un abitacolo fresco.',
-    descriptionEn: 'Deep interior cleaning for a fresh cabin.',
-    features: [
-      'Aspirazione completa interni',
-      'Pulizia cruscotto e consolle',
-      'Pulizia vetri interni',
-      'Pulizia sedili e tappetini'
-    ],
-    featuresEn: [
-      'Complete interior vacuuming',
-      'Dashboard and console cleaning',
-      'Interior glass cleaning',
-      'Seat and mat cleaning'
-    ],
-    image: '/interior.jpeg'
+    description: 'Abitacolo pulito, aria migliore, comfort immediato.',
+    descriptionEn: 'Clean cabin, better air, immediate comfort.',
+    features: ['Aspirazione completa (sedili, moquette, tappetini)', 'Pulizia superfici interne', 'Vetri interni anti-aloni', 'Rifinitura plastiche'],
+    featuresEn: ['Complete vacuuming (seats, carpet, mats)', 'Interior surfaces cleaning', 'Anti-halo interior glass', 'Plastic finishing'],
   },
   {
-    id: 'full-clean',
-    name: 'LAVAGGIO COMPLETO',
-    nameEn: 'FULL CLEAN',
+    id: 'urban-full',
+    name: 'PRIME FULL CLEAN',
+    nameEn: 'PRIME FULL CLEAN',
     price: 24.90,
     duration: '45 min',
-    description: 'Rapido e completo, per un\'auto pulita ogni giorno.',
-    descriptionEn: 'Quick and complete, for a clean car every day.',
-    features: [
-      'Esterni + interni completi',
-      'Schiuma colorata profumata',
-      'Pulizia cerchi, passaruota, vetri',
-      'Aspirazione interni'
-    ],
-    featuresEn: [
-      'Complete exterior + interior',
-      'Scented colored foam',
-      'Wheel, wheel arch, glass cleaning',
-      'Interior vacuuming'
-    ],
-    image: '/completo.jpeg'
+    description: 'Pulita dentro e fuori senza "mezze misure".',
+    descriptionEn: 'Clean inside and out, no half measures.',
+    features: ['Interni + esterni completi', 'Schiuma profumata', 'Cerchi/Passaruota/Vetri', 'Aspirazione profonda', 'Asciugatura e rifinitura'],
+    featuresEn: ['Complete interior + exterior', 'Scented foam', 'Wheels/Wheel arches/Glass', 'Deep vacuuming', 'Drying and finishing'],
   },
   {
-    id: 'full-clean-2',
-    name: 'LAVAGGIO FULL CLEAN N2',
-    nameEn: 'FULL CLEAN N2',
+    id: 'urban-full-n2',
+    name: 'PRIME FULL CLEAN N₂',
+    nameEn: 'PRIME FULL CLEAN N₂',
     price: 34.90,
-    duration: '1 ora',
-    description: 'Lavaggio completo avanzato con trattamenti extra.',
-    descriptionEn: 'Advanced full clean with extra treatments.',
-    features: [],
-    featuresEn: [],
-    image: '/completo2.jpeg'
+    duration: '50 min',
+    description: 'Aria pulita, odori eliminati alla radice.',
+    descriptionEn: 'Clean air, odors eliminated at the root.',
+    features: ['Tutto il Full Clean', 'Sanificazione abitacolo all\'azoto'],
+    featuresEn: ['Everything from Full Clean', 'Nitrogen cabin sanitization'],
   },
   {
-    id: 'top-shine',
-    name: 'LAVAGGIO TOP',
-    nameEn: 'TOP SHINE',
+    id: 'urban-top-shine',
+    name: 'PRIME TOP SHINE',
+    nameEn: 'PRIME TOP SHINE',
     price: 49,
-    duration: '1-2 ore',
-    description: 'Più brillantezza e protezione, con cura extra dei dettagli.',
-    descriptionEn: 'More shine and protection, with extra detail care.',
-    features: [
-      'Tutto quello del Full Clean',
-      'Trattamento lucidante veloce (crema protettiva carrozzeria)',
-      'Dettaglio extra di plastiche interne e bocchette',
-      'Acqua DR7 luxury inclusa'
-    ],
-    featuresEn: [
-      'Everything from Full Clean',
-      'Fast polish treatment (protective cream)',
-      'Extra detail on interior plastics',
-      'DR7 luxury water included'
-    ],
-    image: '/top.jpeg'
+    duration: '90 min',
+    description: 'Più brillantezza, più protezione, più presenza.',
+    descriptionEn: 'More shine, more protection, more presence.',
+    features: ['Full Clean + trattamento lucidante veloce', 'Rifinitura extra plastiche e bocchette', 'Dettagli più curati', 'Acqua Prime Luxury'],
+    featuresEn: ['Full Clean + quick polish treatment', 'Extra plastic and vent finishing', 'More detailed care', 'Prime Luxury Water'],
   },
   {
-    id: 'vip',
-    name: 'LAVAGGIO VIP',
-    nameEn: 'VIP EXPERIENCE',
+    id: 'urban-vip',
+    name: 'PRIME VIP EXPERIENCE',
+    nameEn: 'PRIME VIP EXPERIENCE',
     price: 75,
-    duration: '2-3 ore',
-    description: 'Il pacchetto che ti fa ritirare l\'auto "come nuova".',
-    descriptionEn: 'The package that makes your car look "like new".',
-    features: [
-      'Tutto quello del Top Shine',
-      'Decontaminazione carrozzeria (sporco ostinato, catrame, ferro)',
-      'Pulizia e igienizzazione sedili (pelle)',
-      'Sanificazione abitacolo all\'azoto',
-      'Sigillante premium su carrozzeria',
-      'Profumo premium + omaggio esclusivo',
-      'Acqua DR7 luxury inclusa'
-    ],
-    featuresEn: [
-      'Everything from Top Shine',
-      'Body decontamination (tar, iron)',
-      'Seat cleaning & sanitization',
-      'Nitrogen cabin sanitization',
-      'Premium sealant on body',
-      'Premium perfume + exclusive gift',
-      'DR7 luxury water included'
-    ],
-    image: '/primevip.jpeg'
+    duration: '120 min',
+    description: 'Auto rigenerata, non solo pulita.',
+    descriptionEn: 'Regenerated car, not just clean.',
+    features: ['Top Shine + decontaminazione carrozzeria', 'Pulizia e igienizzazione sedili pelle', 'Sanificazione all\'azoto', 'Sigillante premium', 'Profumo premium + omaggio', 'Acqua Prime Luxury'],
+    featuresEn: ['Top Shine + body decontamination', 'Leather seat cleaning and sanitization', 'Nitrogen sanitization', 'Premium sealant', 'Premium perfume + gift', 'Prime Luxury Water'],
   },
   {
-    id: 'dr7-luxury',
-    name: 'LAVAGGIO DR7 LUXURY',
-    nameEn: 'DR7 LUXURY',
+    id: 'urban-luxury',
+    name: 'PRIME LUXURY DETAIL',
+    nameEn: 'PRIME LUXURY DETAIL',
     price: 119,
-    duration: '2-3 ore',
-    description: 'L\'auto esce meglio di quando è uscita dalla concessionaria.',
-    descriptionEn: 'Your car comes out better than when it left the dealership.',
-    features: [
-      'Tutto quello del VIP Experience',
-      'Igienizzazione totale di ogni singolo dettaglio',
-      'Pulizia e igienizzazione sedili (tessuto o pelle)',
-      'Lavaggio completo moquette e tappetini',
-      'Pulizia e trattamento del cielo (soffitto interno)',
-      'Lavaggio accurato del motore con prodotti specifici',
-      'Profumo premium in omaggio',
-      'Acqua DR7 luxury inclusa'
-    ],
-    featuresEn: [
-      'Everything from VIP Experience',
-      'Total sanitization of every detail',
-      'Complete seat cleaning (fabric/leather)',
-      'Full carpet and mat washing',
-      'Ceiling treatment',
-      'Engine bay cleaning',
-      'Premium perfume gift',
-      'DR7 luxury water included'
-    ],
-    image: '/luxury.jpeg'
+    duration: '180 min',
+    description: 'Effetto concessionaria. Punto.',
+    descriptionEn: 'Dealership effect. Period.',
+    features: ['VIP Experience + igienizzazione totale dettagli', 'Sedili (tessuto o pelle), moquette e tappetini', 'Cielo interno', 'Vano motore con prodotti specifici', 'Profumo premium + Acqua Prime Luxury'],
+    featuresEn: ['VIP Experience + total detail sanitization', 'Seats (fabric or leather), carpet and mats', 'Headliner', 'Engine bay with specific products', 'Premium perfume + Prime Luxury Water'],
   }
 ];
 
-// Mechanical services
-const MECHANICAL_SERVICES: MechanicalService[] = [
-  // Freni
+// PRIME MAXI CLASS
+const MAXI_SERVICES: WashService[] = [
   {
-    id: 'brake-pads-front',
-    name: 'Cambio Pastiglie Freni - Anteriori',
-    nameEn: 'Brake Pads Replacement - Front',
-    price: 29,
-    category: 'Freni',
-    categoryEn: 'Brakes',
-    description: 'Sostituzione pastiglie freni anteriori',
-    descriptionEn: 'Front brake pads replacement',
-    duration: '30 minuti',
-    durationEn: '30 minutes'
+    id: 'maxi-exterior',
+    name: 'PRIME MAXI EXTERIOR CLEAN',
+    nameEn: 'PRIME MAXI EXTERIOR CLEAN',
+    price: 19.90,
+    duration: '20 min',
+    description: 'Grande auto, grande impatto.',
+    descriptionEn: 'Big car, big impact.',
+    features: ['Prelavaggio, lavaggio carrozzeria', 'Vetri, cerchi rapidi', 'Asciugatura a mano'],
+    featuresEn: ['Pre-wash, body wash', 'Glass, quick wheels', 'Hand drying'],
   },
   {
-    id: 'brake-pads-rear',
-    name: 'Cambio Pastiglie Freni - Posteriori',
-    nameEn: 'Brake Pads Replacement - Rear',
-    price: 29,
-    category: 'Freni',
-    categoryEn: 'Brakes',
-    description: 'Sostituzione pastiglie freni posteriori',
-    descriptionEn: 'Rear brake pads replacement',
-    duration: '30 minuti',
-    durationEn: '30 minutes'
+    id: 'maxi-full',
+    name: 'PRIME MAXI FULL CLEAN',
+    nameEn: 'PRIME MAXI FULL CLEAN',
+    price: 29.90,
+    duration: '55 min',
+    description: 'Pulizia totale, visibile.',
+    descriptionEn: 'Total, visible cleaning.',
+    features: ['Interni + esterni completi', 'Schiuma profumata', 'Cerchi/passaruota/vetri', 'Aspirazione e rifinitura'],
+    featuresEn: ['Complete interior + exterior', 'Scented foam', 'Wheels/wheel arches/glass', 'Vacuuming and finishing'],
   },
   {
-    id: 'brake-pads-all',
-    name: 'Cambio Pastiglie Freni - Anteriori + Posteriori',
-    nameEn: 'Brake Pads Replacement - Front + Rear',
-    price: 49,
-    category: 'Freni',
-    categoryEn: 'Brakes',
-    description: 'Sostituzione completa pastiglie freni',
-    descriptionEn: 'Complete brake pads replacement',
-    duration: '1 ora',
-    durationEn: '1 hour'
-  },
-  // Tagliando
-  {
-    id: 'service-city',
-    name: 'Tagliando Rapido (Olio + Filtri) - City Car/Utilitarie',
-    nameEn: 'Quick Service (Oil + Filters) - City Car/Small Cars',
-    price: 39,
-    category: 'Tagliando',
-    categoryEn: 'Service',
-    description: 'Cambio olio e filtri per city car',
-    descriptionEn: 'Oil and filter change for city cars',
-    duration: '30 minuti',
-    durationEn: '30 minutes'
+    id: 'maxi-full-n2',
+    name: 'PRIME MAXI FULL CLEAN N₂',
+    nameEn: 'PRIME MAXI FULL CLEAN N₂',
+    price: 39.90,
+    duration: '55 min',
+    description: 'Igiene profonda per famiglie e viaggi.',
+    descriptionEn: 'Deep hygiene for families and travel.',
+    features: ['Maxi Full Clean + sanificazione all\'azoto'],
+    featuresEn: ['Maxi Full Clean + nitrogen sanitization'],
   },
   {
-    id: 'service-sedan',
-    name: 'Tagliando Rapido (Olio + Filtri) - Berlina/SUV',
-    nameEn: 'Quick Service (Oil + Filters) - Sedan/SUV',
-    price: 49,
-    category: 'Tagliando',
-    categoryEn: 'Service',
-    description: 'Cambio olio e filtri per berlina/SUV',
-    descriptionEn: 'Oil and filter change for sedan/SUV',
-    duration: '45 minuti',
-    durationEn: '45 minutes'
-  },
-  {
-    id: 'service-luxury',
-    name: 'Tagliando Rapido (Olio + Filtri) - Luxury/Sportive',
-    nameEn: 'Quick Service (Oil + Filters) - Luxury/Sports',
+    id: 'maxi-top-shine',
+    name: 'PRIME TOP SHINE MAXI',
+    nameEn: 'PRIME TOP SHINE MAXI',
     price: 59,
-    category: 'Tagliando',
-    categoryEn: 'Service',
-    description: 'Cambio olio e filtri per auto luxury/sportive',
-    descriptionEn: 'Oil and filter change for luxury/sports cars',
-    duration: '1 ora',
-    durationEn: '1 hour'
-  },
-  // Tergicristalli
-  {
-    id: 'wipers',
-    name: 'Cambio Spazzole Tergicristalli (coppia)',
-    nameEn: 'Wiper Blades Replacement (pair)',
-    price: 19,
-    category: 'Tergicristalli',
-    categoryEn: 'Wipers',
-    description: 'Sostituzione coppia spazzole tergicristalli',
-    descriptionEn: 'Pair of wiper blades replacement',
-    duration: '15 minuti',
-    durationEn: '15 minutes'
-  },
-  // Batteria
-  {
-    id: 'battery-check',
-    name: 'Controllo Batteria',
-    nameEn: 'Battery Check',
-    price: 9,
-    category: 'Batteria',
-    categoryEn: 'Battery',
-    description: 'Test completo batteria',
-    descriptionEn: 'Complete battery test',
-    duration: '10 minuti',
-    durationEn: '10 minutes'
+    duration: '100 min',
+    description: 'Presenza premium.',
+    descriptionEn: 'Premium presence.',
+    features: ['Maxi Full Clean + lucidante veloce', 'Rifiniture extra', 'Dettagli curati', 'Acqua Prime Luxury'],
+    featuresEn: ['Maxi Full Clean + quick polish', 'Extra finishing', 'Detailed care', 'Prime Luxury Water'],
   },
   {
-    id: 'battery-small',
-    name: 'Cambio Batteria - Auto Piccole/City Car',
-    nameEn: 'Battery Replacement - Small/City Cars',
-    price: 49,
-    category: 'Batteria',
-    categoryEn: 'Battery',
-    description: 'Sostituzione batteria per city car',
-    descriptionEn: 'Battery replacement for city cars',
-    duration: '20 minuti',
-    durationEn: '20 minutes'
+    id: 'maxi-vip',
+    name: 'PRIME VIP EXPERIENCE MAXI',
+    nameEn: 'PRIME VIP EXPERIENCE MAXI',
+    price: 85,
+    duration: '130 min',
+    description: '"Come nuova", anche sui grandi volumi.',
+    descriptionEn: '"Like new", even on large vehicles.',
+    features: ['Top Shine Maxi + decontaminazione', 'Sedili pelle', 'Sanificazione all\'azoto', 'Sigillante premium', 'Profumo premium + omaggio', 'Acqua Prime Luxury'],
+    featuresEn: ['Top Shine Maxi + decontamination', 'Leather seats', 'Nitrogen sanitization', 'Premium sealant', 'Premium perfume + gift', 'Prime Luxury Water'],
   },
   {
-    id: 'battery-medium',
-    name: 'Cambio Batteria - Berline/SUV Medi',
-    nameEn: 'Battery Replacement - Sedan/Medium SUV',
-    price: 79,
-    category: 'Batteria',
-    categoryEn: 'Battery',
-    description: 'Sostituzione batteria per berlina/SUV',
-    descriptionEn: 'Battery replacement for sedan/SUV',
-    duration: '30 minuti',
-    durationEn: '30 minutes'
-  },
-  {
-    id: 'battery-large',
-    name: 'Cambio Batteria - SUV Grandi/Luxury',
-    nameEn: 'Battery Replacement - Large SUV/Luxury',
-    price: 99,
-    category: 'Batteria',
-    categoryEn: 'Battery',
-    description: 'Sostituzione batteria per SUV grandi/luxury',
-    descriptionEn: 'Battery replacement for large SUV/luxury',
-    duration: '40 minuti',
-    durationEn: '40 minutes'
-  },
-  // Lampadine
-  {
-    id: 'bulb-single',
-    name: 'Cambio Lampadina (singola)',
-    nameEn: 'Bulb Replacement (single)',
-    price: 15,
-    category: 'Lampadine',
-    categoryEn: 'Bulbs',
-    description: 'Sostituzione singola lampadina',
-    descriptionEn: 'Single bulb replacement',
-    duration: '15 minuti',
-    durationEn: '15 minutes'
-  },
-  {
-    id: 'bulb-kit',
-    name: 'Kit Luci Completo (tutte le lampadine)',
-    nameEn: 'Complete Light Kit (all bulbs)',
-    price: 59,
-    category: 'Lampadine',
-    categoryEn: 'Bulbs',
-    description: 'Sostituzione completa tutte lampadine',
-    descriptionEn: 'Complete bulb replacement',
-    duration: '1 ora',
-    durationEn: '1 hour'
-  },
-  // Fari
-  {
-    id: 'headlight-polish-single',
-    name: 'Lucidatura Fari Opachi - Singolo',
-    nameEn: 'Headlight Polish - Single',
-    price: 29,
-    category: 'Fari',
-    categoryEn: 'Headlights',
-    description: 'Lucidatura singolo faro opacizzato',
-    descriptionEn: 'Single headlight polishing',
-    duration: '30 minuti',
-    durationEn: '30 minutes'
-  },
-  {
-    id: 'headlight-polish-pair',
-    name: 'Lucidatura Fari Opachi - Coppia',
-    nameEn: 'Headlight Polish - Pair',
-    price: 49,
-    category: 'Fari',
-    categoryEn: 'Headlights',
-    description: 'Lucidatura coppia fari opacizzati',
-    descriptionEn: 'Pair of headlights polishing',
-    duration: '1 ora',
-    durationEn: '1 hour'
-  },
-  // Carrozzeria
-  {
-    id: 'body-polish-small',
-    name: 'Lucidatura Carrozzeria - Piccola (Graffi Leggeri)',
-    nameEn: 'Body Polish - Small (Light Scratches)',
-    price: 39,
-    category: 'Carrozzeria',
-    categoryEn: 'Bodywork',
-    description: 'Lucidatura graffi leggeri area piccola',
-    descriptionEn: 'Light scratch polishing small area',
-    duration: '1 ora',
-    durationEn: '1 hour'
-  },
-  {
-    id: 'body-polish-medium',
-    name: 'Lucidatura Carrozzeria - Media (1 Pannello)',
-    nameEn: 'Body Polish - Medium (1 Panel)',
-    price: 79,
-    category: 'Carrozzeria',
-    categoryEn: 'Bodywork',
-    description: 'Lucidatura completa 1 pannello',
-    descriptionEn: 'Complete 1 panel polishing',
-    duration: '2 ore',
-    durationEn: '2 hours'
+    id: 'maxi-luxury',
+    name: 'PRIME LUXURY DETAIL MAXI',
+    nameEn: 'PRIME LUXURY DETAIL MAXI',
+    price: 179,
+    duration: '240 min',
+    description: 'Rigenerazione completa.',
+    descriptionEn: 'Complete regeneration.',
+    features: ['VIP Maxi + igienizzazione totale', 'Sedili (tessuto/pelle)', 'Moquette/tappetini', 'Cielo', 'Vano motore', 'Profumo premium + Acqua Prime Luxury'],
+    featuresEn: ['VIP Maxi + total sanitization', 'Seats (fabric/leather)', 'Carpet/mats', 'Headliner', 'Engine bay', 'Premium perfume + Prime Luxury Water'],
   }
 ];
 
-// Export for backward compatibility
-export const SERVICES = FALLBACK_SERVICES;
-
-const ADDITIONAL_SERVICES = [
+// PRIME EXTRA CARE (add-ons)
+const EXTRA_CARE_SERVICES: WashService[] = [
   {
-    id: 'courtesy-car',
-    name: 'Utilitaria di Cortesia',
-    nameEn: 'Courtesy Car',
-    subtitle: 'Perfetto per chi vuole sbrigare commissioni o non aspettare sul posto.',
-    subtitleEn: 'Perfect for running errands while we work.',
-    prices: [
-      { duration: '1 ora', hours: 1, price: 15 },
-      { duration: '2 ore', hours: 2, price: 25 },
-      { duration: '3 ore', hours: 3, price: 35 }
-    ]
+    id: 'extra-glass',
+    name: 'PRIME GLASS CARE',
+    nameEn: 'PRIME GLASS CARE',
+    price: 9.90,
+    duration: '10 min',
+    description: 'Visibilità perfetta.',
+    descriptionEn: 'Perfect visibility.',
+    features: ['Vetri interni/esterni + anti-aloni'],
+    featuresEn: ['Interior/exterior glass + anti-halo'],
   },
   {
-    id: 'supercar',
-    name: 'Supercar Experience',
-    nameEn: 'Supercar Experience',
-    subtitle: '',
-    subtitleEn: '',
-    prices: [
-      { duration: '1 ora', hours: 1, price: 59 },
-      { duration: '2 ore', hours: 2, price: 99 },
-      { duration: '3 ore', hours: 3, price: 139 }
-    ]
+    id: 'extra-odor',
+    name: 'PRIME ODOR CONTROL',
+    nameEn: 'PRIME ODOR CONTROL',
+    price: 9.90,
+    duration: '5 min',
+    description: 'Aria pulita.',
+    descriptionEn: 'Clean air.',
+    features: ['Trattamento neutralizzante + profumazione premium'],
+    featuresEn: ['Neutralizing treatment + premium fragrance'],
   },
   {
-    id: 'lambo-ferrari',
-    name: 'Lamborghini & Ferrari Experience',
-    nameEn: 'Lamborghini & Ferrari Experience',
-    subtitle: 'Guidi una delle nostre supercar mentre la tua auto viene rigenerata.',
-    subtitleEn: 'Drive one of our supercars while your car is being regenerated.',
-    prices: [
-      { duration: '1 ora', hours: 1, price: 149 },
-      { duration: '2 ore', hours: 2, price: 249 },
-      { duration: '3 ore', hours: 3, price: 299 }
-    ]
+    id: 'extra-child',
+    name: 'PRIME CHILD CARE',
+    nameEn: 'PRIME CHILD CARE',
+    price: 14.90,
+    duration: '15 min',
+    description: 'Igiene e tranquillità.',
+    descriptionEn: 'Hygiene and peace of mind.',
+    features: ['Pulizia e igienizzazione seggiolino', 'Trattamento macchie'],
+    featuresEn: ['Child seat cleaning and sanitization', 'Stain treatment'],
+  },
+  {
+    id: 'extra-pet',
+    name: 'PRIME PET CLEAN',
+    nameEn: 'PRIME PET CLEAN',
+    price: 19.90,
+    duration: '20 min',
+    description: 'Tessuti liberi dai peli.',
+    descriptionEn: 'Fabrics free from pet hair.',
+    features: ['Rimozione peli con strumenti dedicati', 'Aspirazione mirata'],
+    featuresEn: ['Pet hair removal with dedicated tools', 'Targeted vacuuming'],
+  },
+  {
+    id: 'extra-engine',
+    name: 'PRIME ENGINE CLEAN',
+    nameEn: 'PRIME ENGINE CLEAN',
+    price: 29.90,
+    duration: '30 min',
+    description: 'Motore pulito e ordinato.',
+    descriptionEn: 'Clean and tidy engine.',
+    features: ['Pulizia vano motore con prodotti specifici', 'Tecnica safe', 'Rifinitura plastiche'],
+    featuresEn: ['Engine bay cleaning with specific products', 'Safe technique', 'Plastic finishing'],
+  },
+  {
+    id: 'extra-quick-shine',
+    name: 'PRIME QUICK SHINE',
+    nameEn: 'PRIME QUICK SHINE',
+    price: 14.90,
+    duration: '10 min',
+    description: 'Più gloss subito.',
+    descriptionEn: 'More gloss immediately.',
+    features: ['Cera spray protettiva + rifinitura'],
+    featuresEn: ['Protective spray wax + finishing'],
+  },
+  {
+    id: 'extra-seat-protect',
+    name: 'PRIME SEAT PROTECT',
+    nameEn: 'PRIME SEAT PROTECT',
+    price: 14.90,
+    duration: '10 min',
+    description: 'Sedili più protetti nel tempo.',
+    descriptionEn: 'Seats more protected over time.',
+    features: ['Trattamento protettivo sedili'],
+    featuresEn: ['Seat protective treatment'],
+    priceUnit: 'a sedile',
+  },
+  {
+    id: 'extra-seat-clean',
+    name: 'PRIME SEAT CLEAN',
+    nameEn: 'PRIME SEAT CLEAN',
+    price: 9.90,
+    duration: '15 min',
+    description: 'Sedile davvero pulito.',
+    descriptionEn: 'Truly clean seat.',
+    features: ['Pretrattamento', 'Pulizia profonda in base al materiale', 'Asciugatura controllata'],
+    featuresEn: ['Pre-treatment', 'Deep cleaning based on material', 'Controlled drying'],
+    priceUnit: 'a sedile',
+  },
+  {
+    id: 'extra-plastic',
+    name: 'PRIME PLASTIC REFRESH',
+    nameEn: 'PRIME PLASTIC REFRESH',
+    price: 14.90,
+    duration: '15 min',
+    description: 'Plastiche piene e curate.',
+    descriptionEn: 'Full and well-maintained plastics.',
+    features: ['Pulizia + ravvivante protettivo (no effetto unto)'],
+    featuresEn: ['Cleaning + protective revitalizer (no greasy effect)'],
+  },
+  {
+    id: 'extra-rim',
+    name: 'PRIME RIM CARE',
+    nameEn: 'PRIME RIM CARE',
+    price: 9.90,
+    duration: '10 min',
+    description: 'Look più "nuovo".',
+    descriptionEn: 'More "new" look.',
+    features: ['Detergente specifico', 'Spazzolatura fronte cerchio', 'Rifinitura gomme'],
+    featuresEn: ['Specific detergent', 'Wheel face brushing', 'Tire finishing'],
+    priceUnit: 'per 4 cerchi',
+  },
+  {
+    id: 'extra-wiper',
+    name: 'PRIME WIPER SERVICE',
+    nameEn: 'PRIME WIPER SERVICE',
+    price: 9.90,
+    duration: '5 min',
+    description: 'Visibilità e sicurezza di guida.',
+    descriptionEn: 'Visibility and driving safety.',
+    features: ['Rimozione spazzole usurate', 'Installazione nuove spazzole', 'Verifica corretta aderenza'],
+    featuresEn: ['Worn blade removal', 'New blade installation', 'Proper adhesion check'],
+    priceUnit: 'anteriore o posteriore',
+  },
+  {
+    id: 'extra-headlight',
+    name: 'PRIME HEADLIGHT RESTORE',
+    nameEn: 'PRIME HEADLIGHT RESTORE',
+    price: 34.90,
+    duration: '30 min',
+    description: 'Migliora estetica, visibilità e sicurezza.',
+    descriptionEn: 'Improves aesthetics, visibility and safety.',
+    features: ['Pulizia profonda del faro', 'Lucidatura progressiva', 'Ripristino trasparenza'],
+    featuresEn: ['Deep headlight cleaning', 'Progressive polishing', 'Transparency restoration'],
+    priceOptions: [
+      { label: '1 faro', price: 34.90 },
+      { label: '2 fari', price: 59.90 },
+      { label: '4 fari', price: 89.90 },
+    ],
+  },
+  {
+    id: 'extra-courtesy',
+    name: 'PRIME COURTESY DRIVE',
+    nameEn: 'PRIME COURTESY DRIVE',
+    price: 9.90,
+    duration: '-',
+    description: 'Nessuna attesa, nessuna perdita di tempo.',
+    descriptionEn: 'No waiting, no time wasted.',
+    features: ['Auto pronta all\'uso mentre la tua viene lavata'],
+    featuresEn: ['Car ready to use while yours is being washed'],
+    priceOptions: [
+      { label: '1 ora', price: 9.90 },
+      { label: '2 ore', price: 14.90 },
+      { label: '3 ore', price: 19.90 },
+      { label: '4+ ore', price: 5.90 },
+    ],
+  },
+  {
+    id: 'extra-supercar',
+    name: 'SUPERCAR EXPERIENCE',
+    nameEn: 'SUPERCAR EXPERIENCE',
+    price: 89,
+    duration: '-',
+    description: 'Non è un servizio. È un\'esperienza.',
+    descriptionEn: 'It\'s not a service. It\'s an experience.',
+    features: ['Guida una delle nostre supercar mentre la tua auto viene trattata'],
+    featuresEn: ['Drive one of our supercars while your car is being treated'],
+    priceOptions: [
+      { label: '1 ora', price: 89 },
+      { label: '2 ore', price: 149 },
+      { label: '3 ore', price: 189 },
+      { label: '4+ ore', price: 69 },
+    ],
+  },
+  {
+    id: 'extra-icon',
+    name: 'PRIME ICON EXPERIENCE',
+    nameEn: 'PRIME ICON EXPERIENCE',
+    price: 189,
+    duration: '-',
+    description: 'L\'esperienza definitiva. Lamborghini & Ferrari.',
+    descriptionEn: 'The ultimate experience. Lamborghini & Ferrari.',
+    features: ['Guidi una Lamborghini o una Ferrari mentre la tua auto viene rigenerata'],
+    featuresEn: ['Drive a Lamborghini or Ferrari while your car is being regenerated'],
+    priceOptions: [
+      { label: '1 ora', price: 189 },
+      { label: '2 ore', price: 289 },
+      { label: '3 ore', price: 349 },
+      { label: '4+ ore', price: 69 },
+    ],
   }
 ];
 
-export { ADDITIONAL_SERVICES };
-export type { Service };
+type CategoryType = 'moto' | 'urban' | 'maxi' | 'extra';
 
-type TabType = 'lavaggio' | 'meccanica';
+const CATEGORIES = [
+  { id: 'moto' as CategoryType, name: 'PRIME MOTO EXPERIENCE', nameEn: 'PRIME MOTO EXPERIENCE' },
+  { id: 'urban' as CategoryType, name: 'PRIME URBAN CLASS', nameEn: 'PRIME URBAN CLASS' },
+  { id: 'maxi' as CategoryType, name: 'PRIME MAXI CLASS', nameEn: 'PRIME MAXI CLASS', subtitle: 'station wagon · SUV · monovolume' },
+  { id: 'extra' as CategoryType, name: 'PRIME EXTRA CARE', nameEn: 'PRIME EXTRA CARE', subtitle: 'in aggiunta a un lavaggio' },
+];
 
 const CarWashServicesPage: React.FC = () => {
   const { lang } = useTranslation();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabType>('lavaggio');
-  const [services] = useState<Service[]>(FALLBACK_SERVICES);
+  const [activeCategory, setActiveCategory] = useState<CategoryType>('urban');
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [showCart, setShowCart] = useState(false);
 
-  const handleBookWashService = (serviceId: string) => {
-    navigate('/car-wash-booking', { state: { serviceId } });
-  };
-
-  const handleBookMechanicalService = (serviceId: string) => {
-    navigate('/mechanical-booking', { state: { serviceId } });
-  };
-
-  // Group mechanical services by category
-  const mechanicalByCategory = MECHANICAL_SERVICES.reduce((acc, service) => {
-    const category = lang === 'it' ? service.category : service.categoryEn;
-    if (!acc[category]) {
-      acc[category] = [];
+  const getServicesForCategory = (category: CategoryType): WashService[] => {
+    switch (category) {
+      case 'moto': return MOTO_SERVICES;
+      case 'urban': return URBAN_SERVICES;
+      case 'maxi': return MAXI_SERVICES;
+      case 'extra': return EXTRA_CARE_SERVICES;
+      default: return [];
     }
-    acc[category].push(service);
-    return acc;
-  }, {} as Record<string, MechanicalService[]>);
+  };
+
+  const addToCart = (service: WashService, selectedOption?: { label: string; price: number }) => {
+    setCart(prev => {
+      const existingIndex = prev.findIndex(item =>
+        item.service.id === service.id &&
+        item.selectedOption?.label === selectedOption?.label
+      );
+
+      if (existingIndex >= 0) {
+        const updated = [...prev];
+        updated[existingIndex].quantity += 1;
+        return updated;
+      }
+
+      return [...prev, { service, quantity: 1, selectedOption }];
+    });
+    setShowCart(true);
+  };
+
+  const removeFromCart = (index: number) => {
+    setCart(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateQuantity = (index: number, delta: number) => {
+    setCart(prev => {
+      const updated = [...prev];
+      updated[index].quantity += delta;
+      if (updated[index].quantity <= 0) {
+        return updated.filter((_, i) => i !== index);
+      }
+      return updated;
+    });
+  };
+
+  const getCartTotal = () => {
+    return cart.reduce((total, item) => {
+      const price = item.selectedOption?.price || item.service.price;
+      return total + (price * item.quantity);
+    }, 0);
+  };
+
+  const hasWashService = () => {
+    return cart.some(item =>
+      !item.service.id.startsWith('extra-')
+    );
+  };
+
+  const handleCheckout = () => {
+    if (cart.length === 0) return;
+
+    // Check if extra care services are selected without a main wash
+    const hasExtraCare = cart.some(item => item.service.id.startsWith('extra-'));
+    if (hasExtraCare && !hasWashService()) {
+      alert(lang === 'it'
+        ? 'I servizi Extra Care richiedono la selezione di un lavaggio principale.'
+        : 'Extra Care services require selecting a main wash service.');
+      return;
+    }
+
+    navigate('/car-wash-booking', {
+      state: {
+        cartItems: cart.map(item => ({
+          serviceId: item.service.id,
+          serviceName: lang === 'it' ? item.service.name : item.service.nameEn,
+          price: item.selectedOption?.price || item.service.price,
+          quantity: item.quantity,
+          option: item.selectedOption?.label
+        })),
+        total: getCartTotal()
+      }
+    });
+  };
+
+  const services = getServicesForCategory(activeCategory);
 
   return (
-    <div className="min-h-screen bg-black pt-32 pb-16">
-      {/* Tab Navigation */}
-      <div className="container mx-auto px-6 mb-8">
-        <div className="flex justify-center">
-          <div className="inline-flex bg-gray-900/50 border border-gray-800 rounded-full p-1">
+    <div className="min-h-screen bg-black pt-32 pb-32">
+      {/* Category Navigation */}
+      <div className="container mx-auto px-4 mb-8">
+        <div className="flex flex-wrap justify-center gap-2">
+          {CATEGORIES.map((cat) => (
             <button
-              onClick={() => setActiveTab('lavaggio')}
-              className={`px-8 py-3 rounded-full font-bold text-sm transition-all duration-300 ${
-                activeTab === 'lavaggio'
+              key={cat.id}
+              onClick={() => setActiveCategory(cat.id)}
+              className={`px-4 py-2 rounded-full font-bold text-xs sm:text-sm transition-all duration-300 ${
+                activeCategory === cat.id
                   ? 'bg-white text-black'
-                  : 'text-white hover:text-gray-300'
+                  : 'bg-gray-900/50 text-white border border-gray-700 hover:border-white'
               }`}
             >
-              {lang === 'it' ? 'LAVAGGIO' : 'WASH'}
+              <span>{lang === 'it' ? cat.name : cat.nameEn}</span>
+              {cat.subtitle && (
+                <span className="hidden sm:inline text-[10px] ml-1 opacity-70">({cat.subtitle})</span>
+              )}
             </button>
-            <button
-              onClick={() => setActiveTab('meccanica')}
-              className={`px-8 py-3 rounded-full font-bold text-sm transition-all duration-300 ${
-                activeTab === 'meccanica'
-                  ? 'bg-white text-black'
-                  : 'text-white hover:text-gray-300'
-              }`}
-            >
-              {lang === 'it' ? 'MECCANICA' : 'MECHANICAL'}
-            </button>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* LAVAGGIO TAB CONTENT */}
-      {activeTab === 'lavaggio' && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <div className="container mx-auto px-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {services.map((service, index) => (
-                <motion.div
-                  key={service.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg overflow-hidden group transition-all duration-300 hover:border-white/50 hover:shadow-2xl hover:shadow-white/10 flex flex-col"
-                >
-                  <div className="relative overflow-hidden">
-                    <img
-                      src={service.image || '/carwash-default.jpg'}
-                      alt={lang === 'it' ? service.name : service.nameEn}
-                      className={`w-full object-cover transition-transform duration-500 group-hover:scale-105 ${service.image ? 'aspect-[3/4] object-top' : 'aspect-[4/3]'}`}
-                    />
-                    {!service.image && (
-                      <>
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-                        <div className="absolute bottom-4 left-4">
-                          <span className="text-3xl font-bold text-white">{service.price}</span>
-                          <span className="text-gray-300 text-sm ml-2">{service.duration}</span>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  {service.image ? (
-                    <div className="p-4">
-                      <button
-                        onClick={() => handleBookWashService(service.id)}
-                        className="w-full bg-transparent border-2 border-white text-white py-3 px-6 rounded-full font-semibold text-sm transform transition-all duration-300 group-hover:bg-white group-hover:text-black"
-                      >
-                        {lang === 'it' ? 'AGGIUNGI AL CARRELLO' : 'ADD TO CART'}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="p-6 flex-grow flex flex-col">
-                      <h3 className="text-xl font-bold text-white mb-2">
-                        {lang === 'it' ? service.name : service.nameEn}
-                      </h3>
-                      <p className="text-gray-400 text-sm mb-4">
-                        {lang === 'it' ? service.description : service.descriptionEn}
-                      </p>
-                      <div className="space-y-2 mb-6 flex-grow">
-                        {(lang === 'it' ? service.features : service.featuresEn)?.slice(0, 4).map((feature, idx) => (
-                          <div key={idx} className="flex items-start">
-                            <span className="text-white mr-2 text-xs">•</span>
-                            <span className="text-gray-300 text-xs">{feature}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <button
-                        onClick={() => handleBookWashService(service.id)}
-                        className="w-full bg-transparent border-2 border-white text-white py-3 px-6 rounded-full font-semibold text-sm transform transition-all duration-300 group-hover:bg-white group-hover:text-black"
-                      >
-                        {lang === 'it' ? 'AGGIUNGI AL CARRELLO' : 'ADD TO CART'}
-                      </button>
-                    </div>
-                  )}
-                </motion.div>
-              ))}
-            </div>
+      {/* Extra Care Warning */}
+      {activeCategory === 'extra' && (
+        <div className="container mx-auto px-6 mb-6">
+          <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-4 text-center">
+            <p className="text-yellow-200 text-sm">
+              {lang === 'it'
+                ? 'I servizi Extra Care sono disponibili in aggiunta a un lavaggio a scelta obbligatorio.'
+                : 'Extra Care services are available as add-ons to a required wash service.'}
+            </p>
           </div>
-
-          {/* Auto di Cortesia Section - Lavaggio */}
-          <div className="bg-gray-900/30 py-16 mt-16">
-            <div className="container mx-auto px-6">
-              <div className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                  {lang === 'it' ? 'Auto di Cortesia' : 'Courtesy Car'}
-                </h2>
-                <p className="text-xl text-white">
-                  {lang === 'it' ? 'Auto di Cortesia o Supercar Experience' : 'Courtesy Car or Supercar Experience'}
-                </p>
-                <p className="text-gray-400 mt-2">
-                  {lang === 'it' ? 'Metti solo la benzina e parti.' : 'Just fill the tank and go.'}
-                </p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {ADDITIONAL_SERVICES.map((service) => (
-                  <div
-                    key={service.id}
-                    className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 hover:border-white transition-colors"
-                  >
-                    <h3 className="text-xl font-bold text-white mb-3">
-                      {lang === 'it' ? service.name : service.nameEn}
-                    </h3>
-                    {service.subtitle && (
-                      <p className="text-gray-400 text-sm mb-4">
-                        {lang === 'it' ? service.subtitle : service.subtitleEn}
-                      </p>
-                    )}
-                    <div className="space-y-2">
-                      {service.prices.map((price) => (
-                        <div key={price.hours} className="flex justify-between items-center text-gray-300 border-b border-gray-800 pb-2">
-                          <span className="text-sm">{price.duration}</span>
-                          <span className="font-bold text-white">{price.price}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </motion.div>
+        </div>
       )}
 
-      {/* MECCANICA TAB CONTENT */}
-      {activeTab === 'meccanica' && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <div className="container mx-auto px-6">
-            {/* Hero Section */}
-            <div className="text-center mb-12">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
-                DR7 RAPID SERVICE
-              </h1>
-              <p className="text-base sm:text-lg md:text-xl text-gray-400 mb-3">
-                {lang === 'it'
-                  ? 'Meccanica rapida senza appuntamenti lunghi'
-                  : 'Fast mechanical service without long appointments'}
-              </p>
-              <p className="text-sm sm:text-base text-gray-500">
-                {lang === 'it'
-                  ? 'Solo lavori rapidi — Prenota online e vieni quando vuoi'
-                  : 'Quick jobs only — Book online and come when you want'}
-              </p>
-            </div>
+      {/* Services Grid */}
+      <div className="container mx-auto px-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {services.map((service, index) => (
+            <motion.div
+              key={service.id}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: index * 0.05 }}
+              className="bg-gray-900/50 border border-gray-800 rounded-lg p-5 hover:border-white/50 transition-all group"
+            >
+              <div className="flex justify-between items-start mb-3">
+                <h3 className="text-lg font-bold text-white">{lang === 'it' ? service.name : service.nameEn}</h3>
+              </div>
 
-            {/* Services by Category */}
-            {Object.entries(mechanicalByCategory).map(([category, categoryServices], index) => (
-              <motion.div
-                key={category}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="mb-12"
-              >
-                <h2 className="text-3xl font-bold text-white mb-6 border-b border-gray-800 pb-3">
-                  {category}
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                  {categoryServices.map((service) => (
-                    <motion.div
-                      key={service.id}
-                      whileHover={{ scale: 1.02 }}
-                      className="bg-gray-900/50 border border-gray-800 rounded-lg p-4 md:p-6 hover:border-white transition-all cursor-pointer flex flex-col h-full"
-                      onClick={() => handleBookMechanicalService(service.id)}
+              <p className="text-gray-400 text-sm mb-3">{lang === 'it' ? service.description : service.descriptionEn}</p>
+
+              <div className="space-y-1 mb-4">
+                {(lang === 'it' ? service.features : service.featuresEn).slice(0, 3).map((feature, idx) => (
+                  <div key={idx} className="flex items-start">
+                    <span className="text-white mr-2 text-xs">•</span>
+                    <span className="text-gray-300 text-xs">{feature}</span>
+                  </div>
+                ))}
+                {service.features.length > 3 && (
+                  <span className="text-gray-500 text-xs">+{service.features.length - 3} {lang === 'it' ? 'altri' : 'more'}</span>
+                )}
+              </div>
+
+              <div className="flex justify-between items-center mb-4">
+                <div className="text-gray-500 text-sm">{service.duration}</div>
+                <div>
+                  <span className="text-2xl font-bold text-white">€{service.price.toFixed(2)}</span>
+                  {service.priceUnit && <span className="text-gray-400 text-xs ml-1">{service.priceUnit}</span>}
+                </div>
+              </div>
+
+              {/* Price Options for multi-tier services */}
+              {service.priceOptions ? (
+                <div className="space-y-2">
+                  {service.priceOptions.map((option) => (
+                    <button
+                      key={option.label}
+                      onClick={() => addToCart(service, option)}
+                      className="w-full flex justify-between items-center bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors text-sm"
                     >
-                      <div className="flex justify-between items-start mb-2 md:mb-3">
-                        <h3 className="text-base sm:text-lg md:text-xl font-bold text-white flex-1">
-                          {lang === 'it' ? service.name : service.nameEn}
-                        </h3>
-                      </div>
-                      <p className="text-gray-400 text-xs sm:text-sm mb-3 md:mb-4 flex-grow">
-                        {lang === 'it' ? service.description : service.descriptionEn}
-                      </p>
-                      <div className="flex justify-between items-center mb-3 md:mb-4">
-                        <div className="text-gray-500 text-xs sm:text-sm">
-                          {lang === 'it' ? service.duration : service.durationEn}
-                        </div>
-                        <div className="text-2xl md:text-3xl font-bold text-white">
-                          {service.price}
-                        </div>
-                      </div>
-                      <button className="w-full bg-white text-black font-bold py-2 md:py-3 px-4 md:px-6 rounded-full hover:bg-gray-200 transition-colors text-sm md:text-base mt-auto">
-                        {lang === 'it' ? 'AGGIUNGI AL CARRELLO' : 'ADD TO CART'}
-                      </button>
-                    </motion.div>
+                      <span>{option.label}</span>
+                      <span className="font-bold">€{option.price.toFixed(2)}</span>
+                    </button>
                   ))}
                 </div>
-              </motion.div>
-            ))}
-          </div>
+              ) : (
+                <button
+                  onClick={() => addToCart(service)}
+                  className="w-full bg-transparent border-2 border-white text-white py-2 px-4 rounded-full font-semibold text-sm transition-all duration-300 hover:bg-white hover:text-black"
+                >
+                  {lang === 'it' ? 'AGGIUNGI' : 'ADD'}
+                </button>
+              )}
+            </motion.div>
+          ))}
+        </div>
+      </div>
 
-          {/* Auto di Cortesia Section - Meccanica */}
-          <div className="bg-gray-900/30 py-16 mt-8">
-            <div className="container mx-auto px-6">
-              <div className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                  {lang === 'it' ? 'Auto di Cortesia' : 'Courtesy Car'}
-                </h2>
-                <p className="text-xl text-white">
-                  {lang === 'it' ? 'Auto di Cortesia o Supercar Experience' : 'Courtesy Car or Supercar Experience'}
-                </p>
-                <p className="text-gray-400 mt-2">
-                  {lang === 'it' ? 'Metti solo la benzina e parti.' : 'Just fill the tank and go.'}
-                </p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {ADDITIONAL_SERVICES.map((service) => (
-                  <div
-                    key={service.id}
-                    className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 hover:border-white transition-colors"
-                  >
-                    <h3 className="text-xl font-bold text-white mb-3">
-                      {lang === 'it' ? service.name : service.nameEn}
-                    </h3>
-                    {service.subtitle && (
-                      <p className="text-gray-400 text-sm mb-4">
-                        {lang === 'it' ? service.subtitle : service.subtitleEn}
-                      </p>
-                    )}
-                    <div className="space-y-2">
-                      {service.prices.map((price) => (
-                        <div key={price.hours} className="flex justify-between items-center text-gray-300 border-b border-gray-800 pb-2">
-                          <span className="text-sm">{price.duration}</span>
-                          <span className="font-bold text-white">{price.price}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* How It Works */}
-          <div className="container mx-auto px-6 mt-16">
-            <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
-              <h3 className="text-2xl font-bold text-white mb-6">
-                {lang === 'it' ? 'Come Funziona' : 'How It Works'}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="text-center">
-                  <h4 className="text-lg font-bold text-white mb-2">
-                    {lang === 'it' ? '1. Prenota Online' : '1. Book Online'}
-                  </h4>
-                  <p className="text-gray-400 text-sm">
-                    {lang === 'it'
-                      ? 'Scegli il servizio e prenota in pochi click'
-                      : 'Choose your service and book in a few clicks'}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <h4 className="text-lg font-bold text-white mb-2">
-                    {lang === 'it' ? '2. Vieni da Noi' : '2. Come to Us'}
-                  </h4>
-                  <p className="text-gray-400 text-sm">
-                    {lang === 'it'
-                      ? 'Arrivi all\'orario prenotato, niente attese'
-                      : 'Arrive at your booked time, no waiting'}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <h4 className="text-lg font-bold text-white mb-2">
-                    {lang === 'it' ? '3. Lavoro Rapido' : '3. Quick Service'}
-                  </h4>
-                  <p className="text-gray-400 text-sm">
-                    {lang === 'it'
-                      ? 'Completiamo il lavoro velocemente e torni in strada'
-                      : 'We complete the job quickly and you\'re back on the road'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Opening Hours */}
-            <div className="mt-8 bg-gray-900/50 border border-gray-800 rounded-lg p-8 text-center">
-              <h3 className="text-lg md:text-xl font-bold text-white mb-4">
-                {lang === 'it' ? 'Orari di Apertura' : 'Opening Hours'}
-              </h3>
-              <p className="text-gray-400">
-                {lang === 'it' ? 'Lunedi - Sabato: 9:00 - 19:00' : 'Monday - Saturday: 9:00 AM - 7:00 PM'}
-              </p>
-              <p className="text-gray-500 text-sm mt-2">
-                {lang === 'it' ? 'Chiusi la domenica' : 'Closed on Sundays'}
-              </p>
-            </div>
-          </div>
-        </motion.div>
+      {/* Floating Cart Button */}
+      {cart.length > 0 && (
+        <motion.button
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          onClick={() => setShowCart(true)}
+          className="fixed bottom-6 right-6 bg-white text-black px-6 py-4 rounded-full font-bold shadow-2xl flex items-center gap-3 z-40 hover:bg-gray-200 transition-colors"
+        >
+          <span className="bg-black text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">
+            {cart.reduce((sum, item) => sum + item.quantity, 0)}
+          </span>
+          <span>€{getCartTotal().toFixed(2)}</span>
+        </motion.button>
       )}
+
+      {/* Cart Sidebar */}
+      <AnimatePresence>
+        {showCart && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowCart(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25 }}
+              className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-black border-l border-gray-800 z-50 flex flex-col"
+            >
+              <div className="p-6 border-b border-gray-800 flex justify-between items-center">
+                <h2 className="text-xl font-bold text-white">
+                  {lang === 'it' ? 'Il tuo carrello' : 'Your cart'}
+                </h2>
+                <button onClick={() => setShowCart(false)} className="text-gray-400 hover:text-white text-2xl">
+                  &times;
+                </button>
+              </div>
+
+              <div className="flex-grow overflow-y-auto p-6 space-y-4">
+                {cart.length === 0 ? (
+                  <p className="text-gray-400 text-center py-8">
+                    {lang === 'it' ? 'Il carrello è vuoto' : 'Your cart is empty'}
+                  </p>
+                ) : (
+                  cart.map((item, index) => (
+                    <div key={`${item.service.id}-${item.selectedOption?.label || ''}-${index}`} className="bg-gray-900/50 border border-gray-800 rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h4 className="font-bold text-white text-sm">
+                            {lang === 'it' ? item.service.name : item.service.nameEn}
+                          </h4>
+                          {item.selectedOption && (
+                            <span className="text-gray-400 text-xs">{item.selectedOption.label}</span>
+                          )}
+                        </div>
+                        <button onClick={() => removeFromCart(index)} className="text-red-500 hover:text-red-400 text-sm">
+                          {lang === 'it' ? 'Rimuovi' : 'Remove'}
+                        </button>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => updateQuantity(index, -1)}
+                            className="w-8 h-8 rounded-full border border-gray-600 text-white hover:bg-gray-800"
+                          >
+                            -
+                          </button>
+                          <span className="text-white font-bold">{item.quantity}</span>
+                          <button
+                            onClick={() => updateQuantity(index, 1)}
+                            className="w-8 h-8 rounded-full border border-gray-600 text-white hover:bg-gray-800"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <span className="text-white font-bold">
+                          €{((item.selectedOption?.price || item.service.price) * item.quantity).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {cart.length > 0 && (
+                <div className="p-6 border-t border-gray-800">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-lg text-white">{lang === 'it' ? 'Totale' : 'Total'}</span>
+                    <span className="text-2xl font-bold text-white">€{getCartTotal().toFixed(2)}</span>
+                  </div>
+                  <button
+                    onClick={handleCheckout}
+                    className="w-full bg-white text-black py-4 rounded-full font-bold text-lg hover:bg-gray-200 transition-colors"
+                  >
+                    {lang === 'it' ? 'PROCEDI' : 'CHECKOUT'}
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
