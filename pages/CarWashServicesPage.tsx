@@ -134,6 +134,17 @@ const MAXI_SERVICES: WashService[] = [
     featuresEn: ['Pre-wash, body wash', 'Glass, quick wheels', 'Hand drying'],
   },
   {
+    id: 'maxi-interior',
+    name: 'PRIME MAXI INTERIOR CLEAN',
+    nameEn: 'PRIME MAXI INTERIOR CLEAN',
+    price: 24.90,
+    duration: '40 min',
+    description: 'Abitacolo spazioso, pulizia profonda.',
+    descriptionEn: 'Spacious cabin, deep cleaning.',
+    features: ['Aspirazione completa (sedili, moquette, tappetini)', 'Pulizia superfici interne', 'Vetri interni anti-aloni', 'Rifinitura plastiche'],
+    featuresEn: ['Complete vacuuming (seats, carpet, mats)', 'Interior surfaces cleaning', 'Anti-halo interior glass', 'Plastic finishing'],
+  },
+  {
     id: 'maxi-full',
     name: 'PRIME MAXI FULL CLEAN',
     nameEn: 'PRIME MAXI FULL CLEAN',
