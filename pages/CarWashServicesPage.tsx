@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { useNavigate } from 'react-router-dom';
 
-interface WashService {
+export interface WashService {
   id: string;
   name: string;
   nameEn: string;
@@ -17,6 +17,9 @@ interface WashService {
   priceUnit?: string;
   priceOptions?: { label: string; price: number }[];
 }
+
+// Alias for backward compatibility
+export type Service = WashService;
 
 interface CartItem {
   service: WashService;
@@ -791,6 +794,26 @@ const CarWashServicesPage: React.FC = () => {
       </AnimatePresence>
     </div>
   );
+};
+
+// Export all services combined for backward compatibility
+export const SERVICES: WashService[] = [
+  ...MOTO_SERVICES,
+  ...URBAN_SERVICES,
+  ...MAXI_SERVICES,
+  ...EXTRA_CARE_SERVICES,
+  ...EXPERIENCE_SERVICES,
+  ...TECH_SERVICES,
+];
+
+// Export individual service arrays
+export {
+  MOTO_SERVICES,
+  URBAN_SERVICES,
+  MAXI_SERVICES,
+  EXTRA_CARE_SERVICES,
+  EXPERIENCE_SERVICES,
+  TECH_SERVICES,
 };
 
 export default CarWashServicesPage;
