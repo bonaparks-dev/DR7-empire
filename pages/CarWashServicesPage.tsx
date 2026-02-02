@@ -233,6 +233,7 @@ const EXTRA_CARE_SERVICES: WashService[] = [
     descriptionEn: 'Hygiene and peace of mind.',
     features: ['Pulizia e igienizzazione seggiolino', 'Trattamento macchie'],
     featuresEn: ['Child seat cleaning and sanitization', 'Stain treatment'],
+    image: '/child.jpeg',
   },
   {
     id: 'extra-engine',
@@ -244,6 +245,7 @@ const EXTRA_CARE_SERVICES: WashService[] = [
     descriptionEn: 'Clean and tidy engine.',
     features: ['Pulizia vano motore con prodotti specifici', 'Tecnica safe', 'Rifinitura plastiche'],
     featuresEn: ['Engine bay cleaning with specific products', 'Safe technique', 'Plastic finishing'],
+    image: '/engine.jpeg',
   },
   {
     id: 'extra-glass',
@@ -255,6 +257,7 @@ const EXTRA_CARE_SERVICES: WashService[] = [
     descriptionEn: 'Perfect visibility.',
     features: ['Vetri interni/esterni + anti-aloni'],
     featuresEn: ['Interior/exterior glass + anti-halo'],
+    image: '/glass.jpeg',
   },
   {
     id: 'extra-odor',
@@ -266,6 +269,7 @@ const EXTRA_CARE_SERVICES: WashService[] = [
     descriptionEn: 'Clean air.',
     features: ['Trattamento neutralizzante + profumazione premium'],
     featuresEn: ['Neutralizing treatment + premium fragrance'],
+    image: '/odor.jpeg',
   },
   {
     id: 'extra-pet',
@@ -277,6 +281,7 @@ const EXTRA_CARE_SERVICES: WashService[] = [
     descriptionEn: 'Fabrics free from pet hair.',
     features: ['Rimozione peli con strumenti dedicati', 'Aspirazione mirata'],
     featuresEn: ['Pet hair removal with dedicated tools', 'Targeted vacuuming'],
+    image: '/pet.jpeg',
   },
   {
     id: 'extra-plastic',
@@ -288,6 +293,7 @@ const EXTRA_CARE_SERVICES: WashService[] = [
     descriptionEn: 'Full and well-maintained plastics.',
     features: ['Pulizia + ravvivante protettivo (no effetto unto)'],
     featuresEn: ['Cleaning + protective revitalizer (no greasy effect)'],
+    image: '/plastic.jpeg',
   },
   {
     id: 'extra-quick-shine',
@@ -299,6 +305,7 @@ const EXTRA_CARE_SERVICES: WashService[] = [
     descriptionEn: 'More gloss immediately.',
     features: ['Cera spray protettiva + rifinitura'],
     featuresEn: ['Protective spray wax + finishing'],
+    image: '/quickshine.jpeg',
   },
   {
     id: 'extra-rim',
@@ -311,6 +318,7 @@ const EXTRA_CARE_SERVICES: WashService[] = [
     features: ['Detergente specifico', 'Spazzolatura fronte cerchio', 'Rifinitura gomme'],
     featuresEn: ['Specific detergent', 'Wheel face brushing', 'Tire finishing'],
     priceUnit: 'per 4 cerchi',
+    image: '/rim.jpeg',
   },
   {
     id: 'extra-seat-clean',
@@ -323,6 +331,7 @@ const EXTRA_CARE_SERVICES: WashService[] = [
     features: ['Pretrattamento', 'Pulizia profonda in base al materiale', 'Asciugatura controllata'],
     featuresEn: ['Pre-treatment', 'Deep cleaning based on material', 'Controlled drying'],
     priceUnit: 'a sedile',
+    image: '/seat-clean.jpeg',
   },
   {
     id: 'extra-seat-protect',
@@ -335,6 +344,7 @@ const EXTRA_CARE_SERVICES: WashService[] = [
     features: ['Trattamento protettivo sedili'],
     featuresEn: ['Seat protective treatment'],
     priceUnit: 'a sedile',
+    image: '/seat-protect.jpeg',
   },
 ];
 
@@ -356,6 +366,7 @@ const EXPERIENCE_SERVICES: WashService[] = [
       { label: '3 ore', price: 19.90 },
       { label: '4+ ore', price: 5.90 },
     ],
+    image: '/courtesy.jpeg',
   },
   {
     id: 'extra-supercar',
@@ -373,6 +384,7 @@ const EXPERIENCE_SERVICES: WashService[] = [
       { label: '3 ore', price: 189 },
       { label: '4+ ore', price: 69 },
     ],
+    image: '/supercar.jpeg',
   },
   {
     id: 'extra-icon',
@@ -390,6 +402,7 @@ const EXPERIENCE_SERVICES: WashService[] = [
       { label: '3 ore', price: 349 },
       { label: '4+ ore', price: 69 },
     ],
+    image: '/icon.jpeg',
   }
 ];
 
@@ -407,6 +420,7 @@ const TECH_SERVICES: WashService[] = [
     descriptionEn: 'Brake check and maintenance.',
     features: ['Controllo pastiglie', 'Controllo dischi', 'Verifica liquido freni'],
     featuresEn: ['Brake pad check', 'Disc check', 'Brake fluid check'],
+    image: '/brake.jpeg',
   },
   {
     id: 'tech-battery',
@@ -418,6 +432,7 @@ const TECH_SERVICES: WashService[] = [
     descriptionEn: 'Quick battery replacement.',
     features: ['Rimozione batteria vecchia', 'Installazione batteria nuova', 'Test avviamento'],
     featuresEn: ['Old battery removal', 'New battery installation', 'Start test'],
+    image: '/battery.jpeg',
   },
   {
     id: 'tech-wiper',
@@ -430,6 +445,7 @@ const TECH_SERVICES: WashService[] = [
     features: ['Rimozione spazzole usurate', 'Installazione nuove spazzole', 'Verifica corretta aderenza'],
     featuresEn: ['Worn blade removal', 'New blade installation', 'Proper adhesion check'],
     priceUnit: 'anteriore o posteriore',
+    image: '/wiper.jpeg',
   },
   {
     id: 'tech-headlight',
@@ -446,6 +462,7 @@ const TECH_SERVICES: WashService[] = [
       { label: '2 fari', price: 59.90 },
       { label: '4 fari', price: 89.90 },
     ],
+    image: '/headlight.jpeg',
   }
 ];
 
