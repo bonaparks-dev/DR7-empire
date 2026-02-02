@@ -875,7 +875,7 @@ const CarWashBookingPage: React.FC = () => {
 
         // Generate WhatsApp prefilled message for customer
         const bookingId = data.id.substring(0, 8).toUpperCase();
-        const serviceName = data.service_name;
+        const whatsappServiceName = data.service_name;
         const appointmentDate = new Date(data.appointment_date);
         const customerName = formData.fullName;
         const customerPhone = formData.phone;
@@ -899,7 +899,7 @@ const CarWashBookingPage: React.FC = () => {
           `*ID:* DR7-${bookingId}\n` +
           `*Nome:* ${customerName}\n` +
           `*Telefono:* ${customerPhone}\n` +
-          `*Servizio:* ${serviceName}\n` +
+          `*Servizio:* ${whatsappServiceName}\n` +
           `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n`;
 
         if (notes) {
