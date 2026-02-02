@@ -271,12 +271,16 @@ const CarWashServicesPage: React.FC = () => {
                   alt={lang === 'it' ? service.name : service.nameEn}
                   className={`w-full object-cover transition-transform duration-500 group-hover:scale-105 ${service.image ? 'aspect-[3/4]' : 'aspect-[4/3]'}`}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-                {/* Price badge */}
-                <div className="absolute bottom-4 left-4">
-                  <span className="text-3xl font-bold text-white">€{service.price}</span>
-                  <span className="text-gray-300 text-sm ml-2">{service.duration}</span>
-                </div>
+                {/* Only show price badge if NO image (image already has price) */}
+                {!service.image && (
+                  <>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                    <div className="absolute bottom-4 left-4">
+                      <span className="text-3xl font-bold text-white">€{service.price}</span>
+                      <span className="text-gray-300 text-sm ml-2">{service.duration}</span>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Content Section - minimal when image exists */}
