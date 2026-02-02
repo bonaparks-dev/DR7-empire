@@ -49,7 +49,7 @@ const FALLBACK_SERVICES: Service[] = [
     id: 'exterior-only',
     name: 'LAVAGGIO SOLO ESTERNO',
     nameEn: 'EXTERIOR ONLY',
-    price: 15,
+    price: 14.90,
     duration: '15 min',
     description: 'Lavaggio esterno rapido per una carrozzeria brillante.',
     descriptionEn: 'Quick exterior wash for a shiny body.',
@@ -64,7 +64,8 @@ const FALLBACK_SERVICES: Service[] = [
       'Scented colored foam',
       'Wheel and exterior glass cleaning',
       'Drying'
-    ]
+    ],
+    image: '/exterior.jpeg'
   },
   {
     id: 'interior-only',
@@ -269,7 +270,7 @@ const CarWashServicesPage: React.FC = () => {
                 <img
                   src={service.image || '/carwash-default.jpg'}
                   alt={lang === 'it' ? service.name : service.nameEn}
-                  className={`w-full object-cover transition-transform duration-500 group-hover:scale-105 ${service.image ? 'aspect-[3/4]' : 'aspect-[4/3]'}`}
+                  className={`w-full object-cover transition-transform duration-500 group-hover:scale-105 ${service.image ? 'aspect-[3/4] object-top' : 'aspect-[4/3]'}`}
                 />
                 {/* Only show price badge if NO image (image already has price) */}
                 {!service.image && (
