@@ -25,12 +25,12 @@ interface Service {
 const FALLBACK_SERVICES: Service[] = [
   {
     id: 'scooter-wash',
-    name: 'LAVAGGIO SCOOTER',
-    nameEn: 'SCOOTER WASH',
+    name: 'LAVAGGIO MOTO',
+    nameEn: 'MOTORCYCLE WASH',
     price: 10,
     duration: '15 min',
-    description: 'Lavaggio rapido ed efficace per il tuo scooter.',
-    descriptionEn: 'Quick and effective wash for your scooter.',
+    description: 'Lavaggio rapido ed efficace per la tua moto.',
+    descriptionEn: 'Quick and effective wash for your motorcycle.',
     features: [
       'Lavaggio esterno completo',
       'Pulizia sella',
@@ -42,7 +42,8 @@ const FALLBACK_SERVICES: Service[] = [
       'Seat cleaning',
       'Wheel and tire cleaning',
       'Drying'
-    ]
+    ],
+    image: '/moto.jpeg'
   },
   {
     id: 'exterior-only',
@@ -307,7 +308,7 @@ const CarWashServicesPage: React.FC = () => {
               {/* Image Section */}
               <div className="relative overflow-hidden">
                 <img
-                  src={service.image || '/images/carwash-default.jpg'}
+                  src={service.image || '/carwash-default.jpg'}
                   alt={lang === 'it' ? service.name : service.nameEn}
                   className="w-full aspect-[4/3] object-cover transition-transform duration-500 group-hover:scale-105"
                 />
