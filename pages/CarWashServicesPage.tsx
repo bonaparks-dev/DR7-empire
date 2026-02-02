@@ -14,8 +14,8 @@ interface WashService {
   features: string[];
   featuresEn: string[];
   image?: string;
-  priceUnit?: string; // e.g., "a sedile", "per 4 cerchi"
-  priceOptions?: { label: string; price: number }[]; // For services with multiple price tiers
+  priceUnit?: string;
+  priceOptions?: { label: string; price: number }[];
 }
 
 interface CartItem {
@@ -23,6 +23,8 @@ interface CartItem {
   quantity: number;
   selectedOption?: { label: string; price: number };
 }
+
+// ==================== LAVAGGIO SERVICES ====================
 
 // PRIME MOTO EXPERIENCE
 const MOTO_SERVICES: WashService[] = [
@@ -201,8 +203,30 @@ const MAXI_SERVICES: WashService[] = [
   }
 ];
 
-// PRIME EXTRA CARE (add-ons)
+// PRIME EXTRA CARE (add-ons for Lavaggio - 10 services: 15-24)
 const EXTRA_CARE_SERVICES: WashService[] = [
+  {
+    id: 'extra-child',
+    name: 'PRIME CHILD CARE',
+    nameEn: 'PRIME CHILD CARE',
+    price: 14.90,
+    duration: '15 min',
+    description: 'Igiene e tranquillità.',
+    descriptionEn: 'Hygiene and peace of mind.',
+    features: ['Pulizia e igienizzazione seggiolino', 'Trattamento macchie'],
+    featuresEn: ['Child seat cleaning and sanitization', 'Stain treatment'],
+  },
+  {
+    id: 'extra-engine',
+    name: 'PRIME ENGINE CLEAN',
+    nameEn: 'PRIME ENGINE CLEAN',
+    price: 29.90,
+    duration: '30 min',
+    description: 'Motore pulito e ordinato.',
+    descriptionEn: 'Clean and tidy engine.',
+    features: ['Pulizia vano motore con prodotti specifici', 'Tecnica safe', 'Rifinitura plastiche'],
+    featuresEn: ['Engine bay cleaning with specific products', 'Safe technique', 'Plastic finishing'],
+  },
   {
     id: 'extra-glass',
     name: 'PRIME GLASS CARE',
@@ -226,17 +250,6 @@ const EXTRA_CARE_SERVICES: WashService[] = [
     featuresEn: ['Neutralizing treatment + premium fragrance'],
   },
   {
-    id: 'extra-child',
-    name: 'PRIME CHILD CARE',
-    nameEn: 'PRIME CHILD CARE',
-    price: 14.90,
-    duration: '15 min',
-    description: 'Igiene e tranquillità.',
-    descriptionEn: 'Hygiene and peace of mind.',
-    features: ['Pulizia e igienizzazione seggiolino', 'Trattamento macchie'],
-    featuresEn: ['Child seat cleaning and sanitization', 'Stain treatment'],
-  },
-  {
     id: 'extra-pet',
     name: 'PRIME PET CLEAN',
     nameEn: 'PRIME PET CLEAN',
@@ -248,15 +261,15 @@ const EXTRA_CARE_SERVICES: WashService[] = [
     featuresEn: ['Pet hair removal with dedicated tools', 'Targeted vacuuming'],
   },
   {
-    id: 'extra-engine',
-    name: 'PRIME ENGINE CLEAN',
-    nameEn: 'PRIME ENGINE CLEAN',
-    price: 29.90,
-    duration: '30 min',
-    description: 'Motore pulito e ordinato.',
-    descriptionEn: 'Clean and tidy engine.',
-    features: ['Pulizia vano motore con prodotti specifici', 'Tecnica safe', 'Rifinitura plastiche'],
-    featuresEn: ['Engine bay cleaning with specific products', 'Safe technique', 'Plastic finishing'],
+    id: 'extra-plastic',
+    name: 'PRIME PLASTIC REFRESH',
+    nameEn: 'PRIME PLASTIC REFRESH',
+    price: 14.90,
+    duration: '15 min',
+    description: 'Plastiche piene e curate.',
+    descriptionEn: 'Full and well-maintained plastics.',
+    features: ['Pulizia + ravvivante protettivo (no effetto unto)'],
+    featuresEn: ['Cleaning + protective revitalizer (no greasy effect)'],
   },
   {
     id: 'extra-quick-shine',
@@ -268,41 +281,6 @@ const EXTRA_CARE_SERVICES: WashService[] = [
     descriptionEn: 'More gloss immediately.',
     features: ['Cera spray protettiva + rifinitura'],
     featuresEn: ['Protective spray wax + finishing'],
-  },
-  {
-    id: 'extra-seat-protect',
-    name: 'PRIME SEAT PROTECT',
-    nameEn: 'PRIME SEAT PROTECT',
-    price: 14.90,
-    duration: '10 min',
-    description: 'Sedili più protetti nel tempo.',
-    descriptionEn: 'Seats more protected over time.',
-    features: ['Trattamento protettivo sedili'],
-    featuresEn: ['Seat protective treatment'],
-    priceUnit: 'a sedile',
-  },
-  {
-    id: 'extra-seat-clean',
-    name: 'PRIME SEAT CLEAN',
-    nameEn: 'PRIME SEAT CLEAN',
-    price: 9.90,
-    duration: '15 min',
-    description: 'Sedile davvero pulito.',
-    descriptionEn: 'Truly clean seat.',
-    features: ['Pretrattamento', 'Pulizia profonda in base al materiale', 'Asciugatura controllata'],
-    featuresEn: ['Pre-treatment', 'Deep cleaning based on material', 'Controlled drying'],
-    priceUnit: 'a sedile',
-  },
-  {
-    id: 'extra-plastic',
-    name: 'PRIME PLASTIC REFRESH',
-    nameEn: 'PRIME PLASTIC REFRESH',
-    price: 14.90,
-    duration: '15 min',
-    description: 'Plastiche piene e curate.',
-    descriptionEn: 'Full and well-maintained plastics.',
-    features: ['Pulizia + ravvivante protettivo (no effetto unto)'],
-    featuresEn: ['Cleaning + protective revitalizer (no greasy effect)'],
   },
   {
     id: 'extra-rim',
@@ -317,33 +295,33 @@ const EXTRA_CARE_SERVICES: WashService[] = [
     priceUnit: 'per 4 cerchi',
   },
   {
-    id: 'extra-wiper',
-    name: 'PRIME WIPER SERVICE',
-    nameEn: 'PRIME WIPER SERVICE',
+    id: 'extra-seat-clean',
+    name: 'PRIME SEAT CLEAN',
+    nameEn: 'PRIME SEAT CLEAN',
     price: 9.90,
-    duration: '5 min',
-    description: 'Visibilità e sicurezza di guida.',
-    descriptionEn: 'Visibility and driving safety.',
-    features: ['Rimozione spazzole usurate', 'Installazione nuove spazzole', 'Verifica corretta aderenza'],
-    featuresEn: ['Worn blade removal', 'New blade installation', 'Proper adhesion check'],
-    priceUnit: 'anteriore o posteriore',
+    duration: '15 min',
+    description: 'Sedile davvero pulito.',
+    descriptionEn: 'Truly clean seat.',
+    features: ['Pretrattamento', 'Pulizia profonda in base al materiale', 'Asciugatura controllata'],
+    featuresEn: ['Pre-treatment', 'Deep cleaning based on material', 'Controlled drying'],
+    priceUnit: 'a sedile',
   },
   {
-    id: 'extra-headlight',
-    name: 'PRIME HEADLIGHT RESTORE',
-    nameEn: 'PRIME HEADLIGHT RESTORE',
-    price: 34.90,
-    duration: '30 min',
-    description: 'Migliora estetica, visibilità e sicurezza.',
-    descriptionEn: 'Improves aesthetics, visibility and safety.',
-    features: ['Pulizia profonda del faro', 'Lucidatura progressiva', 'Ripristino trasparenza'],
-    featuresEn: ['Deep headlight cleaning', 'Progressive polishing', 'Transparency restoration'],
-    priceOptions: [
-      { label: '1 faro', price: 34.90 },
-      { label: '2 fari', price: 59.90 },
-      { label: '4 fari', price: 89.90 },
-    ],
+    id: 'extra-seat-protect',
+    name: 'PRIME SEAT PROTECT',
+    nameEn: 'PRIME SEAT PROTECT',
+    price: 14.90,
+    duration: '10 min',
+    description: 'Sedili più protetti nel tempo.',
+    descriptionEn: 'Seats more protected over time.',
+    features: ['Trattamento protettivo sedili'],
+    featuresEn: ['Seat protective treatment'],
+    priceUnit: 'a sedile',
   },
+];
+
+// PRIME EXPERIENCE (courtesy car and supercar experiences - 25-28)
+const EXPERIENCE_SERVICES: WashService[] = [
   {
     id: 'extra-courtesy',
     name: 'PRIME COURTESY DRIVE',
@@ -397,28 +375,101 @@ const EXTRA_CARE_SERVICES: WashService[] = [
   }
 ];
 
-type CategoryType = 'moto' | 'urban' | 'maxi' | 'extra';
+// ==================== MECCANICA SERVICES ====================
 
-const CATEGORIES = [
-  { id: 'moto' as CategoryType, name: 'PRIME MOTO EXPERIENCE', nameEn: 'PRIME MOTO EXPERIENCE' },
-  { id: 'urban' as CategoryType, name: 'PRIME URBAN CLASS', nameEn: 'PRIME URBAN CLASS' },
-  { id: 'maxi' as CategoryType, name: 'PRIME MAXI CLASS', nameEn: 'PRIME MAXI CLASS', subtitle: 'station wagon · SUV · monovolume' },
-  { id: 'extra' as CategoryType, name: 'PRIME EXTRA CARE', nameEn: 'PRIME EXTRA CARE', subtitle: 'in aggiunta a un lavaggio' },
+// PRIME TECH SERVICE (manodopera - 29-32)
+const TECH_SERVICES: WashService[] = [
+  {
+    id: 'tech-brake',
+    name: 'PRIME BRAKE SERVICE',
+    nameEn: 'PRIME BRAKE SERVICE',
+    price: 29,
+    duration: '30 min',
+    description: 'Controllo e manutenzione freni.',
+    descriptionEn: 'Brake check and maintenance.',
+    features: ['Controllo pastiglie', 'Controllo dischi', 'Verifica liquido freni'],
+    featuresEn: ['Brake pad check', 'Disc check', 'Brake fluid check'],
+  },
+  {
+    id: 'tech-battery',
+    name: 'PRIME BATTERY SWAP',
+    nameEn: 'PRIME BATTERY SWAP',
+    price: 19,
+    duration: '15 min',
+    description: 'Sostituzione batteria rapida.',
+    descriptionEn: 'Quick battery replacement.',
+    features: ['Rimozione batteria vecchia', 'Installazione batteria nuova', 'Test avviamento'],
+    featuresEn: ['Old battery removal', 'New battery installation', 'Start test'],
+  },
+  {
+    id: 'tech-wiper',
+    name: 'PRIME WIPER SERVICE',
+    nameEn: 'PRIME WIPER SERVICE',
+    price: 9.90,
+    duration: '5 min',
+    description: 'Visibilità e sicurezza di guida.',
+    descriptionEn: 'Visibility and driving safety.',
+    features: ['Rimozione spazzole usurate', 'Installazione nuove spazzole', 'Verifica corretta aderenza'],
+    featuresEn: ['Worn blade removal', 'New blade installation', 'Proper adhesion check'],
+    priceUnit: 'anteriore o posteriore',
+  },
+  {
+    id: 'tech-headlight',
+    name: 'PRIME HEADLIGHT RESTORE',
+    nameEn: 'PRIME HEADLIGHT RESTORE',
+    price: 34.90,
+    duration: '30 min',
+    description: 'Migliora estetica, visibilità e sicurezza.',
+    descriptionEn: 'Improves aesthetics, visibility and safety.',
+    features: ['Pulizia profonda del faro', 'Lucidatura progressiva', 'Ripristino trasparenza'],
+    featuresEn: ['Deep headlight cleaning', 'Progressive polishing', 'Transparency restoration'],
+    priceOptions: [
+      { label: '1 faro', price: 34.90 },
+      { label: '2 fari', price: 59.90 },
+      { label: '4 fari', price: 89.90 },
+    ],
+  }
+];
+
+type MainTabType = 'lavaggio' | 'meccanica';
+type LavaggioCategory = 'moto' | 'urban' | 'maxi' | 'extra' | 'experience';
+type MeccanicaCategory = 'tech';
+
+const LAVAGGIO_CATEGORIES = [
+  { id: 'moto' as LavaggioCategory, name: 'PRIME MOTO EXPERIENCE', nameEn: 'PRIME MOTO EXPERIENCE' },
+  { id: 'urban' as LavaggioCategory, name: 'PRIME URBAN CLASS', nameEn: 'PRIME URBAN CLASS' },
+  { id: 'maxi' as LavaggioCategory, name: 'PRIME MAXI CLASS', nameEn: 'PRIME MAXI CLASS', subtitle: 'station wagon · SUV · monovolume' },
+  { id: 'extra' as LavaggioCategory, name: 'PRIME EXTRA CARE', nameEn: 'PRIME EXTRA CARE', subtitle: 'in aggiunta a un lavaggio' },
+  { id: 'experience' as LavaggioCategory, name: 'PRIME EXPERIENCE', nameEn: 'PRIME EXPERIENCE', subtitle: 'auto di cortesia' },
+];
+
+const MECCANICA_CATEGORIES = [
+  { id: 'tech' as MeccanicaCategory, name: 'PRIME TECH SERVICE', nameEn: 'PRIME TECH SERVICE', subtitle: 'manodopera' },
 ];
 
 const CarWashServicesPage: React.FC = () => {
   const { lang } = useTranslation();
   const navigate = useNavigate();
-  const [activeCategory, setActiveCategory] = useState<CategoryType>('urban');
+  const [mainTab, setMainTab] = useState<MainTabType>('lavaggio');
+  const [lavaggioCategory, setLavaggioCategory] = useState<LavaggioCategory>('urban');
+  const [meccanicaCategory, setMeccanicaCategory] = useState<MeccanicaCategory>('tech');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
 
-  const getServicesForCategory = (category: CategoryType): WashService[] => {
+  const getLavaggioServices = (category: LavaggioCategory): WashService[] => {
     switch (category) {
       case 'moto': return MOTO_SERVICES;
       case 'urban': return URBAN_SERVICES;
       case 'maxi': return MAXI_SERVICES;
       case 'extra': return EXTRA_CARE_SERVICES;
+      case 'experience': return EXPERIENCE_SERVICES;
+      default: return [];
+    }
+  };
+
+  const getMeccanicaServices = (category: MeccanicaCategory): WashService[] => {
+    switch (category) {
+      case 'tech': return TECH_SERVICES;
       default: return [];
     }
   };
@@ -465,7 +516,7 @@ const CarWashServicesPage: React.FC = () => {
 
   const hasWashService = () => {
     return cart.some(item =>
-      !item.service.id.startsWith('extra-')
+      !item.service.id.startsWith('extra-') && !item.service.id.startsWith('tech-')
     );
   };
 
@@ -495,20 +546,54 @@ const CarWashServicesPage: React.FC = () => {
     });
   };
 
-  const services = getServicesForCategory(activeCategory);
+  const currentServices = mainTab === 'lavaggio'
+    ? getLavaggioServices(lavaggioCategory)
+    : getMeccanicaServices(meccanicaCategory);
+
+  const currentCategories = mainTab === 'lavaggio' ? LAVAGGIO_CATEGORIES : MECCANICA_CATEGORIES;
+  const activeCategory = mainTab === 'lavaggio' ? lavaggioCategory : meccanicaCategory;
 
   return (
     <div className="min-h-screen bg-black pt-32 pb-32">
+      {/* Main Tab Navigation: LAVAGGIO | MECCANICA */}
+      <div className="container mx-auto px-4 mb-6">
+        <div className="flex justify-center gap-4">
+          <button
+            onClick={() => setMainTab('lavaggio')}
+            className={`px-8 py-3 rounded-full font-bold text-lg transition-all duration-300 ${
+              mainTab === 'lavaggio'
+                ? 'bg-white text-black'
+                : 'bg-transparent text-white border-2 border-white hover:bg-white/10'
+            }`}
+          >
+            LAVAGGIO
+          </button>
+          <button
+            onClick={() => setMainTab('meccanica')}
+            className={`px-8 py-3 rounded-full font-bold text-lg transition-all duration-300 ${
+              mainTab === 'meccanica'
+                ? 'bg-white text-black'
+                : 'bg-transparent text-white border-2 border-white hover:bg-white/10'
+            }`}
+          >
+            MECCANICA
+          </button>
+        </div>
+      </div>
+
       {/* Category Navigation */}
       <div className="container mx-auto px-4 mb-8">
         <div className="flex flex-wrap justify-center gap-2">
-          {CATEGORIES.map((cat) => (
+          {currentCategories.map((cat) => (
             <button
               key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
+              onClick={() => mainTab === 'lavaggio'
+                ? setLavaggioCategory(cat.id as LavaggioCategory)
+                : setMeccanicaCategory(cat.id as MeccanicaCategory)
+              }
               className={`px-4 py-2 rounded-full font-bold text-xs sm:text-sm transition-all duration-300 ${
                 activeCategory === cat.id
-                  ? 'bg-white text-black'
+                  ? 'bg-gray-700 text-white'
                   : 'bg-gray-900/50 text-white border border-gray-700 hover:border-white'
               }`}
             >
@@ -522,7 +607,7 @@ const CarWashServicesPage: React.FC = () => {
       </div>
 
       {/* Extra Care Warning */}
-      {activeCategory === 'extra' && (
+      {mainTab === 'lavaggio' && lavaggioCategory === 'extra' && (
         <div className="container mx-auto px-6 mb-6">
           <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-4 text-center">
             <p className="text-yellow-200 text-sm">
@@ -537,7 +622,7 @@ const CarWashServicesPage: React.FC = () => {
       {/* Services Grid */}
       <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((service, index) => (
+          {currentServices.map((service, index) => (
             <motion.div
               key={service.id}
               initial={{ opacity: 0, y: 30 }}
