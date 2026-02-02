@@ -9,8 +9,7 @@ interface Service {
   name: string;
   nameEn: string;
   price: number;
-  duration: string;
-  duration: string | number; // Changed to allow number
+  duration: string | number;
   features?: string[]; // Made optional
   featuresEn?: string[]; // Made optional
   description: string;
