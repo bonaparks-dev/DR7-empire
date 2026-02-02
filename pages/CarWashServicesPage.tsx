@@ -108,7 +108,8 @@ const FALLBACK_SERVICES: Service[] = [
       'Scented colored foam',
       'Wheel, wheel arch, glass cleaning',
       'Interior vacuuming'
-    ]
+    ],
+    image: '/completo.jpeg'
   },
   {
     id: 'top-shine',
