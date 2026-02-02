@@ -236,51 +236,9 @@ export type { Service };
 const CarWashServicesPage: React.FC = () => {
   const { lang } = useTranslation();
   const navigate = useNavigate();
-  const [services, setServices] = useState<Service[]>(FALLBACK_SERVICES);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadServices();
-  }, []);
-
-  async function loadServices() {
-    try {
-      const { data, error } = await supabase
-        .from('car_wash_services')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
-
-      if (error) {
-        console.error('Failed to load car wash services from database:', error);
-        // Use fallback services
-        setServices(FALLBACK_SERVICES);
-      } else if (data && data.length > 0) {
-        // Map database format to component format
-        const mappedServices: Service[] = data.map((service: any) => ({
-          id: service.id,
-          name: service.name,
-          nameEn: service.name_en,
-          price: service.price,
-          duration: service.duration,
-          features: service.features,
-          featuresEn: service.features_en,
-          description: service.description,
-          descriptionEn: service.description_en,
-          image: service.image_url || service.image
-        }));
-        setServices(mappedServices);
-      } else {
-        // No services in database, use fallback
-        setServices(FALLBACK_SERVICES);
-      }
-    } catch (err) {
-      console.error('Error loading services:', err);
-      setServices(FALLBACK_SERVICES);
-    } finally {
-      setLoading(false);
-    }
-  }
+  // Always use hardcoded FALLBACK_SERVICES (not database)
+  const [services] = useState<Service[]>(FALLBACK_SERVICES);
+  const [loading] = useState(false);
 
   const handleBookService = (serviceId: string) => {
     navigate('/car-wash-booking', { state: { serviceId } });
