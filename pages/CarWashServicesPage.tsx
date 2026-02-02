@@ -156,7 +156,8 @@ const FALLBACK_SERVICES: Service[] = [
       'Premium sealant on body',
       'Premium perfume + exclusive gift',
       'DR7 luxury water included'
-    ]
+    ],
+    image: '/primevip.jpeg'
   },
   {
     id: 'dr7-luxury',
