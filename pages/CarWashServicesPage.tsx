@@ -81,7 +81,7 @@ const URBAN_SERVICES: WashService[] = [
     descriptionEn: 'Clean inside and out, no half measures.',
     features: ['Interni + esterni completi', 'Schiuma profumata', 'Cerchi/Passaruota/Vetri', 'Aspirazione profonda', 'Asciugatura e rifinitura'],
     featuresEn: ['Complete interior + exterior', 'Scented foam', 'Wheels/Wheel arches/Glass', 'Deep vacuuming', 'Drying and finishing'],
-    image: '/completo.jpeg',
+    image: '/full.jpeg',
   },
   {
     id: 'urban-full-n2',
@@ -93,7 +93,7 @@ const URBAN_SERVICES: WashService[] = [
     descriptionEn: 'Clean air, odors eliminated at the root.',
     features: ['Tutto il Full Clean', 'Sanificazione abitacolo all\'azoto'],
     featuresEn: ['Everything from Full Clean', 'Nitrogen cabin sanitization'],
-    image: '/completo2.jpeg',
+    image: '/full-n2.jpeg',
   },
   {
     id: 'urban-top-shine',
@@ -105,7 +105,7 @@ const URBAN_SERVICES: WashService[] = [
     descriptionEn: 'More shine, more protection, more presence.',
     features: ['Full Clean + trattamento lucidante veloce', 'Rifinitura extra plastiche e bocchette', 'Dettagli più curati', 'Acqua Prime Luxury'],
     featuresEn: ['Full Clean + quick polish treatment', 'Extra plastic and vent finishing', 'More detailed care', 'Prime Luxury Water'],
-    image: '/top.jpeg',
+    image: '/topshine.jpeg',
   },
   {
     id: 'urban-vip',
@@ -117,7 +117,7 @@ const URBAN_SERVICES: WashService[] = [
     descriptionEn: 'Regenerated car, not just clean.',
     features: ['Top Shine + decontaminazione carrozzeria', 'Pulizia e igienizzazione sedili pelle', 'Sanificazione all\'azoto', 'Sigillante premium', 'Profumo premium + omaggio', 'Acqua Prime Luxury'],
     featuresEn: ['Top Shine + body decontamination', 'Leather seat cleaning and sanitization', 'Nitrogen sanitization', 'Premium sealant', 'Premium perfume + gift', 'Prime Luxury Water'],
-    image: '/luxurywash.jpeg',
+    image: '/vip.jpeg',
   },
   {
     id: 'urban-luxury',
@@ -145,7 +145,7 @@ const MAXI_SERVICES: WashService[] = [
     descriptionEn: 'Big car, big impact.',
     features: ['Prelavaggio, lavaggio carrozzeria', 'Vetri, cerchi rapidi', 'Asciugatura a mano'],
     featuresEn: ['Pre-wash, body wash', 'Glass, quick wheels', 'Hand drying'],
-    image: '/exterior.jpeg',
+    image: '/maxi-exterior.jpeg',
   },
   {
     id: 'maxi-interior',
@@ -157,7 +157,7 @@ const MAXI_SERVICES: WashService[] = [
     descriptionEn: 'Real order, no "skipped" areas.',
     features: ['Aspirazione completa (volumi grandi)', 'Pulizia superfici', 'Vetri interni', 'Rifinitura plastiche'],
     featuresEn: ['Complete vacuuming (large volumes)', 'Surface cleaning', 'Interior glass', 'Plastic finishing'],
-    image: '/interior.jpeg',
+    image: '/maxi-interior.jpeg',
   },
   {
     id: 'maxi-full',
@@ -169,7 +169,7 @@ const MAXI_SERVICES: WashService[] = [
     descriptionEn: 'Total, visible cleaning.',
     features: ['Interni + esterni completi', 'Schiuma profumata', 'Cerchi/passaruota/vetri', 'Aspirazione e rifinitura'],
     featuresEn: ['Complete interior + exterior', 'Scented foam', 'Wheels/wheel arches/glass', 'Vacuuming and finishing'],
-    image: '/completo.jpeg',
+    image: '/maxi-full.jpeg',
   },
   {
     id: 'maxi-full-n2',
@@ -181,7 +181,7 @@ const MAXI_SERVICES: WashService[] = [
     descriptionEn: 'Deep hygiene for families and travel.',
     features: ['Maxi Full Clean + sanificazione all\'azoto'],
     featuresEn: ['Maxi Full Clean + nitrogen sanitization'],
-    image: '/completo2.jpeg',
+    image: '/maxi-full-n2.jpeg',
   },
   {
     id: 'maxi-top-shine',
@@ -193,7 +193,7 @@ const MAXI_SERVICES: WashService[] = [
     descriptionEn: 'Premium presence.',
     features: ['Maxi Full Clean + lucidante veloce', 'Rifiniture extra', 'Dettagli curati', 'Acqua Prime Luxury'],
     featuresEn: ['Maxi Full Clean + quick polish', 'Extra finishing', 'Detailed care', 'Prime Luxury Water'],
-    image: '/top.jpeg',
+    image: '/maxi-topshine.jpeg',
   },
   {
     id: 'maxi-vip',
@@ -205,7 +205,7 @@ const MAXI_SERVICES: WashService[] = [
     descriptionEn: '"Like new", even on large vehicles.',
     features: ['Top Shine Maxi + decontaminazione', 'Sedili pelle', 'Sanificazione all\'azoto', 'Sigillante premium', 'Profumo premium + omaggio', 'Acqua Prime Luxury'],
     featuresEn: ['Top Shine Maxi + decontamination', 'Leather seats', 'Nitrogen sanitization', 'Premium sealant', 'Premium perfume + gift', 'Prime Luxury Water'],
-    image: '/luxurywash.jpeg',
+    image: '/maxi-vip.jpeg',
   },
   {
     id: 'maxi-luxury',
@@ -217,7 +217,7 @@ const MAXI_SERVICES: WashService[] = [
     descriptionEn: 'Complete regeneration.',
     features: ['VIP Maxi + igienizzazione totale', 'Sedili (tessuto/pelle)', 'Moquette/tappetini', 'Cielo', 'Vano motore', 'Profumo premium + Acqua Prime Luxury'],
     featuresEn: ['VIP Maxi + total sanitization', 'Seats (fabric/leather)', 'Carpet/mats', 'Headliner', 'Engine bay', 'Premium perfume + Prime Luxury Water'],
-    image: '/luxury.jpeg',
+    image: '/maxi-luxury.jpeg',
   }
 ];
 
