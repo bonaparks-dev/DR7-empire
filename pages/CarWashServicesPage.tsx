@@ -56,6 +56,7 @@ const URBAN_SERVICES: WashService[] = [
     descriptionEn: 'Presentable, clean, tidy car.',
     features: ['Prelavaggio', 'Lavaggio carrozzeria', 'Vetri esterni', 'Cerchi rapidi', 'Asciugatura a mano'],
     featuresEn: ['Pre-wash', 'Body wash', 'Exterior glass', 'Quick wheels', 'Hand drying'],
+    image: '/services/exterior-clean.jpg',
   },
   {
     id: 'urban-interior',
@@ -67,6 +68,7 @@ const URBAN_SERVICES: WashService[] = [
     descriptionEn: 'Clean cabin, better air, immediate comfort.',
     features: ['Aspirazione completa (sedili, moquette, tappetini)', 'Pulizia superfici interne', 'Vetri interni anti-aloni', 'Rifinitura plastiche'],
     featuresEn: ['Complete vacuuming (seats, carpet, mats)', 'Interior surfaces cleaning', 'Anti-halo interior glass', 'Plastic finishing'],
+    image: '/services/interior-clean.jpg',
   },
   {
     id: 'urban-full',
@@ -78,6 +80,7 @@ const URBAN_SERVICES: WashService[] = [
     descriptionEn: 'Clean inside and out, no half measures.',
     features: ['Interni + esterni completi', 'Schiuma profumata', 'Cerchi/Passaruota/Vetri', 'Aspirazione profonda', 'Asciugatura e rifinitura'],
     featuresEn: ['Complete interior + exterior', 'Scented foam', 'Wheels/Wheel arches/Glass', 'Deep vacuuming', 'Drying and finishing'],
+    image: '/services/full-clean.jpg',
   },
   {
     id: 'urban-full-n2',
@@ -89,6 +92,7 @@ const URBAN_SERVICES: WashService[] = [
     descriptionEn: 'Clean air, odors eliminated at the root.',
     features: ['Tutto il Full Clean', 'Sanificazione abitacolo all\'azoto'],
     featuresEn: ['Everything from Full Clean', 'Nitrogen cabin sanitization'],
+    image: '/services/full-clean-n2.jpg',
   },
   {
     id: 'urban-top-shine',
@@ -100,6 +104,7 @@ const URBAN_SERVICES: WashService[] = [
     descriptionEn: 'More shine, more protection, more presence.',
     features: ['Full Clean + trattamento lucidante veloce', 'Rifinitura extra plastiche e bocchette', 'Dettagli più curati', 'Acqua Prime Luxury'],
     featuresEn: ['Full Clean + quick polish treatment', 'Extra plastic and vent finishing', 'More detailed care', 'Prime Luxury Water'],
+    image: '/services/top-shine.jpg',
   },
   {
     id: 'urban-vip',
@@ -111,6 +116,7 @@ const URBAN_SERVICES: WashService[] = [
     descriptionEn: 'Regenerated car, not just clean.',
     features: ['Top Shine + decontaminazione carrozzeria', 'Pulizia e igienizzazione sedili pelle', 'Sanificazione all\'azoto', 'Sigillante premium', 'Profumo premium + omaggio', 'Acqua Prime Luxury'],
     featuresEn: ['Top Shine + body decontamination', 'Leather seat cleaning and sanitization', 'Nitrogen sanitization', 'Premium sealant', 'Premium perfume + gift', 'Prime Luxury Water'],
+    image: '/services/vip-experience.jpg',
   },
   {
     id: 'urban-luxury',
@@ -122,6 +128,7 @@ const URBAN_SERVICES: WashService[] = [
     descriptionEn: 'Dealership effect. Period.',
     features: ['VIP Experience + igienizzazione totale dettagli', 'Sedili (tessuto o pelle), moquette e tappetini', 'Cielo interno', 'Vano motore con prodotti specifici', 'Profumo premium + Acqua Prime Luxury'],
     featuresEn: ['VIP Experience + total detail sanitization', 'Seats (fabric or leather), carpet and mats', 'Headliner', 'Engine bay with specific products', 'Premium perfume + Prime Luxury Water'],
+    image: '/services/luxury-detail.jpg',
   }
 ];
 
@@ -631,56 +638,72 @@ const CarWashServicesPage: React.FC = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: index * 0.05 }}
-              className="bg-gray-900/50 border border-gray-800 rounded-lg p-5 hover:border-white/50 transition-all group"
+              className="bg-black border border-gray-800 rounded-2xl overflow-hidden hover:border-white/50 transition-all group"
             >
-              <div className="flex justify-between items-start mb-3">
-                <h3 className="text-lg font-bold text-white">{lang === 'it' ? service.name : service.nameEn}</h3>
-              </div>
+              {/* Service Image */}
+              {service.image && (
+                <div className="relative h-48 overflow-hidden">
+                  <img
+                    src={service.image}
+                    alt={lang === 'it' ? service.name : service.nameEn}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                </div>
+              )}
 
-              <p className="text-gray-400 text-sm mb-3">{lang === 'it' ? service.description : service.descriptionEn}</p>
-
-              <div className="space-y-1 mb-4">
-                {(lang === 'it' ? service.features : service.featuresEn).slice(0, 3).map((feature, idx) => (
-                  <div key={idx} className="flex items-start">
-                    <span className="text-white mr-2 text-xs">•</span>
-                    <span className="text-gray-300 text-xs">{feature}</span>
+              <div className="p-5">
+                {/* Service Name & Price */}
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="text-lg font-bold text-white">{lang === 'it' ? service.name : service.nameEn}</h3>
+                  <div className="text-right">
+                    <span className="text-xl font-bold text-white">€{service.price.toFixed(2)}</span>
+                    {service.priceUnit && <div className="text-gray-400 text-xs">{service.priceUnit}</div>}
                   </div>
-                ))}
-                {service.features.length > 3 && (
-                  <span className="text-gray-500 text-xs">+{service.features.length - 3} {lang === 'it' ? 'altri' : 'more'}</span>
+                </div>
+
+                {/* Duration */}
+                <div className="text-gray-500 text-sm mb-3">{service.duration}</div>
+
+                {/* Description */}
+                <p className="text-gray-400 text-sm mb-4">{lang === 'it' ? service.description : service.descriptionEn}</p>
+
+                {/* Features */}
+                <div className="space-y-1 mb-4">
+                  {(lang === 'it' ? service.features : service.featuresEn).slice(0, 3).map((feature, idx) => (
+                    <div key={idx} className="flex items-start">
+                      <span className="text-white mr-2 text-xs">✓</span>
+                      <span className="text-gray-300 text-xs">{feature}</span>
+                    </div>
+                  ))}
+                  {service.features.length > 3 && (
+                    <span className="text-gray-500 text-xs">+{service.features.length - 3} {lang === 'it' ? 'altri' : 'more'}</span>
+                  )}
+                </div>
+
+                {/* Price Options for multi-tier services */}
+                {service.priceOptions ? (
+                  <div className="space-y-2">
+                    {service.priceOptions.map((option) => (
+                      <button
+                        key={option.label}
+                        onClick={() => addToCart(service, option)}
+                        className="w-full flex justify-between items-center bg-white hover:bg-gray-200 text-black py-3 px-4 rounded-full transition-colors text-sm font-semibold"
+                      >
+                        <span>{option.label}</span>
+                        <span>€{option.price.toFixed(2)}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => addToCart(service)}
+                    className="w-full bg-white text-black py-3 px-4 rounded-full font-semibold text-sm transition-all duration-300 hover:bg-gray-200"
+                  >
+                    {lang === 'it' ? 'AGGIUNGI AL CARRELLO' : 'ADD TO CART'}
+                  </button>
                 )}
               </div>
-
-              <div className="flex justify-between items-center mb-4">
-                <div className="text-gray-500 text-sm">{service.duration}</div>
-                <div>
-                  <span className="text-2xl font-bold text-white">€{service.price.toFixed(2)}</span>
-                  {service.priceUnit && <span className="text-gray-400 text-xs ml-1">{service.priceUnit}</span>}
-                </div>
-              </div>
-
-              {/* Price Options for multi-tier services */}
-              {service.priceOptions ? (
-                <div className="space-y-2">
-                  {service.priceOptions.map((option) => (
-                    <button
-                      key={option.label}
-                      onClick={() => addToCart(service, option)}
-                      className="w-full flex justify-between items-center bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors text-sm"
-                    >
-                      <span>{option.label}</span>
-                      <span className="font-bold">€{option.price.toFixed(2)}</span>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <button
-                  onClick={() => addToCart(service)}
-                  className="w-full bg-transparent border-2 border-white text-white py-2 px-4 rounded-full font-semibold text-sm transition-all duration-300 hover:bg-white hover:text-black"
-                >
-                  {lang === 'it' ? 'AGGIUNGI' : 'ADD'}
-                </button>
-              )}
             </motion.div>
           ))}
         </div>
