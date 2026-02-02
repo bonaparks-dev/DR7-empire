@@ -416,12 +416,6 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
     icon: SparklesIcon,
   },
   {
-    id: 'mechanical-services',
-    label: { en: 'DR7 Rapid Response Services', it: 'DR7 Rapid Response Services' },
-    data: [],
-    icon: CogIcon,
-  },
-  {
     id: 'membership',
     label: { en: 'DR7 Exclusive Members Club', it: 'DR7 Exclusive Members Club' },
     data: [],

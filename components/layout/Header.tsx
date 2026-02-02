@@ -179,13 +179,16 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                   <NavLink to="/jets" onClick={onClose} className={navLinkClasses}>
                     <span>Aviation Division</span>
                   </NavLink>
-                  <NavLink to="/car-wash-services" onClick={onClose} className={navLinkClasses}>
-                    <span>Prime Wash</span>
-                  </NavLink>
-                  <NavLink to="/mechanical-services" onClick={onClose} className={navLinkClasses}>
-                    <span>Rapid Response Services</span>
-                  </NavLink>
                 </div>
+              </div>
+
+              {/* PRIME WASH */}
+              <div>
+                <NavLink to="/car-wash-services" onClick={onClose}>
+                  <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-3 px-1 hover:text-gray-300 transition-colors">
+                    Prime Wash
+                  </h3>
+                </NavLink>
               </div>
 
               {/* DIGITAL INNOVATION */}
