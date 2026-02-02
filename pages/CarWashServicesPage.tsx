@@ -164,7 +164,7 @@ const FALLBACK_SERVICES: Service[] = [
     id: 'dr7-luxury',
     name: 'LAVAGGIO DR7 LUXURY',
     nameEn: 'DR7 LUXURY',
-    price: 99,
+    price: 119,
     duration: '2-3 ore',
     description: 'L\'auto esce meglio di quando è uscita dalla concessionaria.',
     descriptionEn: 'Your car comes out better than when it left the dealership.',
@@ -187,7 +187,8 @@ const FALLBACK_SERVICES: Service[] = [
       'Engine bay cleaning',
       'Premium perfume gift',
       'DR7 luxury water included'
-    ]
+    ],
+    image: '/luxury.jpeg'
   }
 ];
 
