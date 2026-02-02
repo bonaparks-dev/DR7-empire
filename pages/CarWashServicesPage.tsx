@@ -85,7 +85,8 @@ const FALLBACK_SERVICES: Service[] = [
       'Dashboard and console cleaning',
       'Interior glass cleaning',
       'Seat and mat cleaning'
-    ]
+    ],
+    image: '/interior.jpeg'
   },
   {
     id: 'full-clean',
