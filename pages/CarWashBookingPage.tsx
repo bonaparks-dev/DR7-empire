@@ -354,9 +354,11 @@ const CarWashBookingPage: React.FC = () => {
   };
 
   const getAllTimeSlotsWithAvailability = () => {
-    if (!selectedService || !formData.appointmentDate) return [];
+    if ((!selectedService && !hasCartItems) || !formData.appointmentDate) return [];
 
-    const serviceDuration = getServiceDurationInHours(selectedService.price);
+    // For cart items, use the cart total to estimate duration; for single service, use service price
+    const priceForDuration = hasCartItems ? cartTotal : (selectedService?.price || 0);
+    const serviceDuration = getServiceDurationInHours(priceForDuration);
 
     // Define valid time slots based on time ranges
     // Morning: 9:00-12:00, Afternoon: 15:00-18:00
