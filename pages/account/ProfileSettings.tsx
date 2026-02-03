@@ -78,6 +78,7 @@ const ProfileSettings = () => {
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
+    const [successError, setSuccessError] = useState(false);
     const [creditBalance, setCreditBalance] = useState<number>(0);
     const [recentTransactions, setRecentTransactions] = useState<CreditTransaction[]>([]);
     const [isLoadingCredits, setIsLoadingCredits] = useState(true);
@@ -279,16 +280,22 @@ const ProfileSettings = () => {
             await loadData();
 
             // Also update auth user metadata for consistency
-            await updateUser({
-                fullName: formData.fullName || `${formData.firstName} ${formData.lastName}`.trim(),
-                phone: formData.phone
-            });
+            try {
+                await updateUser({
+                    fullName: formData.fullName || `${formData.firstName} ${formData.lastName}`.trim(),
+                    phone: formData.phone
+                });
+            } catch (authError) {
+                console.error("Failed to update auth metadata:", authError);
+            }
 
             setSuccessMessage('Modifiche salvate con successo!');
+            setSuccessError(false);
             setTimeout(() => setSuccessMessage(''), 3000);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to update profile", error);
-            setSuccessMessage('Errore nel salvare le modifiche');
+            setSuccessMessage(error?.message || 'Errore nel salvare le modifiche');
+            setSuccessError(true);
         } finally {
             setIsSubmitting(false);
         }
@@ -506,7 +513,7 @@ const ProfileSettings = () => {
                     )}
                 </div>
                 <div className="p-6 bg-gray-900 flex items-center justify-end space-x-4 rounded-b-lg">
-                    {successMessage && <span className="text-sm text-green-400">{successMessage}</span>}
+                    {successMessage && <span className={`text-sm ${successError ? 'text-red-400' : 'text-green-400'}`}>{successMessage}</span>}
                     <button type="submit" disabled={isSubmitting} className="px-5 py-2.5 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors text-sm disabled:opacity-60">
                         {isSubmitting ? t('Please_wait') : t('Save_Changes')}
                     </button>

@@ -250,7 +250,7 @@ const transformVehicle = (vehicle: Vehicle): TransformedVehicle => {
 
 
 const CACHE_KEY_PREFIX = 'dr7_vehicles_cache_';
-const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+const CACHE_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
 
 export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
   const [vehicles, setVehicles] = useState<TransformedVehicle[]>([]);
