@@ -121,7 +121,7 @@ export const handler: Handler = async (event) => {
             : vehicles.map((v: any) => v.id);
 
         // Fetch bookings for ALL these vehicles
-        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_name&status=neq.cancelled&vehicle_id=in.(${vehicleIds.join(',')})&order=pickup_date.asc`;
+        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_name&status=not.in.(cancelled,annullata,completed,completata)&vehicle_id=in.(${vehicleIds.join(',')})&order=pickup_date.asc`;
 
         const bookingsResponse = await fetch(bookingsUrl, {
             headers: {
@@ -134,7 +134,7 @@ export const handler: Handler = async (event) => {
         const bookings = await bookingsResponse.json();
 
         // Fetch reservations for ALL these vehicles
-        const reservationsUrl = `${SUPABASE_URL}/rest/v1/reservations?select=start_at,end_at,vehicle_id&vehicle_id=in.(${vehicleIds.join(',')})&status=in.(confirmed,pending,active)&order=start_at.asc`;
+        const reservationsUrl = `${SUPABASE_URL}/rest/v1/reservations?select=start_at,end_at,vehicle_id&vehicle_id=in.(${vehicleIds.join(',')})&status=not.in.(cancelled,annullata,completed,completata)&order=start_at.asc`;
 
         const reservationsResponse = await fetch(reservationsUrl, {
             headers: {
