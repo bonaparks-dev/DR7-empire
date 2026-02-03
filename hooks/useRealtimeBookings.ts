@@ -243,10 +243,16 @@ export function useCarWashAvailability(date?: string) {
     else if (servicePriceEuros <= 75) durationHours = 3;
     else durationHours = 4;
 
+    // 2 washers = allow up to 2 concurrent bookings
+    const MAX_CONCURRENT_WASHES = 2;
+
     return allSlots.map(time => {
-      // Check if this slot conflicts with existing bookings
-      const conflict = bookings.some(booking => {
-        if (!booking.appointment_time) return false;
+      const slotStart = timeToMinutes(time);
+      const slotEnd = slotStart + (durationHours * 60);
+
+      let overlappingCount = 0;
+      for (const booking of bookings) {
+        if (!booking.appointment_time) continue;
 
         const bookingStart = timeToMinutes(booking.appointment_time);
         const bookingPriceEuros = booking.price_total / 100;
@@ -257,16 +263,16 @@ export function useCarWashAvailability(date?: string) {
         else bookingDuration = 4;
         const bookingEnd = bookingStart + (bookingDuration * 60);
 
-        const slotStart = timeToMinutes(time);
-        const slotEnd = slotStart + (durationHours * 60);
+        if (slotStart < bookingEnd && slotEnd > bookingStart) {
+          overlappingCount++;
+        }
+      }
 
-        return slotStart < bookingEnd && slotEnd > bookingStart;
-      });
-
+      const full = overlappingCount >= MAX_CONCURRENT_WASHES;
       return {
         time,
-        available: !conflict,
-        reason: conflict ? 'Already booked' : undefined,
+        available: !full,
+        reason: full ? 'Already booked' : undefined,
       };
     });
   }, [bookings]);

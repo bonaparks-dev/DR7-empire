@@ -380,28 +380,27 @@ const CarWashBookingPage: React.FC = () => {
       return h * 60 + m;
     };
 
-    // Helper to check if a time range overlaps with existing booking
+    // Helper to check if a time range overlaps with existing bookings
+    // We have 2 washers, so allow up to 2 concurrent bookings
+    const MAX_CONCURRENT_WASHES = 2;
+
     const hasOverlap = (startTime: string, durationHours: number) => {
       const startMinutes = timeToMinutes(startTime);
       const endMinutes = startMinutes + (durationHours * 60);
 
-      const hasConflict = existingBookings.some(booking => {
-        if (!booking.appointment_time) {
-          console.warn('Booking missing appointment_time:', booking);
-          return false;
-        }
+      let overlappingCount = 0;
+      for (const booking of existingBookings) {
+        if (!booking.appointment_time) continue;
         const bookingStart = timeToMinutes(booking.appointment_time);
         const bookingDuration = getServiceDurationInHours(booking.price_total / 100);
         const bookingEnd = bookingStart + (bookingDuration * 60);
 
-        const overlap = (startMinutes < bookingEnd && endMinutes > bookingStart);
-        if (overlap) {
-          console.log(`Time slot ${startTime} conflicts with existing booking at ${booking.appointment_time}`);
+        if (startMinutes < bookingEnd && endMinutes > bookingStart) {
+          overlappingCount++;
         }
-        return overlap;
-      });
+      }
 
-      return hasConflict;
+      return overlappingCount >= MAX_CONCURRENT_WASHES;
     };
 
     // Helper to check if service can fit in time range
