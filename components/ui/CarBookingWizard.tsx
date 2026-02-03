@@ -1952,6 +1952,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       return;
     }
 
+    // Discount codes are only valid for supercar rentals
+    if (categoryContext === 'urban-cars' || categoryContext === 'corporate-fleet') {
+      setDiscountCodeError('Il codice sconto è valido solo per noleggio Supercar e Lavaggio');
+      setDiscountCodeValid(false);
+      setAppliedDiscount(null);
+      return;
+    }
+
     setIsValidatingCode(true);
     setDiscountCodeError(null);
 
