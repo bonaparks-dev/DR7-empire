@@ -664,7 +664,7 @@ const CarWashServicesPage: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.5, ease: 'easeOut' }}
-              className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg overflow-hidden group transition-all duration-300 hover:border-white/50 hover:shadow-2xl hover:shadow-white/10"
+              className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg overflow-hidden group transition-all duration-300 hover:border-white/50 hover:shadow-2xl hover:shadow-white/10 flex flex-col"
             >
               {/* Service Image - full image display */}
               <div className="relative">
@@ -673,31 +673,33 @@ const CarWashServicesPage: React.FC = () => {
                   alt={lang === 'it' ? service.name : service.nameEn}
                   className="w-full h-auto object-contain"
                 />
-                {/* Add to Cart button overlay at bottom */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 to-transparent">
-                  {service.priceOptions ? (
-                    <div className="space-y-2">
-                      {service.priceOptions.map((option) => (
-                        <button
-                          key={option.label}
-                          onClick={() => addToCart(service, option)}
-                          className="w-full flex justify-between items-center bg-black/50 border-2 border-white text-white px-6 py-2 rounded-full font-semibold text-sm hover:bg-white hover:text-black transition-all duration-300"
-                        >
-                          <span>{option.label}</span>
-                          <span>€{option.price.toFixed(2)}</span>
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
+                {/* Single-price: overlay button at bottom */}
+                {!service.priceOptions && (
+                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 to-transparent">
                     <button
                       onClick={() => addToCart(service)}
                       className="w-full bg-black/50 border-2 border-white text-white px-6 py-2 rounded-full font-semibold text-sm hover:bg-white hover:text-black transition-all duration-300"
                     >
                       {lang === 'it' ? 'AGGIUNGI AL CARRELLO' : 'ADD TO CART'}
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
+              {/* Multi-price options: below the image */}
+              {service.priceOptions && (
+                <div className="p-4 space-y-2">
+                  {service.priceOptions.map((option) => (
+                    <button
+                      key={option.label}
+                      onClick={() => addToCart(service, option)}
+                      className="w-full flex justify-between items-center bg-transparent border-2 border-white text-white px-6 py-2 rounded-full font-semibold text-sm hover:bg-white hover:text-black transition-all duration-300"
+                    >
+                      <span>{option.label}</span>
+                      <span>€{option.price.toFixed(2)}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </motion.div>
           ))}
         </div>
