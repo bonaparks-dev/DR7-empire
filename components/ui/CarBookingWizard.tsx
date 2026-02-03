@@ -1960,6 +1960,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       return;
     }
 
+    // Minimum €500 for supercar rentals
+    if (!categoryContext || categoryContext === 'cars') {
+      if (finalTotal < 500) {
+        setDiscountCodeError('Il codice sconto è utilizzabile solo per noleggi Supercar di almeno €500');
+        setDiscountCodeValid(false);
+        setAppliedDiscount(null);
+        return;
+      }
+    }
+
     setIsValidatingCode(true);
     setDiscountCodeError(null);
 
