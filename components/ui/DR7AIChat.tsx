@@ -193,11 +193,11 @@ const DR7AIChat: React.FC<DR7AIChatProps> = ({ isOpen, onClose }) => {
           {/* Header */}
           <div className="bg-gradient-to-r from-white to-gray-300 px-6 py-4 flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-black">
+              <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-black bg-black flex items-center justify-center">
                 <img
-                  src="/Valerio.jpg"
-                  alt="Valerio"
-                  className="w-full h-full object-cover"
+                  src="/DR7logo.png"
+                  alt="DR7"
+                  className="w-8 h-8 object-contain"
                 />
               </div>
               <div>
