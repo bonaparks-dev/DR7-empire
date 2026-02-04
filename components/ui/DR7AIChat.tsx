@@ -93,7 +93,7 @@ const DR7AIChat: React.FC<DR7AIChatProps> = ({ isOpen, onClose }) => {
       // Welcome message
       const welcomeMessage: Message = {
         id: '1',
-        content: "Ciao! Sono l'assistente AI di DR7. Come posso aiutarti oggi?\n\nPosso aiutarti con:\n• Noleggio auto esotiche e di lusso\n• Yacht e aviazione privata\n• Servizi premium e memberships\n• Informazioni su DR7 Token",
+        content: "Ciao! Benvenuti, come posso aiutarti?",
         isUser: false,
         timestamp: new Date()
       };
