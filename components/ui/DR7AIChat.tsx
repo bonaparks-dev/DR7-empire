@@ -358,7 +358,7 @@ export const DR7AIFloatingButton: React.FC = () => {
         <img
           src="/Valerio.jpg"
           alt="Chat with Valerio"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover object-top"
         />
       </motion.button>
 
