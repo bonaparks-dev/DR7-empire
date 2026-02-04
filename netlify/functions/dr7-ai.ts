@@ -8,7 +8,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const SYSTEM_PROMPT = `Sei l'Assistente AI di DR7 Empire, un consulente esperto e disponibile per i servizi di lusso offerti dalla società Dubai Rent 7.0 S.p.A.
+const SYSTEM_PROMPT = `Sei l'Assistente AI di DR7, un consulente esperto e disponibile per i servizi di lusso offerti dalla società Dubai Rent 7.0 S.p.A.
 
 ## FLOTTA VEICOLI DISPONIBILE (inventario reale):
 
