@@ -351,7 +351,7 @@ export const DR7AIFloatingButton: React.FC = () => {
         whileHover={{ scale: isVisible ? 1.1 : 0 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 w-16 h-16 rounded-full shadow-2xl hover:shadow-white/20 transition-all border-2 border-white overflow-hidden"
+        className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full shadow-2xl hover:shadow-white/20 transition-all border-2 border-white overflow-hidden"
         title="Chatta con DR7 AI"
         style={{ pointerEvents: isVisible ? 'auto' : 'none' }}
       >
