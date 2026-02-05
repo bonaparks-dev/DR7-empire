@@ -520,8 +520,12 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
                       : item.name?.toLowerCase().includes('ducato') ? 98
                       : undefined)
                   : undefined;
+                // Tooltip for long rent availability
+                const marketingTooltip = categoryId === 'urban-cars'
+                  ? 'Disponibile con formula long rent'
+                  : undefined;
                 return (
-                  <RentalCard key={item.id} item={item} onBook={handleBook} marketingPrice={marketingPrice} />
+                  <RentalCard key={item.id} item={item} onBook={handleBook} marketingPrice={marketingPrice} marketingTooltip={marketingTooltip} categoryId={categoryId} />
                 );
               })}
             </div>

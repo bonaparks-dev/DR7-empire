@@ -10,6 +10,8 @@ interface RentalCardProps {
   item: RentalItem;
   onBook: (item: RentalItem) => void;
   marketingPrice?: number;
+  marketingTooltip?: string;
+  categoryId?: string;
   jetSearchData?: {
     departure?: string;
     arrival?: string;
@@ -20,7 +22,7 @@ interface RentalCardProps {
   };
 }
 
-const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, jetSearchData }) => {
+const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, marketingTooltip, categoryId, jetSearchData }) => {
   const { t, getTranslated } = useTranslation();
   const { currency } = useCurrency();
   const { user } = useAuth();
@@ -90,10 +92,20 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, j
           <div>
             {marketingPrice ? (
               // Marketing "Da X/giorno" display
-              <div>
+              <div className="flex items-baseline flex-wrap gap-x-1">
                 <span className="text-sm text-gray-400">Da </span>
                 <span className="text-2xl font-bold text-white">{formatPrice(marketingPrice)}</span>
-                <span className="text-sm text-gray-400 ml-1">/{t('per_day')}</span>
+                <span className="text-sm text-gray-400">/{t('per_day')}</span>
+                {marketingTooltip && (
+                  <span className="relative group/tip inline-flex items-center ml-1 self-center">
+                    <svg className="w-3.5 h-3.5 text-gray-500 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1 bg-gray-800 border border-gray-700 text-gray-300 text-[10px] leading-tight rounded whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                      {marketingTooltip}
+                    </span>
+                  </span>
+                )}
               </div>
             ) : hasDualPricing ? (
               // Dual pricing display for cars with residency-based rates
@@ -135,7 +147,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, j
             </div>
           )}
         </div>
-        <div className="mt-3">
+        <div className={`mt-3 ${categoryId === 'cars' ? 'text-right' : ''}`}>
           {isVilla ? (
             <Link
               to={`/villas/${item.id}`}
