@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 interface RentalCardProps {
   item: RentalItem;
   onBook: (item: RentalItem) => void;
+  marketingPrice?: number;
   jetSearchData?: {
     departure?: string;
     arrival?: string;
@@ -19,7 +20,7 @@ interface RentalCardProps {
   };
 }
 
-const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) => {
+const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, jetSearchData }) => {
   const { t, getTranslated } = useTranslation();
   const { currency } = useCurrency();
   const { user } = useAuth();
@@ -87,7 +88,14 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, jetSearchData }) 
       <div className="px-6 pt-6 pb-4 flex-grow flex flex-col">
         <div className="mt-auto space-y-2">
           <div>
-            {hasDualPricing ? (
+            {marketingPrice ? (
+              // Marketing "Da X/giorno" display
+              <div>
+                <span className="text-sm text-gray-400">Da </span>
+                <span className="text-2xl font-bold text-white">{formatPrice(marketingPrice)}</span>
+                <span className="text-sm text-gray-400 ml-1">/{t('per_day')}</span>
+              </div>
+            ) : hasDualPricing ? (
               // Dual pricing display for cars with residency-based rates
               // Always show CHEAPER price (resident) as LARGER text
               <div className="space-y-0.5">

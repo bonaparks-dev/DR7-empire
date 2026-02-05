@@ -511,9 +511,19 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
             <div
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12"
             >
-              {categoryData.map(item => (
-                <RentalCard key={item.id} item={item} onBook={handleBook} />
-              ))}
+              {categoryData.map(item => {
+                // Marketing "Da X/giorno" prices per category
+                const marketingPrice = categoryId === 'cars' ? 149
+                  : categoryId === 'urban-cars' ? 22
+                  : categoryId === 'corporate-fleet'
+                    ? (item.name?.toLowerCase().includes('vito') ? 198
+                      : item.name?.toLowerCase().includes('ducato') ? 98
+                      : undefined)
+                  : undefined;
+                return (
+                  <RentalCard key={item.id} item={item} onBook={handleBook} marketingPrice={marketingPrice} />
+                );
+              })}
             </div>
 
           )}     </div>
