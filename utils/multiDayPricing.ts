@@ -46,6 +46,35 @@ export const UTILITARIA_PRICES: { [days: number]: number } = {
     5: 149,
     6: 179,
     7: 189,
+    30: 689,
+};
+
+// ========================================
+// V_CLASS (MERCEDES VITO) PRICING TABLE
+// ========================================
+
+export const V_CLASS_PRICES: { [days: number]: number } = {
+    1: 239,
+    2: 469,
+    3: 689,
+    4: 889,
+    5: 1090,
+    6: 1249,
+    7: 1390,
+};
+
+// ========================================
+// FURGONE (FIAT DUCATO) PRICING TABLE
+// ========================================
+
+export const FURGONE_PRICES: { [days: number]: number } = {
+    1: 139,
+    2: 278,
+    3: 389,
+    4: 490,
+    5: 590,
+    6: 649,
+    7: 689,
 };
 
 // ========================================
@@ -87,15 +116,63 @@ export function calculateUtilitariaMultiDayPrice(days: number): number {
         return UTILITARIA_PRICES[days];
     }
 
-    // For 8+ days, calculate based on day 7 average rate
-    if (days > 7) {
+    // For 8-30 days, interpolate between 7-day and 30-day prices
+    if (days > 7 && days <= 30) {
         const day7Price = UTILITARIA_PRICES[7];
-        const day7AvgRate = day7Price / 7;
-        return day7Price + (days - 7) * day7AvgRate;
+        const day30Price = UTILITARIA_PRICES[30];
+        const dailyRate = (day30Price - day7Price) / (30 - 7);
+        return Math.round(day7Price + (days - 7) * dailyRate);
+    }
+
+    // For 31+ days, use 30-day price + daily rate for extra days
+    if (days > 30) {
+        const day30Price = UTILITARIA_PRICES[30];
+        const dailyRate = day30Price / 30;
+        return Math.round(day30Price + (days - 30) * dailyRate);
     }
 
     // Fallback: use 1-day rate
     return days * UTILITARIA_PRICES[1];
+}
+
+/**
+ * Calculate multi-day price for V_CLASS (Mercedes Vito) vehicles
+ * @param days - Number of rental days
+ * @returns Total rental cost with multi-day pricing applied
+ */
+export function calculateVClassMultiDayPrice(days: number): number {
+    if (days >= 1 && days <= 7 && V_CLASS_PRICES[days]) {
+        return V_CLASS_PRICES[days];
+    }
+
+    // For 8+ days, use day 7 average rate for extra days
+    if (days > 7) {
+        const day7Price = V_CLASS_PRICES[7];
+        const day7AvgRate = day7Price / 7;
+        return Math.round(day7Price + (days - 7) * day7AvgRate);
+    }
+
+    return days * V_CLASS_PRICES[1];
+}
+
+/**
+ * Calculate multi-day price for FURGONE (Fiat Ducato) vehicles
+ * @param days - Number of rental days
+ * @returns Total rental cost with multi-day pricing applied
+ */
+export function calculateFurgoneMultiDayPrice(days: number): number {
+    if (days >= 1 && days <= 7 && FURGONE_PRICES[days]) {
+        return FURGONE_PRICES[days];
+    }
+
+    // For 8+ days, use day 7 average rate for extra days
+    if (days > 7) {
+        const day7Price = FURGONE_PRICES[7];
+        const day7AvgRate = day7Price / 7;
+        return Math.round(day7Price + (days - 7) * day7AvgRate);
+    }
+
+    return days * FURGONE_PRICES[1];
 }
 
 /**
@@ -119,8 +196,12 @@ export function calculateMultiDayPrice(
         case 'UTILITARIA':
             return calculateUtilitariaMultiDayPrice(days);
 
-        // For other vehicle types (URBAN, FURGONE, V_CLASS), use simple daily rate
-        // These can be enhanced later with their own price tables if needed
+        case 'V_CLASS':
+            return calculateVClassMultiDayPrice(days);
+
+        case 'FURGONE':
+            return calculateFurgoneMultiDayPrice(days);
+
         default:
             return days * baseDailyRate;
     }
