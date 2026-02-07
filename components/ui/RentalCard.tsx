@@ -33,6 +33,8 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
   const isYacht = item.id.startsWith('yacht');
   const isCar = item.id.startsWith('car-');
   const isM4 = item.name?.toLowerCase().includes('m4');
+  const isM3 = item.name?.toLowerCase().includes('m3') && !item.name?.toLowerCase().includes('m340');
+  const isUnavailableCar = isM4 || isM3;
 
   // Jets, yachts, and helicopters use landscape format, others use vertical format
   const imageAspectRatio = (isJet || isYacht || isHelicopter) ? 'aspect-[16/9]' : 'aspect-[9/16]';
@@ -155,7 +157,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
             >
               {t('Discover_More')}
             </Link>
-          ) : isM4 ? (
+          ) : isUnavailableCar ? (
             <span className="inline-block bg-transparent border-2 border-gray-600 text-gray-500 px-6 py-2 rounded-full font-semibold text-sm cursor-not-allowed">
               Non disponibile
             </span>
