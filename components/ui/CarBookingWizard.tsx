@@ -1829,12 +1829,39 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // Create pickup and dropoff dates in Europe/Rome timezone
       // This ensures times are always interpreted as Italy time, regardless of user's browser timezone
       const createItalyDateTime = (dateStr: string, timeStr: string) => {
-        const dateTimeString = `${dateStr}T${timeStr}:00`;
-        const localDate = new Date(dateTimeString);
-        const italyTimeString = new Date(dateTimeString).toLocaleString('en-US', { timeZone: 'Europe/Rome' });
-        const italyDate = new Date(italyTimeString);
-        const offset = localDate.getTime() - italyDate.getTime();
-        return new Date(localDate.getTime() - offset);
+        // Parse the date and time components directly
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const [hours, minutes] = timeStr.split(':').map(Number);
+
+        // Create a UTC date with the selected values (treating input as UTC initially)
+        const utcDate = new Date(Date.UTC(year, month - 1, day, hours, minutes, 0, 0));
+
+        // Get Italy's offset for this date by checking what time it would be in Italy
+        // We need to find the offset between UTC and Europe/Rome
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          timeZone: 'Europe/Rome',
+          year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', hour12: false
+        });
+
+        // Format the UTC date in Italy timezone to get Italy's current time
+        const italyParts = formatter.formatToParts(utcDate);
+        const italyHour = parseInt(italyParts.find(p => p.type === 'hour')?.value || '0');
+        const italyMinute = parseInt(italyParts.find(p => p.type === 'minute')?.value || '0');
+
+        // Calculate the offset: how many hours/minutes ahead is Italy compared to UTC
+        let offsetHours = italyHour - hours;
+        let offsetMinutes = italyMinute - minutes;
+
+        // Handle day boundary crossing
+        if (offsetHours > 12) offsetHours -= 24;
+        if (offsetHours < -12) offsetHours += 24;
+
+        const offsetMs = (offsetHours * 60 + offsetMinutes) * 60 * 1000;
+
+        // Subtract the offset so that when displayed in Italy, it shows the user's selected time
+        // If Italy is UTC+1 and user selected 18:00, we store 17:00 UTC
+        return new Date(utcDate.getTime() - offsetMs);
       };
 
       const pickupDateTime = createItalyDateTime(formData.pickupDate, formData.pickupTime);
@@ -2153,12 +2180,23 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
         // 2. Prepare Payload (Replicating finalizeBooking logic)
         const createItalyDateTime = (dateStr: string, timeStr: string) => {
-          const dateTimeString = `${dateStr}T${timeStr}:00`;
-          const localDate = new Date(dateTimeString);
-          const italyTimeString = new Date(dateTimeString).toLocaleString('en-US', { timeZone: 'Europe/Rome' });
-          const italyDate = new Date(italyTimeString);
-          const offset = localDate.getTime() - italyDate.getTime();
-          return new Date(localDate.getTime() - offset);
+          const [year, month, day] = dateStr.split('-').map(Number);
+          const [hours, minutes] = timeStr.split(':').map(Number);
+          const utcDate = new Date(Date.UTC(year, month - 1, day, hours, minutes, 0, 0));
+          const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Europe/Rome',
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', hour12: false
+          });
+          const italyParts = formatter.formatToParts(utcDate);
+          const italyHour = parseInt(italyParts.find(p => p.type === 'hour')?.value || '0');
+          const italyMinute = parseInt(italyParts.find(p => p.type === 'minute')?.value || '0');
+          let offsetHours = italyHour - hours;
+          let offsetMinutes = italyMinute - minutes;
+          if (offsetHours > 12) offsetHours -= 24;
+          if (offsetHours < -12) offsetHours += 24;
+          const offsetMs = (offsetHours * 60 + offsetMinutes) * 60 * 1000;
+          return new Date(utcDate.getTime() - offsetMs);
         };
 
         const pickupDateTime = createItalyDateTime(formData.pickupDate, formData.pickupTime);
@@ -2338,12 +2376,23 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
         // Ensure dates are parsed as Italy/Europe time
         const createItalyDateTime = (dateStr: string, timeStr: string) => {
-          const dateTimeString = `${dateStr}T${timeStr}:00`;
-          const localDate = new Date(dateTimeString);
-          const italyTimeString = new Date(dateTimeString).toLocaleString('en-US', { timeZone: 'Europe/Rome' });
-          const italyDate = new Date(italyTimeString);
-          const offset = localDate.getTime() - italyDate.getTime();
-          return new Date(localDate.getTime() - offset);
+          const [year, month, day] = dateStr.split('-').map(Number);
+          const [hours, minutes] = timeStr.split(':').map(Number);
+          const utcDate = new Date(Date.UTC(year, month - 1, day, hours, minutes, 0, 0));
+          const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Europe/Rome',
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', hour12: false
+          });
+          const italyParts = formatter.formatToParts(utcDate);
+          const italyHour = parseInt(italyParts.find(p => p.type === 'hour')?.value || '0');
+          const italyMinute = parseInt(italyParts.find(p => p.type === 'minute')?.value || '0');
+          let offsetHours = italyHour - hours;
+          let offsetMinutes = italyMinute - minutes;
+          if (offsetHours > 12) offsetHours -= 24;
+          if (offsetHours < -12) offsetHours += 24;
+          const offsetMs = (offsetHours * 60 + offsetMinutes) * 60 * 1000;
+          return new Date(utcDate.getTime() - offsetMs);
         };
 
         const pickupDateTime = createItalyDateTime(formData.pickupDate, formData.pickupTime);
