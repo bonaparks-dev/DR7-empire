@@ -2230,6 +2230,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           price_total: Math.round(finalPriceWithBirthdayDiscount * 100),
           currency: currency.toUpperCase(),
           booking_source: 'website',
+          customer_name: `${formData.firstName} ${formData.lastName}`,
+          customer_email: formData.email,
+          customer_phone: formData.phone,
+          deposit_amount: getDeposit(),
+          vehicle_id: formData.selectedVehicleId || null,
+          insurance_option: formData.insuranceOption,
+          booking_usage_zone: formData.usageZone || null,
           booking_details: {
             customer: {
               fullName: `${formData.firstName} ${formData.lastName}`,
