@@ -149,7 +149,7 @@ export const handler: Handler = async (event) => {
 
                 const vehicleBusy = busyByVehicle.get(b.vehicle_id) || [];
                 vehicleBusy.push({
-                    start: new Date(new Date(b.pickup_date).getTime() - BUFFER_TIME_MS),
+                    start: new Date(b.pickup_date),
                     end: new Date(new Date(b.dropoff_date).getTime() + BUFFER_TIME_MS)
                 });
                 busyByVehicle.set(b.vehicle_id, vehicleBusy);
@@ -163,7 +163,7 @@ export const handler: Handler = async (event) => {
 
                 const vehicleBusy = busyByVehicle.get(r.vehicle_id) || [];
                 vehicleBusy.push({
-                    start: new Date(new Date(r.start_at).getTime() - BUFFER_TIME_MS),
+                    start: new Date(r.start_at),
                     end: new Date(new Date(r.end_at).getTime() + BUFFER_TIME_MS)
                 });
                 busyByVehicle.set(r.vehicle_id, vehicleBusy);

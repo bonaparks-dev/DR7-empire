@@ -676,9 +676,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       });
     }
 
-    // CRITICAL: Filter by availability windows
-    // Return time must be BEFORE the next booking starts (considering 90-min buffer)
-    if (availabilityWindows.length > 0 && formData.pickupDate && formData.pickupTime) {
+    // If no pickup date/time set, return empty array
+    // User must select pickup before selecting return
+    if (!formData.pickupDate || !formData.pickupTime) {
+      return [];
+    }
+
+    // Filter by availability windows if available
+    // Return time must be BEFORE the next booking starts (considering buffer)
+    if (availabilityWindows.length > 0) {
       const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
 
       // Find the window containing pickup
@@ -711,9 +717,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       return [];
     }
 
-    // If no pickup date/time set, return empty array
-    // User must select pickup before selecting return
-    return [];
+    // No availability windows loaded yet or vehicle has no bookings - allow all valid return times
+    // The server-side conflict check (checkVehicleAvailability) will catch real conflicts
+    const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
+    return times.filter(time => {
+      const [hours, minutes] = time.split(':').map(Number);
+      const returnDt = new Date(date);
+      returnDt.setHours(hours, minutes, 0, 0);
+      return returnDt > pickup;
+    });
   };
 
   const [hasStoredDocs, setHasStoredDocs] = useState<{ licensePath: string | null; idPath: string | null }>({ licensePath: null, idPath: null });
