@@ -109,7 +109,7 @@ const handler: Handler = async (event) => {
         message += `*Note:* ${notes}\n`;
       }
       message += `*Totale:* €${totalPrice}\n`;
-      message += `*Stato Pagamento:* ${booking.payment_status === 'paid' ? '✅ Pagato' : '⏳ In attesa'}`;
+      message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa'}`;
     } else if (serviceType === 'mechanical') {
       // Mechanical Booking
       const appointmentDate = new Date(booking.appointment_date);
@@ -143,7 +143,7 @@ const handler: Handler = async (event) => {
       if (notes) {
         message += `*Note:* ${notes}\n`;
       }
-      message += `*Stato Pagamento:* ${booking.payment_status === 'paid' ? '✅ Pagato' : '⏳ In attesa'}`;
+      message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa'}`;
     } else {
       // Car Rental Booking
       const vehicleName = booking.vehicle_name;
@@ -188,7 +188,7 @@ const handler: Handler = async (event) => {
         message += `*Cauzione:* €${depositAmount}\n`;
       }
 
-      message += `*Stato Pagamento:* ${booking.payment_status === 'paid' ? '✅ Pagato' : '⏳ In attesa'}`;
+      message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa'}`;
     }
   } else {
     return {

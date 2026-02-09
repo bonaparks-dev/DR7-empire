@@ -1893,6 +1893,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         stripe_payment_intent_id: paymentIntentId || null,
         booked_at: new Date().toISOString(),
         booking_usage_zone: formData.usageZone || null, // Store usage zone for residency pricing
+        vehicle_id: formData.selectedVehicleId || null, // For calendar matching
         deposit_amount: getDeposit(), // Store calculated deposit for email confirmation
         customer_name: `${formData.firstName} ${formData.lastName}`,
         customer_email: formData.email,
