@@ -92,10 +92,10 @@ exports.handler = async (event) => {
       process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
     );
 
-    // Find booking by order ID
-    // The orderId in Nexi is the sanitized booking ID or custom order ID
-    console.log('Looking for booking with orderId:', codTrans);
+    // Find booking or credit wallet purchase by order ID
+    console.log('Looking for order with codTrans:', codTrans);
 
+    // 1. Try bookings first
     const { data: bookings, error: fetchError } = await supabase
       .from('bookings')
       .select('*')
@@ -104,58 +104,146 @@ exports.handler = async (event) => {
 
     if (fetchError) {
       console.error('Error fetching booking:', fetchError);
-      return {
-        statusCode: 500,
-        body: 'Error fetching booking'
+    }
+
+    if (bookings && bookings.length > 0) {
+      const booking = bookings[0];
+      console.log('Found booking:', booking.id);
+
+      const updateData = {
+        payment_status: esito === 'OK' ? 'completed' : 'failed',
+        nexi_transaction_id: codTrans,
+        nexi_authorization_code: codAut || null,
+        payment_completed_at: esito === 'OK' ? new Date().toISOString() : null
       };
+
+      if (esito !== 'OK') {
+        updateData.payment_error_message = messaggio || 'Payment failed';
+        updateData.status = 'cancelled';
+      }
+
+      const { error: updateError } = await supabase
+        .from('bookings')
+        .update(updateData)
+        .eq('id', booking.id);
+
+      if (updateError) {
+        console.error('Error updating booking:', updateError);
+        return { statusCode: 500, body: 'Error updating booking' };
+      }
+
+      console.log(`✅ Booking ${booking.id} updated: payment_status=${updateData.payment_status}`);
+      return { statusCode: 200, body: 'OK' };
     }
 
-    if (!bookings || bookings.length === 0) {
-      console.error('Booking not found for orderId:', codTrans);
-      return {
-        statusCode: 404,
-        body: 'Booking not found'
-      };
+    // 2. Try credit_wallet_purchases
+    const { data: purchases, error: purchaseError } = await supabase
+      .from('credit_wallet_purchases')
+      .select('*')
+      .eq('nexi_order_id', codTrans)
+      .limit(1);
+
+    if (purchaseError) {
+      console.error('Error fetching credit wallet purchase:', purchaseError);
     }
 
-    const booking = bookings[0];
-    console.log('Found booking:', booking.id);
+    if (purchases && purchases.length > 0) {
+      const purchase = purchases[0];
+      console.log('Found credit wallet purchase:', purchase.id);
 
-    // Update booking based on payment result
-    const updateData = {
-      payment_status: esito === 'OK' ? 'completed' : 'failed',
-      nexi_transaction_id: codTrans,
-      nexi_authorization_code: codAut || null,
-      payment_completed_at: esito === 'OK' ? new Date().toISOString() : null
-    };
+      if (esito === 'OK') {
+        // Update purchase status
+        const { error: updateError } = await supabase
+          .from('credit_wallet_purchases')
+          .update({
+            payment_status: 'completed',
+            payment_completed_at: new Date().toISOString()
+          })
+          .eq('id', purchase.id);
 
-    if (esito !== 'OK') {
-      updateData.payment_error_message = messaggio || 'Payment failed';
-      updateData.status = 'cancelled'; // Cancel booking if payment failed
+        if (updateError) {
+          console.error('Error updating purchase:', updateError);
+          return { statusCode: 500, body: 'Error updating purchase' };
+        }
+
+        // Add credits to user's wallet
+        if (purchase.user_id && purchase.received_amount) {
+          // Get current balance
+          const { data: balanceRow } = await supabase
+            .from('user_credit_balance')
+            .select('balance')
+            .eq('user_id', purchase.user_id)
+            .single();
+
+          const currentBalance = balanceRow?.balance || 0;
+          const newBalance = currentBalance + purchase.received_amount;
+
+          // Upsert balance
+          await supabase
+            .from('user_credit_balance')
+            .upsert({
+              user_id: purchase.user_id,
+              balance: newBalance,
+              last_updated: new Date().toISOString()
+            }, { onConflict: 'user_id' });
+
+          // Record credit transaction
+          await supabase
+            .from('credit_transactions')
+            .insert({
+              user_id: purchase.user_id,
+              transaction_type: 'credit',
+              amount: purchase.received_amount,
+              balance_after: newBalance,
+              description: `Ricarica ${purchase.package_name} - Bonus ${purchase.bonus_percentage}%`,
+              reference_id: purchase.id,
+              reference_type: 'wallet_purchase',
+              created_at: new Date().toISOString()
+            });
+
+          console.log(`✅ Credits added: €${purchase.received_amount} to user ${purchase.user_id} (new balance: €${newBalance})`);
+        }
+      } else {
+        // Payment failed
+        await supabase
+          .from('credit_wallet_purchases')
+          .update({
+            payment_status: 'failed',
+            payment_error_message: messaggio || 'Payment failed'
+          })
+          .eq('id', purchase.id);
+
+        console.log(`❌ Credit wallet purchase ${purchase.id} payment failed`);
+      }
+
+      return { statusCode: 200, body: 'OK' };
     }
 
-    console.log('Updating booking with:', updateData);
+    // 3. Try membership_purchases
+    const { data: memberships, error: membershipError } = await supabase
+      .from('membership_purchases')
+      .select('*')
+      .eq('nexi_order_id', codTrans)
+      .limit(1);
 
-    const { error: updateError } = await supabase
-      .from('bookings')
-      .update(updateData)
-      .eq('id', booking.id);
+    if (!membershipError && memberships && memberships.length > 0) {
+      const membership = memberships[0];
+      console.log('Found membership purchase:', membership.id);
 
-    if (updateError) {
-      console.error('Error updating booking:', updateError);
-      return {
-        statusCode: 500,
-        body: 'Error updating booking'
-      };
+      await supabase
+        .from('membership_purchases')
+        .update({
+          payment_status: esito === 'OK' ? 'completed' : 'failed',
+          payment_completed_at: esito === 'OK' ? new Date().toISOString() : null
+        })
+        .eq('id', membership.id);
+
+      console.log(`✅ Membership ${membership.id} updated: ${esito}`);
+      return { statusCode: 200, body: 'OK' };
     }
 
-    console.log(`✅ Booking ${booking.id} updated: payment_status=${updateData.payment_status}`);
-
-    // Return success response to Nexi
-    return {
-      statusCode: 200,
-      body: 'OK'
-    };
+    console.error('No matching order found for codTrans:', codTrans);
+    return { statusCode: 404, body: 'Order not found' };
   } catch (error) {
     console.error('Callback error:', error);
     return {

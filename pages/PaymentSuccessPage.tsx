@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
+import { addCredits } from '../utils/creditWallet';
 
 const PaymentSuccessPage: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [updating, setUpdating] = useState(true);
     const [updateError, setUpdateError] = useState<string | null>(null);
+    const [purchaseType, setPurchaseType] = useState<'booking' | 'wallet' | null>(null);
+    const [walletInfo, setWalletInfo] = useState<{ packageName: string; receivedAmount: number } | null>(null);
 
     const orderId = searchParams.get('codTrans') || searchParams.get('orderId') || searchParams.get('paymentid');
     const amount = searchParams.get('importo');
@@ -16,9 +19,9 @@ const PaymentSuccessPage: React.FC = () => {
     const FUNCTIONS_BASE = import.meta.env.VITE_FUNCTIONS_BASE ?? (window.location.hostname === 'localhost' ? 'http://localhost:8888' : window.location.origin);
     const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
 
-    // Update booking status to completed immediately
+    // Update payment status immediately
     useEffect(() => {
-        const updateBookingStatus = async () => {
+        const updatePaymentStatus = async () => {
             if (!orderId) {
                 console.warn('No orderId found in URL parameters');
                 setUpdating(false);
@@ -26,86 +29,133 @@ const PaymentSuccessPage: React.FC = () => {
             }
 
             try {
-                console.log('Updating booking status for orderId:', orderId);
+                console.log('Processing payment success for orderId:', orderId);
 
-                // Find booking by nexi_order_id or id
+                // 1. Try bookings first
                 const { data: bookings, error: fetchError } = await supabase
                     .from('bookings')
                     .select('*')
                     .or(`id.eq.${orderId},nexi_order_id.eq.${orderId}`)
                     .limit(1);
 
-                if (fetchError) {
-                    console.error('Error fetching booking:', fetchError);
-                    setUpdateError('Could not find booking');
-                    setUpdating(false);
-                    return;
-                }
+                if (!fetchError && bookings && bookings.length > 0) {
+                    const booking = bookings[0];
+                    console.log('Found booking:', booking.id);
+                    setPurchaseType('booking');
 
-                if (!bookings || bookings.length === 0) {
-                    console.error('Booking not found for orderId:', orderId);
-                    setUpdateError('Booking not found');
-                    setUpdating(false);
-                    return;
-                }
+                    const { error: updateError } = await supabase
+                        .from('bookings')
+                        .update({
+                            payment_status: 'completed',
+                            nexi_payment_id: orderId,
+                            nexi_authorization_code: authCode || null,
+                            payment_completed_at: new Date().toISOString()
+                        })
+                        .eq('id', booking.id);
 
-                const booking = bookings[0];
-                console.log('Found booking:', booking.id);
+                    if (updateError) {
+                        console.error('Error updating booking:', updateError);
+                        setUpdateError('Could not update booking status');
+                    } else {
+                        console.log('✅ Booking marked as completed:', booking.id);
 
-                // Update to completed
-                const { error: updateError } = await supabase
-                    .from('bookings')
-                    .update({
-                        payment_status: 'completed',
-                        nexi_payment_id: orderId,
-                        nexi_authorization_code: authCode || null,
-                        payment_completed_at: new Date().toISOString()
-                    })
-                    .eq('id', booking.id);
+                        // Send notifications
+                        fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ booking: { ...booking, payment_status: 'completed' } }),
+                        }).catch(e => console.error('Email error', e));
 
-                if (updateError) {
-                    console.error('Error updating booking:', updateError);
-                    setUpdateError('Could not update booking status');
-                } else {
-                    console.log('✅ Booking marked as completed:', booking.id);
+                        fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ booking: { ...booking, payment_status: 'completed' } }),
+                        }).catch(e => console.error('WhatsApp error', e));
 
-                    // --- SEND NOTIFICATIONS ---
-                    // 1. Email Confirmation
-                    fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ booking: { ...booking, payment_status: 'completed' } }), // ensure status is current
-                    }).catch(e => console.error('Email error', e));
+                        if (booking.booking_details?.customer) {
+                            const bId = booking.id.substring(0, 8).toUpperCase();
+                            const customer = booking.booking_details.customer;
+                            const pDate = new Date(booking.pickup_date);
+                            const dDate = new Date(booking.dropoff_date);
+                            const price = (booking.price_total / 100).toFixed(2);
 
-                    // 2. WhatsApp Admin Notification
-                    fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ booking: { ...booking, payment_status: 'completed' } }),
-                    }).catch(e => console.error('WhatsApp error', e));
+                            const msg = `Ciao! Ho appena completato il pagamento per la prenotazione.\n\n` +
+                                `📋 *Dettagli Prenotazione*\n` +
+                                `*ID:* DR7-${bId}\n` +
+                                `*Nome:* ${customer.fullName}\n` +
+                                `*Veicolo:* ${booking.vehicle_name}\n` +
+                                `*Ritiro:* ${pDate.toLocaleDateString('it-IT')} ${pDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n` +
+                                `*Riconsegna:* ${dDate.toLocaleDateString('it-IT')} ${dDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n` +
+                                `*Totale:* €${price}\n\n` +
+                                `Grazie!`;
 
-                    // 3. Prepare Customer WhatsApp Message (for button)
-                    if (booking.booking_details?.customer) {
-                        const bId = booking.id.substring(0, 8).toUpperCase();
-                        const customer = booking.booking_details.customer;
-                        const pDate = new Date(booking.pickup_date);
-                        const dDate = new Date(booking.dropoff_date);
-                        const price = (booking.price_total / 100).toFixed(2);
-
-                        const msg = `Ciao! Ho appena completato il pagamento per la prenotazione.\n\n` +
-                            `📋 *Dettagli Prenotazione*\n` +
-                            `*ID:* DR7-${bId}\n` +
-                            `*Nome:* ${customer.fullName}\n` +
-                            `*Veicolo:* ${booking.vehicle_name}\n` +
-                            `*Ritiro:* ${pDate.toLocaleDateString('it-IT')} ${pDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n` +
-                            `*Riconsegna:* ${dDate.toLocaleDateString('it-IT')} ${dDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n` +
-                            `*Totale:* €${price}\n\n` +
-                            `Grazie!`;
-
-                        const officeNum = '393457905205';
-                        setWhatsappUrl(`https://wa.me/${officeNum}?text=${encodeURIComponent(msg)}`);
+                            const officeNum = '393457905205';
+                            setWhatsappUrl(`https://wa.me/${officeNum}?text=${encodeURIComponent(msg)}`);
+                        }
                     }
+                    setUpdating(false);
+                    return;
                 }
+
+                // 2. Try credit wallet purchases
+                const { data: purchases, error: purchaseError } = await supabase
+                    .from('credit_wallet_purchases')
+                    .select('*')
+                    .eq('nexi_order_id', orderId)
+                    .limit(1);
+
+                if (!purchaseError && purchases && purchases.length > 0) {
+                    const purchase = purchases[0];
+                    console.log('Found credit wallet purchase:', purchase.id);
+                    setPurchaseType('wallet');
+                    setWalletInfo({
+                        packageName: purchase.package_name,
+                        receivedAmount: purchase.received_amount
+                    });
+
+                    // Skip if already completed (avoid double-crediting)
+                    if (purchase.payment_status === 'completed') {
+                        console.log('Purchase already completed, skipping credit addition');
+                        setUpdating(false);
+                        return;
+                    }
+
+                    // Update purchase status
+                    const { error: upErr } = await supabase
+                        .from('credit_wallet_purchases')
+                        .update({
+                            payment_status: 'completed',
+                            payment_completed_at: new Date().toISOString()
+                        })
+                        .eq('id', purchase.id);
+
+                    if (upErr) {
+                        console.error('Error updating purchase:', upErr);
+                        setUpdateError('Could not update purchase status');
+                    } else {
+                        // Add credits to wallet
+                        const result = await addCredits(
+                            purchase.user_id,
+                            purchase.received_amount,
+                            `Ricarica ${purchase.package_name} - Bonus ${purchase.bonus_percentage}%`,
+                            purchase.id,
+                            'wallet_purchase'
+                        );
+
+                        if (result.success) {
+                            console.log(`✅ Credits added: €${purchase.received_amount} (new balance: €${result.newBalance})`);
+                        } else {
+                            console.error('Error adding credits:', result.error);
+                            setUpdateError('Payment received but error adding credits. Contact support.');
+                        }
+                    }
+                    setUpdating(false);
+                    return;
+                }
+
+                // Nothing found
+                console.error('No order found for orderId:', orderId);
+                setUpdateError('Order not found');
             } catch (error) {
                 console.error('Unexpected error:', error);
                 setUpdateError('An error occurred');
@@ -114,7 +164,7 @@ const PaymentSuccessPage: React.FC = () => {
             }
         };
 
-        updateBookingStatus();
+        updatePaymentStatus();
     }, [orderId, authCode]);
 
     if (updating) {
@@ -150,7 +200,9 @@ const PaymentSuccessPage: React.FC = () => {
                     </h1>
 
                     <p className="text-gray-600 mb-8">
-                        Il tuo pagamento è stato elaborato con successo.
+                        {purchaseType === 'wallet'
+                            ? `La tua ricarica ${walletInfo?.packageName || ''} è stata completata! €${walletInfo?.receivedAmount?.toFixed(2) || ''} sono stati aggiunti al tuo wallet.`
+                            : 'Il tuo pagamento è stato elaborato con successo.'}
                     </p>
 
                     {orderId && (
@@ -199,12 +251,21 @@ const PaymentSuccessPage: React.FC = () => {
                             </a>
                         )}
 
-                        <button
-                            onClick={() => navigate('/account/bookings')}
-                            className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-200 transition-all"
-                        >
-                            Vedi le Mie Prenotazioni
-                        </button>
+                        {purchaseType === 'wallet' ? (
+                            <button
+                                onClick={() => navigate('/credit-wallet')}
+                                className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-200 transition-all"
+                            >
+                                Vai al Wallet
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => navigate('/account/bookings')}
+                                className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-200 transition-all"
+                            >
+                                Vedi le Mie Prenotazioni
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
