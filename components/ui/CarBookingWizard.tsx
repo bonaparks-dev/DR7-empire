@@ -1892,9 +1892,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         payment_method: formData.paymentMethod,
         stripe_payment_intent_id: paymentIntentId || null,
         booked_at: new Date().toISOString(),
-        booking_usage_zone: formData.usageZone || null, // Store usage zone for residency pricing
-        vehicle_id: formData.selectedVehicleId || null, // For calendar matching
-        deposit_amount: getDeposit(), // Store calculated deposit for email confirmation
+        booking_usage_zone: formData.usageZone || null,
+        vehicle_id: formData.selectedVehicleId || null,
+        deposit_amount: getDeposit(),
+        insurance_option: formData.insuranceOption,
         customer_name: `${formData.firstName} ${formData.lastName}`,
         customer_email: formData.email,
         customer_phone: formData.phone,
@@ -2460,6 +2461,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           payment_status: 'pending',
           payment_method: 'nexi',
           booked_at: new Date().toISOString(),
+          customer_name: `${formData.firstName} ${formData.lastName}`,
+          customer_email: formData.email,
+          customer_phone: formData.phone,
+          vehicle_id: formData.selectedVehicleId || null,
+          deposit_amount: getDeposit(),
+          insurance_option: formData.insuranceOption,
           booking_usage_zone: formData.usageZone || null,
           booking_details: {
             customer: {

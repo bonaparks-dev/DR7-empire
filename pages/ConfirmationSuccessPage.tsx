@@ -44,7 +44,7 @@ const BookingConfirmationDetails: React.FC<{ booking: any }> = ({ booking }) => 
         </div>
         <div className="flex justify-between">
           <span className="text-gray-400">Cliente:</span>
-          <span className="font-semibold text-white">{booking.customer_name}</span>
+          <span className="font-semibold text-white">{booking.customer_name || booking.booking_details?.customer?.fullName || 'Cliente'}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-gray-400">Pagamento:</span>
@@ -55,7 +55,7 @@ const BookingConfirmationDetails: React.FC<{ booking: any }> = ({ booking }) => 
           <span className="font-bold text-white">{formatPrice(totalPrice)}</span>
         </div>
         <p className="text-xs text-gray-400 text-center pt-2">
-          Riceverai una conferma via email a {booking.customer_email}
+          Riceverai una conferma via email a {booking.customer_email || booking.booking_details?.customer?.email}
         </p>
       </div>
     );

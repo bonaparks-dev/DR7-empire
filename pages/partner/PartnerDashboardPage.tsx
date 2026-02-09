@@ -173,11 +173,11 @@ const PartnerDashboardPage: React.FC = () => {
                                                 <p className="text-sm font-bold text-white">
                                                     €{(booking.price_total / 100).toFixed(2)}
                                                 </p>
-                                                <span className={`text-xs px-2 py-0.5 rounded-full ${booking.payment_status === 'paid'
+                                                <span className={`text-xs px-2 py-0.5 rounded-full ${booking.payment_status === 'paid' || booking.payment_status === 'succeeded' || booking.payment_status === 'completed'
                                                     ? 'bg-green-500/20 text-green-400'
                                                     : 'bg-yellow-500/20 text-yellow-400'
                                                     }`}>
-                                                    {booking.payment_status === 'paid' ? 'Paid' : 'Pending'}
+                                                    {booking.payment_status === 'paid' || booking.payment_status === 'succeeded' || booking.payment_status === 'completed' ? 'Paid' : 'Pending'}
                                                 </span>
                                             </div>
                                         </div>
