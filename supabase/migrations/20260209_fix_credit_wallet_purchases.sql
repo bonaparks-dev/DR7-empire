@@ -10,6 +10,12 @@ ADD COLUMN IF NOT EXISTS payment_method TEXT DEFAULT 'nexi';
 ALTER TABLE credit_wallet_purchases
 ADD COLUMN IF NOT EXISTS nexi_order_id TEXT;
 
+ALTER TABLE credit_wallet_purchases
+ADD COLUMN IF NOT EXISTS payment_completed_at TIMESTAMPTZ;
+
+ALTER TABLE credit_wallet_purchases
+ADD COLUMN IF NOT EXISTS payment_error_message TEXT;
+
 -- 2. Add INSERT policy so users can create purchase records
 DROP POLICY IF EXISTS "Users can insert own purchases" ON credit_wallet_purchases;
 CREATE POLICY "Users can insert own purchases" ON credit_wallet_purchases

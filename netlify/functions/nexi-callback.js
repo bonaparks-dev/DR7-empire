@@ -151,6 +151,12 @@ exports.handler = async (event) => {
       const purchase = purchases[0];
       console.log('Found credit wallet purchase:', purchase.id);
 
+      // Skip if already completed (avoid double-crediting)
+      if (purchase.payment_status === 'completed') {
+        console.log('Purchase already completed, skipping');
+        return { statusCode: 200, body: 'OK' };
+      }
+
       if (esito === 'OK') {
         // Update purchase status
         const { error: updateError } = await supabase
