@@ -174,6 +174,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
       // Step 3
       insuranceOption: 'RCA',
+      depositOption: 'with_deposit' as 'with_deposit' | 'no_deposit',
       extras: [] as string[],
       kmPackageType: 'unlimited' as 'none' | 'unlimited' | '50km', // 'none' = only free included km, '50km' = 50km/day supercar package
       kmPackageDistance: 100, // default 100km package
@@ -1029,12 +1030,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     duration, rentalCost, insuranceCost, extrasCost, kmPackageCost, pickupFee, dropoffFee, subtotal, taxes, total, includedKm,
     driverAge, licenseYears, youngDriverFee, recentLicenseFee, secondDriverFee, recommendedKm,
     membershipDiscount, membershipTier, originalTotal, finalTotal,
-    isMassimo, specialDiscountAmount, carWashFee,
+    isMassimo, specialDiscountAmount, carWashFee, noDepositSurcharge,
     effectivePricePerDay // Calculated price per day (resident or non-resident)
   } = useMemo(() => {
     const zero = {
       duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, kmPackageCost: 0, pickupFee: 0, dropoffFee: 0, subtotal: 0, taxes: 0, total: 0, includedKm: 0, driverAge: 0, licenseYears: 0, youngDriverFee: 0, recentLicenseFee: 0, secondDriverFee: 0, recommendedKm: null, membershipDiscount: 0, membershipTier: null, originalTotal: 0, finalTotal: 0,
-      isMassimo: false, specialDiscountAmount: 0, carWashFee: 0
+      isMassimo: false, specialDiscountAmount: 0, carWashFee: 0, noDepositSurcharge: 0
     };
     if (!item || !item.pricePerDay) return zero;
 
@@ -1221,6 +1222,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     let calculatedSubtotal = calculatedRentalCost + calculatedInsuranceCost + calculatedExtrasCost + calculatedKmPackageCost + calculatedYoungDriverFee + calculatedRecentLicenseFee + calculatedSecondDriverFee + calculatedPickupFee + calculatedDropoffFee + carWashFee;
 
+    // No-deposit surcharge: +30% on subtotal for urban/corporate vehicles when customer opts out of deposit
+    const vTypeForDeposit = getVehicleType(item, categoryContext);
+    const isUrbanForDeposit = vTypeForDeposit === 'UTILITARIA' || vTypeForDeposit === 'FURGONE' || vTypeForDeposit === 'V_CLASS';
+    const calculatedNoDepositSurcharge = (isUrbanForDeposit && formData.depositOption === 'no_deposit')
+      ? roundToTwoDecimals(calculatedSubtotal * 0.30)
+      : 0;
+    calculatedSubtotal = calculatedSubtotal + calculatedNoDepositSurcharge;
+
     // Massimo: Round to whole euros (no cents)
     let specialDiscountAmount = massimoTotalDiscount;
     if (isMassimo && SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.noCents) {
@@ -1266,13 +1275,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       isMassimo,
       specialDiscountAmount,
       carWashFee,
+      noDepositSurcharge: calculatedNoDepositSurcharge,
       effectivePricePerDay: isSupercar50km && !isMassimo ? SUPERCAR_50KM_DAILY_RATE : pricePerDay // Expose the calculated price per day
     };
   }, [
     formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime,
     formData.insuranceOption, formData.extras, formData.birthDate, formData.licenseIssueDate, formData.addSecondDriver,
     formData.kmPackageType, formData.kmPackageDistance, formData.expectedKm,
-    formData.email, formData.usageZone,
+    formData.email, formData.usageZone, formData.depositOption,
     item, currency, user, isUrbanOrCorporate, categoryContext
   ]);
 
@@ -1414,6 +1424,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const vType = getVehicleType(item, categoryContext);
     const isUtilitaria = vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS';
     const isSupercar = !isUtilitaria;
+
+    // Urban/corporate vehicles: if customer chose "no deposit" option, deposit is €0 (surcharge applied instead)
+    if (isUtilitaria && formData.depositOption === 'no_deposit') return 0;
 
     // Rule 1: Fidelizzato (Gold/Platinum) OR 3+ supercar rentals = NO deposit for ANY vehicle
     const membershipTier = getMembershipTierName(user);
@@ -1881,6 +1894,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         booked_at: new Date().toISOString(),
         booking_usage_zone: formData.usageZone || null, // Store usage zone for residency pricing
         deposit_amount: getDeposit(), // Store calculated deposit for email confirmation
+        customer_name: `${formData.firstName} ${formData.lastName}`,
+        customer_email: formData.email,
+        customer_phone: formData.phone,
         booking_details: {
           customer: {
             fullName: `${formData.firstName} ${formData.lastName}`,
@@ -1916,6 +1932,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             isPremium: isPremiumVehicle(item.name),
             dailyRate: formData.kmPackageType === '50km' ? 149 : undefined
           },
+          depositOption: formData.depositOption,
+          noDepositSurcharge: noDepositSurcharge,
           vehicle_id: formData.selectedVehicleId, // Store specific vehicle ID to avoid grouping collisions
           driverLicenseImage: licenseImageUrl,
           driverIdImage: idImageUrl,
@@ -3088,8 +3106,80 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             </section>
 
 
+            {/* === DEPOSIT CHOICE (Urban/Corporate only) === */}
+            {isUrbanOrCorporate && (
+              <section className="border-t border-gray-700 pt-6">
+                <h3 className="text-lg font-bold text-white mb-2">B. CAUZIONE</h3>
+                <p className="text-sm text-gray-400 mb-4">
+                  Scegli se versare una cauzione al ritiro o se preferisci noleggiare senza cauzione con un supplemento sul totale.
+                </p>
+                <div className="space-y-3">
+                  {/* Option 1: With deposit */}
+                  <div
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.depositOption === 'with_deposit'
+                      ? 'border-green-500 bg-green-500/10'
+                      : 'border-gray-600 hover:border-gray-500'}`}
+                    onClick={() => setFormData(prev => ({ ...prev, depositOption: 'with_deposit' as const }))}
+                  >
+                    <div className="flex items-center">
+                      <input
+                        type="radio"
+                        name="depositOption"
+                        value="with_deposit"
+                        checked={formData.depositOption === 'with_deposit'}
+                        onChange={() => setFormData(prev => ({ ...prev, depositOption: 'with_deposit' as const }))}
+                        className="w-4 h-4 text-green-500"
+                      />
+                      <div className="ml-3 flex-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-white">Con Cauzione</span>
+                          <span className="font-bold text-green-400">
+                            {formatDeposit(licenseYears >= 5 ? DEPOSIT_RULES.UTILITARIA.LICENSE_5_OR_MORE : DEPOSIT_RULES.UTILITARIA.LICENSE_UNDER_5)}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-400 mt-1">
+                          {licenseYears >= 5
+                            ? `Cauzione di €${DEPOSIT_RULES.UTILITARIA.LICENSE_5_OR_MORE} (patente ≥ 5 anni)`
+                            : `Cauzione di €${DEPOSIT_RULES.UTILITARIA.LICENSE_UNDER_5} (patente < 5 anni)`
+                          } — Prezzo base del noleggio
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Option 2: No deposit */}
+                  <div
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.depositOption === 'no_deposit'
+                      ? 'border-yellow-400 bg-yellow-400/10'
+                      : 'border-gray-600 hover:border-gray-500'}`}
+                    onClick={() => setFormData(prev => ({ ...prev, depositOption: 'no_deposit' as const }))}
+                  >
+                    <div className="flex items-center">
+                      <input
+                        type="radio"
+                        name="depositOption"
+                        value="no_deposit"
+                        checked={formData.depositOption === 'no_deposit'}
+                        onChange={() => setFormData(prev => ({ ...prev, depositOption: 'no_deposit' as const }))}
+                        className="w-4 h-4 text-yellow-400"
+                      />
+                      <div className="ml-3 flex-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-white">Senza Cauzione</span>
+                          <span className="font-bold text-yellow-400">+30% sul totale</span>
+                        </div>
+                        <p className="text-sm text-gray-400 mt-1">
+                          Nessuna cauzione richiesta — Supplemento del 30% applicato al totale del noleggio
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+
             <section className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-bold text-white mb-4">B. CHILOMETRI</h3>
+              <h3 className="text-lg font-bold text-white mb-4">{isUrbanOrCorporate ? 'C' : 'B'}. CHILOMETRI</h3>
               {displayVehicleType === 'SUPERCAR' && !isMassimo ? (
                 // Supercar km package selection: 50km/day or unlimited
                 <div className="space-y-3">
@@ -3455,6 +3545,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {/* Lavaggio is now included in the price - no additional fee */}
                   <div className="flex justify-between"><span>Spese di ritiro</span> <span>{formatPrice(pickupFee)}</span></div>
                   <div className="flex justify-between"><span>Spese di riconsegna</span> <span>{formatPrice(dropoffFee)}</span></div>
+                  {noDepositSurcharge > 0 && <div className="flex justify-between text-yellow-400"><span>Supplemento senza cauzione (+30%)</span> <span>{formatPrice(noDepositSurcharge)}</span></div>}
                   {secondDriverFee > 0 && <div className="flex justify-between"><span>Secondo guidatore ({duration.days} gg × €10)</span> <span>{formatPrice(secondDriverFee)}</span></div>}
                   {youngDriverFee > 0 && <div className="flex justify-between"><span>Supplemento under 25 ({duration.days} gg × €10)</span> <span>{formatPrice(youngDriverFee)}</span></div>}
                   {recentLicenseFee > 0 && <div className="flex justify-between"><span>Supplemento patente recente ({duration.days} gg × €20)</span> <span>{formatPrice(recentLicenseFee)}</span></div>}
@@ -3576,8 +3667,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             <p className="text-sm text-gray-300">
                               {/* Automatic deposit calculation - single amount based on loyalty, insurance, and license years */}
                               Cauzione: {formatDeposit(getDeposit())}
-                              {getDeposit() === 0 && isLoyalCustomer && ' (Cliente Fedele)'}
-                              {getDeposit() === 0 && !isLoyalCustomer && formData.insuranceOption === 'KASKO' && ' (Nessun deposito richiesto)'}
+                              {getDeposit() === 0 && formData.depositOption === 'no_deposit' && ' (Senza cauzione — supplemento +30% applicato)'}
+                              {getDeposit() === 0 && formData.depositOption !== 'no_deposit' && isLoyalCustomer && ' (Cliente Fedele)'}
+                              {getDeposit() === 0 && formData.depositOption !== 'no_deposit' && !isLoyalCustomer && formData.insuranceOption === 'KASKO' && ' (Nessun deposito richiesto)'}
                             </p>
                           </>
                         )}

@@ -569,8 +569,8 @@ export const INSURANCE_DEDUCTIBLES = {
 export const DEPOSIT_RULES = {
   UTILITARIA: {
     LOYAL_CUSTOMER: 0,        // 3+ rentals
-    LICENSE_UNDER_5: 1000,    // < 5 years
-    LICENSE_5_OR_MORE: 500,   // ≥ 5 years
+    LICENSE_UNDER_5: 500,     // < 5 years
+    LICENSE_5_OR_MORE: 250,   // ≥ 5 years
   },
   SUPERCAR: {
     LOYAL_CUSTOMER: 0,        // 3+ rentals
