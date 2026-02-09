@@ -217,7 +217,6 @@ const MyBookings = () => {
                             <p className="text-white">
                               {(() => {
                                 const insurance = booking.insurance_option || booking.booking_details?.insuranceOption;
-                                if (insurance === 'RCA') return '2000€';
                                 // Handle both old KASKO_BASE and new KASKO for backward compatibility
                                 if (insurance === 'KASKO_BASE' || insurance === 'KASKO' || insurance === 'Kasko Base' || insurance === 'Kasko') {
                                   // For new bookings, deposit is dynamic based on license/loyalty

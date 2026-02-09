@@ -31,7 +31,7 @@ const FUNCTIONS_BASE =
 
 // Nexi payment integration
 
-type KaskoTier = 'RCA' | 'KASKO' | 'KASKO_BLACK' | 'KASKO_SIGNATURE';
+type KaskoTier = 'KASKO' | 'KASKO_BLACK' | 'KASKO_SIGNATURE';
 
 // Helper function to determine vehicle type
 // Helper function to determine vehicle type
@@ -173,7 +173,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       },
 
       // Step 3
-      insuranceOption: 'RCA',
+      insuranceOption: 'KASKO',
       depositOption: 'with_deposit' as 'with_deposit' | 'no_deposit',
       extras: [] as string[],
       kmPackageType: 'unlimited' as 'none' | 'unlimited' | '50km', // 'none' = only free included km, '50km' = 50km/day supercar package
@@ -3101,7 +3101,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               <h3 className="text-lg font-bold text-white mb-4">A. ASSICURAZIONE INCLUSA</h3>
               <div className="p-4 bg-green-900/20 border border-green-600 rounded-lg">
                 <p className="text-green-300 font-semibold">✅ KASKO inclusa automaticamente nel prezzo</p>
-                <p className="text-sm text-gray-400 mt-2">Copertura completa RCA + KASKO per tutti i veicoli</p>
+                <p className="text-sm text-gray-400 mt-2">Copertura completa KASKO per tutti i veicoli</p>
               </div>
             </section>
 

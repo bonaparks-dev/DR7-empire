@@ -124,17 +124,17 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     const customerPhone = booking.customer_phone || booking.booking_details?.customer?.phone || 'N/A';
     const insuranceOption = booking.insurance_option || booking.booking_details?.insuranceOption || 'KASKO';
 
-    // Map insurance option for display - always show KASKO instead of RCA
-    let insuranceDisplayName = insuranceOption;
-    if (insuranceOption === 'RCA' || insuranceOption === 'KASKO') {
-      insuranceDisplayName = 'KASKO';
-    } else if (insuranceOption === 'KASKO_BLACK') {
-      insuranceDisplayName = 'KASKO BLACK';
-    } else if (insuranceOption === 'KASKO_SIGNATURE') {
-      insuranceDisplayName = 'KASKO SIGNATURE';
-    } else if (insuranceOption === 'KASKO_DR7') {
-      insuranceDisplayName = 'KASKO DR7';
-    }
+    // Map insurance option for display
+    const insuranceDisplayMap: Record<string, string> = {
+      'RCA': 'Kasko',
+      'KASKO': 'Kasko',
+      'KASKO_BASE': 'Kasko',
+      'KASKO_BLACK': 'Kasko Black',
+      'KASKO_SIGNATURE': 'Kasko Signature',
+      'KASKO_DR7': 'Kasko DR7',
+      'DR7': 'Kasko DR7',
+    };
+    const insuranceDisplayName = insuranceDisplayMap[insuranceOption] || 'Kasko';
 
     // Get deposit from booking data (calculated in frontend based on loyalty/membership)
     const depositAmount = booking.deposit_amount !== undefined && booking.deposit_amount !== null

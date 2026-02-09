@@ -549,7 +549,6 @@ export const AUTO_INSURANCE = {
   id: 'KASKO',
   name: 'Copertura assicurativa KASKO',
   coverage: [
-    'RCA',
     'Furto (solo in caso di restituzione chiave, altrimenti paga il 100% del valore del veicolo)',
     'Atti vandalici',
     'Agenti atmosferici',

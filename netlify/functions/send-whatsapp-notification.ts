@@ -150,7 +150,16 @@ const handler: Handler = async (event) => {
       const pickupDate = new Date(booking.pickup_date);
       const dropoffDate = new Date(booking.dropoff_date);
       const pickupLocation = booking.pickup_location;
-      const insuranceOption = booking.insurance_option || booking.booking_details?.insuranceOption || 'Nessuna';
+      const insuranceRaw = booking.insurance_option || booking.booking_details?.insuranceOption || 'KASKO';
+      const insuranceMap: Record<string, string> = {
+        'RCA': 'Kasko',
+        'KASKO_BASE': 'Kasko',
+        'KASKO': 'Kasko',
+        'KASKO_BLACK': 'Kasko Black',
+        'KASKO_SIGNATURE': 'Kasko Signature',
+        'DR7': 'Kasko DR7'
+      };
+      const insuranceOption = insuranceMap[insuranceRaw] || 'Kasko';
 
       const pickupDateFormatted = pickupDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' });
       const pickupTimeFormatted = pickupDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
