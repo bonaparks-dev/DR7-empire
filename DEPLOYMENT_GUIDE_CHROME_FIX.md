@@ -11,7 +11,7 @@ SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key-here>
 ```
 
 **Where to find it:**
-1. Go to [Supabase Dashboard](https://supabase.com/dashboard/project/ahpmzjgkfxrrgxyirasa/settings/api)
+1. Go to [Supabase Dashboard](<YOUR_SUPABASE_URL>/settings/api)
 2. Navigate to: Project Settings → API
 3. Copy the **`service_role`** key (NOT the `anon` key)
 4. Add to Netlify: Site Settings → Environment Variables → Add variable

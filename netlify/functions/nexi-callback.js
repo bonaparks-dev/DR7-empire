@@ -60,31 +60,29 @@ exports.handler = async (event) => {
     // Get Nexi configuration
     const macKey = process.env.NEXI_MAC_KEY;
 
-    // Verify MAC only if configured
-    if (macKey && mac) {
-      console.log('Verifying MAC...');
-      const paramsForMAC = { ...params };
-      delete paramsForMAC.mac; // Remove MAC from params before verification
-
-      const calculatedMAC = generateMAC(paramsForMAC, macKey);
-
-      if (calculatedMAC !== mac) {
-        console.error('❌ Invalid MAC - possible fraud attempt');
-        console.error('Expected:', calculatedMAC);
-        console.error('Received:', mac);
-        return {
-          statusCode: 400,
-          body: 'Invalid MAC',
-        };
-      }
-
-      console.log('✅ MAC verified successfully');
-    } else if (!macKey) {
-      console.warn('⚠️  Operating without MAC verification - reduced security');
-      console.warn('⚠️  Accepting callback based on HTTPS only');
-    } else {
-      console.warn('⚠️  No MAC provided in callback');
+    // Verify MAC - mandatory for security
+    if (!macKey) {
+      console.error('❌ NEXI_MAC_KEY not configured - rejecting callback');
+      return { statusCode: 500, body: 'MAC key not configured' };
     }
+
+    if (!mac) {
+      console.error('❌ No MAC provided in callback - rejecting');
+      return { statusCode: 400, body: 'Missing MAC' };
+    }
+
+    console.log('Verifying MAC...');
+    const paramsForMAC = { ...params };
+    delete paramsForMAC.mac;
+
+    const calculatedMAC = generateMAC(paramsForMAC, macKey);
+
+    if (calculatedMAC !== mac) {
+      console.error('❌ Invalid MAC - possible fraud attempt');
+      return { statusCode: 400, body: 'Invalid MAC' };
+    }
+
+    console.log('✅ MAC verified successfully');
 
     // Initialize Supabase
     const supabase = createClient(
@@ -110,15 +108,23 @@ exports.handler = async (event) => {
       const booking = bookings[0];
       console.log('Found booking:', booking.id);
 
+      // Idempotency check: skip if already completed
+      if (booking.payment_status === 'completed' || booking.payment_status === 'succeeded' || booking.payment_status === 'paid') {
+        console.log('Booking already paid, skipping duplicate callback');
+        return { statusCode: 200, body: 'OK' };
+      }
+
       const updateData = {
-        payment_status: esito === 'OK' ? 'completed' : 'failed',
-        nexi_transaction_id: codTrans,
+        payment_status: esito === 'OK' ? 'succeeded' : 'failed',
+        nexi_payment_id: codTrans,
         nexi_authorization_code: codAut || null,
         payment_completed_at: esito === 'OK' ? new Date().toISOString() : null
       };
 
-      if (esito !== 'OK') {
-        updateData.payment_error_message = messaggio || 'Payment failed';
+      if (esito === 'OK') {
+        updateData.status = 'confirmed';
+      } else {
+        updateData.nexi_error_message = messaggio || 'Payment failed';
         updateData.status = 'cancelled';
       }
 
@@ -152,23 +158,32 @@ exports.handler = async (event) => {
       console.log('Found credit wallet purchase:', purchase.id);
 
       // Skip if already completed (avoid double-crediting)
-      if (purchase.payment_status === 'completed') {
+      if (purchase.payment_status === 'completed' || purchase.payment_status === 'succeeded' || purchase.payment_status === 'paid') {
         console.log('Purchase already completed, skipping');
         return { statusCode: 200, body: 'OK' };
       }
 
       if (esito === 'OK') {
-        // Update purchase status
-        const { error: updateError } = await supabase
+        // Atomically update purchase status - only succeeds if not already 'succeeded'
+        const { data: updatedPurchase, error: upErr } = await supabase
           .from('credit_wallet_purchases')
           .update({
-            payment_status: 'completed',
+            payment_status: 'succeeded',
             payment_completed_at: new Date().toISOString()
           })
-          .eq('id', purchase.id);
+          .eq('id', purchase.id)
+          .neq('payment_status', 'succeeded')
+          .select()
+          .single();
 
-        if (updateError) {
-          console.error('Error updating purchase:', updateError);
+        // If no row returned, another callback already processed it
+        if (!updatedPurchase) {
+          console.log('Purchase already processed by another callback, skipping');
+          return { statusCode: 200, body: 'OK' };
+        }
+
+        if (upErr) {
+          console.error('Error updating purchase:', upErr);
           return { statusCode: 500, body: 'Error updating purchase' };
         }
 
@@ -239,7 +254,7 @@ exports.handler = async (event) => {
       await supabase
         .from('membership_purchases')
         .update({
-          payment_status: esito === 'OK' ? 'completed' : 'failed',
+          payment_status: esito === 'OK' ? 'succeeded' : 'failed',
           payment_completed_at: esito === 'OK' ? new Date().toISOString() : null
         })
         .eq('id', membership.id);

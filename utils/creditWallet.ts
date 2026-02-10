@@ -103,62 +103,34 @@ export async function addCredits(
 }
 
 /**
- * Deduct credits from user's balance
+ * Deduct credits from user's balance (atomic via RPC to prevent double-spending)
  */
 export async function deductCredits(
   userId: string,
   amount: number,
   description: string,
   referenceId?: string,
-  serviceType?: string
+  transactionType: string = 'booking_payment'
 ): Promise<{ success: boolean; newBalance: number; error?: string }> {
-  try {
-    // Get current balance
-    const currentBalance = await getUserCreditBalance(userId);
+  const { data, error } = await supabase.rpc('deduct_credits', {
+    p_user_id: userId,
+    p_amount: amount,
+    p_description: description,
+    p_reference_id: referenceId || null,
+    p_transaction_type: transactionType
+  });
 
-    // Check if user has enough balance
-    if (currentBalance < amount) {
-      return {
-        success: false,
-        newBalance: currentBalance,
-        error: 'Credito insufficiente'
-      };
-    }
-
-    const newBalance = currentBalance - amount;
-
-    // Update balance
-    const { error: balanceError } = await supabase
-      .from('user_credit_balance')
-      .update({
-        balance: newBalance,
-        last_updated: new Date().toISOString()
-      })
-      .eq('user_id', userId);
-
-    if (balanceError) throw balanceError;
-
-    // Record transaction
-    const { error: transactionError } = await supabase
-      .from('credit_transactions')
-      .insert({
-        user_id: userId,
-        transaction_type: 'debit',
-        amount: amount,
-        balance_after: newBalance,
-        description: description,
-        reference_id: referenceId,
-        service_type: serviceType,
-        created_at: new Date().toISOString()
-      });
-
-    if (transactionError) throw transactionError;
-
-    return { success: true, newBalance };
-  } catch (error: any) {
-    console.error('Error deducting credits:', error);
+  if (error) {
+    console.error('Error in deductCredits RPC:', error);
     return { success: false, newBalance: 0, error: error.message };
   }
+
+  const result = data?.[0] || data;
+  return {
+    success: result?.success ?? false,
+    newBalance: result?.new_balance ?? 0,
+    error: result?.error_message || undefined
+  };
 }
 
 /**

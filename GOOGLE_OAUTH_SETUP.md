@@ -43,7 +43,7 @@ In Supabase Dashboard:
 
 **Required redirect URI:**
 ```
-https://ahpmzjgkfxrrgxyirasa.supabase.co/auth/v1/callback
+<YOUR_SUPABASE_URL>/auth/v1/callback
 ```
 
 ⚠️ **IMPORTANT**: This must match exactly (no trailing slash, correct https)

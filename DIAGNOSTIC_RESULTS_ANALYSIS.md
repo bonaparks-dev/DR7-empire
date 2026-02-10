@@ -44,7 +44,6 @@ Force users to complete their profile on next login:
 ### Option 3: Gradual Collection
 Collect missing data when users:
 - Make their first booking (already implemented via "Missing Data" modal)
-- Purchase lottery tickets
 - Try to generate invoices
 
 ## Recommendation

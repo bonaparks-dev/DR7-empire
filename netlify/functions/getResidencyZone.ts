@@ -10,7 +10,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 export const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
     // Enable CORS
     const headers = {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || 'https://dr7empire.com',
         'Access-Control-Allow-Headers': 'Content-Type',
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
         'Content-Type': 'application/json',
@@ -40,12 +40,27 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
 
         if (!userId) {
             console.warn('[getResidencyZone] Missing user_id parameter');
-            // Return default instead of error to maintain resilience
             return {
                 statusCode: 200,
                 headers,
                 body: JSON.stringify({ residency_zone: 'NON_RESIDENTE' }),
             };
+        }
+
+        // Verify the requesting user matches the requested user_id
+        const authHeader = event.headers['authorization'];
+        if (!authHeader) {
+            return { statusCode: 401, headers, body: JSON.stringify({ error: 'Authentication required' }) };
+        }
+        const { createClient: createAuthClient } = await import('@supabase/supabase-js');
+        const authClient = createAuthClient(supabaseUrl, process.env.SUPABASE_ANON_KEY || '');
+        const jwt = authHeader.replace('Bearer ', '');
+        const { data: { user: authUser } } = await authClient.auth.getUser(jwt);
+        if (!authUser) {
+            return { statusCode: 401, headers, body: JSON.stringify({ error: 'Invalid token' }) };
+        }
+        if (authUser.id !== userId) {
+            return { statusCode: 403, headers, body: JSON.stringify({ error: 'Forbidden' }) };
         }
 
         console.log('[getResidencyZone] Fetching residency zone', { userId, timestamp: new Date().toISOString() });

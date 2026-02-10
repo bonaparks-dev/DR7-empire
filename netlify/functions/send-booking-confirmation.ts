@@ -2,6 +2,11 @@ import type { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
 import nodemailer from "nodemailer";
 import { createCalendarEvent, formatCarRentalEvent, formatCarWashEvent } from './utils/googleCalendar';
 
+const escapeHtml = (str: string | undefined | null): string => {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+};
+
 const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
   console.log('📧 [send-booking-confirmation] Function invoked');
 
@@ -88,16 +93,71 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     emailHtml = `
       <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #000; border-bottom: 2px solid #000; padding-bottom: 10px;">🚗 Prenotazione Autolavaggio Confermata!</h1>
-        <p>Gentile ${customerName},</p>
+        <p>Gentile ${escapeHtml(customerName)},</p>
         <p>Grazie per aver prenotato il servizio di autolavaggio con DR7 Empire. Ecco il riepilogo del tuo appuntamento:</p>
 
         <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h2 style="margin-top: 0;">Riepilogo Appuntamento</h2>
-          <p><strong>Servizio:</strong> ${serviceName}</p>
+          <p><strong>Servizio:</strong> ${escapeHtml(serviceName)}</p>
           <p><strong>Numero Prenotazione:</strong> DR7-${bookingId.substring(0, 8).toUpperCase()}</p>
           <p><strong>Data e Ora:</strong> ${formattedDate} alle ${formattedTime}</p>
-          ${additionalService ? `<p><strong>Servizio Aggiuntivo:</strong> ${additionalService}</p>` : ''}
-          ${notes ? `<p><strong>Note:</strong> ${notes}</p>` : ''}
+          ${additionalService ? `<p><strong>Servizio Aggiuntivo:</strong> ${escapeHtml(additionalService)}</p>` : ''}
+          ${notes ? `<p><strong>Note:</strong> ${escapeHtml(notes)}</p>` : ''}
+        </div>
+
+        <h3 style="font-size: 24px;">Totale: ${new Intl.NumberFormat('it-IT', { style: 'currency', currency: currency }).format(totalPrice)}</h3>
+
+        <div style="background: #e3f2fd; padding: 15px; border-left: 4px solid #2196f3; margin: 20px 0;">
+          <p style="margin: 0;"><strong>📍 Orari di apertura:</strong> Lunedì - Sabato, 9:00 - 20:00</p>
+          <p style="margin: 5px 0 0 0;"><strong>⚠️</strong> Chiusi la domenica</p>
+        </div>
+
+        <p style="margin-top: 30px;">Ti aspettiamo al tuo appuntamento!</p>
+        <p><strong>DR7 Empire Team</strong></p>
+
+        <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+        <p style="font-size: 12px; color: #666;">
+          Per qualsiasi domanda, contattaci all'indirizzo <a href="mailto:info@dr7.app">info@dr7.app</a>
+        </p>
+      </div>
+    `;
+  } else if (serviceType === 'mechanical') {
+    // Mechanical Booking Email
+    const appointmentDate = new Date(booking.appointment_date);
+    const serviceName = booking.service_name || 'Servizio Meccanica';
+    const vehicleInfo = booking.booking_details?.vehicle || {};
+    const notes = booking.booking_details?.notes;
+    const customerPhone = booking.customer_phone || booking.booking_details?.customer?.phone || 'N/A';
+
+    const formattedDate = appointmentDate.toLocaleDateString('it-IT', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      timeZone: 'Europe/Rome'
+    });
+    const formattedTime = booking.appointment_time || appointmentDate.toLocaleTimeString('it-IT', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'Europe/Rome'
+    });
+
+    emailSubject = `🔧 Conferma Prenotazione Meccanica #${bookingId.substring(0, 8).toUpperCase()}`;
+    emailHtml = `
+      <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #000; border-bottom: 2px solid #000; padding-bottom: 10px;">🔧 Prenotazione Meccanica Confermata!</h1>
+        <p>Gentile ${escapeHtml(customerName)},</p>
+        <p>Grazie per aver prenotato il servizio di meccanica con DR7 Empire. Ecco il riepilogo del tuo appuntamento:</p>
+
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h2 style="margin-top: 0;">Riepilogo Appuntamento</h2>
+          <p><strong>Servizio:</strong> ${escapeHtml(serviceName)}</p>
+          <p><strong>Numero Prenotazione:</strong> DR7-${bookingId.substring(0, 8).toUpperCase()}</p>
+          ${(vehicleInfo.brand || vehicleInfo.model) ? `<p><strong>Veicolo:</strong> ${escapeHtml(vehicleInfo.brand)} ${escapeHtml(vehicleInfo.model)}</p>` : ''}
+          <p><strong>Data e Ora:</strong> ${formattedDate} alle ${formattedTime}</p>
+          <p><strong>Email:</strong> ${escapeHtml(customerEmail)}</p>
+          <p><strong>Telefono:</strong> ${escapeHtml(customerPhone)}</p>
+          ${notes ? `<p><strong>Note:</strong> ${escapeHtml(notes)}</p>` : ''}
         </div>
 
         <h3 style="font-size: 24px;">Totale: ${new Intl.NumberFormat('it-IT', { style: 'currency', currency: currency }).format(totalPrice)}</h3>
@@ -166,27 +226,35 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     emailHtml = `
       <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #000; border-bottom: 2px solid #000; padding-bottom: 10px;">Prenotazione Confermata!</h1>
-        <p>Gentile ${customerName},</p>
+        <p>Gentile ${escapeHtml(customerName)},</p>
         <p>Grazie per aver prenotato con DR7 Empire. Ecco il riepilogo della tua prenotazione:</p>
 
         <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h2 style="margin-top: 0;">Riepilogo Prenotazione</h2>
-          <p><strong>Veicolo:</strong> ${vehicleName}</p>
+          <p><strong>Veicolo:</strong> ${escapeHtml(vehicleName)}</p>
           <p><strong>Numero Prenotazione:</strong> DR7-${bookingId.substring(0, 8).toUpperCase()}</p>
-          <p><strong>Nome:</strong> ${customerName}</p>
-          <p><strong>Email:</strong> ${customerEmail}</p>
-          <p><strong>Telefono:</strong> ${customerPhone}</p>
+          <p><strong>Nome:</strong> ${escapeHtml(customerName)}</p>
+          <p><strong>Email:</strong> ${escapeHtml(customerEmail)}</p>
+          <p><strong>Telefono:</strong> ${escapeHtml(customerPhone)}</p>
           <p><strong>Data e Ora Ritiro:</strong> ${pickupDateFormatted} alle ${pickupTimeFormatted}</p>
           <p><strong>Data e Ora Riconsegna:</strong> ${dropoffDateFormatted} alle ${dropoffTimeFormatted}</p>
-          <p><strong>Luogo di Ritiro:</strong> ${pickupLocation}</p>
+          <p><strong>Luogo di Ritiro:</strong> ${escapeHtml(pickupLocation)}</p>
           <p><strong>Assicurazione:</strong> ${insuranceDisplayName}</p>
           <p><strong>Cauzione:</strong> ${depositAmount}</p>
-          ${booking.booking_details?.secondDriver ? `
-          <p style="margin-top: 10px;"><strong>Secondo Conducente:</strong> ${booking.booking_details.secondDriver.fullName || `${booking.booking_details.secondDriver.firstName} ${booking.booking_details.secondDriver.lastName}`}</p>
-          <p><strong>Telefono 2° conducente:</strong> ${booking.booking_details.secondDriver.phone || 'N/A'}</p>
-          ` : ''}
-          <p><strong>Stato Pagamento:</strong> ${booking.payment_status === 'pending' ? 'In attesa' : 'Completato'}</p>
+          <p><strong>Stato Pagamento:</strong> ${booking.payment_status === 'pending' ? 'In attesa' : 'Pagato'}</p>
         </div>
+
+        ${booking.booking_details?.secondDriver ? `
+        <div style="background: #f0f4ff; padding: 15px; border-radius: 8px; margin: 15px 0;">
+          <h3 style="margin-top: 0;">Secondo Guidatore</h3>
+          <p><strong>Nome:</strong> ${escapeHtml(booking.booking_details.secondDriver.firstName)} ${escapeHtml(booking.booking_details.secondDriver.lastName)}</p>
+          <p><strong>Email:</strong> ${escapeHtml(booking.booking_details.secondDriver.email)}</p>
+          <p><strong>Telefono:</strong> ${escapeHtml(booking.booking_details.secondDriver.phone)}</p>
+          <p><strong>Patente:</strong> ${escapeHtml(booking.booking_details.secondDriver.licenseNumber) || 'N/A'}</p>
+          ${booking.booking_details.secondDriver.licenseExpiryDate ? `<p><strong>Scadenza Patente:</strong> ${escapeHtml(booking.booking_details.secondDriver.licenseExpiryDate)}</p>` : ''}
+          ${booking.booking_details.secondDriver.countryOfIssue ? `<p><strong>Paese di Rilascio:</strong> ${escapeHtml(booking.booking_details.secondDriver.countryOfIssue)}</p>` : ''}
+        </div>
+        ` : ''}
 
         <h3 style="font-size: 24px;">Costo Totale: ${new Intl.NumberFormat('it-IT', { style: 'currency', currency: currency }).format(totalPrice)}</h3>
 

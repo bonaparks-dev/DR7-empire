@@ -91,14 +91,17 @@ const MyBookings = () => {
   };
 
   const getPaymentBadge = (paymentStatus: string) => {
+    const isPaid = paymentStatus === 'paid' || paymentStatus === 'succeeded' || paymentStatus === 'completed';
     const colors: Record<string, string> = {
       pending: 'bg-yellow-500/20 text-yellow-400',
       paid: 'bg-green-500/20 text-green-400',
+      succeeded: 'bg-green-500/20 text-green-400',
+      completed: 'bg-green-500/20 text-green-400',
       failed: 'bg-red-500/20 text-red-400',
     };
     return (
       <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${colors[paymentStatus] || 'bg-gray-500/20 text-gray-400'}`}>
-        {paymentStatus === 'paid' ? 'Paid' : paymentStatus === 'pending' ? 'Pending' : paymentStatus}
+        {isPaid ? 'Pagato' : paymentStatus === 'pending' ? 'In attesa' : paymentStatus}
       </span>
     );
   };

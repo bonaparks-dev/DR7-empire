@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import * as busboy from 'busboy';
 
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || 'https://dr7empire.com',
   'Access-Control-Allow-Methods': 'POST,OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type,Authorization',
 };
@@ -19,7 +19,8 @@ if (!supabaseUrl || !serviceRole) {
 
 const supabase = createClient(supabaseUrl, serviceRole);
 // Ajuste si tu veux autoriser plus (et vérifie la limite Supabase > Storage)
-const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'pdf', 'webp'];
 
 export const handler: Handler = async (event) => {
   try {
@@ -117,9 +118,42 @@ export const handler: Handler = async (event) => {
       };
     }
 
+    // Validate prefix to prevent path traversal
+    if (!/^[a-zA-Z0-9_-]{1,50}$/.test(prefix)) {
+      return {
+        statusCode: 400,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ error: 'Invalid prefix format' }),
+      };
+    }
+
+    // Verify the requesting user owns this userId
+    const authHeader = event.headers['authorization'];
+    if (authHeader) {
+      const { createClient: createAuthClient } = await import('@supabase/supabase-js');
+      const authClient = createAuthClient(supabaseUrl, process.env.SUPABASE_ANON_KEY || '');
+      const jwt = authHeader.replace('Bearer ', '');
+      const { data: { user: authUser } } = await authClient.auth.getUser(jwt);
+      if (authUser && authUser.id !== userId) {
+        return { statusCode: 403, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Forbidden: userId mismatch' }) };
+      }
+    } else {
+      return { statusCode: 401, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Authentication required' }) };
+    }
+
     // Normalise le nom de fichier (évite espaces/caractères exotiques)
     const safeName = filename.replace(/[^\w.\-]+/g, '_');
-    const ext = safeName.includes('.') ? safeName.split('.').pop() : 'bin';
+    const ext = safeName.includes('.') ? safeName.split('.').pop()?.toLowerCase() : 'bin';
+
+    // Validate file extension
+    if (!ext || !ALLOWED_EXTENSIONS.includes(ext)) {
+      return {
+        statusCode: 400,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ error: `File type not allowed. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}` }),
+      };
+    }
+
     const path = `${userId}/${prefix}_${Date.now()}.${ext}`;
 
     const { error: upErr } = await supabase.storage

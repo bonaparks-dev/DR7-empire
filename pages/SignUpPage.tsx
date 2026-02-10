@@ -204,12 +204,6 @@ const SignUpPage: React.FC = () => {
 
 
     setErrors(newErrors);
-    console.log('🔍 VALIDATION ERRORS:', newErrors);
-    console.log('🔍 FORM DATA:', {
-      residencyZone: formData.residencyZone,
-      provinciaResidenza: formData.provinciaResidenza,
-      nazione: formData.nazione
-    });
     return Object.keys(newErrors).length === 0;
   };
 

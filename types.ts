@@ -52,6 +52,8 @@ export interface RentalItem {
 }
 
 export interface RentalCategory {
+  // Note: 'villas' and 'mechanical-services' are defined but not in RENTAL_CATEGORIES
+  // 'helicopters' is nested within 'jets' category
   id: 'cars' | 'yachts' | 'villas' | 'jets' | 'helicopters' | 'urban-cars' | 'corporate-fleet' | 'car-wash-services' | 'mechanical-services' | 'membership' | 'credit-wallet';
   label: { en: string, it: string };
   data: RentalItem[];
@@ -176,29 +178,6 @@ export interface Inquiry {
   inquiredAt: string;
 }
 
-export interface Prize {
-  tier: { en: string; it: string };
-  name: { en: string; it: string };
-  icon: React.FC<{ className?: string }>;
-  quantity?: number;
-}
-
-export interface CommercialOperation {
-  id: string;
-  name: { en: string; it: string };
-  subtitle: { en: string; it: string };
-  image: string;
-  ticketPriceEUR: number;
-  drawDate: string; // ISO string
-  prizes: Prize[];
-  bonus: { en: string; it: string };
-}
-
-export interface CommercialOperationTicket {
-  number: number;
-  uuid: string;
-  ownerName: string;
-}
 
 export interface Villa {
   id: number;

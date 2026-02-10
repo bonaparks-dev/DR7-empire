@@ -106,11 +106,6 @@ WHERE service_type = 'car_wash'
   AND created_at >= NOW() - INTERVAL '24 hours'
 ORDER BY created_at DESC;
 
--- Recent lottery tickets
-SELECT id, created_at, full_name, email, ticket_number, payment_intent_id
-FROM commercial_operation_tickets
-WHERE created_at >= NOW() - INTERVAL '24 hours'
-ORDER BY created_at DESC;
 ```
 
 ---

@@ -59,7 +59,7 @@ export function useRealtimeBookings(
       setError(null);
 
       // Select only specific columns to avoid PostgREST issues with the 79-column bookings table
-      const columns = 'id,service_type,service_name,appointment_date,appointment_time,price_total,status,payment_status,customer_name,customer_email,booking_source,created_at,vehicle_name,pickup_date,dropoff_date';
+      const columns = 'id,service_type,service_name,appointment_date,appointment_time,price_total,status,payment_status,payment_method,customer_name,customer_email,customer_phone,booking_source,created_at,vehicle_name,vehicle_id,pickup_date,dropoff_date,deposit_amount,insurance_option,booking_usage_zone';
 
       let query = supabase
         .from('bookings')

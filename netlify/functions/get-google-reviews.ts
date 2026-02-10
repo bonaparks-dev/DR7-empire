@@ -28,7 +28,7 @@ export const handler: Handler = async (
 ) => {
   // Enable CORS
   const headers = {
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": process.env.ALLOWED_ORIGIN || 'https://dr7empire.com',
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Content-Type": "application/json",

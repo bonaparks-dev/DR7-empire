@@ -177,7 +177,7 @@ const PartnerDashboardPage: React.FC = () => {
                                                     ? 'bg-green-500/20 text-green-400'
                                                     : 'bg-yellow-500/20 text-yellow-400'
                                                     }`}>
-                                                    {booking.payment_status === 'paid' || booking.payment_status === 'succeeded' || booking.payment_status === 'completed' ? 'Paid' : 'Pending'}
+                                                    {booking.payment_status === 'paid' || booking.payment_status === 'succeeded' || booking.payment_status === 'completed' ? 'Pagato' : 'In attesa'}
                                                 </span>
                                             </div>
                                         </div>
