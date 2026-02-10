@@ -28,7 +28,7 @@ exports.handler = async (event) => {
 
   try {
     const body = JSON.parse(event.body);
-    const { amount, currency, description, orderId, customerEmail, customerName, recurringType, billingCycle, contractId } = body;
+    const { amount, currency, description, orderId, customerEmail, customerName } = body;
 
     // Validate required fields
     if (!amount || !currency || !orderId) {
@@ -85,72 +85,7 @@ exports.handler = async (event) => {
 
     console.log('OrderId sanitization:', { original: orderId, sanitized: sanitizedOrderId });
 
-    // --- MIT server-to-server charge (renewal with stored contractId) ---
-    if (contractId) {
-      console.log('MIT renewal charge for contractId:', contractId);
-
-      const mitBody = {
-        order: {
-          orderId: sanitizedOrderId,
-          amount: amount.toString(),
-          currency: currency,
-          customerId: customerEmail || 'guest',
-          description: description || 'Membership renewal',
-        },
-        card: {
-          contractId: contractId,
-        },
-        recurrence: {
-          action: 'SUBSEQUENT_MIT',
-          contractId: contractId,
-          contractType: 'MIT_SCHEDULED',
-        },
-      };
-
-      console.log('MIT request body:', JSON.stringify(mitBody, null, 2));
-
-      const mitResponse = await fetch(`${baseUrl}/orders/mit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-KEY': nexiConfig.apiKey,
-          'Correlation-Id': correlationId,
-        },
-        body: JSON.stringify(mitBody),
-      });
-
-      let mitData;
-      try {
-        mitData = await mitResponse.json();
-      } catch (parseErr) {
-        mitData = { error: 'Non-JSON response from Nexi' };
-      }
-      console.log('MIT response status:', mitResponse.status);
-      console.log('MIT response:', JSON.stringify(mitData, null, 2));
-
-      if (!mitResponse.ok) {
-        console.error('MIT charge failed:', mitData);
-        return {
-          statusCode: mitResponse.status,
-          body: JSON.stringify({
-            error: 'Renewal charge failed',
-            details: mitData,
-          }),
-        };
-      }
-
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          success: true,
-          operationId: mitData.operationId,
-          orderId: orderId,
-        }),
-      };
-    }
-
-    // --- HPP payment (initial payment, optionally with contract creation) ---
+    // --- HPP payment (one-time payment) ---
     const requestBody = {
       order: {
         orderId: sanitizedOrderId,
@@ -169,18 +104,7 @@ exports.handler = async (event) => {
       },
     };
 
-    // Add recurrence for membership subscription creation
-    if (recurringType === 'MIT_SCHEDULED') {
-      requestBody.recurrence = {
-        action: 'CONTRACT_CREATION',
-        contractId: sanitizedOrderId,
-        contractType: 'MIT_SCHEDULED',
-        contractFrequency: billingCycle === 'monthly' ? '30' : '365',
-        contractExpiryDate: new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0].replace(/-/g, ''),
-      };
-    }
-
-    console.log('Creating Nexi payment via API:', { orderId, amount, currency, correlationId, recurringType });
+    console.log('Creating Nexi payment via API:', { orderId, amount, currency, correlationId });
     console.log('Request headers:', {
       'Content-Type': 'application/json',
       'X-API-KEY': nexiConfig.apiKey.substring(0, 10) + '...',
