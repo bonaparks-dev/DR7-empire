@@ -356,9 +356,10 @@ const CarWashBookingPage: React.FC = () => {
   const getAllTimeSlotsWithAvailability = () => {
     if ((!selectedService && !hasCartItems) || !formData.appointmentDate) return [];
 
-    // For cart items, use the cart total to estimate duration; for single service, use service price
-    const priceForDuration = hasCartItems ? cartTotal : (selectedService?.price || 0);
-    const serviceDuration = getServiceDurationInHours(priceForDuration);
+    // For cart items, sum individual durations; for single service, use service price
+    const serviceDuration = hasCartItems
+      ? cartItems.reduce((total, item) => total + getServiceDurationInHours(item.price) * item.quantity, 0)
+      : getServiceDurationInHours(selectedService?.price || 0);
 
     // Weekdays: 9:00-13:00 / 15:00-19:00 (must FINISH by 13:00 or 19:00)
     // Saturday: 9:00-17:00 continuous (must FINISH by 17:00)
