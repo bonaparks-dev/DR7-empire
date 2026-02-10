@@ -2884,6 +2884,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             return;
                           }
 
+                          // Check if return date is a Sunday or holiday
+                          const returnDayOfWeek = getDayOfWeek(value);
+                          if (returnDayOfWeek === 0) {
+                            alert('Siamo chiusi la domenica.\n\nSeleziona un altro giorno per la riconsegna.');
+                            return;
+                          }
+                          if (isHoliday(value)) {
+                            alert('Siamo chiusi nei giorni festivi.\n\nSeleziona un altro giorno per la riconsegna.');
+                            return;
+                          }
+
                           // CRITICAL: Check if this date has ANY valid return times
                           // This allows Jan 31 (with times before 09:30) but blocks fully booked dates
                           const validTimesForDate = getValidReturnTimes(value);
