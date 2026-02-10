@@ -1770,7 +1770,29 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           : "È richiesta una patente con almeno 3 anni di anzianità.";
       }
 
-      // Second driver fields are optional - no validation required
+      // Second driver validation — mandatory when checkbox is checked
+      if (formData.addSecondDriver) {
+        const sd = formData.secondDriver;
+        if (!sd.firstName.trim()) newErrors['secondDriver.firstName'] = "Nome obbligatorio.";
+        if (!sd.lastName.trim()) newErrors['secondDriver.lastName'] = "Cognome obbligatorio.";
+        if (!sd.email.trim()) newErrors['secondDriver.email'] = "Email obbligatoria.";
+        if (!sd.phone.trim()) newErrors['secondDriver.phone'] = "Telefono obbligatorio.";
+        if (!sd.birthDate) {
+          newErrors['secondDriver.birthDate'] = "Data di nascita obbligatoria.";
+        } else {
+          const sdAge = calculateAgeFromDDMMYYYY(sd.birthDate);
+          if (sdAge < 18) newErrors['secondDriver.birthDate'] = "Il secondo conducente deve avere almeno 18 anni.";
+        }
+        if (!sd.licenseNumber.trim()) newErrors['secondDriver.licenseNumber'] = "Numero patente obbligatorio.";
+        if (!sd.licenseIssueDate) {
+          newErrors['secondDriver.licenseIssueDate'] = "Data rilascio patente obbligatoria.";
+        } else {
+          const sdLicenseYears = calculateYearsSince(sd.licenseIssueDate);
+          if (sdLicenseYears < 3) newErrors['secondDriver.licenseIssueDate'] = "È richiesta una patente con almeno 3 anni di anzianità.";
+        }
+        if (!sd.licenseImage) newErrors['secondDriver.licenseImage'] = "Patente secondo conducente obbligatoria.";
+        if (!sd.idImage) newErrors['secondDriver.idImage'] = "Documento secondo conducente obbligatorio.";
+      }
     }
     if (step === 3) {
       const vType = getVehicleType(item, categoryContext);
@@ -3065,6 +3087,59 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             </section>
 
             {/* Second Driver */}
+            <section className="border-t border-gray-700 pt-6">
+              <h3 className="text-lg font-bold text-white mb-4">D. SECONDO CONDUCENTE (OPZIONALE)</h3>
+              <div className="flex items-start mb-4">
+                <input
+                  type="checkbox"
+                  name="addSecondDriver"
+                  checked={formData.addSecondDriver}
+                  onChange={handleChange}
+                  id="add-second-driver"
+                  className="h-4 w-4 mt-1 text-white bg-gray-700 border-gray-600 rounded focus:ring-white"
+                />
+                <label htmlFor="add-second-driver" className="ml-2 text-white">
+                  Aggiungi un secondo conducente autorizzato
+                </label>
+              </div>
+
+              {formData.addSecondDriver && (
+                <div className="mt-4 p-4 bg-gray-800/30 rounded-lg border border-gray-700 space-y-4">
+                  <p className="text-sm text-amber-300">Tutti i campi sono obbligatori per il secondo conducente.</p>
+                  {renderDriverForm('second')}
+
+                  {/* Second Driver Document Upload */}
+                  <div className="mt-4">
+                    <p className="text-sm font-semibold text-white mb-3">Documenti secondo conducente *</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <DocumentUploader
+                          title="PATENTE SECONDO CONDUCENTE"
+                          details={["Solo fronte/retro", "Foto chiara e leggibile", "Formati: JPG, PNG, PDF (max 5MB)"]}
+                          onFileChange={(file) => setFormData(prev => ({
+                            ...prev,
+                            secondDriver: { ...prev.secondDriver, licenseImage: file }
+                          }))}
+                        />
+                        {errors['secondDriver.licenseImage'] && <p className="text-xs text-red-400 mt-1">{errors['secondDriver.licenseImage']}</p>}
+                      </div>
+                      <div>
+                        <DocumentUploader
+                          title="DOCUMENTO SECONDO CONDUCENTE"
+                          details={["Carta d'identità o passaporto", "Foto chiara e leggibile", "Formati: JPG, PNG, PDF (max 5MB)"]}
+                          onFileChange={(file) => setFormData(prev => ({
+                            ...prev,
+                            secondDriver: { ...prev.secondDriver, idImage: file }
+                          }))}
+                        />
+                        {errors['secondDriver.idImage'] && <p className="text-xs text-red-400 mt-1">{errors['secondDriver.idImage']}</p>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
+
             {/* Security Deposit - Sixt Style */}
             <section className="border-t border-gray-700 pt-6">
               {!isUrbanOrCorporate && (

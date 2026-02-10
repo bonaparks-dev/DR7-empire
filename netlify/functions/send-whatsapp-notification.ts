@@ -188,6 +188,15 @@ const handler: Handler = async (event) => {
         message += `*Cauzione:* €${depositAmount}\n`;
       }
 
+      // Second driver info
+      const secondDriver = booking.booking_details?.secondDriver;
+      if (secondDriver) {
+        message += `\n👤 *SECONDO CONDUCENTE:*\n`;
+        message += `*Nome:* ${secondDriver.fullName || `${secondDriver.firstName} ${secondDriver.lastName}`}\n`;
+        if (secondDriver.phone) message += `*Telefono:* ${secondDriver.phone}\n`;
+        if (secondDriver.licenseNumber) message += `*Patente:* ${secondDriver.licenseNumber}\n`;
+      }
+
       message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa'}`;
     }
   } else {
