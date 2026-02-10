@@ -360,8 +360,8 @@ const CarWashBookingPage: React.FC = () => {
     const priceForDuration = hasCartItems ? cartTotal : (selectedService?.price || 0);
     const serviceDuration = getServiceDurationInHours(priceForDuration);
 
-    // Weekdays: 9:00-12:00 / 15:00-18:00 (lunch break 12:00-15:00)
-    // Saturday: 9:00-17:00 continuous (no lunch break)
+    // Weekdays: 9:00-13:00 / 15:00-19:00 (must FINISH by 13:00 or 19:00)
+    // Saturday: 9:00-17:00 continuous (must FINISH by 17:00)
     const [year, month, day] = formData.appointmentDate.split('-').map(Number);
     const isSaturday = new Date(year, month - 1, day).getDay() === 6;
 
@@ -372,8 +372,8 @@ const CarWashBookingPage: React.FC = () => {
           '15:00', '15:30', '16:00', '16:30', '17:00'
         ]
       : [
-          '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00',
-          '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00'
+          '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30',
+          '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30'
         ];
 
     // Parse selected date as local date to avoid timezone issues
@@ -412,42 +412,21 @@ const CarWashBookingPage: React.FC = () => {
     };
 
     // Helper to check if service can fit in time range
+    // Rule from Valerio: must FINISH by 13:00 (morning), 19:00 (afternoon), 17:00 (Saturday)
     const canFitInRange = (startTime: string, durationHours: number) => {
       const startMinutes = timeToMinutes(startTime);
       const endMinutes = startMinutes + (durationHours * 60);
 
-      // Saturday: continuous 9:00-17:00 — service must end by 17:00
+      // Saturday: continuous 9:00-17:00 — must finish by 17:00
       if (isSaturday) {
         return startMinutes >= 9 * 60 && endMinutes <= 17 * 60;
       }
 
-      // Weekdays: split schedule — morning 9:00-12:00, afternoon 15:00-18:00
-
-      // For 2.5-hour services (€99 - LAVAGGIO DR7 LUXURY), only allow specific time slots
-      if (durationHours >= 2.5) {
-        return startMinutes === 9 * 60 || startMinutes === 15 * 60;
-      }
-
-      // For 0.75-hour services (45 min - €25 LAVAGGIO COMPLETO)
-      if (durationHours <= 0.75) {
-        if (startMinutes >= 9 * 60 && startMinutes <= 12 * 60) return true;
-        if (startMinutes >= 15 * 60 && startMinutes <= 18 * 60) return true;
-        return false;
-      }
-
-      // For 1.5-hour services (€49 - LAVAGGIO TOP)
-      if (durationHours === 1.5) {
-        if (startMinutes >= 9 * 60 && startMinutes <= 10 * 60 + 30) return true;
-        if (startMinutes >= 15 * 60 && startMinutes <= 16 * 60 + 30) return true;
-        return false;
-      }
-
-      // For 2-hour services (€75 - LAVAGGIO VIP)
-      if (durationHours === 2) {
-        if (startMinutes >= 9 * 60 && startMinutes <= 10 * 60) return true;
-        if (startMinutes >= 15 * 60 && startMinutes <= 16 * 60) return true;
-        return false;
-      }
+      // Weekdays: morning must finish by 13:00, afternoon must finish by 19:00
+      // Morning window: start from 9:00, end by 13:00
+      if (startMinutes >= 9 * 60 && endMinutes <= 13 * 60) return true;
+      // Afternoon window: start from 15:00, end by 19:00
+      if (startMinutes >= 15 * 60 && endMinutes <= 19 * 60) return true;
 
       return false;
     };
@@ -535,7 +514,7 @@ const CarWashBookingPage: React.FC = () => {
         } else if (isHoliday(formData.appointmentDate)) {
           newErrors.appointmentDate = lang === 'it' ? 'Siamo chiusi nei giorni festivi' : 'We are closed on holidays';
         } else {
-          newErrors.appointmentTime = lang === 'it' ? 'Orario disponibile: Lun-Ven 9:00-12:00 / 15:00-18:00, Sabato 9:00-17:00 (minimo 2 ore in anticipo)' : 'Available hours: Mon-Fri 9:00-12:00 / 3:00-6:00 PM, Saturday 9:00-5:00 PM (minimum 2 hours in advance)';
+          newErrors.appointmentTime = lang === 'it' ? 'Orario disponibile: Lun-Ven 9:00-13:00 / 15:00-19:00, Sabato 9:00-17:00 (minimo 2 ore in anticipo)' : 'Available hours: Mon-Fri 9:00-1:00 PM / 3:00-7:00 PM, Saturday 9:00-5:00 PM (minimum 2 hours in advance)';
         }
       }
     }
@@ -1278,7 +1257,7 @@ const CarWashBookingPage: React.FC = () => {
                     {lang === 'it' ? 'Orari di apertura:' : 'Opening hours:'}
                   </span>
                   {' '}
-                  {lang === 'it' ? 'Lun-Ven 9:00-12:00 / 15:00-18:00 | Sabato 9:00-17:00 continuato' : 'Mon-Fri 9:00-12:00 / 3:00-6:00 PM | Saturday 9:00 AM - 5:00 PM'}
+                  {lang === 'it' ? 'Lun-Ven 9:00-13:00 / 15:00-19:00 | Sabato 9:00-17:00 continuato' : 'Mon-Fri 9:00-1:00 PM / 3:00-7:00 PM | Saturday 9:00 AM - 5:00 PM'}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
                   {lang === 'it' ? 'Chiusi la domenica' : 'Closed on Sundays'}
