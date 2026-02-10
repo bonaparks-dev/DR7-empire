@@ -136,10 +136,19 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     };
     const insuranceDisplayName = insuranceDisplayMap[insuranceOption] || 'Kasko';
 
-    // Get deposit from booking data (calculated in frontend based on loyalty/membership)
-    const depositAmount = booking.deposit_amount !== undefined && booking.deposit_amount !== null
-      ? (booking.deposit_amount === 0 ? '0€' : `${booking.deposit_amount}€`)
-      : 'N/A';
+    // Get deposit from booking data — differentiate between deposit vs no-deposit option
+    const depositOption = booking.booking_details?.depositOption;
+    const noDepositSurcharge = booking.booking_details?.noDepositSurcharge || 0;
+    const rawDeposit = booking.deposit_amount;
+
+    let depositAmount: string;
+    if (depositOption === 'no_deposit') {
+      depositAmount = `Senza cauzione (supplemento +30% = €${noDepositSurcharge.toFixed(2)} incluso nel totale)`;
+    } else if (rawDeposit !== undefined && rawDeposit !== null && rawDeposit > 0) {
+      depositAmount = `€${rawDeposit} (al ritiro)`;
+    } else {
+      depositAmount = '€0';
+    }
 
     // Get pickup location - replace dr7_office with actual address
     let pickupLocation = booking.pickup_location || 'DR7 Office';

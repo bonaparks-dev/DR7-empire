@@ -174,7 +174,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
       // Step 3
       insuranceOption: 'KASKO',
-      depositOption: 'with_deposit' as 'with_deposit' | 'no_deposit',
+      depositOption: '' as '' | 'with_deposit' | 'no_deposit',
       extras: [] as string[],
       kmPackageType: 'unlimited' as 'none' | 'unlimited' | '50km', // 'none' = only free included km, '50km' = 50km/day supercar package
       kmPackageDistance: 100, // default 100km package
@@ -1755,6 +1755,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (step === 3) {
       const vType = getVehicleType(item, categoryContext);
 
+      if (isUrbanOrCorporate && !formData.depositOption) {
+        newErrors.depositOption = "Devi selezionare un'opzione per la cauzione.";
+      }
+
       // Validate usage zone selection ONLY for SUPERCAR vehicles
       // Utility vehicles (UTILITARIA, FURGONE, V_CLASS) auto-set to FUORI_ZONA
       // Skip validation for Massimo Runchina - usage zone is auto-set and hidden for him
@@ -2274,6 +2278,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               dailyRate: formData.kmPackageType === '50km' ? 149 : undefined
             },
             vehicle_id: formData.selectedVehicleId,
+            depositOption: formData.depositOption,
+            noDepositSurcharge: noDepositSurcharge,
             driverLicenseImage: licenseImageUrl,
             driverIdImage: idImageUrl,
           }
@@ -2504,6 +2510,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               dailyRate: formData.kmPackageType === '50km' ? 149 : undefined
             },
             vehicle_id: formData.selectedVehicleId,
+            depositOption: formData.depositOption,
+            noDepositSurcharge: noDepositSurcharge,
             driverLicenseImage: licenseImageUrl,
             driverIdImage: idImageUrl,
           }
@@ -3128,6 +3136,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 <p className="text-sm text-gray-400 mb-4">
                   Scegli se versare una cauzione al ritiro o se preferisci noleggiare senza cauzione con un supplemento sul totale.
                 </p>
+                {!formData.depositOption && (
+                  <div className="p-3 bg-amber-900/20 border border-amber-500/50 rounded-lg mb-3">
+                    <p className="text-amber-300 text-sm font-medium">
+                      ⚠ Seleziona un'opzione per la cauzione per continuare
+                    </p>
+                  </div>
+                )}
                 <div className="space-y-3">
                   {/* Option 1: With deposit */}
                   <div
@@ -3190,6 +3205,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     </div>
                   </div>
                 </div>
+                {errors.depositOption && (
+                  <p className="text-xs text-red-400 mt-2">{errors.depositOption}</p>
+                )}
               </section>
             )}
 
@@ -3544,6 +3562,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   <p>Assicurazione: KASKO (inclusa)</p>
                   <p>Lavaggio completo obbligatorio</p>
                   {formData.addSecondDriver && <p>Secondo guidatore</p>}
+                  {isUrbanOrCorporate && formData.depositOption && (
+                    <p className={formData.depositOption === 'no_deposit' ? 'text-yellow-400' : 'text-green-400'}>
+                      {formData.depositOption === 'with_deposit'
+                        ? `Cauzione: €${getDeposit()} (patente ${licenseYears >= 5 ? '≥' : '<'} 5 anni)`
+                        : 'Senza cauzione (supplemento +30% applicato)'}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -3871,6 +3896,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       {secondDriverFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Secondo guidatore</span><span className="text-white font-medium">{formatPrice(secondDriverFee)}</span></div>}
                       {youngDriverFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Supplemento under 25</span><span className="text-white font-medium">{formatPrice(youngDriverFee)}</span></div>}
                       {recentLicenseFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Supplemento patente recente</span><span className="text-white font-medium">{formatPrice(recentLicenseFee)}</span></div>}
+                      {noDepositSurcharge > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-yellow-400">Supplemento senza cauzione (+30%)</span>
+                          <span className="text-yellow-400 font-medium">{formatPrice(noDepositSurcharge)}</span>
+                        </div>
+                      )}
 
                       <div className="border-t border-white/20 my-2"></div>
 
@@ -3899,6 +3930,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           )}
                           <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(finalPriceWithBirthdayDiscount)}</span></div>
                         </>
+                      )}
+                      {isUrbanOrCorporate && formData.depositOption === 'with_deposit' && getDeposit() > 0 && (
+                        <div className="mt-2 pt-2 border-t border-gray-700">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-400">Cauzione al ritiro</span>
+                            <span className="text-white font-medium">€{getDeposit()}</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">Restituita dopo la riconsegna</p>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -3943,7 +3983,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         type="button"
                         onClick={handleNext}
                         className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={(licenseYears < 2 && step === 2) || (step === 2 && !formData.confirmsInformation)}
+                        disabled={(licenseYears < 2 && step === 2) || (step === 2 && !formData.confirmsInformation) || (step === 3 && isUrbanOrCorporate && !formData.depositOption)}
                       >
                         Continua
                       </button>
