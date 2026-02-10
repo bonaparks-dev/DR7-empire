@@ -1,4 +1,17 @@
 User-agent: *
 Allow: /
 
+Disallow: /signin
+Disallow: /signup
+Disallow: /account/
+Disallow: /partner/
+Disallow: /auth/
+Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /payment-success
+Disallow: /payment-cancel
+Disallow: /booking-success
+Disallow: /car-booking-success
+Disallow: /confirmation-success
+
 Sitemap: https://dr7empire.com/sitemap.xml
