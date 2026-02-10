@@ -120,20 +120,32 @@ const CarWashBookingPage: React.FC = () => {
   // Use the real-time hook for bookings
   const { bookings: existingBookings, loading: bookingsLoading } = useCarWashAvailability(formData.appointmentDate);
 
-  // Helper function to get service duration in hours based on price
-  const getServiceDurationInHours = (price: number): number => {
-    // Exact price to duration mapping:
-    // €10 = 15 minutes (LAVAGGIO SCOOTER)
-    // €15 = 15 minutes (LAVAGGIO SOLO ESTERNO)
-    // €20 = 30 minutes (LAVAGGIO SOLO INTERNO)
-    // €25 = 45 minutes (LAVAGGIO COMPLETO)
-    // €49 = 1.5 hours (LAVAGGIO TOP)
-    // €75 = 2 hours (LAVAGGIO VIP)
-    // €99 = 2.5 hours (LAVAGGIO DR7 LUXURY) - dalle 9:00 alle 10:30 o dalle 15:00 alle 16:30
-    if (price <= 10) return 0.25; // 15 minutes
-    if (price <= 15) return 0.25; // 15 minutes
-    if (price <= 20) return 0.5;  // 30 minutes
-    if (price <= 25) return 0.75; // 45 minutes
+  // Build duration map from SERVICES (real durations from CarWashServicesPage)
+  // Parses duration strings like '10 min', '90 min', '120 min' into hours
+  const SERVICE_DURATION_MAP: Record<string, number> = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const svc of SERVICES) {
+      if (svc.duration && svc.duration !== '-') {
+        const minutes = parseInt(svc.duration, 10);
+        if (!isNaN(minutes)) {
+          map[svc.id] = minutes / 60;
+        }
+      }
+    }
+    return map;
+  }, []);
+
+  // Get duration by service ID (accurate), with price-based fallback for DB bookings
+  const getServiceDurationById = (serviceId: string): number => {
+    return SERVICE_DURATION_MAP[serviceId] || 0.25; // default 15 min if unknown
+  };
+
+  const getServiceDurationByPrice = (price: number): number => {
+    // Fallback for existing DB bookings that only have price_total
+    if (price <= 10) return 0.25;
+    if (price <= 15) return 0.25;
+    if (price <= 20) return 0.5;
+    if (price <= 25) return 0.75;
     if (price <= 49) return 1.5;
     if (price <= 75) return 2;
     return 2.5;
@@ -356,10 +368,10 @@ const CarWashBookingPage: React.FC = () => {
   const getAllTimeSlotsWithAvailability = () => {
     if ((!selectedService && !hasCartItems) || !formData.appointmentDate) return [];
 
-    // For cart items, sum individual durations; for single service, use service price
+    // For cart items, sum individual durations by service ID; for single service, look up by ID
     const serviceDuration = hasCartItems
-      ? cartItems.reduce((total, item) => total + getServiceDurationInHours(item.price) * item.quantity, 0)
-      : getServiceDurationInHours(selectedService?.price || 0);
+      ? cartItems.reduce((total, item) => total + getServiceDurationById(item.serviceId) * item.quantity, 0)
+      : getServiceDurationById(selectedService?.id || '');
 
     // Weekdays: 9:00-13:00 / 15:00-19:00 (must FINISH by 13:00 or 19:00)
     // Saturday: 9:00-17:00 continuous (must FINISH by 17:00)
@@ -405,7 +417,7 @@ const CarWashBookingPage: React.FC = () => {
       for (const booking of existingBookings) {
         if (!booking.appointment_time) continue;
         const bookingStart = timeToMinutes(booking.appointment_time);
-        const bookingDuration = getServiceDurationInHours(booking.price_total / 100);
+        const bookingDuration = getServiceDurationByPrice(booking.price_total / 100);
         const bookingEnd = bookingStart + (bookingDuration * 60);
 
         if (startMinutes < bookingEnd && endMinutes > bookingStart) {
