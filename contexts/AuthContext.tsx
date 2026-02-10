@@ -67,10 +67,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Fetch residency_zone from Netlify Function with safe fallback
         try {
-          const response = await fetch(`/.netlify/functions/getResidencyZone?user_id=${session.user.id}`);
+          const response = await fetch(`/.netlify/functions/getResidencyZone?user_id=${session.user.id}`, {
+            headers: { 'Authorization': `Bearer ${session.access_token}` },
+          });
 
           if (!response.ok) {
-            console.warn('⚠️ Unable to fetch residency_zone from Netlify Function:', {
+            console.warn('Unable to fetch residency_zone from Netlify Function:', {
               status: response.status,
               statusText: response.statusText,
               userId: session.user.id,
@@ -83,7 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             (appUser as any).residencyZone = data.residency_zone || 'NON_RESIDENTE';
           }
         } catch (error) {
-          console.error('❌ Error fetching residency zone:', {
+          console.error('Error fetching residency zone:', {
             error,
             errorMessage: (error as Error).message,
             userId: session.user.id,
@@ -188,7 +190,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // ✅ SIMPLE GOOGLE SIGN-IN: Let Supabase use your Dashboard "Site URL"
+  // SIMPLE GOOGLE SIGN-IN: Let Supabase use your Dashboard "Site URL"
   const signInWithGoogle = useCallback(async () => {
     return supabase.auth.signInWithOAuth({
       provider: 'google',

@@ -24,8 +24,15 @@ export interface UserCreditBalance {
 export async function getUserCreditBalance(userId: string): Promise<number> {
   const fetchBalance = async (retryCount = 0): Promise<number> => {
     try {
+      // Get auth token for authenticated request
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = {};
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       // Fetch balance via Netlify Function instead of direct Supabase REST
-      const response = await fetch(`/.netlify/functions/getCreditBalance?user_id=${userId}`);
+      const response = await fetch(`/.netlify/functions/getCreditBalance?user_id=${userId}`, { headers });
 
       if (!response.ok) {
         // If error and we haven't retried too many times, retry
