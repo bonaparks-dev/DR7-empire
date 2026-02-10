@@ -35,11 +35,11 @@ const handler: Handler = async (event) => {
     };
   }
 
-  console.log('🔄 Starting sync of old bookings to Google Calendar...');
+  console.log('Starting sync of old bookings to Google Calendar...');
 
   try {
     // Fetch all bookings from Supabase
-    console.log('📊 Fetching bookings from database...');
+    console.log('Fetching bookings from database...');
     const { data: bookings, error } = await supabase
       .from('bookings')
       .select('*')
@@ -60,7 +60,7 @@ const handler: Handler = async (event) => {
       return bookingDate >= today;
     });
 
-    console.log(`📅 ${futureBookings.length} future bookings to sync`);
+    console.log(`${futureBookings.length} future bookings to sync`);
 
     if (futureBookings.length === 0) {
       return {
@@ -85,7 +85,7 @@ const handler: Handler = async (event) => {
         const serviceType = booking.service_type;
         const bookingId = booking.id.substring(0, 8).toUpperCase();
 
-        console.log(`📝 Processing booking DR7-${bookingId} (${serviceType || 'car_rental'})...`);
+        console.log(`Processing booking DR7-${bookingId} (${serviceType || 'car_rental'})...`);
 
         const eventDetails = serviceType === 'car_wash'
           ? formatCarWashEvent(booking)
@@ -93,7 +93,7 @@ const handler: Handler = async (event) => {
 
         await createCalendarEvent(eventDetails);
 
-        console.log(`✅ Calendar event created for DR7-${bookingId}`);
+        console.log(`Calendar event created for DR7-${bookingId}`);
         results.success.push(`DR7-${bookingId}`);
 
         // Add a small delay to avoid rate limits
@@ -101,7 +101,7 @@ const handler: Handler = async (event) => {
 
       } catch (error: any) {
         const bookingId = booking.id.substring(0, 8).toUpperCase();
-        console.error(`❌ Failed to create event for DR7-${bookingId}: ${error.message}`);
+        console.error(`Failed to create event for DR7-${bookingId}: ${error.message}`);
         results.errors.push({
           bookingId: `DR7-${bookingId}`,
           error: error.message,
@@ -125,7 +125,7 @@ const handler: Handler = async (event) => {
     };
 
   } catch (error: any) {
-    console.error('❌ Sync error:', error.message);
+    console.error('Sync error:', error.message);
     return {
       statusCode: 500,
       body: JSON.stringify({

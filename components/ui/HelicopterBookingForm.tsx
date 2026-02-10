@@ -117,14 +117,14 @@ const HelicopterBookingForm: React.FC = () => {
     if (!validate()) return;
 
     // Build comprehensive WhatsApp message
-    let msg = `Ciao DR7 Empire 👋\nVorrei prenotare un volo in elicottero.\n\n`;
+    let msg = `Ciao DR7 Empire\nVorrei prenotare un volo in elicottero.\n\n`;
 
-    msg += `📇 DATI CLIENTE\n`;
+    msg += `DATI CLIENTE\n`;
     msg += `Nome: ${formData.firstName} ${formData.lastName}\n`;
     msg += `Email: ${formData.email}\n`;
     msg += `Telefono / WhatsApp: ${formData.phone}\n\n`;
 
-    msg += `📍 1. DETTAGLI DEL VOLO\n`;
+    msg += `1. DETTAGLI DEL VOLO\n`;
     msg += `• Da: ${formData.departureLocation}\n`;
     msg += `• A: ${formData.arrivalLocation}\n`;
     msg += `• Tipo: ${formData.tripType === 'round_trip' ? 'Andata e Ritorno' : 'Solo Andata'}\n`;
@@ -142,14 +142,14 @@ const HelicopterBookingForm: React.FC = () => {
     }
     msg += `• Volo: ${formData.dayNightFlight === 'day' ? 'Diurno' : 'Notturno'}\n\n`;
 
-    msg += `👥 2. PASSEGGERI\n`;
+    msg += `2. PASSEGGERI\n`;
     msg += `• Numero passeggeri: ${formData.passengerCount}\n`;
     msg += `• Bambini/neonati: ${formData.hasChildren === 'yes' ? 'Sì - ' + formData.childrenDetails : 'No'}\n`;
     msg += `• Animali: ${formData.hasPets === 'yes' ? 'Sì - ' + formData.petDetails : 'No'}\n`;
     msg += `• Assistente/hostess: ${formData.needsHostess === 'yes' ? 'Sì' : 'No'}\n`;
     msg += `• Ospite VIP: ${formData.isVIP === 'yes' ? 'Sì - ' + (formData.vipDetails || 'richiede riservatezza') : 'No'}\n\n`;
 
-    msg += `💼 3. BAGAGLI\n`;
+    msg += `3. BAGAGLI\n`;
     msg += `• Numero bagagli: ${formData.luggageCount || 'Non specificato'}\n`;
     if (formData.luggageDimensions) {
       msg += `• Dimensioni/peso: ${formData.luggageDimensions}\n`;
@@ -204,10 +204,10 @@ const HelicopterBookingForm: React.FC = () => {
     msg += `• NDA richiesto: ${formData.needsNDA === 'yes' ? 'Sì' : 'No'}\n`;
 
     if (formData.notes) {
-      msg += `\n💬 NOTE AGGIUNTIVE\n${formData.notes}\n`;
+      msg += `\nNOTE AGGIUNTIVE\n${formData.notes}\n`;
     }
 
-    msg += `\nPotete confermare disponibilità e prezzo? Grazie 🙏`;
+    msg += `\nPotete confermare disponibilità e prezzo? Grazie`;
 
     const encoded = encodeURIComponent(msg);
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`;
@@ -236,7 +236,7 @@ const HelicopterBookingForm: React.FC = () => {
         {/* Customer Info Section */}
         <div className="bg-zinc-900/50 p-6 rounded-lg border border-zinc-800">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            📇 Dati Cliente
+            Dati Cliente
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -293,7 +293,7 @@ const HelicopterBookingForm: React.FC = () => {
         {/* 1. Flight Details */}
         <div className="bg-zinc-900/50 p-6 rounded-lg border border-zinc-800">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            📍 1. Dettagli del Volo
+            1. Dettagli del Volo
           </h3>
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -459,7 +459,7 @@ const HelicopterBookingForm: React.FC = () => {
         {/* 2. Passengers */}
         <div className="bg-zinc-900/50 p-6 rounded-lg border border-zinc-800">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            👥 2. Passeggeri
+            2. Passeggeri
           </h3>
           <div className="space-y-4">
             <div>
@@ -575,7 +575,7 @@ const HelicopterBookingForm: React.FC = () => {
         {/* 3. Luggage */}
         <div className="bg-zinc-900/50 p-6 rounded-lg border border-zinc-800">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            💼 3. Bagagli
+            3. Bagagli
           </h3>
           <div className="space-y-4">
             <div>
@@ -1006,7 +1006,7 @@ const HelicopterBookingForm: React.FC = () => {
         {/* General Notes */}
         <div className="bg-zinc-900/50 p-6 rounded-lg border border-zinc-800">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            💬 Note Aggiuntive
+            Note Aggiuntive
           </h3>
           <textarea
             name="notes"

@@ -153,7 +153,7 @@ const CarWashBookingPage: React.FC = () => {
 
   // Log bookings for debugging
   useEffect(() => {
-    console.log('🔍 Existing bookings from hook:', existingBookings);
+    console.log('Existing bookings from hook:', existingBookings);
     console.log('Selected date:', formData.appointmentDate);
   }, [existingBookings, formData.appointmentDate]);
 
@@ -844,10 +844,10 @@ const CarWashBookingPage: React.FC = () => {
             console.error('Email API returned error:', emailResponse.status, errorText);
           } else {
             emailSent = true;
-            console.log('✅ Email confirmation sent successfully');
+            console.log('Email confirmation sent successfully');
           }
         } catch (emailError) {
-          console.error('❌ Email error (non-blocking):', emailError);
+          console.error('Email error (non-blocking):', emailError);
           console.error('Email error details:', {
             message: emailError instanceof Error ? emailError.message : 'Unknown error',
             stack: emailError instanceof Error ? emailError.stack : undefined
@@ -866,10 +866,10 @@ const CarWashBookingPage: React.FC = () => {
             console.error('WhatsApp API returned error:', whatsappResponse.status);
           } else {
             whatsappSent = true;
-            console.log('✅ WhatsApp notification sent successfully');
+            console.log('WhatsApp notification sent successfully');
           }
         } catch (whatsappError) {
-          console.error('❌ WhatsApp error (non-blocking):', whatsappError);
+          console.error('WhatsApp error (non-blocking):', whatsappError);
         }
 
         // Log notification status for debugging
@@ -877,7 +877,7 @@ const CarWashBookingPage: React.FC = () => {
 
         // Show warning if emails failed (but don't block the success flow)
         if (!emailSent) {
-          console.warn('⚠️ Booking saved but email notification failed. Webhook backup will send notifications.');
+          console.warn('Booking saved but email notification failed. Webhook backup will send notifications.');
         }
 
         // Generate WhatsApp prefilled message for customer
@@ -902,7 +902,7 @@ const CarWashBookingPage: React.FC = () => {
         const formattedTime = data.appointment_time;
 
         let whatsappMessage = `Ciao! Ho appena completato una prenotazione autolavaggio sul vostro sito.\n\n` +
-          `📋 *Dettagli Prenotazione*\n` +
+          `*Dettagli Prenotazione*\n` +
           `*ID:* DR7-${bookingId}\n` +
           `*Nome:* ${customerName}\n` +
           `*Telefono:* ${customerPhone}\n` +
@@ -961,7 +961,7 @@ const CarWashBookingPage: React.FC = () => {
           return;
         }
 
-        console.log('✅ Booking saved:', bookingData.id);
+        console.log('Booking saved:', bookingData.id);
 
         // Create Nexi payment
         console.log('Creating Nexi payment for booking:', bookingData.id);
@@ -999,12 +999,12 @@ const CarWashBookingPage: React.FC = () => {
         console.log('Nexi response:', nexiData);
 
         if (nexiData.success && nexiData.paymentUrl) {
-          console.log('✅ Redirecting to Nexi:', nexiData.paymentUrl);
+          console.log('Redirecting to Nexi:', nexiData.paymentUrl);
           // Redirect to Nexi payment page
           window.location.href = nexiData.paymentUrl;
           return; // Stop execution as we're redirecting
         } else {
-          console.error('❌ Nexi payment creation failed:', nexiData);
+          console.error('Nexi payment creation failed:', nexiData);
           setPaymentError(nexiData.error || 'Failed to create Nexi payment');
           setIsProcessing(false);
         }

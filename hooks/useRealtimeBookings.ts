@@ -190,14 +190,14 @@ export function useRealtimeBookings(
           table: 'bookings',
         },
         (payload) => {
-          console.log('📡 Real-time booking change:', payload);
+          console.log('Real-time booking change:', payload);
 
           // Refetch all bookings to ensure consistency
           fetchBookings();
         }
       )
       .subscribe((status) => {
-        console.log('📡 Real-time subscription status:', status);
+        console.log('Real-time subscription status:', status);
       });
 
     setChannel(realtimeChannel);

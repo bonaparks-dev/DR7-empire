@@ -68,45 +68,25 @@ export async function addCredits(
   referenceId?: string,
   referenceType?: string
 ): Promise<{ success: boolean; newBalance: number; error?: string }> {
-  try {
-    // Get current balance
-    const currentBalance = await getUserCreditBalance(userId);
-    const newBalance = currentBalance + amount;
+  const { data, error } = await supabase.rpc('add_credits', {
+    p_user_id: userId,
+    p_amount: amount,
+    p_description: description,
+    p_reference_id: referenceId || null,
+    p_reference_type: referenceType || 'purchase'
+  });
 
-    // Update or insert balance
-    const { error: balanceError } = await supabase
-      .from('user_credit_balance')
-      .upsert({
-        user_id: userId,
-        balance: newBalance,
-        last_updated: new Date().toISOString()
-      }, {
-        onConflict: 'user_id'
-      });
-
-    if (balanceError) throw balanceError;
-
-    // Record transaction
-    const { error: transactionError } = await supabase
-      .from('credit_transactions')
-      .insert({
-        user_id: userId,
-        transaction_type: 'credit',
-        amount: amount,
-        balance_after: newBalance,
-        description: description,
-        reference_id: referenceId,
-        reference_type: referenceType,
-        created_at: new Date().toISOString()
-      });
-
-    if (transactionError) throw transactionError;
-
-    return { success: true, newBalance };
-  } catch (error: any) {
-    console.error('Error adding credits:', error);
+  if (error) {
+    console.error('Error in addCredits RPC:', error);
     return { success: false, newBalance: 0, error: error.message };
   }
+
+  const result = data?.[0] || data;
+  return {
+    success: result?.success ?? false,
+    newBalance: result?.new_balance ?? 0,
+    error: result?.error_message || undefined
+  };
 }
 
 /**

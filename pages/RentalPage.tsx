@@ -439,7 +439,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
                   </svg>
                   <div className="flex-1">
                     <p className="text-blue-200 text-sm font-medium">
-                      🔧 Dev Note: Chrome Connection Issue Detected
+                      Dev Note: Chrome Connection Issue Detected
                     </p>
                     <p className="text-blue-300/70 text-xs mt-1">
                       If Chrome fails but Safari works, try: <strong>incognito mode</strong> or <strong>disable browser extensions</strong>. This is a known Chrome HTTP/2 protocol issue with Supabase.
@@ -467,8 +467,8 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
                   <div className="flex-1">
                     <p className="text-yellow-200 text-sm font-medium">
                       {usingCache
-                        ? '⚡ Showing cached vehicles — connection issue detected'
-                        : '⚡ Temporary connection issue — showing last known vehicles'}
+                        ? 'Showing cached vehicles — connection issue detected'
+                        : 'Temporary connection issue — showing last known vehicles'}
                     </p>
                     <p className="text-yellow-300/70 text-xs mt-0.5">
                       Vehicles may not reflect real-time availability. Retry to refresh.
@@ -479,7 +479,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
                   onClick={() => window.location.reload()}
                   className="px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-200 text-sm font-medium rounded-lg transition-colors flex-shrink-0"
                 >
-                  🔄 Retry
+                  Retry
                 </button>
               </div>
             </div>

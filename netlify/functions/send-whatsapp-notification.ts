@@ -78,7 +78,7 @@ const handler: Handler = async (event) => {
         timeZone: 'Europe/Rome'
       });
 
-      message = `🚗 *NUOVA PRENOTAZIONE AUTOLAVAGGIO*\n\n`;
+      message = `*NUOVA PRENOTAZIONE AUTOLAVAGGIO*\n\n`;
       message += `*ID:* DR7-${bookingId}\n`;
       message += `*Cliente:* ${sanitizeForWhatsApp(customerName)}\n`;
       message += `*Email:* ${sanitizeForWhatsApp(customerEmail)}\n`;
@@ -92,7 +92,7 @@ const handler: Handler = async (event) => {
         message += `*Note:* ${sanitizeForWhatsApp(notes)}\n`;
       }
       message += `*Totale:* €${totalPrice}\n`;
-      message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa'}`;
+      message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? 'Pagato' : 'In attesa'}`;
     } else if (serviceType === 'mechanical') {
       // Mechanical Booking
       const appointmentDate = new Date(booking.appointment_date);
@@ -113,7 +113,7 @@ const handler: Handler = async (event) => {
         timeZone: 'Europe/Rome'
       });
 
-      message = `🔧 *NUOVA PRENOTAZIONE MECCANICA*\n\n`;
+      message = `*NUOVA PRENOTAZIONE MECCANICA*\n\n`;
       message += `*ID:* DR7-${bookingId}\n`;
       message += `*Cliente:* ${sanitizeForWhatsApp(customerName)}\n`;
       message += `*Email:* ${sanitizeForWhatsApp(customerEmail)}\n`;
@@ -126,12 +126,12 @@ const handler: Handler = async (event) => {
       if (notes) {
         message += `*Note:* ${sanitizeForWhatsApp(notes)}\n`;
       }
-      message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded' || booking.payment_status === 'completed') ? '✅ Pagato' : '⏳ In attesa'}`;
+      message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded' || booking.payment_status === 'completed') ? 'Pagato' : 'In attesa'}`;
 
       // Second driver info
       const secondDriver = booking.booking_details?.secondDriver;
       if (secondDriver) {
-        message += `\n\n👤 *SECONDO GUIDATORE*\n`;
+        message += `\n\n*SECONDO GUIDATORE*\n`;
         message += `*Nome:* ${sanitizeForWhatsApp(secondDriver.firstName)} ${sanitizeForWhatsApp(secondDriver.lastName)}\n`;
         message += `*Email:* ${sanitizeForWhatsApp(secondDriver.email)}\n`;
         message += `*Telefono:* ${sanitizeForWhatsApp(secondDriver.phone)}\n`;
@@ -165,7 +165,7 @@ const handler: Handler = async (event) => {
       const dropoffDateFormatted = dropoffDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' });
       const dropoffTimeFormatted = dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
 
-      message = `🚘 *NUOVA PRENOTAZIONE NOLEGGIO*\n\n`;
+      message = `*NUOVA PRENOTAZIONE NOLEGGIO*\n\n`;
       message += `*ID:* DR7-${bookingId}\n`;
       message += `*Cliente:* ${sanitizeForWhatsApp(customerName)}\n`;
       message += `*Email:* ${sanitizeForWhatsApp(customerEmail)}\n`;
@@ -190,13 +190,13 @@ const handler: Handler = async (event) => {
       // Second driver info
       const secondDriver = booking.booking_details?.secondDriver;
       if (secondDriver) {
-        message += `\n👤 *SECONDO CONDUCENTE:*\n`;
+        message += `\n*SECONDO CONDUCENTE:*\n`;
         message += `*Nome:* ${secondDriver.fullName || `${secondDriver.firstName} ${secondDriver.lastName}`}\n`;
         if (secondDriver.phone) message += `*Telefono:* ${secondDriver.phone}\n`;
         if (secondDriver.licenseNumber) message += `*Patente:* ${secondDriver.licenseNumber}\n`;
       }
 
-      message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa'}`;
+      message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? 'Pagato' : 'In attesa'}`;
     }
   } else {
     return {
@@ -227,7 +227,7 @@ const handler: Handler = async (event) => {
       throw new Error(result.error || 'Green API error');
     }
 
-    console.log('✅ WhatsApp notification sent via Green API:', result.idMessage);
+    console.log('WhatsApp notification sent via Green API:', result.idMessage);
 
     return {
       statusCode: 200,

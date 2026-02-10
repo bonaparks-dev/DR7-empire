@@ -58,7 +58,7 @@ const PaymentSuccessPage: React.FC = () => {
                         console.error('Error updating booking:', updateError);
                         setUpdateError('Could not update booking status');
                     } else {
-                        console.log('✅ Booking marked as completed:', booking.id);
+                        console.log('Booking marked as completed:', booking.id);
 
                         // Send notifications
                         fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
@@ -81,7 +81,7 @@ const PaymentSuccessPage: React.FC = () => {
                             const price = (booking.price_total / 100).toFixed(2);
 
                             const msg = `Ciao! Ho appena completato il pagamento per la prenotazione.\n\n` +
-                                `📋 *Dettagli Prenotazione*\n` +
+                                `*Dettagli Prenotazione*\n` +
                                 `*ID:* DR7-${bId}\n` +
                                 `*Nome:* ${customer.fullName}\n` +
                                 `*Veicolo:* ${booking.vehicle_name}\n` +
@@ -154,7 +154,7 @@ const PaymentSuccessPage: React.FC = () => {
                         );
 
                         if (result.success) {
-                            console.log(`✅ Credits added: €${purchase.received_amount} (new balance: €${result.newBalance})`);
+                            console.log(`Credits added: €${purchase.received_amount} (new balance: €${result.newBalance})`);
                         } else {
                             console.error('Error adding credits:', result.error);
                             setUpdateError('Payment received but error adding credits. Contact support.');
@@ -203,7 +203,9 @@ const PaymentSuccessPage: React.FC = () => {
             <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8">
                 <div className="text-center">
                     <div className="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
-                        <span className="text-5xl">✅</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
                     </div>
 
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">

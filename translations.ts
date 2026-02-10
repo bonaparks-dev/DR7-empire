@@ -310,7 +310,7 @@ export const translations: Translations = {
   Email_Confirmed: { en: "Email Confirmed!", it: "Email Confermata!" },
   Account_Successfully_Created: { en: "Your account has been successfully created. Welcome to the world of DR7.", it: "Il tuo account è stato creato con successo. Benvenuto nel mondo di DR7." },
   Proceed_to_My_Account: { en: "Proceed to My Account", it: "Vai al Mio Account" },
-  Email_Confirmed_Fallback_Title: { en: "Email confirmed ✅", it: "Email confermata ✅" },
+  Email_Confirmed_Fallback_Title: { en: "Email confirmed", it: "Email confermata" },
   Email_Confirmed_Fallback_Body: { en: "Your email has been successfully verified. Please log in to access your account.", it: "Il tuo indirizzo email è stato verificato con successo. Accedi per entrare nel tuo account." },
 
   // Account Pages

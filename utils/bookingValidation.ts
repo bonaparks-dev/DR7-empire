@@ -197,7 +197,7 @@ export async function checkVehicleAvailability(
     });
 
     if (!response.ok) {
-      console.error('❌ Availability check failed:', {
+      console.error('Availability check failed:', {
         status: response.status,
         statusText: response.statusText,
       });
@@ -208,7 +208,7 @@ export async function checkVehicleAvailability(
     const data = await response.json();
     return data.conflicts || [];
   } catch (error) {
-    console.error('❌ Error in checkVehicleAvailability:', error);
+    console.error('Error in checkVehicleAvailability:', error);
     // Return empty conflicts on error to not block user
     return [];
   }
@@ -519,7 +519,7 @@ export async function checkCarWashAvailability(
         return {
           isAvailable: false,
           conflictingBooking: booking,
-          message: `❌ Questo orario non è disponibile. È già prenotato dalle ${booking.appointment_time} per ${bookingDuration} ora/e.`
+          message: `Questo orario non è disponibile. È già prenotato dalle ${booking.appointment_time} per ${bookingDuration} ora/e.`
         };
       }
     }

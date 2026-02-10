@@ -38,11 +38,11 @@ export const createCalendarEvent = async (eventDetails: CalendarEventDetails) =>
     const calendar = getCalendarClient();
     const calendarId = process.env.GOOGLE_CALENDAR_ID || 'dubai.rent7.0srl@gmail.com';
 
-    console.log(`📅 Creating calendar event for: ${eventDetails.summary}`);
-    console.log(`📧 Customer: ${eventDetails.customerName} (${eventDetails.customerEmail})`);
-    console.log(`🗓️ Start: ${eventDetails.startDateTime}`);
-    console.log(`🗓️ End: ${eventDetails.endDateTime}`);
-    console.log(`📍 Calendar ID: ${calendarId}`);
+    console.log(`Creating calendar event for: ${eventDetails.summary}`);
+    console.log(`Customer: ${eventDetails.customerName} (${eventDetails.customerEmail})`);
+    console.log(`Start: ${eventDetails.startDateTime}`);
+    console.log(`End: ${eventDetails.endDateTime}`);
+    console.log(`Calendar ID: ${calendarId}`);
 
     const event = {
       summary: eventDetails.summary,
@@ -73,12 +73,12 @@ export const createCalendarEvent = async (eventDetails: CalendarEventDetails) =>
       sendUpdates: 'all', // Send email notifications to attendees (OAuth2 supports this)
     });
 
-    console.log('✅ Calendar event created successfully!');
-    console.log(`🆔 Event ID: ${response.data.id}`);
-    console.log(`🔗 Event link: ${response.data.htmlLink}`);
+    console.log('Calendar event created successfully!');
+    console.log(`Event ID: ${response.data.id}`);
+    console.log(`Event link: ${response.data.htmlLink}`);
     return response.data;
   } catch (error: any) {
-    console.error('❌ Error creating calendar event:', error.message);
+    console.error('Error creating calendar event:', error.message);
     console.error('Error details:', {
       code: error.code,
       status: error.status,
@@ -88,11 +88,11 @@ export const createCalendarEvent = async (eventDetails: CalendarEventDetails) =>
 
     // Provide more helpful error messages
     if (error.code === 401) {
-      console.error('⚠️ Authentication error: Refresh token may be expired or invalid');
+      console.error('Authentication error: Refresh token may be expired or invalid');
     } else if (error.code === 403) {
-      console.error('⚠️ Permission error: Check if calendar is shared with the OAuth account');
+      console.error('Permission error: Check if calendar is shared with the OAuth account');
     } else if (error.code === 404) {
-      console.error('⚠️ Calendar not found: Verify GOOGLE_CALENDAR_ID is correct');
+      console.error('Calendar not found: Verify GOOGLE_CALENDAR_ID is correct');
     }
 
     throw error;
@@ -111,26 +111,26 @@ export const formatCarRentalEvent = (booking: any): CalendarEventDetails => {
   const vehicleType = booking.vehicle_type || 'car';
 
   // Determine service type based on vehicle type
-  let servicePrefix = '🚗';
+  let servicePrefix = '';
   if (vehicleType === 'exotic' || vehicleType === 'supercar') {
-    servicePrefix = '🏎️ EXOTIC SUPERCAR';
+    servicePrefix = 'EXOTIC SUPERCAR';
   } else if (vehicleType === 'urban') {
-    servicePrefix = '🚗 URBAN CAR';
+    servicePrefix = 'URBAN CAR';
   } else {
-    servicePrefix = '🚙 CAR RENTAL';
+    servicePrefix = 'CAR RENTAL';
   }
 
   return {
     summary: `${servicePrefix} - ${vehicleName} - ${customerName}`,
     description: `
-📋 Booking ID: DR7-${bookingId}
-👤 Customer: ${customerName}
-📧 Email: ${customerEmail}
-🚗 Vehicle: ${vehicleName}
-📍 Pickup Location: ${booking.pickup_location}
-💰 Total: ${new Intl.NumberFormat('it-IT', { style: 'currency', currency }).format(totalPrice)}
-💳 Payment: ${booking.payment_method === 'agency' ? 'In sede' : 'Online'}
-📝 Status: ${booking.payment_status === 'pending' ? 'In attesa' : 'Completato'}
+Booking ID: DR7-${bookingId}
+Customer: ${customerName}
+Email: ${customerEmail}
+Vehicle: ${vehicleName}
+Pickup Location: ${booking.pickup_location}
+Total: ${new Intl.NumberFormat('it-IT', { style: 'currency', currency }).format(totalPrice)}
+Payment: ${booking.payment_method === 'agency' ? 'In sede' : 'Online'}
+Status: ${booking.payment_status === 'pending' ? 'In attesa' : 'Completato'}
     `.trim(),
     startDateTime: pickupDate.toISOString(),
     endDateTime: dropoffDate.toISOString(),
@@ -144,8 +144,8 @@ export const deleteCalendarEvent = async (eventId: string) => {
     const calendar = getCalendarClient();
     const calendarId = process.env.GOOGLE_CALENDAR_ID || 'dubai.rent7.0srl@gmail.com';
 
-    console.log(`🗑️ Deleting calendar event: ${eventId}`);
-    console.log(`📍 Calendar ID: ${calendarId}`);
+    console.log(`Deleting calendar event: ${eventId}`);
+    console.log(`Calendar ID: ${calendarId}`);
 
     await calendar.events.delete({
       calendarId: calendarId,
@@ -153,14 +153,14 @@ export const deleteCalendarEvent = async (eventId: string) => {
       sendUpdates: 'all', // Notify attendees about cancellation
     });
 
-    console.log('✅ Calendar event deleted successfully!');
+    console.log('Calendar event deleted successfully!');
     return { success: true };
   } catch (error: any) {
-    console.error('❌ Error deleting calendar event:', error.message);
+    console.error('Error deleting calendar event:', error.message);
 
     // If event is already deleted or not found, consider it successful
     if (error.code === 404 || error.code === 410) {
-      console.log('ℹ️ Event already deleted or not found, continuing...');
+      console.log('Event already deleted or not found, continuing...');
       return { success: true, alreadyDeleted: true };
     }
 
@@ -192,19 +192,19 @@ export const formatCarWashEvent = (booking: any): CalendarEventDetails => {
   endDate.setHours(endDate.getHours() + durationHours);
 
   return {
-    summary: `🚿 LUXURY WASH (${durationHours}h) - ${serviceName} - ${customerName}`,
+    summary: `LUXURY WASH (${durationHours}h) - ${serviceName} - ${customerName}`,
     description: `
-📋 Booking ID: DR7-${bookingId}
-👤 Customer: ${customerName}
-📧 Email: ${customerEmail}
-📞 Phone: ${booking.customer_phone || 'N/A'}
-🚿 Service: ${serviceName}
-⏱️ Duration: ${durationHours} hour${durationHours > 1 ? 's' : ''}
-${additionalService ? `➕ Additional: ${additionalService}` : ''}
-💰 Total: ${new Intl.NumberFormat('it-IT', { style: 'currency', currency }).format(totalPrice)}
-${notes ? `📝 Notes: ${notes}` : ''}
+Booking ID: DR7-${bookingId}
+Customer: ${customerName}
+Email: ${customerEmail}
+Phone: ${booking.customer_phone || 'N/A'}
+Service: ${serviceName}
+Duration: ${durationHours} hour${durationHours > 1 ? 's' : ''}
+${additionalService ? `Additional: ${additionalService}` : ''}
+Total: ${new Intl.NumberFormat('it-IT', { style: 'currency', currency }).format(totalPrice)}
+${notes ? `Notes: ${notes}` : ''}
 
-🔒 SLOT BLOCKED: ${appointmentDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+SLOT BLOCKED: ${appointmentDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
     `.trim(),
     startDateTime: appointmentDate.toISOString(),
     endDateTime: endDate.toISOString(),

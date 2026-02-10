@@ -6,7 +6,7 @@ import { google } from 'googleapis';
  * Call: /.netlify/functions/test-calendar-oauth
  */
 const handler: Handler = async () => {
-  console.log('🧪 Testing Google Calendar OAuth Setup...');
+  console.log('Testing Google Calendar OAuth Setup...');
 
   // Check environment variables
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -16,10 +16,10 @@ const handler: Handler = async () => {
 
   const results = {
     environmentVariables: {
-      GOOGLE_CLIENT_ID: clientId ? '✅ Set' : '❌ Missing',
-      GOOGLE_CLIENT_SECRET: clientSecret ? '✅ Set' : '❌ Missing',
-      GOOGLE_REFRESH_TOKEN: refreshToken ? '✅ Set' : '❌ Missing',
-      GOOGLE_CALENDAR_ID: calendarId ? '✅ Set' : '❌ Missing',
+      GOOGLE_CLIENT_ID: clientId ? 'Set' : 'Missing',
+      GOOGLE_CLIENT_SECRET: clientSecret ? 'Set' : 'Missing',
+      GOOGLE_REFRESH_TOKEN: refreshToken ? 'Set' : 'Missing',
+      GOOGLE_CALENDAR_ID: calendarId ? 'Set' : 'Missing',
     },
     values: {
       clientIdPrefix: clientId ? clientId.substring(0, 20) + '...' : 'MISSING',
@@ -42,8 +42,8 @@ const handler: Handler = async () => {
   }
 
   try {
-    console.log('✅ All OAuth environment variables are set');
-    console.log('📝 Creating OAuth client...');
+    console.log('All OAuth environment variables are set');
+    console.log('Creating OAuth client...');
 
     // Create OAuth client
     const oauth2Client = new google.auth.OAuth2(
@@ -56,11 +56,11 @@ const handler: Handler = async () => {
       refresh_token: refreshToken,
     });
 
-    results.authTest = '✅ OAuth client created successfully';
-    console.log('✅ OAuth client created');
+    results.authTest = 'OAuth client created successfully';
+    console.log('OAuth client created');
 
     // Try to access calendar
-    console.log('📅 Testing calendar API access...');
+    console.log('Testing calendar API access...');
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
     const testCalendarId = calendarId || 'dubai.rent7.0srl@gmail.com';
@@ -73,17 +73,17 @@ const handler: Handler = async () => {
     });
 
     results.calendarTest = {
-      status: '✅ Calendar API access successful!',
+      status: 'Calendar API access successful!',
       calendarId: testCalendarId,
       canReadEvents: true,
     };
 
-    console.log('✅ Calendar API access works!');
+    console.log('Calendar API access works!');
 
     // Try to create a test event
-    console.log('📝 Creating test event...');
+    console.log('Creating test event...');
     const testEvent = {
-      summary: '🧪 TEST - Calendar OAuth Working!',
+      summary: 'TEST - Calendar OAuth Working!',
       description: 'This is a test event to verify OAuth is working. You can delete this.',
       start: {
         dateTime: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour from now
@@ -100,24 +100,24 @@ const handler: Handler = async () => {
       requestBody: testEvent,
     });
 
-    results.calendarTest.testEventCreated = '✅ Test event created successfully!';
+    results.calendarTest.testEventCreated = 'Test event created successfully!';
     results.calendarTest.eventId = createResponse.data.id;
     results.calendarTest.eventLink = createResponse.data.htmlLink;
 
-    console.log('✅ Test event created:', createResponse.data.id);
+    console.log('Test event created:', createResponse.data.id);
 
     return {
       statusCode: 200,
       body: JSON.stringify({
         success: true,
-        message: '✅ Google Calendar OAuth is working perfectly!',
+        message: 'Google Calendar OAuth is working perfectly!',
         results,
         testEventLink: createResponse.data.htmlLink,
       }, null, 2),
     };
 
   } catch (error: any) {
-    console.error('❌ Calendar test failed:', error.message);
+    console.error('Calendar test failed:', error.message);
 
     return {
       statusCode: 500,
