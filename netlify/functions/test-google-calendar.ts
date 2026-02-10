@@ -23,7 +23,7 @@ const handler: Handler = async (event) => {
 
   try {
     // Step 1: Check if all required environment variables are present
-    console.log('📋 Checking environment variables...');
+    console.log('Checking environment variables...');
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
@@ -48,10 +48,10 @@ const handler: Handler = async (event) => {
     }
 
     results.configurationCheck.status = 'PASSED';
-    console.log('✅ All environment variables present');
+    console.log('All environment variables present');
 
     // Step 2: Test OAuth2 client creation and token refresh
-    console.log('🔐 Testing OAuth2 client...');
+    console.log('Testing OAuth2 client...');
     const oauth2Client = new google.auth.OAuth2(
       clientId,
       clientSecret,
@@ -71,14 +71,14 @@ const handler: Handler = async (event) => {
         hasAccessToken: !!credentials.access_token,
         expiryDate: credentials.expiry_date ? new Date(credentials.expiry_date).toISOString() : null,
       };
-      console.log('✅ OAuth2 client working, access token obtained');
+      console.log('OAuth2 client working, access token obtained');
     } catch (tokenError: any) {
       results.connectionTest = {
         status: 'FAILED',
         error: tokenError.message,
         details: 'Refresh token may be expired or invalid',
       };
-      console.error('❌ Failed to refresh access token:', tokenError);
+      console.error('Failed to refresh access token:', tokenError);
       return {
         statusCode: 500,
         headers: { 'Content-Type': 'application/json' },
@@ -87,7 +87,7 @@ const handler: Handler = async (event) => {
     }
 
     // Step 3: Test calendar access by listing calendars
-    console.log('📅 Testing calendar access...');
+    console.log('Testing calendar access...');
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
     try {
@@ -111,9 +111,9 @@ const handler: Handler = async (event) => {
 
       if (!targetCalendar) {
         results.calendarAccessTest.warning = `Target calendar "${calendarId}" not found in accessible calendars`;
-        console.warn(`⚠️ Target calendar "${calendarId}" not found`);
+        console.warn(`Target calendar "${calendarId}" not found`);
       } else {
-        console.log(`✅ Target calendar found with access role: ${targetCalendar.accessRole}`);
+        console.log(`Target calendar found with access role: ${targetCalendar.accessRole}`);
       }
 
     } catch (calendarError: any) {
@@ -122,7 +122,7 @@ const handler: Handler = async (event) => {
         error: calendarError.message,
         details: 'Failed to access Google Calendar API',
       };
-      console.error('❌ Failed to access calendar:', calendarError);
+      console.error('Failed to access calendar:', calendarError);
       return {
         statusCode: 500,
         headers: { 'Content-Type': 'application/json' },
@@ -131,7 +131,7 @@ const handler: Handler = async (event) => {
     }
 
     // All tests passed!
-    console.log('✅ All tests passed!');
+    console.log('All tests passed!');
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -143,7 +143,7 @@ const handler: Handler = async (event) => {
     };
 
   } catch (error: any) {
-    console.error('❌ Unexpected error:', error);
+    console.error('Unexpected error:', error);
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },

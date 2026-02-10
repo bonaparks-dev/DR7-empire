@@ -335,7 +335,7 @@ export default function DynamicCustomerForm({ onSubmit, isAdminMode = false }: D
                   className="btn-search"
                   onClick={cercaPerDenominazione}
                 >
-                  🔍 Cerca
+                  Cerca
                 </button>
               </div>
             </div>
@@ -361,7 +361,7 @@ export default function DynamicCustomerForm({ onSubmit, isAdminMode = false }: D
                   className="btn-search"
                   onClick={cercaPerPartitaIVA}
                 >
-                  🔍 Cerca
+                  Cerca
                 </button>
               </div>
             </div>
@@ -580,7 +580,7 @@ export default function DynamicCustomerForm({ onSubmit, isAdminMode = false }: D
                   className="btn-search"
                   onClick={cercaPerCodiceUnivoco}
                 >
-                  🔍 Cerca
+                  Cerca
                 </button>
               </div>
             </div>
@@ -606,7 +606,7 @@ export default function DynamicCustomerForm({ onSubmit, isAdminMode = false }: D
                   className="btn-search"
                   onClick={cercaPerCodiceFiscale}
                 >
-                  🔍 Cerca
+                  Cerca
                 </button>
               </div>
             </div>
@@ -632,7 +632,7 @@ export default function DynamicCustomerForm({ onSubmit, isAdminMode = false }: D
                   className="btn-search"
                   onClick={cercaPerEnteUfficio}
                 >
-                  🔍 Cerca
+                  Cerca
                 </button>
               </div>
             </div>
@@ -658,7 +658,7 @@ export default function DynamicCustomerForm({ onSubmit, isAdminMode = false }: D
                   className="btn-search"
                   onClick={cercaPerCitta}
                 >
-                  🔍 Cerca
+                  Cerca
                 </button>
               </div>
             </div>

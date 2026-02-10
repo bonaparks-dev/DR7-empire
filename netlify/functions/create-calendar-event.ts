@@ -52,7 +52,7 @@ async function createCalendarEvent(accessToken: string, booking: BookingDetails)
   const endDateTime = `${booking.returnDate}T${booking.returnTime}:00`;
 
   const event = {
-    summary: `🚗 ${booking.vehicleName} - ${booking.customerName}`,
+    summary: `${booking.vehicleName} - ${booking.customerName}`,
     description: `
 Booking Details:
 ━━━━━━━━━━━━━━━

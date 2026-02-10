@@ -366,7 +366,7 @@ const CreditWalletPage: React.FC = () => {
         throw new Error('Failed to save purchase record');
       }
 
-      console.log('✅ Purchase record saved:', data.id);
+      console.log('Purchase record saved:', data.id);
 
       // 2. Generate nexi_order_id
       const nexiOrderId = `DR7${Date.now()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
@@ -394,7 +394,7 @@ const CreditWalletPage: React.FC = () => {
       const nexiData = await nexiResponse.json();
       if (!nexiResponse.ok) throw new Error(nexiData.error || 'Failed to create payment');
 
-      console.log('✅ Nexi payment created, redirecting...');
+      console.log('Nexi payment created, redirecting...');
 
       // 5. Redirect to Nexi HPP
       window.location.href = nexiData.paymentUrl;
@@ -495,7 +495,7 @@ const CreditWalletPage: React.FC = () => {
             className="mb-12"
           >
             <h2 className="text-3xl font-bold text-white text-center mb-6">
-              SCEGLI IL TUO PACCHETTO: 👑
+              SCEGLI IL TUO PACCHETTO:
             </h2>
             <div className="flex flex-wrap justify-center gap-3">
               {series.map((s) => (

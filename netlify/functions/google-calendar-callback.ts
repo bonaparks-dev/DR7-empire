@@ -53,7 +53,7 @@ export const handler: Handler = async (event) => {
         <html>
           <head><title>Google Calendar Authorization</title></head>
           <body style="font-family: sans-serif; padding: 40px; background: #000; color: #fff;">
-            <h1>✅ Authorization Successful!</h1>
+            <h1>Authorization Successful!</h1>
             <p>Copy this refresh token and add it to Netlify environment variables as <code>GOOGLE_REFRESH_TOKEN</code>:</p>
             <pre style="background: #222; padding: 20px; border-radius: 8px; overflow-x: auto;">${tokens.refresh_token}</pre>
             <h3>Steps to complete setup:</h3>

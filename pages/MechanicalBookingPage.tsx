@@ -432,7 +432,7 @@ const MechanicalBookingPage: React.FC = () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            vehicleName: `🔧 ${pendingBookingData.service_name}`,
+            vehicleName: `${pendingBookingData.service_name}`,
             customerName: formData.fullName,
             customerEmail: formData.email,
             customerPhone: formData.phone,
@@ -486,7 +486,7 @@ const MechanicalBookingPage: React.FC = () => {
       const totalPrice = (data.price_total / 100).toFixed(2);
 
       let whatsappMessage = `Ciao! Ho appena prenotato un servizio meccanico sul vostro sito.\n\n` +
-        `📋 *Dettagli Prenotazione*\n` +
+        `*Dettagli Prenotazione*\n` +
         `*ID:* DR7-${bookingId}\n` +
         `*Nome:* ${formData.fullName}\n` +
         `*Telefono:* ${formData.phone}\n` +

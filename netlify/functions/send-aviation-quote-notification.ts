@@ -29,22 +29,22 @@ export const handler: Handler = async (event) => {
     // Format the WhatsApp message
     const flightType = quote.flight_type === 'round_trip' ? 'Andata/Ritorno' : 'Solo Andata';
 
-    const message = `🚁 *NUOVA RICHIESTA PREVENTIVO JET/ELICOTTERO*
+    const message = `*NUOVA RICHIESTA PREVENTIVO JET/ELICOTTERO*
 
-👤 *Cliente:* ${quote.customer_name}
-📧 *Email:* ${quote.customer_email}
-📱 *Tel:* ${quote.customer_phone}
+*Cliente:* ${quote.customer_name}
+*Email:* ${quote.customer_email}
+*Tel:* ${quote.customer_phone}
 
-✈️ *Volo:*
-📍 Da: ${quote.departure_location}
-📍 A: ${quote.arrival_location}
-🔄 Tipo: ${flightType}
-📅 Partenza: ${quote.departure_date}
-👥 Passeggeri: ${quote.passenger_count}
+*Volo:*
+Da: ${quote.departure_location}
+A: ${quote.arrival_location}
+Tipo: ${flightType}
+Partenza: ${quote.departure_date}
+Passeggeri: ${quote.passenger_count}
 
-${quote.notes ? `💬 Note: ${quote.notes}` : ''}
+${quote.notes ? `Note: ${quote.notes}` : ''}
 
-⚡ Rispondi entro 24 ore!`;
+Rispondi entro 24 ore!`;
 
     // Send via CallMeBot
     const encodedMessage = encodeURIComponent(message);
@@ -56,7 +56,7 @@ ${quote.notes ? `💬 Note: ${quote.notes}` : ''}
       throw new Error(`CallMeBot API error: ${response.statusText}`);
     }
 
-    console.log('✅ WhatsApp notification sent for aviation quote');
+    console.log('WhatsApp notification sent for aviation quote');
 
     return {
       statusCode: 200,

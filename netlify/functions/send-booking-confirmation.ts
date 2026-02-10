@@ -8,10 +8,10 @@ const escapeHtml = (str: string | undefined | null): string => {
 };
 
 const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
-  console.log('📧 [send-booking-confirmation] Function invoked');
+  console.log('[send-booking-confirmation] Function invoked');
 
   if (event.httpMethod !== 'POST') {
-    console.error('❌ Invalid HTTP method:', event.httpMethod);
+    console.error('Invalid HTTP method:', event.httpMethod);
     return {
       statusCode: 405,
       body: JSON.stringify({ message: 'Method Not Allowed' }),
@@ -21,14 +21,14 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
   const { booking } = JSON.parse(event.body || '{}');
 
   if (!booking) {
-    console.error('❌ No booking data provided');
+    console.error('No booking data provided');
     return {
       statusCode: 400,
       body: JSON.stringify({ message: 'Booking data is required' }),
     };
   }
 
-  console.log('📋 Processing booking:', {
+  console.log('Processing booking:', {
     id: booking.id,
     service_type: booking.service_type,
     customer_email: booking.customer_email || booking.booking_details?.customer?.email,
@@ -37,14 +37,14 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
   // Check SMTP credentials
   if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
-    console.error('❌ Missing SMTP credentials in environment variables');
+    console.error('Missing SMTP credentials in environment variables');
     return {
       statusCode: 500,
       body: JSON.stringify({ message: 'Email service not configured' }),
     };
   }
 
-  console.log('✅ SMTP credentials found, creating transporter...');
+  console.log('SMTP credentials found, creating transporter...');
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.secureserver.net',
     port: parseInt(process.env.SMTP_PORT || '587'),
@@ -89,10 +89,10 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       timeZone: 'Europe/Rome'
     });
 
-    emailSubject = `🚗 Conferma Prenotazione Autolavaggio #${bookingId.substring(0, 8).toUpperCase()}`;
+    emailSubject = `Conferma Prenotazione Autolavaggio #${bookingId.substring(0, 8).toUpperCase()}`;
     emailHtml = `
       <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #000; border-bottom: 2px solid #000; padding-bottom: 10px;">🚗 Prenotazione Autolavaggio Confermata!</h1>
+        <h1 style="color: #000; border-bottom: 2px solid #000; padding-bottom: 10px;">Prenotazione Autolavaggio Confermata!</h1>
         <p>Gentile ${escapeHtml(customerName)},</p>
         <p>Grazie per aver prenotato il servizio di autolavaggio con DR7 Empire. Ecco il riepilogo del tuo appuntamento:</p>
 
@@ -108,8 +108,8 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
         <h3 style="font-size: 24px;">Totale: ${new Intl.NumberFormat('it-IT', { style: 'currency', currency: currency }).format(totalPrice)}</h3>
 
         <div style="background: #e3f2fd; padding: 15px; border-left: 4px solid #2196f3; margin: 20px 0;">
-          <p style="margin: 0;"><strong>📍 Orari di apertura:</strong> Lunedì - Sabato, 9:00 - 20:00</p>
-          <p style="margin: 5px 0 0 0;"><strong>⚠️</strong> Chiusi la domenica</p>
+          <p style="margin: 0;"><strong>Orari di apertura:</strong> Lunedì - Sabato, 9:00 - 20:00</p>
+          <p style="margin: 5px 0 0 0;"><strong>Nota:</strong> Chiusi la domenica</p>
         </div>
 
         <p style="margin-top: 30px;">Ti aspettiamo al tuo appuntamento!</p>
@@ -142,10 +142,10 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       timeZone: 'Europe/Rome'
     });
 
-    emailSubject = `🔧 Conferma Prenotazione Meccanica #${bookingId.substring(0, 8).toUpperCase()}`;
+    emailSubject = `Conferma Prenotazione Meccanica #${bookingId.substring(0, 8).toUpperCase()}`;
     emailHtml = `
       <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #000; border-bottom: 2px solid #000; padding-bottom: 10px;">🔧 Prenotazione Meccanica Confermata!</h1>
+        <h1 style="color: #000; border-bottom: 2px solid #000; padding-bottom: 10px;">Prenotazione Meccanica Confermata!</h1>
         <p>Gentile ${escapeHtml(customerName)},</p>
         <p>Grazie per aver prenotato il servizio di meccanica con DR7 Empire. Ecco il riepilogo del tuo appuntamento:</p>
 
@@ -163,8 +163,8 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
         <h3 style="font-size: 24px;">Totale: ${new Intl.NumberFormat('it-IT', { style: 'currency', currency: currency }).format(totalPrice)}</h3>
 
         <div style="background: #e3f2fd; padding: 15px; border-left: 4px solid #2196f3; margin: 20px 0;">
-          <p style="margin: 0;"><strong>📍 Orari di apertura:</strong> Lunedì - Sabato, 9:00 - 20:00</p>
-          <p style="margin: 5px 0 0 0;"><strong>⚠️</strong> Chiusi la domenica</p>
+          <p style="margin: 0;"><strong>Orari di apertura:</strong> Lunedì - Sabato, 9:00 - 20:00</p>
+          <p style="margin: 5px 0 0 0;"><strong>Nota:</strong> Chiusi la domenica</p>
         </div>
 
         <p style="margin-top: 30px;">Ti aspettiamo al tuo appuntamento!</p>
@@ -260,7 +260,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
         ${booking.payment_method === 'agency' ? `
           <p style="background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0;">
-            <strong>⚠️ Nota:</strong> Il pagamento sarà effettuato in sede al momento del ritiro del veicolo.
+            <strong>Nota:</strong> Il pagamento sarà effettuato in sede al momento del ritiro del veicolo.
           </p>
         ` : ''}
 
@@ -292,17 +292,17 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
   try {
     // Send email to customer
-    console.log('📤 Sending email to customer:', customerEmail);
+    console.log('Sending email to customer:', customerEmail);
     await transporter.sendMail(customerMailOptions);
-    console.log('✅ Customer email sent successfully to:', customerEmail);
+    console.log('Customer email sent successfully to:', customerEmail);
 
     // Send copy to admin (blocking to catch errors)
     try {
-      console.log('📤 Sending notification to admin: info@dr7.app');
+      console.log('Sending notification to admin: info@dr7.app');
       await transporter.sendMail(adminMailOptions);
-      console.log('✅ Admin notification email sent successfully');
+      console.log('Admin notification email sent successfully');
     } catch (adminError: any) {
-      console.error('❌ Failed to send admin notification:', adminError.message);
+      console.error('Failed to send admin notification:', adminError.message);
       console.error('Admin email error details:', {
         code: adminError.code,
         command: adminError.command,
@@ -313,7 +313,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
     // Create Google Calendar event (non-blocking)
     try {
-      console.log('🗓️ Starting calendar event creation...');
+      console.log('Starting calendar event creation...');
       console.log('Service type:', serviceType);
       console.log('Booking data:', JSON.stringify(booking, null, 2));
 
@@ -324,9 +324,9 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       console.log('Event details formatted:', JSON.stringify(eventDetails, null, 2));
 
       await createCalendarEvent(eventDetails);
-      console.log('✅ Calendar event created successfully');
+      console.log('Calendar event created successfully');
     } catch (calendarError: any) {
-      console.error('❌ Failed to create calendar event:', calendarError);
+      console.error('Failed to create calendar event:', calendarError);
       console.error('Error message:', calendarError.message);
       console.error('Error stack:', calendarError.stack);
       // Don't fail the entire request if calendar creation fails
@@ -337,7 +337,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       body: JSON.stringify({ message: 'Email sent successfully' }),
     };
   } catch (error: any) {
-    console.error('❌ Critical error sending email:', error);
+    console.error('Critical error sending email:', error);
     console.error('Error details:', {
       message: error.message,
       code: error.code,

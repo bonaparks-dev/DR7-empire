@@ -271,13 +271,13 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
 
           // Use cache if less than 24 hours old
           if (age < CACHE_EXPIRY_MS) {
-            console.log(`📦 Loaded ${data.length} vehicles from cache (age: ${Math.round(age / 1000 / 60)}min)`);
+            console.log(`Loaded ${data.length} vehicles from cache (age: ${Math.round(age / 1000 / 60)}min)`);
             setVehicles(data);
             return true;
           }
         }
       } catch (err) {
-        console.warn('⚠️ Failed to load from cache:', err);
+        console.warn('Failed to load from cache:', err);
       }
       return false;
     };
@@ -339,7 +339,7 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
           if (fetchError) {
             // Enhanced error logging with full diagnostics
             const browserInfo = getBrowserInfo();
-            console.error('❌ Error fetching vehicles (detailed diagnostics):', {
+            console.error('Error fetching vehicles (detailed diagnostics):', {
               // Request info
               requestUrl: '[vehicles endpoint]',
               category,
@@ -371,7 +371,7 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
 
             // Retry logic
             if (attemptNumber < maxAttempts - 1) {
-              console.warn(`⚠️ Retrying fetch (attempt ${attemptNumber + 2}/${maxAttempts})...`);
+              console.warn(`Retrying fetch (attempt ${attemptNumber + 2}/${maxAttempts})...`);
               return fetchWithRetry(attemptNumber + 1);
             }
 
@@ -382,7 +382,7 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
         } catch (err: any) {
           // Handle timeout or network errors
           const browserInfo = getBrowserInfo();
-          console.error('❌ Fatal error in fetchVehicles (detailed diagnostics):', {
+          console.error('Fatal error in fetchVehicles (detailed diagnostics):', {
             // Request info
             requestUrl: '[vehicles endpoint]',
             category,
@@ -412,7 +412,7 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
 
           // Retry logic for network errors
           if (attemptNumber < maxAttempts - 1) {
-            console.warn(`⚠️ Retrying fetch after error (attempt ${attemptNumber + 2}/${maxAttempts})...`);
+            console.warn(`Retrying fetch after error (attempt ${attemptNumber + 2}/${maxAttempts})...`);
             return fetchWithRetry(attemptNumber + 1);
           }
 
@@ -482,7 +482,7 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
           }
         });
 
-        console.log(`✅ Successfully fetched ${finalVehicles.length} vehicles (category: ${category || 'all'})`);
+        console.log(`Successfully fetched ${finalVehicles.length} vehicles (category: ${category || 'all'})`);
 
         // Save to cache
         try {
@@ -491,14 +491,14 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
             timestamp: Date.now()
           }));
         } catch (err) {
-          console.warn('⚠️ Failed to save to cache:', err);
+          console.warn('Failed to save to cache:', err);
         }
 
         setVehicles(finalVehicles);
         setError(null);
         setUsingCache(false);
       } catch (err) {
-        console.error('❌ Fatal error in fetchVehicles:', {
+        console.error('Fatal error in fetchVehicles:', {
           error: err,
           errorMessage: (err as Error).message,
           errorName: (err as Error).name,
@@ -511,7 +511,7 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
           // If we have cache, use it and mark as using cache
           if (hasCache) {
             setUsingCache(true);
-            console.log('📦 Using cached vehicles due to fetch error');
+            console.log('Using cached vehicles due to fetch error');
           }
         }
       } finally {
