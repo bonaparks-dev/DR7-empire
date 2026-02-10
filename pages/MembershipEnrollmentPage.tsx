@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import React, { useState, useMemo } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { useAuth } from '../hooks/useAuth';
-import { MEMBERSHIP_TIERS, CRYPTO_ADDRESSES } from '../constants';
+import { MEMBERSHIP_TIERS } from '../constants';
 // Nexi payment - no Stripe imports needed
 // Credit wallet disabled for membership purchases - card only
 import { supabase } from '../supabaseClient';
@@ -14,15 +14,13 @@ import { supabase } from '../supabaseClient';
 const MembershipEnrollmentPage: React.FC = () => {
     const { tierId } = useParams<{ tierId: string }>();
     const [searchParams] = useSearchParams();
-    const navigate = useNavigate();
 
     const { t, lang } = useTranslation();
     const { currency } = useCurrency();
-    const { user, updateUser } = useAuth();
+    const { user } = useAuth();
 
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>(searchParams.get('billing') === 'monthly' ? 'monthly' : 'annually');
     const [isProcessing, setIsProcessing] = useState(false);
-    const [isConfirmed, setIsConfirmed] = useState(false);
     const [paymentError, setPaymentError] = useState<string | null>(null);
 
     const tier = useMemo(() => MEMBERSHIP_TIERS.find(t => t.id === tierId), [tierId]);
@@ -50,7 +48,7 @@ const MembershipEnrollmentPage: React.FC = () => {
         }
 
         try {
-            // 1. Save membership purchase as pending
+            // 1. Save membership purchase as pending (with recurring flag)
             const { data: purchaseData, error: dbError } = await supabase
                 .from('membership_purchases')
                 .insert({
@@ -62,6 +60,8 @@ const MembershipEnrollmentPage: React.FC = () => {
                     currency: currency.toUpperCase(),
                     payment_method: 'nexi',
                     payment_status: 'pending',
+                    is_recurring: true,
+                    subscription_status: 'active',
                     renewal_date: new Date(Date.now() + (billingCycle === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000).toISOString()
                 })
                 .select()
@@ -93,7 +93,9 @@ const MembershipEnrollmentPage: React.FC = () => {
                     currency: 'EUR',
                     description: `Membership ${tier.name[lang]} - ${billingCycle}`,
                     customerEmail: user.email,
-                    customerName: user.fullName
+                    customerName: user.fullName,
+                    recurringType: 'MIT_SCHEDULED',
+                    billingCycle: billingCycle,
                 })
             });
 
@@ -108,83 +110,10 @@ const MembershipEnrollmentPage: React.FC = () => {
         }
     };
 
-    const finalizeEnrollment = async () => {
-        if (!tier || !user?.id) return;
-        const renewalDate = new Date();
-        if (billingCycle === 'monthly') renewalDate.setMonth(renewalDate.getMonth() + 1);
-        else renewalDate.setFullYear(renewalDate.getFullYear() + 1);
-
-        // Update user's membership status
-        await updateUser({
-            membership: {
-                tierId: tier.id,
-                billingCycle: billingCycle,
-                renewalDate: renewalDate.toISOString()
-            }
-        });
-
-        // Save purchase record to database
-        const { error: purchaseError } = await supabase
-            .from('membership_purchases')
-            .insert({
-                user_id: user.id,
-                tier_id: tier.id,
-                tier_name: tier.name[lang],
-                billing_cycle: billingCycle,
-                price: price,
-                currency: currency.toUpperCase(),
-                payment_method: 'nexi',
-                payment_status: 'completed',
-                renewal_date: renewalDate.toISOString()
-            });
-
-        if (purchaseError) {
-            console.error('Error saving membership purchase:', purchaseError);
-            // Don't block the user, just log the error
-        }
-
-        // Generate WhatsApp message for membership enrollment
-        const tierName = tier.name[lang];
-        const billingText = billingCycle === 'monthly' ? (lang === 'it' ? 'Mensile' : 'Monthly') : (lang === 'it' ? 'Annuale' : 'Annual');
-        const renewalDateFormatted = renewalDate.toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-
-        let message = `Ciao! Mi sono appena iscritto al DR7 Club.\n\n`;
-        message += `Membership: ${tierName}\n`;
-        message += `Piano: ${billingText}\n`;
-        message += `Prezzo: ${formatPrice(price)}\n`;
-        message += `Data rinnovo: ${renewalDateFormatted}\n\n`;
-        if (user) {
-            message += `Nome: ${user.fullName || ''}\n`;
-            message += `Email: ${user.email || ''}\n\n`;
-        }
-        message += `Grazie!`;
-
-        const whatsappUrl = `https://wa.me/393457905205?text=${encodeURIComponent(message)}`;
-        setTimeout(() => {
-            window.open(whatsappUrl, '_blank');
-        }, 1000);
-
-        setIsProcessing(false);
-        setIsConfirmed(true);
-    };
+    // finalizeEnrollment removed — membership activation is handled by nexi-callback
+    // which updates user metadata via supabase.auth.admin.updateUserById()
 
     if (!tier) return <div className="pt-32 text-center text-white">Membership tier not found.</div>;
-
-    if (isConfirmed) {
-        return (
-            <div className="pt-32 pb-24 bg-black min-h-screen flex items-center justify-center">
-                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center text-white p-8">
-                    <h1 className="text-5xl font-bold mb-4">{t('Welcome_to_the_Club')}</h1>
-                    <p className="text-lg text-gray-300 mb-8">{t('Your_membership_is_now_active')}</p>
-                    <button onClick={() => navigate('/account/membership')} className="bg-white text-black font-bold py-3 px-8 rounded-full">{t('Go_to_Dashboard')}</button>
-                </motion.div>
-            </div>
-        )
-    }
 
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pt-32 pb-24 bg-black min-h-screen">
@@ -206,6 +135,14 @@ const MembershipEnrollmentPage: React.FC = () => {
                             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
                                 <p className="text-gray-300 mb-2">Verrai reindirizzato alla pagina di pagamento sicura Nexi</p>
                                 <p className="text-gray-400 text-sm">Pagamento protetto e certificato</p>
+                            </div>
+                            <div className="bg-blue-900/30 border border-blue-800/50 rounded-lg p-4 mt-3">
+                                <p className="text-blue-300 text-xs">
+                                    {lang === 'it'
+                                        ? `Abbonamento con rinnovo automatico ${billingCycle === 'monthly' ? 'mensile' : 'annuale'}. Puoi cancellare in qualsiasi momento dalla tua area personale.`
+                                        : `Auto-renewing ${billingCycle === 'monthly' ? 'monthly' : 'annual'} subscription. You can cancel anytime from your account page.`
+                                    }
+                                </p>
                             </div>
                             {paymentError && <p className="text-xs text-red-400 mt-2">{paymentError}</p>}
                         </div>

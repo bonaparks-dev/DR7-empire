@@ -87,6 +87,8 @@ export interface User {
     tierId: string;
     billingCycle: 'monthly' | 'annually';
     renewalDate: string;
+    isRecurring?: boolean;
+    subscriptionStatus?: 'active' | 'cancelled' | 'renewal_failed';
   };
   verification: {
     idStatus: 'unverified' | 'pending' | 'verified';
