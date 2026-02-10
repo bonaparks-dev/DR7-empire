@@ -48,7 +48,7 @@ const MembershipEnrollmentPage: React.FC = () => {
         }
 
         try {
-            // 1. Save membership purchase as pending (with recurring flag)
+            // 1. Save membership purchase as pending
             const { data: purchaseData, error: dbError } = await supabase
                 .from('membership_purchases')
                 .insert({
@@ -60,7 +60,6 @@ const MembershipEnrollmentPage: React.FC = () => {
                     currency: currency.toUpperCase(),
                     payment_method: 'nexi',
                     payment_status: 'pending',
-                    is_recurring: true,
                     subscription_status: 'active',
                     renewal_date: new Date(Date.now() + (billingCycle === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000).toISOString()
                 })
@@ -94,8 +93,6 @@ const MembershipEnrollmentPage: React.FC = () => {
                     description: `Membership ${tier.name[lang]} - ${billingCycle}`,
                     customerEmail: user.email,
                     customerName: user.fullName,
-                    recurringType: 'MIT_SCHEDULED',
-                    billingCycle: billingCycle,
                 })
             });
 
@@ -139,14 +136,6 @@ const MembershipEnrollmentPage: React.FC = () => {
                             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
                                 <p className="text-gray-300 mb-2">Verrai reindirizzato alla pagina di pagamento sicura Nexi</p>
                                 <p className="text-gray-400 text-sm">Pagamento protetto e certificato</p>
-                            </div>
-                            <div className="bg-blue-900/30 border border-blue-800/50 rounded-lg p-4 mt-3">
-                                <p className="text-blue-300 text-xs">
-                                    {lang === 'it'
-                                        ? `Abbonamento con rinnovo automatico ${billingCycle === 'monthly' ? 'mensile' : 'annuale'}. Puoi cancellare in qualsiasi momento dalla tua area personale.`
-                                        : `Auto-renewing ${billingCycle === 'monthly' ? 'monthly' : 'annual'} subscription. You can cancel anytime from your account page.`
-                                    }
-                                </p>
                             </div>
                             {paymentError && <p className="text-xs text-red-400 mt-2">{paymentError}</p>}
                         </div>
