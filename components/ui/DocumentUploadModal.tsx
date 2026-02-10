@@ -32,8 +32,16 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ isOpen, onClo
       formData.append('userId', userId);
       formData.append('prefix', prefix);
 
+      // Get auth token for authenticated upload
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = {};
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch(`${FUNCTIONS_BASE}/.netlify/functions/upload-file`, {
         method: 'POST',
+        headers,
         body: formData,
       });
 

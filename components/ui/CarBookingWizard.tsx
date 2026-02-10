@@ -374,14 +374,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           // Only show blue box if there are actual busy periods (not just "fully available")
           const busyIntervals = data.busyIntervals || [];
           setHasBusyPeriods(busyIntervals.length > 0);
-          console.log('✅ Fetched availability windows:', data);
-          console.log('✅ Filtered windows (excluded after-hours same-day):', filteredWindows);
-          console.log('✅ Has busy periods:', busyIntervals.length > 0);
+          console.log('Fetched availability windows:', data);
+          console.log('Filtered windows (excluded after-hours same-day):', filteredWindows);
+          console.log('Has busy periods:', busyIntervals.length > 0);
         } else {
-          console.error('❌ Failed to fetch availability windows:', response.status);
+          console.error('Failed to fetch availability windows:', response.status);
         }
       } catch (error) {
-        console.error('❌ Error fetching availability windows:', error);
+        console.error('Error fetching availability windows:', error);
       } finally {
         setIsLoadingWindows(false);
       }
@@ -404,7 +404,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           const isChrome = /Chrome/.test(ua) && /Google Inc/.test(navigator.vendor);
           const isSafari = /Safari/.test(ua) && /Apple Computer/.test(navigator.vendor);
 
-          console.error('❌ Error fetching credit balance (detailed diagnostics):', {
+          console.error('Error fetching credit balance (detailed diagnostics):', {
             // Request info
             requestUrl: '[credit balance endpoint]',
             userId: user.id,
@@ -807,7 +807,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             const isChrome = /Chrome/.test(ua) && /Google Inc/.test(navigator.vendor);
             const isSafari = /Safari/.test(ua) && /Apple Computer/.test(navigator.vendor);
 
-            console.warn('⚠️ Unable to fetch customer data from customers_extended (detailed diagnostics):', {
+            console.warn('Unable to fetch customer data from customers_extended (detailed diagnostics):', {
               // Request info
               requestUrl: '[customers_extended endpoint]',
               userId: user.id,
@@ -859,7 +859,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           licenseIssueDate: customerData.metadata?.patente_data_rilascio || prev.licenseIssueDate,
         }));
 
-        console.log('✅ Autofilled form with user profile data');
+        console.log('Autofilled form with user profile data');
 
       } catch (err) {
         // Enhanced error logging with full diagnostics
@@ -867,7 +867,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const isChrome = /Chrome/.test(ua) && /Google Inc/.test(navigator.vendor);
         const isSafari = /Safari/.test(ua) && /Apple Computer/.test(navigator.vendor);
 
-        console.error('❌ Error autofilling user data (detailed diagnostics):', {
+        console.error('Error autofilling user data (detailed diagnostics):', {
           // Request info
           requestUrl: '[customers_extended endpoint]',
           userId: user.id,
@@ -1077,7 +1077,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA' || userResidencyZone === 'RESIDENTE_CA' || userResidencyZone === 'RESIDENTE_SU';
 
       // Debug logging for pricing
-      console.log('🏷️ Pricing Debug:', {
+      console.log('Pricing Debug:', {
         userResidencyZone,
         isResidentInDB: isResident,
         usageZone: formData.usageZone,
@@ -1091,13 +1091,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // when they select "Cagliari e Sud Sardegna" usage zone
       if (formData.usageZone === 'CAGLIARI_SUD') {
         pricePerDay = item.priceResidentDaily;
-        console.log('✅ Applied RESIDENT pricing (based on usage zone selection):', pricePerDay);
+        console.log('Applied RESIDENT pricing (based on usage zone selection):', pricePerDay);
       } else {
         // All other cases use non-resident pricing:
         // - FUORI_ZONA selected
         // - No zone selected yet (defaults to non-resident)
         pricePerDay = item.priceNonresidentDaily;
-        console.log('📍 Applied NON-RESIDENT pricing:', pricePerDay);
+        console.log('Applied NON-RESIDENT pricing:', pricePerDay);
       }
     }
 
@@ -1346,7 +1346,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA' || userResidencyZone === 'RESIDENTE_CA' || userResidencyZone === 'RESIDENTE_SU';
     const vType = getVehicleType(item, categoryContext);
 
-    console.log('🏠 Usage Zone Auto-Set Check:', {
+    console.log('Usage Zone Auto-Set Check:', {
       userExists: !!user,
       userId: user?.id,
       userResidencyZone,
@@ -1360,18 +1360,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (vType !== 'SUPERCAR') {
       // Utility vehicles (UTILITARIA, FURGONE, V_CLASS) always use FUORI_ZONA
       if (formData.usageZone !== 'FUORI_ZONA') {
-        console.log('✅ Auto-setting usageZone to FUORI_ZONA for utility vehicle');
+        console.log('Auto-setting usageZone to FUORI_ZONA for utility vehicle');
         setFormData(prev => ({ ...prev, usageZone: 'FUORI_ZONA' }));
       }
     } else {
       // SUPERCAR: Default to CAGLIARI_SUD for residents if not already set
       if (isResident && !formData.usageZone) {
-        console.log('✅ Auto-setting usageZone to CAGLIARI_SUD for resident user with supercar');
+        console.log('Auto-setting usageZone to CAGLIARI_SUD for resident user with supercar');
         setFormData(prev => ({ ...prev, usageZone: 'CAGLIARI_SUD' }));
       } else if (!isResident && !formData.usageZone) {
-        console.log('ℹ️ Non-resident user with supercar - usageZone will remain empty until manually selected');
+        console.log('Non-resident user with supercar - usageZone will remain empty until manually selected');
       } else if (formData.usageZone) {
-        console.log(`ℹ️ usageZone already set to: ${formData.usageZone}`);
+        console.log(`usageZone already set to: ${formData.usageZone}`);
       }
     }
   }, [user, formData.usageZone, item, categoryContext]);
@@ -1486,7 +1486,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
       const dayOfWeek = getDayOfWeek(value);
       if (dayOfWeek === 0) {
-        setErrors(prev => ({ ...prev, pickupDate: "Le prenotazioni non sono disponibili la domenica." }));
+        setErrors(prev => ({ ...prev, pickupDate: "Siamo chiusi la domenica. Seleziona un altro giorno per il ritiro." }));
       } else {
         setErrors(prev => ({ ...prev, pickupDate: "" }));
       }
@@ -1519,6 +1519,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       const retH = String(Math.floor(retMinutes / 60)).padStart(2, '0');
       const retM = String(retMinutes % 60).padStart(2, '0');
       setFormData(prev => ({ ...prev, returnTime: `${retH}:${retM}` }));
+    }
+
+    // Immediate Sunday check when return date is selected
+    if (name === 'returnDate' && value) {
+      const dayOfWeek = getDayOfWeek(value);
+      if (dayOfWeek === 0) {
+        setErrors(prev => ({ ...prev, returnDate: "Siamo chiusi la domenica. Seleziona un altro giorno per la riconsegna." }));
+      } else {
+        setErrors(prev => ({ ...prev, returnDate: '' }));
+      }
     }
 
     // Clear generic date error (duration, min rental) if any date/time field changes
@@ -1600,8 +1610,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       body.append('userId', userId);
       body.append('prefix', prefix);
 
+      // Get auth token for authenticated upload
+      const { data: { session } } = await supabase.auth.getSession();
+      const uploadHeaders: Record<string, string> = {};
+      if (session?.access_token) {
+        uploadHeaders['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/upload-file`, {
         method: 'POST',
+        headers: uploadHeaders,
         body,
       });
 
@@ -1696,7 +1714,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         // Check Sunday drop-off (CLOSED)
         const returnDayOfWeek = getDayOfWeek(formData.returnDate);
         if (returnDayOfWeek === 0) { // Sunday = 0
-          newErrors.returnDate = "Non è possibile riconsegnare il veicolo di domenica. Siamo chiusi. Seleziona un altro giorno.";
+          newErrors.returnDate = "Siamo chiusi la domenica. Seleziona un altro giorno per la riconsegna.";
         }
 
         // Check Saturday drop-off time limits
@@ -1744,7 +1762,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         }
       }
       if (formData.pickupDate && getDayOfWeek(formData.pickupDate) === 0) {
-        newErrors.pickupDate = "Le prenotazioni non sono disponibili la domenica.";
+        newErrors.pickupDate = "Siamo chiusi la domenica. Seleziona un altro giorno per il ritiro.";
       }
 
       // Check if there's an availability error
@@ -2037,7 +2055,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const insuranceOption = data.insurance_option || data.booking_details?.insuranceOption || 'Nessuna';
 
         const whatsappMessage = `Ciao! Ho appena completato una prenotazione sul vostro sito.\n\n` +
-          `📋 *Dettagli Prenotazione*\n` +
+          `*Dettagli Prenotazione*\n` +
           `*ID:* DR7-${bookingId}\n` +
           `*Nome:* ${customerName}\n` +
           `*Telefono:* ${customerPhone}\n` +
@@ -2410,7 +2428,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           const totalPrice = finalPriceWithBirthdayDiscount.toFixed(2);
 
           const whatsappMessage = `Ciao! Ho appena completato una prenotazione con Credito DR7.\n\n` +
-            `📋 *Dettagli Prenotazione*\n` +
+            `*Dettagli Prenotazione*\n` +
             `*ID:* DR7-${bookingId}\n` +
             `*Nome:* ${customerName}\n` +
             `*Telefono:* ${customerPhone}\n` +
@@ -2993,7 +3011,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
             {/* Document Upload */}
             <section className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-bold text-white mb-4">📄 DOCUMENTI RICHIESTI (OBBLIGATORI)</h3>
+              <h3 className="text-lg font-bold text-white mb-4">DOCUMENTI RICHIESTI (OBBLIGATORI)</h3>
 
               {/* Check if documents are already on file */}
               {(hasStoredDocs.licensePath && hasStoredDocs.idPath) ? (
@@ -3213,7 +3231,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             <section>
               <h3 className="text-lg font-bold text-white mb-4">A. ASSICURAZIONE INCLUSA</h3>
               <div className="p-4 bg-green-900/20 border border-green-600 rounded-lg">
-                <p className="text-green-300 font-semibold">✅ KASKO inclusa automaticamente nel prezzo</p>
+                <p className="text-green-300 font-semibold">KASKO inclusa automaticamente nel prezzo</p>
                 <p className="text-sm text-gray-400 mt-2">Copertura completa KASKO per tutti i veicoli</p>
               </div>
             </section>
@@ -3229,7 +3247,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 {!formData.depositOption && (
                   <div className="p-3 bg-amber-900/20 border border-amber-500/50 rounded-lg mb-3">
                     <p className="text-amber-300 text-sm font-medium">
-                      ⚠ Seleziona un'opzione per la cauzione per continuare
+                      Seleziona un'opzione per la cauzione per continuare
                     </p>
                   </div>
                 )}
@@ -3431,7 +3449,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     {user && ((user as any)?.residencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA' || (user as any)?.residencyZone === 'RESIDENTE_CA' || (user as any)?.residencyZone === 'RESIDENTE_SU') && item.priceResidentDaily && item.priceNonresidentDaily && (
                       <div className="ml-7 mt-2 p-2 bg-yellow-900/20 border border-yellow-600/50 rounded">
                         <p className="text-yellow-300 text-xs font-semibold">
-                          ⚠️ Selezionando questa opzione, si applica la tariffa non residente: €{item.priceNonresidentDaily}/giorno invece di €{item.priceResidentDaily}/giorno
+                          Attenzione: Selezionando questa opzione, si applica la tariffa non residente: €{item.priceNonresidentDaily}/giorno invece di €{item.priceResidentDaily}/giorno
                         </p>
                       </div>
                     )}
@@ -3441,7 +3459,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {usageZoneError && (
                     <div className="mt-3 p-4 bg-red-900/30 border-2 border-red-500 rounded-lg">
                       <p className="text-red-300 font-semibold text-sm">
-                        ⚠️ {usageZoneError}
+                        {usageZoneError}
                       </p>
                     </div>
                   )}
@@ -3449,7 +3467,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {/* Validation error if no zone selected */}
                   {errors.usageZone && (
                     <p className="text-xs text-red-400 mt-2 flex items-center">
-                      <span className="mr-1">⚠️</span> {errors.usageZone}
+                      {errors.usageZone}
                     </p>
                   )}
                 </div>
@@ -3912,7 +3930,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       </p>
                       <div className="bg-yellow-900/20 border border-yellow-600/50 rounded-lg p-3 sm:p-4">
                         <p className="text-yellow-300 text-xs sm:text-sm font-semibold mb-2">
-                          ⚠️ LIMITAZIONI GEOGRAFICHE
+                          LIMITAZIONI GEOGRAFICHE
                         </p>
                         <p className="text-yellow-100 text-xs sm:text-sm">
                           Il veicolo è autorizzato <strong>SOLO</strong> all'interno dell'area di Cagliari e provincia del Sud Sardegna. L'utilizzo al di fuori di questa zona comporterà:
