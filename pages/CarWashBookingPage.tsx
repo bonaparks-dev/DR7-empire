@@ -374,7 +374,7 @@ const CarWashBookingPage: React.FC = () => {
         ]
       : [
           '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00',
-          '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00'
+          '15:00', '15:30', '16:00', '16:30', '17:00', '17:30'
         ];
 
     // Parse selected date as local date to avoid timezone issues
@@ -422,10 +422,11 @@ const CarWashBookingPage: React.FC = () => {
         return startMinutes >= 9 * 60 && endMinutes <= 17 * 60;
       }
 
-      // Weekdays: split schedule — morning 9:00-12:00, afternoon 15:00-18:00
+      // Weekdays: split schedule — morning 9:00-12:00, afternoon 15:00-17:30
+      // Last bookable slot is 17:30 regardless of service duration
 
       // For 2.5-hour services (€99 - LAVAGGIO DR7 LUXURY), only allow specific time slots
-      // dalle 9:00 alle 10:30 or dalle 15:00 alle 16:30
+      // dalle 9:00 alle 10:30 or dalle 15:00 alle 15:00
       if (durationHours >= 2.5) {
         return startMinutes === 9 * 60 || startMinutes === 15 * 60;
       }
@@ -433,7 +434,7 @@ const CarWashBookingPage: React.FC = () => {
       // For 0.75-hour services (45 min - €25 LAVAGGIO COMPLETO), allow booking throughout the day
       if (durationHours <= 0.75) {
         if (startMinutes >= 9 * 60 && startMinutes <= 12 * 60) return true;
-        if (startMinutes >= 15 * 60 && startMinutes <= 18 * 60) return true;
+        if (startMinutes >= 15 * 60 && startMinutes <= 17 * 60 + 30) return true;
         return false;
       }
 
@@ -441,8 +442,8 @@ const CarWashBookingPage: React.FC = () => {
       if (durationHours === 1.5) {
         // Morning: 9:00 to 10:30 (ends by 12:00)
         if (startMinutes >= 9 * 60 && startMinutes <= 10 * 60 + 30) return true;
-        // Afternoon: 15:00 to 16:30 (ends by 18:00)
-        if (startMinutes >= 15 * 60 && startMinutes <= 16 * 60 + 30) return true;
+        // Afternoon: 15:00 to 17:30
+        if (startMinutes >= 15 * 60 && startMinutes <= 17 * 60 + 30) return true;
         return false;
       }
 
@@ -450,8 +451,8 @@ const CarWashBookingPage: React.FC = () => {
       if (durationHours === 2) {
         // Morning: 9:00 to 10:00 (ends by 12:00)
         if (startMinutes >= 9 * 60 && startMinutes <= 10 * 60) return true;
-        // Afternoon: 15:00 to 16:00 (ends by 18:00)
-        if (startMinutes >= 15 * 60 && startMinutes <= 16 * 60) return true;
+        // Afternoon: 15:00 to 17:30
+        if (startMinutes >= 15 * 60 && startMinutes <= 17 * 60 + 30) return true;
         return false;
       }
 
