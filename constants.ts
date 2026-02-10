@@ -1,5 +1,5 @@
 import React from 'react';
-import type { RentalCategory, MembershipTier, CommercialOperation, Amenity } from './types';
+import type { RentalCategory, MembershipTier, Amenity } from './types';
 // FIX: Consolidate and correct icon imports
 import {
   UsersIcon,
@@ -24,7 +24,6 @@ import {
   ClockIcon,
   DevicePhoneMobileIcon,
   CubeTransparentIcon,
-  TicketIcon,
   HelicopterIcon,
   SparklesIcon,
 } from './components/icons/Icons';
@@ -520,25 +519,6 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
   },
 ];
 
-export const COMMERCIAL_OPERATION_GIVEAWAY: CommercialOperation = {
-  id: 'christmas-2024',
-  name: { en: 'DR7 Official Lottery', it: 'DR7 Official Lottery' },
-  subtitle: { en: 'Win an Alfa Romeo Stelvio Quadrifoglio', it: 'Vinci un\'Alfa Romeo Stelvio Quadrifoglio' },
-  image: '/main.jpeg',
-  ticketPriceEUR: 25,
-  drawDate: '2026-01-24T09:00:00Z',
-  prizes: [
-    {
-      tier: { en: 'Grand Prize', it: 'Premio Unico' },
-      name: { en: 'Alfa Romeo Stelvio Quadrifoglio', it: 'Alfa Romeo Stelvio Quadrifoglio' },
-      icon: CarIcon,
-    }
-  ],
-  bonus: {
-    en: 'Only 2,000 tickets available. Drawing supervised by lawyer. Full transparency guaranteed.',
-    it: 'Solo 2.000 biglietti disponibili. Estrazione supervisionata da avvocato. Trasparenza totale garantita.',
-  },
-};
 
 export const PICKUP_LOCATIONS = [
   { id: 'dr7_office', label: { en: 'DR7 Office (Viale Marconi, 229, 09131 Cagliari CA)', it: 'Viale Marconi, 229, 09131 Cagliari CA' } },

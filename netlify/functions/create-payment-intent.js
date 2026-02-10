@@ -10,7 +10,7 @@ const createResponse = (statusCode, body) => ({
   statusCode,
   headers: {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || 'https://dr7empire.com',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   },
@@ -23,7 +23,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 204,
       headers: {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || 'https://dr7empire.com',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
       },
@@ -64,25 +64,12 @@ exports.handler = async (event) => {
 
     const metadata = {
         email: email,
-        purchaseType: 'commercial-operation-ticket'
     };
-
-    const isEurVoucher = amountInCents === 2000 && currency.toLowerCase() === 'eur';
-    const isUsdVoucher = amountInCents === 2360 && currency.toLowerCase() === 'usd';
-
-    // If the purchase is for a 20 EUR or $23.60 USD ticket, flag it for a voucher.
-    if (isEurVoucher || isUsdVoucher) {
-        metadata.generateVoucher = 'true';
-        metadata.voucherValue = '2500'; // The 25€ voucher value in cents
-    }
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
       currency: currency.toLowerCase(),
-      metadata: metadata
-      // The `automatic_payment_methods` parameter is removed.
-      // This creates a standard Payment Intent that is compatible with
-      // the `confirmCardPayment` method used on the frontend.
+      metadata: metadata,
     });
 
     return createResponse(200, { clientSecret: paymentIntent.client_secret });

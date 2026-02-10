@@ -154,8 +154,7 @@ After backend is working, you'll need to update these pages:
 
 ### Pages to Update
 
-1. **CommercialOperationPage.tsx** - Lottery ticket purchases
-2. **CarWashBookingPage.tsx** - Car wash bookings
+1. **CarWashBookingPage.tsx** - Car wash bookings
 3. **MechanicalBookingPage.tsx** - Mechanical service bookings
 4. **RentalPage.tsx** - Car rental bookings
 

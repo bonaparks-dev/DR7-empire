@@ -28,7 +28,6 @@ EAFnnIPzu6F8BP7cZCZBsTHyhScVXe7MCSoUQBddTfpS65aEM6kIuw7lRQpY8FiuV2IXA4sB0fQOzgGE
 ## What Triggers Notifications
 - ✅ Car rental bookings
 - ✅ Car wash service bookings
-- ✅ Ticket purchases (7 MILIONI DI EURO giveaway)
 
 ## Finding Your Credentials
 

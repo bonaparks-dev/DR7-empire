@@ -22,6 +22,7 @@ import { checkVehicleAvailability, checkVehiclePartialUnavailability, checkGroup
 import { getUserCreditBalance, deductCredits, hasSufficientBalance } from '../../utils/creditWallet';
 import { calculateDiscountedPrice, getMembershipTierName } from '../../utils/membershipDiscounts';
 import { roundToTwoDecimals, eurosToCents, roundToWholeEuros } from '../../utils/pricing';
+import { fetchWithTimeout } from '../../utils/fetchWithTimeout';
 
 const FUNCTIONS_BASE =
   import.meta.env.VITE_FUNCTIONS_BASE ??
@@ -96,6 +97,20 @@ const calculateYearsSince = (dateString: string): number => {
   return years < 0 ? 0 : years;
 };
 
+const createItalyDateTime = (dateStr: string, timeStr: string) => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  const checkDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+  const italyFormatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Rome',
+    hour: '2-digit',
+    hour12: false
+  });
+  const italyNoonHour = parseInt(italyFormatter.format(checkDate));
+  const italyOffset = italyNoonHour - 12;
+  return new Date(Date.UTC(year, month - 1, day, hours - italyOffset, minutes, 0, 0));
+};
+
 // === Km inclusi per durata ===
 // 1gg=100, 2gg=180, 3gg=240, 4gg=280, 5gg=300, dal 5° giorno in poi +60/giorno
 const calculateIncludedKm = (days: number) => {
@@ -168,6 +183,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         birthDate: '',
         licenseNumber: '',
         licenseIssueDate: '',
+        licenseExpiryDate: '',
+        countryOfIssue: '',
         licenseImage: null as File | string | null,
         idImage: null as File | string | null,
       },
@@ -291,7 +308,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(`${FUNCTIONS_BASE}/.netlify/functions/health`, { method: 'GET' });
+        const res = await fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/health`, { method: 'GET' });
         if (!res.ok) console.warn('Functions health not OK:', res.status, res.statusText);
         else console.log('Functions health: OK');
       } catch (e) {
@@ -310,7 +327,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
       setIsLoadingWindows(true);
       try {
-        const response = await fetch(`${FUNCTIONS_BASE}/.netlify/functions/getAvailabilityWindows`, {
+        const response = await fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/getAvailabilityWindows`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -389,7 +406,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
           console.error('❌ Error fetching credit balance (detailed diagnostics):', {
             // Request info
-            requestUrl: `https://ahpmzjgkfxrrgxyirasa.supabase.co/rest/v1/user_credit_balance?select=balance&user_id=eq.${user.id}`,
+            requestUrl: '[credit balance endpoint]',
             userId: user.id,
 
             // Error details
@@ -792,7 +809,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
             console.warn('⚠️ Unable to fetch customer data from customers_extended (detailed diagnostics):', {
               // Request info
-              requestUrl: `https://ahpmzjgkfxrrgxyirasa.supabase.co/rest/v1/customers_extended?select=*&user_id=eq.${user.id}`,
+              requestUrl: '[customers_extended endpoint]',
               userId: user.id,
 
               // Error details
@@ -852,7 +869,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
         console.error('❌ Error autofilling user data (detailed diagnostics):', {
           // Request info
-          requestUrl: `https://ahpmzjgkfxrrgxyirasa.supabase.co/rest/v1/customers_extended?select=*&user_id=eq.${user.id}`,
+          requestUrl: '[customers_extended endpoint]',
           userId: user.id,
 
           // Error details
@@ -1484,6 +1501,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           [secondDriverField]: isFile ? (e.target as HTMLInputElement).files?.[0] || null : (isCheckbox ? (e.target as HTMLInputElement).checked : value),
         }
       }));
+      // Clear second driver field error
+      const errorKey = `secondDriver.${secondDriverField}`;
+      if (errors[errorKey]) setErrors(prev => ({ ...prev, [errorKey]: '' }));
     } else {
       setFormData(prev => ({
         ...prev,
@@ -1580,7 +1600,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       body.append('userId', userId);
       body.append('prefix', prefix);
 
-      const response = await fetch(`${FUNCTIONS_BASE}/.netlify/functions/upload-file`, {
+      const response = await fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/upload-file`, {
         method: 'POST',
         body,
       });
@@ -1788,8 +1808,21 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           newErrors['secondDriver.licenseIssueDate'] = "Data rilascio patente obbligatoria.";
         } else {
           const sdLicenseYears = calculateYearsSince(sd.licenseIssueDate);
-          if (sdLicenseYears < 3) newErrors['secondDriver.licenseIssueDate'] = "È richiesta una patente con almeno 3 anni di anzianità.";
+          if (sdLicenseYears < requiredYears) {
+            newErrors['secondDriver.licenseIssueDate'] = isBMW_M4
+              ? "Per la BMW M4 è richiesta una patente con almeno 5 anni di anzianità."
+              : "È richiesta una patente con almeno 3 anni di anzianità.";
+          }
         }
+        if (!sd.licenseExpiryDate) {
+          newErrors['secondDriver.licenseExpiryDate'] = "La data di scadenza della patente è obbligatoria.";
+        } else {
+          const today = new Date().toISOString().split('T')[0];
+          if (sd.licenseExpiryDate < today) {
+            newErrors['secondDriver.licenseExpiryDate'] = "La patente è scaduta.";
+          }
+        }
+        if (!sd.countryOfIssue) newErrors['secondDriver.countryOfIssue'] = "Il paese di rilascio è obbligatorio.";
         if (!sd.licenseImage) newErrors['secondDriver.licenseImage'] = "Patente secondo conducente obbligatoria.";
         if (!sd.idImage) newErrors['secondDriver.idImage'] = "Documento secondo conducente obbligatorio.";
       }
@@ -1898,27 +1931,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       });
 
       // Create pickup and dropoff dates in Europe/Rome timezone
-      // User selects time in Italy timezone, we convert to UTC for storage
-      const createItalyDateTime = (dateStr: string, timeStr: string) => {
-        const [year, month, day] = dateStr.split('-').map(Number);
-        const [hours, minutes] = timeStr.split(':').map(Number);
-
-        // Determine Italy's UTC offset for this date (CET=+1, CEST=+2)
-        // Check what hour noon UTC shows in Italy to determine offset
-        const checkDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
-        const italyFormatter = new Intl.DateTimeFormat('en-GB', {
-          timeZone: 'Europe/Rome',
-          hour: '2-digit',
-          hour12: false
-        });
-        const italyNoonHour = parseInt(italyFormatter.format(checkDate));
-        const italyOffset = italyNoonHour - 12; // 1 for CET (winter), 2 for CEST (summer)
-
-        // User selected time is in Italy, subtract offset to get UTC
-        // e.g., 9:30 Italy with offset +1 = 8:30 UTC
-        return new Date(Date.UTC(year, month - 1, day, hours - italyOffset, minutes, 0, 0));
-      };
-
       const pickupDateTime = createItalyDateTime(formData.pickupDate, formData.pickupTime);
       const dropoffDateTime = createItalyDateTime(formData.returnDate, formData.returnTime);
 
@@ -1968,6 +1980,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             birthDate: formData.secondDriver.birthDate,
             licenseNumber: formData.secondDriver.licenseNumber,
             licenseIssueDate: formData.secondDriver.licenseIssueDate,
+            licenseExpiryDate: formData.secondDriver.licenseExpiryDate,
+            countryOfIssue: formData.secondDriver.countryOfIssue,
           } : null,
           duration: `${days} days`,
           insuranceOption: formData.insuranceOption,
@@ -1997,14 +2011,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
       if (data) {
         // Send email confirmation
-        fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
+        fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ booking: data }),
         }).catch(emailError => console.error('Failed to send confirmation email:', emailError));
 
         // Send WhatsApp notification to admin
-        fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+        fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ booking: data }),
@@ -2209,7 +2223,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     // Credit wallet payment (ATOMIC TRANSACTION)
     if (!user?.id) {
-      setPaymentError('User not logged in');
+      setPaymentError('Devi effettuare il login per procedere.');
       setIsProcessing(false);
       return;
     }
@@ -2243,24 +2257,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         }
 
         // 2. Prepare Payload (Replicating finalizeBooking logic)
-        const createItalyDateTime = (dateStr: string, timeStr: string) => {
-          const [year, month, day] = dateStr.split('-').map(Number);
-          const [hours, minutes] = timeStr.split(':').map(Number);
-
-          // Determine Italy's UTC offset for this date (CET=+1, CEST=+2)
-          const checkDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
-          const italyFormatter = new Intl.DateTimeFormat('en-GB', {
-            timeZone: 'Europe/Rome',
-            hour: '2-digit',
-            hour12: false
-          });
-          const italyNoonHour = parseInt(italyFormatter.format(checkDate));
-          const italyOffset = italyNoonHour - 12;
-
-          // User selected time is in Italy, subtract offset to get UTC
-          return new Date(Date.UTC(year, month - 1, day, hours - italyOffset, minutes, 0, 0));
-        };
-
         const pickupDateTime = createItalyDateTime(formData.pickupDate, formData.pickupTime);
         const dropoffDateTime = createItalyDateTime(formData.returnDate, formData.returnTime);
         const { days } = duration;
@@ -2307,6 +2303,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               birthDate: formData.secondDriver.birthDate,
               licenseNumber: formData.secondDriver.licenseNumber,
               licenseIssueDate: formData.secondDriver.licenseIssueDate,
+              licenseExpiryDate: formData.secondDriver.licenseExpiryDate,
+              countryOfIssue: formData.secondDriver.countryOfIssue,
             } : null,
             duration: `${days} days`,
             insuranceOption: formData.insuranceOption,
@@ -2380,14 +2378,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           console.log("Calling onBookingComplete...", finalBookingData);
 
           // Send Email Confirmation
-          fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
+          fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ booking: finalBookingData }),
           }).catch(e => console.error('Email error', e));
 
           // Send WhatsApp Admin
-          fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+          fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ booking: finalBookingData }),
@@ -2395,7 +2393,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
           // Mark birthday discount code as used
           if (appliedDiscount) {
-            await markDiscountCodeAsUsed(data.booking_id);
+            try {
+              await markDiscountCodeAsUsed(data.booking_id);
+            } catch (discountErr) {
+              console.error('Failed to mark discount code as used:', discountErr);
+            }
           }
 
           // Completed - Pass the full object with ID so UI can redirect
@@ -2426,13 +2428,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         } else {
           // RPC returned but success was not true
           console.warn("RPC returned success: false", data);
-          setPaymentError(data?.message || "Booking failed. Please try again or contact support.");
+          setPaymentError(data?.message || "Prenotazione fallita. Riprova o contatta il supporto.");
           setIsProcessing(false);
         }
 
       } catch (err: any) {
         console.error("Catch Error during booking:", err);
-        setPaymentError(err.message || "Unknown error during booking");
+        setPaymentError(err.message || "Errore sconosciuto durante la prenotazione.");
         setIsProcessing(false);
       }
     } else if (formData.paymentMethod === 'nexi' && step === 4) {
@@ -2446,24 +2448,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const { days } = duration;
 
         // Ensure dates are parsed as Italy/Europe time
-        const createItalyDateTime = (dateStr: string, timeStr: string) => {
-          const [year, month, day] = dateStr.split('-').map(Number);
-          const [hours, minutes] = timeStr.split(':').map(Number);
-
-          // Determine Italy's UTC offset for this date (CET=+1, CEST=+2)
-          const checkDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
-          const italyFormatter = new Intl.DateTimeFormat('en-GB', {
-            timeZone: 'Europe/Rome',
-            hour: '2-digit',
-            hour12: false
-          });
-          const italyNoonHour = parseInt(italyFormatter.format(checkDate));
-          const italyOffset = italyNoonHour - 12;
-
-          // User selected time is in Italy, subtract offset to get UTC
-          return new Date(Date.UTC(year, month - 1, day, hours - italyOffset, minutes, 0, 0));
-        };
-
         const pickupDateTime = createItalyDateTime(formData.pickupDate, formData.pickupTime);
         const dropoffDateTime = createItalyDateTime(formData.returnDate, formData.returnTime);
 
@@ -2493,7 +2477,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
         const vehicleName = availableVehicleName || item.name;
 
-        // 2. Insert Pending Booking
+        // 2. Generate Nexi Order ID BEFORE insert (prevents race condition)
+        const nexiOrderId = `DR7${Date.now()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+        // 3. Insert Pending Booking (with nexi_order_id already set)
         const bookingData = {
           user_id: user.id,
           vehicle_type: item.type || 'car',
@@ -2508,6 +2495,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           status: 'pending',
           payment_status: 'pending',
           payment_method: 'nexi',
+          nexi_order_id: nexiOrderId,
           booked_at: new Date().toISOString(),
           customer_name: `${formData.firstName} ${formData.lastName}`,
           customer_email: formData.email,
@@ -2539,6 +2527,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               birthDate: formData.secondDriver.birthDate,
               licenseNumber: formData.secondDriver.licenseNumber,
               licenseIssueDate: formData.secondDriver.licenseIssueDate,
+              licenseExpiryDate: formData.secondDriver.licenseExpiryDate,
+              countryOfIssue: formData.secondDriver.countryOfIssue,
             } : null,
             duration: `${days} days`,
             insuranceOption: formData.insuranceOption,
@@ -2567,18 +2557,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
         if (bookingError) throw bookingError;
 
-        // 3. Generate Nexi Order ID
-        const timestamp = Date.now().toString().substring(5);
-        const random = Math.floor(100 + Math.random() * 900).toString();
-        const nexiOrderId = `${timestamp}${random}`;
-
-        // 4. Update Booking with Nexi Order ID
-        await supabase
-          .from('bookings')
-          .update({ nexi_order_id: nexiOrderId })
-          .eq('id', pendingBooking.id);
-
-        // 5. Initiate Nexi Payment
+        // 4. Initiate Nexi Payment
         const nexiResponse = await fetch('/.netlify/functions/create-nexi-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2991,6 +2970,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               <div><label className="text-sm text-gray-400">Data di nascita *</label><input type="date" name={`${prefix}birthDate`} value={(driverData as any).birthDate} onChange={handleChange} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}birthDate`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Numero patente *</label><input type="text" name={`${prefix}licenseNumber`} value={(driverData as any).licenseNumber} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}licenseNumber`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseNumber`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Data rilascio patente *</label><input type="date" name={`${prefix}licenseIssueDate`} value={(driverData as any).licenseIssueDate} onChange={handleChange} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseIssueDate`]}</p>}</div>
+              {driverType === 'second' && (
+                <>
+                  <div><label className="text-sm text-gray-400">Data scadenza patente *</label><input type="date" name={`${prefix}licenseExpiryDate`} value={(driverData as any).licenseExpiryDate} onChange={handleChange} min={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}licenseExpiryDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseExpiryDate`]}</p>}</div>
+                  <div><label className="text-sm text-gray-400">Paese di rilascio *</label><input type="text" name={`${prefix}countryOfIssue`} value={(driverData as any).countryOfIssue} onChange={handleChange} placeholder="es. Italia" className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}countryOfIssue`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}countryOfIssue`]}</p>}</div>
+                </>
+              )}
             </div>
           );
         };
@@ -3103,7 +3088,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 </label>
               </div>
 
+              <AnimatePresence>
               {formData.addSecondDriver && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
                 <div className="mt-4 p-4 bg-gray-800/30 rounded-lg border border-gray-700 space-y-4">
                   <p className="text-sm text-amber-300">Tutti i campi sono obbligatori per il secondo conducente.</p>
                   {renderDriverForm('second')}
@@ -3137,7 +3130,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     </div>
                   </div>
                 </div>
+                </motion.div>
               )}
+              </AnimatePresence>
             </section>
 
             {/* Security Deposit - Sixt Style */}
@@ -3647,6 +3642,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {formData.addSecondDriver && (
                     <div className="mt-2">
                       <p>Secondo: {formData.secondDriver.firstName} {formData.secondDriver.lastName}</p>
+                      <p className="text-xs text-gray-400">{formData.secondDriver.email} - {formData.secondDriver.phone}</p>
+                      <p className="text-xs text-gray-400">Patente: {formData.secondDriver.licenseNumber} - Rilascio: {formData.secondDriver.licenseIssueDate} - Scadenza: {formData.secondDriver.licenseExpiryDate}</p>
+                      <p className="text-xs text-gray-400">Paese di rilascio: {formData.secondDriver.countryOfIssue}</p>
                     </div>
                   )}
                 </div>
@@ -4088,7 +4086,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         disabled={isProcessing || !formData.agreesToTerms || !formData.agreesToPrivacy || !formData.confirmsDocuments}
                         className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed"
                       >
-                        {isProcessing ? 'Processing...' : 'CONFERMA PRENOTAZIONE'}
+                        {isProcessing ? 'Elaborazione in corso...' : 'CONFERMA PRENOTAZIONE'}
                       </button>
                     )}
                   </div>

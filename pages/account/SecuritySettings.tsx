@@ -65,7 +65,7 @@ const SecuritySettings = () => {
             // Fallback: get from localStorage
             if (!userId) {
                 try {
-                    const stored = localStorage.getItem('sb-ahpmzjgkfxrrgxyirasa-auth-token');
+                    const stored = localStorage.getItem(`sb-${import.meta.env.VITE_SUPABASE_URL?.split('//')[1]?.split('.')[0] || 'app'}-auth-token`);
                     if (stored) {
                         const parsed = JSON.parse(stored);
                         userId = parsed?.user?.id;

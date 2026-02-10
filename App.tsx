@@ -59,8 +59,6 @@ import MarketingConsentModal from './components/ui/MarketingConsentModal';
 import { supabase } from './supabaseClient';
 
 import CancellationPolicyPage from './pages/CancellationPolicyPage';
-// import LotteriaPopup from './components/ui/LotteriaPopup';
-import MyTickets from './pages/account/MyTickets';
 import MyBookings from './pages/account/MyBookings';
 import ConfirmationSuccessPage from './pages/ConfirmationSuccessPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
@@ -260,7 +258,6 @@ const AnimatedRoutes = () => {
           <Route path="membership" element={<MembershipStatus />} />
           <Route path="bookings" element={<MyBookings />} />
           <Route path="notifications" element={<NotificationSettings />} />
-          <Route path="tickets" element={<MyTickets />} />
         </Route>
 
         <Route path="/partner" element={
@@ -328,8 +325,6 @@ const MainContent = () => {
   const { isCarWizardOpen, closeCarWizard, selectedCar, wizardCategory } = useBooking();
   const navigate = useNavigate();
 
-  console.log('MainContent render - isCarWizardOpen:', isCarWizardOpen, 'selectedCar:', selectedCar?.name);
-
   const handleBookingComplete = (booking: any) => {
     closeCarWizard();
     navigate('/car-booking-success', { state: { booking } });
@@ -350,7 +345,6 @@ const MainContent = () => {
         <VerificationModal />
         <CookieBanner />
         <ConsentPopupManager />
-        {/* <LotteriaPopup /> */}
         <DR7AIFloatingButton />
         <AnimatePresence>
           {isCarWizardOpen && selectedCar && (

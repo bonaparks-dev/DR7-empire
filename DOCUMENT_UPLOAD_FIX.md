@@ -25,7 +25,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 ```
 
 **To get your Service Role Key:**
-1. Go to https://supabase.com/dashboard/project/ahpmzjgkfxrrgxyirasa/settings/api
+1. Go to <YOUR_SUPABASE_URL>/settings/api
 2. Copy the "service_role" key (NOT the anon key)
 3. Add it to Netlify environment variables
 
@@ -113,7 +113,7 @@ npm run dev
 5. **Test Service Role Key:**
    ```bash
    # Test if the key works
-   curl 'https://ahpmzjgkfxrrgxyirasa.supabase.co/rest/v1/' \
+   curl '<YOUR_SUPABASE_URL>/rest/v1/' \
      -H "apikey: YOUR_SERVICE_ROLE_KEY" \
      -H "Authorization: Bearer YOUR_SERVICE_ROLE_KEY"
    ```

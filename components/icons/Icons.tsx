@@ -233,13 +233,6 @@ export const CubeTransparentIcon: React.FC<{ className?: string }> = ({ classNam
     </svg>
 );
 
-export const TicketIcon: React.FC<{ className?: string }> = ({ className = "w-6 h-6" }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-1.5h5.25m-5.25 0h3m-3 0h-3m2.25-4.125c0-1.036.84-1.875 1.875-1.875h.375c1.036 0 1.875.84 1.875 1.875v.375c0 1.036-.84 1.875-1.875 1.875h-.375a1.875 1.875 0 01-1.875-1.875v-.375z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 3.75V18a2.25 2.25 0 01-2.25 2.25H9.75A2.25 2.25 0 017.5 18V3.75m9 0V3.375c0-.621-.504-1.125-1.125-1.125H10.125c-.621 0-1.125.504-1.125 1.125v.375m9 0a2.25 2.25 0 012.25 2.25v12a2.25 2.25 0 01-2.25 2.25M3.75 6.75h16.5M3.75 18a2.25 2.25 0 002.25 2.25h12A2.25 2.25 0 0019.5 18v-2.25a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 15.75V18m0 0V6.75A2.25 2.25 0 015.25 4.5h12A2.25 2.25 0 0119.5 6.75v8.25a2.25 2.25 0 01-2.25 2.25h-9a2.25 2.25 0 00-2.25 2.25v.375" />
-    </svg>
-);
-
 export const SignOutIcon: React.FC<{ className?: string }> = ({ className = "w-6 h-6" }) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />

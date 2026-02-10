@@ -1,5 +1,11 @@
 import type { Handler } from "@netlify/functions";
 
+const sanitizeForWhatsApp = (str: string | undefined | null): string => {
+  if (!str) return '';
+  // Remove markdown-sensitive characters that could be exploited
+  return str.replace(/[*_~`]/g, '').substring(0, 500);
+};
+
 const GREEN_API_INSTANCE_ID = process.env.GREEN_API_INSTANCE_ID;
 const GREEN_API_TOKEN = process.env.GREEN_API_TOKEN;
 const NOTIFICATION_PHONE = process.env.NOTIFICATION_PHONE || "393457905205"; // Your phone to receive notifications
@@ -16,7 +22,7 @@ const handler: Handler = async (event) => {
     };
   }
 
-  const { booking, ticket, type, customMessage, customPhone } = JSON.parse(event.body || '{}');
+  const { booking, customMessage, customPhone } = JSON.parse(event.body || '{}');
 
   // Check if Green API is configured
   if (!GREEN_API_INSTANCE_ID || !GREEN_API_TOKEN) {
@@ -42,29 +48,6 @@ const handler: Handler = async (event) => {
   // Handle custom message (for birthdays, marketing, etc.)
   if (customMessage) {
     message = customMessage;
-  }
-  // Handle ticket purchase notifications
-  else if (ticket || type === 'ticket') {
-    const ticketData = ticket || {};
-    const customerName = ticketData.customer_name || ticketData.name || 'Cliente';
-    const customerEmail = ticketData.customer_email || ticketData.email;
-    const customerPhone = ticketData.customer_phone || ticketData.phone;
-    const ticketQuantity = ticketData.quantity || 1;
-    const totalPrice = ticketData.total_price ? (ticketData.total_price / 100).toFixed(2) : 'N/A';
-    const ticketNumbers = ticketData.ticket_numbers || [];
-
-    message = `🎟️ *NUOVA VENDITA BIGLIETTI*\n\n`;
-    message += `*Cliente:* ${customerName}\n`;
-    message += `*Email:* ${customerEmail}\n`;
-    if (customerPhone) {
-      message += `*Telefono:* ${customerPhone}\n`;
-    }
-    message += `*Quantità:* ${ticketQuantity} bigliett${ticketQuantity > 1 ? 'i' : 'o'}\n`;
-    message += `*Totale:* €${totalPrice}\n`;
-    if (ticketNumbers.length > 0) {
-      message += `*Numeri:* ${ticketNumbers.join(', ')}\n`;
-    }
-    message += `*Data:* ${new Date().toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })} alle ${new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })}`;
   }
   // Handle booking notifications
   else if (booking) {
@@ -97,16 +80,16 @@ const handler: Handler = async (event) => {
 
       message = `🚗 *NUOVA PRENOTAZIONE AUTOLAVAGGIO*\n\n`;
       message += `*ID:* DR7-${bookingId}\n`;
-      message += `*Cliente:* ${customerName}\n`;
-      message += `*Email:* ${customerEmail}\n`;
-      message += `*Telefono:* ${customerPhone}\n`;
-      message += `*Servizio:* ${serviceName}\n`;
+      message += `*Cliente:* ${sanitizeForWhatsApp(customerName)}\n`;
+      message += `*Email:* ${sanitizeForWhatsApp(customerEmail)}\n`;
+      message += `*Telefono:* ${sanitizeForWhatsApp(customerPhone)}\n`;
+      message += `*Servizio:* ${sanitizeForWhatsApp(serviceName)}\n`;
       message += `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n`;
       if (additionalService) {
-        message += `*Servizio Aggiuntivo:* ${additionalService}\n`;
+        message += `*Servizio Aggiuntivo:* ${sanitizeForWhatsApp(additionalService)}\n`;
       }
       if (notes) {
-        message += `*Note:* ${notes}\n`;
+        message += `*Note:* ${sanitizeForWhatsApp(notes)}\n`;
       }
       message += `*Totale:* €${totalPrice}\n`;
       message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa'}`;
@@ -132,18 +115,34 @@ const handler: Handler = async (event) => {
 
       message = `🔧 *NUOVA PRENOTAZIONE MECCANICA*\n\n`;
       message += `*ID:* DR7-${bookingId}\n`;
-      message += `*Cliente:* ${customerName}\n`;
-      message += `*Email:* ${customerEmail}\n`;
-      message += `*Telefono:* ${customerPhone}\n`;
-      message += `*Servizio:* ${serviceName}\n`;
+      message += `*Cliente:* ${sanitizeForWhatsApp(customerName)}\n`;
+      message += `*Email:* ${sanitizeForWhatsApp(customerEmail)}\n`;
+      message += `*Telefono:* ${sanitizeForWhatsApp(customerPhone)}\n`;
+      message += `*Servizio:* ${sanitizeForWhatsApp(serviceName)}\n`;
       if (vehicleInfo.brand || vehicleInfo.model) {
-        message += `*Veicolo:* ${vehicleInfo.brand || ''} ${vehicleInfo.model || ''}\n`;
+        message += `*Veicolo:* ${sanitizeForWhatsApp(vehicleInfo.brand)} ${sanitizeForWhatsApp(vehicleInfo.model)}\n`;
       }
       message += `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n`;
       if (notes) {
-        message += `*Note:* ${notes}\n`;
+        message += `*Note:* ${sanitizeForWhatsApp(notes)}\n`;
       }
-      message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa'}`;
+      message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded' || booking.payment_status === 'completed') ? '✅ Pagato' : '⏳ In attesa'}`;
+
+      // Second driver info
+      const secondDriver = booking.booking_details?.secondDriver;
+      if (secondDriver) {
+        message += `\n\n👤 *SECONDO GUIDATORE*\n`;
+        message += `*Nome:* ${sanitizeForWhatsApp(secondDriver.firstName)} ${sanitizeForWhatsApp(secondDriver.lastName)}\n`;
+        message += `*Email:* ${sanitizeForWhatsApp(secondDriver.email)}\n`;
+        message += `*Telefono:* ${sanitizeForWhatsApp(secondDriver.phone)}\n`;
+        message += `*Patente:* ${sanitizeForWhatsApp(secondDriver.licenseNumber) || 'N/A'}`;
+        if (secondDriver.licenseExpiryDate) {
+          message += ` (scad. ${secondDriver.licenseExpiryDate})`;
+        }
+        if (secondDriver.countryOfIssue) {
+          message += `\n*Paese Rilascio:* ${sanitizeForWhatsApp(secondDriver.countryOfIssue)}`;
+        }
+      }
     } else {
       // Car Rental Booking
       const vehicleName = booking.vehicle_name;
@@ -168,13 +167,13 @@ const handler: Handler = async (event) => {
 
       message = `🚘 *NUOVA PRENOTAZIONE NOLEGGIO*\n\n`;
       message += `*ID:* DR7-${bookingId}\n`;
-      message += `*Cliente:* ${customerName}\n`;
-      message += `*Email:* ${customerEmail}\n`;
-      message += `*Telefono:* ${customerPhone}\n`;
-      message += `*Veicolo:* ${vehicleName}\n`;
+      message += `*Cliente:* ${sanitizeForWhatsApp(customerName)}\n`;
+      message += `*Email:* ${sanitizeForWhatsApp(customerEmail)}\n`;
+      message += `*Telefono:* ${sanitizeForWhatsApp(customerPhone)}\n`;
+      message += `*Veicolo:* ${sanitizeForWhatsApp(vehicleName)}\n`;
       message += `*Ritiro:* ${pickupDateFormatted} alle ${pickupTimeFormatted}\n`;
       message += `*Riconsegna:* ${dropoffDateFormatted} alle ${dropoffTimeFormatted}\n`;
-      message += `*Luogo Ritiro:* ${pickupLocation}\n`;
+      message += `*Luogo Ritiro:* ${sanitizeForWhatsApp(pickupLocation)}\n`;
       message += `*Assicurazione:* ${insuranceOption}\n`;
       message += `*Totale:* €${totalPrice}\n`;
 
@@ -202,7 +201,7 @@ const handler: Handler = async (event) => {
   } else {
     return {
       statusCode: 400,
-      body: JSON.stringify({ message: 'No booking, ticket, or custom message provided' }),
+      body: JSON.stringify({ message: 'No booking or custom message provided' }),
     };
   }
 

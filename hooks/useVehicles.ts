@@ -339,11 +339,9 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
           if (fetchError) {
             // Enhanced error logging with full diagnostics
             const browserInfo = getBrowserInfo();
-            const requestUrl = `https://ahpmzjgkfxrrgxyirasa.supabase.co/rest/v1/vehicles?select=*&status=neq.retired&order=display_name.asc${category ? `&category=eq.${category}` : ''}`;
-
             console.error('❌ Error fetching vehicles (detailed diagnostics):', {
               // Request info
-              requestUrl,
+              requestUrl: '[vehicles endpoint]',
               category,
               attemptNumber: attemptNumber + 1,
               maxAttempts,
@@ -384,11 +382,9 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
         } catch (err: any) {
           // Handle timeout or network errors
           const browserInfo = getBrowserInfo();
-          const requestUrl = `https://ahpmzjgkfxrrgxyirasa.supabase.co/rest/v1/vehicles?select=*&status=neq.retired&order=display_name.asc${category ? `&category=eq.${category}` : ''}`;
-
           console.error('❌ Fatal error in fetchVehicles (detailed diagnostics):', {
             // Request info
-            requestUrl,
+            requestUrl: '[vehicles endpoint]',
             category,
             attemptNumber: attemptNumber + 1,
             maxAttempts,

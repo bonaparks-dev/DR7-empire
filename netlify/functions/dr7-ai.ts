@@ -4,7 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || 'https://dr7empire.com',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 

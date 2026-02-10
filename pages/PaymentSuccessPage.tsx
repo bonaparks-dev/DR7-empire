@@ -46,7 +46,8 @@ const PaymentSuccessPage: React.FC = () => {
                     const { error: updateError } = await supabase
                         .from('bookings')
                         .update({
-                            payment_status: 'completed',
+                            status: 'confirmed',
+                            payment_status: 'succeeded',
                             nexi_payment_id: orderId,
                             nexi_authorization_code: authCode || null,
                             payment_completed_at: new Date().toISOString()
@@ -63,13 +64,13 @@ const PaymentSuccessPage: React.FC = () => {
                         fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ booking: { ...booking, payment_status: 'completed' } }),
+                            body: JSON.stringify({ booking: { ...booking, payment_status: 'succeeded' } }),
                         }).catch(e => console.error('Email error', e));
 
                         fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ booking: { ...booking, payment_status: 'completed' } }),
+                            body: JSON.stringify({ booking: { ...booking, payment_status: 'succeeded' } }),
                         }).catch(e => console.error('WhatsApp error', e));
 
                         if (booking.booking_details?.customer) {
@@ -114,20 +115,30 @@ const PaymentSuccessPage: React.FC = () => {
                     });
 
                     // Skip if already completed (avoid double-crediting)
-                    if (purchase.payment_status === 'completed') {
+                    if (purchase.payment_status === 'completed' || purchase.payment_status === 'succeeded' || purchase.payment_status === 'paid') {
                         console.log('Purchase already completed, skipping credit addition');
                         setUpdating(false);
                         return;
                     }
 
-                    // Update purchase status
-                    const { error: upErr } = await supabase
+                    // Atomically update purchase status - only succeeds if not already 'succeeded'
+                    const { data: updatedPurchase, error: upErr } = await supabase
                         .from('credit_wallet_purchases')
                         .update({
-                            payment_status: 'completed',
+                            payment_status: 'succeeded',
                             payment_completed_at: new Date().toISOString()
                         })
-                        .eq('id', purchase.id);
+                        .eq('id', purchase.id)
+                        .neq('payment_status', 'succeeded')
+                        .select()
+                        .single();
+
+                    // If no row returned, another caller (callback) already processed it
+                    if (!updatedPurchase) {
+                        console.log('Purchase already processed by callback, skipping credit addition');
+                        setUpdating(false);
+                        return;
+                    }
 
                     if (upErr) {
                         console.error('Error updating purchase:', upErr);

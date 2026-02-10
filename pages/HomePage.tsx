@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../hooks/useTranslation';
-import { RENTAL_CATEGORIES, COMMERCIAL_OPERATION_GIVEAWAY } from '../constants';
+import { RENTAL_CATEGORIES } from '../constants';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Display titles matching the menu division names

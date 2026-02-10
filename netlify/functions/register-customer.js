@@ -77,14 +77,6 @@ exports.handler = async (event) => {
         };
 
 
-        // DEBUG: Log the exact metadata being sent
-        console.log('=== REGISTER CUSTOMER DEBUG ===');
-        console.log('Email:', email);
-        console.log('User Metadata:', JSON.stringify(userMetadata, null, 2));
-        console.log('Customer Data Keys:', customerData ? Object.keys(customerData) : 'none');
-        console.log('residencyZone value:', customerData?.residency_zone);
-        console.log('===============================');
-
         const { data: authData, error: authError } = await supabase.auth.admin.createUser({
             email,
             password,
