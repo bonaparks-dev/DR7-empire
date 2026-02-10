@@ -12,7 +12,8 @@ const PaymentSuccessPage: React.FC = () => {
     const [walletInfo, setWalletInfo] = useState<{ packageName: string; receivedAmount: number } | null>(null);
     const [membershipInfo, setMembershipInfo] = useState<{ tierName: string; billingCycle: string } | null>(null);
 
-    const orderId = searchParams.get('codTrans') || searchParams.get('orderId') || searchParams.get('paymentid');
+    const orderId = searchParams.get('codTrans') || searchParams.get('orderId') || searchParams.get('paymentid') || sessionStorage.getItem('dr7_pending_order');
+    const pendingType = sessionStorage.getItem('dr7_pending_type');
     const amount = searchParams.get('importo');
     const authCode = searchParams.get('codAut');
 
@@ -23,7 +24,37 @@ const PaymentSuccessPage: React.FC = () => {
     // Update payment status immediately
     useEffect(() => {
         const updatePaymentStatus = async () => {
+            // Clean up sessionStorage after reading
+            sessionStorage.removeItem('dr7_pending_order');
+            sessionStorage.removeItem('dr7_pending_type');
+
             if (!orderId) {
+                // Last resort: if no orderId but we know it was a membership, look up by user
+                if (pendingType === 'membership') {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                        const { data: recent } = await supabase
+                            .from('membership_purchases')
+                            .select('*')
+                            .eq('user_id', user.id)
+                            .in('payment_status', ['pending', 'succeeded'])
+                            .order('created_at', { ascending: false })
+                            .limit(1)
+                            .single();
+
+                        if (recent) {
+                            console.log('Found recent membership by user fallback:', recent.id);
+                            setPurchaseType('membership');
+                            setMembershipInfo({
+                                tierName: recent.tier_name,
+                                billingCycle: recent.billing_cycle,
+                            });
+                            setUpdating(false);
+                            return;
+                        }
+                    }
+                }
+
                 console.warn('No orderId found in URL parameters');
                 setUpdating(false);
                 return;

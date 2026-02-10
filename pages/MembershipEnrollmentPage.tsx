@@ -102,7 +102,11 @@ const MembershipEnrollmentPage: React.FC = () => {
             const nexiData = await nexiResponse.json();
             if (!nexiResponse.ok) throw new Error(nexiData.error || 'Failed to create payment');
 
-            // 5. Redirect to Nexi HPP
+            // 5. Save orderId for PaymentSuccessPage fallback (in case Nexi doesn't append params to redirect)
+            sessionStorage.setItem('dr7_pending_order', nexiOrderId);
+            sessionStorage.setItem('dr7_pending_type', 'membership');
+
+            // 6. Redirect to Nexi HPP
             window.location.href = nexiData.paymentUrl;
         } catch (error: any) {
             setPaymentError(error.message || 'Payment failed');

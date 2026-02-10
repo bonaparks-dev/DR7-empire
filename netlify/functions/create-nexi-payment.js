@@ -163,7 +163,7 @@ exports.handler = async (event) => {
         actionType: 'PAY',
         amount: amount.toString(),
         language: 'ITA',
-        resultUrl: `${siteUrl}/payment-success`,
+        resultUrl: `${siteUrl}/payment-success?orderId=${sanitizedOrderId}`,
         cancelUrl: `${siteUrl}/payment-cancel`,
         notificationUrl: `${siteUrl}/.netlify/functions/nexi-callback`,
       },
