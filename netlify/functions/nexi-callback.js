@@ -84,10 +84,14 @@ exports.handler = async (event) => {
 
     console.log('✅ MAC verified successfully');
 
-    // Initialize Supabase
+    // Initialize Supabase — require service role key (never fall back to anon key)
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('❌ SUPABASE_SERVICE_ROLE_KEY not configured');
+      return { statusCode: 500, body: 'Server configuration error' };
+    }
     const supabase = createClient(
-      process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
     // Find booking or credit wallet purchase by order ID
@@ -187,42 +191,22 @@ exports.handler = async (event) => {
           return { statusCode: 500, body: 'Error updating purchase' };
         }
 
-        // Add credits to user's wallet
+        // Add credits via atomic RPC (prevents race conditions and double-crediting)
         if (purchase.user_id && purchase.received_amount) {
-          // Get current balance
-          const { data: balanceRow } = await supabase
-            .from('user_credit_balance')
-            .select('balance')
-            .eq('user_id', purchase.user_id)
-            .single();
+          const { data: rpcResult, error: rpcError } = await supabase.rpc('add_credits', {
+            p_user_id: purchase.user_id,
+            p_amount: purchase.received_amount,
+            p_description: `Ricarica ${purchase.package_name} - Bonus ${purchase.bonus_percentage}%`,
+            p_reference_id: purchase.id,
+            p_reference_type: 'wallet_purchase'
+          });
 
-          const currentBalance = balanceRow?.balance || 0;
-          const newBalance = currentBalance + purchase.received_amount;
-
-          // Upsert balance
-          await supabase
-            .from('user_credit_balance')
-            .upsert({
-              user_id: purchase.user_id,
-              balance: newBalance,
-              last_updated: new Date().toISOString()
-            }, { onConflict: 'user_id' });
-
-          // Record credit transaction
-          await supabase
-            .from('credit_transactions')
-            .insert({
-              user_id: purchase.user_id,
-              transaction_type: 'credit',
-              amount: purchase.received_amount,
-              balance_after: newBalance,
-              description: `Ricarica ${purchase.package_name} - Bonus ${purchase.bonus_percentage}%`,
-              reference_id: purchase.id,
-              reference_type: 'wallet_purchase',
-              created_at: new Date().toISOString()
-            });
-
-          console.log(`✅ Credits added: €${purchase.received_amount} to user ${purchase.user_id} (new balance: €${newBalance})`);
+          if (rpcError) {
+            console.error('❌ Error adding credits via RPC:', rpcError);
+          } else {
+            const result = rpcResult?.[0] || rpcResult;
+            console.log(`✅ Credits added via RPC: €${purchase.received_amount} to user ${purchase.user_id} (new balance: €${result?.new_balance})`);
+          }
         }
       } else {
         // Payment failed

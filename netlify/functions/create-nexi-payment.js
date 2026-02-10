@@ -5,10 +5,23 @@ const crypto = require('crypto');
  * Uses /orders/hpp endpoint with X-API-KEY authentication
  */
 exports.handler = async (event) => {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || 'https://dr7empire.com',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Content-Type': 'application/json',
+  };
+
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers: corsHeaders, body: '' };
+  }
+
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
+      headers: corsHeaders,
       body: JSON.stringify({ error: 'Method not allowed' }),
     };
   }
@@ -21,6 +34,7 @@ exports.handler = async (event) => {
     if (!amount || !currency || !orderId) {
       return {
         statusCode: 400,
+        headers: corsHeaders,
         body: JSON.stringify({ error: 'Missing required fields' }),
       };
     }
@@ -36,6 +50,7 @@ exports.handler = async (event) => {
       console.error('Missing Nexi API key');
       return {
         statusCode: 500,
+        headers: corsHeaders,
         body: JSON.stringify({ error: 'Nexi configuration error' }),
       };
     }
@@ -60,6 +75,7 @@ exports.handler = async (event) => {
       console.error('Invalid orderId after sanitization:', orderId);
       return {
         statusCode: 400,
+        headers: corsHeaders,
         body: JSON.stringify({
           error: 'Invalid orderId format',
           details: 'OrderId must contain at least one alphanumeric character'
@@ -116,6 +132,7 @@ exports.handler = async (event) => {
       console.error('Nexi API error:', responseData);
       return {
         statusCode: response.status,
+        headers: corsHeaders,
         body: JSON.stringify({
           error: 'Failed to create payment',
           details: responseData,
@@ -128,9 +145,7 @@ exports.handler = async (event) => {
     // Return payment URL to frontend
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: corsHeaders,
       body: JSON.stringify({
         success: true,
         paymentUrl: responseData.hostedPage,
@@ -142,6 +157,7 @@ exports.handler = async (event) => {
     console.error('Nexi payment creation error:', error);
     return {
       statusCode: 500,
+      headers: corsHeaders,
       body: JSON.stringify({
         error: 'Failed to create payment',
         message: error.message,
