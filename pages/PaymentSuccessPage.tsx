@@ -114,6 +114,15 @@ const PaymentSuccessPage: React.FC = () => {
                         receivedAmount: purchase.received_amount
                     });
 
+                    // Verify the logged-in user matches the purchase owner
+                    const { data: { user: authUser } } = await supabase.auth.getUser();
+                    if (!authUser || authUser.id !== purchase.user_id) {
+                        console.error('Auth mismatch: logged-in user does not match purchase owner');
+                        setUpdateError('Errore di autenticazione. Contatta il supporto.');
+                        setUpdating(false);
+                        return;
+                    }
+
                     // Skip if already completed (avoid double-crediting)
                     if (purchase.payment_status === 'completed' || purchase.payment_status === 'succeeded' || purchase.payment_status === 'paid') {
                         console.log('Purchase already completed, skipping credit addition');
@@ -144,7 +153,7 @@ const PaymentSuccessPage: React.FC = () => {
                         console.error('Error updating purchase:', upErr);
                         setUpdateError('Could not update purchase status');
                     } else {
-                        // Add credits to wallet
+                        // Add credits to wallet via atomic RPC
                         const result = await addCredits(
                             purchase.user_id,
                             purchase.received_amount,
