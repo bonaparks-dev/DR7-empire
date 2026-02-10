@@ -4,7 +4,7 @@
     <meta name="google" content="notranslate">
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="DR7 Empire - Noleggio auto di lusso e supercar in Sardegna. Servizi premium: autolavaggio Prime Wash, yachting, aviazione privata, membership esclusiva e franchising globale.">
+    <meta name="description" content="DR7 Empire — Noleggio supercar e auto di lusso in Sardegna. Supercar Division, Urban Division e Prime Car Wash. Yachting, aviazione privata, membership esclusiva.">
     <meta name="keywords" content="noleggio auto lusso, supercar sardegna, noleggio lamborghini, noleggio ferrari, autolavaggio premium, yachting sardegna, jet privato, DR7 Empire, car rental sardinia, luxury car rental">
     <meta name="facebook-domain-verification" content="9ss9au2ld4z63y8zf54z95a940sx46" />
     <meta name="robots" content="index, follow">
@@ -15,7 +15,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://dr7empire.com/" />
     <meta property="og:title" content="DR7 Empire - Noleggio Auto di Lusso & Supercar | Sardegna" />
-    <meta property="og:description" content="Noleggio supercar, auto di lusso, yachting e aviazione privata in Sardegna. Scopri Prime Wash, il nostro servizio di autolavaggio premium." />
+    <meta property="og:description" content="Noleggio supercar, auto di lusso, yachting e aviazione privata in Sardegna. Scopri Prime Car Wash, il nostro servizio di autolavaggio premium." />
     <meta property="og:image" content="https://dr7empire.com/DR7logo1.png" />
     <meta property="og:site_name" content="DR7 Empire" />
     <meta property="og:locale" content="it_IT" />
@@ -32,36 +32,103 @@
     <link rel="manifest" href="/site.webmanifest">
     <meta name="theme-color" content="#000000">
 
-    <!-- Structured Data: Organization -->
+    <!-- Structured Data: Organization with department hierarchy -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "DR7 Empire",
-      "url": "https://dr7empire.com",
-      "logo": "https://dr7empire.com/DR7logo1.png",
-      "description": "Noleggio auto di lusso, supercar, yachting e aviazione privata in Sardegna. Servizi premium di autolavaggio e membership esclusiva.",
-      "address": {
-        "@type": "PostalAddress",
-        "addressLocality": "Sardegna",
-        "addressCountry": "IT"
-      },
-      "sameAs": []
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://dr7empire.com/#organization",
+          "name": "DR7 Empire",
+          "legalName": "Dubai Rent 7.0 S.p.A.",
+          "alternateName": ["DR7", "Dubai Rent 7.0"],
+          "url": "https://dr7empire.com",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://dr7empire.com/DR7logo1.png",
+            "width": 500,
+            "height": 500
+          },
+          "image": "https://dr7empire.com/DR7logo1.png",
+          "description": "DR7 Empire is Sardinia's premier luxury mobility group offering supercar rentals, urban car rentals, premium car wash services, yachting, and private aviation.",
+          "telephone": "+39 345 790 5205",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Viale Marconi, 229",
+            "addressLocality": "Cagliari",
+            "addressRegion": "CA",
+            "postalCode": "09131",
+            "addressCountry": "IT"
+          },
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "telephone": "+39-345-790-5205",
+            "contactType": "customer service",
+            "availableLanguage": ["Italian", "English"]
+          },
+          "sameAs": [
+            "https://www.instagram.com/dubai_rent_7.0_s_p_a_",
+            "https://www.tiktok.com/@dr7luxuryempire"
+          ],
+          "parentOrganization": {
+            "@type": "Organization",
+            "name": "DR7 Group S.p.A."
+          },
+          "areaServed": {
+            "@type": "State",
+            "name": "Sardegna",
+            "containedInPlace": { "@type": "Country", "name": "Italy" }
+          },
+          "department": [
+            {
+              "@type": "AutoRental",
+              "@id": "https://dr7empire.com/cars#supercarDivision",
+              "name": "Supercar Division",
+              "description": "Premium supercar and luxury vehicle rental: Porsche, BMW M, Mercedes AMG, and more in Sardinia.",
+              "url": "https://dr7empire.com/cars",
+              "parentOrganization": { "@id": "https://dr7empire.com/#organization" },
+              "areaServed": { "@type": "State", "name": "Sardegna" }
+            },
+            {
+              "@type": "AutoRental",
+              "@id": "https://dr7empire.com/urban-cars#urbanDivision",
+              "name": "Urban Division",
+              "description": "Affordable city car and urban vehicle rental for practical transportation in Sardinia.",
+              "url": "https://dr7empire.com/urban-cars",
+              "parentOrganization": { "@id": "https://dr7empire.com/#organization" },
+              "areaServed": { "@type": "State", "name": "Sardegna" }
+            },
+            {
+              "@type": "AutoWash",
+              "@id": "https://dr7empire.com/car-wash-services#primeCarWash",
+              "name": "Prime Car Wash",
+              "description": "Premium car wash, professional detailing, ceramic coating, and paint protection services in Cagliari.",
+              "url": "https://dr7empire.com/car-wash-services",
+              "parentOrganization": { "@id": "https://dr7empire.com/#organization" },
+              "priceRange": "$$"
+            }
+          ]
+        }
+      ]
     }
     </script>
 
-    <!-- Structured Data: Website with SearchAction -->
+    <!-- Structured Data: WebSite with SearchAction -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
+      "@id": "https://dr7empire.com/#website",
       "name": "DR7 Empire",
       "url": "https://dr7empire.com",
+      "publisher": { "@id": "https://dr7empire.com/#organization" },
       "potentialAction": {
         "@type": "SearchAction",
         "target": "https://dr7empire.com/?q={search_term_string}",
         "query-input": "required name=search_term_string"
-      }
+      },
+      "inLanguage": ["it-IT", "en"]
     }
     </script>
 
@@ -70,24 +137,9 @@
     {
       "@context": "https://schema.org",
       "@graph": [
-        {
-          "@type": "SiteNavigationElement",
-          "name": "Supercar Division",
-          "description": "Noleggio Lamborghini, Ferrari, Porsche e le migliori supercar in Sardegna.",
-          "url": "https://dr7empire.com/cars"
-        },
-        {
-          "@type": "SiteNavigationElement",
-          "name": "Urban Division",
-          "description": "Noleggio city car e auto urbane per spostamenti pratici e convenienti.",
-          "url": "https://dr7empire.com/urban-cars"
-        },
-        {
-          "@type": "SiteNavigationElement",
-          "name": "Prime Car Wash",
-          "description": "Servizio di autolavaggio premium. Lavaggio professionale, sanificazione e detailing.",
-          "url": "https://dr7empire.com/car-wash-services"
-        }
+        { "@type": "SiteNavigationElement", "name": "Supercar Division", "description": "Noleggio Lamborghini, Ferrari, Porsche e le migliori supercar in Sardegna.", "url": "https://dr7empire.com/cars" },
+        { "@type": "SiteNavigationElement", "name": "Urban Division", "description": "Noleggio city car e auto urbane per spostamenti pratici e convenienti.", "url": "https://dr7empire.com/urban-cars" },
+        { "@type": "SiteNavigationElement", "name": "Prime Car Wash", "description": "Servizio di autolavaggio premium. Lavaggio professionale, sanificazione e detailing.", "url": "https://dr7empire.com/car-wash-services" }
       ]
     }
     </script>
