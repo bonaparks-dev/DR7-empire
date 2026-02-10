@@ -52,10 +52,8 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
         if (!authHeader) {
             return { statusCode: 401, headers, body: JSON.stringify({ error: 'Authentication required' }) };
         }
-        const { createClient: createAuthClient } = await import('@supabase/supabase-js');
-        const authClient = createAuthClient(supabaseUrl, process.env.SUPABASE_ANON_KEY || '');
         const jwt = authHeader.replace('Bearer ', '');
-        const { data: { user: authUser } } = await authClient.auth.getUser(jwt);
+        const { data: { user: authUser } } = await supabase.auth.getUser(jwt);
         if (!authUser) {
             return { statusCode: 401, headers, body: JSON.stringify({ error: 'Invalid token' }) };
         }
