@@ -235,15 +235,97 @@ exports.handler = async (event) => {
       const membership = memberships[0];
       console.log('Found membership purchase:', membership.id);
 
-      await supabase
-        .from('membership_purchases')
-        .update({
-          payment_status: esito === 'OK' ? 'succeeded' : 'failed',
-          payment_completed_at: esito === 'OK' ? new Date().toISOString() : null
-        })
-        .eq('id', membership.id);
+      // Idempotency check: skip if already succeeded
+      if (membership.payment_status === 'succeeded') {
+        console.log('Membership already succeeded, skipping duplicate callback');
+        return { statusCode: 200, body: 'OK' };
+      }
 
-      console.log(`✅ Membership ${membership.id} updated: ${esito}`);
+      if (esito === 'OK') {
+        // Extract contractId from callback params (Nexi returns it after CONTRACT_CREATION)
+        const contractId = params.contractId || params.contract_id || codTrans;
+
+        // Atomically update — only if not already 'succeeded'
+        const { data: updated, error: upErr } = await supabase
+          .from('membership_purchases')
+          .update({
+            payment_status: 'succeeded',
+            payment_completed_at: new Date().toISOString(),
+            nexi_contract_id: contractId,
+            subscription_status: 'active',
+          })
+          .eq('id', membership.id)
+          .neq('payment_status', 'succeeded')
+          .select()
+          .single();
+
+        if (!updated) {
+          console.log('Membership already processed by another callback, skipping');
+          return { statusCode: 200, body: 'OK' };
+        }
+
+        if (upErr) {
+          console.error('Error updating membership:', upErr);
+          return { statusCode: 500, body: 'Error updating membership' };
+        }
+
+        // Activate membership in user metadata (fixes finalizeEnrollment never running)
+        if (membership.user_id) {
+          const { error: metaErr } = await supabase.auth.admin.updateUserById(
+            membership.user_id,
+            {
+              user_metadata: {
+                membership: {
+                  tierId: membership.tier_id,
+                  billingCycle: membership.billing_cycle,
+                  renewalDate: membership.renewal_date,
+                  isRecurring: membership.is_recurring || false,
+                  subscriptionStatus: 'active',
+                },
+              },
+            }
+          );
+
+          if (metaErr) {
+            console.error('Error updating user metadata:', metaErr);
+            return { statusCode: 500, body: 'Metadata update failed' };
+          } else {
+            console.log(`✅ User ${membership.user_id} metadata updated with membership`);
+          }
+        }
+
+        // Send WhatsApp notification to admin
+        const whatsappMsg = `Nuova Membership Attivata!\n\n` +
+          `Tier: ${membership.tier_name}\n` +
+          `Piano: ${membership.billing_cycle}\n` +
+          `Prezzo: €${membership.price}\n` +
+          `User ID: ${membership.user_id}\n` +
+          `Contract ID: ${contractId}\n` +
+          `Rinnovo automatico: ${membership.is_recurring ? 'Si' : 'No'}`;
+
+        try {
+          await fetch(`${process.env.URL || 'https://dr7empire.com'}/.netlify/functions/send-whatsapp-notification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: whatsappMsg, type: 'membership_activation' }),
+          });
+        } catch (whatsErr) {
+          console.error('WhatsApp notification failed:', whatsErr);
+        }
+
+        console.log(`✅ Membership ${membership.id} activated with contractId: ${contractId}`);
+      } else {
+        // Payment failed
+        await supabase
+          .from('membership_purchases')
+          .update({
+            payment_status: 'failed',
+          })
+          .eq('id', membership.id);
+
+        console.log(`❌ Membership ${membership.id} payment failed: ${messaggio}`);
+      }
+
       return { statusCode: 200, body: 'OK' };
     }
 

@@ -8,8 +8,9 @@ const PaymentSuccessPage: React.FC = () => {
     const [searchParams] = useSearchParams();
     const [updating, setUpdating] = useState(true);
     const [updateError, setUpdateError] = useState<string | null>(null);
-    const [purchaseType, setPurchaseType] = useState<'booking' | 'wallet' | null>(null);
+    const [purchaseType, setPurchaseType] = useState<'booking' | 'wallet' | 'membership' | null>(null);
     const [walletInfo, setWalletInfo] = useState<{ packageName: string; receivedAmount: number } | null>(null);
+    const [membershipInfo, setMembershipInfo] = useState<{ tierName: string; billingCycle: string } | null>(null);
 
     const orderId = searchParams.get('codTrans') || searchParams.get('orderId') || searchParams.get('paymentid');
     const amount = searchParams.get('importo');
@@ -173,6 +174,27 @@ const PaymentSuccessPage: React.FC = () => {
                     return;
                 }
 
+                // 3. Try membership purchases
+                const { data: memberships, error: membershipError } = await supabase
+                    .from('membership_purchases')
+                    .select('*')
+                    .eq('nexi_order_id', orderId)
+                    .limit(1);
+
+                if (!membershipError && memberships && memberships.length > 0) {
+                    const membership = memberships[0];
+                    console.log('Found membership purchase:', membership.id);
+                    setPurchaseType('membership');
+                    setMembershipInfo({
+                        tierName: membership.tier_name,
+                        billingCycle: membership.billing_cycle,
+                    });
+                    // The callback handles payment status + metadata activation
+                    // Just show the success page
+                    setUpdating(false);
+                    return;
+                }
+
                 // Nothing found
                 console.error('No order found for orderId:', orderId);
                 setUpdateError('Order not found');
@@ -222,7 +244,9 @@ const PaymentSuccessPage: React.FC = () => {
                     </h1>
 
                     <p className="text-gray-600 mb-8">
-                        {purchaseType === 'wallet'
+                        {purchaseType === 'membership'
+                            ? `La tua membership ${membershipInfo?.tierName || ''} (${membershipInfo?.billingCycle === 'monthly' ? 'Mensile' : 'Annuale'}) è stata attivata con successo!`
+                            : purchaseType === 'wallet'
                             ? `La tua ricarica ${walletInfo?.packageName || ''} è stata completata! €${walletInfo?.receivedAmount?.toFixed(2) || ''} sono stati aggiunti al tuo wallet.`
                             : 'Il tuo pagamento è stato elaborato con successo.'}
                     </p>
@@ -273,7 +297,14 @@ const PaymentSuccessPage: React.FC = () => {
                             </a>
                         )}
 
-                        {purchaseType === 'wallet' ? (
+                        {purchaseType === 'membership' ? (
+                            <button
+                                onClick={() => navigate('/account/membership')}
+                                className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-200 transition-all"
+                            >
+                                Vai alla Membership
+                            </button>
+                        ) : purchaseType === 'wallet' ? (
                             <button
                                 onClick={() => navigate('/credit-wallet')}
                                 className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-200 transition-all"

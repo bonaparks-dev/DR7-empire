@@ -43,6 +43,9 @@
     X-XSS-Protection = "1; mode=block"
     Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://aistudiocdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.green-api.com https://api.stripe.com https://*.googleapis.com; frame-src https://js.stripe.com https://hooks.stripe.com"
 
+[functions."process-membership-renewals"]
+  schedule = "0 6 * * *"
+
 [dev]
   command = "vite"
   targetPort = 5173
