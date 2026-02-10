@@ -181,6 +181,10 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
           <p><strong>Luogo di Ritiro:</strong> ${pickupLocation}</p>
           <p><strong>Assicurazione:</strong> ${insuranceDisplayName}</p>
           <p><strong>Cauzione:</strong> ${depositAmount}</p>
+          ${booking.booking_details?.secondDriver ? `
+          <p style="margin-top: 10px;"><strong>Secondo Conducente:</strong> ${booking.booking_details.secondDriver.fullName || `${booking.booking_details.secondDriver.firstName} ${booking.booking_details.secondDriver.lastName}`}</p>
+          <p><strong>Telefono 2° conducente:</strong> ${booking.booking_details.secondDriver.phone || 'N/A'}</p>
+          ` : ''}
           <p><strong>Stato Pagamento:</strong> ${booking.payment_status === 'pending' ? 'In attesa' : 'Completato'}</p>
         </div>
 
