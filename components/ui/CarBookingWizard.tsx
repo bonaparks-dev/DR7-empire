@@ -704,13 +704,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           return []; // Return date is after window ends, no valid times
         }
 
+        // Return time must be ≤ pickup time minus 1h30
+        const [pH, pM] = formData.pickupTime.split(':').map(Number);
+        const maxRetMinutes = (pH * 60 + pM) - 90;
+
         return times.filter(time => {
           const [hours, minutes] = time.split(':').map(Number);
           const returnDt = new Date(date);
           returnDt.setHours(hours, minutes, 0, 0);
+          const timeInMinutes = hours * 60 + minutes;
 
-          // Return must be AT OR BEFORE the window end
-          return returnDt <= windowEnd && returnDt > pickup;
+          // Return must be AT OR BEFORE the window end AND ≤ pickup time - 1h30
+          return returnDt <= windowEnd && returnDt > pickup && (maxRetMinutes < 0 || timeInMinutes <= maxRetMinutes);
         });
       }
 
@@ -721,11 +726,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // No availability windows loaded yet or vehicle has no bookings - allow all valid return times
     // The server-side conflict check (checkVehicleAvailability) will catch real conflicts
     const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
+
+    // Return time must be ≤ pickup time minus 1h30 (to avoid exceeding 24h per day)
+    const [pickupH, pickupM] = formData.pickupTime.split(':').map(Number);
+    const maxReturnMinutes = (pickupH * 60 + pickupM) - 90; // pickup time - 1h30
+
     return times.filter(time => {
       const [hours, minutes] = time.split(':').map(Number);
       const returnDt = new Date(date);
       returnDt.setHours(hours, minutes, 0, 0);
-      return returnDt > pickup;
+      const timeInMinutes = hours * 60 + minutes;
+      return returnDt > pickup && (maxReturnMinutes < 0 || timeInMinutes <= maxReturnMinutes);
     });
   };
 
@@ -1480,6 +1491,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }));
     }
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+
+    // When pickup time changes, auto-set return time to pickup time - 1h30
+    if (name === 'pickupTime') {
+      const [h, m] = value.split(':').map(Number);
+      const retMinutes = Math.max(0, (h * 60 + m) - 90);
+      const retH = String(Math.floor(retMinutes / 60)).padStart(2, '0');
+      const retM = String(retMinutes % 60).padStart(2, '0');
+      setFormData(prev => ({ ...prev, returnTime: `${retH}:${retM}` }));
+    }
 
     // Clear generic date error (duration, min rental) if any date/time field changes
     if (['pickupDate', 'pickupTime', 'returnDate', 'returnTime'].includes(name) && errors.date) {
