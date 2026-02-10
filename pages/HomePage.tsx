@@ -11,7 +11,7 @@ const DISPLAY_TITLE: Record<string, string> = {
   'corporate-fleet': 'DR7 Corporate & Utility Fleet Division',
   yachts: 'DR7 Yachting Division',
   jets: 'DR7 Aviation Division',
-  'car-wash-services': 'Prime Wash',
+  'car-wash-services': 'Prime Car Wash',
   'mechanical-services': 'DR7 Rapid Response Services',
   membership: 'DR7 Exclusive Members Club',
   'credit-wallet': 'DR7 Credit Wallet',
@@ -177,6 +177,9 @@ const HomePage: React.FC = () => {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
     >
+      <h1 style={{ position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0,0,0,0)' }}>
+        DR7 Empire — Noleggio Auto di Lusso, Supercar e Servizi Premium in Sardegna
+      </h1>
       <HeroSection />
 
 

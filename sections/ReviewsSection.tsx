@@ -328,12 +328,12 @@ export default function ReviewsSection() {
         name: "DR7 Empire",
         url: "https://dr7empire.com",
         image: "https://dr7empire.com/logo.png",
-        telephone: "+39 000 000 000",
+        telephone: "+39 345 790 5205",
         address: {
-          streetAddress: "Viale Marconi",
+          streetAddress: "Viale Marconi, 229",
           addressLocality: "Cagliari",
-          addressRegion: "SU",
-          postalCode: "09100",
+          addressRegion: "CA",
+          postalCode: "09131",
           addressCountry: "IT",
         },
       }}
