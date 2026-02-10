@@ -220,14 +220,19 @@ const handler: Handler = async (event) => {
       message += `*Assicurazione:* ${insuranceOption}\n`;
       message += `*Totale:* €${totalPrice}\n`;
 
-      // Cauzione (deposit) info
-      const depositAmount = booking.deposit_amount || booking.booking_details?.deposit || 0;
+      // Cauzione (deposit) info — always show
+      const rawDeposit = booking.deposit_amount ?? booking.booking_details?.deposit ?? null;
+      const depositAmount = rawDeposit !== null ? Number(rawDeposit) : null;
       const depositOption = booking.booking_details?.depositOption;
       if (depositOption === 'no_deposit') {
         const surcharge = booking.booking_details?.noDepositSurcharge || 0;
-        message += `*Cauzione:* Senza cauzione (+30% = €${surcharge.toFixed(2)})\n`;
-      } else if (depositAmount > 0) {
+        message += `*Cauzione:* Senza cauzione (+30% = €${Number(surcharge).toFixed(2)})\n`;
+      } else if (depositAmount !== null && depositAmount > 0) {
         message += `*Cauzione:* €${depositAmount}\n`;
+      } else if (depositAmount !== null && depositAmount === 0) {
+        message += `*Cauzione:* €0\n`;
+      } else {
+        message += `*Cauzione:* N/D\n`;
       }
 
       // Second driver info

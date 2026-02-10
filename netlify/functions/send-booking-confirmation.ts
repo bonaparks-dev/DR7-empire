@@ -196,18 +196,21 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     };
     const insuranceDisplayName = insuranceDisplayMap[insuranceOption] || 'Kasko';
 
-    // Get deposit from booking data — differentiate between deposit vs no-deposit option
+    // Get deposit from booking data — check both top-level column and booking_details (admin panel)
     const depositOption = booking.booking_details?.depositOption;
     const noDepositSurcharge = booking.booking_details?.noDepositSurcharge || 0;
-    const rawDeposit = booking.deposit_amount;
+    const rawDepositValue = booking.deposit_amount ?? booking.booking_details?.deposit ?? null;
+    const parsedDeposit = rawDepositValue !== null ? Number(rawDepositValue) : null;
 
     let depositAmount: string;
     if (depositOption === 'no_deposit') {
-      depositAmount = `Senza cauzione (supplemento +30% = €${noDepositSurcharge.toFixed(2)} incluso nel totale)`;
-    } else if (rawDeposit !== undefined && rawDeposit !== null && rawDeposit > 0) {
-      depositAmount = `€${rawDeposit} (al ritiro)`;
-    } else {
+      depositAmount = `Senza cauzione (supplemento +30% = €${Number(noDepositSurcharge).toFixed(2)} incluso nel totale)`;
+    } else if (parsedDeposit !== null && parsedDeposit > 0) {
+      depositAmount = `€${parsedDeposit} (al ritiro)`;
+    } else if (parsedDeposit !== null && parsedDeposit === 0) {
       depositAmount = '€0';
+    } else {
+      depositAmount = 'N/D';
     }
 
     // Get pickup location - replace dr7_office with actual address
