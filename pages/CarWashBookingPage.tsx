@@ -908,11 +908,6 @@ const CarWashBookingPage: React.FC = () => {
           `*Email:* ${formData.email}\n` +
           `*Telefono:* ${customerPhone}\n`;
 
-        if (formData.indirizzo) {
-          const addressParts = [formData.indirizzo, formData.numeroCivico, formData.codicePostale, formData.cittaResidenza, formData.provinciaResidenza].filter(Boolean);
-          whatsappMessage += `*Indirizzo:* ${addressParts.join(', ')}\n`;
-        }
-
         whatsappMessage += `\n*Servizio:* ${whatsappServiceName}\n` +
           `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n` +
           `*Pagamento:* Credit Wallet\n`;
