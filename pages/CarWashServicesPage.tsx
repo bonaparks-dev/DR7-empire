@@ -1065,7 +1065,7 @@ const CarWashServicesPage: React.FC = () => {
                           <img
                             src={extra.image || '/luxurywash.jpeg'}
                             alt={lang === 'it' ? extra.name : extra.nameEn}
-                            className="w-full h-full object-cover object-top"
+                            className="w-full h-full object-cover object-center"
                           />
                         </div>
                         <div className="p-3 flex flex-col flex-grow">
@@ -1119,38 +1119,33 @@ const CarWashServicesPage: React.FC = () => {
                         transition={{ duration: 0.3 }}
                         className="bg-gray-900/60 border border-gray-800 rounded-xl overflow-hidden flex flex-col"
                       >
-                        <div className="aspect-[4/3] overflow-hidden">
+                        {/* Large image area */}
+                        <div className="relative">
                           <img
                             src={exp.image || '/luxurywash.jpeg'}
                             alt={lang === 'it' ? exp.name : exp.nameEn}
-                            className="w-full h-full object-cover object-top"
+                            className="w-full h-auto object-contain"
                           />
-                        </div>
-                        <div className="p-3 flex flex-col flex-grow">
-                          <h3 className="text-white font-bold text-xs leading-tight mb-1">
-                            {lang === 'it' ? exp.name : exp.nameEn}
-                          </h3>
-                          <p className="text-gray-400 text-[11px] leading-snug line-clamp-2 mb-3 flex-grow">
-                            {lang === 'it' ? exp.description : exp.descriptionEn}
-                          </p>
-                          <div className="space-y-1.5 mt-auto">
-                            {exp.priceOptions?.map((option) => {
-                              const isSelected = addedOptionLabel === option.label;
-                              return (
-                                <button
-                                  key={option.label}
-                                  onClick={() => handleUpsellToggleExtra(exp, option)}
-                                  className={`w-full flex justify-between items-center px-3 py-1.5 rounded-full font-semibold text-xs transition-all duration-300 ${
-                                    isSelected
-                                      ? 'bg-green-600 text-white hover:bg-red-500'
-                                      : 'bg-white/10 border border-gray-700 text-white hover:bg-white hover:text-black'
-                                  }`}
-                                >
-                                  <span>{option.label}</span>
-                                  <span>{isSelected ? '✓' : `€${option.price % 1 === 0 ? option.price : option.price.toFixed(2)}`}</span>
-                                </button>
-                              );
-                            })}
+                          {/* Compact time buttons overlaid at the bottom */}
+                          <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
+                            <div className="flex gap-1.5 justify-center flex-wrap">
+                              {exp.priceOptions?.map((option) => {
+                                const isSelected = addedOptionLabel === option.label;
+                                return (
+                                  <button
+                                    key={option.label}
+                                    onClick={() => handleUpsellToggleExtra(exp, option)}
+                                    className={`px-2.5 py-1 rounded-full font-semibold text-[10px] transition-all duration-300 ${
+                                      isSelected
+                                        ? 'bg-green-600 text-white hover:bg-red-500'
+                                        : 'bg-black/60 backdrop-blur-sm border border-white/40 text-white hover:bg-white hover:text-black'
+                                    }`}
+                                  >
+                                    {isSelected ? `${option.label} ✓` : `${option.label} · €${option.price % 1 === 0 ? option.price : option.price.toFixed(2)}`}
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
                       </motion.div>
