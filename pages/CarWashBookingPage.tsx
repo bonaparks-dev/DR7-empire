@@ -809,7 +809,7 @@ const CarWashBookingPage: React.FC = () => {
         // Create booking data for credit payment
         bookingDataWithPayment = {
           ...pendingBookingData,
-          payment_status: 'paid',
+          payment_status: 'succeeded',
           payment_method: 'credit_wallet'
         };
 
