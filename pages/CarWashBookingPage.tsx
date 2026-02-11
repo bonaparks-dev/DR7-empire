@@ -905,12 +905,24 @@ const CarWashBookingPage: React.FC = () => {
           `*Dettagli Prenotazione*\n` +
           `*ID:* DR7-${bookingId}\n` +
           `*Nome:* ${customerName}\n` +
-          `*Telefono:* ${customerPhone}\n` +
-          `*Servizio:* ${whatsappServiceName}\n` +
-          `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n`;
+          `*Email:* ${formData.email}\n` +
+          `*Telefono:* ${customerPhone}\n`;
+
+        if (formData.indirizzo) {
+          const addressParts = [formData.indirizzo, formData.numeroCivico, formData.codicePostale, formData.cittaResidenza, formData.provinciaResidenza].filter(Boolean);
+          whatsappMessage += `*Indirizzo:* ${addressParts.join(', ')}\n`;
+        }
+
+        whatsappMessage += `\n*Servizio:* ${whatsappServiceName}\n` +
+          `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n` +
+          `*Pagamento:* Credit Wallet\n`;
 
         if (notes) {
           whatsappMessage += `*Note:* ${notes}\n`;
+        }
+
+        if (appliedDiscount) {
+          whatsappMessage += `*Sconto:* ${appliedDiscount.code} (-€${birthdayDiscountAmount})\n`;
         }
 
         whatsappMessage += `*Totale:* €${totalPrice}\n\n` +
