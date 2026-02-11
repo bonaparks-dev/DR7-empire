@@ -35,7 +35,7 @@ const BookingConfirmationDetails: React.FC<{ booking: any }> = ({ booking }) => 
         <div className="flex justify-between">
           <span className="text-gray-400">Data:</span>
           <span className="font-semibold text-white">
-            {new Date(booking.appointment_date + 'T00:00:00').toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })}
+            {new Date(booking.appointment_date).toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })}
           </span>
         </div>
         <div className="flex justify-between">
