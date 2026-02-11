@@ -221,6 +221,75 @@ const MAXI_SERVICES: WashService[] = [
   }
 ];
 
+// COMBINED WASH SERVICES (Urban + Maxi paired)
+interface CombinedWashService {
+  id: string;
+  name: string;
+  nameEn: string;
+  image: string;
+  urban: WashService;
+  maxi: WashService;
+}
+
+const COMBINED_WASH_SERVICES: CombinedWashService[] = [
+  {
+    id: 'combined-exterior',
+    name: 'PRIME EXTERIOR CLEAN',
+    nameEn: 'PRIME EXTERIOR CLEAN',
+    image: '/exterior.jpeg',
+    urban: URBAN_SERVICES[0],
+    maxi: MAXI_SERVICES[0],
+  },
+  {
+    id: 'combined-interior',
+    name: 'PRIME INTERIOR CLEAN',
+    nameEn: 'PRIME INTERIOR CLEAN',
+    image: '/combined-interior.jpeg',
+    urban: URBAN_SERVICES[1],
+    maxi: MAXI_SERVICES[1],
+  },
+  {
+    id: 'combined-full',
+    name: 'PRIME FULL CLEAN',
+    nameEn: 'PRIME FULL CLEAN',
+    image: '/combined-full.jpeg',
+    urban: URBAN_SERVICES[2],
+    maxi: MAXI_SERVICES[2],
+  },
+  {
+    id: 'combined-full-n2',
+    name: 'PRIME FULL CLEAN N₂',
+    nameEn: 'PRIME FULL CLEAN N₂',
+    image: '/combined-full-n2.jpeg',
+    urban: URBAN_SERVICES[3],
+    maxi: MAXI_SERVICES[3],
+  },
+  {
+    id: 'combined-topshine',
+    name: 'PRIME TOP SHINE',
+    nameEn: 'PRIME TOP SHINE',
+    image: '/combined-topshine.jpeg',
+    urban: URBAN_SERVICES[4],
+    maxi: MAXI_SERVICES[4],
+  },
+  {
+    id: 'combined-vip',
+    name: 'PRIME VIP EXPERIENCE',
+    nameEn: 'PRIME VIP EXPERIENCE',
+    image: '/combined-vip.jpeg',
+    urban: URBAN_SERVICES[5],
+    maxi: MAXI_SERVICES[5],
+  },
+  {
+    id: 'combined-luxury',
+    name: 'PRIME LUXURY DETAIL',
+    nameEn: 'PRIME LUXURY DETAIL',
+    image: '/combined-luxury.jpeg',
+    urban: URBAN_SERVICES[6],
+    maxi: MAXI_SERVICES[6],
+  },
+];
+
 // PRIME EXTRA CARE (add-ons for Lavaggio - 10 services: 15-24)
 const EXTRA_CARE_SERVICES: WashService[] = [
   {
@@ -467,13 +536,12 @@ const TECH_SERVICES: WashService[] = [
 ];
 
 type MainTabType = 'lavaggio' | 'meccanica';
-type LavaggioCategory = 'moto' | 'urban' | 'maxi' | 'extra' | 'experience';
+type LavaggioCategory = 'moto' | 'wash' | 'extra' | 'experience';
 type MeccanicaCategory = 'tech';
 
 const LAVAGGIO_CATEGORIES = [
   { id: 'moto' as LavaggioCategory, name: 'PRIME MOTO EXPERIENCE', nameEn: 'PRIME MOTO EXPERIENCE' },
-  { id: 'urban' as LavaggioCategory, name: 'PRIME URBAN CLASS', nameEn: 'PRIME URBAN CLASS' },
-  { id: 'maxi' as LavaggioCategory, name: 'PRIME MAXI CLASS', nameEn: 'PRIME MAXI CLASS', subtitle: 'station wagon · SUV · monovolume' },
+  { id: 'wash' as LavaggioCategory, name: 'PRIME WASH', nameEn: 'PRIME WASH' },
   { id: 'extra' as LavaggioCategory, name: 'PRIME EXTRA CARE', nameEn: 'PRIME EXTRA CARE', subtitle: 'in aggiunta a un lavaggio' },
   { id: 'experience' as LavaggioCategory, name: 'PRIME EXPERIENCE', nameEn: 'PRIME EXPERIENCE', subtitle: 'auto di cortesia' },
 ];
@@ -486,7 +554,7 @@ const CarWashServicesPage: React.FC = () => {
   const { lang } = useTranslation();
   const navigate = useNavigate();
   const [mainTab, setMainTab] = useState<MainTabType>('lavaggio');
-  const [lavaggioCategory, setLavaggioCategory] = useState<LavaggioCategory>('urban');
+  const [lavaggioCategory, setLavaggioCategory] = useState<LavaggioCategory>('wash');
   const [meccanicaCategory, setMeccanicaCategory] = useState<MeccanicaCategory>('tech');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
@@ -494,8 +562,6 @@ const CarWashServicesPage: React.FC = () => {
   const getLavaggioServices = (category: LavaggioCategory): WashService[] => {
     switch (category) {
       case 'moto': return MOTO_SERVICES;
-      case 'urban': return URBAN_SERVICES;
-      case 'maxi': return MAXI_SERVICES;
       case 'extra': return EXTRA_CARE_SERVICES;
       case 'experience': return EXPERIENCE_SERVICES;
       default: return [];
@@ -656,53 +722,90 @@ const CarWashServicesPage: React.FC = () => {
 
       {/* Services Grid */}
       <div className="container mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {currentServices.map((service, index) => (
-            <motion.div
-              key={service.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.5, ease: 'easeOut' }}
-              className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg overflow-hidden group transition-all duration-300 hover:border-white/50 hover:shadow-2xl hover:shadow-white/10 flex flex-col"
-            >
-              {/* Service Image - full image display */}
-              <div className="relative">
+        {/* Combined Wash Cards */}
+        {mainTab === 'lavaggio' && lavaggioCategory === 'wash' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {COMBINED_WASH_SERVICES.map((combo) => (
+              <motion.div
+                key={combo.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+                className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg overflow-hidden group transition-all duration-300 hover:border-white/50 hover:shadow-2xl hover:shadow-white/10 flex flex-col"
+              >
                 <img
-                  src={service.image || '/luxurywash.jpeg'}
-                  alt={lang === 'it' ? service.name : service.nameEn}
+                  src={combo.image}
+                  alt={lang === 'it' ? combo.name : combo.nameEn}
                   className="w-full h-auto object-contain"
                 />
-                {/* Single-price: overlay button at bottom */}
-                {!service.priceOptions && (
-                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 to-transparent">
-                    <button
-                      onClick={() => addToCart(service)}
-                      className="w-full bg-black/50 border-2 border-white text-white px-6 py-2 rounded-full font-semibold text-sm hover:bg-white hover:text-black transition-all duration-300"
-                    >
-                      {lang === 'it' ? 'AGGIUNGI AL CARRELLO' : 'ADD TO CART'}
-                    </button>
+                <div className="p-4 flex gap-3">
+                  <button
+                    onClick={() => addToCart(combo.urban)}
+                    className="flex-1 bg-transparent border-2 border-white text-white px-3 py-2 rounded-full font-semibold text-sm hover:bg-white hover:text-black transition-all duration-300"
+                  >
+                    URBAN — €{combo.urban.price % 1 === 0 ? combo.urban.price : combo.urban.price.toFixed(2)}
+                  </button>
+                  <button
+                    onClick={() => addToCart(combo.maxi)}
+                    className="flex-1 bg-transparent border-2 border-white text-white px-3 py-2 rounded-full font-semibold text-sm hover:bg-white hover:text-black transition-all duration-300"
+                  >
+                    MAXI — €{combo.maxi.price % 1 === 0 ? combo.maxi.price : combo.maxi.price.toFixed(2)}
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          /* Standard single-service cards */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {currentServices.map((service, index) => (
+              <motion.div
+                key={service.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+                className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg overflow-hidden group transition-all duration-300 hover:border-white/50 hover:shadow-2xl hover:shadow-white/10 flex flex-col"
+              >
+                {/* Service Image - full image display */}
+                <div className="relative">
+                  <img
+                    src={service.image || '/luxurywash.jpeg'}
+                    alt={lang === 'it' ? service.name : service.nameEn}
+                    className="w-full h-auto object-contain"
+                  />
+                  {/* Single-price: overlay button at bottom */}
+                  {!service.priceOptions && (
+                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 to-transparent">
+                      <button
+                        onClick={() => addToCart(service)}
+                        className="w-full bg-black/50 border-2 border-white text-white px-6 py-2 rounded-full font-semibold text-sm hover:bg-white hover:text-black transition-all duration-300"
+                      >
+                        {lang === 'it' ? 'AGGIUNGI AL CARRELLO' : 'ADD TO CART'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {/* Multi-price options: below the image */}
+                {service.priceOptions && (
+                  <div className="p-4 space-y-2">
+                    {service.priceOptions.map((option) => (
+                      <button
+                        key={option.label}
+                        onClick={() => addToCart(service, option)}
+                        className="w-full flex justify-between items-center bg-transparent border-2 border-white text-white px-6 py-2 rounded-full font-semibold text-sm hover:bg-white hover:text-black transition-all duration-300"
+                      >
+                        <span>{option.label}</span>
+                        <span>€{option.price.toFixed(2)}</span>
+                      </button>
+                    ))}
                   </div>
                 )}
-              </div>
-              {/* Multi-price options: below the image */}
-              {service.priceOptions && (
-                <div className="p-4 space-y-2">
-                  {service.priceOptions.map((option) => (
-                    <button
-                      key={option.label}
-                      onClick={() => addToCart(service, option)}
-                      className="w-full flex justify-between items-center bg-transparent border-2 border-white text-white px-6 py-2 rounded-full font-semibold text-sm hover:bg-white hover:text-black transition-all duration-300"
-                    >
-                      <span>{option.label}</span>
-                      <span>€{option.price.toFixed(2)}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </motion.div>
-          ))}
-        </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Floating Cart Button */}
