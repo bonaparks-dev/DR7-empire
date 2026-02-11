@@ -1104,18 +1104,19 @@ const CarWashBookingPage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <button
-            onClick={() => navigate('/car-wash-services')}
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-6"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            {lang === 'it' ? 'Torna ai servizi' : 'Back to services'}
-          </button>
-          <h1 className="text-4xl font-bold text-white mb-2">
-            {lang === 'it' ? 'Prenota il Servizio' : 'Book Service'}
-          </h1>
+          <div className="flex items-center gap-4 mb-2">
+            <button
+              onClick={() => navigate('/car-wash-services')}
+              className="w-10 h-10 flex items-center justify-center rounded-full border border-gray-700 text-gray-400 hover:text-white hover:border-white transition-all"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <h1 className="text-4xl font-bold text-white">
+              {lang === 'it' ? 'Prenota il Servizio' : 'Book Service'}
+            </h1>
+          </div>
           {hasCartItems ? (
             <div className="mb-8">
               <p className="text-gray-400 mb-3">{lang === 'it' ? 'Il tuo carrello:' : 'Your cart:'}</p>
