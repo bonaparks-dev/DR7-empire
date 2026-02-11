@@ -542,7 +542,6 @@ type MeccanicaCategory = 'tech';
 const LAVAGGIO_CATEGORIES = [
   { id: 'moto' as LavaggioCategory, name: 'PRIME MOTO EXPERIENCE', nameEn: 'PRIME MOTO EXPERIENCE' },
   { id: 'wash' as LavaggioCategory, name: 'PRIME WASH', nameEn: 'PRIME WASH' },
-  { id: 'extra' as LavaggioCategory, name: 'PRIME EXTRA CARE', nameEn: 'PRIME EXTRA CARE', subtitle: 'in aggiunta a un lavaggio' },
   { id: 'experience' as LavaggioCategory, name: 'PRIME EXPERIENCE', nameEn: 'PRIME EXPERIENCE', subtitle: 'auto di cortesia' },
 ];
 
@@ -754,19 +753,6 @@ const CarWashServicesPage: React.FC = () => {
           ))}
         </div>
       </div>
-
-      {/* Extra Care Warning */}
-      {mainTab === 'lavaggio' && lavaggioCategory === 'extra' && (
-        <div className="container mx-auto px-6 mb-6">
-          <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-4 text-center">
-            <p className="text-yellow-200 text-sm">
-              {lang === 'it'
-                ? 'I servizi Extra Care sono disponibili in aggiunta a un lavaggio a scelta obbligatorio.'
-                : 'Extra Care services are available as add-ons to a required wash service.'}
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Services Grid */}
       <div className="container mx-auto px-6">
