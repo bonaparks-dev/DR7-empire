@@ -558,6 +558,9 @@ const CarWashServicesPage: React.FC = () => {
   const [meccanicaCategory, setMeccanicaCategory] = useState<MeccanicaCategory>('tech');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
+  const [showUpsell, setShowUpsell] = useState(false);
+  const [upsellSelectedService, setUpsellSelectedService] = useState<WashService | null>(null);
+  const [upsellAddedExtras, setUpsellAddedExtras] = useState<Set<string>>(new Set());
 
   const getLavaggioServices = (category: LavaggioCategory): WashService[] => {
     switch (category) {
@@ -619,6 +622,49 @@ const CarWashServicesPage: React.FC = () => {
     return cart.some(item =>
       !item.service.id.startsWith('extra-') && !item.service.id.startsWith('tech-')
     );
+  };
+
+  const handleCombinedWashSelect = (service: WashService) => {
+    // Add wash to cart WITHOUT opening cart sidebar
+    setCart(prev => {
+      const existingIndex = prev.findIndex(item =>
+        item.service.id === service.id && !item.selectedOption
+      );
+      if (existingIndex >= 0) {
+        const updated = [...prev];
+        updated[existingIndex].quantity += 1;
+        return updated;
+      }
+      return [...prev, { service, quantity: 1 }];
+    });
+    // Open upsell overlay
+    setUpsellSelectedService(service);
+    setUpsellAddedExtras(new Set());
+    setShowUpsell(true);
+  };
+
+  const handleUpsellAddExtra = (extra: WashService) => {
+    setCart(prev => {
+      const existingIndex = prev.findIndex(item =>
+        item.service.id === extra.id && !item.selectedOption
+      );
+      if (existingIndex >= 0) {
+        const updated = [...prev];
+        updated[existingIndex].quantity += 1;
+        return updated;
+      }
+      return [...prev, { service: extra, quantity: 1 }];
+    });
+    setUpsellAddedExtras(prev => new Set(prev).add(extra.id));
+  };
+
+  const handleReviewCart = () => {
+    setShowUpsell(false);
+    setShowCart(true);
+  };
+
+  const handleSkipUpsell = () => {
+    setShowUpsell(false);
   };
 
   const handleCheckout = () => {
@@ -741,13 +787,13 @@ const CarWashServicesPage: React.FC = () => {
                 />
                 <div className="p-4 flex gap-3">
                   <button
-                    onClick={() => addToCart(combo.urban)}
+                    onClick={() => handleCombinedWashSelect(combo.urban)}
                     className="flex-1 bg-transparent border-2 border-white text-white px-3 py-2 rounded-full font-semibold text-sm hover:bg-white hover:text-black transition-all duration-300"
                   >
                     URBAN — €{combo.urban.price % 1 === 0 ? combo.urban.price : combo.urban.price.toFixed(2)}
                   </button>
                   <button
-                    onClick={() => addToCart(combo.maxi)}
+                    onClick={() => handleCombinedWashSelect(combo.maxi)}
                     className="flex-1 bg-transparent border-2 border-white text-white px-3 py-2 rounded-full font-semibold text-sm hover:bg-white hover:text-black transition-all duration-300"
                   >
                     MAXI — €{combo.maxi.price % 1 === 0 ? combo.maxi.price : combo.maxi.price.toFixed(2)}
@@ -912,6 +958,129 @@ const CarWashServicesPage: React.FC = () => {
               )}
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* Extra Care Upsell Overlay */}
+      <AnimatePresence>
+        {showUpsell && upsellSelectedService && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black overflow-y-auto"
+          >
+            {/* Sticky header */}
+            <div className="sticky top-0 z-10 bg-black/90 backdrop-blur-md border-b border-gray-800">
+              <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-white font-bold text-sm truncate">
+                    {lang === 'it' ? upsellSelectedService.name : upsellSelectedService.nameEn}
+                  </span>
+                  <span className="text-gray-400 text-sm flex-shrink-0">
+                    €{upsellSelectedService.price % 1 === 0 ? upsellSelectedService.price : upsellSelectedService.price.toFixed(2)}
+                  </span>
+                </div>
+                <button
+                  onClick={handleReviewCart}
+                  className="bg-white text-black px-5 py-2 rounded-full font-bold text-sm hover:bg-gray-200 transition-colors flex-shrink-0"
+                >
+                  {lang === 'it' ? 'Rivedi carrello' : 'Review Cart'}
+                </button>
+              </div>
+            </div>
+
+            {/* Confirmation section */}
+            <div className="container mx-auto px-4 pt-12 pb-8 text-center">
+              <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
+                {lang === 'it' ? 'Completa il tuo lavaggio' : 'Complete your wash'}
+              </h2>
+              <p className="text-gray-400 text-base max-w-md mx-auto">
+                {lang === 'it'
+                  ? 'Aggiungi un servizio Extra Care per ottenere il massimo dal tuo lavaggio.'
+                  : 'Add an Extra Care service to get the most out of your wash.'}
+              </p>
+            </div>
+
+            {/* Extra Care grid */}
+            <div className="container mx-auto px-4 pb-8">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {EXTRA_CARE_SERVICES.map((extra) => {
+                  const isAdded = upsellAddedExtras.has(extra.id);
+                  return (
+                    <motion.div
+                      key={extra.id}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="bg-gray-900/60 border border-gray-800 rounded-xl overflow-hidden flex flex-col"
+                    >
+                      <div className="aspect-[4/3] overflow-hidden">
+                        <img
+                          src={extra.image || '/luxurywash.jpeg'}
+                          alt={lang === 'it' ? extra.name : extra.nameEn}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="p-3 flex flex-col flex-grow">
+                        <h3 className="text-white font-bold text-xs leading-tight mb-1">
+                          {lang === 'it' ? extra.name : extra.nameEn}
+                        </h3>
+                        <p className="text-gray-400 text-[11px] leading-snug line-clamp-2 mb-2 flex-grow">
+                          {lang === 'it' ? extra.description : extra.descriptionEn}
+                        </p>
+                        <div className="flex items-center justify-between mt-auto">
+                          <span className="text-white font-bold text-sm">
+                            €{extra.price % 1 === 0 ? extra.price : extra.price.toFixed(2)}
+                            {extra.priceUnit && (
+                              <span className="text-gray-500 text-[10px] font-normal ml-1">{extra.priceUnit}</span>
+                            )}
+                          </span>
+                          <button
+                            onClick={() => !isAdded && handleUpsellAddExtra(extra)}
+                            disabled={isAdded}
+                            className={`px-3 py-1.5 rounded-full font-semibold text-xs transition-all duration-300 ${
+                              isAdded
+                                ? 'bg-green-600 text-white cursor-default'
+                                : 'bg-white text-black hover:bg-gray-200'
+                            }`}
+                          >
+                            {isAdded
+                              ? (lang === 'it' ? 'Aggiunto' : 'Added')
+                              : (lang === 'it' ? 'Aggiungi' : 'Add')
+                            }
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Bottom CTA */}
+            <div className="container mx-auto px-4 pb-12">
+              <div className="max-w-md mx-auto text-center space-y-4">
+                <button
+                  onClick={handleReviewCart}
+                  className="w-full bg-white text-black py-4 rounded-full font-bold text-lg hover:bg-gray-200 transition-colors"
+                >
+                  {lang === 'it' ? 'Rivedi carrello' : 'Review Cart'} — €{getCartTotal().toFixed(2)}
+                </button>
+                <button
+                  onClick={handleSkipUpsell}
+                  className="text-gray-400 hover:text-white text-sm font-medium transition-colors"
+                >
+                  {lang === 'it' ? 'No grazie, continua a sfogliare' : 'No thanks, continue browsing'}
+                </button>
+              </div>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

@@ -48,6 +48,17 @@ const MembershipEnrollmentPage: React.FC = () => {
         }
 
         try {
+            // Calculate renewal date: extend from current expiry if renewing early
+            let baseDate = new Date();
+            if (user.membership?.renewalDate) {
+                const currentExpiry = new Date(user.membership.renewalDate);
+                if (currentExpiry > baseDate) {
+                    baseDate = currentExpiry; // Extend from current expiry, don't lose remaining days
+                }
+            }
+            const daysToAdd = billingCycle === 'monthly' ? 30 : 365;
+            const renewalDate = new Date(baseDate.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
+
             // 1. Save membership purchase as pending
             const { data: purchaseData, error: dbError } = await supabase
                 .from('membership_purchases')
@@ -61,7 +72,7 @@ const MembershipEnrollmentPage: React.FC = () => {
                     payment_method: 'nexi',
                     payment_status: 'pending',
                     subscription_status: 'active',
-                    renewal_date: new Date(Date.now() + (billingCycle === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000).toISOString()
+                    renewal_date: renewalDate.toISOString()
                 })
                 .select()
                 .single();

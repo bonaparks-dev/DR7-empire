@@ -299,15 +299,13 @@ exports.handler = async (event) => {
           `Tier: ${membership.tier_name}\n` +
           `Piano: ${membership.billing_cycle}\n` +
           `Prezzo: €${membership.price}\n` +
-          `User ID: ${membership.user_id}\n` +
-          `Contract ID: ${contractId}\n` +
-          `Rinnovo automatico: ${membership.is_recurring ? 'Si' : 'No'}`;
+          `User ID: ${membership.user_id}`;
 
         try {
           await fetch(`${process.env.URL || 'https://dr7empire.com'}/.netlify/functions/send-whatsapp-notification`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: whatsappMsg, type: 'membership_activation' }),
+            body: JSON.stringify({ customMessage: whatsappMsg }),
           });
         } catch (whatsErr) {
           console.error('WhatsApp notification failed:', whatsErr);
