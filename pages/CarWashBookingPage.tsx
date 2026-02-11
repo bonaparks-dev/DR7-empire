@@ -481,7 +481,7 @@ const CarWashBookingPage: React.FC = () => {
   };
 
   const isValidAppointmentTime = (date: string, time: string) => {
-    if (!date || !time || !selectedService) return false;
+    if (!date || !time || !hasValidBooking) return false;
 
     // Parse date string as local date to avoid timezone issues
     const [year, month, day] = date.split('-').map(Number);
