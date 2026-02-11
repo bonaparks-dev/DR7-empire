@@ -1065,7 +1065,7 @@ const CarWashServicesPage: React.FC = () => {
                           <img
                             src={extra.image || '/luxurywash.jpeg'}
                             alt={lang === 'it' ? extra.name : extra.nameEn}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover object-top"
                           />
                         </div>
                         <div className="p-3 flex flex-col flex-grow">
@@ -1123,7 +1123,7 @@ const CarWashServicesPage: React.FC = () => {
                           <img
                             src={exp.image || '/luxurywash.jpeg'}
                             alt={lang === 'it' ? exp.name : exp.nameEn}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover object-top"
                           />
                         </div>
                         <div className="p-3 flex flex-col flex-grow">
