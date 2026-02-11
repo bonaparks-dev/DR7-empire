@@ -1061,13 +1061,11 @@ const CarWashServicesPage: React.FC = () => {
                         transition={{ duration: 0.3 }}
                         className="bg-gray-900/60 border border-gray-800 rounded-xl overflow-hidden flex flex-col"
                       >
-                        <div className="aspect-[4/3] overflow-hidden">
-                          <img
-                            src={extra.image || '/luxurywash.jpeg'}
-                            alt={lang === 'it' ? extra.name : extra.nameEn}
-                            className="w-full h-full object-cover object-center"
-                          />
-                        </div>
+                        <img
+                          src={extra.image || '/luxurywash.jpeg'}
+                          alt={lang === 'it' ? extra.name : extra.nameEn}
+                          className="w-full h-auto object-contain"
+                        />
                         <div className="p-3 flex flex-col flex-grow">
                           <h3 className="text-white font-bold text-xs leading-tight mb-1">
                             {lang === 'it' ? extra.name : extra.nameEn}
