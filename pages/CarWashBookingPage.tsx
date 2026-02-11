@@ -740,11 +740,11 @@ const CarWashBookingPage: React.FC = () => {
         codicePostale: formData.codicePostale,
         provinciaResidenza: formData.provinciaResidenza
       },
-      cart_items: hasCartItems ? cartItems : null, // Store cart items for reference
       appointment_date: adjustedDateTime.toISOString(),
       appointment_time: formData.appointmentTime,
       booking_details: {
-        notes: formData.notes
+        notes: formData.notes,
+        ...(hasCartItems ? { cart_items: cartItems } : {})
       },
       status: 'confirmed',
       payment_status: 'pending',
