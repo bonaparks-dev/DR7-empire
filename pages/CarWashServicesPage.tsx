@@ -1119,33 +1119,29 @@ const CarWashServicesPage: React.FC = () => {
                         transition={{ duration: 0.3 }}
                         className="bg-gray-900/60 border border-gray-800 rounded-xl overflow-hidden flex flex-col"
                       >
-                        {/* Large image area */}
-                        <div className="relative">
-                          <img
-                            src={exp.image || '/luxurywash.jpeg'}
-                            alt={lang === 'it' ? exp.name : exp.nameEn}
-                            className="w-full h-auto object-contain"
-                          />
-                          {/* Compact time buttons overlaid at the bottom */}
-                          <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
-                            <div className="flex gap-1.5 justify-center flex-wrap">
-                              {exp.priceOptions?.map((option) => {
-                                const isSelected = addedOptionLabel === option.label;
-                                return (
-                                  <button
-                                    key={option.label}
-                                    onClick={() => handleUpsellToggleExtra(exp, option)}
-                                    className={`px-2.5 py-1 rounded-full font-semibold text-[10px] transition-all duration-300 ${
-                                      isSelected
-                                        ? 'bg-green-600 text-white hover:bg-red-500'
-                                        : 'bg-black/60 backdrop-blur-sm border border-white/40 text-white hover:bg-white hover:text-black'
-                                    }`}
-                                  >
-                                    {isSelected ? `${option.label} ✓` : `${option.label} · €${option.price % 1 === 0 ? option.price : option.price.toFixed(2)}`}
-                                  </button>
-                                );
-                              })}
-                            </div>
+                        <img
+                          src={exp.image || '/luxurywash.jpeg'}
+                          alt={lang === 'it' ? exp.name : exp.nameEn}
+                          className="w-full h-auto object-contain"
+                        />
+                        <div className="p-3">
+                          <div className="flex gap-1.5 justify-center flex-wrap">
+                            {exp.priceOptions?.map((option) => {
+                              const isSelected = addedOptionLabel === option.label;
+                              return (
+                                <button
+                                  key={option.label}
+                                  onClick={() => handleUpsellToggleExtra(exp, option)}
+                                  className={`px-3 py-1.5 rounded-full font-semibold text-xs transition-all duration-300 ${
+                                    isSelected
+                                      ? 'bg-green-600 text-white hover:bg-red-500'
+                                      : 'border border-white/40 text-white hover:bg-white hover:text-black'
+                                  }`}
+                                >
+                                  {isSelected ? `${option.label} ✓` : `${option.label} · €${option.price % 1 === 0 ? option.price : option.price.toFixed(2)}`}
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
                       </motion.div>
