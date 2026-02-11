@@ -540,9 +540,8 @@ type LavaggioCategory = 'moto' | 'wash' | 'extra' | 'experience';
 type MeccanicaCategory = 'tech';
 
 const LAVAGGIO_CATEGORIES = [
-  { id: 'moto' as LavaggioCategory, name: 'PRIME MOTO EXPERIENCE', nameEn: 'PRIME MOTO EXPERIENCE' },
   { id: 'wash' as LavaggioCategory, name: 'PRIME WASH', nameEn: 'PRIME WASH' },
-  { id: 'experience' as LavaggioCategory, name: 'PRIME EXPERIENCE', nameEn: 'PRIME EXPERIENCE', subtitle: 'auto di cortesia' },
+  { id: 'moto' as LavaggioCategory, name: 'PRIME MOTO EXPERIENCE', nameEn: 'PRIME MOTO EXPERIENCE' },
 ];
 
 const MECCANICA_CATEGORIES = [
@@ -558,6 +557,7 @@ const CarWashServicesPage: React.FC = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
   const [showUpsell, setShowUpsell] = useState(false);
+  const [upsellStep, setUpsellStep] = useState<1 | 2>(1);
   const [upsellSelectedService, setUpsellSelectedService] = useState<WashService | null>(null);
   const [upsellAddedExtras, setUpsellAddedExtras] = useState<Set<string>>(new Set());
 
@@ -636,26 +636,53 @@ const CarWashServicesPage: React.FC = () => {
       }
       return [...prev, { service, quantity: 1 }];
     });
-    // Open upsell overlay
+    // Open upsell overlay at step 1
     setUpsellSelectedService(service);
     setUpsellAddedExtras(new Set());
+    setUpsellStep(1);
     setShowUpsell(true);
   };
 
-  const handleUpsellToggleExtra = (extra: WashService) => {
-    const isCurrentlyAdded = upsellAddedExtras.has(extra.id);
+  const handleUpsellToggleExtra = (extra: WashService, selectedOption?: { label: string; price: number }) => {
+    const trackingKey = selectedOption ? `${extra.id}:${selectedOption.label}` : extra.id;
+    const isCurrentlyAdded = upsellAddedExtras.has(trackingKey);
     if (isCurrentlyAdded) {
       // Remove from cart
-      setCart(prev => prev.filter(item => item.service.id !== extra.id));
+      setCart(prev => prev.filter(item =>
+        !(item.service.id === extra.id && item.selectedOption?.label === selectedOption?.label)
+      ));
       setUpsellAddedExtras(prev => {
         const next = new Set(prev);
-        next.delete(extra.id);
+        next.delete(trackingKey);
         return next;
       });
     } else {
-      // Add to cart
-      setCart(prev => [...prev, { service: extra, quantity: 1 }]);
-      setUpsellAddedExtras(prev => new Set(prev).add(extra.id));
+      // For priceOptions services, remove any previous option of the same service first
+      if (selectedOption) {
+        setCart(prev => prev.filter(item => item.service.id !== extra.id));
+        setUpsellAddedExtras(prev => {
+          const next = new Set(prev);
+          // Remove all keys for this service
+          for (const key of next) {
+            if (key.startsWith(extra.id + ':')) next.delete(key);
+          }
+          next.add(trackingKey);
+          return next;
+        });
+        setCart(prev => [...prev, { service: extra, quantity: 1, selectedOption }]);
+      } else {
+        setCart(prev => [...prev, { service: extra, quantity: 1 }]);
+        setUpsellAddedExtras(prev => new Set(prev).add(trackingKey));
+      }
+    }
+  };
+
+  const handleNextUpsellStep = () => {
+    if (upsellStep === 1) {
+      setUpsellStep(2);
+    } else {
+      setShowUpsell(false);
+      setShowCart(true);
     }
   };
 
@@ -665,7 +692,11 @@ const CarWashServicesPage: React.FC = () => {
   };
 
   const handleSkipUpsell = () => {
-    setShowUpsell(false);
+    if (upsellStep === 1) {
+      setUpsellStep(2);
+    } else {
+      setShowUpsell(false);
+    }
   };
 
   const handleCheckout = () => {
@@ -978,92 +1009,174 @@ const CarWashServicesPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Step indicator */}
+            <div className="container mx-auto px-4 pt-6 pb-2 flex justify-center gap-2">
+              <div className={`w-2 h-2 rounded-full transition-colors ${upsellStep === 1 ? 'bg-white' : 'bg-gray-600'}`} />
+              <div className={`w-2 h-2 rounded-full transition-colors ${upsellStep === 2 ? 'bg-white' : 'bg-gray-600'}`} />
+            </div>
+
             {/* Confirmation section */}
-            <div className="container mx-auto px-4 pt-12 pb-8 text-center">
+            <div className="container mx-auto px-4 pt-6 pb-8 text-center">
               <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
                 <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
-                {lang === 'it' ? 'Completa il tuo lavaggio' : 'Complete your wash'}
-              </h2>
-              <p className="text-gray-400 text-base max-w-md mx-auto">
-                {lang === 'it'
-                  ? 'Aggiungi un servizio Extra Care per ottenere il massimo dal tuo lavaggio.'
-                  : 'Add an Extra Care service to get the most out of your wash.'}
-              </p>
+              {upsellStep === 1 ? (
+                <>
+                  <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
+                    {lang === 'it' ? 'Completa il tuo lavaggio' : 'Complete your wash'}
+                  </h2>
+                  <p className="text-gray-400 text-base max-w-md mx-auto">
+                    {lang === 'it'
+                      ? 'Aggiungi un servizio Extra Care per ottenere il massimo dal tuo lavaggio.'
+                      : 'Add an Extra Care service to get the most out of your wash.'}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
+                    {lang === 'it' ? 'Vivi l\'attesa in grande stile' : 'Experience the wait in style'}
+                  </h2>
+                  <p className="text-gray-400 text-base max-w-md mx-auto">
+                    {lang === 'it'
+                      ? 'Guida un\'auto di cortesia o una supercar mentre il tuo veicolo viene trattato.'
+                      : 'Drive a courtesy car or supercar while your vehicle is being treated.'}
+                  </p>
+                </>
+              )}
             </div>
 
-            {/* Extra Care grid */}
-            <div className="container mx-auto px-4 pb-8">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {EXTRA_CARE_SERVICES.map((extra) => {
-                  const isAdded = upsellAddedExtras.has(extra.id);
-                  return (
-                    <motion.div
-                      key={extra.id}
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="bg-gray-900/60 border border-gray-800 rounded-xl overflow-hidden flex flex-col"
-                    >
-                      <div className="aspect-[4/3] overflow-hidden">
-                        <img
-                          src={extra.image || '/luxurywash.jpeg'}
-                          alt={lang === 'it' ? extra.name : extra.nameEn}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="p-3 flex flex-col flex-grow">
-                        <h3 className="text-white font-bold text-xs leading-tight mb-1">
-                          {lang === 'it' ? extra.name : extra.nameEn}
-                        </h3>
-                        <p className="text-gray-400 text-[11px] leading-snug line-clamp-2 mb-2 flex-grow">
-                          {lang === 'it' ? extra.description : extra.descriptionEn}
-                        </p>
-                        <div className="flex items-center justify-between mt-auto">
-                          <span className="text-white font-bold text-sm">
-                            €{extra.price % 1 === 0 ? extra.price : extra.price.toFixed(2)}
-                            {extra.priceUnit && (
-                              <span className="text-gray-500 text-[10px] font-normal ml-1">{extra.priceUnit}</span>
-                            )}
-                          </span>
-                          <button
-                            onClick={() => handleUpsellToggleExtra(extra)}
-                            className={`px-3 py-1.5 rounded-full font-semibold text-xs transition-all duration-300 ${
-                              isAdded
-                                ? 'bg-green-600 text-white hover:bg-red-500'
-                                : 'bg-white text-black hover:bg-gray-200'
-                            }`}
-                          >
-                            {isAdded
-                              ? (lang === 'it' ? 'Aggiunto ✓' : 'Added ✓')
-                              : (lang === 'it' ? 'Aggiungi' : 'Add')
-                            }
-                          </button>
+            {/* Step 1: Extra Care grid */}
+            {upsellStep === 1 && (
+              <div className="container mx-auto px-4 pb-8">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {EXTRA_CARE_SERVICES.map((extra) => {
+                    const isAdded = upsellAddedExtras.has(extra.id);
+                    return (
+                      <motion.div
+                        key={extra.id}
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="bg-gray-900/60 border border-gray-800 rounded-xl overflow-hidden flex flex-col"
+                      >
+                        <div className="aspect-[4/3] overflow-hidden">
+                          <img
+                            src={extra.image || '/luxurywash.jpeg'}
+                            alt={lang === 'it' ? extra.name : extra.nameEn}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
+                        <div className="p-3 flex flex-col flex-grow">
+                          <h3 className="text-white font-bold text-xs leading-tight mb-1">
+                            {lang === 'it' ? extra.name : extra.nameEn}
+                          </h3>
+                          <p className="text-gray-400 text-[11px] leading-snug line-clamp-2 mb-2 flex-grow">
+                            {lang === 'it' ? extra.description : extra.descriptionEn}
+                          </p>
+                          <div className="flex items-center justify-between mt-auto">
+                            <span className="text-white font-bold text-sm">
+                              €{extra.price % 1 === 0 ? extra.price : extra.price.toFixed(2)}
+                              {extra.priceUnit && (
+                                <span className="text-gray-500 text-[10px] font-normal ml-1">{extra.priceUnit}</span>
+                              )}
+                            </span>
+                            <button
+                              onClick={() => handleUpsellToggleExtra(extra)}
+                              className={`px-3 py-1.5 rounded-full font-semibold text-xs transition-all duration-300 ${
+                                isAdded
+                                  ? 'bg-green-600 text-white hover:bg-red-500'
+                                  : 'bg-white text-black hover:bg-gray-200'
+                              }`}
+                            >
+                              {isAdded
+                                ? (lang === 'it' ? 'Aggiunto ✓' : 'Added ✓')
+                                : (lang === 'it' ? 'Aggiungi' : 'Add')
+                              }
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Step 2: Experience services */}
+            {upsellStep === 2 && (
+              <div className="container mx-auto px-4 pb-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+                  {EXPERIENCE_SERVICES.map((exp) => {
+                    const addedOptionKey = Array.from(upsellAddedExtras).find(key => key.startsWith(exp.id + ':'));
+                    const addedOptionLabel = addedOptionKey ? addedOptionKey.split(':')[1] : null;
+                    return (
+                      <motion.div
+                        key={exp.id}
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="bg-gray-900/60 border border-gray-800 rounded-xl overflow-hidden flex flex-col"
+                      >
+                        <div className="aspect-[4/3] overflow-hidden">
+                          <img
+                            src={exp.image || '/luxurywash.jpeg'}
+                            alt={lang === 'it' ? exp.name : exp.nameEn}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="p-3 flex flex-col flex-grow">
+                          <h3 className="text-white font-bold text-xs leading-tight mb-1">
+                            {lang === 'it' ? exp.name : exp.nameEn}
+                          </h3>
+                          <p className="text-gray-400 text-[11px] leading-snug line-clamp-2 mb-3 flex-grow">
+                            {lang === 'it' ? exp.description : exp.descriptionEn}
+                          </p>
+                          <div className="space-y-1.5 mt-auto">
+                            {exp.priceOptions?.map((option) => {
+                              const isSelected = addedOptionLabel === option.label;
+                              return (
+                                <button
+                                  key={option.label}
+                                  onClick={() => handleUpsellToggleExtra(exp, option)}
+                                  className={`w-full flex justify-between items-center px-3 py-1.5 rounded-full font-semibold text-xs transition-all duration-300 ${
+                                    isSelected
+                                      ? 'bg-green-600 text-white hover:bg-red-500'
+                                      : 'bg-white/10 border border-gray-700 text-white hover:bg-white hover:text-black'
+                                  }`}
+                                >
+                                  <span>{option.label}</span>
+                                  <span>{isSelected ? '✓' : `€${option.price % 1 === 0 ? option.price : option.price.toFixed(2)}`}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Bottom CTA */}
             <div className="container mx-auto px-4 pb-12">
               <div className="max-w-md mx-auto text-center space-y-4">
                 <button
-                  onClick={handleReviewCart}
+                  onClick={handleNextUpsellStep}
                   className="w-full bg-white text-black py-4 rounded-full font-bold text-lg hover:bg-gray-200 transition-colors"
                 >
-                  {lang === 'it' ? 'Rivedi carrello' : 'Review Cart'} — €{getCartTotal().toFixed(2)}
+                  {upsellStep === 1
+                    ? (lang === 'it' ? 'Continua' : 'Continue')
+                    : `${lang === 'it' ? 'Rivedi carrello' : 'Review Cart'} — €${getCartTotal().toFixed(2)}`
+                  }
                 </button>
                 <button
                   onClick={handleSkipUpsell}
                   className="text-gray-400 hover:text-white text-sm font-medium transition-colors"
                 >
-                  {lang === 'it' ? 'No grazie, continua a sfogliare' : 'No thanks, continue browsing'}
+                  {lang === 'it' ? 'Salta' : 'Skip'}
                 </button>
               </div>
             </div>
