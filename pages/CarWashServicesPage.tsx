@@ -236,7 +236,7 @@ const COMBINED_WASH_SERVICES: CombinedWashService[] = [
     id: 'combined-exterior',
     name: 'PRIME EXTERIOR CLEAN',
     nameEn: 'PRIME EXTERIOR CLEAN',
-    image: '/exterior.jpeg',
+    image: '/combined-exterior.jpeg',
     urban: URBAN_SERVICES[0],
     maxi: MAXI_SERVICES[0],
   },
@@ -643,19 +643,21 @@ const CarWashServicesPage: React.FC = () => {
     setShowUpsell(true);
   };
 
-  const handleUpsellAddExtra = (extra: WashService) => {
-    setCart(prev => {
-      const existingIndex = prev.findIndex(item =>
-        item.service.id === extra.id && !item.selectedOption
-      );
-      if (existingIndex >= 0) {
-        const updated = [...prev];
-        updated[existingIndex].quantity += 1;
-        return updated;
-      }
-      return [...prev, { service: extra, quantity: 1 }];
-    });
-    setUpsellAddedExtras(prev => new Set(prev).add(extra.id));
+  const handleUpsellToggleExtra = (extra: WashService) => {
+    const isCurrentlyAdded = upsellAddedExtras.has(extra.id);
+    if (isCurrentlyAdded) {
+      // Remove from cart
+      setCart(prev => prev.filter(item => item.service.id !== extra.id));
+      setUpsellAddedExtras(prev => {
+        const next = new Set(prev);
+        next.delete(extra.id);
+        return next;
+      });
+    } else {
+      // Add to cart
+      setCart(prev => [...prev, { service: extra, quantity: 1 }]);
+      setUpsellAddedExtras(prev => new Set(prev).add(extra.id));
+    }
   };
 
   const handleReviewCart = () => {
@@ -1042,16 +1044,15 @@ const CarWashServicesPage: React.FC = () => {
                             )}
                           </span>
                           <button
-                            onClick={() => !isAdded && handleUpsellAddExtra(extra)}
-                            disabled={isAdded}
+                            onClick={() => handleUpsellToggleExtra(extra)}
                             className={`px-3 py-1.5 rounded-full font-semibold text-xs transition-all duration-300 ${
                               isAdded
-                                ? 'bg-green-600 text-white cursor-default'
+                                ? 'bg-green-600 text-white hover:bg-red-500'
                                 : 'bg-white text-black hover:bg-gray-200'
                             }`}
                           >
                             {isAdded
-                              ? (lang === 'it' ? 'Aggiunto' : 'Added')
+                              ? (lang === 'it' ? 'Aggiunto ✓' : 'Added ✓')
                               : (lang === 'it' ? 'Aggiungi' : 'Add')
                             }
                           </button>
