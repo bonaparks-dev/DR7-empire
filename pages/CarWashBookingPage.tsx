@@ -989,7 +989,7 @@ const CarWashBookingPage: React.FC = () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            amount: calculateTotal() * 100, // Convert to cents
+            amount: Math.round(calculateTotal() * 100), // Convert to cents
             currency: 'EUR',
             orderId: nexiOrderId,
             description: `Lavaggio ${nexiServiceName}`,
