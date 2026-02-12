@@ -172,10 +172,7 @@ exports.handler = async (event) => {
         // 3. Wait briefly for trigger to complete, then update with full data
         if (customerData) {
             // Small delay to let the trigger create the initial record
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            // Ensure the user_id matches the new user
-            customerData.user_id = userId;
+            await new Promise(resolve => setTimeout(resolve, 800));
 
             // Force source to be 'website' (not 'website_registration' from trigger)
             customerData.source = 'website';
@@ -186,46 +183,67 @@ exports.handler = async (event) => {
                 delete customerData.codiceFiscale;
             }
 
-            console.log('Upserting customer data for user:', userId);
-            console.log('Customer data keys:', Object.keys(customerData));
+            // Remove empty strings for date fields (PostgREST can't cast '' to date)
+            if (customerData.data_nascita === '') delete customerData.data_nascita;
 
-            const { data: upsertedData, error: profileError } = await supabase
+            // Prepare update payload (without user_id — that's the filter key)
+            const updatePayload = { ...customerData };
+            delete updatePayload.user_id;
+
+            console.log('Updating customer data for user:', userId);
+            console.log('Customer data keys:', Object.keys(updatePayload));
+
+            // Try UPDATE first (trigger should have created the record)
+            const { data: updatedData, error: updateError, count } = await supabase
                 .from('customers_extended')
-                .upsert(customerData, {
-                    onConflict: 'user_id',  // Specify the conflict column
-                    ignoreDuplicates: false  // Force update on conflict
-                })
+                .update(updatePayload)
+                .eq('user_id', userId)
                 .select();
 
-            if (profileError) {
-                console.error('Profile upsert error:', profileError);
-                console.error('Customer data that failed:', JSON.stringify(customerData, null, 2));
+            if (updateError) {
+                console.error('Profile UPDATE error:', updateError);
+                console.error('Customer data that failed:', JSON.stringify(updatePayload, null, 2));
 
-                // Try a direct UPDATE as fallback
-                console.log('Attempting direct UPDATE as fallback...');
-                const { error: updateError } = await supabase
+                // Fallback: INSERT if the trigger didn't create the record
+                console.log('Attempting INSERT as fallback...');
+                customerData.user_id = userId;
+                const { error: insertError } = await supabase
                     .from('customers_extended')
-                    .update(customerData)
-                    .eq('user_id', userId);
+                    .insert(customerData);
 
-                if (updateError) {
-                    console.error('Direct UPDATE also failed:', updateError);
+                if (insertError) {
+                    console.error('INSERT also failed:', insertError);
                     return {
                         statusCode: 500,
                         body: JSON.stringify({
                             error: 'Account created but failed to save profile data. Please contact support.',
                             userId: userId,
-                            details: profileError.message,
-                            code: profileError.code,
-                            hint: profileError.hint,
-                            dbDetails: profileError.details
+                            details: updateError.message,
+                            code: updateError.code,
+                            hint: updateError.hint,
+                            dbDetails: updateError.details
                         })
                     };
                 }
 
-                console.log('Direct UPDATE succeeded!');
+                console.log('INSERT fallback succeeded!');
+            } else if (!updatedData || updatedData.length === 0) {
+                // UPDATE matched 0 rows — trigger didn't create the record yet
+                console.log('UPDATE matched 0 rows, inserting...');
+                customerData.user_id = userId;
+                const { error: insertError } = await supabase
+                    .from('customers_extended')
+                    .insert(customerData);
+
+                if (insertError) {
+                    console.error('INSERT after 0-row update failed:', insertError);
+                    // Non-fatal: the auth user exists, profile can be completed later
+                    console.warn('Profile data not saved, but auth user created successfully');
+                } else {
+                    console.log('INSERT succeeded after 0-row update');
+                }
             } else {
-                console.log('Profile upserted successfully:', upsertedData);
+                console.log('Profile updated successfully:', updatedData);
             }
         }
 
