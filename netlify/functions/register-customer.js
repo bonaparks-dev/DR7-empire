@@ -1,5 +1,4 @@
 const { createClient } = require('@supabase/supabase-js');
-const nodemailer = require('nodemailer');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -119,50 +118,55 @@ exports.handler = async (event) => {
                 const confirmationLink = linkData.properties.action_link;
                 console.log('Confirmation link generated for:', email);
 
-                // Send verification email via SMTP
-                if (process.env.SMTP_USER && process.env.SMTP_PASSWORD) {
-                    const smtpPort = parseInt(process.env.SMTP_PORT || '465');
-                    const transporter = nodemailer.createTransport({
-                        host: process.env.SMTP_HOST || 'smtp.resend.com',
-                        port: smtpPort,
-                        secure: smtpPort === 465,
-                        auth: {
-                            user: process.env.SMTP_USER,
-                            pass: process.env.SMTP_PASSWORD,
-                        },
-                    });
-
+                // Send verification email via Resend HTTP API
+                const resendApiKey = process.env.RESEND_API_KEY || process.env.SMTP_PASSWORD;
+                if (resendApiKey) {
                     const customerName = customerData?.nome
                         ? `${customerData.nome} ${customerData.cognome || ''}`.trim()
                         : email;
 
-                    await transporter.sendMail({
-                        from: `"DR7 Empire" <${process.env.SMTP_FROM || 'info@dr7.app'}>`,
-                        to: email,
-                        subject: 'Conferma il tuo indirizzo email — DR7 Empire',
-                        html: `
-                            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #000; color: #fff; padding: 40px; border-radius: 12px;">
-                                <div style="text-align: center; margin-bottom: 30px;">
-                                    <h1 style="color: #fff; font-size: 28px; margin: 0;">DR7 Empire</h1>
+                    const fromAddress = process.env.SMTP_FROM || 'info@dr7.app';
+
+                    const resendResponse = await fetch('https://api.resend.com/emails', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${resendApiKey}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            from: `DR7 Empire <${fromAddress}>`,
+                            to: [email],
+                            subject: 'Conferma il tuo indirizzo email — DR7 Empire',
+                            html: `
+                                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #000; color: #fff; padding: 40px; border-radius: 12px;">
+                                    <div style="text-align: center; margin-bottom: 30px;">
+                                        <h1 style="color: #fff; font-size: 28px; margin: 0;">DR7 Empire</h1>
+                                    </div>
+                                    <h2 style="color: #fff; font-size: 22px;">Ciao ${customerName},</h2>
+                                    <p style="color: #ccc; font-size: 16px; line-height: 1.6;">
+                                        Grazie per esserti registrato su DR7 Empire. Per completare la registrazione, conferma il tuo indirizzo email cliccando il pulsante qui sotto.
+                                    </p>
+                                    <div style="text-align: center; margin: 30px 0;">
+                                        <a href="${confirmationLink}" style="background: #fff; color: #000; padding: 14px 32px; border-radius: 50px; text-decoration: none; font-weight: bold; font-size: 16px; display: inline-block;">
+                                            Conferma Email
+                                        </a>
+                                    </div>
+                                    <p style="color: #888; font-size: 13px; text-align: center;">
+                                        Se non hai creato un account su DR7 Empire, puoi ignorare questa email.
+                                    </p>
                                 </div>
-                                <h2 style="color: #fff; font-size: 22px;">Ciao ${customerName},</h2>
-                                <p style="color: #ccc; font-size: 16px; line-height: 1.6;">
-                                    Grazie per esserti registrato su DR7 Empire. Per completare la registrazione, conferma il tuo indirizzo email cliccando il pulsante qui sotto.
-                                </p>
-                                <div style="text-align: center; margin: 30px 0;">
-                                    <a href="${confirmationLink}" style="background: #fff; color: #000; padding: 14px 32px; border-radius: 50px; text-decoration: none; font-weight: bold; font-size: 16px; display: inline-block;">
-                                        Conferma Email
-                                    </a>
-                                </div>
-                                <p style="color: #888; font-size: 13px; text-align: center;">
-                                    Se non hai creato un account su DR7 Empire, puoi ignorare questa email.
-                                </p>
-                            </div>
-                        `,
+                            `,
+                        }),
                     });
-                    console.log('Verification email sent to:', email);
+
+                    const resendResult = await resendResponse.json();
+                    if (resendResponse.ok) {
+                        console.log('Verification email sent via Resend to:', email, resendResult);
+                    } else {
+                        console.error('Resend API error:', resendResult);
+                    }
                 } else {
-                    console.warn('SMTP not configured, verification email not sent');
+                    console.warn('No RESEND_API_KEY or SMTP_PASSWORD configured, verification email not sent');
                 }
             }
         } catch (emailError) {
