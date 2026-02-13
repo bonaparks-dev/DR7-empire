@@ -1,0 +1,35 @@
+/* 🚨 CRITICAL SAFARI FIX - Add to main CSS file */
+
+/* Fix Safari black screen on booking modal */
+@supports (-webkit-backdrop-filter: blur(10px)) {
+  .safari-modal-backdrop {
+    background: rgba(0, 0, 0, 0.9) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    backdrop-filter: blur(10px) !important;
+  }
+}
+
+/* Fallback for older Safari versions */
+@media screen and (-webkit-min-device-pixel-ratio: 0) and (min-color-index: 0) {
+  .modal-backdrop-fallback {
+    background: rgba(0, 0, 0, 0.85) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+/* Ensure modal content is visible on Safari */
+.safari-modal-content {
+  position: relative !important;
+  z-index: 1000 !important;
+  background: white !important;
+  min-height: 100px !important;
+}
+
+/* Force hardware acceleration on Safari */
+.safari-booking-wizard {
+  -webkit-transform: translateZ(0) !important;
+  transform: translateZ(0) !important;
+  -webkit-backface-visibility: hidden !important;
+  backface-visibility: hidden !important;
+}
