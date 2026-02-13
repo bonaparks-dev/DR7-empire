@@ -1356,25 +1356,31 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       willAutoSet: isResident && !formData.usageZone
     });
 
-    // Auto-set logic based on vehicle type
+    // Auto-set logic based on vehicle type and km package
     if (vType !== 'SUPERCAR') {
       // Utility vehicles (UTILITARIA, FURGONE, V_CLASS) always use FUORI_ZONA
       if (formData.usageZone !== 'FUORI_ZONA') {
         console.log('Auto-setting usageZone to FUORI_ZONA for utility vehicle');
         setFormData(prev => ({ ...prev, usageZone: 'FUORI_ZONA' }));
       }
+    } else if (formData.kmPackageType === '50km') {
+      // SUPERCAR with 50km/day: no zone restriction, auto-set FUORI_ZONA
+      if (formData.usageZone !== 'FUORI_ZONA') {
+        console.log('Auto-setting usageZone to FUORI_ZONA for supercar 50km/day package');
+        setFormData(prev => ({ ...prev, usageZone: 'FUORI_ZONA' }));
+      }
     } else {
-      // SUPERCAR: Default to CAGLIARI_SUD for residents if not already set
+      // SUPERCAR with unlimited km: Default to CAGLIARI_SUD for residents if not already set
       if (isResident && !formData.usageZone) {
-        console.log('Auto-setting usageZone to CAGLIARI_SUD for resident user with supercar');
+        console.log('Auto-setting usageZone to CAGLIARI_SUD for resident user with supercar unlimited km');
         setFormData(prev => ({ ...prev, usageZone: 'CAGLIARI_SUD' }));
       } else if (!isResident && !formData.usageZone) {
-        console.log('Non-resident user with supercar - usageZone will remain empty until manually selected');
+        console.log('Non-resident user with supercar unlimited km - usageZone will remain empty until manually selected');
       } else if (formData.usageZone) {
         console.log(`usageZone already set to: ${formData.usageZone}`);
       }
     }
-  }, [user, formData.usageZone, item, categoryContext]);
+  }, [user, formData.usageZone, formData.kmPackageType, item, categoryContext]);
 
   // Force Massimo Runchina settings & Pre-fill Personal Data
   useEffect(() => {
@@ -1852,10 +1858,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         newErrors.depositOption = "Devi selezionare un'opzione per la cauzione.";
       }
 
-      // Validate usage zone selection ONLY for SUPERCAR vehicles
+      // Validate usage zone selection ONLY for SUPERCAR + km illimitati
       // Utility vehicles (UTILITARIA, FURGONE, V_CLASS) auto-set to FUORI_ZONA
-      // Skip validation for Massimo Runchina - usage zone is auto-set and hidden for him
-      if (vType === 'SUPERCAR' && !isMassimo) {
+      // 50km/day supercars don't need usage zone - Skip for Massimo (auto-set)
+      if (vType === 'SUPERCAR' && !isMassimo && formData.kmPackageType === 'unlimited') {
         if (!formData.usageZone) {
           newErrors.usageZone = "Devi selezionare una zona di utilizzo.";
         }
@@ -3381,9 +3387,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             </section>
 
             {/* === USAGE ZONE SELECTOR === */}
-            {/* Only show for SUPERCAR vehicles - utility vehicles auto-set to FUORI_ZONA */}
+            {/* Only show for SUPERCAR + km illimitati - utility vehicles auto-set to FUORI_ZONA */}
             {/* Hide for Massimo Runchina - auto-set to FUORI_ZONA */}
-            {vehicleType === 'SUPERCAR' && !isMassimo && (
+            {vehicleType === 'SUPERCAR' && !isMassimo && formData.kmPackageType === 'unlimited' && (
               <section className="border-t border-gray-700 pt-6">
                 <h3 className="text-lg font-bold text-white mb-2">C. ZONA DI UTILIZZO *</h3>
                 <p className="text-sm text-gray-400 mb-4">
