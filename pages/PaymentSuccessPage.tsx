@@ -63,14 +63,29 @@ const PaymentSuccessPage: React.FC = () => {
             try {
                 console.log('Processing payment success for orderId:', orderId);
 
-                // 1. Try bookings first
-                const { data: bookings, error: fetchError } = await supabase
+                // 1. Try bookings first (nexi_order_id column, then booking_details JSONB fallback)
+                let bookings = null;
+                const result1 = await supabase
                     .from('bookings')
                     .select('*')
                     .or(`id.eq.${orderId},nexi_order_id.eq.${orderId}`)
                     .limit(1);
 
-                if (!fetchError && bookings && bookings.length > 0) {
+                if (!result1.error && result1.data && result1.data.length > 0) {
+                    bookings = result1.data;
+                } else {
+                    // Fallback: check booking_details JSONB
+                    const result2 = await supabase
+                        .from('bookings')
+                        .select('*')
+                        .eq('booking_details->>nexi_order_id', orderId)
+                        .limit(1);
+                    if (!result2.error && result2.data && result2.data.length > 0) {
+                        bookings = result2.data;
+                    }
+                }
+
+                if (bookings && bookings.length > 0) {
                     const booking = bookings[0];
                     console.log('Found booking:', booking.id);
                     setPurchaseType('booking');

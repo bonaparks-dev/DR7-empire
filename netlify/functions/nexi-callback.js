@@ -97,15 +97,34 @@ exports.handler = async (event) => {
     // Find booking or credit wallet purchase by order ID
     console.log('Looking for order with codTrans:', codTrans);
 
-    // 1. Try bookings first
-    const { data: bookings, error: fetchError } = await supabase
+    // 1. Try bookings first (check nexi_order_id column, then fallback to booking_details JSONB)
+    let bookings = null;
+    let fetchError = null;
+
+    // Try with nexi_order_id column first
+    const result1 = await supabase
       .from('bookings')
       .select('*')
       .or(`id.eq.${codTrans},nexi_order_id.eq.${codTrans}`)
       .limit(1);
 
-    if (fetchError) {
-      console.error('Error fetching booking:', fetchError);
+    if (!result1.error && result1.data && result1.data.length > 0) {
+      bookings = result1.data;
+    } else {
+      // Fallback: check booking_details JSONB for nexi_order_id
+      const result2 = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('booking_details->>nexi_order_id', codTrans)
+        .limit(1);
+
+      if (!result2.error && result2.data && result2.data.length > 0) {
+        bookings = result2.data;
+        console.log('Found booking via booking_details JSONB fallback');
+      } else {
+        fetchError = result1.error || result2.error;
+        if (fetchError) console.error('Error fetching booking:', fetchError);
+      }
     }
 
     if (bookings && bookings.length > 0) {

@@ -447,20 +447,20 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
 
       try {
-        // Count only SUPERCAR rentals for loyalty deposit waiver
+        // Count completed car rentals for loyalty deposit waiver
         const { count, error } = await supabase
           .from('bookings')
           .select('*', { count: 'exact', head: true })
-          .eq('booking_details->>email', email)
+          .eq('customer_email', email)
           .eq('status', 'completed')
-          .eq('category', 'exotic'); // Only count supercar rentals
+          .eq('vehicle_type', 'car');
 
         if (!error && count !== null) {
           setCustomerRentalCount(count);
           setIsLoyalCustomer(count >= DEPOSIT_RULES.LOYAL_CUSTOMER_THRESHOLD);
         }
       } catch (error) {
-        console.error('Error fetching supercar rental count:', error);
+        console.error('Error fetching rental count:', error);
         setCustomerRentalCount(0);
         setIsLoyalCustomer(false);
       }
@@ -2501,10 +2501,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
         const vehicleName = availableVehicleName || item.name;
 
-        // 2. Generate Nexi Order ID BEFORE insert (prevents race condition)
+        // 2. Generate Nexi Order ID BEFORE insert
         const nexiOrderId = `DR7${Date.now()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
-        // 3. Insert Pending Booking (with nexi_order_id already set)
+        // 3. Insert Pending Booking (nexi_order_id stored in booking_details, updated separately)
         const bookingData = {
           user_id: user.id,
           vehicle_type: item.type || 'car',
@@ -2519,7 +2519,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           status: 'pending',
           payment_status: 'pending',
           payment_method: 'nexi',
-          nexi_order_id: nexiOrderId,
           booked_at: new Date().toISOString(),
           customer_name: `${formData.firstName} ${formData.lastName}`,
           customer_email: formData.email,
@@ -2529,6 +2528,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           insurance_option: formData.insuranceOption,
           booking_usage_zone: formData.usageZone || null,
           booking_details: {
+            nexi_order_id: nexiOrderId,
             customer: {
               fullName: `${formData.firstName} ${formData.lastName}`,
               firstName: formData.firstName,
@@ -2573,13 +2573,28 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           }
         };
 
+        console.log("Inserting booking...", { nexiOrderId, amount: bookingData.price_total });
+
         const { data: pendingBooking, error: bookingError } = await supabase
           .from('bookings')
           .insert(bookingData)
           .select()
           .single();
 
-        if (bookingError) throw bookingError;
+        if (bookingError) {
+          console.error("Booking INSERT failed:", { message: bookingError.message, code: bookingError.code, details: bookingError.details, hint: bookingError.hint });
+          throw new Error(`Errore salvataggio prenotazione: ${bookingError.message}`);
+        }
+
+        // 3b. Try to set nexi_order_id column (may not exist yet)
+        try {
+          await supabase
+            .from('bookings')
+            .update({ nexi_order_id: nexiOrderId })
+            .eq('id', pendingBooking.id);
+        } catch (e) {
+          console.warn("Could not set nexi_order_id column, using booking_details fallback");
+        }
 
         // 4. Initiate Nexi Payment
         const nexiResponse = await fetch('/.netlify/functions/create-nexi-payment', {
@@ -2605,12 +2620,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           throw new Error("URL di pagamento non ricevuto da Nexi");
         }
 
-        // 6. Redirect to Nexi HPP
+        // 5. Redirect to Nexi HPP
         console.log("Redirecting to Nexi:", nexiData.paymentUrl);
         window.location.href = nexiData.paymentUrl;
 
       } catch (err: any) {
-        console.error("Booking Error:", err);
+        console.error("Booking Error:", err.message || err, { code: err?.code, details: err?.details, hint: err?.hint });
         setPaymentError(err.message || "Si è verificato un errore durante la prenotazione.");
         setIsProcessing(false);
       }
