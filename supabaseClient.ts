@@ -1,20 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 
-// SECURE VERSION - NO HARDCODED CREDENTIALS
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-// Validation obligatoire
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('CRITICAL: Supabase credentials are missing. Please check your .env file.');
-  console.error('Required: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
-  throw new Error('Missing Supabase configuration');
-}
-
-// Additional URL validation
-if (!supabaseUrl.startsWith('https://') || !supabaseUrl.includes('.supabase.co')) {
-  throw new Error('Invalid Supabase URL format');
-}
+// CRITICAL: Keep hardcoded fallbacks — VITE_* env vars are baked at BUILD TIME by Vite.
+// If Netlify doesn't have them set, the app gets `undefined` and crashes entirely.
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ahpmzjgkfxrrgxyirasa.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFocG16amdrZnhycmd4eWlyYXNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzEzNDQ1NzcsImV4cCI6MjA0NjkyMDU3N30.AtBeKfIMJYLH46hVTqJAADQPmWJAmiGsel0JEiX27Gc';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -23,11 +12,5 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
   db: {
     schema: 'public',
-  },
-  // Enhanced error handling
-  global: {
-    headers: {
-      'x-client-info': 'dr7-empire-web'
-    }
   }
 });
