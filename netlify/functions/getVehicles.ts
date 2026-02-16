@@ -1,5 +1,6 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
+import { getCorsOrigin } from './utils/cors';
 
 // 🚨 FIX: Align environment variables (VITE_* for client, plain for server)
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -34,7 +35,7 @@ const supabase = createClient(
 export const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
     // Enable CORS
     const headers = {
-        'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || 'https://dr7empire.com',
+        'Access-Control-Allow-Origin': getCorsOrigin(event.headers['origin']),
         'Access-Control-Allow-Headers': 'Content-Type',
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
         'Content-Type': 'application/json',

@@ -2,12 +2,15 @@
 import type { Handler } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
 import * as busboy from 'busboy';
+import { getCorsOrigin } from './utils/cors';
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || 'https://dr7empire.com',
-  'Access-Control-Allow-Methods': 'POST,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-};
+function getCorsHeaders(origin?: string) {
+  return {
+    'Access-Control-Allow-Origin': getCorsOrigin(origin),
+    'Access-Control-Allow-Methods': 'POST,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+  };
+}
 
 const supabaseUrl = process.env.SUPABASE_URL!;
 const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -26,11 +29,11 @@ export const handler: Handler = async (event) => {
   try {
     // Préflight CORS
     if (event.httpMethod === 'OPTIONS') {
-      return { statusCode: 204, headers: CORS_HEADERS, body: '' };
+      return { statusCode: 204, headers: getCorsHeaders(event.headers['origin']), body: '' };
     }
 
     if (event.httpMethod !== 'POST') {
-      return { statusCode: 405, headers: CORS_HEADERS, body: 'Method Not Allowed' };
+      return { statusCode: 405, headers: getCorsHeaders(event.headers['origin']), body: 'Method Not Allowed' };
     }
 
     const contentType =
@@ -40,7 +43,7 @@ export const handler: Handler = async (event) => {
     if (!contentType || !contentType.startsWith('multipart/form-data')) {
       return {
         statusCode: 400,
-        headers: CORS_HEADERS,
+        headers: getCorsHeaders(event.headers['origin']),
         body: JSON.stringify({ error: 'Expected multipart/form-data' }),
       };
     }
@@ -104,7 +107,7 @@ export const handler: Handler = async (event) => {
     if (!result.ok) {
       return {
         statusCode: 400,
-        headers: CORS_HEADERS,
+        headers: getCorsHeaders(event.headers['origin']),
         body: JSON.stringify({ error: result.error }),
       };
     }
@@ -113,7 +116,7 @@ export const handler: Handler = async (event) => {
       console.error('Missing fields:', { bucket, userId, prefix, hasFile: !!fileBuffer });
       return {
         statusCode: 400,
-        headers: CORS_HEADERS,
+        headers: getCorsHeaders(event.headers['origin']),
         body: JSON.stringify({ error: 'Missing fields or file' }),
       };
     }
@@ -122,7 +125,7 @@ export const handler: Handler = async (event) => {
     if (!/^[a-zA-Z0-9_-]{1,50}$/.test(prefix)) {
       return {
         statusCode: 400,
-        headers: CORS_HEADERS,
+        headers: getCorsHeaders(event.headers['origin']),
         body: JSON.stringify({ error: 'Invalid prefix format' }),
       };
     }
@@ -135,10 +138,10 @@ export const handler: Handler = async (event) => {
       const jwt = authHeader.replace('Bearer ', '');
       const { data: { user: authUser } } = await authClient.auth.getUser(jwt);
       if (authUser && authUser.id !== userId) {
-        return { statusCode: 403, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Forbidden: userId mismatch' }) };
+        return { statusCode: 403, headers: getCorsHeaders(event.headers['origin']), body: JSON.stringify({ error: 'Forbidden: userId mismatch' }) };
       }
     } else {
-      return { statusCode: 401, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Authentication required' }) };
+      return { statusCode: 401, headers: getCorsHeaders(event.headers['origin']), body: JSON.stringify({ error: 'Authentication required' }) };
     }
 
     // Normalise le nom de fichier (évite espaces/caractères exotiques)
@@ -149,7 +152,7 @@ export const handler: Handler = async (event) => {
     if (!ext || !ALLOWED_EXTENSIONS.includes(ext)) {
       return {
         statusCode: 400,
-        headers: CORS_HEADERS,
+        headers: getCorsHeaders(event.headers['origin']),
         body: JSON.stringify({ error: `File type not allowed. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}` }),
       };
     }
@@ -167,7 +170,7 @@ export const handler: Handler = async (event) => {
       console.error('Supabase upload error:', upErr);
       return {
         statusCode: 502,
-        headers: CORS_HEADERS,
+        headers: getCorsHeaders(event.headers['origin']),
         body: JSON.stringify({
           error: 'Upload failed',
           details: upErr.message,
@@ -200,7 +203,7 @@ export const handler: Handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+      headers: { 'Content-Type': 'application/json', ...getCorsHeaders(event.headers['origin']) },
       body: JSON.stringify({
         ok: true,
         bucket,
@@ -212,7 +215,7 @@ export const handler: Handler = async (event) => {
     console.error('Function fatal error:', e);
     return {
       statusCode: 500,
-      headers: CORS_HEADERS,
+      headers: getCorsHeaders(event.headers['origin']),
       body: JSON.stringify({ error: 'Server error' }),
     };
   }

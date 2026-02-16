@@ -1,10 +1,14 @@
 // netlify/functions/redeem-discount-code.js
 
 const { createClient } = require('@supabase/supabase-js');
+const { getCorsOrigin } = require('./utils/cors');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+
+// Store current request origin for CORS (set per-request in handler)
+let _currentOrigin = '';
 
 /**
  * Creates a standard JSON response with CORS headers.
@@ -13,7 +17,7 @@ const createResponse = (statusCode, body) => ({
   statusCode,
   headers: {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || 'https://dr7empire.com',
+    'Access-Control-Allow-Origin': getCorsOrigin(_currentOrigin),
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   },
@@ -40,12 +44,14 @@ const createResponse = (statusCode, body) => ({
  * - 400: Invalid, expired, or already used
  */
 exports.handler = async (event) => {
+  _currentOrigin = event.headers['origin'] || '';
+
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 204,
       headers: {
-        'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || 'https://dr7empire.com',
+        'Access-Control-Allow-Origin': getCorsOrigin(_currentOrigin),
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
       },

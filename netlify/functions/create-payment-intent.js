@@ -1,4 +1,8 @@
 // netlify/functions/create-payment-intent.js
+const { getCorsOrigin } = require('./utils/cors');
+
+// Store current request origin for CORS (set per-request in handler)
+let _currentOrigin = '';
 
 /**
  * Creates a standard JSON response with CORS headers.
@@ -10,7 +14,7 @@ const createResponse = (statusCode, body) => ({
   statusCode,
   headers: {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || 'https://dr7empire.com',
+    'Access-Control-Allow-Origin': getCorsOrigin(_currentOrigin),
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   },
@@ -18,12 +22,14 @@ const createResponse = (statusCode, body) => ({
 });
 
 exports.handler = async (event) => {
+  _currentOrigin = event.headers['origin'] || '';
+
   // Handle CORS preflight requests
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 204,
       headers: {
-        'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || 'https://dr7empire.com',
+        'Access-Control-Allow-Origin': getCorsOrigin(_currentOrigin),
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
       },

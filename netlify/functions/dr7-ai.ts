@@ -1,12 +1,15 @@
 import type { Handler } from "@netlify/functions";
 import Anthropic from "@anthropic-ai/sdk";
+import { getCorsOrigin } from './utils/cors';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || 'https://dr7empire.com',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+function getCorsHeaders(origin?: string) {
+  return {
+    'Access-Control-Allow-Origin': getCorsOrigin(origin),
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+}
 
 const SYSTEM_PROMPT = `Sei l'Assistente AI di DR7, un consulente esperto e disponibile per i servizi di lusso offerti dalla società Dubai Rent 7.0 S.p.A.
 
@@ -75,7 +78,7 @@ export const handler: Handler = async (event) => {
   if (event.httpMethod === "OPTIONS") {
     return {
       statusCode: 200,
-      headers: corsHeaders,
+      headers: getCorsHeaders(event.headers['origin']),
       body: "",
     };
   }
@@ -83,7 +86,7 @@ export const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return {
       statusCode: 405,
-      headers: corsHeaders,
+      headers: getCorsHeaders(event.headers['origin']),
       body: JSON.stringify({ error: "Method not allowed" }),
     };
   }
@@ -94,7 +97,7 @@ export const handler: Handler = async (event) => {
     if (!message) {
       return {
         statusCode: 400,
-        headers: corsHeaders,
+        headers: getCorsHeaders(event.headers['origin']),
         body: JSON.stringify({ error: "Message is required" }),
       };
     }
@@ -103,7 +106,7 @@ export const handler: Handler = async (event) => {
       console.error('Anthropic API key not configured');
       return {
         statusCode: 500,
-        headers: corsHeaders,
+        headers: getCorsHeaders(event.headers['origin']),
         body: JSON.stringify({ error: "AI service not configured" }),
       };
     }
@@ -134,7 +137,7 @@ export const handler: Handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...getCorsHeaders(event.headers['origin']), 'Content-Type': 'application/json' },
       body: JSON.stringify({ response: aiResponse }),
     };
   } catch (error: any) {
@@ -147,7 +150,7 @@ export const handler: Handler = async (event) => {
     });
     return {
       statusCode: 500,
-      headers: corsHeaders,
+      headers: getCorsHeaders(event.headers['origin']),
       body: JSON.stringify({
         error: "Failed to generate response",
         details: error.message,

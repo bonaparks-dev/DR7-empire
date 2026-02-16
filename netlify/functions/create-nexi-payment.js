@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { getCorsOrigin } = require('./utils/cors');
 
 /**
  * Netlify Function to create Nexi XPay payment using API method
@@ -6,7 +7,7 @@ const crypto = require('crypto');
  */
 exports.handler = async (event) => {
   const corsHeaders = {
-    'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || 'https://dr7empire.com',
+    'Access-Control-Allow-Origin': getCorsOrigin(event.headers['origin']),
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Content-Type': 'application/json',

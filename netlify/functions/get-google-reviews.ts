@@ -1,4 +1,5 @@
 import type { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
+import { getCorsOrigin } from './utils/cors';
 
 const GOOGLE_PLACES_API_KEY = process.env.VITE_GOOGLE_PLACES_API_KEY;
 const GOOGLE_PLACE_ID = process.env.VITE_GOOGLE_PLACE_ID;
@@ -28,7 +29,7 @@ export const handler: Handler = async (
 ) => {
   // Enable CORS
   const headers = {
-    "Access-Control-Allow-Origin": process.env.ALLOWED_ORIGIN || 'https://dr7empire.com',
+    "Access-Control-Allow-Origin": getCorsOrigin(event.headers['origin']),
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Content-Type": "application/json",

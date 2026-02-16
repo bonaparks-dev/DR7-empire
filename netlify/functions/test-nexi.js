@@ -1,10 +1,11 @@
 // Simple test endpoint for Nexi X-Pay
 // Access at: /.netlify/functions/test-nexi
+const { getCorsOrigin } = require('./utils/cors');
 
 exports.handler = async (event) => {
     // Handle CORS
     const headers = {
-        'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || 'https://dr7empire.com',
+        'Access-Control-Allow-Origin': getCorsOrigin(event.headers['origin']),
         'Access-Control-Allow-Headers': 'Content-Type',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Content-Type': 'text/html; charset=utf-8',

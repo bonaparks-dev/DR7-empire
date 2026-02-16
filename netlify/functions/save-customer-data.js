@@ -1,4 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
+const { getCorsOrigin } = require('./utils/cors');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -7,7 +8,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 exports.handler = async (event) => {
     // Enable CORS
     const headers = {
-        'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || 'https://dr7empire.com',
+        'Access-Control-Allow-Origin': getCorsOrigin(event.headers['origin']),
         'Access-Control-Allow-Headers': 'Content-Type',
         'Access-Control-Allow-Methods': 'POST, OPTIONS'
     };

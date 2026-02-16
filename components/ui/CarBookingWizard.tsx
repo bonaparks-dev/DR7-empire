@@ -795,8 +795,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       if (!user?.id) return;
 
       try {
-        // Fetch customer data via Netlify Function
-        const response = await fetch(`/.netlify/functions/getResidencyZone?user_id=${user.id}`);
+        // Fetch customer data via Netlify Function (with auth token)
+        const { data: { session: authSession } } = await supabase.auth.getSession();
+        const fetchHeaders: Record<string, string> = {};
+        if (authSession?.access_token) {
+          fetchHeaders['Authorization'] = `Bearer ${authSession.access_token}`;
+        }
+        const response = await fetch(`/.netlify/functions/getResidencyZone?user_id=${user.id}`, { headers: fetchHeaders });
         const customerData = response.ok ? await response.json() : null;
         const error = !response.ok ? new Error(`HTTP ${response.status}`) : null;
 

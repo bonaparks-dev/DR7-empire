@@ -1,5 +1,6 @@
 import type { Handler } from "@netlify/functions";
 import Stripe from "stripe";
+import { getCorsOrigin } from './utils/cors';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2024-12-18.acacia',
@@ -16,7 +17,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 const handler: Handler = async (event) => {
   // CORS headers
   const headers = {
-    'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || 'https://dr7empire.com',
+    'Access-Control-Allow-Origin': getCorsOrigin(event.headers['origin']),
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Content-Type': 'application/json',
