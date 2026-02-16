@@ -1314,20 +1314,24 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     item, currency, user, isUrbanOrCorporate, categoryContext
   ]);
 
+  // Online booking discount (5%)
+  const onlineDiscountAmount = finalTotal * 0.05;
+  const finalTotalWithOnlineDiscount = finalTotal * 0.95;
+
   // Calculate final price including discount code (supports both fixed and percentage)
   const discountAmount = useMemo(() => {
     if (!appliedDiscount) return 0;
 
     if (appliedDiscount.type === 'percentage') {
-      // Percentage discount: calculate based on finalTotal
-      return Math.min(finalTotal * (appliedDiscount.amount / 100), finalTotal);
+      // Percentage discount: calculate based on price after online discount
+      return Math.min(finalTotalWithOnlineDiscount * (appliedDiscount.amount / 100), finalTotalWithOnlineDiscount);
     } else {
-      // Fixed amount (rental, fixed, car_wash): cap at finalTotal
-      return Math.min(appliedDiscount.amount, finalTotal);
+      // Fixed amount (rental, fixed, car_wash): cap at finalTotalWithOnlineDiscount
+      return Math.min(appliedDiscount.amount, finalTotalWithOnlineDiscount);
     }
-  }, [appliedDiscount, finalTotal]);
+  }, [appliedDiscount, finalTotalWithOnlineDiscount]);
 
-  const finalPriceWithBirthdayDiscount = Math.max(0, finalTotal - discountAmount);
+  const finalPriceWithBirthdayDiscount = Math.max(0, finalTotalWithOnlineDiscount - discountAmount);
 
   // Forcer horaires valides et pas de dimanche
   useEffect(() => {
@@ -3757,6 +3761,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         <span>Sconto {membershipTier} ({(membershipDiscount / originalTotal * 100).toFixed(0)}%)</span>
                         <span>-{formatPrice(membershipDiscount)}</span>
                       </div>
+                      <div className="flex justify-between text-green-400 text-sm">
+                        <span>Sconto Online -5%</span>
+                        <span>-{formatPrice(onlineDiscountAmount)}</span>
+                      </div>
                       {discountAmount > 0 && (
                         <div className="flex justify-between text-yellow-400 text-sm">
                           <span>Codice Sconto ({appliedDiscount?.code})</span>
@@ -3767,14 +3775,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     </>
                   ) : (
                     <>
+                      <div className="flex justify-between text-gray-400"><span>Subtotale</span> <span>{formatPrice(finalTotal)}</span></div>
+                      <div className="flex justify-between text-green-400 text-sm">
+                        <span>Sconto Online -5%</span>
+                        <span>-{formatPrice(onlineDiscountAmount)}</span>
+                      </div>
                       {discountAmount > 0 && (
-                        <>
-                          <div className="flex justify-between text-gray-400"><span>Subtotale</span> <span>{formatPrice(total)}</span></div>
-                          <div className="flex justify-between text-yellow-400 text-sm">
-                            <span>Codice Sconto ({appliedDiscount?.code})</span>
-                            <span>-{formatPrice(discountAmount)}</span>
-                          </div>
-                        </>
+                        <div className="flex justify-between text-yellow-400 text-sm">
+                          <span>Codice Sconto ({appliedDiscount?.code})</span>
+                          <span>-{formatPrice(discountAmount)}</span>
+                        </div>
                       )}
                       <div className="flex justify-between font-bold text-lg"><span>TOTALE</span> <span>{formatPrice(finalPriceWithBirthdayDiscount)}</span></div>
                     </>
@@ -4057,6 +4067,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             <span>Sconto {membershipTier}</span>
                             <span>-{formatPrice(membershipDiscount)}</span>
                           </div>
+                          <div className="flex justify-between text-green-400 text-sm">
+                            <span>Sconto Online -5%</span>
+                            <span>-{formatPrice(onlineDiscountAmount)}</span>
+                          </div>
                           {discountAmount > 0 && (
                             <div className="flex justify-between text-yellow-400 text-sm">
                               <span>Codice Sconto</span>
@@ -4067,6 +4081,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         </>
                       ) : (
                         <>
+                          <div className="flex justify-between text-gray-400 text-sm"><span>Subtotale</span><span>{formatPrice(finalTotal)}</span></div>
+                          <div className="flex justify-between text-green-400 text-sm">
+                            <span>Sconto Online -5%</span>
+                            <span>-{formatPrice(onlineDiscountAmount)}</span>
+                          </div>
                           {discountAmount > 0 && (
                             <div className="flex justify-between text-yellow-400 text-sm">
                               <span>Codice Sconto</span>

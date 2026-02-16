@@ -68,6 +68,10 @@ const MechanicalBookingPage: React.FC = () => {
   const [creditBalance, setCreditBalance] = useState<number>(0);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
 
+  // Online booking discount (5%)
+  const discountedPrice = selectedService ? +(selectedService.price * 0.95).toFixed(2) : 0;
+  const onlineDiscountAmount = selectedService ? +(selectedService.price * 0.05).toFixed(2) : 0;
+
   // Load existing bookings when date changes
   useEffect(() => {
     if (formData.appointmentDate) {
@@ -278,7 +282,7 @@ const MechanicalBookingPage: React.FC = () => {
       service_type: 'mechanical_service',
       service_name: lang === 'it' ? selectedService.name : selectedService.nameEn,
       service_id: selectedService.id,
-      price_total: Math.round(selectedService.price * 100), // in cents
+      price_total: Math.round(discountedPrice * 100), // in cents (after 5% online discount)
       currency: 'EUR',
       customer_name: formData.fullName,
       customer_email: formData.email,
@@ -325,7 +329,7 @@ const MechanicalBookingPage: React.FC = () => {
           throw new Error('User not logged in');
         }
 
-        const totalAmount = selectedService?.price || 0;
+        const totalAmount = discountedPrice;
 
         // Check sufficient balance
         const hasBalance = await hasSufficientBalance(user.id, totalAmount);
@@ -393,7 +397,7 @@ const MechanicalBookingPage: React.FC = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             orderId: nexiOrderId,
-            amount: Math.round((selectedService?.price || 0) * 100),
+            amount: Math.round(discountedPrice * 100),
             currency: 'EUR',
             description: `Servizio Meccanico - ${lang === 'it' ? selectedService?.name : selectedService?.nameEn}`,
             customerEmail: formData.email,
@@ -442,7 +446,7 @@ const MechanicalBookingPage: React.FC = () => {
             returnTime: endTime,
             pickupLocation: `DR7 Rapid Service - ${pendingBookingData.vehicle_name}`,
             returnLocation: 'DR7 Rapid Service',
-            totalPrice: selectedService?.price || 0,
+            totalPrice: discountedPrice,
             bookingId: data.id.substring(0, 8)
           })
         });
@@ -600,7 +604,7 @@ const MechanicalBookingPage: React.FC = () => {
             {lang === 'it' ? 'Prenota il Servizio' : 'Book Service'}
           </h1>
           <p className="text-gray-400 mb-8">
-            {lang === 'it' ? selectedService.name : selectedService.nameEn} - €{selectedService.price}
+            {lang === 'it' ? selectedService.name : selectedService.nameEn} - €{discountedPrice}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-8">
@@ -882,11 +886,19 @@ const MechanicalBookingPage: React.FC = () => {
 
             {/* Total & Submit */}
             <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
+              <div className="flex justify-between items-center mb-3 text-gray-400">
+                <span>Subtotale</span>
+                <span>€{selectedService.price.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center mb-3 text-green-400">
+                <span>Sconto Online -5%</span>
+                <span>-€{onlineDiscountAmount.toFixed(2)}</span>
+              </div>
               <div className="flex justify-between items-center mb-6">
                 <span className="text-2xl font-bold text-white">
                   {lang === 'it' ? 'Totale' : 'Total'}
                 </span>
-                <span className="text-4xl font-bold text-white">€{selectedService.price}</span>
+                <span className="text-4xl font-bold text-white">€{discountedPrice.toFixed(2)}</span>
               </div>
 
               <button
@@ -938,9 +950,17 @@ const MechanicalBookingPage: React.FC = () => {
                   </span>
                 </div>
                 <div className="border-t border-gray-700 my-3"></div>
+                <div className="flex justify-between text-sm text-gray-300 mb-1">
+                  <span>Subtotale:</span>
+                  <span>€{selectedService?.price.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-green-400 mb-1">
+                  <span>Sconto Online -5%:</span>
+                  <span>-€{onlineDiscountAmount.toFixed(2)}</span>
+                </div>
                 <div className="flex justify-between text-lg font-bold text-white">
                   <span>{lang === 'it' ? 'Totale' : 'Total'}:</span>
-                  <span>€{selectedService?.price}</span>
+                  <span>€{discountedPrice.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -1022,7 +1042,7 @@ const MechanicalBookingPage: React.FC = () => {
                   >
                     {isProcessing
                       ? (lang === 'it' ? 'Elaborazione...' : 'Processing...')
-                      : (lang === 'it' ? `Paga €${selectedService?.price}` : `Pay €${selectedService?.price}`)}
+                      : (lang === 'it' ? `Paga €${discountedPrice.toFixed(2)}` : `Pay €${discountedPrice.toFixed(2)}`)}
                   </button>
 
                   <p className="text-xs text-gray-400 text-center mt-4">
@@ -1044,16 +1064,16 @@ const MechanicalBookingPage: React.FC = () => {
                       <span className="text-sm text-gray-300">
                         {lang === 'it' ? 'Costo Servizio' : 'Service Cost'}:
                       </span>
-                      <span className="text-lg font-bold text-white">€{selectedService?.price.toFixed(2)}</span>
+                      <span className="text-lg font-bold text-white">€{discountedPrice.toFixed(2)}</span>
                     </div>
                     <div className="border-t border-gray-700 my-3"></div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-white font-semibold">
                         {lang === 'it' ? 'Saldo Dopo' : 'Balance After'}:
                       </span>
-                      <span className={`text-lg font-bold ${creditBalance >= (selectedService?.price || 0) ? 'text-green-400' : 'text-red-400'
+                      <span className={`text-lg font-bold ${creditBalance >= discountedPrice ? 'text-green-400' : 'text-red-400'
                         }`}>
-                        €{(creditBalance - (selectedService?.price || 0)).toFixed(2)}
+                        €{(creditBalance - discountedPrice).toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -1066,17 +1086,17 @@ const MechanicalBookingPage: React.FC = () => {
 
                   <button
                     onClick={handlePayment}
-                    disabled={isProcessing || creditBalance < (selectedService?.price || 0)}
+                    disabled={isProcessing || creditBalance < discountedPrice}
                     className="w-full bg-white text-black font-bold py-3 px-6 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {isProcessing
                       ? (lang === 'it' ? 'Elaborazione...' : 'Processing...')
-                      : creditBalance < (selectedService?.price || 0)
+                      : creditBalance < discountedPrice
                         ? (lang === 'it' ? 'Credito Insufficiente' : 'Insufficient Credit')
                         : (lang === 'it' ? `Paga con Credit Wallet` : `Pay with Credit Wallet`)}
                   </button>
 
-                  {creditBalance < (selectedService?.price || 0) && (
+                  {creditBalance < discountedPrice && (
                     <p className="text-xs text-gray-400 text-center mt-4">
                       {lang === 'it'
                         ? 'Ricarica il tuo Credit Wallet per completare questa prenotazione'

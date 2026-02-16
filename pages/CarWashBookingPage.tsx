@@ -543,15 +543,18 @@ const CarWashBookingPage: React.FC = () => {
   const calculateTotal = () => {
     // Use cart total if we have cart items, otherwise use selected service price
     const basePrice = hasCartItems ? cartTotal : (selectedService?.price || 0);
-    const discount = appliedDiscount?.type === 'car_wash' ? Math.min(appliedDiscount.amount, basePrice) : 0;
-    return Math.max(0, basePrice - discount);
+    const afterOnlineDiscount = basePrice * 0.95;
+    const discount = appliedDiscount?.type === 'car_wash' ? Math.min(appliedDiscount.amount, afterOnlineDiscount) : 0;
+    return Math.max(0, afterOnlineDiscount - discount);
   };
 
   const getBasePrice = () => {
     return hasCartItems ? cartTotal : (selectedService?.price || 0);
   };
 
-  const birthdayDiscountAmount = appliedDiscount?.type === 'car_wash' ? Math.min(appliedDiscount.amount, getBasePrice()) : 0;
+  const onlineDiscountAmount = getBasePrice() * 0.05;
+
+  const birthdayDiscountAmount = appliedDiscount?.type === 'car_wash' ? Math.min(appliedDiscount.amount, getBasePrice() * 0.95) : 0;
 
   // Validate birthday discount code
   const validateDiscountCode = async () => {
@@ -1405,23 +1408,25 @@ const CarWashBookingPage: React.FC = () => {
 
             {/* Total & Submit */}
             <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
-              {birthdayDiscountAmount > 0 && (
-                <div className="flex justify-between items-center mb-3 text-gray-400">
-                  <span>Prezzo originale</span>
-                  <span className="line-through">€{getBasePrice().toFixed(2)}</span>
-                </div>
-              )}
+              <div className="flex justify-between items-center mb-3 text-gray-400">
+                <span>Subtotale</span>
+                <span>€{getBasePrice().toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center mb-3 text-green-400">
+                <span>Sconto Online -5%</span>
+                <span>-€{onlineDiscountAmount.toFixed(2)}</span>
+              </div>
               {birthdayDiscountAmount > 0 && (
                 <div className="flex justify-between items-center mb-3 text-yellow-400">
                   <span>Sconto ({appliedDiscount?.code})</span>
-                  <span>-€{birthdayDiscountAmount}</span>
+                  <span>-€{birthdayDiscountAmount.toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between items-center mb-6">
                 <span className="text-2xl font-bold text-white">
                   {lang === 'it' ? 'Totale' : 'Total'}
                 </span>
-                <span className="text-4xl font-bold text-white">€{calculateTotal()}</span>
+                <span className="text-4xl font-bold text-white">€{calculateTotal().toFixed(2)}</span>
               </div>
 
               {errors.form && (
@@ -1497,9 +1502,23 @@ const CarWashBookingPage: React.FC = () => {
                   </div>
                 )}
                 <div className="border-t border-gray-700 my-3"></div>
+                <div className="flex justify-between text-sm text-gray-300 mb-1">
+                  <span>Subtotale:</span>
+                  <span>€{getBasePrice().toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-green-400 mb-1">
+                  <span>Sconto Online -5%:</span>
+                  <span>-€{onlineDiscountAmount.toFixed(2)}</span>
+                </div>
+                {birthdayDiscountAmount > 0 && (
+                  <div className="flex justify-between text-sm text-yellow-400 mb-1">
+                    <span>Sconto ({appliedDiscount?.code}):</span>
+                    <span>-€{birthdayDiscountAmount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-lg font-bold text-white">
                   <span>{lang === 'it' ? 'Totale' : 'Total'}:</span>
-                  <span>€{calculateTotal()}</span>
+                  <span>€{calculateTotal().toFixed(2)}</span>
                 </div>
               </div>
 
