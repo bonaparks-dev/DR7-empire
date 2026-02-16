@@ -2133,7 +2133,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           action: 'validate',
           code: discountCode.trim().toUpperCase(),
           service_type: serviceType,
-          order_total: Math.round(finalTotal * 100) // Convert to cents
+          order_total: Math.round(finalTotalWithOnlineDiscount * 100) // Convert to cents (after 5% online discount)
         })
       });
 
