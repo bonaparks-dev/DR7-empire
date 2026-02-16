@@ -184,7 +184,7 @@ const CarWashBookingPage: React.FC = () => {
     }
   }, [user]);
 
-  // Fetch existing clients for selection (all clients, not just first 100)
+  // Fetch existing clients for selection
   useEffect(() => {
     const fetchClients = async () => {
       try {
@@ -192,7 +192,7 @@ const CarWashBookingPage: React.FC = () => {
           .from('customers_extended')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(1000);
+          .limit(100);
 
         if (error) throw error;
         setExistingClients(data || []);
@@ -204,12 +204,11 @@ const CarWashBookingPage: React.FC = () => {
     fetchClients();
   }, []);
 
-  // Filter clients based on search query — matches ALL words independently
-  // so "Mario Rossi" finds clients with both "Mario" AND "Rossi" anywhere
+  // Filter clients based on search query
   const filteredClients = useMemo(() => {
-    if (!clientSearchQuery || clientSearchQuery.trim().length < 2) return [];
+    if (!clientSearchQuery) return [];
 
-    const queryWords = clientSearchQuery.toLowerCase().trim().split(/\s+/);
+    const query = clientSearchQuery.toLowerCase();
     return existingClients.filter(client => {
       const searchText = [
         client.nome,
@@ -221,7 +220,7 @@ const CarWashBookingPage: React.FC = () => {
         client.telefono
       ].filter(Boolean).join(' ').toLowerCase();
 
-      return queryWords.every(word => searchText.includes(word));
+      return searchText.includes(query);
     }).slice(0, 10); // Limit to 10 results
   }, [clientSearchQuery, existingClients]);
 
