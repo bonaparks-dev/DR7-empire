@@ -627,8 +627,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       const currentMinute = now.getMinutes();
       const currentTimeInMinutes = currentHour * 60 + currentMinute;
 
-      // Add 2 hours buffer (120 minutes) to allow preparation time
-      const minTimeInMinutes = currentTimeInMinutes + 120;
+      // Add 1 hour buffer (60 minutes) to allow preparation time
+      const minTimeInMinutes = currentTimeInMinutes + 60;
 
       return times.filter(time => {
         const [hours, minutes] = time.split(':').map(Number);
@@ -2786,7 +2786,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           if (!value) return;
 
                           // Check if date has ANY valid pickup times (partial-day support)
-                          if (availabilityWindows.length > 0) {
+                          // Skip blocking for today — always allow same-day booking attempts
+                          const selectedIsToday = value === today;
+                          if (availabilityWindows.length > 0 && !selectedIsToday) {
                             const validTimes = getValidPickupTimes(value);
 
                             if (validTimes.length === 0) {
