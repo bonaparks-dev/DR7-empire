@@ -32,9 +32,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
   const isHelicopter = item.id.startsWith('heli');
   const isYacht = item.id.startsWith('yacht');
   const isCar = item.id.startsWith('car-');
-  const isM4 = item.name?.toLowerCase().includes('m4');
-  const isM3 = item.name?.toLowerCase().includes('m3') && !item.name?.toLowerCase().includes('m340');
-  const isUnavailableCar = isM4 || isM3;
+  const isUnavailableCar = false; // M3 and M4 now available
 
   // Jets, yachts, and helicopters use landscape format, others use vertical format
   const imageAspectRatio = (isJet || isYacht || isHelicopter) ? 'aspect-[16/9]' : 'aspect-[9/16]';
