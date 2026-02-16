@@ -2504,12 +2504,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         // 2. Generate Nexi Order ID BEFORE insert
         const nexiOrderId = `DR7${Date.now()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
-        // 3. Insert Pending Booking (extra fields stored in booking_details JSONB)
-        const bookingData = {
+        // 3. Insert Pending Booking (only confirmed columns + extras in booking_details JSONB)
+        const bookingData: Record<string, any> = {
           user_id: user.id,
           vehicle_type: item.type || 'car',
           vehicle_name: vehicleName,
-          vehicle_image_url: item.image,
           pickup_date: pickupDateTime.toISOString(),
           dropoff_date: dropoffDateTime.toISOString(),
           pickup_location: formData.pickupLocation,
@@ -2523,9 +2522,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           customer_name: `${formData.firstName} ${formData.lastName}`,
           customer_email: formData.email,
           customer_phone: formData.phone,
-          vehicle_id: formData.selectedVehicleId || null,
           booking_details: {
             nexi_order_id: nexiOrderId,
+            vehicle_image_url: item.image,
+            vehicle_id: formData.selectedVehicleId || null,
             insurance_option: formData.insuranceOption,
             deposit_amount: getDeposit(),
             booking_usage_zone: formData.usageZone || null,
