@@ -250,7 +250,7 @@ const transformVehicle = (vehicle: Vehicle): TransformedVehicle => {
 
 
 const CACHE_KEY_PREFIX = 'dr7_vehicles_cache_';
-const CACHE_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_EXPIRY_MS = 2 * 60 * 1000; // 2 minutes (reduced for debugging)
 
 export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
   const [vehicles, setVehicles] = useState<TransformedVehicle[]>([]);
@@ -299,11 +299,11 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
         return { isChrome, isSafari, userAgent: ua };
       };
 
-      // Helper: Fetch with timeout and retry
+      // Helper: Fetch with timeout and retry (optimized)
       const fetchWithRetry = async (attemptNumber = 0): Promise<any> => {
-        const maxAttempts = 3;
-        const timeout = 10000; // 10 seconds
-        const backoffDelay = attemptNumber * 1000; // 0ms, 1000ms, 2000ms
+        const maxAttempts = 2; // Reduced from 3 to 2
+        const timeout = 8000; // Reduced from 10s to 8s
+        const backoffDelay = attemptNumber * 500; // Reduced: 0ms, 500ms
 
         // Wait for backoff delay before retry
         if (backoffDelay > 0) {
@@ -316,18 +316,24 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
             setTimeout(() => reject(new Error('Request timeout after 10s')), timeout);
           });
 
-          // Call Netlify Function instead of direct Supabase REST
-          const url = category
-            ? `/.netlify/functions/getVehicles?category=${category}`
-            : '/.netlify/functions/getVehicles';
+          // 🚨 EMERGENCY FIX: Direct Supabase call instead of broken Netlify function
+          // TODO: Restore Netlify function once environment variables are fixed
+          let query = supabase
+            .from('vehicles')
+            .select('*')
+            .neq('status', 'retired')
+            .order('display_name', { ascending: true });
 
-          // Race between fetch and timeout
-          const fetchPromise = fetch(url).then(async (response) => {
-            if (!response.ok) {
-              const errorBody = await response.json().catch(() => ({ error: 'Unknown error' }));
-              throw new Error(errorBody.error || `HTTP ${response.status}`);
+          // Filter by category if specified
+          if (category && ['exotic', 'urban', 'aziendali'].includes(category)) {
+            query = query.eq('category', category);
+          }
+
+          // Execute query directly
+          const fetchPromise = query.then(({ data, error }) => {
+            if (error) {
+              throw error;
             }
-            const data = await response.json();
             return { data, error: null };
           });
 

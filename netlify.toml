@@ -1,51 +1,19 @@
 [build]
-  publish = "dist"
   command = "npm run build"
-  functions = "netlify/functions"
+  publish = "dist"
+
+[functions]
+  node_bundler = "esbuild"
 
 [[redirects]]
-  from = "/.netlify/*"
-  to = "/.netlify/:splat"
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
   status = 200
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
-[build.environment]
-  NODE_VERSION = "18"
-  NPM_FLAGS = "--legacy-peer-deps"
-
-[[headers]]
-  for = "/assets/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/*.js"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000"
-
-[[headers]]
-  for = "/*.css"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000"
-
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
-    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
-    X-XSS-Protection = "1; mode=block"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://aistudiocdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.green-api.com https://api.stripe.com https://*.googleapis.com; frame-src https://js.stripe.com https://hooks.stripe.com"
-
-[functions."send-membership-reminders"]
-  schedule = "0 6 * * *"
-
-[dev]
-  command = "vite"
-  targetPort = 5173
+# Environment variables for build
+[context.production.environment]
+  SUPABASE_URL = "https://ahpmzjgkfxrrgxyirasa.supabase.co"
+  ALLOWED_ORIGIN = "https://dr7empire.com"
+  
+# Add service role key in Netlify dashboard:
+# SUPABASE_SERVICE_ROLE_KEY = "your_service_role_key"

@@ -1,0 +1,159 @@
+import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
+import { createClient } from '@supabase/supabase-js';
+
+// FIXED: Support both naming conventions
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Enhanced validation
+if (!supabaseUrl) {
+    console.error('Missing Supabase URL. Check VITE_SUPABASE_URL or SUPABASE_URL');
+    throw new Error('SUPABASE_URL environment variable is required');
+}
+
+if (!supabaseServiceKey) {
+    console.error('Missing Supabase Service Role Key. Check VITE_SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SERVICE_ROLE_KEY');
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is required');
+}
+
+// Create Supabase client with enhanced error handling
+const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+        autoRefreshToken: false,
+        persistSession: false
+    },
+    // Add timeout and retry configurations
+    global: {
+        headers: {
+            'x-client-info': 'dr7-netlify-function'
+        }
+    }
+});
+
+export const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
+    // Enhanced CORS configuration
+    const headers = {
+        'Access-Control-Allow-Origin': process.env.VITE_ALLOWED_ORIGIN || process.env.ALLOWED_ORIGIN || '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=300', // 5 minute cache
+    };
+
+    // Handle preflight requests
+    if (event.httpMethod === 'OPTIONS') {
+        return {
+            statusCode: 200,
+            headers,
+            body: '',
+        };
+    }
+
+    // Only allow GET requests
+    if (event.httpMethod !== 'GET') {
+        return {
+            statusCode: 405,
+            headers,
+            body: JSON.stringify({ error: 'Method not allowed' }),
+        };
+    }
+
+    try {
+        // Extract and validate category
+        const category = event.queryStringParameters?.category;
+        const validCategories = ['exotic', 'urban', 'aziendali'];
+        
+        console.log('[getVehicles] Request received:', { 
+            category, 
+            timestamp: new Date().toISOString(),
+            origin: event.headers?.origin,
+            userAgent: event.headers?.['user-agent']
+        });
+
+        // Build query with enhanced filtering
+        let query = supabase
+            .from('vehicles')
+            .select('*')
+            .neq('status', 'retired')
+            .order('display_name', { ascending: true });
+
+        // Apply category filter if valid
+        if (category && validCategories.includes(category)) {
+            query = query.eq('category', category);
+        }
+
+        // Add timeout to the query
+        const queryPromise = query;
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Database query timeout')), 8000);
+        });
+
+        // Race between query and timeout
+        const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+
+        if (error) {
+            console.error('[getVehicles] Supabase error:', {
+                error: error.message,
+                code: error.code,
+                details: error.details,
+                hint: error.hint,
+                category,
+                timestamp: new Date().toISOString(),
+            });
+
+            return {
+                statusCode: 500,
+                headers,
+                body: JSON.stringify({
+                    error: 'Database query failed',
+                    message: error.message,
+                    code: error.code,
+                }),
+            };
+        }
+
+        const resultCount = data?.length || 0;
+        console.log('[getVehicles] Success:', {
+            count: resultCount,
+            category: category || 'all',
+            timestamp: new Date().toISOString(),
+            sampleData: resultCount > 0 ? {
+                firstVehicle: data[0]?.display_name,
+                categories: [...new Set(data.map((v: any) => v.category))]
+            } : null
+        });
+
+        // Return data with metadata
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+                data: data || [],
+                meta: {
+                    count: resultCount,
+                    category: category || 'all',
+                    timestamp: new Date().toISOString()
+                }
+            }),
+        };
+
+    } catch (error: any) {
+        console.error('[getVehicles] Critical error:', {
+            error: error.message,
+            stack: error.stack,
+            name: error.name,
+            timestamp: new Date().toISOString(),
+            isTimeout: error.message?.includes('timeout'),
+        });
+
+        return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({
+                error: 'Internal server error',
+                message: error.message,
+                timestamp: new Date().toISOString(),
+            }),
+        };
+    }
+};
