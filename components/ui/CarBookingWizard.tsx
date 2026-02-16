@@ -2504,7 +2504,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         // 2. Generate Nexi Order ID BEFORE insert
         const nexiOrderId = `DR7${Date.now()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
-        // 3. Insert Pending Booking (nexi_order_id stored in booking_details, updated separately)
+        // 3. Insert Pending Booking (extra fields stored in booking_details JSONB)
         const bookingData = {
           user_id: user.id,
           vehicle_type: item.type || 'car',
@@ -2524,11 +2524,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           customer_email: formData.email,
           customer_phone: formData.phone,
           vehicle_id: formData.selectedVehicleId || null,
-          deposit_amount: getDeposit(),
-          insurance_option: formData.insuranceOption,
-          booking_usage_zone: formData.usageZone || null,
           booking_details: {
             nexi_order_id: nexiOrderId,
+            insurance_option: formData.insuranceOption,
+            deposit_amount: getDeposit(),
+            booking_usage_zone: formData.usageZone || null,
             customer: {
               fullName: `${formData.firstName} ${formData.lastName}`,
               firstName: formData.firstName,
