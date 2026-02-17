@@ -216,5 +216,29 @@
   <body class="bg-black text-gray-200" translate="no">
     <div id="root" translate="no"></div>
     <script type="module" src="/index.tsx"></script>
+    <script>
+      // Auto-refresh: check for new build version every page load
+      (function() {
+        try {
+          var key = 'dr7_build_version';
+          fetch('/build-version.txt?t=' + Date.now())
+            .then(function(r) { return r.ok ? r.text() : null; })
+            .then(function(serverVersion) {
+              if (!serverVersion) return;
+              serverVersion = serverVersion.trim();
+              var localVersion = sessionStorage.getItem(key);
+              if (!localVersion) {
+                // First visit this session — store version, don't reload
+                sessionStorage.setItem(key, serverVersion);
+              } else if (localVersion !== serverVersion) {
+                // Version changed — store new version and reload
+                sessionStorage.setItem(key, serverVersion);
+                location.reload();
+              }
+            })
+            .catch(function() { /* ignore fetch errors */ });
+        } catch(e) { /* ignore */ }
+      })();
+    </script>
   </body>
 </html>
