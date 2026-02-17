@@ -34,6 +34,27 @@ exports.handler = async (event) => {
   let failed = 0;
 
   // ──────────────────────────────────────────────
+  // Load message templates from system_messages table
+  // (editable from Admin CRM → Marketing → Messaggi di Sistema)
+  // ──────────────────────────────────────────────
+  const messageTemplates = {};
+  try {
+    const { data: templates } = await supabase
+      .from('system_messages')
+      .select('message_key, message_body');
+
+    if (templates) {
+      templates.forEach(t => { messageTemplates[t.message_key] = t.message_body; });
+      console.log(`Loaded ${templates.length} message template(s) from database`);
+    }
+  } catch (err) {
+    console.warn('Could not load system_messages, using defaults:', err.message);
+  }
+
+  // Fallback defaults if table doesn't exist yet
+  const getTemplate = (key, fallback) => messageTemplates[key] || fallback;
+
+  // ──────────────────────────────────────────────
   // 1 & 2. DAY-BEFORE REMINDERS (supercar + utilitaria)
   // Find bookings where dropoff_date is tomorrow (Italy time)
   // ──────────────────────────────────────────────
@@ -87,21 +108,13 @@ exports.handler = async (event) => {
           let message = '';
 
           if (vehicleType === 'SUPERCAR') {
-            // SUPERCAR: promo continuation offer
-            message =
-              `Buongiorno ${firstName},\n\n` +
-              `Vorrebbe valutare una promo in continuazione super vantaggiosa?\n\n` +
-              `Cordiali saluti,\n` +
-              `DR7`;
+            const template = getTemplate('supercar_day_before',
+              `Buongiorno {nome},\n\nVorrebbe valutare una promo in continuazione super vantaggiosa?\n\nCordiali saluti,\nDR7`);
+            message = template.replace(/\{nome\}/g, firstName);
           } else if (['UTILITARIA', 'FURGONE', 'V_CLASS'].includes(vehicleType)) {
-            // UTILITARIA/URBAN: extension offer
-            message =
-              `Buongiorno ${firstName},\n\n` +
-              `La contattiamo per informarla che, qualora avesse necessità di prolungare il noleggio, restiamo a disposizione per verificarne la disponibilità.\n\n` +
-              `In caso di estensione, possiamo riservarle uno sconto dedicato sul periodo aggiuntivo.\n\n` +
-              `Qualora lo desiderasse, le chiediamo gentilmente di indicarci per quanto tempo intende eventualmente prolungare, così da poter valutare la soluzione più conveniente.\n\n` +
-              `Cordiali saluti,\n` +
-              `DR7`;
+            const template = getTemplate('utilitaria_day_before',
+              `Buongiorno {nome},\n\nLa contattiamo per informarla che, qualora avesse necessità di prolungare il noleggio, restiamo a disposizione per verificarne la disponibilità.\n\nIn caso di estensione, possiamo riservarle uno sconto dedicato sul periodo aggiuntivo.\n\nQualora lo desiderasse, le chiediamo gentilmente di indicarci per quanto tempo intende eventualmente prolungare, così da poter valutare la soluzione più conveniente.\n\nCordiali saluti,\nDR7`);
+            message = template.replace(/\{nome\}/g, firstName);
           } else {
             console.log(`Skipping booking ${booking.id} — unknown vehicle type: ${vehicleType}`);
             continue;
@@ -180,13 +193,9 @@ exports.handler = async (event) => {
             continue;
           }
 
-          const message =
-            `Buongiorno ${firstName},\n\n` +
-            `La ringraziamo per aver scelto i nostri servizi.\n\n` +
-            `Al fine di procedere con la restituzione della cauzione, Le chiediamo cortesemente di comunicarci il Suo IBAN completo e il nominativo dell'intestatario del conto.\n\n` +
-            `Il rimborso verrà effettuato tramite bonifico ordinario entro il quattordicesimo giorno lavorativo, come da condizioni contrattuali.\n\n` +
-            `Cordiali saluti,\n` +
-            `DR7`;
+          const template = getTemplate('deposit_return_iban',
+            `Buongiorno {nome},\n\nLa ringraziamo per aver scelto i nostri servizi.\n\nAl fine di procedere con la restituzione della cauzione, Le chiediamo cortesemente di comunicarci il Suo IBAN completo e il nominativo dell'intestatario del conto.\n\nIl rimborso verrà effettuato tramite bonifico ordinario entro il quattordicesimo giorno lavorativo, come da condizioni contrattuali.\n\nCordiali saluti,\nDR7`);
+          const message = template.replace(/\{nome\}/g, firstName);
 
           const success = await sendWhatsApp(greenInstanceId, greenToken, phone, message);
 
