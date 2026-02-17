@@ -617,11 +617,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       addTimes(17 * 60 + 30, 18 * 60 + 30, 15);  // 17:30 to 18:30
     }
 
-    // Filter out past times if the selected date is today
     const selectedDate = safeDate(date);
     const now = new Date();
     const isToday = selectedDate.toDateString() === now.toDateString();
 
+    // Filter out past times if the selected date is today
+    let filteredTimes = times;
     if (isToday) {
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();
@@ -630,7 +631,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // Add 1 hour buffer (60 minutes) to allow preparation time
       const minTimeInMinutes = currentTimeInMinutes + 60;
 
-      return times.filter(time => {
+      filteredTimes = times.filter(time => {
         const [hours, minutes] = time.split(':').map(Number);
         const timeInMinutes = hours * 60 + minutes;
         return timeInMinutes >= minTimeInMinutes;
@@ -638,8 +639,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
 
     // CRITICAL: Filter by availability windows (partial-day support)
+    // Applies to both today AND future dates
     if (availabilityWindows.length > 0) {
-      return times.filter(time => {
+      return filteredTimes.filter(time => {
         const [hours, minutes] = time.split(':').map(Number);
         const datetime = new Date(date);
         datetime.setHours(hours, minutes, 0, 0);
@@ -653,7 +655,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       });
     }
 
-    return times;
+    return filteredTimes;
   };
 
   const getValidReturnTimes = (date: string): string[] => {
@@ -686,9 +688,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const now = new Date();
     const isToday = selectedDate.toDateString() === now.toDateString();
 
+    let filteredTimes = times;
     if (isToday) {
       const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
-      return times.filter(time => {
+      filteredTimes = times.filter(time => {
         const [hours, minutes] = time.split(':').map(Number);
         return (hours * 60 + minutes) >= currentTimeInMinutes;
       });
@@ -725,7 +728,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const [pH, pM] = formData.pickupTime.split(':').map(Number);
         const maxRetMinutes = (pH * 60 + pM) - 90;
 
-        return times.filter(time => {
+        return filteredTimes.filter(time => {
           const [hours, minutes] = time.split(':').map(Number);
           const returnDt = new Date(date);
           returnDt.setHours(hours, minutes, 0, 0);
@@ -748,7 +751,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const [pickupH, pickupM] = formData.pickupTime.split(':').map(Number);
     const maxReturnMinutes = (pickupH * 60 + pickupM) - 90; // pickup time - 1h30
 
-    return times.filter(time => {
+    return filteredTimes.filter(time => {
       const [hours, minutes] = time.split(':').map(Number);
       const returnDt = new Date(date);
       returnDt.setHours(hours, minutes, 0, 0);
