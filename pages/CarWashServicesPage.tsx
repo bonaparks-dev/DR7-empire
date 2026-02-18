@@ -828,6 +828,7 @@ const CarWashServicesPage: React.FC = () => {
               </label>
               <div className="relative">
                 <input
+                  id="vehicle-search-input"
                   type="text"
                   value={vehicleSearch}
                   onChange={(e) => handleVehicleSearch(e.target.value)}
@@ -870,6 +871,8 @@ const CarWashServicesPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {COMBINED_WASH_SERVICES.map((combo) => {
                 const autoService = detectedCategory === 'urban' ? combo.urban : detectedCategory === 'maxi' ? combo.maxi : null;
+                const lowestPrice = Math.min(combo.urban.price, combo.maxi.price);
+                const formatPrice = (p: number) => p % 1 === 0 ? `${p}` : p.toFixed(2);
                 return (
                   <motion.div
                     key={combo.id}
@@ -884,31 +887,27 @@ const CarWashServicesPage: React.FC = () => {
                       alt={lang === 'it' ? combo.name : combo.nameEn}
                       className="w-full h-auto object-contain"
                     />
-                    <div className="p-4 flex gap-3">
+                    <div className="p-4">
                       {autoService ? (
-                        /* Single button when vehicle is classified */
                         <button
                           onClick={() => handleCombinedWashSelect(autoService)}
-                          className="flex-1 bg-white text-black px-3 py-2 rounded-full font-semibold text-sm hover:bg-gray-200 transition-all duration-300"
+                          className="w-full bg-white text-black px-3 py-2 rounded-full font-semibold text-sm hover:bg-gray-200 transition-all duration-300"
                         >
-                          €{autoService.price % 1 === 0 ? autoService.price : autoService.price.toFixed(2)}
+                          €{formatPrice(autoService.price)}
                         </button>
                       ) : (
-                        /* Two buttons when no vehicle detected */
-                        <>
-                          <button
-                            onClick={() => handleCombinedWashSelect(combo.urban)}
-                            className="flex-1 bg-transparent border-2 border-white text-white px-3 py-2 rounded-full font-semibold text-sm hover:bg-white hover:text-black transition-all duration-300"
-                          >
-                            URBAN — €{combo.urban.price % 1 === 0 ? combo.urban.price : combo.urban.price.toFixed(2)}
-                          </button>
-                          <button
-                            onClick={() => handleCombinedWashSelect(combo.maxi)}
-                            className="flex-1 bg-transparent border-2 border-white text-white px-3 py-2 rounded-full font-semibold text-sm hover:bg-white hover:text-black transition-all duration-300"
-                          >
-                            MAXI — €{combo.maxi.price % 1 === 0 ? combo.maxi.price : combo.maxi.price.toFixed(2)}
-                          </button>
-                        </>
+                        <button
+                          onClick={() => {
+                            const searchInput = document.getElementById('vehicle-search-input');
+                            if (searchInput) {
+                              searchInput.focus();
+                              searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                          }}
+                          className="w-full bg-transparent border-2 border-white text-white px-3 py-2 rounded-full font-semibold text-sm hover:bg-white hover:text-black transition-all duration-300"
+                        >
+                          {lang === 'it' ? 'da' : 'from'} €{formatPrice(lowestPrice)}
+                        </button>
                       )}
                     </div>
                   </motion.div>
