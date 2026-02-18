@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { useNavigate } from 'react-router-dom';
+import { classifyVehicle, type VehicleCategory } from '../utils/vehicleClassification';
 
 export interface WashService {
   id: string;
@@ -560,6 +561,36 @@ const CarWashServicesPage: React.FC = () => {
   const [upsellStep, setUpsellStep] = useState<1 | 2>(1);
   const [upsellSelectedService, setUpsellSelectedService] = useState<WashService | null>(null);
   const [upsellAddedExtras, setUpsellAddedExtras] = useState<Set<string>>(new Set());
+  const [vehicleSearch, setVehicleSearch] = useState('');
+  const [detectedCategory, setDetectedCategory] = useState<VehicleCategory | null>(null);
+  const [detectedModel, setDetectedModel] = useState<string | null>(null);
+
+  const handleVehicleSearch = useCallback((value: string) => {
+    setVehicleSearch(value);
+    if (value.trim().length < 3) {
+      setDetectedCategory(null);
+      setDetectedModel(null);
+      return;
+    }
+    const result = classifyVehicle(value.trim());
+    if (result) {
+      setDetectedCategory(result.category);
+      setDetectedModel(
+        result.matchedBrand
+          ? `${result.matchedBrand.charAt(0).toUpperCase() + result.matchedBrand.slice(1)}${result.matchedModel ? ' ' + result.matchedModel.charAt(0).toUpperCase() + result.matchedModel.slice(1) : ''}`
+          : null
+      );
+    } else {
+      setDetectedCategory(null);
+      setDetectedModel(null);
+    }
+  }, []);
+
+  const clearVehicleSearch = useCallback(() => {
+    setVehicleSearch('');
+    setDetectedCategory(null);
+    setDetectedModel(null);
+  }, []);
 
   const getLavaggioServices = (category: LavaggioCategory): WashService[] => {
     switch (category) {
@@ -789,38 +820,102 @@ const CarWashServicesPage: React.FC = () => {
       <div className="container mx-auto px-6">
         {/* Combined Wash Cards */}
         {mainTab === 'lavaggio' && lavaggioCategory === 'wash' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {COMBINED_WASH_SERVICES.map((combo) => (
-              <motion.div
-                key={combo.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.5, ease: 'easeOut' }}
-                className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg overflow-hidden group transition-all duration-300 hover:border-white/50 hover:shadow-2xl hover:shadow-white/10 flex flex-col"
-              >
-                <img
-                  src={combo.image}
-                  alt={lang === 'it' ? combo.name : combo.nameEn}
-                  className="w-full h-auto object-contain"
+          <>
+            {/* Vehicle Model Search */}
+            <div className="mb-8 max-w-lg mx-auto">
+              <label className="block text-gray-400 text-sm mb-2 text-center">
+                {lang === 'it' ? 'Cerca il tuo modello per scoprire il prezzo' : 'Search your model to find the price'}
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={vehicleSearch}
+                  onChange={(e) => handleVehicleSearch(e.target.value)}
+                  placeholder={lang === 'it' ? 'es. Fiat Panda, BMW X3, Golf...' : 'e.g. Fiat Panda, BMW X3, Golf...'}
+                  className="w-full bg-gray-900/80 border border-gray-700 rounded-full px-5 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-white transition-colors text-center"
                 />
-                <div className="p-4 flex gap-3">
+                {vehicleSearch && (
                   <button
-                    onClick={() => handleCombinedWashSelect(combo.urban)}
-                    className="flex-1 bg-transparent border-2 border-white text-white px-3 py-2 rounded-full font-semibold text-sm hover:bg-white hover:text-black transition-all duration-300"
+                    onClick={clearVehicleSearch}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-lg"
                   >
-                    URBAN — €{combo.urban.price % 1 === 0 ? combo.urban.price : combo.urban.price.toFixed(2)}
+                    &times;
                   </button>
+                )}
+              </div>
+              {detectedCategory && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-3 text-center"
+                >
+                  <span className={`inline-block px-4 py-1.5 rounded-full text-sm font-bold ${
+                    detectedCategory === 'urban'
+                      ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-600/40'
+                      : 'bg-amber-600/20 text-amber-400 border border-amber-600/40'
+                  }`}>
+                    {detectedModel && <span className="opacity-70 mr-1">{detectedModel} →</span>}
+                    {detectedCategory === 'urban' ? 'PRIME URBAN CLASS' : 'PRIME MAXI CLASS'}
+                  </span>
                   <button
-                    onClick={() => handleCombinedWashSelect(combo.maxi)}
-                    className="flex-1 bg-transparent border-2 border-white text-white px-3 py-2 rounded-full font-semibold text-sm hover:bg-white hover:text-black transition-all duration-300"
+                    onClick={clearVehicleSearch}
+                    className="block mx-auto mt-1 text-gray-500 hover:text-white text-xs transition-colors"
                   >
-                    MAXI — €{combo.maxi.price % 1 === 0 ? combo.maxi.price : combo.maxi.price.toFixed(2)}
+                    {lang === 'it' ? 'Cambia veicolo' : 'Change vehicle'}
                   </button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                </motion.div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {COMBINED_WASH_SERVICES.map((combo) => {
+                const autoService = detectedCategory === 'urban' ? combo.urban : detectedCategory === 'maxi' ? combo.maxi : null;
+                return (
+                  <motion.div
+                    key={combo.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.2 }}
+                    transition={{ duration: 0.5, ease: 'easeOut' }}
+                    className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg overflow-hidden group transition-all duration-300 hover:border-white/50 hover:shadow-2xl hover:shadow-white/10 flex flex-col"
+                  >
+                    <img
+                      src={combo.image}
+                      alt={lang === 'it' ? combo.name : combo.nameEn}
+                      className="w-full h-auto object-contain"
+                    />
+                    <div className="p-4 flex gap-3">
+                      {autoService ? (
+                        /* Single button when vehicle is classified */
+                        <button
+                          onClick={() => handleCombinedWashSelect(autoService)}
+                          className="flex-1 bg-white text-black px-3 py-2 rounded-full font-semibold text-sm hover:bg-gray-200 transition-all duration-300"
+                        >
+                          €{autoService.price % 1 === 0 ? autoService.price : autoService.price.toFixed(2)}
+                        </button>
+                      ) : (
+                        /* Two buttons when no vehicle detected */
+                        <>
+                          <button
+                            onClick={() => handleCombinedWashSelect(combo.urban)}
+                            className="flex-1 bg-transparent border-2 border-white text-white px-3 py-2 rounded-full font-semibold text-sm hover:bg-white hover:text-black transition-all duration-300"
+                          >
+                            URBAN — €{combo.urban.price % 1 === 0 ? combo.urban.price : combo.urban.price.toFixed(2)}
+                          </button>
+                          <button
+                            onClick={() => handleCombinedWashSelect(combo.maxi)}
+                            className="flex-1 bg-transparent border-2 border-white text-white px-3 py-2 rounded-full font-semibold text-sm hover:bg-white hover:text-black transition-all duration-300"
+                          >
+                            MAXI — €{combo.maxi.price % 1 === 0 ? combo.maxi.price : combo.maxi.price.toFixed(2)}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </>
         ) : (
           /* Standard single-service cards */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
