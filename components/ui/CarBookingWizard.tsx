@@ -1159,14 +1159,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // 50km/day supercar package: flat €149/day, no multi-day discounts
       calculatedRentalCost = billingDaysCalc * SUPERCAR_50KM_DAILY_RATE;
     } else if (isMassimo) {
-      // Massimo pricing: Tiered discount structure
-      // 1-2 days: 0%, 3 days: -10%, 4-6 days: -15%, 7+ days: -20%
+      // Massimo pricing: €339/day base rate, tiered discounts ONLY with active membership
       const baseRate = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseRate;
       const discountTiers = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.discountTiers;
 
-      // Find applicable discount tier
-      const tier = discountTiers.find(t => billingDaysCalc >= t.minDays);
-      const discountPercent = tier ? tier.discount : 0; // No discount for 1-2 days
+      // Discounts only apply if user has active paid membership
+      const membershipActive = user?.membership?.subscriptionStatus === 'active' &&
+        user?.membership?.renewalDate && new Date(user.membership.renewalDate) > new Date();
+      const tier = membershipActive ? discountTiers.find(t => billingDaysCalc >= t.minDays) : null;
+      const discountPercent = tier ? tier.discount : 0;
 
       const baseRentalCost = billingDaysCalc * baseRate;
       massimoTotalDiscount = roundToTwoDecimals(baseRentalCost * discountPercent);

@@ -9,8 +9,8 @@ export const SPECIAL_CLIENTS = {
     MASSIMO_RUNCHINA: {
         email: 'massimorunchina69@gmail.com',
         config: {
-            baseRate: 305,              // Fixed rate: €305 per day for any supercar
-            // Tiered discounts based on rental duration
+            baseRate: 339,              // Fixed rate: €339 per day for any supercar
+            // Tiered discounts based on rental duration (ONLY with active membership)
             discountTiers: [
                 { minDays: 7, discount: 0.20 },  // 7+ days: -20%
                 { minDays: 4, discount: 0.15 },  // 4-6 days: -15%
@@ -27,7 +27,7 @@ export const SPECIAL_CLIENTS = {
         email: 'jeannegiraud92@gmail.com',
         config: {
             baseRate: 305,              // Fixed rate: €305 per day for any supercar
-            // Tiered discounts based on rental duration (same as Massimo)
+            // Tiered discounts based on rental duration (ONLY with active membership)
             discountTiers: [
                 { minDays: 7, discount: 0.20 },  // 7+ days: -20%
                 { minDays: 4, discount: 0.15 },  // 4-6 days: -15%
@@ -134,20 +134,34 @@ export interface ClientPricingResult {
 }
 
 /**
- * Get the appropriate discount percentage for Massimo based on rental duration
+ * Check if a user has an active, paid membership (not expired)
  */
-const getMassimoDiscount = (days: number): number => {
-    const tiers = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.discountTiers;
-    // Find the first tier where days >= minDays
-    const tier = tiers.find(t => days >= t.minDays);
-    return tier ? tier.discount : 0; // No discount for 1-2 days, 10% for 3+ days
+const hasActiveMembership = (user: User | null): boolean => {
+    if (!user?.membership?.tierId) return false;
+    if (user.membership.subscriptionStatus !== 'active') return false;
+    if (user.membership.renewalDate) {
+        const renewalDate = new Date(user.membership.renewalDate);
+        if (renewalDate < new Date()) return false;
+    }
+    return true;
+};
+
+/**
+ * Get the appropriate discount percentage for a special client based on rental duration.
+ * Discount tiers ONLY apply if the client has an active membership.
+ */
+const getClientDiscount = (days: number, clientConfig: typeof SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config, user: User | null): number => {
+    if (!hasActiveMembership(user)) return 0; // No discount without active membership
+    const tier = clientConfig.discountTiers.find(t => days >= t.minDays);
+    return tier ? tier.discount : 0;
 };
 
 export const calculateClientPricing = (
     email: string | undefined,
     days: number,
-    currentSubtotal: number, // Subtotal BEFORE special client logic (but includes extras if we want to discount them, or we can recalculate)
-    otherFees: number // Fees that might not be discounted or need to be added back
+    currentSubtotal: number,
+    otherFees: number,
+    user?: User | null // Pass user to check membership status for discount eligibility
 ): ClientPricingResult => {
 
     if (!isMassimoRunchina(email)) {
@@ -160,12 +174,12 @@ export const calculateClientPricing = (
     }
 
     const { baseRate, noCents } = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config;
-    const discountPercent = getMassimoDiscount(days);
+    const discountPercent = getClientDiscount(days, SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config, user ?? null);
 
     // Step 1: Calculate base rental cost (€339 × days)
     const baseRentalCost = baseRate * days;
 
-    // Step 2: Apply tiered discount
+    // Step 2: Apply tiered discount (only if membership active)
     const totalDiscount = roundToTwoDecimals(baseRentalCost * discountPercent);
     const rentalAfterDiscount = roundToTwoDecimals(baseRentalCost - totalDiscount);
 
@@ -187,6 +201,8 @@ export const calculateClientPricing = (
         dailyRate: effectiveDailyRate,
         discountAmount: totalDiscount,
         subtotal: newSubtotal,
-        message: `Sconto cliente speciale ${discountLabel}% applicato`
+        message: discountPercent > 0
+            ? `Sconto cliente speciale ${discountLabel}% applicato`
+            : undefined
     };
 };

@@ -19,7 +19,7 @@ const MembershipEnrollmentPage: React.FC = () => {
     const { currency } = useCurrency();
     const { user } = useAuth();
 
-    const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>(searchParams.get('billing') === 'monthly' ? 'monthly' : 'annually');
+    const [billingCycle] = useState<'monthly' | 'annually'>('annually');
     const [isProcessing, setIsProcessing] = useState(false);
     const [paymentError, setPaymentError] = useState<string | null>(null);
 
