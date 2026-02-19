@@ -90,56 +90,156 @@ const PaymentSuccessPage: React.FC = () => {
                     console.log('Found booking:', booking.id);
                     setPurchaseType('booking');
 
-                    const { error: updateError } = await supabase
+                    // Update if not already confirmed (backward compat + idempotency)
+                    if (booking.payment_status !== 'succeeded' && booking.payment_status !== 'completed' && booking.payment_status !== 'paid') {
+                        await supabase
+                            .from('bookings')
+                            .update({
+                                status: 'confirmed',
+                                payment_status: 'succeeded',
+                                nexi_payment_id: orderId,
+                                nexi_authorization_code: authCode || null,
+                                payment_completed_at: new Date().toISOString()
+                            })
+                            .eq('id', booking.id);
+                    }
+
+                    // Send notifications
+                    fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ booking: { ...booking, payment_status: 'succeeded' } }),
+                    }).catch(e => console.error('Email error', e));
+
+                    fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ booking: { ...booking, payment_status: 'succeeded' } }),
+                    }).catch(e => console.error('WhatsApp error', e));
+
+                    if (booking.booking_details?.customer) {
+                        const bId = booking.id.substring(0, 8).toUpperCase();
+                        const customer = booking.booking_details.customer;
+                        const pDate = new Date(booking.pickup_date);
+                        const dDate = new Date(booking.dropoff_date);
+                        const price = (booking.price_total / 100).toFixed(2);
+
+                        const msg = `Ciao! Ho appena completato il pagamento per la prenotazione.\n\n` +
+                            `*Dettagli Prenotazione*\n` +
+                            `*ID:* DR7-${bId}\n` +
+                            `*Nome:* ${customer.fullName}\n` +
+                            `*Veicolo:* ${booking.vehicle_name}\n` +
+                            `*Ritiro:* ${pDate.toLocaleDateString('it-IT')} ${pDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n` +
+                            `*Riconsegna:* ${dDate.toLocaleDateString('it-IT')} ${dDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n` +
+                            `*Totale:* €${price}\n\n` +
+                            `Grazie!`;
+
+                        const officeNum = '393457905205';
+                        setWhatsappUrl(`https://wa.me/${officeNum}?text=${encodeURIComponent(msg)}`);
+                    }
+                    setUpdating(false);
+                    return;
+                }
+
+                // 1b. Try pending_nexi_bookings — new flow: booking created only after payment
+                const { data: pendingRows } = await supabase
+                    .from('pending_nexi_bookings')
+                    .select('*')
+                    .eq('nexi_order_id', orderId)
+                    .limit(1);
+
+                if (pendingRows && pendingRows.length > 0) {
+                    const pending = pendingRows[0];
+                    console.log('Found pending booking, creating real booking after payment success');
+                    setPurchaseType('booking');
+
+                    // Create the REAL booking now that payment succeeded
+                    const bookingPayload = {
+                        ...pending.booking_data,
+                        status: 'confirmed',
+                        payment_status: 'succeeded',
+                        nexi_order_id: orderId,
+                        nexi_payment_id: orderId,
+                        nexi_authorization_code: authCode || null,
+                        payment_completed_at: new Date().toISOString()
+                    };
+
+                    const { data: newBooking, error: insertErr } = await supabase
                         .from('bookings')
-                        .update({
-                            status: 'confirmed',
-                            payment_status: 'succeeded',
-                            nexi_payment_id: orderId,
-                            nexi_authorization_code: authCode || null,
-                            payment_completed_at: new Date().toISOString()
-                        })
-                        .eq('id', booking.id);
+                        .insert(bookingPayload)
+                        .select()
+                        .single();
 
-                    if (updateError) {
-                        console.error('Error updating booking:', updateError);
-                        setUpdateError('Could not update booking status');
-                    } else {
-                        console.log('Booking marked as completed:', booking.id);
+                    if (insertErr) {
+                        // If insert fails with unique constraint, callback already created it — re-fetch
+                        console.warn('Insert failed (callback may have been faster):', insertErr.message);
+                        const { data: existingBookings } = await supabase
+                            .from('bookings')
+                            .select('*')
+                            .eq('nexi_order_id', orderId)
+                            .limit(1);
 
-                        // Send notifications
-                        fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ booking: { ...booking, payment_status: 'succeeded' } }),
-                        }).catch(e => console.error('Email error', e));
-
-                        fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ booking: { ...booking, payment_status: 'succeeded' } }),
-                        }).catch(e => console.error('WhatsApp error', e));
-
-                        if (booking.booking_details?.customer) {
-                            const bId = booking.id.substring(0, 8).toUpperCase();
-                            const customer = booking.booking_details.customer;
-                            const pDate = new Date(booking.pickup_date);
-                            const dDate = new Date(booking.dropoff_date);
-                            const price = (booking.price_total / 100).toFixed(2);
-
-                            const msg = `Ciao! Ho appena completato il pagamento per la prenotazione.\n\n` +
-                                `*Dettagli Prenotazione*\n` +
-                                `*ID:* DR7-${bId}\n` +
-                                `*Nome:* ${customer.fullName}\n` +
-                                `*Veicolo:* ${booking.vehicle_name}\n` +
-                                `*Ritiro:* ${pDate.toLocaleDateString('it-IT')} ${pDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n` +
-                                `*Riconsegna:* ${dDate.toLocaleDateString('it-IT')} ${dDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n` +
-                                `*Totale:* €${price}\n\n` +
-                                `Grazie!`;
-
-                            const officeNum = '393457905205';
-                            setWhatsappUrl(`https://wa.me/${officeNum}?text=${encodeURIComponent(msg)}`);
+                        if (existingBookings && existingBookings.length > 0) {
+                            console.log('Callback already created booking, showing success');
+                            const b = existingBookings[0];
+                            if (b.booking_details?.customer) {
+                                const bId = b.id.substring(0, 8).toUpperCase();
+                                const customer = b.booking_details.customer;
+                                const pDate = new Date(b.pickup_date);
+                                const dDate = new Date(b.dropoff_date);
+                                const price = (b.price_total / 100).toFixed(2);
+                                const msg = `Ciao! Ho appena completato il pagamento per la prenotazione.\n\n*ID:* DR7-${bId}\n*Nome:* ${customer.fullName}\n*Veicolo:* ${b.vehicle_name}\n*Ritiro:* ${pDate.toLocaleDateString('it-IT')}\n*Riconsegna:* ${dDate.toLocaleDateString('it-IT')}\n*Totale:* €${price}\n\nGrazie!`;
+                                setWhatsappUrl(`https://wa.me/393457905205?text=${encodeURIComponent(msg)}`);
+                            }
+                            setUpdating(false);
+                            return;
                         }
+
+                        setUpdateError('Errore nella creazione della prenotazione. Contatta il supporto.');
+                        setUpdating(false);
+                        return;
+                    }
+
+                    // Clean up pending record
+                    await supabase
+                        .from('pending_nexi_bookings')
+                        .delete()
+                        .eq('id', pending.id);
+
+                    console.log('Booking created:', newBooking.id);
+
+                    // Send notifications
+                    fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ booking: newBooking }),
+                    }).catch(e => console.error('Email error', e));
+
+                    fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ booking: newBooking }),
+                    }).catch(e => console.error('WhatsApp error', e));
+
+                    if (newBooking.booking_details?.customer) {
+                        const bId = newBooking.id.substring(0, 8).toUpperCase();
+                        const customer = newBooking.booking_details.customer;
+                        const pDate = new Date(newBooking.pickup_date);
+                        const dDate = new Date(newBooking.dropoff_date);
+                        const price = (newBooking.price_total / 100).toFixed(2);
+
+                        const msg = `Ciao! Ho appena completato il pagamento per la prenotazione.\n\n` +
+                            `*Dettagli Prenotazione*\n` +
+                            `*ID:* DR7-${bId}\n` +
+                            `*Nome:* ${customer.fullName}\n` +
+                            `*Veicolo:* ${newBooking.vehicle_name}\n` +
+                            `*Ritiro:* ${pDate.toLocaleDateString('it-IT')} ${pDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n` +
+                            `*Riconsegna:* ${dDate.toLocaleDateString('it-IT')} ${dDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n` +
+                            `*Totale:* €${price}\n\n` +
+                            `Grazie!`;
+
+                        const officeNum = '393457905205';
+                        setWhatsappUrl(`https://wa.me/${officeNum}?text=${encodeURIComponent(msg)}`);
                     }
                     setUpdating(false);
                     return;

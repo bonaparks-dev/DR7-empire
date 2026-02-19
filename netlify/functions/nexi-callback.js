@@ -97,11 +97,9 @@ exports.handler = async (event) => {
     // Find booking or credit wallet purchase by order ID
     console.log('Looking for order with codTrans:', codTrans);
 
-    // 1. Try bookings first (check nexi_order_id column, then fallback to booking_details JSONB)
+    // 1. Try bookings first — backward compat for old pending bookings already in the table
     let bookings = null;
-    let fetchError = null;
 
-    // Try with nexi_order_id column first
     const result1 = await supabase
       .from('bookings')
       .select('*')
@@ -111,7 +109,6 @@ exports.handler = async (event) => {
     if (!result1.error && result1.data && result1.data.length > 0) {
       bookings = result1.data;
     } else {
-      // Fallback: check booking_details JSONB for nexi_order_id
       const result2 = await supabase
         .from('bookings')
         .select('*')
@@ -121,17 +118,13 @@ exports.handler = async (event) => {
       if (!result2.error && result2.data && result2.data.length > 0) {
         bookings = result2.data;
         console.log('Found booking via booking_details JSONB fallback');
-      } else {
-        fetchError = result1.error || result2.error;
-        if (fetchError) console.error('Error fetching booking:', fetchError);
       }
     }
 
     if (bookings && bookings.length > 0) {
       const booking = bookings[0];
-      console.log('Found booking:', booking.id);
+      console.log('Found existing booking:', booking.id);
 
-      // Idempotency check: skip if already completed
       if (booking.payment_status === 'completed' || booking.payment_status === 'succeeded' || booking.payment_status === 'paid') {
         console.log('Booking already paid, skipping duplicate callback');
         return { statusCode: 200, body: 'OK' };
@@ -165,7 +158,86 @@ exports.handler = async (event) => {
       return { statusCode: 200, body: 'OK' };
     }
 
-    // 2. Try credit_wallet_purchases
+    // 2. Try pending_nexi_bookings — new flow: booking only created AFTER payment
+    const { data: pendingRows, error: pendingError } = await supabase
+      .from('pending_nexi_bookings')
+      .select('*')
+      .eq('nexi_order_id', codTrans)
+      .limit(1);
+
+    if (pendingError) {
+      console.error('Error fetching pending booking:', pendingError);
+    }
+
+    if (pendingRows && pendingRows.length > 0) {
+      const pending = pendingRows[0];
+      console.log('Found pending booking for codTrans:', codTrans);
+
+      if (esito === 'OK') {
+        // Payment succeeded — create the REAL booking now
+        const bookingData = pending.booking_data;
+        bookingData.status = 'confirmed';
+        bookingData.payment_status = 'succeeded';
+        bookingData.nexi_order_id = codTrans;
+        bookingData.nexi_payment_id = codTrans;
+        bookingData.nexi_authorization_code = codAut || null;
+        bookingData.payment_completed_at = new Date().toISOString();
+
+        const { data: newBooking, error: insertError } = await supabase
+          .from('bookings')
+          .insert(bookingData)
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('Error creating booking from pending:', insertError);
+          return { statusCode: 500, body: 'Error creating booking' };
+        }
+
+        // Clean up pending record
+        await supabase
+          .from('pending_nexi_bookings')
+          .delete()
+          .eq('id', pending.id);
+
+        console.log(`✅ Booking ${newBooking.id} created from pending after successful payment`);
+
+        // Send notifications
+        const siteUrl = process.env.URL || 'https://dr7empire.com';
+        try {
+          await fetch(`${siteUrl}/.netlify/functions/send-booking-confirmation`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ booking: newBooking }),
+          });
+        } catch (e) {
+          console.error('Email notification failed:', e);
+        }
+
+        try {
+          await fetch(`${siteUrl}/.netlify/functions/send-whatsapp-notification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ booking: newBooking }),
+          });
+        } catch (e) {
+          console.error('WhatsApp notification failed:', e);
+        }
+
+        return { statusCode: 200, body: 'OK' };
+      } else {
+        // Payment failed — delete pending record, no booking created
+        await supabase
+          .from('pending_nexi_bookings')
+          .delete()
+          .eq('id', pending.id);
+
+        console.log(`❌ Payment failed for pending booking (codTrans: ${codTrans}), pending record deleted`);
+        return { statusCode: 200, body: 'OK' };
+      }
+    }
+
+    // 3. Try credit_wallet_purchases
     const { data: purchases, error: purchaseError } = await supabase
       .from('credit_wallet_purchases')
       .select('*')

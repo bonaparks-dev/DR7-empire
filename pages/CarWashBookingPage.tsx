@@ -946,43 +946,46 @@ const CarWashBookingPage: React.FC = () => {
         // Nexi card payment - redirect to Nexi
         console.log('Creating Nexi payment...');
 
-        // First, save booking as pending
-        const pendingBooking = {
+        // Generate Nexi Order ID BEFORE storing pending data
+        const timestamp = Date.now().toString().substring(5);
+        const random = Math.floor(100 + Math.random() * 900).toString();
+        const nexiOrderId = `${timestamp}${random}`;
+
+        console.log('Generated Nexi orderId:', nexiOrderId, 'Length:', nexiOrderId.length);
+
+        // Prepare booking data with Nexi-specific fields
+        const nexiBookingData = {
           ...pendingBookingData,
-          payment_status: 'pending', // Will be updated by Nexi callback
-          payment_method: 'nexi'
+          payment_status: 'pending',
+          payment_method: 'nexi',
+          booking_details: {
+            ...pendingBookingData.booking_details,
+            nexi_order_id: nexiOrderId
+          }
         };
 
-        console.log('Saving booking to database...');
-        const { data: bookingData, error: bookingError } = await supabase
-          .from('bookings')
-          .insert(pendingBooking)
-          .select()
-          .single();
+        // Store in pending_nexi_bookings (NOT in bookings table)
+        // The real booking will only be created AFTER payment succeeds via nexi-callback
+        console.log('Storing pending booking...');
+        const { error: pendingError } = await supabase
+          .from('pending_nexi_bookings')
+          .insert({
+            nexi_order_id: nexiOrderId,
+            booking_data: nexiBookingData
+          });
 
-        if (bookingError) {
-          console.error('Database error:', bookingError);
+        if (pendingError) {
+          console.error('Database error:', pendingError);
           setPaymentError(
             lang === 'it'
-              ? `Errore database: ${bookingError.message}`
-              : `Database error: ${bookingError.message}`
+              ? `Errore database: ${pendingError.message}`
+              : `Database error: ${pendingError.message}`
           );
           setIsProcessing(false);
           return;
         }
 
-        console.log('Booking saved:', bookingData.id);
-
-        // Create Nexi payment
-        console.log('Creating Nexi payment for booking:', bookingData.id);
-
-        // Create a SHORT timestamp-based orderId
-        // Nexi might have length restrictions - try shorter format
-        const timestamp = Date.now().toString().substring(5); // Last 8 digits
-        const random = Math.floor(100 + Math.random() * 900).toString(); // 3 digits
-        const nexiOrderId = `${timestamp}${random}`;
-
-        console.log('Generated Nexi orderId:', nexiOrderId, 'Length:', nexiOrderId.length);
+        console.log('Pending booking stored with nexiOrderId:', nexiOrderId);
 
         const nexiServiceName = hasCartItems
           ? cartItems.map(i => i.serviceName).join(', ')
@@ -992,16 +995,12 @@ const CarWashBookingPage: React.FC = () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            amount: Math.round(calculateTotal() * 100), // Convert to cents
+            amount: Math.round(calculateTotal() * 100),
             currency: 'EUR',
             orderId: nexiOrderId,
             description: `Lavaggio ${nexiServiceName}`,
             customerEmail: formData.email,
-            metadata: {
-              type: 'car-wash',
-              bookingId: bookingData.id,
-              serviceName: nexiServiceName
-            }
+            customerName: formData.fullName
           })
         });
 
@@ -1010,9 +1009,8 @@ const CarWashBookingPage: React.FC = () => {
 
         if (nexiData.success && nexiData.paymentUrl) {
           console.log('Redirecting to Nexi:', nexiData.paymentUrl);
-          // Redirect to Nexi payment page
           window.location.href = nexiData.paymentUrl;
-          return; // Stop execution as we're redirecting
+          return;
         } else {
           console.error('Nexi payment creation failed:', nexiData);
           setPaymentError(nexiData.error || 'Failed to create Nexi payment');

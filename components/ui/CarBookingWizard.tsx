@@ -2585,27 +2585,20 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           }
         };
 
-        console.log("Inserting booking...", { nexiOrderId, amount: bookingData.price_total });
+        console.log("Storing pending booking...", { nexiOrderId, amount: bookingData.price_total });
 
-        const { data: pendingBooking, error: bookingError } = await supabase
-          .from('bookings')
-          .insert(bookingData)
-          .select()
-          .single();
+        // 3. Store booking data in pending_nexi_bookings (NOT in bookings table)
+        // The real booking will only be created AFTER payment succeeds via nexi-callback
+        const { error: pendingError } = await supabase
+          .from('pending_nexi_bookings')
+          .insert({
+            nexi_order_id: nexiOrderId,
+            booking_data: bookingData
+          });
 
-        if (bookingError) {
-          console.error("Booking INSERT failed:", { message: bookingError.message, code: bookingError.code, details: bookingError.details, hint: bookingError.hint });
-          throw new Error(`Errore salvataggio prenotazione: ${bookingError.message}`);
-        }
-
-        // 3b. Try to set nexi_order_id column (may not exist yet)
-        try {
-          await supabase
-            .from('bookings')
-            .update({ nexi_order_id: nexiOrderId })
-            .eq('id', pendingBooking.id);
-        } catch (e) {
-          console.warn("Could not set nexi_order_id column, using booking_details fallback");
+        if (pendingError) {
+          console.error("Pending booking INSERT failed:", { message: pendingError.message, code: pendingError.code, details: pendingError.details, hint: pendingError.hint });
+          throw new Error(`Errore salvataggio prenotazione: ${pendingError.message}`);
         }
 
         // 4. Initiate Nexi Payment
