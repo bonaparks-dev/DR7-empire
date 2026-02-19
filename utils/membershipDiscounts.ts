@@ -15,12 +15,28 @@ export const SERVICE_ELIGIBILITY = {
 } as const;
 
 /**
+ * Check if a user's membership is currently active (paid + not expired)
+ */
+function isMembershipActive(user: User | null): boolean {
+    if (!user?.membership?.tierId) return false;
+    if (user.membership.subscriptionStatus !== 'active') return false;
+
+    // Check renewal date hasn't passed
+    if (user.membership.renewalDate) {
+        const renewalDate = new Date(user.membership.renewalDate);
+        if (renewalDate < new Date()) return false;
+    }
+
+    return true;
+}
+
+/**
  * Get the discount percentage for a user's membership tier
  */
 export function getMembershipDiscount(user: User | null): number {
-    if (!user?.membership?.tierId) return 0;
+    if (!isMembershipActive(user)) return 0;
 
-    const tierId = user.membership.tierId.toLowerCase();
+    const tierId = user!.membership!.tierId.toLowerCase();
     return MEMBERSHIP_DISCOUNTS[tierId as keyof typeof MEMBERSHIP_DISCOUNTS] || 0;
 }
 
@@ -28,9 +44,9 @@ export function getMembershipDiscount(user: User | null): number {
  * Check if a service is eligible for discount based on membership tier
  */
 export function isServiceEligible(user: User | null, serviceType: string): boolean {
-    if (!user?.membership?.tierId) return false;
+    if (!isMembershipActive(user)) return false;
 
-    const tierId = user.membership.tierId.toLowerCase();
+    const tierId = user!.membership!.tierId.toLowerCase();
     const eligibleServices = SERVICE_ELIGIBILITY[tierId as keyof typeof SERVICE_ELIGIBILITY];
 
     return eligibleServices?.includes(serviceType) || false;
