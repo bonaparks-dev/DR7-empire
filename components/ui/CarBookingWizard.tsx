@@ -2254,12 +2254,22 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setPaymentError(null);
     console.log("handleSubmit called", { paymentMethod: formData.paymentMethod, step, userId: user?.id });
     if (!validateStep() || !item) return;
     setIsProcessing(true);
 
-    // Credit wallet payment (ATOMIC TRANSACTION)
-    if (!user?.id) {
+    // Safety timeout: auto-reset isProcessing after 30 seconds to prevent stuck button
+    const safetyTimer = setTimeout(() => {
+      setIsProcessing(false);
+      setPaymentError('Timeout — riprova il pagamento.');
+    }, 30000);
+
+    try {
+
+    // Credit wallet requires login
+    if (formData.paymentMethod === 'credit' && !user?.id) {
+      clearTimeout(safetyTimer);
       setPaymentError('Devi effettuare il login per procedere.');
       setIsProcessing(false);
       return;
@@ -2479,7 +2489,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       setIsProcessing(true);
 
       try {
-        if (!user?.id) throw new Error("User must be logged in");
+        // user.id is preferred but not strictly required for Nexi (booking data has customer info)
 
         // 1. Prepare standardized booking payload
         const { days } = duration;
@@ -2501,13 +2511,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         // 1a. Upload Images First (Critical)
         let licenseImageUrl = null;
         let idImageUrl = null;
+        const userId = user?.id || 'guest';
         if (formData.licenseImage) {
-          licenseImageUrl = await uploadToBucket('driver-licenses', user.id, formData.licenseImage, 'license');
+          licenseImageUrl = await uploadToBucket('driver-licenses', userId, formData.licenseImage, 'license');
         } else if (hasStoredDocs.licensePath) {
           licenseImageUrl = hasStoredDocs.licensePath;
         }
         if (formData.idImage) {
-          idImageUrl = await uploadToBucket('carta-identita', user.id, formData.idImage, 'id');
+          idImageUrl = await uploadToBucket('carta-identita', userId, formData.idImage, 'id');
         } else if (hasStoredDocs.idPath) {
           idImageUrl = hasStoredDocs.idPath;
         }
@@ -2519,7 +2530,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
         // 3. Insert Pending Booking (only confirmed columns + extras in booking_details JSONB)
         const bookingData: Record<string, any> = {
-          user_id: user.id,
+          user_id: user?.id || null,
           vehicle_type: item.type || 'car',
           vehicle_name: vehicleName,
           pickup_date: pickupDateTime.toISOString(),
@@ -2635,6 +2646,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         setPaymentError(err.message || "Si è verificato un errore durante la prenotazione.");
         setIsProcessing(false);
       }
+    }
+
+    } catch (outerErr: any) {
+      // Catch-all safety net for any unhandled errors
+      console.error("Unhandled booking error:", outerErr);
+      setPaymentError("Errore imprevisto. Riprova.");
+      setIsProcessing(false);
+    } finally {
+      clearTimeout(safetyTimer);
     }
   };
 
@@ -4139,6 +4159,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {errors.form && (
                     <div className="mt-4 text-center p-3 rounded-md border border-red-500 bg-red-500/10 text-red-400">
                       <p>{errors.form}</p>
+                    </div>
+                  )}
+
+                  {/* Show payment error near the button so it's visible on all devices */}
+                  {paymentError && step === steps.length && (
+                    <div className="mt-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg">
+                      <p className="text-sm text-red-400 text-center">{paymentError}</p>
                     </div>
                   )}
 

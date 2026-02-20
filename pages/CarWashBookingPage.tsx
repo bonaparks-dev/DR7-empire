@@ -772,13 +772,20 @@ const CarWashBookingPage: React.FC = () => {
     setIsProcessing(true);
     setPaymentError(null);
 
+    // Safety timeout: auto-reset after 30 seconds to prevent stuck button
+    const safetyTimer = setTimeout(() => {
+      setIsProcessing(false);
+      setPaymentError('Timeout — riprova il pagamento.');
+    }, 30000);
+
     try {
       let bookingDataWithPayment;
 
       if (paymentMethod === 'credit') {
-        // Credit wallet payment
+        // Credit wallet payment requires login
         if (!user?.id) {
-          throw new Error('User not logged in');
+          clearTimeout(safetyTimer);
+          throw new Error('Devi effettuare il login per procedere.');
         }
 
         const totalAmount = calculateTotal();
@@ -1023,6 +1030,7 @@ const CarWashBookingPage: React.FC = () => {
         error instanceof Error ? error.message : 'An unexpected error occurred'
       );
     } finally {
+      clearTimeout(safetyTimer);
       setIsProcessing(false);
     }
   };
