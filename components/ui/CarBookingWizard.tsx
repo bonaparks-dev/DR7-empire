@@ -2615,8 +2615,96 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           }
         };
 
-        console.log("Storing pending booking...", { nexiOrderId, amount: bookingData.price_total });
+        console.log("Booking amount:", { nexiOrderId, amount: bookingData.price_total });
 
+        // CHECK: If discount covers full amount (€0 total), skip Nexi and book directly
+        if (Math.round(finalPriceWithBirthdayDiscount * 100) <= 0) {
+          console.log("Zero-total booking: discount covers full amount, skipping Nexi payment");
+
+          // Insert directly into bookings table (no payment needed)
+          bookingData.status = 'confirmed';
+          bookingData.payment_status = 'succeeded';
+          bookingData.payment_method = 'discount_code';
+          bookingData.vehicle_image_url = item.image;
+          bookingData.vehicle_id = formData.selectedVehicleId || null;
+          bookingData.deposit_amount = getDeposit();
+          bookingData.insurance_option = formData.insuranceOption;
+          bookingData.booking_usage_zone = formData.usageZone || null;
+
+          const { data: insertedBooking, error: insertError } = await supabase
+            .from('bookings')
+            .insert(bookingData)
+            .select()
+            .single();
+
+          if (insertError) {
+            console.error("Booking INSERT failed:", insertError);
+            throw new Error(`Errore salvataggio prenotazione: ${insertError.message}`);
+          }
+
+          console.log("Zero-total booking created:", insertedBooking.id);
+
+          // Send email confirmation
+          fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ booking: insertedBooking }),
+          }).catch(e => console.error('Email error', e));
+
+          // Send WhatsApp admin notification
+          fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ booking: insertedBooking }),
+          }).catch(e => console.error('WhatsApp error', e));
+
+          // Mark discount code as used
+          if (appliedDiscount) {
+            try {
+              await markDiscountCodeAsUsed(insertedBooking.id);
+            } catch (discountErr) {
+              console.error('Failed to mark discount code as used:', discountErr);
+            }
+          }
+
+          // Redeem discount code
+          if (appliedDiscount?.code) {
+            fetch('/.netlify/functions/redeem-discount-code', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                code: appliedDiscount.code,
+                bookingId: insertedBooking.id,
+                customerName: `${formData.firstName} ${formData.lastName}`,
+                serviceType: categoryContext === 'cars' ? 'supercar' : categoryContext === 'urban-cars' ? 'utilitarie' : 'noleggio',
+                discountApplied: Math.round(discountAmount * 100),
+              })
+            }).catch(e => console.error('Redeem discount error', e));
+          }
+
+          onBookingComplete(insertedBooking);
+
+          // WhatsApp customer message
+          const bookingId = insertedBooking.id.substring(0, 8).toUpperCase();
+          const customerName = `${formData.firstName} ${formData.lastName}`;
+          const whatsappMessage = `Ciao! Ho appena completato una prenotazione con codice sconto.\n\n` +
+            `*Dettagli Prenotazione*\n` +
+            `*ID:* DR7-${bookingId}\n` +
+            `*Nome:* ${customerName}\n` +
+            `*Telefono:* ${formData.phone}\n` +
+            `*Veicolo:* ${vehicleName}\n` +
+            `*Ritiro:* ${formData.pickupDate} ${formData.pickupTime}\n` +
+            `*Totale:* €0.00 (coperto da codice sconto)\n\n` +
+            `Grazie!`;
+          const whatsappUrl = `https://wa.me/393457905205?text=${encodeURIComponent(whatsappMessage)}`;
+          setTimeout(() => window.open(whatsappUrl, '_blank'), 1000);
+
+          isSubmittingRef.current = false;
+          setIsProcessing(false);
+          return;
+        }
+
+        // Normal Nexi flow: amount > 0
         // 3. Store booking data in pending_nexi_bookings (NOT in bookings table)
         // The real booking will only be created AFTER payment succeeds via nexi-callback
         const { error: pendingError } = await supabase
