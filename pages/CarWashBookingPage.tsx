@@ -136,8 +136,36 @@ const CarWashBookingPage: React.FC = () => {
     return map;
   }, []);
 
+  // Real working durations for admin calendar (not shown to customers)
+  // Urban = lower value, Maxi = higher value
+  const CALENDAR_DURATION_MAP: Record<string, number> = {
+    'urban-interior': 40,
+    'urban-exterior': 30,
+    'urban-full': 80,
+    'urban-full-n2': 80,
+    'urban-top-shine': 120,
+    'urban-vip': 140,
+    'urban-luxury': 220,
+    'maxi-interior': 45,
+    'maxi-exterior': 40,
+    'maxi-full': 90,
+    'maxi-full-n2': 90,
+    'maxi-top-shine': 130,
+    'maxi-vip': 150,
+    'maxi-luxury': 280,
+  };
+
+  // Get calendar duration in minutes for a service (for admin calendar + slot blocking)
+  const getCalendarDurationMinutes = (serviceId: string): number => {
+    return CALENDAR_DURATION_MAP[serviceId] || (SERVICE_DURATION_MAP[serviceId] ? SERVICE_DURATION_MAP[serviceId] * 60 : 15);
+  };
+
   // Get duration by service ID (accurate), with price-based fallback for DB bookings
   const getServiceDurationById = (serviceId: string): number => {
+    // Use calendar duration (real working time) for slot calculations
+    if (CALENDAR_DURATION_MAP[serviceId]) {
+      return CALENDAR_DURATION_MAP[serviceId] / 60; // convert minutes to hours
+    }
     return SERVICE_DURATION_MAP[serviceId] || 0.25; // default 15 min if unknown
   };
 
@@ -740,6 +768,11 @@ const CarWashBookingPage: React.FC = () => {
       return selectedService!.id;
     };
 
+    // Calculate total calendar duration (real working time for admin calendar)
+    const totalDurationMinutes = hasCartItems
+      ? cartItems.reduce((total, item) => total + getCalendarDurationMinutes(item.serviceId) * item.quantity, 0)
+      : getCalendarDurationMinutes(selectedService?.id || '');
+
     const bookingData = {
       user_id: user?.id || null,
       vehicle_type: 'car',
@@ -747,6 +780,7 @@ const CarWashBookingPage: React.FC = () => {
       service_type: 'car_wash',
       service_name: getServiceNames(),
       service_id: getServiceIds(),
+      duration_minutes: totalDurationMinutes,
       price_total: Math.round(calculateTotal() * 100), // in cents
       currency: 'EUR',
       customer_name: formData.fullName,
