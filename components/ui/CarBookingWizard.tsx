@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Link } from 'react-router-dom';
 import { useCurrency } from '../../contexts/CurrencyContext';
-import { isMassimoRunchina } from '../../utils/clientPricingRules';
+import { isMassimoRunchina, SPECIAL_CLIENTS } from '../../utils/clientPricingRules';
 import { calculateMultiDayPrice } from '../../utils/multiDayPricing';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../supabaseClient';
@@ -1157,10 +1157,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (isSupercar50km) {
       // 50km/day supercar package: flat €149/day, no multi-day discounts
       calculatedRentalCost = billingDaysCalc * SUPERCAR_50KM_DAILY_RATE;
+    } else if (isMassimo && getVehicleType(item, categoryContext) === 'SUPERCAR') {
+      // Massimo Runchina: flat €339/day for supercars, NO tiered discounts
+      // Additional discounts ONLY via codice sconto
+      calculatedRentalCost = billingDaysCalc * SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseRate;
     } else {
-      // Standard pricing for ALL customers (including Massimo — discounts via codice sconto only)
+      // Standard multi-day pricing for all other customers
       const vType = getVehicleType(item, categoryContext);
-      // Use usage zone selection to determine resident status (not database field)
       const isResident = formData.usageZone === 'CAGLIARI_SUD';
 
       calculatedRentalCost = calculateMultiDayPrice(vType, billingDaysCalc, pricePerDay, isResident);
