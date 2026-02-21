@@ -23,6 +23,9 @@ import { getUserCreditBalance, deductCredits, hasSufficientBalance } from '../..
 import { calculateDiscountedPrice, getMembershipTierName } from '../../utils/membershipDiscounts';
 import { roundToTwoDecimals, eurosToCents } from '../../utils/pricing';
 import { fetchWithTimeout } from '../../utils/fetchWithTimeout';
+import { URBAN_SERVICES, MAXI_SERVICES } from '../../pages/CarWashServicesPage';
+import type { WashService } from '../../pages/CarWashServicesPage';
+import { classifyVehicle } from '../../utils/vehicleClassification';
 
 const FUNCTIONS_BASE =
   import.meta.env.VITE_FUNCTIONS_BASE ??
@@ -218,6 +221,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [availableVehicleName, setAvailableVehicleName] = useState<string | null>(null);
   const [usageZoneError, setUsageZoneError] = useState<string | null>(null); // Error for resident blocking
   const [showZoneConfirmation, setShowZoneConfirmation] = useState(false); // Zone confirmation modal
+
+  // Wash upsell state
+  const [showWashUpsell, setShowWashUpsell] = useState(false);
+  const [selectedUpsellWash, setSelectedUpsellWash] = useState<WashService | null>(null);
+  const [upsellCarInput, setUpsellCarInput] = useState('');
+  const [upsellCarCategory, setUpsellCarCategory] = useState<'urban' | 'maxi' | null>(null);
+  const [upsellCarModel, setUpsellCarModel] = useState<string | null>(null);
 
   // Single source of truth for availability
   const [earliestAvailability, setEarliestAvailability] = useState<{
@@ -1319,6 +1329,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   const finalPriceWithBirthdayDiscount = Math.max(0, finalTotalWithOnlineDiscount - discountAmount);
 
+  // Wash upsell cost (-10% on selected wash service)
+  const washUpsellCost = selectedUpsellWash ? roundToTwoDecimals(selectedUpsellWash.price * 0.90) : 0;
+  const grandTotal = finalPriceWithBirthdayDiscount + washUpsellCost;
+
   // Forcer horaires valides et pas de dimanche
   useEffect(() => {
     const validTimes = getValidPickupTimes(formData.pickupDate);
@@ -1956,7 +1970,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         dropoff_date: dropoffDateTime.toISOString(),
         pickup_location: formData.pickupLocation,
         dropoff_location: formData.returnLocation,
-        price_total: eurosToCents(total),
+        price_total: eurosToCents(grandTotal),
         currency: currency.toUpperCase(),
         status: 'pending',
         payment_status: paymentIntentId || formData.paymentMethod === 'credit' ? 'succeeded' : 'pending',
@@ -2012,6 +2026,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           vehicle_id: formData.selectedVehicleId, // Store specific vehicle ID to avoid grouping collisions
           driverLicenseImage: licenseImageUrl,
           driverIdImage: idImageUrl,
+          ...(selectedUpsellWash ? { washUpsell: {
+            serviceId: selectedUpsellWash.id,
+            serviceName: selectedUpsellWash.name,
+            originalPrice: selectedUpsellWash.price,
+            discountedPrice: washUpsellCost,
+            discountPercent: 10,
+            customerCarModel: upsellCarInput,
+            carCategory: upsellCarCategory,
+          }} : {}),
         }
       };
 
@@ -2059,6 +2082,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           `*Data Riconsegna:* ${dropoffDate.toLocaleDateString('it-IT')} alle ${dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n` +
           `*Luogo Ritiro:* ${data.pickup_location}\n` +
           `*Assicurazione:* ${insuranceOption}\n` +
+          (selectedUpsellWash ? `*Lavaggio Auto:* ${selectedUpsellWash.name} (€${washUpsellCost.toFixed(2)}) - ${upsellCarInput}\n` : '') +
           `*Totale:* €${totalPrice}\n\n` +
           `Grazie!`;
 
@@ -2273,10 +2297,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     // Check sufficient balance only for credit wallet payments
     if (formData.paymentMethod === 'credit') {
-      const hasBalance = await hasSufficientBalance(user.id, finalPriceWithBirthdayDiscount);
+      const hasBalance = await hasSufficientBalance(user.id, grandTotal);
       if (!hasBalance) {
         clearTimeout(safetyTimer);
-        setPaymentError(`Credito insufficiente. Saldo attuale: €${creditBalance.toFixed(2)}, Richiesto: €${finalPriceWithBirthdayDiscount.toFixed(2)}`);
+        setPaymentError(`Credito insufficiente. Saldo attuale: €${creditBalance.toFixed(2)}, Richiesto: €${grandTotal.toFixed(2)}`);
         isSubmittingRef.current = false;
         setIsProcessing(false);
         return;
@@ -2315,7 +2339,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           dropoff_date: dropoffDateTime.toISOString(),
           pickup_location: formData.pickupLocation,
           dropoff_location: formData.returnLocation,
-          price_total: Math.round(finalPriceWithBirthdayDiscount * 100),
+          price_total: Math.round(grandTotal * 100),
           currency: currency.toUpperCase(),
           booking_source: 'website',
           customer_name: `${formData.firstName} ${formData.lastName}`,
@@ -2367,14 +2391,23 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             noDepositSurcharge: noDepositSurcharge,
             driverLicenseImage: licenseImageUrl,
             driverIdImage: idImageUrl,
+            ...(selectedUpsellWash ? { washUpsell: {
+              serviceId: selectedUpsellWash.id,
+              serviceName: selectedUpsellWash.name,
+              originalPrice: selectedUpsellWash.price,
+              discountedPrice: washUpsellCost,
+              discountPercent: 10,
+              customerCarModel: upsellCarInput,
+              carCategory: upsellCarCategory,
+            }} : {}),
           }
         };
 
         // 3. Call Atomic RPC
-        console.log("Starting credit booking RPC call...", { user: user.id, amount: Math.round(finalPriceWithBirthdayDiscount * 100), vehicle: item.name });
+        console.log("Starting credit booking RPC call...", { user: user.id, amount: Math.round(grandTotal * 100), vehicle: item.name });
         const { data, error } = await supabase.rpc('book_with_credits', {
           p_user_id: user.id,
-          p_amount_cents: Math.round(finalPriceWithBirthdayDiscount * 100),
+          p_amount_cents: Math.round(grandTotal * 100),
           p_vehicle_name: item.name,
           p_booking_payload: bookingPayload
         });
@@ -2452,7 +2485,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           const bookingId = data.booking_id.substring(0, 8).toUpperCase();
           const customerName = `${formData.firstName} ${formData.lastName}`;
           const customerPhone = formData.phone;
-          const totalPrice = finalPriceWithBirthdayDiscount.toFixed(2);
+          const totalPrice = grandTotal.toFixed(2);
 
           const whatsappMessage = `Ciao! Ho appena completato una prenotazione con Credito DR7.\n\n` +
             `*Dettagli Prenotazione*\n` +
@@ -2461,6 +2494,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             `*Telefono:* ${customerPhone}\n` +
             `*Veicolo:* ${item.name}\n` +
             `*Ritiro:* ${formData.pickupDate} ${formData.pickupTime}\n` +
+            (selectedUpsellWash ? `*Lavaggio Auto:* ${selectedUpsellWash.name} (€${washUpsellCost.toFixed(2)}) - ${upsellCarInput}\n` : '') +
             `*Totale:* €${totalPrice}\n\n` +
             `Grazie!`;
 
@@ -2535,7 +2569,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           dropoff_date: dropoffDateTime.toISOString(),
           pickup_location: formData.pickupLocation,
           dropoff_location: formData.returnLocation,
-          price_total: Math.round(finalPriceWithBirthdayDiscount * 100), // Store in cents
+          price_total: Math.round(grandTotal * 100), // Store in cents
           currency: 'EUR',
           status: 'pending',
           payment_status: 'pending',
@@ -2592,13 +2626,22 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             noDepositSurcharge: noDepositSurcharge,
             driverLicenseImage: licenseImageUrl,
             driverIdImage: idImageUrl,
+            ...(selectedUpsellWash ? { washUpsell: {
+              serviceId: selectedUpsellWash.id,
+              serviceName: selectedUpsellWash.name,
+              originalPrice: selectedUpsellWash.price,
+              discountedPrice: washUpsellCost,
+              discountPercent: 10,
+              customerCarModel: upsellCarInput,
+              carCategory: upsellCarCategory,
+            }} : {}),
           }
         };
 
         console.log("Booking amount:", { nexiOrderId, amount: bookingData.price_total });
 
         // CHECK: If discount covers full amount (€0 total), skip Nexi and book directly
-        if (Math.round(finalPriceWithBirthdayDiscount * 100) <= 0) {
+        if (Math.round(grandTotal * 100) <= 0) {
           console.log("Zero-total booking: discount covers full amount, skipping Nexi payment");
 
           // Insert directly into bookings table (no payment needed)
@@ -2674,6 +2717,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             `*Telefono:* ${formData.phone}\n` +
             `*Veicolo:* ${vehicleName}\n` +
             `*Ritiro:* ${formData.pickupDate} ${formData.pickupTime}\n` +
+            (selectedUpsellWash ? `*Lavaggio Auto:* ${selectedUpsellWash.name} (€${washUpsellCost.toFixed(2)}) - ${upsellCarInput}\n` : '') +
             `*Totale:* €0.00 (coperto da codice sconto)\n\n` +
             `Grazie!`;
           const whatsappUrl = `https://wa.me/393457905205?text=${encodeURIComponent(whatsappMessage)}`;
@@ -2700,9 +2744,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         }
 
         // 4. Validate amount before calling Nexi
-        const amountCents = Math.round(finalPriceWithBirthdayDiscount * 100);
+        const amountCents = Math.round(grandTotal * 100);
         if (!amountCents || isNaN(amountCents) || amountCents <= 0) {
-          console.error('Invalid payment amount:', { finalPriceWithBirthdayDiscount, amountCents });
+          console.error('Invalid payment amount:', { grandTotal, amountCents });
           throw new Error("Importo non valido per il pagamento. Controlla i dati della prenotazione.");
         }
 
@@ -2764,17 +2808,56 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       return;
     }
 
+    // Show wash upsell modal on Step 3 → 4 transition (if zone confirmation didn't trigger)
+    if (step === 3) {
+      setShowWashUpsell(true);
+      return;
+    }
+
     setStep(s => s + 1);
   };
 
   const handleZoneConfirmation = () => {
     setShowZoneConfirmation(false);
-    setStep(4); // Proceed to payment
+    // Chain to wash upsell instead of going directly to Step 4
+    setShowWashUpsell(true);
   };
 
   const handleZoneModification = () => {
     setShowZoneConfirmation(false);
     // Stay on Step 3 so user can modify their selection
+  };
+
+  const handleWashUpsellAccept = () => {
+    setShowWashUpsell(false);
+    setStep(4);
+  };
+
+  const handleWashUpsellDecline = () => {
+    setSelectedUpsellWash(null);
+    setUpsellCarInput('');
+    setUpsellCarCategory(null);
+    setUpsellCarModel(null);
+    setShowWashUpsell(false);
+    setStep(4);
+  };
+
+  const handleUpsellCarSearch = (value: string) => {
+    setUpsellCarInput(value);
+    setSelectedUpsellWash(null);
+    if (value.trim().length >= 2) {
+      const result = classifyVehicle(value.trim());
+      if (result) {
+        setUpsellCarCategory(result.category);
+        setUpsellCarModel(result.matchedModel || null);
+      } else {
+        setUpsellCarCategory(null);
+        setUpsellCarModel(null);
+      }
+    } else {
+      setUpsellCarCategory(null);
+      setUpsellCarModel(null);
+    }
   };
 
   const handleBack = () => setStep(s => s - 1);
@@ -3873,7 +3956,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           <span>-{formatPrice(discountAmount)}</span>
                         </div>
                       )}
-                      <div className="flex justify-between font-bold text-lg text-white"><span>TOTALE</span> <span>{formatPrice(finalPriceWithBirthdayDiscount)}</span></div>
+                      {selectedUpsellWash && (
+                        <div className="flex justify-between text-blue-400 text-sm">
+                          <span>Lavaggio {selectedUpsellWash.name} (-10%)</span>
+                          <span>+{formatPrice(washUpsellCost)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between font-bold text-lg text-white"><span>TOTALE</span> <span>{formatPrice(grandTotal)}</span></div>
                     </>
                   ) : (
                     <>
@@ -3890,7 +3979,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           <span>-{formatPrice(discountAmount)}</span>
                         </div>
                       )}
-                      <div className="flex justify-between font-bold text-lg"><span>TOTALE</span> <span>{formatPrice(finalPriceWithBirthdayDiscount)}</span></div>
+                      {selectedUpsellWash && (
+                        <div className="flex justify-between text-blue-400 text-sm">
+                          <span>Lavaggio {selectedUpsellWash.name} (-10%)</span>
+                          <span>+{formatPrice(washUpsellCost)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between font-bold text-lg"><span>TOTALE</span> <span>{formatPrice(grandTotal)}</span></div>
                     </>
                   )}
                 </div>
@@ -4113,6 +4208,138 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   </motion.div>
                 </motion.div>
               )}
+
+              {/* Wash Upsell Modal */}
+              {showWashUpsell && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4"
+                  onClick={handleWashUpsellDecline}
+                >
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                    className="bg-gray-900 border border-gray-700 rounded-2xl p-5 sm:p-8 max-w-2xl w-full max-h-[92vh] overflow-y-auto"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Header */}
+                    <div className="text-center mb-5 sm:mb-6">
+                      <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-white/10 rounded-full mb-3">
+                        <svg className="w-7 h-7 sm:w-8 sm:h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-xl sm:text-2xl font-bold text-white tracking-wide mb-1">
+                        APPROFITTA SUBITO
+                      </h3>
+                      <div className="w-12 h-0.5 bg-white/30 mx-auto mb-4"></div>
+                      <p className="text-gray-300 text-sm sm:text-base leading-relaxed max-w-md mx-auto">
+                        Grazie per aver prenotato il tuo noleggio.
+                      </p>
+                      <p className="text-gray-300 text-sm sm:text-base leading-relaxed max-w-md mx-auto mt-1">
+                        Mentre ti godi la tua {categoryContext === 'urban-cars' || categoryContext === 'corporate-fleet' ? 'utilitaria' : 'supercar'}, lascia a noi la cura della <strong className="text-white">tua auto</strong>.
+                      </p>
+                      <p className="text-white font-semibold text-base sm:text-lg mt-3">
+                        Solo per i clienti noleggio: <span className="text-green-400">–10%</span> su qualsiasi servizio lavaggio.
+                      </p>
+                    </div>
+
+                    {/* Car model input */}
+                    <div className="mb-5">
+                      <label className="block text-sm text-gray-400 mb-2 font-medium">Inserisci il modello della tua auto</label>
+                      <input
+                        type="text"
+                        value={upsellCarInput}
+                        onChange={(e) => handleUpsellCarSearch(e.target.value)}
+                        placeholder="es. Fiat Panda, BMW X3, Golf..."
+                        className="w-full bg-gray-800/80 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-white/50 transition-colors"
+                      />
+                      {upsellCarCategory && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
+                            upsellCarCategory === 'urban'
+                              ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-600/40'
+                              : 'bg-amber-600/20 text-amber-400 border border-amber-600/40'
+                          }`}>
+                            {upsellCarModel && <span className="opacity-70 mr-1">{upsellCarModel} →</span>}
+                            {upsellCarCategory === 'urban' ? 'PRIME URBAN' : 'PRIME MAXI'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Service grid */}
+                    {upsellCarCategory && (
+                      <div className="space-y-2 mb-5">
+                        {(upsellCarCategory === 'urban' ? URBAN_SERVICES : MAXI_SERVICES).map((svc) => {
+                          const discountedPrice = roundToTwoDecimals(svc.price * 0.90);
+                          const isSelected = selectedUpsellWash?.id === svc.id;
+                          return (
+                            <button
+                              key={svc.id}
+                              type="button"
+                              onClick={() => setSelectedUpsellWash(isSelected ? null : svc)}
+                              className={`w-full text-left px-4 py-3 rounded-xl border transition-all ${
+                                isSelected
+                                  ? 'border-white bg-white/10'
+                                  : 'border-gray-700 bg-gray-800/50 hover:border-gray-500'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-white font-semibold text-sm truncate">{svc.name}</p>
+                                  <p className="text-gray-400 text-xs mt-0.5">{svc.duration}</p>
+                                </div>
+                                <div className="text-right ml-3 flex-shrink-0">
+                                  <span className="text-gray-500 line-through text-xs">€{svc.price % 1 === 0 ? svc.price : svc.price.toFixed(2)}</span>
+                                  <span className="text-white font-bold text-base ml-2">€{discountedPrice % 1 === 0 ? discountedPrice : discountedPrice.toFixed(2)}</span>
+                                </div>
+                              </div>
+                              {isSelected && (
+                                <div className="mt-2 pt-2 border-t border-gray-700">
+                                  <p className="text-gray-300 text-xs leading-relaxed">{svc.description}</p>
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {!upsellCarCategory && upsellCarInput.trim().length >= 2 && (
+                      <p className="text-gray-500 text-sm text-center mb-5">Modello non trovato. Prova con marca e modello (es. "Fiat Panda").</p>
+                    )}
+
+                    {/* Action buttons */}
+                    <div className="flex flex-col gap-3">
+                      <button
+                        type="button"
+                        onClick={handleWashUpsellAccept}
+                        disabled={!selectedUpsellWash}
+                        className={`w-full py-3.5 rounded-full font-bold text-sm sm:text-base transition-all ${
+                          selectedUpsellWash
+                            ? 'bg-white text-black hover:bg-gray-100'
+                            : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        {selectedUpsellWash
+                          ? `Aggiungi lavaggio – €${washUpsellCost % 1 === 0 ? washUpsellCost : washUpsellCost.toFixed(2)}`
+                          : 'Seleziona un servizio'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleWashUpsellDecline}
+                        className="w-full py-3 text-gray-400 hover:text-white text-sm transition-colors"
+                      >
+                        No, grazie
+                      </button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
             </AnimatePresence>
 
             <canvas ref={canvasRef} className="hidden"></canvas>
@@ -4163,6 +4390,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           <span className="text-yellow-400 font-medium">{formatPrice(noDepositSurcharge)}</span>
                         </div>
                       )}
+                      {selectedUpsellWash && (
+                        <div className="flex justify-between">
+                          <span className="text-blue-400">Lavaggio auto (-10%)</span>
+                          <span className="text-blue-400 font-medium">{formatPrice(washUpsellCost)}</span>
+                        </div>
+                      )}
 
                       <div className="border-t border-white/20 my-2"></div>
 
@@ -4185,7 +4418,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                               <span>-{formatPrice(discountAmount)}</span>
                             </div>
                           )}
-                          <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(finalPriceWithBirthdayDiscount)}</span></div>
+                          {selectedUpsellWash && (
+                            <div className="flex justify-between text-blue-400 text-sm">
+                              <span>Lavaggio (-10%)</span>
+                              <span>+{formatPrice(washUpsellCost)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(grandTotal)}</span></div>
                         </>
                       ) : (
                         <>
@@ -4202,7 +4441,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                               <span>-{formatPrice(discountAmount)}</span>
                             </div>
                           )}
-                          <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(finalPriceWithBirthdayDiscount)}</span></div>
+                          {selectedUpsellWash && (
+                            <div className="flex justify-between text-blue-400 text-sm">
+                              <span>Lavaggio (-10%)</span>
+                              <span>+{formatPrice(washUpsellCost)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(grandTotal)}</span></div>
                         </>
                       )}
                       {isUrbanOrCorporate && formData.depositOption === 'with_deposit' && getDeposit() > 0 && (
