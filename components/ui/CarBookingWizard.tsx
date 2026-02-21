@@ -2136,7 +2136,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     try {
       // Call the admin API to validate the code with service context
-      const response = await fetch('https://admin.dr7empire.com/.netlify/functions/validate-discount-code', {
+      const response = await fetch('/.netlify/functions/validate-discount-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2247,7 +2247,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
 
     try {
-      await fetch('https://admin.dr7empire.com/.netlify/functions/validate-discount-code', {
+      await fetch('/.netlify/functions/validate-discount-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
