@@ -1324,22 +1324,21 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     item, currency, user, isUrbanOrCorporate, categoryContext
   ]);
 
-  // Online booking discount (5%)
-  const onlineDiscountAmount = finalTotal * 0.05;
-  const finalTotalWithOnlineDiscount = finalTotal * 0.95;
+  // Online booking discount (5%) — NOT for Massimo (already has special pricing)
+  const onlineDiscountAmount = isMassimo ? 0 : finalTotal * 0.05;
+  const finalTotalWithOnlineDiscount = isMassimo ? finalTotal : finalTotal * 0.95;
 
-  // Calculate final price including discount code (supports both fixed and percentage)
+  // Calculate discount code amount (flat value — NOT reduced by online discount)
   const discountAmount = useMemo(() => {
     if (!appliedDiscount) return 0;
 
     if (appliedDiscount.type === 'percentage') {
-      // Percentage discount: calculate based on price after online discount
-      return Math.min(finalTotalWithOnlineDiscount * (appliedDiscount.amount / 100), finalTotalWithOnlineDiscount);
+      return Math.min(finalTotal * (appliedDiscount.amount / 100), finalTotal);
     } else {
-      // Fixed amount (rental, fixed, car_wash): cap at finalTotalWithOnlineDiscount
-      return Math.min(appliedDiscount.amount, finalTotalWithOnlineDiscount);
+      // Fixed amount: €150 means €150, capped at subtotal only
+      return Math.min(appliedDiscount.amount, finalTotal);
     }
-  }, [appliedDiscount, finalTotalWithOnlineDiscount]);
+  }, [appliedDiscount, finalTotal]);
 
   const finalPriceWithBirthdayDiscount = Math.max(0, finalTotalWithOnlineDiscount - discountAmount);
 
