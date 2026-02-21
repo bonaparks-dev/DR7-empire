@@ -2941,13 +2941,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             const validTimes = getValidPickupTimes(value);
 
                             if (validTimes.length === 0) {
-                              // No valid times on this date - find next available
-                              const nextAvailable = availabilityWindows[0];
-                              const nextDate = new Date(nextAvailable.start);
-                              const dateStr = nextDate.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                              const timeStr = nextDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
-
-                              alert(`Questo veicolo non è disponibile in questa data.\n\nPrima disponibilità: ${dateStr} alle ${timeStr}`);
+                              // No valid times on this date — don't block selection,
+                              // let the useEffect availability check show the error in the UI
                               return;
                             }
                           }
@@ -2971,7 +2966,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           : today}
                         max={isUtilitaria ? UTILITARIE_MAX_DATE : undefined}
                         required
-                        className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors cursor-pointer ${errors.pickupDate
+                        className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors cursor-pointer ${errors.pickupDate || (formData.pickupDate && availabilityError)
                           ? 'border-red-500 focus:border-red-400'
                           : formData.pickupDate
                             ? 'border-green-500 focus:border-green-400'
@@ -3037,26 +3032,28 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
                           // STRICT VALIDATION: Return Date cannot be before Pickup Date
                           if (formData.pickupDate && value < formData.pickupDate) {
-                            alert('La data di riconsegna non può essere precedente alla data di ritiro.');
+                            setErrors(prev => ({ ...prev, returnDate: 'La data di riconsegna non può essere precedente alla data di ritiro.' }));
                             return;
                           }
 
                           // Check if return date is a Sunday or holiday
                           const returnDayOfWeek = getDayOfWeek(value);
                           if (returnDayOfWeek === 0) {
-                            alert('Siamo chiusi la domenica.\n\nSeleziona un altro giorno per la riconsegna.');
+                            setErrors(prev => ({ ...prev, returnDate: 'Siamo chiusi la domenica. Seleziona un altro giorno.' }));
                             return;
                           }
                           if (isHoliday(value)) {
-                            alert('Siamo chiusi nei giorni festivi.\n\nSeleziona un altro giorno per la riconsegna.');
+                            setErrors(prev => ({ ...prev, returnDate: 'Siamo chiusi nei giorni festivi. Seleziona un altro giorno.' }));
                             return;
                           }
 
+                          // Clear return date errors if valid
+                          setErrors(prev => ({ ...prev, returnDate: undefined, date: undefined }));
+
                           // CRITICAL: Check if this date has ANY valid return times
-                          // This allows Jan 31 (with times before 09:30) but blocks fully booked dates
                           const validTimesForDate = getValidReturnTimes(value);
                           if (validTimesForDate.length === 0) {
-                            alert(`Questa opzione di riconsegna non è attualmente disponibile per il veicolo selezionato.\n\nSeleziona una data compatibile con le disponibilità mostrate sopra per proseguire.`);
+                            setErrors(prev => ({ ...prev, returnDate: 'Questa data non è disponibile. Seleziona una data compatibile.' }));
                             return;
                           }
 
@@ -3068,7 +3065,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         required
                         className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors ${!formData.pickupDate || !formData.pickupTime
                           ? 'border-gray-700 opacity-50 cursor-not-allowed'
-                          : errors.returnDate || errors.date
+                          : errors.returnDate || errors.date || (formData.returnDate && availabilityError)
                             ? 'border-red-500 focus:border-red-400 cursor-pointer'
                             : formData.returnDate
                               ? 'border-green-500 focus:border-green-400 cursor-pointer'
@@ -4284,7 +4281,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         type="button"
                         onClick={handleNext}
                         className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={(licenseYears < 2 && step === 2) || (step === 2 && !formData.confirmsInformation) || (step === 3 && isUrbanOrCorporate && !formData.depositOption)}
+                        disabled={(step === 1 && !!availabilityError) || (step === 1 && isCheckingAvailability) || (licenseYears < 2 && step === 2) || (step === 2 && !formData.confirmsInformation) || (step === 3 && isUrbanOrCorporate && !formData.depositOption)}
                       >
                         Continua
                       </button>
