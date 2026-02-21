@@ -31,12 +31,31 @@ exports.handler = async (event) => {
     const body = JSON.parse(event.body);
     const { amount, currency, description, orderId, customerEmail, customerName } = body;
 
-    // Validate required fields
-    if (!amount || !currency || !orderId) {
+    // Validate required fields (use explicit checks — !amount would reject amount=0)
+    if (amount == null || isNaN(amount) || !currency || !orderId) {
+      console.error('Validation failed:', { amount, currency, orderId, body: event.body });
       return {
         statusCode: 400,
         headers: corsHeaders,
-        body: JSON.stringify({ error: 'Missing required fields' }),
+        body: JSON.stringify({
+          error: 'Missing required fields',
+          details: {
+            hasAmount: amount != null,
+            amountValue: amount,
+            isNaN: isNaN(amount),
+            hasCurrency: !!currency,
+            hasOrderId: !!orderId
+          }
+        }),
+      };
+    }
+
+    // Reject zero or negative amounts — no point redirecting to Nexi for €0
+    if (amount <= 0) {
+      return {
+        statusCode: 400,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'Amount must be greater than zero' }),
       };
     }
 

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Link } from 'react-router-dom';
 import { useCurrency } from '../../contexts/CurrencyContext';
-import { isMassimoRunchina, SPECIAL_CLIENTS } from '../../utils/clientPricingRules';
+import { isMassimoRunchina } from '../../utils/clientPricingRules';
 import { calculateMultiDayPrice } from '../../utils/multiDayPricing';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../supabaseClient';
@@ -21,7 +21,7 @@ import {
 import { checkVehicleAvailability, checkVehiclePartialUnavailability, checkGroupedVehicleAvailability, safeDate } from '../../utils/bookingValidation';
 import { getUserCreditBalance, deductCredits, hasSufficientBalance } from '../../utils/creditWallet';
 import { calculateDiscountedPrice, getMembershipTierName } from '../../utils/membershipDiscounts';
-import { roundToTwoDecimals, eurosToCents, roundToWholeEuros } from '../../utils/pricing';
+import { roundToTwoDecimals, eurosToCents } from '../../utils/pricing';
 import { fetchWithTimeout } from '../../utils/fetchWithTimeout';
 
 const FUNCTIONS_BASE =
@@ -607,15 +607,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     // Office hours with 15-minute intervals
     // Mon-Fri: Morning 10:30-12:30, Afternoon 17:30-18:30
-    // Saturday: Morning 10:30-13:30, Afternoon 17:30-18:30
+    // Saturday: Morning only 10:30-13:30 (closed at 14:00, no afternoon)
     if (dayOfWeek >= 1 && dayOfWeek <= 5) {
       // Monday to Friday
       addTimes(10 * 60 + 30, 12 * 60 + 30, 15);  // 10:30 to 12:30
       addTimes(17 * 60 + 30, 18 * 60 + 30, 15);  // 17:30 to 18:30
     } else if (dayOfWeek === 6) {
-      // Saturday - extended morning hours
+      // Saturday - morning only (close at 14:00)
       addTimes(10 * 60 + 30, 13 * 60 + 30, 15);  // 10:30 to 13:30
-      addTimes(17 * 60 + 30, 18 * 60 + 30, 15);  // 17:30 to 18:30
     }
 
     const selectedDate = safeDate(date);
@@ -1154,27 +1153,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const isSupercar50km = formData.kmPackageType === '50km' && getVehicleType(item, categoryContext) === 'SUPERCAR';
 
     let calculatedRentalCost = billingDays * pricePerDay;
-    let massimoTotalDiscount = 0;
 
-    if (isSupercar50km && !isMassimo) {
+    if (isSupercar50km) {
       // 50km/day supercar package: flat €149/day, no multi-day discounts
       calculatedRentalCost = billingDaysCalc * SUPERCAR_50KM_DAILY_RATE;
-    } else if (isMassimo) {
-      // Massimo pricing: €339/day base rate, tiered discounts ONLY with active membership
-      const baseRate = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseRate;
-      const discountTiers = SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.discountTiers;
-
-      // Discounts only apply if user has active paid membership
-      const membershipActive = user?.membership?.subscriptionStatus === 'active' &&
-        user?.membership?.renewalDate && new Date(user.membership.renewalDate) > new Date();
-      const tier = membershipActive ? discountTiers.find(t => billingDaysCalc >= t.minDays) : null;
-      const discountPercent = tier ? tier.discount : 0;
-
-      const baseRentalCost = billingDaysCalc * baseRate;
-      massimoTotalDiscount = roundToTwoDecimals(baseRentalCost * discountPercent);
-      calculatedRentalCost = roundToTwoDecimals(baseRentalCost - massimoTotalDiscount);
     } else {
-      // Standard pricing: Apply multi-day pricing for all other customers
+      // Standard pricing for ALL customers (including Massimo — discounts via codice sconto only)
       const vType = getVehicleType(item, categoryContext);
       // Use usage zone selection to determine resident status (not database field)
       const isResident = formData.usageZone === 'CAGLIARI_SUD';
@@ -1197,11 +1181,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     insuranceDailyPrice = 0;
 
     let calculatedInsuranceCost = 0; // Always 0 since insurance is included
-
-    if (isMassimo) {
-      // Massimo gets KASKO included (free) - same as everyone else now
-      calculatedInsuranceCost = 0;
-    }
 
     // Calculate extras cost
     const calculatedExtrasCost = formData.extras.reduce((acc, extraId) => {
@@ -1237,7 +1216,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // KM package handling
     let calculatedKmPackageCost = 0;
     let calculatedIncludedKm = 9999; // Default: unlimited for all vehicles
-    if (isSupercar50km && !isMassimo) {
+    if (isSupercar50km) {
       // 50km/day package: km cost is already baked into the flat daily rate
       calculatedIncludedKm = 50 * billingDaysCalc;
       calculatedKmPackageCost = 0; // Included in rental cost
@@ -1268,11 +1247,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       : 0;
     calculatedSubtotal = calculatedSubtotal + calculatedNoDepositSurcharge;
 
-    // Massimo: Round to whole euros (no cents)
-    let specialDiscountAmount = massimoTotalDiscount;
-    if (isMassimo && SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.noCents) {
-      calculatedSubtotal = roundToWholeEuros(calculatedSubtotal);
-    }
+    let specialDiscountAmount = 0;
 
     // Tax calculation
     // ALL PRICES ARE TAX-INCLUSIVE (IVA/TVA already included)
@@ -1280,12 +1255,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const calculatedTaxes = 0;
     const calculatedTotal = calculatedSubtotal;
 
-    // Apply membership discount
-    // Massimo Runchina and Special Clients have their own pricing logic (fixed rates + tiered discounts)
-    // They should NOT receive additional membership discounts on top of their special pricing
-    const discountInfo = isMassimo
-      ? { originalPrice: calculatedTotal, discountPercentage: 0, discountAmount: 0, finalPrice: calculatedTotal, hasDiscount: false }
-      : calculateDiscountedPrice(calculatedTotal, user, 'car_rental');
+    // Apply membership discount (same for all customers including Massimo)
+    const discountInfo = calculateDiscountedPrice(calculatedTotal, user, 'car_rental');
     const membershipTierName = getMembershipTierName(user);
 
     return {
@@ -1314,7 +1285,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       specialDiscountAmount,
       carWashFee,
       noDepositSurcharge: calculatedNoDepositSurcharge,
-      effectivePricePerDay: isSupercar50km && !isMassimo ? SUPERCAR_50KM_DAILY_RATE : pricePerDay // Expose the calculated price per day
+      effectivePricePerDay: isSupercar50km ? SUPERCAR_50KM_DAILY_RATE : pricePerDay // Expose the calculated price per day
     };
   }, [
     formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime,
@@ -1324,13 +1295,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     item, currency, user, isUrbanOrCorporate, categoryContext
   ]);
 
-  // Online booking discount (5%) — NOT for Massimo (already has special pricing)
-  const onlineDiscountAmount = isMassimo ? 0 : finalTotal * 0.05;
-  const finalTotalWithOnlineDiscount = isMassimo ? finalTotal : finalTotal * 0.95;
+  // Online booking discount (5%) — NOT for supercars, NOT for Massimo
+  const isEligibleForOnlineDiscount = vehicleType !== 'SUPERCAR' && !isMassimo;
+  const onlineDiscountAmount = isEligibleForOnlineDiscount ? finalTotal * 0.05 : 0;
+  const finalTotalWithOnlineDiscount = isEligibleForOnlineDiscount ? finalTotal * 0.95 : finalTotal;
 
-  // Calculate discount code amount (flat value — NOT reduced by online discount)
+  // Calculate discount code amount — supercars excluded (except special clients with dedicated codes)
   const discountAmount = useMemo(() => {
     if (!appliedDiscount) return 0;
+    // Safety: never apply discount codes to supercars (except special clients with dedicated codes)
+    if (vehicleType === 'SUPERCAR' && !isMassimo) return 0;
 
     if (appliedDiscount.type === 'percentage') {
       return Math.min(finalTotal * (appliedDiscount.amount / 100), finalTotal);
@@ -1338,7 +1312,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // Fixed amount: €150 means €150, capped at subtotal only
       return Math.min(appliedDiscount.amount, finalTotal);
     }
-  }, [appliedDiscount, finalTotal]);
+  }, [appliedDiscount, finalTotal, vehicleType]);
 
   const finalPriceWithBirthdayDiscount = Math.max(0, finalTotalWithOnlineDiscount - discountAmount);
 
@@ -1411,16 +1385,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       updates.email = user.email || '';
     }
 
-    // 2. Special Rules for Massimo Runchina & VIPs
+    // 2. Special Rules for Massimo Runchina & VIPs (convenience auto-fill only, no pricing overrides)
     const emailToCheck = formData.email || user?.email || '';
     if (isMassimoRunchina(emailToCheck)) {
-      // Force Pricing/Insurance Settings
-      if (formData.insuranceOption !== 'KASKO') updates.insuranceOption = 'KASKO';
-      if (formData.kmPackageType !== 'unlimited') updates.kmPackageType = 'unlimited';
-
-      // Auto-select FUORI_ZONA to bypass usage zone selection (VIP unrestricted access)
-      if (formData.usageZone !== 'FUORI_ZONA') updates.usageZone = 'FUORI_ZONA';
-
       // Determine which VIP it is for name defaults
       const isJeanne = emailToCheck.toLowerCase().trim() === 'jeannegiraud92@gmail.com';
       const defaultFirst = isJeanne ? 'Jeanne' : 'Massimo';
@@ -1876,8 +1843,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
       // Validate usage zone selection ONLY for SUPERCAR + km illimitati
       // Utility vehicles (UTILITARIA, FURGONE, V_CLASS) auto-set to FUORI_ZONA
-      // 50km/day supercars don't need usage zone - Skip for Massimo (auto-set)
-      if (vType === 'SUPERCAR' && !isMassimo && formData.kmPackageType === 'unlimited') {
+      // Validate usage zone for supercars with unlimited km
+      if (vType === 'SUPERCAR' && formData.kmPackageType === 'unlimited') {
         if (!formData.usageZone) {
           newErrors.usageZone = "Devi selezionare una zona di utilizzo.";
         }
@@ -2125,6 +2092,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       return;
     }
 
+    // Block discount codes on supercar bookings (except for special clients who get codes made for them)
+    if (vehicleType === 'SUPERCAR' && !isMassimoRunchina(user)) {
+      setDiscountCodeError('I codici sconto non sono applicabili ai veicoli Supercar');
+      return;
+    }
+
     setIsValidatingCode(true);
     setDiscountCodeError(null);
 
@@ -2145,9 +2118,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           action: 'validate',
           code: discountCode.trim().toUpperCase(),
           serviceType: serviceType,
-          service_type: serviceType,
-          orderTotal: Math.round(finalTotalWithOnlineDiscount * 100),
-          order_total: Math.round(finalTotalWithOnlineDiscount * 100)
+          orderTotal: Math.round(finalTotalWithOnlineDiscount * 100)
         })
       });
 
@@ -2722,13 +2693,20 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           throw new Error(`Errore salvataggio prenotazione: ${pendingError.message}`);
         }
 
-        // 4. Initiate Nexi Payment
+        // 4. Validate amount before calling Nexi
+        const amountCents = Math.round(finalPriceWithBirthdayDiscount * 100);
+        if (!amountCents || isNaN(amountCents) || amountCents <= 0) {
+          console.error('Invalid payment amount:', { finalPriceWithBirthdayDiscount, amountCents });
+          throw new Error("Importo non valido per il pagamento. Controlla i dati della prenotazione.");
+        }
+
+        // 5. Initiate Nexi Payment
         const nexiResponse = await fetch('/.netlify/functions/create-nexi-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             orderId: nexiOrderId,
-            amount: Math.round(finalPriceWithBirthdayDiscount * 100),
+            amount: amountCents,
             currency: 'EUR',
             description: `Noleggio ${vehicleName} - ${days} giorni`,
             customerEmail: formData.email,
@@ -3489,7 +3467,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
             <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-4">{isUrbanOrCorporate ? 'C' : 'B'}. CHILOMETRI</h3>
-              {displayVehicleType === 'SUPERCAR' && !isMassimo ? (
+              {displayVehicleType === 'SUPERCAR' ? (
                 // Supercar km package selection: 50km/day or unlimited
                 <div className="space-y-3">
                   {/* Option 1: 50km/day at €149/day */}
@@ -3538,9 +3516,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             </section>
 
             {/* === USAGE ZONE SELECTOR === */}
-            {/* Only show for SUPERCAR + km illimitati - utility vehicles auto-set to FUORI_ZONA */}
-            {/* Hide for Massimo Runchina - auto-set to FUORI_ZONA */}
-            {vehicleType === 'SUPERCAR' && !isMassimo && formData.kmPackageType === 'unlimited' && (
+            {/* Only show for SUPERCAR with unlimited km — 50km package auto-sets to non-resident */}
+            {vehicleType === 'SUPERCAR' && formData.kmPackageType === 'unlimited' && (
               <section className="border-t border-gray-700 pt-6">
                 <h3 className="text-lg font-bold text-white mb-2">C. ZONA DI UTILIZZO *</h3>
                 <p className="text-sm text-gray-400 mb-4">
@@ -3855,7 +3832,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   <hr className="border-gray-600 mb-2" />
                   <div className="flex justify-between">
                     <span>
-                      Noleggio ({duration.days} gg {isMassimo ? `× €${Math.round(rentalCost / duration.days)} [FISSO]` : `× ${effectivePricePerDay ? formatPrice(effectivePricePerDay) : '€0'}`})
+                      Noleggio ({duration.days} gg × {effectivePricePerDay ? formatPrice(effectivePricePerDay) : '€0'})
                     </span>
                     <span>{formatPrice(rentalCost)}</span>
                   </div>
@@ -3870,19 +3847,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {recentLicenseFee > 0 && <div className="flex justify-between"><span>Supplemento patente recente ({duration.days} gg × €20)</span> <span>{formatPrice(recentLicenseFee)}</span></div>}
                   <hr className="border-gray-500 my-2" />
 
-                  {isMassimo && (
-                    <div className="mb-2 p-2 bg-blue-900/30 border border-blue-500/30 rounded">
-                      <p className="text-blue-200 font-semibold text-center text-xs uppercase mb-1">★ Cliente Speciale Massimo Runchina ★</p>
-                      {specialDiscountAmount > 0 ? (
-                        <div className="flex justify-between text-green-400 font-bold">
-                          <span>Sconto Fedeltà (10% dopo 3gg)</span>
-                          <span>-{formatPrice(specialDiscountAmount)}</span>
-                        </div>
-                      ) : (
-                        <p className="text-gray-400 text-xs text-center">Tariffa fissa €305/gg applicata</p>
-                      )}
-                    </div>
-                  )}
 
                   {membershipDiscount > 0 ? (
                     <>
@@ -3921,7 +3885,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   )}
                 </div>
 
-                {/* Codice Sconto Compleanno */}
+                {/* Codice Sconto - Hidden for Supercars (except special clients who get dedicated codes) */}
+                {(vehicleType !== 'SUPERCAR' || isMassimo) && (
                 <div className="border-t border-gray-600 pt-4">
                   <p className="font-bold text-base text-white mb-3">CODICE SCONTO</p>
                   {appliedDiscount ? (
@@ -3965,6 +3930,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     <p className="text-red-400 text-sm mt-2">{discountCodeError}</p>
                   )}
                 </div>
+                )}
 
                 {/* Maggiori informazioni */}
                 <div className="border-t border-gray-600 pt-3">
