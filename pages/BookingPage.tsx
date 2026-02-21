@@ -297,14 +297,18 @@ const BookingPage: React.FC = () => {
     setIsProcessing(false);
   };
 
+  const isSubmittingRef = useRef(false);
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); if (!validateStep() || !item) return; setIsProcessing(true);
-    if (isQuoteRequest) { await finalizeBooking(); return; }
+    e.preventDefault(); if (!validateStep() || !item) return;
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    setIsProcessing(true);
+    if (isQuoteRequest) { await finalizeBooking(); isSubmittingRef.current = false; return; }
     if (formData.paymentMethod === 'stripe') {
-      setStripeError(null); if (!stripe || !cardElement || !clientSecret) { setStripeError("Payment system is not ready."); setIsProcessing(false); return; }
+      setStripeError(null); if (!stripe || !cardElement || !clientSecret) { setStripeError("Payment system is not ready."); setIsProcessing(false); isSubmittingRef.current = false; return; }
       const { error } = await stripe.confirmCardPayment(clientSecret, { payment_method: { card: cardElement, billing_details: { name: formData.fullName, email: formData.email, phone: formData.phone } }, });
-      if (error) { setStripeError(error.message || "An unexpected error occurred."); setIsProcessing(false); } else { await finalizeBooking(); }
-    } else { await finalizeBooking(); }
+      if (error) { setStripeError(error.message || "An unexpected error occurred."); setIsProcessing(false); isSubmittingRef.current = false; } else { await finalizeBooking(); isSubmittingRef.current = false; }
+    } else { await finalizeBooking(); isSubmittingRef.current = false; }
   };
 
   const steps = useMemo(() => {

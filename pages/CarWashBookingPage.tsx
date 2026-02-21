@@ -99,6 +99,7 @@ const CarWashBookingPage: React.FC = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [pendingBookingData, setPendingBookingData] = useState<any>(null);
 
   // Credit wallet state
@@ -584,18 +585,25 @@ const CarWashBookingPage: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'validate',
-          code: discountCode.trim().toUpperCase()
+          code: discountCode.trim().toUpperCase(),
+          serviceType: 'lavaggi',
+          service_type: 'lavaggi',
+          orderTotal: Math.round(calculateTotal() * 100),
+          order_total: Math.round(calculateTotal() * 100)
         })
       });
 
-      const result = await response.json();
+      const rawResult = await response.json();
 
-      if (!response.ok || !result.valid) {
-        setDiscountCodeError(result.error || 'Codice non valido');
+      if (!response.ok || !rawResult.valid) {
+        setDiscountCodeError(rawResult.message || rawResult.error || 'Codice non valido');
         setDiscountCodeValid(false);
         setAppliedDiscount(null);
         return;
       }
+
+      // The API may return discount data nested in discountCode or at top level
+      const result = { ...rawResult, ...(rawResult.discountCode || {}) };
 
       if (result.car_wash_used) {
         setDiscountCodeError('Lo sconto lavaggio di questo codice è già stato utilizzato');
@@ -604,31 +612,43 @@ const CarWashBookingPage: React.FC = () => {
         return;
       }
 
-      // Verify the logged-in user matches the code's customer (by email or phone)
-      const userEmail = user.email?.toLowerCase().trim();
-      const userPhone = user.phone?.replace(/[\s\-\+]/g, '');
-      const codeCustomerPhone = result.customer_phone?.replace(/[\s\-\+]/g, '');
+      // For birthday codes ONLY: verify the logged-in user matches the code's customer
+      // Marketing codes can be used by anyone
+      // Skip check if no customer_email/customer_phone is set on the code
+      if (result.code_type === 'birthday' && (result.customer_email || result.customer_phone)) {
+        const userEmail = user.email?.toLowerCase().trim();
+        const userPhone = user.phone?.replace(/[\s\-\+]/g, '');
+        const codeCustomerPhone = result.customer_phone?.replace(/[\s\-\+]/g, '');
 
-      // Check if user's email or phone matches the code's customer
-      const emailMatch = userEmail && result.customer_email && userEmail === result.customer_email.toLowerCase().trim();
-      const phoneMatch = userPhone && codeCustomerPhone && (
-        userPhone === codeCustomerPhone ||
-        userPhone.endsWith(codeCustomerPhone.slice(-9)) ||
-        codeCustomerPhone.endsWith(userPhone.slice(-9))
-      );
+        const emailMatch = userEmail && result.customer_email && userEmail === result.customer_email.toLowerCase().trim();
+        const phoneMatch = userPhone && codeCustomerPhone && (
+          userPhone === codeCustomerPhone ||
+          userPhone.endsWith(codeCustomerPhone.slice(-9)) ||
+          codeCustomerPhone.endsWith(userPhone.slice(-9))
+        );
 
-      if (!emailMatch && !phoneMatch) {
-        setDiscountCodeError('Questo codice sconto è riservato a un altro cliente. Verifica di aver effettuato il login con lo stesso account.');
-        setDiscountCodeValid(false);
-        setAppliedDiscount(null);
-        return;
+        if (!emailMatch && !phoneMatch) {
+          setDiscountCodeError('Questo codice sconto è riservato a un altro cliente. Verifica di aver effettuato il login con lo stesso account.');
+          setDiscountCodeValid(false);
+          setAppliedDiscount(null);
+          return;
+        }
+      }
+
+      // Apply discount based on code type
+      let discountAmount = result.car_wash_discount || 0;
+      let discountType: string = 'car_wash';
+
+      if (result.code_type !== 'birthday' && result.value_type) {
+        discountType = result.value_type; // 'fixed' or 'percentage'
+        discountAmount = result.value_amount || 0;
       }
 
       setDiscountCodeValid(true);
       setAppliedDiscount({
         code: result.code,
-        amount: result.car_wash_discount || 10,
-        type: 'car_wash'
+        amount: discountAmount || 10,
+        type: discountType
       });
       setDiscountCodeError(null);
 
@@ -769,14 +789,23 @@ const CarWashBookingPage: React.FC = () => {
       return;
     }
 
+    // Ref-based guard: prevents double-tap/double-click even if state hasn't updated yet
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     setIsProcessing(true);
     setPaymentError(null);
 
-    // Safety timeout: auto-reset after 30 seconds to prevent stuck button
+    // Track whether we're redirecting to Nexi (don't reset button state during redirect)
+    let isRedirecting = false;
+
+    // Safety timeout: auto-reset after 120 seconds (enough for slow networks + Nexi redirect)
     const safetyTimer = setTimeout(() => {
-      setIsProcessing(false);
-      setPaymentError('Timeout — riprova il pagamento.');
-    }, 30000);
+      if (!isRedirecting) {
+        isSubmittingRef.current = false;
+        setIsProcessing(false);
+        setPaymentError('Timeout — riprova il pagamento.');
+      }
+    }, 120000);
 
     try {
       let bookingDataWithPayment;
@@ -793,7 +822,9 @@ const CarWashBookingPage: React.FC = () => {
         // Check sufficient balance
         const hasBalance = await hasSufficientBalance(user.id, totalAmount);
         if (!hasBalance) {
+          clearTimeout(safetyTimer);
           setPaymentError(lang === 'it' ? 'Credito insufficiente' : 'Insufficient credit');
+          isSubmittingRef.current = false;
           setIsProcessing(false);
           return;
         }
@@ -811,7 +842,9 @@ const CarWashBookingPage: React.FC = () => {
         );
 
         if (!deductResult.success) {
+          clearTimeout(safetyTimer);
           setPaymentError(deductResult.error || 'Failed to deduct credits');
+          isSubmittingRef.current = false;
           setIsProcessing(false);
           return;
         }
@@ -983,11 +1016,13 @@ const CarWashBookingPage: React.FC = () => {
 
         if (pendingError) {
           console.error('Database error:', pendingError);
+          clearTimeout(safetyTimer);
           setPaymentError(
             lang === 'it'
               ? `Errore database: ${pendingError.message}`
               : `Database error: ${pendingError.message}`
           );
+          isSubmittingRef.current = false;
           setIsProcessing(false);
           return;
         }
@@ -1016,11 +1051,13 @@ const CarWashBookingPage: React.FC = () => {
 
         if (nexiData.success && nexiData.paymentUrl) {
           console.log('Redirecting to Nexi:', nexiData.paymentUrl);
+          isRedirecting = true;
           window.location.href = nexiData.paymentUrl;
           return;
         } else {
           console.error('Nexi payment creation failed:', nexiData);
           setPaymentError(nexiData.error || 'Failed to create Nexi payment');
+          isSubmittingRef.current = false;
           setIsProcessing(false);
         }
       }
@@ -1029,9 +1066,13 @@ const CarWashBookingPage: React.FC = () => {
       setPaymentError(
         error instanceof Error ? error.message : 'An unexpected error occurred'
       );
+      isSubmittingRef.current = false;
+      setIsProcessing(false);
     } finally {
       clearTimeout(safetyTimer);
-      setIsProcessing(false);
+      // Don't reset isProcessing here — Nexi redirect keeps the page alive briefly
+      // and resetting would re-enable the button, allowing double-clicks.
+      // Each exit path (success/error) handles its own reset above.
     }
   };
 
@@ -1601,6 +1642,7 @@ const CarWashBookingPage: React.FC = () => {
                     onClick={handlePayment}
                     disabled={isProcessing}
                     className="w-full bg-white text-black font-bold py-3 px-6 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60"
+                    style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                   >
                     {isProcessing
                       ? (lang === 'it' ? 'Reindirizzamento...' : 'Redirecting...')
@@ -1650,6 +1692,7 @@ const CarWashBookingPage: React.FC = () => {
                     onClick={handlePayment}
                     disabled={isProcessing || creditBalance < calculateTotal()}
                     className="w-full bg-white text-black font-bold py-3 px-6 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                   >
                     {isProcessing
                       ? (lang === 'it' ? 'Elaborazione...' : 'Processing...')

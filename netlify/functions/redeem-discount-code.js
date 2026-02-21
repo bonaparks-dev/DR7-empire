@@ -64,15 +64,14 @@ exports.handler = async (event) => {
   }
 
   try {
-    const {
-      code,
-      bookingId,
-      customerId,
-      customerName,
-      serviceType,
-      discountApplied,
-      notes
-    } = JSON.parse(event.body || '{}');
+    const body = JSON.parse(event.body || '{}');
+    const code = body.code;
+    const bookingId = body.bookingId || body.booking_id;
+    const customerId = body.customerId || body.customer_id;
+    const customerName = body.customerName || body.customer_name;
+    const serviceType = body.serviceType || body.service_type;
+    const discountApplied = body.discountApplied || body.discount_applied;
+    const notes = body.notes;
 
     if (!code) {
       return createResponse(400, {

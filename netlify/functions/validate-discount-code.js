@@ -60,7 +60,10 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { code, serviceType, orderTotal } = JSON.parse(event.body || '{}');
+    const body = JSON.parse(event.body || '{}');
+    const code = body.code;
+    const serviceType = body.serviceType || body.service_type;
+    const orderTotal = body.orderTotal || body.order_total;
 
     if (!code) {
       return createResponse(400, {
@@ -168,17 +171,24 @@ exports.handler = async (event) => {
       const scope = discountCode.scope;
       const normalizedServiceType = serviceType.toLowerCase().replace(/\s+/g, '_');
 
+      // Rental service hierarchy: 'noleggio' is parent of 'supercar' and 'utilitarie'
+      const isRentalService = ['noleggio', 'supercar', 'utilitarie', 'urban-cars', 'corporate-fleet'].includes(normalizedServiceType);
+      const isCarWashService = normalizedServiceType.includes('lavag') || normalizedServiceType === 'car_wash' || normalizedServiceType === 'car-wash';
+
       // Check if scope includes 'tutti' or 'tutti_i_servizi' or the specific service
       const isValidScope = scope.some(s => {
         const normalizedScope = s.toLowerCase().replace(/\s+/g, '_');
         return normalizedScope === 'tutti' ||
                normalizedScope === 'tutti_i_servizi' ||
                normalizedScope === normalizedServiceType ||
-               // Check partial matches
-               (normalizedServiceType.includes('noleggio') && normalizedScope === 'noleggio') ||
-               (normalizedServiceType.includes('lavag') && normalizedScope === 'lavaggi') ||
+               // 'noleggio' scope covers ALL rental types (supercar, utilitarie, etc.)
+               (isRentalService && normalizedScope === 'noleggio') ||
+               // Specific rental type matches
                (normalizedServiceType.includes('supercar') && normalizedScope === 'supercar') ||
-               (normalizedServiceType.includes('utilitaria') && normalizedScope === 'utilitarie');
+               (normalizedServiceType.includes('utilitari') && normalizedScope === 'utilitarie') ||
+               // Car wash matching
+               (isCarWashService && normalizedScope === 'lavaggi') ||
+               (normalizedServiceType.includes('lavag') && normalizedScope === 'lavaggi');
       });
 
       if (!isValidScope) {
@@ -238,7 +248,14 @@ exports.handler = async (event) => {
         valid_until: discountCode.valid_until,
         single_use: discountCode.single_use,
         message: discountCode.message,
-        usage_conditions: discountCode.usage_conditions
+        usage_conditions: discountCode.usage_conditions,
+        // Birthday code fields
+        customer_email: discountCode.customer_email || null,
+        customer_phone: discountCode.customer_phone || null,
+        rental_credit: discountCode.rental_credit || null,
+        rental_used: discountCode.rental_used || false,
+        car_wash_discount: discountCode.car_wash_discount || null,
+        car_wash_used: discountCode.car_wash_used || false
       }
     });
 

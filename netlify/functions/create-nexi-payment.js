@@ -143,6 +143,19 @@ exports.handler = async (event) => {
 
     console.log('Payment created successfully:', responseData);
 
+    // Validate that Nexi returned the hosted page URL
+    if (!responseData.hostedPage) {
+      console.error('Nexi API did not return hostedPage URL:', responseData);
+      return {
+        statusCode: 500,
+        headers: corsHeaders,
+        body: JSON.stringify({
+          error: 'Nexi non ha restituito l\'URL di pagamento. Riprova.',
+          success: false,
+        }),
+      };
+    }
+
     // Return payment URL to frontend
     return {
       statusCode: 200,

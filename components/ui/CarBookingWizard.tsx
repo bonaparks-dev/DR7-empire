@@ -265,6 +265,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const isSubmittingRef = useRef(false);
 
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
@@ -2141,19 +2142,24 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         body: JSON.stringify({
           action: 'validate',
           code: discountCode.trim().toUpperCase(),
+          serviceType: serviceType,
           service_type: serviceType,
-          order_total: Math.round(finalTotalWithOnlineDiscount * 100) // Convert to cents (after 5% online discount)
+          orderTotal: Math.round(finalTotalWithOnlineDiscount * 100),
+          order_total: Math.round(finalTotalWithOnlineDiscount * 100)
         })
       });
 
-      const result = await response.json();
+      const rawResult = await response.json();
 
-      if (!response.ok || !result.valid) {
-        setDiscountCodeError(result.message || result.error || 'Codice non valido');
+      if (!response.ok || !rawResult.valid) {
+        setDiscountCodeError(rawResult.message || rawResult.error || 'Codice non valido');
         setDiscountCodeValid(false);
         setAppliedDiscount(null);
         return;
       }
+
+      // The API may return discount data nested in discountCode or at top level
+      const result = { ...rawResult, ...(rawResult.discountCode || {}) };
 
       // Check if rental credit is already used (for birthday codes)
       if (result.code_type === 'birthday' && result.rental_used) {
@@ -2165,7 +2171,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
       // For birthday codes ONLY: verify the logged-in user matches the code's customer
       // Marketing codes (from admin generator) can be used by anyone
-      if (result.code_type === 'birthday') {
+      // Skip check if no customer_email/customer_phone is set on the code (admin didn't restrict it)
+      if (result.code_type === 'birthday' && (result.customer_email || result.customer_phone)) {
         const userEmail = user.email?.toLowerCase().trim();
         const userPhone = user.phone?.replace(/[\s\-\+]/g, '');
         const codeCustomerPhone = result.customer_phone?.replace(/[\s\-\+]/g, '');
@@ -2187,14 +2194,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
 
       // Code is valid - apply the discount
-      // For marketing codes: use value_type and value_amount
-      // For birthday codes: use rental_credit
-      let discountAmount = result.rental_credit || 0;
-      let discountType: 'fixed' | 'percentage' | 'rental' = 'rental';
+      // Use value_type/value_amount for all codes, with rental_credit as fallback for birthday codes
+      let discountAmount = 0;
+      let discountType: 'fixed' | 'percentage' | 'rental' = 'fixed';
 
-      if (result.code_type !== 'birthday' && result.value_type) {
+      if (result.value_type && result.value_amount) {
+        // Prefer explicit value_type and value_amount (works for all code types)
         discountType = result.value_type; // 'fixed' or 'percentage'
-        discountAmount = result.value_amount || 0;
+        discountAmount = result.value_amount;
+      } else if (result.rental_credit) {
+        // Fallback for birthday codes that only have rental_credit
+        discountType = 'fixed';
+        discountAmount = result.rental_credit;
       }
 
       setDiscountCodeValid(true);
@@ -2202,7 +2213,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         code: result.code,
         amount: discountAmount,
         type: discountType,
-        code_type: result.code_type || 'birthday'
+        code_type: result.code_type || 'marketing'
       });
       setDiscountCodeError(null);
 
@@ -2257,13 +2268,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     setPaymentError(null);
     console.log("handleSubmit called", { paymentMethod: formData.paymentMethod, step, userId: user?.id });
     if (!validateStep() || !item) return;
+
+    // Ref-based guard: prevents double-tap/double-click even if state hasn't updated yet
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     setIsProcessing(true);
 
-    // Safety timeout: auto-reset isProcessing after 30 seconds to prevent stuck button
+    // Safety timeout: auto-reset after 120 seconds (enough for slow networks + Nexi redirect)
     const safetyTimer = setTimeout(() => {
+      isSubmittingRef.current = false;
       setIsProcessing(false);
       setPaymentError('Timeout — riprova il pagamento.');
-    }, 30000);
+    }, 120000);
 
     try {
 
@@ -2271,6 +2287,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (formData.paymentMethod === 'credit' && !user?.id) {
       clearTimeout(safetyTimer);
       setPaymentError('Devi effettuare il login per procedere.');
+      isSubmittingRef.current = false;
       setIsProcessing(false);
       return;
     }
@@ -2279,7 +2296,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (formData.paymentMethod === 'credit') {
       const hasBalance = await hasSufficientBalance(user.id, finalPriceWithBirthdayDiscount);
       if (!hasBalance) {
+        clearTimeout(safetyTimer);
         setPaymentError(`Credito insufficiente. Saldo attuale: €${creditBalance.toFixed(2)}, Richiesto: €${finalPriceWithBirthdayDiscount.toFixed(2)}`);
+        isSubmittingRef.current = false;
         setIsProcessing(false);
         return;
       }
@@ -2644,6 +2663,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       } catch (err: any) {
         console.error("Booking Error:", err.message || err, { code: err?.code, details: err?.details, hint: err?.hint });
         setPaymentError(err.message || "Si è verificato un errore durante la prenotazione.");
+        isSubmittingRef.current = false;
         setIsProcessing(false);
       }
     }
@@ -2652,6 +2672,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // Catch-all safety net for any unhandled errors
       console.error("Unhandled booking error:", outerErr);
       setPaymentError("Errore imprevisto. Riprova.");
+      isSubmittingRef.current = false;
       setIsProcessing(false);
     } finally {
       clearTimeout(safetyTimer);
@@ -4185,6 +4206,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         type="submit"
                         disabled={isProcessing || !formData.agreesToTerms || !formData.agreesToPrivacy || !formData.confirmsDocuments}
                         className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed"
+                        style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                       >
                         {isProcessing ? 'Elaborazione in corso...' : 'CONFERMA PRENOTAZIONE'}
                       </button>

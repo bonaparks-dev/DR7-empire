@@ -52,19 +52,15 @@ const MechanicalBookingPage: React.FC = () => {
   const [existingBookings, setExistingBookings] = useState<any[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
 
-  // Stripe payment state
+  // Payment state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  // Nexi - no stripe
-  // Nexi - no elements
-  // Nexi - no card element
-  // Nexi - no client secret
-  // Nexi - no loading
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [pendingBookingData, setPendingBookingData] = useState<any>(null);
 
   // Credit wallet state
-  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'credit'>('stripe');
+  const [paymentMethod, setPaymentMethod] = useState<'nexi' | 'credit'>('nexi');
   const [creditBalance, setCreditBalance] = useState<number>(0);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
 
@@ -317,8 +313,23 @@ const MechanicalBookingPage: React.FC = () => {
       return;
     }
 
+    // Ref-based guard: prevents double-tap/double-click even if state hasn't updated yet
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     setIsProcessing(true);
     setPaymentError(null);
+
+    // Track whether we're redirecting to Nexi (don't reset button state during redirect)
+    let isRedirecting = false;
+
+    // Safety timeout: auto-reset after 120 seconds (enough for slow networks + Nexi redirect)
+    const safetyTimer = setTimeout(() => {
+      if (!isRedirecting) {
+        isSubmittingRef.current = false;
+        setIsProcessing(false);
+        setPaymentError('Timeout — riprova il pagamento.');
+      }
+    }, 120000);
 
     try {
       let bookingDataWithPayment;
@@ -326,6 +337,7 @@ const MechanicalBookingPage: React.FC = () => {
       if (paymentMethod === 'credit') {
         // Credit wallet payment
         if (!user?.id) {
+          clearTimeout(safetyTimer);
           throw new Error('User not logged in');
         }
 
@@ -334,7 +346,9 @@ const MechanicalBookingPage: React.FC = () => {
         // Check sufficient balance
         const hasBalance = await hasSufficientBalance(user.id, totalAmount);
         if (!hasBalance) {
+          clearTimeout(safetyTimer);
           setPaymentError(lang === 'it' ? 'Credito insufficiente' : 'Insufficient credit');
+          isSubmittingRef.current = false;
           setIsProcessing(false);
           return;
         }
@@ -349,7 +363,9 @@ const MechanicalBookingPage: React.FC = () => {
         );
 
         if (!deductResult.success) {
+          clearTimeout(safetyTimer);
           setPaymentError(deductResult.error || 'Failed to deduct credits');
+          isSubmittingRef.current = false;
           setIsProcessing(false);
           return;
         }
@@ -364,32 +380,43 @@ const MechanicalBookingPage: React.FC = () => {
       } else {
         // Nexi card payment
         if (!user?.id) {
+          clearTimeout(safetyTimer);
           throw new Error('User not logged in');
         }
 
-        // 1. Save booking as pending first
-        const { data: pendingBooking, error: bookingError } = await supabase
-          .from('bookings')
-          .insert({
-            ...pendingBookingData,
-            payment_status: 'pending',
-            payment_method: 'nexi'
-          })
-          .select()
-          .single();
-
-        if (bookingError) throw bookingError;
-
-        // 2. Generate nexi_order_id
+        // 1. Generate nexi_order_id
         const timestamp = Date.now().toString().substring(5);
         const random = Math.floor(100 + Math.random() * 900).toString();
         const nexiOrderId = `${timestamp}${random}`;
 
-        // 3. Update with nexi_order_id
-        await supabase
-          .from('bookings')
-          .update({ nexi_order_id: nexiOrderId })
-          .eq('id', pendingBooking.id);
+        // 2. Prepare booking data with Nexi-specific fields
+        const nexiBookingData = {
+          ...pendingBookingData,
+          payment_status: 'pending',
+          payment_method: 'nexi',
+          booking_details: {
+            ...pendingBookingData.booking_details,
+            nexi_order_id: nexiOrderId
+          }
+        };
+
+        // 3. Store in pending_nexi_bookings (NOT in bookings table)
+        // The real booking will only be created AFTER payment succeeds via nexi-callback
+        const { error: pendingError } = await supabase
+          .from('pending_nexi_bookings')
+          .insert({
+            nexi_order_id: nexiOrderId,
+            booking_data: nexiBookingData
+          });
+
+        if (pendingError) {
+          console.error('Database error:', pendingError);
+          clearTimeout(safetyTimer);
+          setPaymentError(`Errore database: ${pendingError.message}`);
+          isSubmittingRef.current = false;
+          setIsProcessing(false);
+          return;
+        }
 
         // 4. Create Nexi payment
         const nexiResponse = await fetch('/.netlify/functions/create-nexi-payment', {
@@ -408,12 +435,18 @@ const MechanicalBookingPage: React.FC = () => {
         const nexiData = await nexiResponse.json();
         if (!nexiResponse.ok) throw new Error(nexiData.error || 'Payment failed');
 
-        // 5. Redirect to Nexi HPP
-        window.location.href = nexiData.paymentUrl;
-        return; // Exit here since we're redirecting
+        if (nexiData.success && nexiData.paymentUrl) {
+          // 5. Redirect to Nexi HPP
+          console.log('Redirecting to Nexi:', nexiData.paymentUrl);
+          isRedirecting = true;
+          window.location.href = nexiData.paymentUrl;
+          return;
+        } else {
+          throw new Error(nexiData.error || 'Failed to create Nexi payment');
+        }
       }
 
-      // Create booking in database (common for both payment methods)
+      // Create booking in database (only for credit wallet — Nexi creates via callback)
       const { data, error } = await supabase
         .from('bookings')
         .insert(bookingDataWithPayment)
@@ -516,16 +549,20 @@ const MechanicalBookingPage: React.FC = () => {
     } catch (error: any) {
       console.error('Payment error:', error);
       setPaymentError(error.message || 'Payment processing failed');
-    } finally {
+      isSubmittingRef.current = false;
       setIsProcessing(false);
+    } finally {
+      clearTimeout(safetyTimer);
+      // Don't reset isProcessing here — Nexi redirect keeps the page alive briefly
+      // and resetting would re-enable the button, allowing double-clicks.
     }
   };
 
   const handleCloseModal = () => {
     setShowPaymentModal(false);
-    setClientSecret(null);
     setPaymentError(null);
     setPendingBookingData(null);
+    isSubmittingRef.current = false;
   };
 
   if (!selectedService) {
@@ -991,8 +1028,8 @@ const MechanicalBookingPage: React.FC = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPaymentMethod('stripe')}
-                    className={`p-4 rounded-lg border-2 transition-all ${paymentMethod === 'stripe'
+                    onClick={() => setPaymentMethod('nexi')}
+                    className={`p-4 rounded-lg border-2 transition-all ${paymentMethod === 'nexi'
                       ? 'border-white bg-white/10'
                       : 'border-gray-700 bg-gray-800 hover:border-gray-600'
                       }`}
@@ -1007,26 +1044,24 @@ const MechanicalBookingPage: React.FC = () => {
                 </div>
               </div>
 
-              {paymentMethod === 'stripe' && isClientSecretLoading ? (
-                <div className="text-center py-8 text-gray-400">
-                  {lang === 'it' ? 'Caricamento...' : 'Loading...'}
-                </div>
-              ) : paymentMethod === 'stripe' && clientSecret ? (
+              {paymentMethod === 'nexi' ? (
                 <>
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      {lang === 'it' ? 'Dettagli Carta' : 'Card Details'}
-                    </label>
-                    <div
-                      ref={cardElementRef}
-                      className="bg-gray-800 border border-gray-700 rounded-md p-3 min-h-[44px]"
-                      style={{ position: 'relative', zIndex: 1 }}
-                    />
-                    <p className="text-xs text-gray-400 mt-2">
-                      {lang === 'it'
-                        ? 'Inserisci i dettagli della tua carta qui sopra'
-                        : 'Enter your card details above'}
-                    </p>
+                  <div className="mb-6 p-4 bg-gray-800 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <svg className="w-6 h-6 text-white mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                      </svg>
+                      <div>
+                        <h3 className="text-white font-semibold mb-1">
+                          {lang === 'it' ? 'Pagamento Sicuro con Nexi' : 'Secure Payment with Nexi'}
+                        </h3>
+                        <p className="text-gray-400 text-sm">
+                          {lang === 'it'
+                            ? 'Sarai reindirizzato alla pagina di pagamento sicura di Nexi per completare la prenotazione.'
+                            : 'You will be redirected to Nexi\'s secure payment page to complete your booking.'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
                   {paymentError && (
@@ -1037,18 +1072,19 @@ const MechanicalBookingPage: React.FC = () => {
 
                   <button
                     onClick={handlePayment}
-                    disabled={isProcessing || !stripe}
+                    disabled={isProcessing}
                     className="w-full bg-white text-black font-bold py-3 px-6 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60"
+                    style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                   >
                     {isProcessing
-                      ? (lang === 'it' ? 'Elaborazione...' : 'Processing...')
-                      : (lang === 'it' ? `Paga €${discountedPrice.toFixed(2)}` : `Pay €${discountedPrice.toFixed(2)}`)}
+                      ? (lang === 'it' ? 'Reindirizzamento...' : 'Redirecting...')
+                      : (lang === 'it' ? `Procedi al Pagamento €${discountedPrice.toFixed(2)}` : `Proceed to Payment €${discountedPrice.toFixed(2)}`)}
                   </button>
 
                   <p className="text-xs text-gray-400 text-center mt-4">
                     {lang === 'it'
-                      ? 'Pagamento sicuro elaborato da Stripe'
-                      : 'Secure payment processed by Stripe'}
+                      ? 'Pagamento sicuro elaborato da Nexi'
+                      : 'Secure payment processed by Nexi'}
                   </p>
                 </>
               ) : paymentMethod === 'credit' ? (
@@ -1088,6 +1124,7 @@ const MechanicalBookingPage: React.FC = () => {
                     onClick={handlePayment}
                     disabled={isProcessing || creditBalance < discountedPrice}
                     className="w-full bg-white text-black font-bold py-3 px-6 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                   >
                     {isProcessing
                       ? (lang === 'it' ? 'Elaborazione...' : 'Processing...')
@@ -1104,7 +1141,7 @@ const MechanicalBookingPage: React.FC = () => {
                     </p>
                   )}
                 </>
-              ) : paymentMethod === 'stripe' && paymentError ? (
+              ) : paymentMethod === 'nexi' && paymentError ? (
                 <div className="p-4 bg-red-900/20 border border-red-800 rounded text-sm text-red-400">
                   {paymentError}
                 </div>
