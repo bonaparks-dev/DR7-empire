@@ -1388,9 +1388,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       updates.email = user.email || '';
     }
 
-    // 2. Special Rules for Massimo Runchina & VIPs (convenience auto-fill only, no pricing overrides)
+    // 2. Special Rules for Massimo Runchina & VIPs — fast track booking flow
     const emailToCheck = formData.email || user?.email || '';
     if (isMassimoRunchina(emailToCheck)) {
+      // Auto-set options so Massimo skips selection steps
+      if (formData.insuranceOption !== 'KASKO') updates.insuranceOption = 'KASKO';
+      if (formData.kmPackageType !== 'unlimited') updates.kmPackageType = 'unlimited';
+      if (formData.usageZone !== 'FUORI_ZONA') updates.usageZone = 'FUORI_ZONA';
+
       // Determine which VIP it is for name defaults
       const isJeanne = emailToCheck.toLowerCase().trim() === 'jeannegiraud92@gmail.com';
       const defaultFirst = isJeanne ? 'Jeanne' : 'Massimo';
@@ -1844,10 +1849,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         newErrors.depositOption = "Devi selezionare un'opzione per la cauzione.";
       }
 
-      // Validate usage zone selection ONLY for SUPERCAR + km illimitati
-      // Utility vehicles (UTILITARIA, FURGONE, V_CLASS) auto-set to FUORI_ZONA
-      // Validate usage zone for supercars with unlimited km
-      if (vType === 'SUPERCAR' && formData.kmPackageType === 'unlimited') {
+      // Validate usage zone — skip for Massimo (auto-set to FUORI_ZONA)
+      if (vType === 'SUPERCAR' && !isMassimo && formData.kmPackageType === 'unlimited') {
         if (!formData.usageZone) {
           newErrors.usageZone = "Devi selezionare una zona di utilizzo.";
         }
@@ -3470,7 +3473,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
             <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-4">{isUrbanOrCorporate ? 'C' : 'B'}. CHILOMETRI</h3>
-              {displayVehicleType === 'SUPERCAR' ? (
+              {displayVehicleType === 'SUPERCAR' && !isMassimo ? (
                 // Supercar km package selection: 50km/day or unlimited
                 <div className="space-y-3">
                   {/* Option 1: 50km/day at €149/day */}
@@ -3519,8 +3522,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             </section>
 
             {/* === USAGE ZONE SELECTOR === */}
-            {/* Only show for SUPERCAR with unlimited km — 50km package auto-sets to non-resident */}
-            {vehicleType === 'SUPERCAR' && formData.kmPackageType === 'unlimited' && (
+            {/* Hidden for Massimo (auto-set FUORI_ZONA) */}
+            {vehicleType === 'SUPERCAR' && !isMassimo && formData.kmPackageType === 'unlimited' && (
               <section className="border-t border-gray-700 pt-6">
                 <h3 className="text-lg font-bold text-white mb-2">C. ZONA DI UTILIZZO *</h3>
                 <p className="text-sm text-gray-400 mb-4">
