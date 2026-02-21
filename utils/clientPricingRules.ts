@@ -20,7 +20,8 @@ export const SPECIAL_CLIENTS = {
             includeKaskoBase: true,
             excludeCarWash: true,
             useCalendarDays: true,
-            noCents: true  // Round to whole euros (no cents)
+            noCents: true,  // Round to whole euros (no cents)
+            noDeposit: true  // No caution/deposit required
         }
     },
     JEANNE_GIRAUD: {

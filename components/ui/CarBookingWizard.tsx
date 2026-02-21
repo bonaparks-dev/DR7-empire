@@ -1472,6 +1472,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const isUtilitaria = vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS';
     const isSupercar = !isUtilitaria;
 
+    // Special client with noDeposit = always €0
+    if (isMassimo) return 0;
+
     // Urban/corporate vehicles: if customer chose "no deposit" option, deposit is €0 (surcharge applied instead)
     if (isUtilitaria && formData.depositOption === 'no_deposit') return 0;
 
