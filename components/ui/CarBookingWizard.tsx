@@ -3861,10 +3861,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         <span>Sconto {membershipTier} ({(membershipDiscount / originalTotal * 100).toFixed(0)}%)</span>
                         <span>-{formatPrice(membershipDiscount)}</span>
                       </div>
-                      <div className="flex justify-between text-green-400 text-sm">
-                        <span>Sconto Online -5%</span>
-                        <span>-{formatPrice(onlineDiscountAmount)}</span>
-                      </div>
+                      {onlineDiscountAmount > 0 && (
+                        <div className="flex justify-between text-green-400 text-sm">
+                          <span>Sconto Online -5%</span>
+                          <span>-{formatPrice(onlineDiscountAmount)}</span>
+                        </div>
+                      )}
                       {discountAmount > 0 && (
                         <div className="flex justify-between text-yellow-400 text-sm">
                           <span>Codice Sconto ({appliedDiscount?.code})</span>
@@ -3876,10 +3878,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   ) : (
                     <>
                       <div className="flex justify-between text-gray-400"><span>Subtotale</span> <span>{formatPrice(finalTotal)}</span></div>
-                      <div className="flex justify-between text-green-400 text-sm">
-                        <span>Sconto Online -5%</span>
-                        <span>-{formatPrice(onlineDiscountAmount)}</span>
-                      </div>
+                      {onlineDiscountAmount > 0 && (
+                        <div className="flex justify-between text-green-400 text-sm">
+                          <span>Sconto Online -5%</span>
+                          <span>-{formatPrice(onlineDiscountAmount)}</span>
+                        </div>
+                      )}
                       {discountAmount > 0 && (
                         <div className="flex justify-between text-yellow-400 text-sm">
                           <span>Codice Sconto ({appliedDiscount?.code})</span>
@@ -4169,10 +4173,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             <span>Sconto {membershipTier}</span>
                             <span>-{formatPrice(membershipDiscount)}</span>
                           </div>
-                          <div className="flex justify-between text-green-400 text-sm">
-                            <span>Sconto Online -5%</span>
-                            <span>-{formatPrice(onlineDiscountAmount)}</span>
-                          </div>
+                          {onlineDiscountAmount > 0 && (
+                            <div className="flex justify-between text-green-400 text-sm">
+                              <span>Sconto Online -5%</span>
+                              <span>-{formatPrice(onlineDiscountAmount)}</span>
+                            </div>
+                          )}
                           {discountAmount > 0 && (
                             <div className="flex justify-between text-yellow-400 text-sm">
                               <span>Codice Sconto</span>
@@ -4184,10 +4190,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       ) : (
                         <>
                           <div className="flex justify-between text-gray-400 text-sm"><span>Subtotale</span><span>{formatPrice(finalTotal)}</span></div>
-                          <div className="flex justify-between text-green-400 text-sm">
-                            <span>Sconto Online -5%</span>
-                            <span>-{formatPrice(onlineDiscountAmount)}</span>
-                          </div>
+                          {onlineDiscountAmount > 0 && (
+                            <div className="flex justify-between text-green-400 text-sm">
+                              <span>Sconto Online -5%</span>
+                              <span>-{formatPrice(onlineDiscountAmount)}</span>
+                            </div>
+                          )}
                           {discountAmount > 0 && (
                             <div className="flex justify-between text-yellow-400 text-sm">
                               <span>Codice Sconto</span>
