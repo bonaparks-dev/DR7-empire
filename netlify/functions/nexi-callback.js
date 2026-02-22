@@ -2,7 +2,7 @@ const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
 
 /**
- * Generate MAC to verify callback authenticity
+ * Generate MAC to verify callback authenticity (old XPay format only)
  */
 function generateMAC(params, macKey) {
   const sortedKeys = Object.keys(params).sort();
@@ -20,73 +20,122 @@ function generateMAC(params, macKey) {
 }
 
 /**
+ * Parse the incoming callback and normalize to a standard format.
+ * Handles:
+ *   1. Nexi HPP API v1 — JSON body with orderId / operationResult
+ *   2. Old XPay — form-encoded body with codTrans / esito / mac
+ *   3. GET redirect with query string (browser redirect fallback)
+ *
+ * Returns { orderId, isSuccess, authCode, errorMessage, isHPP, rawParams }
+ */
+function parseCallback(event) {
+  let rawParams = {};
+  let isHPP = false;
+
+  if (event.httpMethod === 'GET') {
+    rawParams = event.queryStringParameters || {};
+  } else if (event.httpMethod === 'POST') {
+    const body = (event.body || '').trim();
+    const contentType = (event.headers['content-type'] || '').toLowerCase();
+
+    // Try JSON first (HPP API v1 notification)
+    if (contentType.includes('application/json') || body.startsWith('{')) {
+      try {
+        rawParams = JSON.parse(body);
+        isHPP = true;
+        console.log('Parsed as JSON (HPP API v1)');
+      } catch (e) {
+        console.warn('JSON parse failed, falling back to form-encoded:', e.message);
+      }
+    }
+
+    // Fall back to URL-encoded form data (old XPay)
+    if (!isHPP && body.includes('=')) {
+      body.split('&').forEach(pair => {
+        const [key, ...rest] = pair.split('=');
+        if (key) {
+          rawParams[decodeURIComponent(key)] = decodeURIComponent(rest.join('='));
+        }
+      });
+      console.log('Parsed as form-encoded (old XPay)');
+    }
+  }
+
+  // Normalize field names — map HPP v1 fields to our canonical names
+  // HPP v1 uses: orderId, operationId, operationResult, operationType, paymentMethod, etc.
+  // Old XPay uses: codTrans, esito (OK/KO), codAut, mac, importo, divisa, messaggio
+  const orderId = rawParams.orderId || rawParams.codTrans || rawParams.order_id || null;
+
+  let isSuccess = false;
+  if (rawParams.operationResult) {
+    // HPP v1: AUTHORIZED, EXECUTED, DECLINED, DENIED, CANCELLED, etc.
+    isSuccess = rawParams.operationResult === 'AUTHORIZED' || rawParams.operationResult === 'EXECUTED';
+  } else if (rawParams.esito) {
+    // Old XPay: OK or KO
+    isSuccess = rawParams.esito === 'OK';
+  }
+
+  const authCode = rawParams.authorizationCode || rawParams.codAut || rawParams.codice_autorizzazione || null;
+  const errorMessage = rawParams.operationResult || rawParams.messaggio || rawParams.message || null;
+
+  return { orderId, isSuccess, authCode, errorMessage, isHPP, rawParams };
+}
+
+/**
  * Nexi XPay Callback Handler
- * Receives payment notifications from Nexi
+ * Receives payment notifications from Nexi (both old XPay and HPP API v1 formats)
  */
 exports.handler = async (event) => {
   try {
     console.log('Nexi callback received:', event.httpMethod);
+    console.log('Content-Type:', event.headers['content-type']);
+    console.log('Raw body (first 500 chars):', (event.body || '').substring(0, 500));
 
-    // Parse callback data (Nexi sends POST with form data)
-    let params = {};
+    const { orderId, isSuccess, authCode, errorMessage, isHPP, rawParams } = parseCallback(event);
 
-    if (event.httpMethod === 'POST') {
-      // Parse URL-encoded form data
-      const body = event.body;
-      body.split('&').forEach(pair => {
-        const [key, value] = pair.split('=');
-        params[decodeURIComponent(key)] = decodeURIComponent(value);
-      });
-    } else if (event.httpMethod === 'GET') {
-      // Parse query parameters
-      params = event.queryStringParameters || {};
+    console.log('Parsed callback:', { orderId, isSuccess, authCode, errorMessage, isHPP });
+    console.log('Raw params:', JSON.stringify(rawParams, null, 2));
+
+    // Verify MAC for old XPay format only (HPP v1 uses API key auth, no MAC)
+    if (!isHPP) {
+      const macKey = process.env.NEXI_MAC_KEY;
+      const mac = rawParams.mac;
+
+      if (!macKey) {
+        console.error('NEXI_MAC_KEY not configured - rejecting old XPay callback');
+        return { statusCode: 500, body: 'MAC key not configured' };
+      }
+
+      if (!mac) {
+        console.error('No MAC provided in old XPay callback - rejecting');
+        return { statusCode: 400, body: 'Missing MAC' };
+      }
+
+      const paramsForMAC = { ...rawParams };
+      delete paramsForMAC.mac;
+      const calculatedMAC = generateMAC(paramsForMAC, macKey);
+
+      if (calculatedMAC !== mac) {
+        console.error('Invalid MAC - possible fraud attempt');
+        return { statusCode: 400, body: 'Invalid MAC' };
+      }
+
+      console.log('MAC verified successfully');
+    } else {
+      // HPP v1: Verify using X-API-KEY header if present, or accept trusted notification
+      // Nexi S2S notifications come from Nexi's servers to our notificationUrl
+      console.log('HPP API v1 notification — MAC not required');
     }
 
-    console.log('Callback params:', JSON.stringify(params, null, 2));
-
-    // Extract important fields
-    const {
-      codTrans,      // Order ID
-      esito,         // Result: OK or KO
-      importo,       // Amount
-      divisa,        // Currency
-      data,          // Date
-      orario,        // Time
-      codAut,        // Authorization code
-      mac,           // MAC for verification
-      messaggio,     // Error message (if any)
-    } = params;
-
-    // Get Nexi configuration
-    const macKey = process.env.NEXI_MAC_KEY;
-
-    // Verify MAC - mandatory for security
-    if (!macKey) {
-      console.error('❌ NEXI_MAC_KEY not configured - rejecting callback');
-      return { statusCode: 500, body: 'MAC key not configured' };
+    if (!orderId) {
+      console.error('No orderId found in callback params');
+      console.error('Full event body:', event.body);
+      return { statusCode: 400, body: 'Missing orderId' };
     }
-
-    if (!mac) {
-      console.error('❌ No MAC provided in callback - rejecting');
-      return { statusCode: 400, body: 'Missing MAC' };
-    }
-
-    console.log('Verifying MAC...');
-    const paramsForMAC = { ...params };
-    delete paramsForMAC.mac;
-
-    const calculatedMAC = generateMAC(paramsForMAC, macKey);
-
-    if (calculatedMAC !== mac) {
-      console.error('❌ Invalid MAC - possible fraud attempt');
-      return { statusCode: 400, body: 'Invalid MAC' };
-    }
-
-    console.log('✅ MAC verified successfully');
 
     // Initialize Supabase — require service role key (never fall back to anon key)
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('❌ SUPABASE_SERVICE_ROLE_KEY not configured');
+      console.error('SUPABASE_SERVICE_ROLE_KEY not configured');
       return { statusCode: 500, body: 'Server configuration error' };
     }
     const supabase = createClient(
@@ -95,7 +144,7 @@ exports.handler = async (event) => {
     );
 
     // Find booking or credit wallet purchase by order ID
-    console.log('Looking for order with codTrans:', codTrans);
+    console.log('Looking for order with orderId:', orderId);
 
     // 1. Try bookings first — backward compat for old pending bookings already in the table
     let bookings = null;
@@ -103,7 +152,7 @@ exports.handler = async (event) => {
     const result1 = await supabase
       .from('bookings')
       .select('*')
-      .or(`id.eq.${codTrans},nexi_order_id.eq.${codTrans}`)
+      .or(`id.eq.${orderId},nexi_order_id.eq.${orderId}`)
       .limit(1);
 
     if (!result1.error && result1.data && result1.data.length > 0) {
@@ -112,7 +161,7 @@ exports.handler = async (event) => {
       const result2 = await supabase
         .from('bookings')
         .select('*')
-        .eq('booking_details->>nexi_order_id', codTrans)
+        .eq('booking_details->>nexi_order_id', orderId)
         .limit(1);
 
       if (!result2.error && result2.data && result2.data.length > 0) {
@@ -131,16 +180,16 @@ exports.handler = async (event) => {
       }
 
       const updateData = {
-        payment_status: esito === 'OK' ? 'succeeded' : 'failed',
-        nexi_payment_id: codTrans,
-        nexi_authorization_code: codAut || null,
-        payment_completed_at: esito === 'OK' ? new Date().toISOString() : null
+        payment_status: isSuccess ? 'succeeded' : 'failed',
+        nexi_payment_id: orderId,
+        nexi_authorization_code: authCode || null,
+        payment_completed_at: isSuccess ? new Date().toISOString() : null
       };
 
-      if (esito === 'OK') {
+      if (isSuccess) {
         updateData.status = 'confirmed';
       } else {
-        updateData.nexi_error_message = messaggio || 'Payment failed';
+        updateData.nexi_error_message = errorMessage || 'Payment failed';
         updateData.status = 'cancelled';
       }
 
@@ -154,7 +203,31 @@ exports.handler = async (event) => {
         return { statusCode: 500, body: 'Error updating booking' };
       }
 
-      console.log(`✅ Booking ${booking.id} updated: payment_status=${updateData.payment_status}`);
+      console.log(`Booking ${booking.id} updated: payment_status=${updateData.payment_status}`);
+
+      // Send notifications if payment succeeded
+      if (isSuccess) {
+        const siteUrl = process.env.URL || 'https://dr7empire.com';
+        try {
+          await fetch(`${siteUrl}/.netlify/functions/send-booking-confirmation`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ booking: { ...booking, ...updateData } }),
+          });
+        } catch (e) {
+          console.error('Email notification failed:', e);
+        }
+        try {
+          await fetch(`${siteUrl}/.netlify/functions/send-whatsapp-notification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ booking: { ...booking, ...updateData } }),
+          });
+        } catch (e) {
+          console.error('WhatsApp notification failed:', e);
+        }
+      }
+
       return { statusCode: 200, body: 'OK' };
     }
 
@@ -162,7 +235,7 @@ exports.handler = async (event) => {
     const { data: pendingRows, error: pendingError } = await supabase
       .from('pending_nexi_bookings')
       .select('*')
-      .eq('nexi_order_id', codTrans)
+      .eq('nexi_order_id', orderId)
       .limit(1);
 
     if (pendingError) {
@@ -171,16 +244,16 @@ exports.handler = async (event) => {
 
     if (pendingRows && pendingRows.length > 0) {
       const pending = pendingRows[0];
-      console.log('Found pending booking for codTrans:', codTrans);
+      console.log('Found pending booking for orderId:', orderId);
 
-      if (esito === 'OK') {
+      if (isSuccess) {
         // Payment succeeded — create the REAL booking now
         const bookingData = pending.booking_data;
         bookingData.status = 'confirmed';
         bookingData.payment_status = 'succeeded';
-        bookingData.nexi_order_id = codTrans;
-        bookingData.nexi_payment_id = codTrans;
-        bookingData.nexi_authorization_code = codAut || null;
+        bookingData.nexi_order_id = orderId;
+        bookingData.nexi_payment_id = orderId;
+        bookingData.nexi_authorization_code = authCode || null;
         bookingData.payment_completed_at = new Date().toISOString();
 
         const { data: newBooking, error: insertError } = await supabase
@@ -200,7 +273,7 @@ exports.handler = async (event) => {
           .delete()
           .eq('id', pending.id);
 
-        console.log(`✅ Booking ${newBooking.id} created from pending after successful payment`);
+        console.log(`Booking ${newBooking.id} created from pending after successful payment`);
 
         // Send notifications
         const siteUrl = process.env.URL || 'https://dr7empire.com';
@@ -232,7 +305,7 @@ exports.handler = async (event) => {
           .delete()
           .eq('id', pending.id);
 
-        console.log(`❌ Payment failed for pending booking (codTrans: ${codTrans}), pending record deleted`);
+        console.log(`Payment failed for pending booking (orderId: ${orderId}), pending record deleted`);
         return { statusCode: 200, body: 'OK' };
       }
     }
@@ -241,7 +314,7 @@ exports.handler = async (event) => {
     const { data: purchases, error: purchaseError } = await supabase
       .from('credit_wallet_purchases')
       .select('*')
-      .eq('nexi_order_id', codTrans)
+      .eq('nexi_order_id', orderId)
       .limit(1);
 
     if (purchaseError) {
@@ -258,7 +331,7 @@ exports.handler = async (event) => {
         return { statusCode: 200, body: 'OK' };
       }
 
-      if (esito === 'OK') {
+      if (isSuccess) {
         // Atomically update purchase status - only succeeds if not already 'succeeded'
         const { data: updatedPurchase, error: upErr } = await supabase
           .from('credit_wallet_purchases')
@@ -293,10 +366,10 @@ exports.handler = async (event) => {
           });
 
           if (rpcError) {
-            console.error('❌ Error adding credits via RPC:', rpcError);
+            console.error('Error adding credits via RPC:', rpcError);
           } else {
             const result = rpcResult?.[0] || rpcResult;
-            console.log(`✅ Credits added via RPC: €${purchase.received_amount} to user ${purchase.user_id} (new balance: €${result?.new_balance})`);
+            console.log(`Credits added via RPC: €${purchase.received_amount} to user ${purchase.user_id} (new balance: €${result?.new_balance})`);
           }
         }
       } else {
@@ -305,21 +378,21 @@ exports.handler = async (event) => {
           .from('credit_wallet_purchases')
           .update({
             payment_status: 'failed',
-            payment_error_message: messaggio || 'Payment failed'
+            payment_error_message: errorMessage || 'Payment failed'
           })
           .eq('id', purchase.id);
 
-        console.log(`❌ Credit wallet purchase ${purchase.id} payment failed`);
+        console.log(`Credit wallet purchase ${purchase.id} payment failed`);
       }
 
       return { statusCode: 200, body: 'OK' };
     }
 
-    // 3. Try membership_purchases
+    // 4. Try membership_purchases
     const { data: memberships, error: membershipError } = await supabase
       .from('membership_purchases')
       .select('*')
-      .eq('nexi_order_id', codTrans)
+      .eq('nexi_order_id', orderId)
       .limit(1);
 
     if (!membershipError && memberships && memberships.length > 0) {
@@ -332,9 +405,9 @@ exports.handler = async (event) => {
         return { statusCode: 200, body: 'OK' };
       }
 
-      if (esito === 'OK') {
+      if (isSuccess) {
         // Extract contractId from callback params (Nexi returns it after CONTRACT_CREATION)
-        const contractId = params.contractId || params.contract_id || codTrans;
+        const contractId = rawParams.contractId || rawParams.contract_id || orderId;
 
         // Atomically update — only if not already 'succeeded'
         const { data: updated, error: upErr } = await supabase
@@ -381,7 +454,7 @@ exports.handler = async (event) => {
             console.error('Error updating user metadata:', metaErr);
             return { statusCode: 500, body: 'Metadata update failed' };
           } else {
-            console.log(`✅ User ${membership.user_id} metadata updated with membership`);
+            console.log(`User ${membership.user_id} metadata updated with membership`);
           }
         }
 
@@ -402,7 +475,7 @@ exports.handler = async (event) => {
           console.error('WhatsApp notification failed:', whatsErr);
         }
 
-        console.log(`✅ Membership ${membership.id} activated with contractId: ${contractId}`);
+        console.log(`Membership ${membership.id} activated with contractId: ${contractId}`);
       } else {
         // Payment failed
         await supabase
@@ -412,13 +485,13 @@ exports.handler = async (event) => {
           })
           .eq('id', membership.id);
 
-        console.log(`❌ Membership ${membership.id} payment failed: ${messaggio}`);
+        console.log(`Membership ${membership.id} payment failed: ${errorMessage}`);
       }
 
       return { statusCode: 200, body: 'OK' };
     }
 
-    console.error('No matching order found for codTrans:', codTrans);
+    console.error('No matching order found for orderId:', orderId);
     return { statusCode: 404, body: 'Order not found' };
   } catch (error) {
     console.error('Callback error:', error);

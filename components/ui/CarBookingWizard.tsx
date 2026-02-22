@@ -2805,7 +2805,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           throw new Error("URL di pagamento non ricevuto da Nexi");
         }
 
-        // 5. Redirect to Nexi HPP
+        // 5. Store orderId in sessionStorage as fallback for PaymentSuccessPage
+        try {
+          sessionStorage.setItem('dr7_pending_order', nexiOrderId);
+          sessionStorage.setItem('dr7_pending_type', 'booking');
+        } catch (e) { /* sessionStorage may be unavailable */ }
+
+        // 6. Redirect to Nexi HPP
         console.log("Redirecting to Nexi:", nexiData.paymentUrl);
         window.location.href = nexiData.paymentUrl;
 
