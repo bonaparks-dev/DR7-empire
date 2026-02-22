@@ -87,8 +87,8 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
         }
 
         // If no data found, return default
-        if (!data || !data.residency_zone) {
-            console.log('[getResidencyZone] No residency zone found, returning default', { userId });
+        if (!data) {
+            console.log('[getResidencyZone] No customer record found, returning default', { userId });
             return {
                 statusCode: 200,
                 headers,
@@ -99,13 +99,23 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
         console.log('[getResidencyZone] Success:', {
             userId,
             residency_zone: data.residency_zone,
+            hasName: !!(data.nome || data.cognome),
             timestamp: new Date().toISOString(),
         });
 
         return {
             statusCode: 200,
             headers,
-            body: JSON.stringify({ residency_zone: data.residency_zone }),
+            body: JSON.stringify({
+                residency_zone: data.residency_zone || 'NON_RESIDENTE',
+                nome: data.nome,
+                cognome: data.cognome,
+                email: data.email,
+                telefono: data.telefono,
+                data_nascita: data.data_nascita,
+                metadata: data.metadata,
+                id: data.id,
+            }),
         };
     } catch (error: any) {
         console.error('[getResidencyZone] Unexpected error (returning default):', {
