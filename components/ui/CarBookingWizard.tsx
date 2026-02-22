@@ -2286,6 +2286,23 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     try {
 
+    // SAFETY NET: Re-validate critical customer fields before ANY booking
+    const customerName = `${formData.firstName} ${formData.lastName}`.trim();
+    if (!customerName || !formData.firstName.trim() || !formData.lastName.trim()) {
+      clearTimeout(safetyTimer);
+      setPaymentError('Nome e cognome sono obbligatori. Torna allo Step 2 e compila i campi.');
+      isSubmittingRef.current = false;
+      setIsProcessing(false);
+      return;
+    }
+    if (!formData.email.trim()) {
+      clearTimeout(safetyTimer);
+      setPaymentError('Email obbligatoria. Torna allo Step 2 e compila il campo.');
+      isSubmittingRef.current = false;
+      setIsProcessing(false);
+      return;
+    }
+
     // Credit wallet requires login
     if (formData.paymentMethod === 'credit' && !user?.id) {
       clearTimeout(safetyTimer);
