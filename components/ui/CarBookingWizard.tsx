@@ -1975,6 +1975,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       const pickupDateTime = createItalyDateTime(formData.pickupDate, formData.pickupTime);
       const dropoffDateTime = createItalyDateTime(formData.returnDate, formData.returnTime);
 
+      // Resolve customer data with fallback to user object
+      const rFirstName = formData.firstName || (user.fullName?.split(' ')[0]) || '';
+      const rLastName = formData.lastName || (user.fullName?.split(' ').slice(1).join(' ')) || '';
+      const rFullName = `${rFirstName} ${rLastName}`.trim() || user.fullName || 'Cliente';
+      const rEmail = formData.email || user.email || '';
+      const rPhone = formData.phone || (user as any).phone || '';
+
       const bookingData = {
         user_id: user.id,
         vehicle_type: item.type || 'car',
@@ -1995,16 +2002,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         vehicle_id: formData.selectedVehicleId || null,
         deposit_amount: getDeposit(),
         insurance_option: formData.insuranceOption,
-        customer_name: `${formData.firstName} ${formData.lastName}`,
-        customer_email: formData.email,
-        customer_phone: formData.phone,
+        customer_name: rFullName,
+        customer_email: rEmail,
+        customer_phone: rPhone,
         booking_details: {
           customer: {
-            fullName: `${formData.firstName} ${formData.lastName}`,
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            email: formData.email,
-            phone: formData.phone,
+            fullName: rFullName,
+            firstName: rFirstName,
+            lastName: rLastName,
+            email: rEmail,
+            phone: rPhone,
             birthDate: formData.birthDate,
             age: driverAge,
             licenseNumber: formData.licenseNumber,
@@ -2591,7 +2598,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         // 2. Generate Nexi Order ID BEFORE insert
         const nexiOrderId = `DR7${Date.now()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
-        // 3. Insert Pending Booking (only confirmed columns + extras in booking_details JSONB)
+        // 3. Resolve customer data with fallback to user object
+        const nFirstName = formData.firstName || (user?.fullName?.split(' ')[0]) || '';
+        const nLastName = formData.lastName || (user?.fullName?.split(' ').slice(1).join(' ')) || '';
+        const nFullName = `${nFirstName} ${nLastName}`.trim() || user?.fullName || 'Cliente';
+        const nEmail = formData.email || user?.email || '';
+        const nPhone = formData.phone || (user as any)?.phone || '';
+
+        // 4. Insert Pending Booking (only confirmed columns + extras in booking_details JSONB)
         const bookingData: Record<string, any> = {
           user_id: user?.id || null,
           vehicle_type: item.type || 'car',
@@ -2606,9 +2620,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           payment_status: 'pending',
           payment_method: 'nexi',
           booked_at: new Date().toISOString(),
-          customer_name: `${formData.firstName} ${formData.lastName}`,
-          customer_email: formData.email,
-          customer_phone: formData.phone,
+          customer_name: nFullName,
+          customer_email: nEmail,
+          customer_phone: nPhone,
           booking_details: {
             nexi_order_id: nexiOrderId,
             vehicle_image_url: item.image,
@@ -2617,11 +2631,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             deposit_amount: getDeposit(),
             booking_usage_zone: formData.usageZone || null,
             customer: {
-              fullName: `${formData.firstName} ${formData.lastName}`,
-              firstName: formData.firstName,
-              lastName: formData.lastName,
-              email: formData.email,
-              phone: formData.phone,
+              fullName: nFullName,
+              firstName: nFirstName,
+              lastName: nLastName,
+              email: nEmail,
+              phone: nPhone,
               birthDate: formData.birthDate,
               age: driverAge,
               licenseNumber: formData.licenseNumber,
@@ -2729,7 +2743,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               body: JSON.stringify({
                 code: appliedDiscount.code,
                 bookingId: insertedBooking.id,
-                customerName: `${formData.firstName} ${formData.lastName}`,
+                customerName: nFullName,
                 serviceType: categoryContext === 'cars' ? 'supercar' : categoryContext === 'urban-cars' ? 'utilitarie' : 'noleggio',
                 discountApplied: Math.round(discountAmount * 100),
               })
@@ -2740,12 +2754,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
           // WhatsApp customer message
           const bookingId = insertedBooking.id.substring(0, 8).toUpperCase();
-          const customerName = `${formData.firstName} ${formData.lastName}`;
           const whatsappMessage = `Ciao! Ho appena completato una prenotazione con codice sconto.\n\n` +
             `*Dettagli Prenotazione*\n` +
             `*ID:* DR7-${bookingId}\n` +
-            `*Nome:* ${customerName}\n` +
-            `*Telefono:* ${formData.phone}\n` +
+            `*Nome:* ${nFullName}\n` +
+            `*Telefono:* ${nPhone}\n` +
             `*Veicolo:* ${vehicleName}\n` +
             `*Ritiro:* ${formData.pickupDate} ${formData.pickupTime}\n` +
             (selectedUpsellWash ? `*Lavaggio Auto:* ${selectedUpsellWash.name} (€${washUpsellCost.toFixed(2)}) - ${upsellCarInput}\n` : '') +
@@ -2790,8 +2803,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             amount: amountCents,
             currency: 'EUR',
             description: `Noleggio ${vehicleName} - ${days} giorni`,
-            customerEmail: formData.email,
-            customerName: `${formData.firstName} ${formData.lastName}`
+            customerEmail: nEmail,
+            customerName: nFullName
           })
         });
 
