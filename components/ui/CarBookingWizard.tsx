@@ -27,6 +27,16 @@ import { URBAN_SERVICES, MAXI_SERVICES } from '../../pages/CarWashServicesPage';
 import type { WashService } from '../../pages/CarWashServicesPage';
 import { classifyVehicle } from '../../utils/vehicleClassification';
 
+// Filter out dummy/placeholder names from auth profiles (e.g. "No Name", "User", "Test")
+const DUMMY_NAMES = ['no name', 'no-name', 'noname', 'user', 'test', 'unknown', 'n/a', 'none', 'cliente'];
+const isRealName = (name: string | null | undefined): string => {
+  if (!name) return '';
+  const trimmed = name.trim();
+  if (!trimmed) return '';
+  if (DUMMY_NAMES.includes(trimmed.toLowerCase())) return '';
+  return trimmed;
+};
+
 const FUNCTIONS_BASE =
   import.meta.env.VITE_FUNCTIONS_BASE ??
   (location.hostname === 'localhost' || location.hostname === '127.0.0.1'
@@ -854,10 +864,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             });
           }
           // If no extended profile, at least try to fill basic info from Auth Context if available
+          const realName1 = isRealName(user.fullName);
           setFormData(prev => ({
             ...prev,
-            firstName: prev.firstName || (user.fullName ? user.fullName.split(' ')[0] : ''),
-            lastName: prev.lastName || (user.fullName ? user.fullName.split(' ').slice(1).join(' ') : ''),
+            firstName: prev.firstName || (realName1 ? realName1.split(' ')[0] : ''),
+            lastName: prev.lastName || (realName1 ? realName1.split(' ').slice(1).join(' ') : ''),
             email: prev.email || user.email || '',
             phone: prev.phone || user.phone || ''
           }));
@@ -865,10 +876,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         }
 
         // Autofill form with extended data
+        const realName2 = isRealName(user.fullName);
         setFormData(prev => ({
           ...prev,
-          firstName: customerData.nome || prev.firstName || (user.fullName ? user.fullName.split(' ')[0] : ''),
-          lastName: customerData.cognome || prev.lastName || (user.fullName ? user.fullName.split(' ').slice(1).join(' ') : ''),
+          firstName: customerData.nome || prev.firstName || (realName2 ? realName2.split(' ')[0] : ''),
+          lastName: customerData.cognome || prev.lastName || (realName2 ? realName2.split(' ').slice(1).join(' ') : ''),
           email: customerData.email || prev.email || user.email || '',
           phone: customerData.telefono || prev.phone || user.phone || '',
           birthDate: customerData.data_nascita || prev.birthDate,
@@ -909,10 +921,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           possibleHTTP2Error: (err as Error).message?.includes('HTTP2') || (err as Error).message?.includes('ERR_'),
         });
         // Continue with basic auth data even if extended profile fails
+        const realName3 = isRealName(user.fullName);
         setFormData(prev => ({
           ...prev,
-          firstName: prev.firstName || (user.fullName ? user.fullName.split(' ')[0] : ''),
-          lastName: prev.lastName || (user.fullName ? user.fullName.split(' ').slice(1).join(' ') : ''),
+          firstName: prev.firstName || (realName3 ? realName3.split(' ')[0] : ''),
+          lastName: prev.lastName || (realName3 ? realName3.split(' ').slice(1).join(' ') : ''),
           email: prev.email || user.email || '',
           phone: prev.phone || user.phone || ''
         }));
@@ -1392,7 +1405,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     // 1. Pre-fill Personal Data (Fast Track) for ANY logged-in user
     if (user && !formData.firstName && !formData.lastName) {
-      const nameParts = user.fullName ? user.fullName.split(' ') : [];
+      const realName = isRealName(user.fullName);
+      const nameParts = realName ? realName.split(' ') : [];
       const first = nameParts.length > 0 ? nameParts[0] : '';
       const last = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
 
