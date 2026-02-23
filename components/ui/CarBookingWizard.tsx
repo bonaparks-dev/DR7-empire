@@ -2997,19 +2997,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           const value = e.target.value;
                           if (!value) return;
 
-                          // Check if date has ANY valid pickup times (partial-day support)
-                          // Skip blocking for today — always allow same-day booking attempts
-                          const selectedIsToday = value === today;
-                          if (availabilityWindows.length > 0 && !selectedIsToday) {
-                            const validTimes = getValidPickupTimes(value);
-
-                            if (validTimes.length === 0) {
-                              // No valid times on this date — don't block selection,
-                              // let the useEffect availability check show the error in the UI
-                              return;
-                            }
-                          }
-
                           // Auto-Clear Return Date if Pickup > Return or invalid
                           // IMPROVED: Reset return date cleanly to avoid "return date before pickup date" errors
                           const newPickup = value;
