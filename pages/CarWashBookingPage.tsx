@@ -1418,25 +1418,36 @@ const CarWashBookingPage: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     {lang === 'it' ? 'Ora' : 'Time'} *
                   </label>
-                  <select
-                    name="appointmentTime"
-                    value={formData.appointmentTime}
-                    onChange={handleChange}
-                    required
-                    className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
-                    style={{ colorScheme: 'dark' }}
-                  >
-                    <option value="">
-                      {lang === 'it' ? 'Seleziona un orario' : 'Select a time'}
-                    </option>
-                    {getAllTimeSlotsWithAvailability()
-                      .filter(slot => slot.available)
-                      .map(slot => (
-                        <option key={slot.time} value={slot.time}>
-                          {slot.time}
-                        </option>
-                      ))}
-                  </select>
+                  {formData.appointmentDate && !bookingsLoading && getAvailableTimeSlots().length === 0 ? (
+                    <div className="w-full bg-red-900/30 border border-red-500/50 rounded-md p-3 text-center">
+                      <p className="text-red-400 font-bold text-sm">
+                        {lang === 'it' ? 'SOLD OUT — Nessun orario disponibile' : 'SOLD OUT — No time slots available'}
+                      </p>
+                      <p className="text-gray-400 text-xs mt-1">
+                        {lang === 'it' ? 'Prova un\'altra data' : 'Try another date'}
+                      </p>
+                    </div>
+                  ) : (
+                    <select
+                      name="appointmentTime"
+                      value={formData.appointmentTime}
+                      onChange={handleChange}
+                      required
+                      className="w-full bg-gray-800 border-gray-700 rounded-md p-3 text-white"
+                      style={{ colorScheme: 'dark' }}
+                    >
+                      <option value="">
+                        {lang === 'it' ? 'Seleziona un orario' : 'Select a time'}
+                      </option>
+                      {getAllTimeSlotsWithAvailability()
+                        .filter(slot => slot.available)
+                        .map(slot => (
+                          <option key={slot.time} value={slot.time}>
+                            {slot.time}
+                          </option>
+                        ))}
+                    </select>
+                  )}
                   {errors.appointmentTime && <p className="text-xs text-red-400 mt-1 font-semibold">{errors.appointmentTime}</p>}
                 </div>
               </div>
