@@ -2969,26 +2969,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             </div>
 
 
-            {/* Utilitarie deadline notice */}
-            {isUtilitaria && (
-              <div className="mb-6 bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-                <div className="flex items-center gap-3">
-                  <div className="bg-blue-500/20 p-2 rounded-full">
-                    <svg className="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-blue-200 text-sm font-medium">
-                      Ultima disponibilità il 25/03/2026
-                    </p>
-                    <p className="text-blue-300/70 text-xs mt-1">
-                      Non accettiamo prenotazioni oltre questa data.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Utilitarie deadline - calendar max date handles blocking, no message needed */}
 
             {/* Availability Windows - Show free gaps only when there are actual bookings */}
             {availabilityWindows.length > 0 && hasBusyPeriods && (
