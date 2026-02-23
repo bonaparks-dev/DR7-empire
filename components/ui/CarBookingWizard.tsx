@@ -899,29 +899,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       let returnHours = tempDate.getHours();
       let returnMinutes = tempDate.getMinutes();
 
-      // SMART: Check if this exceeds availability window end
-      if (availabilityWindows.length > 0) {
-        const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
-        const calculatedReturn = new Date(`${formData.returnDate}T${String(returnHours).padStart(2, '0')}:${String(returnMinutes).padStart(2, '0')}`);
-
-        // Find window containing pickup
-        const pickupWindow = availabilityWindows.find(w => {
-          const start = new Date(w.start);
-          const end = new Date(w.end);
-          return pickup >= start && pickup <= end;
-        });
-
-        if (pickupWindow) {
-          const windowEnd = new Date(pickupWindow.end);
-
-          // If calculated return exceeds window end, use window end time instead
-          if (calculatedReturn > windowEnd) {
-            returnHours = windowEnd.getHours();
-            returnMinutes = windowEnd.getMinutes();
-          }
-        }
-      }
-
       const newReturnTime = `${String(returnHours).padStart(2, '0')}:${String(returnMinutes).padStart(2, '0')}`;
       setFormData(prev => ({ ...prev, returnTime: newReturnTime }));
     }
@@ -1704,30 +1681,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           }
         }
 
-        // CRITICAL: Validate booking doesn't cross availability gaps
-        if (availabilityWindows.length > 0) {
-          const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
-          const returnD = new Date(`${formData.returnDate}T${formData.returnTime}`);
-
-          // Find which window contains the pickup
-          const pickupWindow = availabilityWindows.find(w => {
-            const start = new Date(w.start);
-            const end = new Date(w.end);
-            return pickup >= start && pickup <= end;
-          });
-
-          if (!pickupWindow) {
-            newErrors.pickupDate = "L'orario di ritiro non è disponibile.";
-          } else {
-            // Check if return is in the SAME window
-            const windowEnd = new Date(pickupWindow.end);
-            if (returnD > windowEnd) {
-              const windowEndStr = windowEnd.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
-              const windowEndTime = windowEnd.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
-              newErrors.returnDate = `La prenotazione attraversa un periodo non disponibile. Questa finestra termina il ${windowEndStr} alle ${windowEndTime}.`;
-            }
-          }
-        }
+        // Server-side availability check (checkVehicleAvailability) handles conflict detection
       }
       if (formData.pickupDate && getDayOfWeek(formData.pickupDate) === 0) {
         newErrors.pickupDate = "Siamo chiusi la domenica. Seleziona un altro giorno per il ritiro.";
