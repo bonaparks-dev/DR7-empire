@@ -2987,21 +2987,30 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   </div>
                 </div>
                 <div className="space-y-2">
-                  {availabilityWindows.slice(0, 3).map((window, i) => {
-                    const start = new Date(window.start);
-                    const end = new Date(window.end);
-                    return (
+                  {availabilityWindows.slice(0, 3)
+                    .map((window) => {
+                      const start = new Date(window.start);
+                      let end = new Date(window.end);
+                      // Cap end date for utilitarie
+                      if (isUtilitaria) {
+                        const maxDate = new Date(UTILITARIE_MAX_DATE + 'T23:59:59');
+                        if (end > maxDate) end = maxDate;
+                        if (start > maxDate) return null; // skip windows entirely after max date
+                      }
+                      return { start, end };
+                    })
+                    .filter(Boolean)
+                    .map((w, i) => (
                       <div key={i} className="text-white text-sm bg-blue-900/30 rounded p-2">
                         <span className="font-semibold">
-                          {start.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
+                          {w!.start.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
                         </span>
                         {' → '}
                         <span className="font-semibold">
-                          {end.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
+                          {w!.end.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
                         </span>
                       </div>
-                    );
-                  })}
+                    ))}
                   {availabilityWindows.length > 3 && (
                     <p className="text-blue-300/70 text-xs mt-1">
                       +{availabilityWindows.length - 3} altre finestre disponibili
