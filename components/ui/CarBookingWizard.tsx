@@ -658,23 +658,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       });
     }
 
-    // CRITICAL: Filter by availability windows (partial-day support)
-    // Applies to both today AND future dates
-    if (availabilityWindows.length > 0) {
-      return filteredTimes.filter(time => {
-        const [hours, minutes] = time.split(':').map(Number);
-        const datetime = new Date(date);
-        datetime.setHours(hours, minutes, 0, 0);
-
-        // Check if this datetime falls within ANY availability window
-        return availabilityWindows.some(w => {
-          const windowStart = new Date(w.start);
-          const windowEnd = new Date(w.end);
-          return datetime >= windowStart && datetime <= windowEnd;
-        });
-      });
-    }
-
     return filteredTimes;
   };
 
@@ -723,48 +706,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       return [];
     }
 
-    // Filter by availability windows if available
-    // Return time must be BEFORE the next booking starts (considering buffer)
-    if (availabilityWindows.length > 0) {
-      const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
-
-      // Find the window containing pickup
-      const pickupWindow = availabilityWindows.find(w => {
-        const start = new Date(w.start);
-        const end = new Date(w.end);
-        return pickup >= start && pickup <= end;
-      });
-
-      if (pickupWindow) {
-        const windowEnd = new Date(pickupWindow.end);
-        const windowEndDate = windowEnd.toISOString().split('T')[0]; // YYYY-MM-DD
-
-        // First check: return DATE must not be after window end DATE
-        if (date > windowEndDate) {
-          return []; // Return date is after window ends, no valid times
-        }
-
-        // Return time must be ≤ pickup time minus 1h30
-        const [pH, pM] = formData.pickupTime.split(':').map(Number);
-        const maxRetMinutes = (pH * 60 + pM) - 90;
-
-        return filteredTimes.filter(time => {
-          const [hours, minutes] = time.split(':').map(Number);
-          const returnDt = new Date(date);
-          returnDt.setHours(hours, minutes, 0, 0);
-          const timeInMinutes = hours * 60 + minutes;
-
-          // Return must be AT OR BEFORE the window end AND ≤ pickup time - 1h30
-          return returnDt <= windowEnd && returnDt > pickup && (maxRetMinutes < 0 || timeInMinutes <= maxRetMinutes);
-        });
-      }
-
-      // If no pickup window found, return empty (can't determine valid times)
-      return [];
-    }
-
-    // No availability windows loaded yet or vehicle has no bookings - allow all valid return times
-    // The server-side conflict check (checkVehicleAvailability) will catch real conflicts
+    // Server-side conflict check (checkVehicleAvailability) handles real conflicts
+    // Allow all valid return times based on office hours
     const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
 
     // Return time must be ≤ pickup time minus 1h30 (to avoid exceeding 24h per day)
