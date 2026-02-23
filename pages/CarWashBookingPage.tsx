@@ -203,14 +203,49 @@ const CarWashBookingPage: React.FC = () => {
   }, [hasValidBooking, navigate]);
 
   useEffect(() => {
-    if (user) {
-      setFormData(prev => ({
-        ...prev,
-        fullName: user.fullName || '',
-        email: user.email || '',
-        phone: user.phone || ''
-      }));
-    }
+    if (!user) return;
+
+    // First set basic auth profile data
+    setFormData(prev => ({
+      ...prev,
+      fullName: user.fullName || '',
+      email: user.email || '',
+      phone: user.phone || ''
+    }));
+
+    // Then fetch full customer data from customers_extended (admin-editable)
+    const fetchCustomerData = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('customers_extended')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error || !data) return;
+
+        const fullName = data.tipo_cliente === 'azienda'
+          ? (data.denominazione || data.ragione_sociale || '')
+          : `${data.nome || ''} ${data.cognome || ''}`.trim();
+
+        setFormData(prev => ({
+          ...prev,
+          fullName: fullName || prev.fullName,
+          email: data.email || prev.email,
+          phone: data.telefono || prev.phone,
+          codiceFiscale: data.codice_fiscale || prev.codiceFiscale,
+          indirizzo: data.indirizzo || prev.indirizzo,
+          numeroCivico: data.numero_civico || prev.numeroCivico,
+          cittaResidenza: data.citta_residenza || data.citta || prev.cittaResidenza,
+          codicePostale: data.codice_postale || data.cap || prev.codicePostale,
+          provinciaResidenza: data.provincia_residenza || data.provincia || prev.provinciaResidenza,
+        }));
+      } catch (err) {
+        console.error('Error fetching customer data:', err);
+      }
+    };
+
+    fetchCustomerData();
   }, [user]);
 
   // Fetch existing clients for selection
