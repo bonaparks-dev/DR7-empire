@@ -2971,54 +2971,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
             {/* Utilitarie deadline - calendar max date handles blocking, no message needed */}
 
-            {/* Availability Windows - Show free gaps only when there are actual bookings */}
-            {availabilityWindows.length > 0 && hasBusyPeriods && (
-              <div className="mb-6 bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="bg-blue-500/20 p-2 rounded-full">
-                    <svg className="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-blue-200 text-sm font-medium">
-                      {availabilityWindows.length === 1 ? 'Disponibilità:' : 'Prossime disponibilità:'}
-                    </p>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {availabilityWindows.slice(0, 3)
-                    .map((window) => {
-                      const start = new Date(window.start);
-                      let end = new Date(window.end);
-                      // Cap end date for utilitarie
-                      if (isUtilitaria) {
-                        const maxDate = new Date(UTILITARIE_MAX_DATE + 'T23:59:59');
-                        if (end > maxDate) end = maxDate;
-                        if (start > maxDate) return null; // skip windows entirely after max date
-                      }
-                      return { start, end };
-                    })
-                    .filter(Boolean)
-                    .map((w, i) => (
-                      <div key={i} className="text-white text-sm bg-blue-900/30 rounded p-2">
-                        <span className="font-semibold">
-                          {w!.start.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
-                        </span>
-                        {' → '}
-                        <span className="font-semibold">
-                          {w!.end.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
-                        </span>
-                      </div>
-                    ))}
-                  {availabilityWindows.length > 3 && (
-                    <p className="text-blue-300/70 text-xs mt-1">
-                      +{availabilityWindows.length - 3} altre finestre disponibili
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
+            {/* Availability is handled directly by date picker validation — no separate box needed */}
 
             <div>
               <h3 className="text-lg font-semibold text-white mb-4">DATE AND TIME SELECTION</h3>
