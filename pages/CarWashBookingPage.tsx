@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
 import { SERVICES, Service } from './CarWashServicesPage';
 import { useCarWashAvailability } from '../hooks/useRealtimeBookings';
-import { getUserCreditBalance, deductCredits, hasSufficientBalance } from '../utils/creditWallet';
+import { getUserCreditBalance, deductCredits, addCredits, hasSufficientBalance } from '../utils/creditWallet';
 
 interface CartItem {
   serviceId: string;
@@ -435,8 +435,8 @@ const CarWashBookingPage: React.FC = () => {
     };
 
     // Helper to check if a time range overlaps with existing bookings
-    // We have 2 washers, so allow up to 2 concurrent bookings
-    const MAX_CONCURRENT_WASHES = 2;
+    // Only 1 booking per slot — no double bookings
+    const MAX_CONCURRENT_WASHES = 1;
 
     const hasOverlap = (startTime: string, durationHours: number) => {
       const startMinutes = timeToMinutes(startTime);
@@ -780,7 +780,7 @@ const CarWashBookingPage: React.FC = () => {
       service_type: 'car_wash',
       service_name: getServiceNames(),
       service_id: getServiceIds(),
-      duration_minutes: totalDurationMinutes,
+      duration: `${totalDurationMinutes} min`,
       price_total: Math.round(calculateTotal() * 100), // in cents
       currency: 'EUR',
       customer_name: formData.fullName,
@@ -890,7 +890,7 @@ const CarWashBookingPage: React.FC = () => {
           payment_method: 'credit_wallet'
         };
 
-        // Create booking in database (common for both payment methods)
+        // Create booking in database — if this fails, we MUST refund the credits
         const { data, error } = await supabase
           .from('bookings')
           .insert(bookingDataWithPayment)
@@ -899,6 +899,21 @@ const CarWashBookingPage: React.FC = () => {
 
         if (error) {
           console.error('Database error:', error);
+          // CRITICAL: Refund credits since booking failed but credits were already deducted
+          console.error('Booking insert failed after credit deduction — refunding credits...');
+          try {
+            await addCredits(
+              user.id,
+              totalAmount,
+              `Rimborso automatico: errore prenotazione lavaggio`,
+              undefined,
+              'refund'
+            );
+            console.log('Credits refunded successfully after booking failure');
+          } catch (refundError) {
+            console.error('CRITICAL: Failed to refund credits after booking error!', refundError);
+            // User will need to contact support — at least we log it
+          }
           throw error;
         }
 

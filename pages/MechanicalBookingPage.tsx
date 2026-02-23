@@ -5,7 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
 import { MECHANICAL_SERVICES } from './MechanicalServicesPage';
-import { getUserCreditBalance, deductCredits, hasSufficientBalance } from '../utils/creditWallet';
+import { getUserCreditBalance, deductCredits, addCredits, hasSufficientBalance } from '../utils/creditWallet';
 
 
 const MechanicalBookingPage: React.FC = () => {
@@ -455,6 +455,22 @@ const MechanicalBookingPage: React.FC = () => {
 
       if (error) {
         console.error('Database error:', error);
+        // CRITICAL: Refund credits if booking insert failed (credits already deducted)
+        if (paymentMethod === 'credit' && user?.id) {
+          console.error('Booking insert failed after credit deduction — refunding credits...');
+          try {
+            await addCredits(
+              user.id,
+              discountedPrice,
+              `Rimborso automatico: errore prenotazione servizio meccanico`,
+              undefined,
+              'refund'
+            );
+            console.log('Credits refunded successfully after booking failure');
+          } catch (refundError) {
+            console.error('CRITICAL: Failed to refund credits after booking error!', refundError);
+          }
+        }
         throw error;
       }
 

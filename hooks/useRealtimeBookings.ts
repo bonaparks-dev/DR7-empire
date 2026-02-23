@@ -98,6 +98,10 @@ export function useRealtimeBookings(
           matchesService = !booking.service_type || booking.service_type !== 'car_wash';
         } else if (serviceType === 'car_wash') {
           matchesService = booking.service_type === 'car_wash';
+          // Exclude rientro auto-washes ("Lavaggio Completo") — they don't block booking slots
+          if (booking.service_name === 'Lavaggio Completo') {
+            matchesService = false;
+          }
         }
 
         // Only include bookings with valid status and payment_status
@@ -245,8 +249,8 @@ export function useCarWashAvailability(date?: string) {
     else if (servicePriceEuros <= 75) durationHours = 3;
     else durationHours = 4;
 
-    // 2 washers = allow up to 2 concurrent bookings
-    const MAX_CONCURRENT_WASHES = 2;
+    // Only 1 booking per slot — no double bookings
+    const MAX_CONCURRENT_WASHES = 1;
 
     return allSlots.map(time => {
       const slotStart = timeToMinutes(time);
