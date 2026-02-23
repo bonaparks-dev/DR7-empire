@@ -268,7 +268,7 @@ const Header: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Fetch credit balance when user is logged in (with debounce)
+  // Fetch credit balance when user is logged in + refresh on navigation/focus
   useEffect(() => {
     if (!user?.id) {
       setCreditBalance(0);
@@ -282,15 +282,23 @@ const Header: React.FC = () => {
         setCreditBalance(balance);
       } catch (error) {
         console.error('Error fetching credit balance:', error);
-        setCreditBalance(0); // Set to 0 on error to stop retries
+        setCreditBalance(0);
       } finally {
         setIsLoadingBalance(false);
       }
     };
 
-    // Debounce: wait 500ms before fetching to avoid rapid calls
+    // Fetch on mount
     const timer = setTimeout(fetchBalance, 500);
-    return () => clearTimeout(timer);
+
+    // Re-fetch when user returns to tab or navigates
+    const handleFocus = () => fetchBalance();
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [user?.id]);
 
   return (
