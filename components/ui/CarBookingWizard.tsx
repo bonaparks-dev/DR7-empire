@@ -152,8 +152,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const vehicleType = useMemo(() => getVehicleType(item, categoryContext), [item, categoryContext]);
   const isUrbanOrCorporate = vehicleType === 'UTILITARIA' || vehicleType === 'FURGONE' || vehicleType === 'V_CLASS';
 
-  // Utilitarie availability deadline - only bookable until April 1st 2026
-  const UTILITARIE_MAX_DATE = '2026-04-01';
+  // Utilitarie availability deadline - last availability March 25th 2026
+  const UTILITARIE_MAX_DATE = '2026-03-25';
   const isUtilitaria = vehicleType === 'UTILITARIA';
 
   const [step, setStep] = useState(1);
@@ -2980,10 +2980,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   </div>
                   <div className="flex-1">
                     <p className="text-blue-200 text-sm font-medium">
-                      Disponibilità fino al 1° Aprile 2026
+                      Ultima disponibilità il 25/03/2026
                     </p>
                     <p className="text-blue-300/70 text-xs mt-1">
-                      Le utilitarie sono prenotabili fino a nuova disposizione solo entro questa data.
+                      Non accettiamo prenotazioni oltre questa data.
                     </p>
                   </div>
                 </div>
