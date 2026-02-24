@@ -2811,13 +2811,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     setSelectedUpsellWash(null);
     if (value.trim().length >= 2) {
       const result = classifyVehicle(value.trim());
-      if (result) {
-        setUpsellCarCategory(result.category);
-        setUpsellCarModel(result.matchedModel || null);
-      } else {
-        setUpsellCarCategory(null);
-        setUpsellCarModel(null);
-      }
+      setUpsellCarCategory(result.category);
+      setUpsellCarModel(result.matchedModel || null);
     } else {
       setUpsellCarCategory(null);
       setUpsellCarModel(null);
@@ -2854,10 +2849,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       setUpsellTargaResult(result);
       setUpsellCarInput(`${result.carMake} ${result.carModel}`.trim());
       const classification = classifyVehicle(`${result.carMake} ${result.carModel}`.trim());
-      if (classification) {
-        setUpsellCarCategory(classification.category);
-        setUpsellCarModel(classification.matchedModel || null);
-      }
+      setUpsellCarCategory(classification.category);
+      setUpsellCarModel(classification.matchedModel || null);
     } catch (err: any) {
       setUpsellTargaError(err.message || 'Errore nella ricerca.');
     } finally {

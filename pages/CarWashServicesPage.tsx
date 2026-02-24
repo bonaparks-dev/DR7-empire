@@ -583,17 +583,12 @@ const CarWashServicesPage: React.FC = () => {
       return;
     }
     const result = classifyVehicle(value.trim());
-    if (result) {
-      setDetectedCategory(result.category);
-      setDetectedModel(
-        result.matchedBrand
-          ? `${result.matchedBrand.charAt(0).toUpperCase() + result.matchedBrand.slice(1)}${result.matchedModel ? ' ' + result.matchedModel.charAt(0).toUpperCase() + result.matchedModel.slice(1) : ''}`
-          : null
-      );
-    } else {
-      setDetectedCategory(null);
-      setDetectedModel(null);
-    }
+    setDetectedCategory(result.category);
+    setDetectedModel(
+      result.matchedBrand
+        ? `${result.matchedBrand.charAt(0).toUpperCase() + result.matchedBrand.slice(1)}${result.matchedModel ? ' ' + result.matchedModel.charAt(0).toUpperCase() + result.matchedModel.slice(1) : ''}`
+        : null
+    );
   }, []);
 
   const clearVehicleSearch = useCallback(() => {
@@ -632,18 +627,12 @@ const CarWashServicesPage: React.FC = () => {
       // Feed into classifyVehicle
       const makeModel = `${result.carMake} ${result.carModel}`.trim();
       const classification = classifyVehicle(makeModel);
-      if (classification) {
-        setDetectedCategory(classification.category);
-        setDetectedModel(
-          classification.matchedBrand
-            ? `${classification.matchedBrand.charAt(0).toUpperCase() + classification.matchedBrand.slice(1)}${classification.matchedModel ? ' ' + classification.matchedModel.charAt(0).toUpperCase() + classification.matchedModel.slice(1) : ''}`
-            : null
-        );
-      } else {
-        // classifyVehicle returned null — rare car brand, show manual pick
-        setDetectedCategory(null);
-        setDetectedModel(null);
-      }
+      setDetectedCategory(classification.category);
+      setDetectedModel(
+        classification.matchedBrand
+          ? `${classification.matchedBrand.charAt(0).toUpperCase() + classification.matchedBrand.slice(1)}${classification.matchedModel ? ' ' + classification.matchedModel.charAt(0).toUpperCase() + classification.matchedModel.slice(1) : ''}`
+          : null
+      );
     } catch (err: any) {
       setTargaError(err.message || (lang === 'it' ? 'Errore nella ricerca.' : 'Search error.'));
     } finally {
