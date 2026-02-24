@@ -26,6 +26,7 @@ import { fetchWithTimeout } from '../../utils/fetchWithTimeout';
 import { URBAN_SERVICES, MAXI_SERVICES } from '../../pages/CarWashServicesPage';
 import type { WashService } from '../../pages/CarWashServicesPage';
 import { classifyVehicle } from '../../utils/vehicleClassification';
+import { lookupTarga, isValidItalianPlate, normalizePlate, type TargaResult } from '../../utils/lookupTarga';
 
 // Filter out dummy/placeholder names from auth profiles (e.g. "No Name", "User", "Test")
 const DUMMY_NAMES = ['no name', 'no-name', 'noname', 'user', 'test', 'unknown', 'n/a', 'none', 'cliente'];
@@ -238,6 +239,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [upsellCarInput, setUpsellCarInput] = useState('');
   const [upsellCarCategory, setUpsellCarCategory] = useState<'urban' | 'maxi' | null>(null);
   const [upsellCarModel, setUpsellCarModel] = useState<string | null>(null);
+
+  // Wash upsell targa state
+  type UpsellSearchMode = 'model' | 'targa';
+  const [upsellSearchMode, setUpsellSearchMode] = useState<UpsellSearchMode>('model');
+  const [upsellTargaInput, setUpsellTargaInput] = useState('');
+  const [upsellTargaLoading, setUpsellTargaLoading] = useState(false);
+  const [upsellTargaError, setUpsellTargaError] = useState<string | null>(null);
+  const [upsellTargaResult, setUpsellTargaResult] = useState<TargaResult | null>(null);
+  const [upsellTargaManualCategory, setUpsellTargaManualCategory] = useState<'urban' | 'maxi' | null>(null);
 
   // Single source of truth for availability
   const [earliestAvailability, setEarliestAvailability] = useState<{
@@ -1952,6 +1962,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             discountPercent: 10,
             customerCarModel: upsellCarInput,
             carCategory: upsellCarCategory,
+            ...(upsellTargaResult ? { customerPlate: upsellTargaResult.plate } : {}),
           }} : {}),
         }
       };
@@ -2785,6 +2796,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     setUpsellCarInput('');
     setUpsellCarCategory(null);
     setUpsellCarModel(null);
+    setUpsellSearchMode('model');
+    setUpsellTargaInput('');
+    setUpsellTargaError(null);
+    setUpsellTargaResult(null);
+    setUpsellTargaLoading(false);
+    setUpsellTargaManualCategory(null);
     setShowWashUpsell(false);
     setStep(4);
   };
@@ -2804,6 +2821,47 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     } else {
       setUpsellCarCategory(null);
       setUpsellCarModel(null);
+    }
+  };
+
+  const handleUpsellSearchModeSwitch = (mode: UpsellSearchMode) => {
+    setUpsellSearchMode(mode);
+    setUpsellCarInput('');
+    setUpsellCarCategory(null);
+    setUpsellCarModel(null);
+    setSelectedUpsellWash(null);
+    setUpsellTargaInput('');
+    setUpsellTargaError(null);
+    setUpsellTargaResult(null);
+    setUpsellTargaManualCategory(null);
+  };
+
+  const handleUpsellTargaSearch = async () => {
+    const plate = normalizePlate(upsellTargaInput);
+    if (!isValidItalianPlate(plate)) {
+      setUpsellTargaError('Targa non valida. Inserisci una targa italiana (es. EX117YA).');
+      return;
+    }
+    setUpsellTargaLoading(true);
+    setUpsellTargaError(null);
+    setUpsellTargaResult(null);
+    setUpsellTargaManualCategory(null);
+    setUpsellCarCategory(null);
+    setUpsellCarModel(null);
+    setSelectedUpsellWash(null);
+    try {
+      const result = await lookupTarga(plate);
+      setUpsellTargaResult(result);
+      setUpsellCarInput(`${result.carMake} ${result.carModel}`.trim());
+      const classification = classifyVehicle(`${result.carMake} ${result.carModel}`.trim());
+      if (classification) {
+        setUpsellCarCategory(classification.category);
+        setUpsellCarModel(classification.matchedModel || null);
+      }
+    } catch (err: any) {
+      setUpsellTargaError(err.message || 'Errore nella ricerca.');
+    } finally {
+      setUpsellTargaLoading(false);
     }
   };
 
@@ -4124,29 +4182,148 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       </p>
                     </div>
 
-                    {/* Car model input */}
-                    <div className="mb-5">
-                      <label className="block text-sm text-gray-400 mb-2 font-medium">Inserisci il modello della tua auto</label>
-                      <input
-                        type="text"
-                        value={upsellCarInput}
-                        onChange={(e) => handleUpsellCarSearch(e.target.value)}
-                        placeholder="es. Fiat Panda, BMW X3, Golf..."
-                        className="w-full bg-gray-800/80 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-white/50 transition-colors"
-                      />
-                      {upsellCarCategory && (
-                        <div className="mt-2 flex items-center gap-2">
-                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
-                            upsellCarCategory === 'urban'
-                              ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-600/40'
-                              : 'bg-amber-600/20 text-amber-400 border border-amber-600/40'
-                          }`}>
-                            {upsellCarModel && <span className="opacity-70 mr-1">{upsellCarModel} →</span>}
-                            {upsellCarCategory === 'urban' ? 'PRIME URBAN' : 'PRIME MAXI'}
-                          </span>
-                        </div>
-                      )}
+                    {/* Search Mode Toggle */}
+                    <div className="flex justify-center mb-4">
+                      <div className="inline-flex bg-gray-800/80 border border-gray-700 rounded-full p-0.5">
+                        <button
+                          type="button"
+                          onClick={() => handleUpsellSearchModeSwitch('model')}
+                          className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
+                            upsellSearchMode === 'model'
+                              ? 'bg-white text-black'
+                              : 'text-gray-400 hover:text-white'
+                          }`}
+                        >
+                          Ricerca Modello
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleUpsellSearchModeSwitch('targa')}
+                          className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
+                            upsellSearchMode === 'targa'
+                              ? 'bg-white text-black'
+                              : 'text-gray-400 hover:text-white'
+                          }`}
+                        >
+                          Ricerca Targa
+                        </button>
+                      </div>
                     </div>
+
+                    {/* Model Search */}
+                    {upsellSearchMode === 'model' && (
+                      <div className="mb-5">
+                        <input
+                          type="text"
+                          value={upsellCarInput}
+                          onChange={(e) => handleUpsellCarSearch(e.target.value)}
+                          placeholder="es. Fiat Panda, BMW X3, Golf..."
+                          className="w-full bg-gray-800/80 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-white/50 transition-colors"
+                        />
+                        {upsellCarCategory && (
+                          <div className="mt-2 flex items-center gap-2">
+                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
+                              upsellCarCategory === 'urban'
+                                ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-600/40'
+                                : 'bg-amber-600/20 text-amber-400 border border-amber-600/40'
+                            }`}>
+                              {upsellCarModel && <span className="opacity-70 mr-1">{upsellCarModel} →</span>}
+                              {upsellCarCategory === 'urban' ? 'PRIME URBAN' : 'PRIME MAXI'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Targa Search */}
+                    {upsellSearchMode === 'targa' && (
+                      <div className="mb-5">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={upsellTargaInput}
+                            onChange={(e) => setUpsellTargaInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8))}
+                            onKeyDown={(e) => { if (e.key === 'Enter' && isValidItalianPlate(upsellTargaInput)) handleUpsellTargaSearch(); }}
+                            placeholder="es. EX117YA"
+                            className="flex-1 bg-gray-800/80 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-white/50 transition-colors font-mono tracking-widest uppercase text-center"
+                            maxLength={8}
+                          />
+                          <button
+                            type="button"
+                            onClick={handleUpsellTargaSearch}
+                            disabled={!isValidItalianPlate(upsellTargaInput) || upsellTargaLoading}
+                            className={`px-5 py-3 rounded-xl font-bold text-sm transition-all duration-200 ${
+                              isValidItalianPlate(upsellTargaInput) && !upsellTargaLoading
+                                ? 'bg-white text-black hover:bg-gray-200'
+                                : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                            }`}
+                          >
+                            {upsellTargaLoading ? '...' : 'Cerca'}
+                          </button>
+                        </div>
+                        {upsellTargaError && (
+                          <p className="mt-2 text-red-400 text-sm text-center">
+                            {upsellTargaError}
+                            <button
+                              type="button"
+                              onClick={() => handleUpsellSearchModeSwitch('model')}
+                              className="block mx-auto mt-1 text-gray-500 hover:text-white text-xs underline transition-colors"
+                            >
+                              Prova con ricerca modello
+                            </button>
+                          </p>
+                        )}
+                        {upsellTargaResult && (
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <span className="inline-block px-2.5 py-1 rounded-full text-xs font-bold bg-gray-700/60 text-white border border-gray-600">
+                              {upsellTargaResult.plate}
+                            </span>
+                            {upsellCarCategory && (
+                              <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
+                                upsellCarCategory === 'urban'
+                                  ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-600/40'
+                                  : 'bg-amber-600/20 text-amber-400 border border-amber-600/40'
+                              }`}>
+                                {upsellCarModel && <span className="opacity-70 mr-1">{upsellCarModel} →</span>}
+                                {upsellCarCategory === 'urban' ? 'PRIME URBAN' : 'PRIME MAXI'}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {/* Manual category pick if classifyVehicle returned null */}
+                        {upsellTargaResult && !upsellCarCategory && (
+                          <div className="mt-3 text-center">
+                            <p className="text-gray-400 text-xs mb-2">
+                              Veicolo trovato: {upsellTargaResult.description || `${upsellTargaResult.carMake} ${upsellTargaResult.carModel}`}. Seleziona la categoria:
+                            </p>
+                            <div className="flex justify-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => { setUpsellTargaManualCategory('urban'); setUpsellCarCategory('urban'); }}
+                                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                                  upsellTargaManualCategory === 'urban'
+                                    ? 'bg-emerald-600/20 text-emerald-400 border-2 border-emerald-500'
+                                    : 'bg-gray-800 text-gray-300 border border-gray-600 hover:border-emerald-500'
+                                }`}
+                              >
+                                URBAN
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setUpsellTargaManualCategory('maxi'); setUpsellCarCategory('maxi'); }}
+                                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                                  upsellTargaManualCategory === 'maxi'
+                                    ? 'bg-amber-600/20 text-amber-400 border-2 border-amber-500'
+                                    : 'bg-gray-800 text-gray-300 border border-gray-600 hover:border-amber-500'
+                                }`}
+                              >
+                                MAXI
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Service grid */}
                     {upsellCarCategory && (
@@ -4186,7 +4363,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       </div>
                     )}
 
-                    {!upsellCarCategory && upsellCarInput.trim().length >= 2 && (
+                    {upsellSearchMode === 'model' && !upsellCarCategory && upsellCarInput.trim().length >= 2 && (
                       <p className="text-gray-500 text-sm text-center mb-5">Modello non trovato. Prova con marca e modello (es. "Fiat Panda").</p>
                     )}
 

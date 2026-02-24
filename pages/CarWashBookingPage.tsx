@@ -31,6 +31,7 @@ const CarWashBookingPage: React.FC = () => {
   const locationState = location.state as any;
   const cartItems: CartItem[] = locationState?.cartItems || [];
   const cartTotal: number = locationState?.total || 0;
+  const customerVehicle = locationState?.customerVehicle || null;
 
   // Legacy single service support
   const serviceId = locationState?.serviceId;
@@ -836,7 +837,8 @@ const CarWashBookingPage: React.FC = () => {
       appointment_time: formData.appointmentTime,
       booking_details: {
         notes: formData.notes,
-        ...(hasCartItems ? { cart_items: cartItems } : {})
+        ...(hasCartItems ? { cart_items: cartItems } : {}),
+        ...(customerVehicle ? { customerVehicle } : {}),
       },
       status: 'confirmed',
       payment_status: 'pending',
