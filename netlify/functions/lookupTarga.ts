@@ -1,7 +1,7 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getCorsOrigin } from './utils/cors';
 
-const OPENAPI_TOKEN = process.env.OPENAPI_AUTOMOTIVE_TOKEN || '699d7f716e76c425ee086085';
+const OPENAPI_TOKEN = process.env.OPENAPI_AUTOMOTIVE_TOKEN || '';
 
 export const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
     const headers = {
