@@ -4149,9 +4149,34 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         </button>
                       </div>
                       {upsellTargaError && (
-                        <p className="mt-2 text-red-400 text-sm text-center">
-                          {upsellTargaError}
-                        </p>
+                        <div className="mt-3 text-center">
+                          <p className="text-red-400 text-sm mb-2">{upsellTargaError}</p>
+                          <p className="text-gray-400 text-xs mb-2">Seleziona manualmente la categoria del tuo veicolo:</p>
+                          <div className="flex justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => { setUpsellTargaManualCategory('urban'); setUpsellCarCategory('urban'); setUpsellCarInput('Veicolo cliente'); }}
+                              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                                upsellTargaManualCategory === 'urban'
+                                  ? 'bg-emerald-600/20 text-emerald-400 border-2 border-emerald-500'
+                                  : 'bg-gray-800 text-gray-300 border border-gray-600 hover:border-emerald-500'
+                              }`}
+                            >
+                              URBAN
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { setUpsellTargaManualCategory('maxi'); setUpsellCarCategory('maxi'); setUpsellCarInput('Veicolo cliente'); }}
+                              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                                upsellTargaManualCategory === 'maxi'
+                                  ? 'bg-amber-600/20 text-amber-400 border-2 border-amber-500'
+                                  : 'bg-gray-800 text-gray-300 border border-gray-600 hover:border-amber-500'
+                              }`}
+                            >
+                              MAXI
+                            </button>
+                          </div>
+                        </div>
                       )}
                       {upsellTargaResult && (
                         <div className="mt-2 flex flex-wrap items-center gap-2">

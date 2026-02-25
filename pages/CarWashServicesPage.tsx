@@ -886,15 +886,40 @@ const CarWashServicesPage: React.FC = () => {
                 </button>
               </div>
 
-              {/* Targa Error */}
+              {/* Targa Error — with manual category fallback */}
               {targaError && (
-                <motion.p
+                <motion.div
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mt-3 text-center text-red-400 text-sm"
+                  className="mt-3 text-center"
                 >
-                  {targaError}
-                </motion.p>
+                  <p className="text-red-400 text-sm mb-2">{targaError}</p>
+                  <p className="text-gray-400 text-xs mb-2">
+                    {lang === 'it' ? 'Seleziona manualmente la categoria del tuo veicolo:' : 'Manually select your vehicle category:'}
+                  </p>
+                  <div className="flex justify-center gap-2">
+                    <button
+                      onClick={() => { setTargaManualCategory('urban'); setDetectedCategory('urban'); }}
+                      className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                        targaManualCategory === 'urban'
+                          ? 'bg-emerald-600/20 text-emerald-400 border-2 border-emerald-500'
+                          : 'bg-gray-800 text-gray-300 border border-gray-600 hover:border-emerald-500'
+                      }`}
+                    >
+                      URBAN
+                    </button>
+                    <button
+                      onClick={() => { setTargaManualCategory('maxi'); setDetectedCategory('maxi'); }}
+                      className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                        targaManualCategory === 'maxi'
+                          ? 'bg-amber-600/20 text-amber-400 border-2 border-amber-500'
+                          : 'bg-gray-800 text-gray-300 border border-gray-600 hover:border-amber-500'
+                      }`}
+                    >
+                      MAXI
+                    </button>
+                  </div>
+                </motion.div>
               )}
 
               {/* Targa Result with Category */}
