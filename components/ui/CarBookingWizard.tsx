@@ -978,11 +978,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
 
         if (conflicts.length > 0) {
-          // Conflicts exist - but we rely on earliestAvailability banner (server-side single source of truth)
-          // No need to set availabilityError here as it creates duplicate messages
-          // The blue banner at the top already shows the earliest available date/time
-
-          // Skip to partial unavailability check
+          const conflictEnd = new Date(conflicts[0].dropoff_date);
+          const conflictEndFormatted = conflictEnd.toLocaleDateString('it-IT', {
+            day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Rome'
+          });
+          const conflictTimeFormatted = conflictEnd.toLocaleTimeString('it-IT', {
+            hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome'
+          });
+          setAvailabilityError(
+            `Veicolo non disponibile per le date selezionate. Già prenotato fino al ${conflictEndFormatted} alle ${conflictTimeFormatted}.`
+          );
+          setIsCheckingAvailability(false);
+          return;
         }
 
         // Check for partial-day unavailability (e.g., at mechanic)
