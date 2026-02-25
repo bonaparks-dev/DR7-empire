@@ -241,8 +241,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [upsellCarModel, setUpsellCarModel] = useState<string | null>(null);
 
   // Wash upsell targa state
-  type UpsellSearchMode = 'model' | 'targa';
-  const [upsellSearchMode, setUpsellSearchMode] = useState<UpsellSearchMode>('model');
   const [upsellTargaInput, setUpsellTargaInput] = useState('');
   const [upsellTargaLoading, setUpsellTargaLoading] = useState(false);
   const [upsellTargaError, setUpsellTargaError] = useState<string | null>(null);
@@ -2796,7 +2794,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     setUpsellCarInput('');
     setUpsellCarCategory(null);
     setUpsellCarModel(null);
-    setUpsellSearchMode('model');
     setUpsellTargaInput('');
     setUpsellTargaError(null);
     setUpsellTargaResult(null);
@@ -2804,31 +2801,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     setUpsellTargaManualCategory(null);
     setShowWashUpsell(false);
     setStep(4);
-  };
-
-  const handleUpsellCarSearch = (value: string) => {
-    setUpsellCarInput(value);
-    setSelectedUpsellWash(null);
-    if (value.trim().length >= 2) {
-      const result = classifyVehicle(value.trim());
-      setUpsellCarCategory(result.category);
-      setUpsellCarModel(result.matchedModel || null);
-    } else {
-      setUpsellCarCategory(null);
-      setUpsellCarModel(null);
-    }
-  };
-
-  const handleUpsellSearchModeSwitch = (mode: UpsellSearchMode) => {
-    setUpsellSearchMode(mode);
-    setUpsellCarInput('');
-    setUpsellCarCategory(null);
-    setUpsellCarModel(null);
-    setSelectedUpsellWash(null);
-    setUpsellTargaInput('');
-    setUpsellTargaError(null);
-    setUpsellTargaResult(null);
-    setUpsellTargaManualCategory(null);
   };
 
   const handleUpsellTargaSearch = async () => {
@@ -4155,11 +4127,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   >
                     {/* Header */}
                     <div className="text-center mb-5 sm:mb-6">
-                      <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-white/10 rounded-full mb-3">
-                        <svg className="w-7 h-7 sm:w-8 sm:h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
-                        </svg>
-                      </div>
                       <h3 className="text-xl sm:text-2xl font-bold text-white tracking-wide mb-1">
                         APPROFITTA SUBITO
                       </h3>
@@ -4175,46 +4142,42 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       </p>
                     </div>
 
-                    {/* Search Mode Toggle */}
-                    <div className="flex justify-center mb-4">
-                      <div className="inline-flex bg-gray-800/80 border border-gray-700 rounded-full p-0.5">
-                        <button
-                          type="button"
-                          onClick={() => handleUpsellSearchModeSwitch('model')}
-                          className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
-                            upsellSearchMode === 'model'
-                              ? 'bg-white text-black'
-                              : 'text-gray-400 hover:text-white'
-                          }`}
-                        >
-                          Ricerca Modello
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleUpsellSearchModeSwitch('targa')}
-                          className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
-                            upsellSearchMode === 'targa'
-                              ? 'bg-white text-black'
-                              : 'text-gray-400 hover:text-white'
-                          }`}
-                        >
-                          Ricerca Targa
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Model Search */}
-                    {upsellSearchMode === 'model' && (
-                      <div className="mb-5">
+                    {/* Targa Search */}
+                    <div className="mb-5">
+                      <div className="flex gap-2">
                         <input
                           type="text"
-                          value={upsellCarInput}
-                          onChange={(e) => handleUpsellCarSearch(e.target.value)}
-                          placeholder="es. Fiat Panda, BMW X3, Golf..."
-                          className="w-full bg-gray-800/80 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-white/50 transition-colors"
+                          value={upsellTargaInput}
+                          onChange={(e) => setUpsellTargaInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8))}
+                          onKeyDown={(e) => { if (e.key === 'Enter' && isValidItalianPlate(upsellTargaInput)) handleUpsellTargaSearch(); }}
+                          placeholder="es. EX117YA"
+                          className="flex-1 bg-gray-800/80 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-white/50 transition-colors font-mono tracking-widest uppercase text-center"
+                          maxLength={8}
                         />
-                        {upsellCarCategory && (
-                          <div className="mt-2 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleUpsellTargaSearch}
+                          disabled={!isValidItalianPlate(upsellTargaInput) || upsellTargaLoading}
+                          className={`px-5 py-3 rounded-xl font-bold text-sm transition-all duration-200 ${
+                            isValidItalianPlate(upsellTargaInput) && !upsellTargaLoading
+                              ? 'bg-white text-black hover:bg-gray-200'
+                              : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                          }`}
+                        >
+                          {upsellTargaLoading ? '...' : 'Cerca'}
+                        </button>
+                      </div>
+                      {upsellTargaError && (
+                        <p className="mt-2 text-red-400 text-sm text-center">
+                          {upsellTargaError}
+                        </p>
+                      )}
+                      {upsellTargaResult && (
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <span className="inline-block px-2.5 py-1 rounded-full text-xs font-bold bg-gray-700/60 text-white border border-gray-600">
+                            {upsellTargaResult.plate}
+                          </span>
+                          {upsellCarCategory && (
                             <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
                               upsellCarCategory === 'urban'
                                 ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-600/40'
@@ -4223,104 +4186,46 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                               {upsellCarModel && <span className="opacity-70 mr-1">{upsellCarModel} →</span>}
                               {upsellCarCategory === 'urban' ? 'PRIME URBAN' : 'PRIME MAXI'}
                             </span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Targa Search */}
-                    {upsellSearchMode === 'targa' && (
-                      <div className="mb-5">
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={upsellTargaInput}
-                            onChange={(e) => setUpsellTargaInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8))}
-                            onKeyDown={(e) => { if (e.key === 'Enter' && isValidItalianPlate(upsellTargaInput)) handleUpsellTargaSearch(); }}
-                            placeholder="es. EX117YA"
-                            className="flex-1 bg-gray-800/80 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-white/50 transition-colors font-mono tracking-widest uppercase text-center"
-                            maxLength={8}
-                          />
-                          <button
-                            type="button"
-                            onClick={handleUpsellTargaSearch}
-                            disabled={!isValidItalianPlate(upsellTargaInput) || upsellTargaLoading}
-                            className={`px-5 py-3 rounded-xl font-bold text-sm transition-all duration-200 ${
-                              isValidItalianPlate(upsellTargaInput) && !upsellTargaLoading
-                                ? 'bg-white text-black hover:bg-gray-200'
-                                : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                            }`}
-                          >
-                            {upsellTargaLoading ? '...' : 'Cerca'}
-                          </button>
+                          )}
                         </div>
-                        {upsellTargaError && (
-                          <p className="mt-2 text-red-400 text-sm text-center">
-                            {upsellTargaError}
+                      )}
+                      {/* Manual category pick if classifyVehicle returned null */}
+                      {upsellTargaResult && !upsellCarCategory && (
+                        <div className="mt-3 text-center">
+                          <p className="text-gray-400 text-xs mb-2">
+                            Veicolo trovato: {upsellTargaResult.description || `${upsellTargaResult.carMake} ${upsellTargaResult.carModel}`}. Seleziona la categoria:
+                          </p>
+                          <div className="flex justify-center gap-2">
                             <button
                               type="button"
-                              onClick={() => handleUpsellSearchModeSwitch('model')}
-                              className="block mx-auto mt-1 text-gray-500 hover:text-white text-xs underline transition-colors"
+                              onClick={() => { setUpsellTargaManualCategory('urban'); setUpsellCarCategory('urban'); }}
+                              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                                upsellTargaManualCategory === 'urban'
+                                  ? 'bg-emerald-600/20 text-emerald-400 border-2 border-emerald-500'
+                                  : 'bg-gray-800 text-gray-300 border border-gray-600 hover:border-emerald-500'
+                              }`}
                             >
-                              Prova con ricerca modello
+                              URBAN
                             </button>
-                          </p>
-                        )}
-                        {upsellTargaResult && (
-                          <div className="mt-2 flex flex-wrap items-center gap-2">
-                            <span className="inline-block px-2.5 py-1 rounded-full text-xs font-bold bg-gray-700/60 text-white border border-gray-600">
-                              {upsellTargaResult.plate}
-                            </span>
-                            {upsellCarCategory && (
-                              <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
-                                upsellCarCategory === 'urban'
-                                  ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-600/40'
-                                  : 'bg-amber-600/20 text-amber-400 border border-amber-600/40'
-                              }`}>
-                                {upsellCarModel && <span className="opacity-70 mr-1">{upsellCarModel} →</span>}
-                                {upsellCarCategory === 'urban' ? 'PRIME URBAN' : 'PRIME MAXI'}
-                              </span>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => { setUpsellTargaManualCategory('maxi'); setUpsellCarCategory('maxi'); }}
+                              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                                upsellTargaManualCategory === 'maxi'
+                                  ? 'bg-amber-600/20 text-amber-400 border-2 border-amber-500'
+                                  : 'bg-gray-800 text-gray-300 border border-gray-600 hover:border-amber-500'
+                              }`}
+                            >
+                              MAXI
+                            </button>
                           </div>
-                        )}
-                        {/* Manual category pick if classifyVehicle returned null */}
-                        {upsellTargaResult && !upsellCarCategory && (
-                          <div className="mt-3 text-center">
-                            <p className="text-gray-400 text-xs mb-2">
-                              Veicolo trovato: {upsellTargaResult.description || `${upsellTargaResult.carMake} ${upsellTargaResult.carModel}`}. Seleziona la categoria:
-                            </p>
-                            <div className="flex justify-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => { setUpsellTargaManualCategory('urban'); setUpsellCarCategory('urban'); }}
-                                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                                  upsellTargaManualCategory === 'urban'
-                                    ? 'bg-emerald-600/20 text-emerald-400 border-2 border-emerald-500'
-                                    : 'bg-gray-800 text-gray-300 border border-gray-600 hover:border-emerald-500'
-                                }`}
-                              >
-                                URBAN
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => { setUpsellTargaManualCategory('maxi'); setUpsellCarCategory('maxi'); }}
-                                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                                  upsellTargaManualCategory === 'maxi'
-                                    ? 'bg-amber-600/20 text-amber-400 border-2 border-amber-500'
-                                    : 'bg-gray-800 text-gray-300 border border-gray-600 hover:border-amber-500'
-                                }`}
-                              >
-                                MAXI
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                        </div>
+                      )}
+                    </div>
 
-                    {/* Service grid */}
+                    {/* Service grid — card design with images */}
                     {upsellCarCategory && (
-                      <div className="space-y-2 mb-5">
+                      <div className="grid grid-cols-2 gap-3 mb-5">
                         {(upsellCarCategory === 'urban' ? URBAN_SERVICES : MAXI_SERVICES).map((svc) => {
                           const discountedPrice = roundToTwoDecimals(svc.price * 0.90);
                           const isSelected = selectedUpsellWash?.id === svc.id;
@@ -4329,35 +4234,27 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                               key={svc.id}
                               type="button"
                               onClick={() => setSelectedUpsellWash(isSelected ? null : svc)}
-                              className={`w-full text-left px-4 py-3 rounded-xl border transition-all ${
+                              className={`text-left rounded-xl border overflow-hidden transition-all ${
                                 isSelected
-                                  ? 'border-white bg-white/10'
-                                  : 'border-gray-700 bg-gray-800/50 hover:border-gray-500'
+                                  ? 'border-white ring-2 ring-white/50'
+                                  : 'border-gray-700 hover:border-gray-500'
                               }`}
                             >
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-white font-semibold text-sm truncate">{svc.name}</p>
-                                  <p className="text-gray-400 text-xs mt-0.5">{svc.duration}</p>
-                                </div>
-                                <div className="text-right ml-3 flex-shrink-0">
+                              <img
+                                src={svc.image || '/luxurywash.jpeg'}
+                                alt={svc.name}
+                                className="w-full h-auto object-contain"
+                              />
+                              <div className="p-2.5">
+                                <div className="flex items-baseline gap-1.5">
                                   <span className="text-gray-500 line-through text-xs">€{svc.price % 1 === 0 ? svc.price : svc.price.toFixed(2)}</span>
-                                  <span className="text-white font-bold text-base ml-2">€{discountedPrice % 1 === 0 ? discountedPrice : discountedPrice.toFixed(2)}</span>
+                                  <span className="text-white font-bold text-sm">€{discountedPrice % 1 === 0 ? discountedPrice : discountedPrice.toFixed(2)}</span>
                                 </div>
                               </div>
-                              {isSelected && (
-                                <div className="mt-2 pt-2 border-t border-gray-700">
-                                  <p className="text-gray-300 text-xs leading-relaxed">{svc.description}</p>
-                                </div>
-                              )}
                             </button>
                           );
                         })}
                       </div>
-                    )}
-
-                    {upsellSearchMode === 'model' && !upsellCarCategory && upsellCarInput.trim().length >= 2 && (
-                      <p className="text-gray-500 text-sm text-center mb-5">Modello non trovato. Prova con marca e modello (es. "Fiat Panda").</p>
                     )}
 
                     {/* Action buttons */}

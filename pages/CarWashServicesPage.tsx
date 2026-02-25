@@ -562,52 +562,15 @@ const CarWashServicesPage: React.FC = () => {
   const [upsellStep, setUpsellStep] = useState<1 | 2>(1);
   const [upsellSelectedService, setUpsellSelectedService] = useState<WashService | null>(null);
   const [upsellAddedExtras, setUpsellAddedExtras] = useState<Set<string>>(new Set());
-  const [vehicleSearch, setVehicleSearch] = useState('');
   const [detectedCategory, setDetectedCategory] = useState<VehicleCategory | null>(null);
   const [detectedModel, setDetectedModel] = useState<string | null>(null);
 
   // Targa lookup state
-  type SearchMode = 'model' | 'targa';
-  const [searchMode, setSearchMode] = useState<SearchMode>('model');
   const [targaInput, setTargaInput] = useState('');
   const [targaLoading, setTargaLoading] = useState(false);
   const [targaError, setTargaError] = useState<string | null>(null);
   const [targaResult, setTargaResult] = useState<TargaResult | null>(null);
   const [targaManualCategory, setTargaManualCategory] = useState<VehicleCategory | null>(null);
-
-  const handleVehicleSearch = useCallback((value: string) => {
-    setVehicleSearch(value);
-    if (value.trim().length < 3) {
-      setDetectedCategory(null);
-      setDetectedModel(null);
-      return;
-    }
-    const result = classifyVehicle(value.trim());
-    setDetectedCategory(result.category);
-    setDetectedModel(
-      result.matchedBrand
-        ? `${result.matchedBrand.charAt(0).toUpperCase() + result.matchedBrand.slice(1)}${result.matchedModel ? ' ' + result.matchedModel.charAt(0).toUpperCase() + result.matchedModel.slice(1) : ''}`
-        : null
-    );
-  }, []);
-
-  const clearVehicleSearch = useCallback(() => {
-    setVehicleSearch('');
-    setDetectedCategory(null);
-    setDetectedModel(null);
-  }, []);
-
-  const handleSearchModeSwitch = useCallback((mode: SearchMode) => {
-    setSearchMode(mode);
-    // Clear all results when switching tabs
-    setVehicleSearch('');
-    setDetectedCategory(null);
-    setDetectedModel(null);
-    setTargaInput('');
-    setTargaError(null);
-    setTargaResult(null);
-    setTargaManualCategory(null);
-  }, []);
 
   const handleTargaSearch = useCallback(async () => {
     const plate = normalizePlate(targaInput);
@@ -819,11 +782,6 @@ const CarWashServicesPage: React.FC = () => {
             fuelType: targaResult.fuelType,
             category: detectedCategory || targaManualCategory,
           }
-        } : detectedModel ? {
-          customerVehicle: {
-            carModel: vehicleSearch,
-            category: detectedCategory,
-          }
         } : {})
       }
     });
@@ -900,204 +858,122 @@ const CarWashServicesPage: React.FC = () => {
                 {lang === 'it' ? 'Cerca il tuo veicolo per scoprire il prezzo' : 'Search your vehicle to find the price'}
               </label>
 
-              {/* Search Mode Toggle */}
-              <div className="flex justify-center mb-3">
-                <div className="inline-flex bg-gray-900/80 border border-gray-700 rounded-full p-0.5">
-                  <button
-                    onClick={() => handleSearchModeSwitch('model')}
-                    className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
-                      searchMode === 'model'
-                        ? 'bg-white text-black'
-                        : 'text-gray-400 hover:text-white'
-                    }`}
-                  >
-                    {lang === 'it' ? 'Ricerca Modello' : 'Search Model'}
-                  </button>
-                  <button
-                    onClick={() => handleSearchModeSwitch('targa')}
-                    className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
-                      searchMode === 'targa'
-                        ? 'bg-white text-black'
-                        : 'text-gray-400 hover:text-white'
-                    }`}
-                  >
-                    {lang === 'it' ? 'Ricerca Targa' : 'Plate Lookup'}
-                  </button>
-                </div>
+              {/* Targa Search */}
+              <div className="flex gap-2">
+                <input
+                  id="targa-search-input"
+                  type="text"
+                  value={targaInput}
+                  onChange={(e) => setTargaInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8))}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && isValidItalianPlate(targaInput)) handleTargaSearch(); }}
+                  placeholder={lang === 'it' ? 'es. EX117YA' : 'e.g. EX117YA'}
+                  className="flex-1 bg-gray-900/80 border border-gray-700 rounded-full px-5 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-white transition-colors text-center font-mono tracking-widest uppercase"
+                  maxLength={8}
+                />
+                <button
+                  onClick={handleTargaSearch}
+                  disabled={!isValidItalianPlate(targaInput) || targaLoading}
+                  className={`px-6 py-3 rounded-full font-bold text-sm transition-all duration-200 ${
+                    isValidItalianPlate(targaInput) && !targaLoading
+                      ? 'bg-white text-black hover:bg-gray-200'
+                      : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  {targaLoading
+                    ? (lang === 'it' ? 'Cercando...' : 'Searching...')
+                    : (lang === 'it' ? 'Cerca' : 'Search')
+                  }
+                </button>
               </div>
 
-              {/* Model Search Tab */}
-              {searchMode === 'model' && (
-                <>
-                  <div className="relative">
-                    <input
-                      id="vehicle-search-input"
-                      type="text"
-                      value={vehicleSearch}
-                      onChange={(e) => handleVehicleSearch(e.target.value)}
-                      placeholder={lang === 'it' ? 'es. Fiat Panda, BMW X3, Golf...' : 'e.g. Fiat Panda, BMW X3, Golf...'}
-                      className="w-full bg-gray-900/80 border border-gray-700 rounded-full px-5 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-white transition-colors text-center"
-                    />
-                    {vehicleSearch && (
-                      <button
-                        onClick={clearVehicleSearch}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-lg"
-                      >
-                        &times;
-                      </button>
-                    )}
-                  </div>
-                  {detectedCategory && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mt-3 text-center"
-                    >
-                      <span className={`inline-block px-4 py-1.5 rounded-full text-sm font-bold ${
-                        detectedCategory === 'urban'
-                          ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-600/40'
-                          : 'bg-amber-600/20 text-amber-400 border border-amber-600/40'
-                      }`}>
-                        {detectedModel && <span className="opacity-70 mr-1">{detectedModel} →</span>}
-                        {detectedCategory === 'urban' ? 'PRIME URBAN CLASS' : 'PRIME MAXI CLASS'}
-                      </span>
-                      <button
-                        onClick={clearVehicleSearch}
-                        className="block mx-auto mt-1 text-gray-500 hover:text-white text-xs transition-colors"
-                      >
-                        {lang === 'it' ? 'Cambia veicolo' : 'Change vehicle'}
-                      </button>
-                    </motion.div>
-                  )}
-                </>
+              {/* Targa Error */}
+              {targaError && (
+                <motion.p
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-3 text-center text-red-400 text-sm"
+                >
+                  {targaError}
+                </motion.p>
               )}
 
-              {/* Targa Search Tab */}
-              {searchMode === 'targa' && (
-                <>
-                  <div className="flex gap-2">
-                    <input
-                      id="targa-search-input"
-                      type="text"
-                      value={targaInput}
-                      onChange={(e) => setTargaInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8))}
-                      onKeyDown={(e) => { if (e.key === 'Enter' && isValidItalianPlate(targaInput)) handleTargaSearch(); }}
-                      placeholder={lang === 'it' ? 'es. EX117YA' : 'e.g. EX117YA'}
-                      className="flex-1 bg-gray-900/80 border border-gray-700 rounded-full px-5 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-white transition-colors text-center font-mono tracking-widest uppercase"
-                      maxLength={8}
-                    />
+              {/* Targa Result with Category */}
+              {targaResult && detectedCategory && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-3 text-center"
+                >
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-gray-700/60 text-white border border-gray-600">
+                      {targaResult.plate}
+                    </span>
+                    <span className={`inline-block px-4 py-1.5 rounded-full text-sm font-bold ${
+                      detectedCategory === 'urban'
+                        ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-600/40'
+                        : 'bg-amber-600/20 text-amber-400 border border-amber-600/40'
+                    }`}>
+                      {detectedModel && <span className="opacity-70 mr-1">{detectedModel} →</span>}
+                      {detectedCategory === 'urban' ? 'PRIME URBAN CLASS' : 'PRIME MAXI CLASS'}
+                    </span>
+                  </div>
+                  <p className="text-gray-500 text-xs mt-1.5">{targaResult.description}</p>
+                  <button
+                    onClick={clearTargaSearch}
+                    className="block mx-auto mt-1 text-gray-500 hover:text-white text-xs transition-colors"
+                  >
+                    {lang === 'it' ? 'Cambia veicolo' : 'Change vehicle'}
+                  </button>
+                </motion.div>
+              )}
+
+              {/* Targa result but classifyVehicle returned null — manual category pick */}
+              {targaResult && !detectedCategory && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-3 text-center"
+                >
+                  <div className="flex flex-wrap items-center justify-center gap-2 mb-2">
+                    <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-gray-700/60 text-white border border-gray-600">
+                      {targaResult.plate}
+                    </span>
+                  </div>
+                  <p className="text-gray-400 text-sm mb-2">
+                    {lang === 'it'
+                      ? `Veicolo trovato: ${targaResult.description || `${targaResult.carMake} ${targaResult.carModel}`}. Seleziona la categoria:`
+                      : `Vehicle found: ${targaResult.description || `${targaResult.carMake} ${targaResult.carModel}`}. Select category:`
+                    }
+                  </p>
+                  <div className="flex justify-center gap-2">
                     <button
-                      onClick={handleTargaSearch}
-                      disabled={!isValidItalianPlate(targaInput) || targaLoading}
-                      className={`px-6 py-3 rounded-full font-bold text-sm transition-all duration-200 ${
-                        isValidItalianPlate(targaInput) && !targaLoading
-                          ? 'bg-white text-black hover:bg-gray-200'
-                          : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                      onClick={() => { setTargaManualCategory('urban'); setDetectedCategory('urban'); }}
+                      className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-200 ${
+                        targaManualCategory === 'urban'
+                          ? 'bg-emerald-600/20 text-emerald-400 border-2 border-emerald-500'
+                          : 'bg-gray-800 text-gray-300 border border-gray-600 hover:border-emerald-500'
                       }`}
                     >
-                      {targaLoading
-                        ? (lang === 'it' ? 'Cercando...' : 'Searching...')
-                        : (lang === 'it' ? 'Cerca' : 'Search')
-                      }
+                      URBAN
+                    </button>
+                    <button
+                      onClick={() => { setTargaManualCategory('maxi'); setDetectedCategory('maxi'); }}
+                      className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-200 ${
+                        targaManualCategory === 'maxi'
+                          ? 'bg-amber-600/20 text-amber-400 border-2 border-amber-500'
+                          : 'bg-gray-800 text-gray-300 border border-gray-600 hover:border-amber-500'
+                      }`}
+                    >
+                      MAXI
                     </button>
                   </div>
-
-                  {/* Targa Error */}
-                  {targaError && (
-                    <motion.p
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mt-3 text-center text-red-400 text-sm"
-                    >
-                      {targaError}
-                      <button
-                        onClick={() => handleSearchModeSwitch('model')}
-                        className="block mx-auto mt-1 text-gray-500 hover:text-white text-xs underline transition-colors"
-                      >
-                        {lang === 'it' ? 'Prova con ricerca modello' : 'Try model search'}
-                      </button>
-                    </motion.p>
-                  )}
-
-                  {/* Targa Result with Category */}
-                  {targaResult && detectedCategory && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mt-3 text-center"
-                    >
-                      <div className="flex flex-wrap items-center justify-center gap-2">
-                        <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-gray-700/60 text-white border border-gray-600">
-                          {targaResult.plate}
-                        </span>
-                        <span className={`inline-block px-4 py-1.5 rounded-full text-sm font-bold ${
-                          detectedCategory === 'urban'
-                            ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-600/40'
-                            : 'bg-amber-600/20 text-amber-400 border border-amber-600/40'
-                        }`}>
-                          {detectedModel && <span className="opacity-70 mr-1">{detectedModel} →</span>}
-                          {detectedCategory === 'urban' ? 'PRIME URBAN CLASS' : 'PRIME MAXI CLASS'}
-                        </span>
-                      </div>
-                      <p className="text-gray-500 text-xs mt-1.5">{targaResult.description}</p>
-                      <button
-                        onClick={clearTargaSearch}
-                        className="block mx-auto mt-1 text-gray-500 hover:text-white text-xs transition-colors"
-                      >
-                        {lang === 'it' ? 'Cambia veicolo' : 'Change vehicle'}
-                      </button>
-                    </motion.div>
-                  )}
-
-                  {/* Targa result but classifyVehicle returned null — manual category pick */}
-                  {targaResult && !detectedCategory && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mt-3 text-center"
-                    >
-                      <div className="flex flex-wrap items-center justify-center gap-2 mb-2">
-                        <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-gray-700/60 text-white border border-gray-600">
-                          {targaResult.plate}
-                        </span>
-                      </div>
-                      <p className="text-gray-400 text-sm mb-2">
-                        {lang === 'it'
-                          ? `Veicolo trovato: ${targaResult.description || `${targaResult.carMake} ${targaResult.carModel}`}. Seleziona la categoria:`
-                          : `Vehicle found: ${targaResult.description || `${targaResult.carMake} ${targaResult.carModel}`}. Select category:`
-                        }
-                      </p>
-                      <div className="flex justify-center gap-2">
-                        <button
-                          onClick={() => { setTargaManualCategory('urban'); setDetectedCategory('urban'); }}
-                          className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-200 ${
-                            targaManualCategory === 'urban'
-                              ? 'bg-emerald-600/20 text-emerald-400 border-2 border-emerald-500'
-                              : 'bg-gray-800 text-gray-300 border border-gray-600 hover:border-emerald-500'
-                          }`}
-                        >
-                          URBAN
-                        </button>
-                        <button
-                          onClick={() => { setTargaManualCategory('maxi'); setDetectedCategory('maxi'); }}
-                          className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-200 ${
-                            targaManualCategory === 'maxi'
-                              ? 'bg-amber-600/20 text-amber-400 border-2 border-amber-500'
-                              : 'bg-gray-800 text-gray-300 border border-gray-600 hover:border-amber-500'
-                          }`}
-                        >
-                          MAXI
-                        </button>
-                      </div>
-                      <button
-                        onClick={clearTargaSearch}
-                        className="block mx-auto mt-2 text-gray-500 hover:text-white text-xs transition-colors"
-                      >
-                        {lang === 'it' ? 'Cambia veicolo' : 'Change vehicle'}
-                      </button>
-                    </motion.div>
-                  )}
-                </>
+                  <button
+                    onClick={clearTargaSearch}
+                    className="block mx-auto mt-2 text-gray-500 hover:text-white text-xs transition-colors"
+                  >
+                    {lang === 'it' ? 'Cambia veicolo' : 'Change vehicle'}
+                  </button>
+                </motion.div>
               )}
             </div>
 
@@ -1131,8 +1007,7 @@ const CarWashServicesPage: React.FC = () => {
                       ) : (
                         <button
                           onClick={() => {
-                            const inputId = searchMode === 'targa' ? 'targa-search-input' : 'vehicle-search-input';
-                            const searchInput = document.getElementById(inputId);
+                            const searchInput = document.getElementById('targa-search-input');
                             if (searchInput) {
                               searchInput.focus();
                               searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });

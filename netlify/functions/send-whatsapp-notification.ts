@@ -33,17 +33,35 @@ const handler: Handler = async (event) => {
     };
   }
 
-  let message = '';
-  let targetPhone = customPhone || NOTIFICATION_PHONE;
+  // Helper to clean phone numbers for Green API format: 393457905205 (no + or spaces)
+  const cleanPhone = (phone: string): string => {
+    let cleaned = phone.replace(/[\s\-\+]/g, '');
+    if (cleaned.startsWith('0')) {
+      cleaned = '39' + cleaned.substring(1);
+    }
+    if (!cleaned.startsWith('39') && cleaned.length === 10) {
+      cleaned = '39' + cleaned;
+    }
+    return cleaned;
+  };
 
-  // Clean phone number - Green API format: 393457905205 (no + or spaces)
-  targetPhone = targetPhone.replace(/[\s\-\+]/g, '');
-  if (targetPhone.startsWith('0')) {
-    targetPhone = '39' + targetPhone.substring(1);
-  }
-  if (!targetPhone.startsWith('39') && targetPhone.length === 10) {
-    targetPhone = '39' + targetPhone;
-  }
+  // Helper to send a single Green API message
+  const sendGreenApiMessage = async (phone: string, msg: string) => {
+    const greenApiUrl = `https://api.green-api.com/waInstance${GREEN_API_INSTANCE_ID}/sendMessage/${GREEN_API_TOKEN}`;
+    const response = await fetch(greenApiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chatId: `${phone}@c.us`, message: msg }),
+    });
+    const result = await response.json();
+    if (!response.ok || result.error) {
+      throw new Error(result.error || 'Green API error');
+    }
+    return result;
+  };
+
+  let message = '';
+  let targetPhone = cleanPhone(customPhone || NOTIFICATION_PHONE);
 
   // Handle custom message (for birthdays, marketing, etc.)
   if (customMessage) {
@@ -62,37 +80,62 @@ const handler: Handler = async (event) => {
       // Car Wash Booking
       const appointmentDate = new Date(booking.appointment_date);
       const serviceName = booking.service_name;
-      const additionalService = booking.booking_details?.additionalService;
-      const notes = booking.booking_details?.notes;
+      const vehiclePlate = booking.booking_details?.customerVehicle?.plate || booking.vehicle_plate || '';
+      const firstName = customerName.split(' ')[0];
 
       const formattedDate = appointmentDate.toLocaleDateString('it-IT', {
         weekday: 'long',
-        day: '2-digit',
+        day: 'numeric',
         month: 'long',
         year: 'numeric',
         timeZone: 'Europe/Rome'
       });
-      const formattedTime = appointmentDate.toLocaleTimeString('it-IT', {
+      const formattedTime = booking.appointment_time || appointmentDate.toLocaleTimeString('it-IT', {
         hour: '2-digit',
         minute: '2-digit',
         timeZone: 'Europe/Rome'
       });
 
+      const paymentDisplay = (booking.payment_status === 'paid' || booking.payment_status === 'succeeded' || booking.payment_status === 'completed') ? 'Pagato' : 'Da saldare';
+
+      // Customer-facing message via Green API — plain text, no bold
+      let customerMessage = `Salve ${sanitizeForWhatsApp(firstName)},\n\n`;
+      customerMessage += `Confermiamo il suo appuntamento.\n\n`;
+      customerMessage += `NUOVA PRENOTAZIONE AUTOLAVAGGIO\n\n`;
+      customerMessage += `ID: DR7-${bookingId}\n`;
+      customerMessage += `Servizio: ${sanitizeForWhatsApp(serviceName)}\n`;
+      if (vehiclePlate) {
+        customerMessage += `Targa:${sanitizeForWhatsApp(vehiclePlate)}\n`;
+      }
+      customerMessage += `Data e Ora: ${formattedDate} alle ${formattedTime}\n`;
+      customerMessage += `Totale: €${totalPrice}\n`;
+      customerMessage += `Pagamento: ${paymentDisplay}\n\n`;
+      customerMessage += `Cordiali Saluti,\nDR7`;
+
+      // Send to customer if phone is available
+      if (customerPhone) {
+        try {
+          const custPhone = cleanPhone(customerPhone);
+          await sendGreenApiMessage(custPhone, customerMessage);
+          console.log('Car wash confirmation sent to customer:', custPhone);
+        } catch (custErr: any) {
+          console.error('Failed to send car wash confirmation to customer:', custErr.message);
+        }
+      }
+
+      // Office notification with full details
       message = `*NUOVA PRENOTAZIONE AUTOLAVAGGIO*\n\n`;
       message += `*ID:* DR7-${bookingId}\n`;
       message += `*Cliente:* ${sanitizeForWhatsApp(customerName)}\n`;
       message += `*Email:* ${sanitizeForWhatsApp(customerEmail)}\n`;
       message += `*Telefono:* ${sanitizeForWhatsApp(customerPhone)}\n`;
       message += `*Servizio:* ${sanitizeForWhatsApp(serviceName)}\n`;
+      if (vehiclePlate) {
+        message += `*Targa:* ${sanitizeForWhatsApp(vehiclePlate)}\n`;
+      }
       message += `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n`;
-      if (additionalService) {
-        message += `*Servizio Aggiuntivo:* ${sanitizeForWhatsApp(additionalService)}\n`;
-      }
-      if (notes) {
-        message += `*Note:* ${sanitizeForWhatsApp(notes)}\n`;
-      }
       message += `*Totale:* €${totalPrice}\n`;
-      message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? 'Pagato' : 'In attesa'}`;
+      message += `*Pagamento:* ${paymentDisplay}`;
     } else if (serviceType === 'mechanical') {
       // Mechanical Booking
       const appointmentDate = new Date(booking.appointment_date);
@@ -206,27 +249,7 @@ const handler: Handler = async (event) => {
   }
 
   try {
-    // Send via Green API
-    const greenApiUrl = `https://api.green-api.com/waInstance${GREEN_API_INSTANCE_ID}/sendMessage/${GREEN_API_TOKEN}`;
-
-    const response = await fetch(greenApiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        chatId: `${targetPhone}@c.us`,
-        message: message,
-      }),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok || result.error) {
-      console.error('Green API error:', result);
-      throw new Error(result.error || 'Green API error');
-    }
-
+    const result = await sendGreenApiMessage(targetPhone, message);
     console.log('WhatsApp notification sent via Green API:', result.idMessage);
 
     return {
