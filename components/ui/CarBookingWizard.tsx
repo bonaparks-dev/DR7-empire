@@ -1787,14 +1787,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         if (!formData.usageZone) {
           newErrors.usageZone = "Devi selezionare una zona di utilizzo.";
         }
-
-        // Block residents from selecting Fuori zona
-        const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
-        const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA' || userResidencyZone === 'RESIDENTE_CA' || userResidencyZone === 'RESIDENTE_SU';
-
-        if (isResident && formData.usageZone === 'FUORI_ZONA') {
-          newErrors.usageZone = "Con tariffa residente il veicolo è autorizzato solo a Cagliari e Sud Sardegna.";
-        }
       }
     }
     if (step === 4) {
@@ -3545,15 +3537,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     className={`p-4 rounded-md border transition-all ${formData.usageZone === 'FUORI_ZONA'
                       ? 'border-yellow-400 bg-yellow-400/10'
                       : 'border-gray-700 hover:border-gray-500'
-                      } ${usageZoneError ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                      } cursor-pointer`}
                     onClick={() => {
-                      const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
-                      const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA' || userResidencyZone === 'RESIDENTE_CA' || userResidencyZone === 'RESIDENTE_SU';
-
-                      // Allow non-residents to select, block residents
-                      if (!isResident) {
-                        setFormData(p => ({ ...p, usageZone: 'FUORI_ZONA' }));
-                      }
+                      setFormData(p => ({ ...p, usageZone: 'FUORI_ZONA' }));
                     }}
                   >
                     <div className="flex items-center">
@@ -3562,13 +3548,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         name="usageZone"
                         value="FUORI_ZONA"
                         checked={formData.usageZone === 'FUORI_ZONA'}
-                        disabled={!!usageZoneError}
                         onChange={() => {
-                          const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
-                          const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA' || userResidencyZone === 'RESIDENTE_CA' || userResidencyZone === 'RESIDENTE_SU';
-                          if (!isResident) {
-                            setFormData(p => ({ ...p, usageZone: 'FUORI_ZONA' }));
-                          }
+                          setFormData(p => ({ ...p, usageZone: 'FUORI_ZONA' }));
                         }}
                         className="w-4 h-4 text-yellow-400"
                       />
