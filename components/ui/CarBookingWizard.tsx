@@ -23,7 +23,7 @@ import { getUserCreditBalance, deductCredits, hasSufficientBalance } from '../..
 import { calculateDiscountedPrice, getMembershipTierName } from '../../utils/membershipDiscounts';
 import { roundToTwoDecimals, eurosToCents } from '../../utils/pricing';
 import { fetchWithTimeout } from '../../utils/fetchWithTimeout';
-import { URBAN_SERVICES, MAXI_SERVICES } from '../../pages/CarWashServicesPage';
+import { URBAN_SERVICES, MAXI_SERVICES, EXTRA_CARE_SERVICES, EXPERIENCE_SERVICES } from '../../pages/CarWashServicesPage';
 import type { WashService } from '../../pages/CarWashServicesPage';
 import { classifyVehicle } from '../../utils/vehicleClassification';
 import { lookupTarga, isValidItalianPlate, normalizePlate, type TargaResult } from '../../utils/lookupTarga';
@@ -37,6 +37,9 @@ const isRealName = (name: string | null | undefined): string => {
   if (DUMMY_NAMES.includes(trimmed.toLowerCase())) return '';
   return trimmed;
 };
+
+// All extra/add-on services available in the wash upsell (exclude Cortesia)
+const UPSELL_EXTRAS = [...EXTRA_CARE_SERVICES, ...EXPERIENCE_SERVICES].filter(s => s.id !== 'extra-courtesy');
 
 const FUNCTIONS_BASE =
   import.meta.env.VITE_FUNCTIONS_BASE ??
@@ -236,6 +239,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   // Wash upsell state
   const [showWashUpsell, setShowWashUpsell] = useState(false);
   const [selectedUpsellWash, setSelectedUpsellWash] = useState<WashService | null>(null);
+  const [selectedUpsellExtras, setSelectedUpsellExtras] = useState<WashService[]>([]);
   const [upsellCarInput, setUpsellCarInput] = useState('');
   const [upsellCarCategory, setUpsellCarCategory] = useState<'urban' | 'maxi' | null>(null);
   const [upsellCarModel, setUpsellCarModel] = useState<string | null>(null);
@@ -1277,9 +1281,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   const finalPriceWithBirthdayDiscount = Math.max(0, finalTotalWithOnlineDiscount - discountAmount);
 
-  // Wash upsell cost (-10% on selected wash service)
+  // Wash upsell cost (-10% on selected wash service + extras)
   const washUpsellCost = selectedUpsellWash ? roundToTwoDecimals(selectedUpsellWash.price * 0.90) : 0;
-  const grandTotal = finalPriceWithBirthdayDiscount + washUpsellCost;
+  const extrasUpsellCost = selectedUpsellExtras.reduce((sum, svc) => sum + roundToTwoDecimals(svc.price * 0.90), 0);
+  const totalWashUpsellCost = roundToTwoDecimals(washUpsellCost + extrasUpsellCost);
+  const grandTotal = finalPriceWithBirthdayDiscount + totalWashUpsellCost;
 
   // Forcer horaires valides et pas de dimanche
   useEffect(() => {
@@ -1951,15 +1957,22 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           vehicle_id: formData.selectedVehicleId, // Store specific vehicle ID to avoid grouping collisions
           driverLicenseImage: licenseImageUrl,
           driverIdImage: idImageUrl,
-          ...(selectedUpsellWash ? { washUpsell: {
-            serviceId: selectedUpsellWash.id,
-            serviceName: selectedUpsellWash.name,
-            originalPrice: selectedUpsellWash.price,
-            discountedPrice: washUpsellCost,
+          ...(selectedUpsellWash || selectedUpsellExtras.length > 0 ? { washUpsell: {
+            ...(selectedUpsellWash ? {
+              serviceId: selectedUpsellWash.id,
+              serviceName: selectedUpsellWash.name,
+              originalPrice: selectedUpsellWash.price,
+              discountedPrice: washUpsellCost,
+            } : {}),
             discountPercent: 10,
             customerCarModel: upsellCarInput,
             carCategory: upsellCarCategory,
             ...(upsellTargaResult ? { customerPlate: upsellTargaResult.plate } : {}),
+            washUpsellExtras: selectedUpsellExtras.map(svc => ({
+              serviceId: svc.id, serviceName: svc.name,
+              originalPrice: svc.price, discountedPrice: roundToTwoDecimals(svc.price * 0.90),
+            })),
+            totalCost: totalWashUpsellCost,
           }} : {}),
         }
       };
@@ -2009,6 +2022,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           `*Luogo Ritiro:* ${data.pickup_location}\n` +
           `*Assicurazione:* ${insuranceOption}\n` +
           (selectedUpsellWash ? `*Lavaggio Auto:* ${selectedUpsellWash.name} (€${washUpsellCost.toFixed(2)}) - ${upsellCarInput}\n` : '') +
+          (selectedUpsellExtras.length > 0 ? `*Servizi Aggiuntivi:* ${selectedUpsellExtras.map(s => `${s.name} (€${roundToTwoDecimals(s.price * 0.90).toFixed(2)})`).join(', ')}\n` : '') +
           `*Totale:* €${totalPrice}\n\n` +
           `Grazie!`;
 
@@ -2334,14 +2348,21 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             noDepositSurcharge: noDepositSurcharge,
             driverLicenseImage: licenseImageUrl,
             driverIdImage: idImageUrl,
-            ...(selectedUpsellWash ? { washUpsell: {
-              serviceId: selectedUpsellWash.id,
-              serviceName: selectedUpsellWash.name,
-              originalPrice: selectedUpsellWash.price,
-              discountedPrice: washUpsellCost,
+            ...(selectedUpsellWash || selectedUpsellExtras.length > 0 ? { washUpsell: {
+              ...(selectedUpsellWash ? {
+                serviceId: selectedUpsellWash.id,
+                serviceName: selectedUpsellWash.name,
+                originalPrice: selectedUpsellWash.price,
+                discountedPrice: washUpsellCost,
+              } : {}),
               discountPercent: 10,
               customerCarModel: upsellCarInput,
               carCategory: upsellCarCategory,
+              washUpsellExtras: selectedUpsellExtras.map(svc => ({
+                serviceId: svc.id, serviceName: svc.name,
+                originalPrice: svc.price, discountedPrice: roundToTwoDecimals(svc.price * 0.90),
+              })),
+              totalCost: totalWashUpsellCost,
             }} : {}),
           }
         };
@@ -2438,6 +2459,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             `*Veicolo:* ${item.name}\n` +
             `*Ritiro:* ${formData.pickupDate} ${formData.pickupTime}\n` +
             (selectedUpsellWash ? `*Lavaggio Auto:* ${selectedUpsellWash.name} (€${washUpsellCost.toFixed(2)}) - ${upsellCarInput}\n` : '') +
+          (selectedUpsellExtras.length > 0 ? `*Servizi Aggiuntivi:* ${selectedUpsellExtras.map(s => `${s.name} (€${roundToTwoDecimals(s.price * 0.90).toFixed(2)})`).join(', ')}\n` : '') +
             `*Totale:* €${totalPrice}\n\n` +
             `Grazie!`;
 
@@ -2576,14 +2598,21 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             noDepositSurcharge: noDepositSurcharge,
             driverLicenseImage: licenseImageUrl,
             driverIdImage: idImageUrl,
-            ...(selectedUpsellWash ? { washUpsell: {
-              serviceId: selectedUpsellWash.id,
-              serviceName: selectedUpsellWash.name,
-              originalPrice: selectedUpsellWash.price,
-              discountedPrice: washUpsellCost,
+            ...(selectedUpsellWash || selectedUpsellExtras.length > 0 ? { washUpsell: {
+              ...(selectedUpsellWash ? {
+                serviceId: selectedUpsellWash.id,
+                serviceName: selectedUpsellWash.name,
+                originalPrice: selectedUpsellWash.price,
+                discountedPrice: washUpsellCost,
+              } : {}),
               discountPercent: 10,
               customerCarModel: upsellCarInput,
               carCategory: upsellCarCategory,
+              washUpsellExtras: selectedUpsellExtras.map(svc => ({
+                serviceId: svc.id, serviceName: svc.name,
+                originalPrice: svc.price, discountedPrice: roundToTwoDecimals(svc.price * 0.90),
+              })),
+              totalCost: totalWashUpsellCost,
             }} : {}),
           }
         };
@@ -2667,6 +2696,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             `*Veicolo:* ${vehicleName}\n` +
             `*Ritiro:* ${formData.pickupDate} ${formData.pickupTime}\n` +
             (selectedUpsellWash ? `*Lavaggio Auto:* ${selectedUpsellWash.name} (€${washUpsellCost.toFixed(2)}) - ${upsellCarInput}\n` : '') +
+          (selectedUpsellExtras.length > 0 ? `*Servizi Aggiuntivi:* ${selectedUpsellExtras.map(s => `${s.name} (€${roundToTwoDecimals(s.price * 0.90).toFixed(2)})`).join(', ')}\n` : '') +
             `*Totale:* €0.00 (coperto da codice sconto)\n\n` +
             `Grazie!`;
           const whatsappUrl = `https://wa.me/393457905205?text=${encodeURIComponent(whatsappMessage)}`;
@@ -2790,6 +2820,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   const handleWashUpsellDecline = () => {
     setSelectedUpsellWash(null);
+    setSelectedUpsellExtras([]);
     setUpsellCarInput('');
     setUpsellCarCategory(null);
     setUpsellCarModel(null);
@@ -4270,20 +4301,60 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       </div>
                     )}
 
+                    {/* Servizi Aggiuntivi — multi-select extras */}
+                    {upsellCarCategory && (
+                      <div className="mb-5">
+                        <h4 className="text-white font-bold text-sm tracking-widest mb-3">SERVIZI AGGIUNTIVI</h4>
+                        <div className="grid grid-cols-2 gap-3">
+                          {UPSELL_EXTRAS.map((svc) => {
+                            const discountedPrice = roundToTwoDecimals(svc.price * 0.90);
+                            const isSelected = selectedUpsellExtras.some(s => s.id === svc.id);
+                            return (
+                              <button
+                                key={svc.id}
+                                type="button"
+                                onClick={() => setSelectedUpsellExtras(prev =>
+                                  isSelected ? prev.filter(s => s.id !== svc.id) : [...prev, svc]
+                                )}
+                                className={`text-left rounded-xl border overflow-hidden transition-all ${
+                                  isSelected
+                                    ? 'border-blue-400 ring-2 ring-blue-400/50'
+                                    : 'border-gray-700 hover:border-gray-500'
+                                }`}
+                              >
+                                <img
+                                  src={svc.image || '/luxurywash.jpeg'}
+                                  alt={svc.name}
+                                  className="w-full h-auto object-contain"
+                                />
+                                <div className="p-2.5">
+                                  <p className="text-white text-[11px] font-semibold leading-tight mb-1">{svc.name}</p>
+                                  <div className="flex items-baseline gap-1.5">
+                                    <span className="text-gray-500 line-through text-xs">€{svc.price % 1 === 0 ? svc.price : svc.price.toFixed(2)}</span>
+                                    <span className="text-white font-bold text-sm">€{discountedPrice % 1 === 0 ? discountedPrice : discountedPrice.toFixed(2)}</span>
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Action buttons */}
                     <div className="flex flex-col gap-3">
                       <button
                         type="button"
                         onClick={handleWashUpsellAccept}
-                        disabled={!selectedUpsellWash}
+                        disabled={!selectedUpsellWash && selectedUpsellExtras.length === 0}
                         className={`w-full py-3.5 rounded-full font-bold text-sm sm:text-base transition-all ${
-                          selectedUpsellWash
+                          selectedUpsellWash || selectedUpsellExtras.length > 0
                             ? 'bg-white text-black hover:bg-gray-100'
                             : 'bg-gray-700 text-gray-500 cursor-not-allowed'
                         }`}
                       >
-                        {selectedUpsellWash
-                          ? `Aggiungi lavaggio – €${washUpsellCost % 1 === 0 ? washUpsellCost : washUpsellCost.toFixed(2)}`
+                        {selectedUpsellWash || selectedUpsellExtras.length > 0
+                          ? `Aggiungi servizi – €${totalWashUpsellCost % 1 === 0 ? totalWashUpsellCost : totalWashUpsellCost.toFixed(2)}`
                           : 'Seleziona un servizio'}
                       </button>
                       <button
@@ -4353,6 +4424,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           <span className="text-blue-400 font-medium">{formatPrice(washUpsellCost)}</span>
                         </div>
                       )}
+                      {selectedUpsellExtras.map(svc => (
+                        <div key={svc.id} className="flex justify-between">
+                          <span className="text-blue-400 text-xs">{svc.name} (-10%)</span>
+                          <span className="text-blue-400 font-medium">{formatPrice(roundToTwoDecimals(svc.price * 0.90))}</span>
+                        </div>
+                      ))}
 
                       <div className="border-t border-white/20 my-2"></div>
 
@@ -4375,10 +4452,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                               <span>-{formatPrice(discountAmount)}</span>
                             </div>
                           )}
-                          {selectedUpsellWash && (
+                          {(selectedUpsellWash || selectedUpsellExtras.length > 0) && (
                             <div className="flex justify-between text-blue-400 text-sm">
-                              <span>Lavaggio (-10%)</span>
-                              <span>+{formatPrice(washUpsellCost)}</span>
+                              <span>Lavaggio + Servizi (-10%)</span>
+                              <span>+{formatPrice(totalWashUpsellCost)}</span>
                             </div>
                           )}
                           <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(grandTotal)}</span></div>
@@ -4398,10 +4475,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                               <span>-{formatPrice(discountAmount)}</span>
                             </div>
                           )}
-                          {selectedUpsellWash && (
+                          {(selectedUpsellWash || selectedUpsellExtras.length > 0) && (
                             <div className="flex justify-between text-blue-400 text-sm">
-                              <span>Lavaggio (-10%)</span>
-                              <span>+{formatPrice(washUpsellCost)}</span>
+                              <span>Lavaggio + Servizi (-10%)</span>
+                              <span>+{formatPrice(totalWashUpsellCost)}</span>
                             </div>
                           )}
                           <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(grandTotal)}</span></div>

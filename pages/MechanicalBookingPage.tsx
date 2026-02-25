@@ -292,6 +292,12 @@ const MechanicalBookingPage: React.FC = () => {
       appointment_date: formData.appointmentDate,
       appointment_time: formData.appointmentTime,
       booking_details: {
+        customer: {
+          fullName: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          codiceFiscale: formData.codiceFiscale,
+        },
         vehicleMake: formData.vehicleMake,
         vehicleModel: formData.vehicleModel,
         vehicleYear: formData.vehicleYear,

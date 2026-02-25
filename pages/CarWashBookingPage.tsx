@@ -836,6 +836,12 @@ const CarWashBookingPage: React.FC = () => {
       appointment_date: adjustedDateTime.toISOString(),
       appointment_time: formData.appointmentTime,
       booking_details: {
+        customer: {
+          fullName: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          codiceFiscale: formData.codiceFiscale,
+        },
         notes: formData.notes,
         ...(hasCartItems ? { cart_items: cartItems } : {}),
         ...(customerVehicle ? { customerVehicle } : {}),
