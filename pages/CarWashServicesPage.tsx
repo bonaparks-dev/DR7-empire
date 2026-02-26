@@ -461,19 +461,22 @@ const EXPERIENCE_SERVICES: WashService[] = [
     id: 'extra-icon',
     name: 'PRIME ICON EXPERIENCE',
     nameEn: 'PRIME ICON EXPERIENCE',
-    price: 189,
+    price: 149,
     duration: '-',
     description: 'L\'esperienza definitiva. Lamborghini & Ferrari.',
     descriptionEn: 'The ultimate experience. Lamborghini & Ferrari.',
     features: ['Guidi una Lamborghini o una Ferrari mentre la tua auto viene rigenerata'],
     featuresEn: ['Drive a Lamborghini or Ferrari while your car is being regenerated'],
     priceOptions: [
-      { label: '1 ora', price: 189 },
-      { label: '2 ore', price: 289 },
-      { label: '3 ore', price: 349 },
-      { label: '4+ ore', price: 69 },
+      { label: '1 ora', price: 149 },
+      { label: '2 ore', price: 249 },
+      { label: '3 ore', price: 289 },
+      { label: '4 ore', price: 356 },
+      { label: '5 ore', price: 445 },
+      { label: '6 ore', price: 534 },
+      { label: '7 ore', price: 623 },
     ],
-    image: '/icon.jpeg',
+    image: '/icon-experience.jpeg',
   }
 ];
 

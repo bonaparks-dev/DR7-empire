@@ -78,7 +78,7 @@ const MarketingConsentModal: React.FC<MarketingConsentModalProps> = ({ isOpen, o
                             <XIcon className="w-5 h-5" />
                         </button>
 
-                        <div className="p-8">
+                        <div className="p-5 md:p-8">
                             <div className="text-center mb-6">
                                 <h2 className="text-2xl font-bold text-white mb-4">Rimani Aggiornato</h2>
                             </div>

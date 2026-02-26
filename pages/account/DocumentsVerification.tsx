@@ -197,12 +197,12 @@ const DocumentsVerification = () => {
             {/* Uploaded Documents Section */}
             {hasUploadedDocs && (
                 <div className="bg-gray-900/50 border border-gray-800 rounded-lg">
-                    <div className="p-6 border-b border-gray-800">
+                    <div className="p-4 md:p-6 border-b border-gray-800">
                         <h2 className="text-xl font-bold text-white">I Tuoi Documenti</h2>
                         <p className="text-sm text-gray-400 mt-1">Documenti caricati e il loro stato di verifica</p>
                     </div>
 
-                    <div className="p-6">
+                    <div className="p-4 md:p-6">
                         {loadingDocuments ? (
                             <div className="text-center py-8">
                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
@@ -237,12 +237,12 @@ const DocumentsVerification = () => {
 
             {/* Upload New Documents Section - All at Once */}
             <div className="bg-gray-900/50 border border-gray-800 rounded-lg">
-                <div className="p-6 border-b border-gray-800">
+                <div className="p-4 md:p-6 border-b border-gray-800">
                     <h2 className="text-xl font-bold text-white">Carica Documenti</h2>
                     <p className="text-sm text-gray-400 mt-1">Seleziona e carica i tuoi documenti per la verifica</p>
                 </div>
 
-                <div className="p-6 space-y-4">
+                <div className="p-4 md:p-6 space-y-4">
                     {uploadSteps.map((step, index) => {
                         const isUploaded = uploadedSteps.has(index);
                         const hasFile = files[index] !== null && files[index] !== undefined;
@@ -252,9 +252,9 @@ const DocumentsVerification = () => {
                                 key={index}
                                 className={`bg-gray-800/50 border ${isUploaded ? 'border-green-500/50' : 'border-gray-700'} rounded-lg p-4`}
                             >
-                                <div className="flex items-start justify-between gap-4">
+                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                                     <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-2">
+                                        <div className="flex items-center gap-2 mb-2 flex-wrap">
                                             <h3 className="text-base font-semibold text-white">
                                                 {step.label}
                                             </h3>
@@ -292,7 +292,7 @@ const DocumentsVerification = () => {
                                     <button
                                         onClick={() => handleUploadStep(index)}
                                         disabled={uploading || !hasFile || isUploaded}
-                                        className="px-6 py-2 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+                                        className="w-full sm:w-auto px-6 py-2 min-h-[44px] bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
                                     >
                                         {isUploaded ? 'Caricato ✓' : uploading ? 'Caricamento...' : 'Carica'}
                                     </button>

@@ -31,9 +31,9 @@ const PartnerDashboardLayout = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
-            className="pt-32 pb-24 bg-black min-h-screen"
+            className="pt-20 md:pt-32 pb-24 bg-black min-h-screen"
         >
-            <div className="container mx-auto px-6">
+            <div className="container mx-auto px-4 md:px-6">
                 <div className="flex flex-col md:flex-row gap-8 lg:gap-12">
                     <aside className="md:w-1/4 lg:w-1/5">
                         <div className="mb-6 p-3">
@@ -45,8 +45,8 @@ const PartnerDashboardLayout = () => {
                                 <NavLink
                                     key={item.path}
                                     to={item.path}
-                                    className={({ isActive }) => 
-                                        `flex items-center p-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0 ` +
+                                    className={({ isActive }) =>
+                                        `flex items-center min-h-[44px] p-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0 ` +
                                         (isActive || (item.path === '/partner/settings' && isSettingsPage) ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50 hover:text-white')
                                     }
                                 >
@@ -54,23 +54,23 @@ const PartnerDashboardLayout = () => {
                                     {item.label}
                                 </NavLink>
                             ))}
-                            {isSettingsPage && (
-                                <motion.div initial={{opacity:0, height: 0}} animate={{opacity:1, height: 'auto'}} className="pl-5 mt-1 pt-1 border-l-2 border-gray-700 ml-4 space-y-1">
-                                    {settingsSubNavItems.map(item => (
-                                         <NavLink
-                                            key={item.path}
-                                            to={item.path}
-                                            className={({ isActive }) => 
-                                                `block py-1.5 px-3 rounded-md text-sm transition-colors ` +
-                                                (isActive ? 'font-semibold text-white' : 'text-gray-400 hover:text-white')
-                                            }
-                                        >
-                                            {item.label}
-                                        </NavLink>
-                                    ))}
-                                </motion.div>
-                            )}
                         </nav>
+                        {isSettingsPage && (
+                            <motion.div initial={{opacity:0, height: 0}} animate={{opacity:1, height: 'auto'}} className="mt-2 md:mt-1 md:ml-4 pl-5 pt-1 border-l-2 border-gray-700 space-y-1">
+                                {settingsSubNavItems.map(item => (
+                                     <NavLink
+                                        key={item.path}
+                                        to={item.path}
+                                        className={({ isActive }) =>
+                                            `block min-h-[44px] flex items-center py-1.5 px-3 rounded-md text-sm transition-colors ` +
+                                            (isActive ? 'font-semibold text-white' : 'text-gray-400 hover:text-white')
+                                        }
+                                    >
+                                        {item.label}
+                                    </NavLink>
+                                ))}
+                            </motion.div>
+                        )}
                     </aside>
                     <main className="flex-1">
                          <motion.div

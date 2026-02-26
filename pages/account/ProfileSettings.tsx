@@ -305,18 +305,18 @@ const ProfileSettings = () => {
         <div className="space-y-6">
             {/* Credit Wallet Card */}
             <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-lg overflow-hidden">
-                <div className="p-6 border-b border-gray-800">
+                <div className="p-4 md:p-6 border-b border-gray-800">
                     <h2 className="text-xl font-bold text-white">DR7 Credit Wallet</h2>
                     <p className="text-sm text-gray-400 mt-1">Your available credits for DR7 services</p>
                 </div>
-                <div className="p-6">
+                <div className="p-4 md:p-6">
                     {isLoadingCredits ? (
                         <div className="flex items-center justify-center py-8">
                             <div className="w-8 h-8 border-2 border-t-white border-gray-600 rounded-full animate-spin"></div>
                         </div>
                     ) : (
                         <>
-                            <div className="flex items-center justify-between mb-6">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                                 <div>
                                     <p className="text-sm text-gray-400 mb-1">Saldo Disponibile</p>
                                     <p className="text-4xl font-bold text-white">€{creditBalance.toFixed(2)}</p>
@@ -397,11 +397,11 @@ const ProfileSettings = () => {
 
             {/* Profile Form */}
             <form onSubmit={handleSubmit} className="bg-gray-900/50 border border-gray-800 rounded-lg">
-                <div className="p-6 border-b border-gray-800">
+                <div className="p-4 md:p-6 border-b border-gray-800">
                     <h2 className="text-xl font-bold text-white">{t('Profile_Details')}</h2>
                     <p className="text-sm text-gray-400 mt-1">{t('Update_your_information')}</p>
                 </div>
-                <div className="p-6 space-y-6">
+                <div className="p-4 md:p-6 space-y-6">
 
                     {isLoadingProfile ? (
                         <div className="text-center py-4 text-gray-400">Caricamento dati profilo...</div>
@@ -424,31 +424,31 @@ const ProfileSettings = () => {
                                 <div className="border-t border-gray-800 pt-4">
                                     <h3 className="text-lg font-semibold text-white mb-4">Dati Personali</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div><label className="text-sm text-gray-400">Nome</label><input type="text" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
-                                        <div><label className="text-sm text-gray-400">Cognome</label><input type="text" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
+                                        <div><label className="text-sm text-gray-400">Nome</label><input type="text" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2 min-h-[44px]" /></div>
+                                        <div><label className="text-sm text-gray-400">Cognome</label><input type="text" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2 min-h-[44px]" /></div>
                                         <div><label className="text-sm text-gray-400">Codice Fiscale</label><input type="text" value={formData.codiceFiscale} onChange={handleChange} name="codiceFiscale" className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2 font-mono uppercase" maxLength={16} /></div>
-                                        <div><label className="text-sm text-gray-400">Sesso</label><select value={formData.sesso} onChange={(e) => setFormData({ ...formData, sesso: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2"><option value="">Seleziona...</option><option value="M">Maschio</option><option value="F">Femmina</option></select></div>
-                                        <div><label className="text-sm text-gray-400">Data di Nascita</label><input type="date" value={formData.dataNascita} onChange={(e) => setFormData({ ...formData, dataNascita: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
-                                        <div><label className="text-sm text-gray-400">Città di Nascita</label><input type="text" value={formData.cittaNascita} onChange={(e) => setFormData({ ...formData, cittaNascita: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
+                                        <div><label className="text-sm text-gray-400">Sesso</label><select value={formData.sesso} onChange={(e) => setFormData({ ...formData, sesso: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2 min-h-[44px]"><option value="">Seleziona...</option><option value="M">Maschio</option><option value="F">Femmina</option></select></div>
+                                        <div><label className="text-sm text-gray-400">Data di Nascita</label><input type="date" value={formData.dataNascita} onChange={(e) => setFormData({ ...formData, dataNascita: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2 min-h-[44px]" /></div>
+                                        <div><label className="text-sm text-gray-400">Città di Nascita</label><input type="text" value={formData.cittaNascita} onChange={(e) => setFormData({ ...formData, cittaNascita: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2 min-h-[44px]" /></div>
                                         <div><label className="text-sm text-gray-400">Provincia di Nascita</label><input type="text" value={formData.provinciaNascita} onChange={(e) => setFormData({ ...formData, provinciaNascita: e.target.value })} maxLength={2} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2 uppercase" /></div>
                                     </div>
 
                                     <h3 className="text-lg font-semibold text-white mt-6 mb-4">Residenza</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div><label className="text-sm text-gray-400">Indirizzo</label><input type="text" value={formData.indirizzo} onChange={(e) => setFormData({ ...formData, indirizzo: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
-                                        <div><label className="text-sm text-gray-400">Numero Civico</label><input type="text" value={formData.numeroCivico} onChange={(e) => setFormData({ ...formData, numeroCivico: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
-                                        <div><label className="text-sm text-gray-400">Città</label><input type="text" value={formData.cittaResidenza} onChange={(e) => setFormData({ ...formData, cittaResidenza: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
+                                        <div><label className="text-sm text-gray-400">Indirizzo</label><input type="text" value={formData.indirizzo} onChange={(e) => setFormData({ ...formData, indirizzo: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2 min-h-[44px]" /></div>
+                                        <div><label className="text-sm text-gray-400">Numero Civico</label><input type="text" value={formData.numeroCivico} onChange={(e) => setFormData({ ...formData, numeroCivico: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2 min-h-[44px]" /></div>
+                                        <div><label className="text-sm text-gray-400">Città</label><input type="text" value={formData.cittaResidenza} onChange={(e) => setFormData({ ...formData, cittaResidenza: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2 min-h-[44px]" /></div>
                                         <div><label className="text-sm text-gray-400">Provincia</label><input type="text" value={formData.provinciaResidenza} onChange={(e) => setFormData({ ...formData, provinciaResidenza: e.target.value })} maxLength={2} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2 uppercase" /></div>
-                                        <div><label className="text-sm text-gray-400">CAP</label><input type="text" value={formData.codicePostale} onChange={(e) => setFormData({ ...formData, codicePostale: e.target.value })} maxLength={5} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
+                                        <div><label className="text-sm text-gray-400">CAP</label><input type="text" value={formData.codicePostale} onChange={(e) => setFormData({ ...formData, codicePostale: e.target.value })} maxLength={5} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2 min-h-[44px]" /></div>
                                     </div>
 
                                     <h3 className="text-lg font-semibold text-white mt-6 mb-4">Patente di Guida</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div><label className="text-sm text-gray-400">Tipo Patente</label><input type="text" value={formData.tipoPatente} onChange={(e) => setFormData({ ...formData, tipoPatente: e.target.value })} placeholder="es. B" className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
+                                        <div><label className="text-sm text-gray-400">Tipo Patente</label><input type="text" value={formData.tipoPatente} onChange={(e) => setFormData({ ...formData, tipoPatente: e.target.value })} placeholder="es. B" className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2 min-h-[44px]" /></div>
                                         <div><label className="text-sm text-gray-400">Numero</label><input type="text" value={formData.numeroPatente} onChange={(e) => setFormData({ ...formData, numeroPatente: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2 font-mono" /></div>
-                                        <div><label className="text-sm text-gray-400">Rilasciata da</label><input type="text" value={formData.patenteEmessaDa} onChange={(e) => setFormData({ ...formData, patenteEmessaDa: e.target.value })} placeholder="es. MIT" className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
-                                        <div><label className="text-sm text-gray-400">Data Rilascio</label><input type="date" value={formData.patenteDataRilascio} onChange={(e) => setFormData({ ...formData, patenteDataRilascio: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
-                                        <div><label className="text-sm text-gray-400">Scadenza</label><input type="date" value={formData.patenteScadenza} onChange={(e) => setFormData({ ...formData, patenteScadenza: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2" /></div>
+                                        <div><label className="text-sm text-gray-400">Rilasciata da</label><input type="text" value={formData.patenteEmessaDa} onChange={(e) => setFormData({ ...formData, patenteEmessaDa: e.target.value })} placeholder="es. MIT" className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2 min-h-[44px]" /></div>
+                                        <div><label className="text-sm text-gray-400">Data Rilascio</label><input type="date" value={formData.patenteDataRilascio} onChange={(e) => setFormData({ ...formData, patenteDataRilascio: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2 min-h-[44px]" /></div>
+                                        <div><label className="text-sm text-gray-400">Scadenza</label><input type="date" value={formData.patenteScadenza} onChange={(e) => setFormData({ ...formData, patenteScadenza: e.target.value })} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md text-white p-2 min-h-[44px]" /></div>
                                     </div>
                                 </div>
                             )}
@@ -512,7 +512,7 @@ const ProfileSettings = () => {
                         </div>
                     )}
                 </div>
-                <div className="p-6 bg-gray-900 flex items-center justify-end space-x-4 rounded-b-lg">
+                <div className="p-4 md:p-6 bg-gray-900 flex flex-col sm:flex-row items-center justify-end gap-3 rounded-b-lg">
                     {successMessage && <span className={`text-sm ${successError ? 'text-red-400' : 'text-green-400'}`}>{successMessage}</span>}
                     <button type="submit" disabled={isSubmitting} className="px-5 py-2.5 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors text-sm disabled:opacity-60">
                         {isSubmitting ? t('Please_wait') : t('Save_Changes')}

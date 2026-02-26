@@ -59,7 +59,7 @@ const VerificationForm: React.FC = () => {
 
   return (
     <form onSubmit={handleSubmit} className="bg-gray-900/50 border border-gray-800 rounded-lg">
-      <div className="p-8 space-y-8">
+      <div className="p-4 md:p-8 space-y-8">
         <div className="border-b border-gray-700 pb-6">
           <h3 className="text-xl font-bold text-white mb-4">{t('Company_Information')}</h3>
           <div className="space-y-4">
@@ -178,10 +178,10 @@ const PartnerVerificationPage = () => {
         transition={{ duration: 0.5 }}
         className="pt-20 pb-24 bg-black min-h-screen text-white"
     >
-      <div className="container mx-auto px-6 max-w-3xl">
+      <div className="container mx-auto px-4 md:px-6 max-w-3xl">
         {verificationStatus === 'unverified' && (
             <div className="text-center mb-10">
-                <h1 className="text-4xl font-bold">{t('Business_Verification')}</h1>
+                <h1 className="text-2xl md:text-4xl font-bold">{t('Business_Verification')}</h1>
                 <p className="text-gray-400 mt-2">{t('Complete_verification_to_publish')}</p>
             </div>
         )}

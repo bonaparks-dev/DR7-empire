@@ -108,7 +108,7 @@ const MyBookings = () => {
 
   return (
     <div className="bg-gray-900/50 border border-gray-800 rounded-lg">
-      <div className="p-6 border-b border-gray-800">
+      <div className="p-4 md:p-6 border-b border-gray-800">
         <div className="flex items-center gap-3 mb-1">
 
           <h2 className="text-xl font-bold text-white">{t('My_Bookings')}</h2>
@@ -118,7 +118,7 @@ const MyBookings = () => {
         </p>
       </div>
 
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         {loading ? (
           <div className="text-center text-gray-400 py-8">
             {lang === 'it' ? 'Caricamento...' : 'Loading...'}
@@ -142,7 +142,7 @@ const MyBookings = () => {
                           <p className="text-sm text-gray-400">{booking.vehicle_name}</p>
                         )}
                       </div>
-                      <div className="flex flex-col gap-2 items-end">
+                      <div className="flex flex-col flex-wrap gap-2 items-end">
                         {getStatusBadge(booking.status)}
                         {getPaymentBadge(booking.payment_status)}
                       </div>

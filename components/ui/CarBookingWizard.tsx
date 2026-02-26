@@ -3980,11 +3980,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         ) : (
                           <>
                             <p className="text-sm text-gray-300">
-                              {/* Automatic deposit calculation - single amount based on loyalty, insurance, and license years */}
+                              {/* Automatic deposit calculation - single amount based on loyalty and license years */}
                               Cauzione: {formatDeposit(getDeposit())}
                               {getDeposit() === 0 && formData.depositOption === 'no_deposit' && ' (Senza cauzione — supplemento +30% applicato)'}
                               {getDeposit() === 0 && formData.depositOption !== 'no_deposit' && isLoyalCustomer && ' (Cliente Fedele)'}
-                              {getDeposit() === 0 && formData.depositOption !== 'no_deposit' && !isLoyalCustomer && formData.insuranceOption === 'KASKO' && ' (Nessun deposito richiesto)'}
                             </p>
                           </>
                         )}

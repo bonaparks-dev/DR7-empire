@@ -85,11 +85,11 @@ const PartnerDashboardPage: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
-            className="pt-32 pb-24 bg-black min-h-screen"
+            className="pt-20 md:pt-32 pb-24 bg-black min-h-screen"
         >
-            <div className="container mx-auto px-6">
-                <div className="text-center mb-12">
-                    <h1 className="text-5xl md:text-6xl font-bold text-white mb-2">{t('Welcome_to_your_Partner_Dashboard')}</h1>
+            <div className="container mx-auto px-4 md:px-6">
+                <div className="text-center mb-6 md:mb-12">
+                    <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-2">{t('Welcome_to_your_Partner_Dashboard')}</h1>
                     <p className="text-lg text-gray-400">Welcome, {user?.companyName || user?.fullName}</p>
                 </div>
 

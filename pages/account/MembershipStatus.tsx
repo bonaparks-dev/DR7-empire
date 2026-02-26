@@ -33,7 +33,7 @@ const MembershipStatus = () => {
 
     if (!user?.membership || !currentTier) {
         return (
-            <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8 text-center">
+            <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-5 md:p-8 text-center">
                 <h2 className="text-xl font-bold text-white">{t('No_Active_Membership')}</h2>
                 <p className="text-sm text-gray-400 mt-2 max-w-sm mx-auto">{t('You_do_not_have_an_active_membership')}</p>
                 <button onClick={() => navigate('/membership')} className="mt-6 px-5 py-2.5 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors text-sm">
@@ -47,8 +47,8 @@ const MembershipStatus = () => {
 
     return (
         <div className="bg-gray-900/50 border border-gray-800 rounded-lg">
-            <div className="p-6 border-b border-gray-800">
-                <div className="flex justify-between items-center">
+            <div className="p-4 md:p-6 border-b border-gray-800">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div>
                         <h2 className="text-xl font-bold text-white">{t('My_Membership')}</h2>
                         <p className="text-sm text-gray-400 mt-1">
@@ -60,7 +60,7 @@ const MembershipStatus = () => {
                     </span>
                 </div>
             </div>
-            <div className="p-6">
+            <div className="p-4 md:p-6">
                  <h3 className="text-lg font-semibold text-white mb-4">{t('Your_Benefits')}</h3>
                  <ul className="space-y-3">
                      {currentTier.features[lang].map((feature, index) => (
@@ -80,7 +80,7 @@ const MembershipStatus = () => {
                      ))}
                  </ul>
             </div>
-            <div className="p-6 bg-gray-900 flex items-center justify-end rounded-b-lg">
+            <div className="p-4 md:p-6 bg-gray-900 flex items-center justify-end rounded-b-lg">
                 <button
                     onClick={() => navigate(`/membership/enroll/${currentTier.id}?billing=${user.membership?.billingCycle}`)}
                     className="px-5 py-2.5 bg-white text-black font-bold rounded-full text-sm hover:bg-gray-200 transition-colors"

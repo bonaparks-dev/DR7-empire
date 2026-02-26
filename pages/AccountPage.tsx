@@ -29,11 +29,11 @@ const AccountPage = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
-            className="pt-32 pb-24 bg-black min-h-screen"
+            className="pt-20 md:pt-32 pb-24 bg-black min-h-screen"
         >
-            <div className="container mx-auto px-6">
-                <div className="text-center mb-12">
-                    <h1 className="text-5xl md:text-6xl font-bold text-white mb-2">{t('Account_Settings')}</h1>
+            <div className="container mx-auto px-4 md:px-6">
+                <div className="text-center mb-6 md:mb-12">
+                    <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-2">{t('Account_Settings')}</h1>
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-8 lg:gap-12">
@@ -44,7 +44,7 @@ const AccountPage = () => {
                                     key={item.path}
                                     to={item.path}
                                     className={({ isActive }) =>
-                                        `flex items-center p-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0 ` +
+                                        `flex items-center min-h-[44px] p-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0 ` +
                                         (isActive ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50 hover:text-white')
                                     }
                                 >
