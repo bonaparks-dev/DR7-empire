@@ -631,6 +631,7 @@ const CarWashServicesPage: React.FC = () => {
     }
   };
 
+  const MAX_QTY_IDS = ['extra-seat-clean', 'extra-seat-protect', 'extra-child', 'extra-engine', 'extra-odor'];
   const addToCart = (service: WashService, selectedOption?: { label: string; price: number }) => {
     setCart(prev => {
       const existingIndex = prev.findIndex(item =>
@@ -640,6 +641,8 @@ const CarWashServicesPage: React.FC = () => {
 
       if (existingIndex >= 0) {
         const updated = [...prev];
+        const maxQty = MAX_QTY_IDS.includes(service.id) ? 10 : 99;
+        if (updated[existingIndex].quantity >= maxQty) return prev;
         updated[existingIndex].quantity += 1;
         return updated;
       }
@@ -656,10 +659,13 @@ const CarWashServicesPage: React.FC = () => {
   const updateQuantity = (index: number, delta: number) => {
     setCart(prev => {
       const updated = [...prev];
-      updated[index].quantity += delta;
-      if (updated[index].quantity <= 0) {
+      const newQty = updated[index].quantity + delta;
+      if (newQty <= 0) {
         return updated.filter((_, i) => i !== index);
       }
+      const maxQty = MAX_QTY_IDS.includes(updated[index].service.id) ? 10 : 99;
+      if (newQty > maxQty) return prev;
+      updated[index].quantity = newQty;
       return updated;
     });
   };
