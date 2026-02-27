@@ -331,31 +331,42 @@ exports.handler = async (event) => {
         return { statusCode: 200, body: 'OK' };
       }
 
+      // If currently being processed by another callback, skip to avoid race condition
+      if (purchase.payment_status === 'processing') {
+        console.log('Purchase currently being processed by another callback, skipping');
+        return { statusCode: 200, body: 'OK' };
+      }
+
       if (isSuccess) {
-        // Atomically update purchase status - only succeeds if not already 'succeeded'
-        const { data: updatedPurchase, error: upErr } = await supabase
+        // IMPORTANT: First claim the purchase atomically to prevent double-processing.
+        // Mark as 'processing' (not 'succeeded') so that if credit addition fails,
+        // a retry from Nexi can still be processed.
+        const { data: claimedPurchase, error: claimErr } = await supabase
           .from('credit_wallet_purchases')
           .update({
-            payment_status: 'succeeded',
+            payment_status: 'processing',
             payment_completed_at: new Date().toISOString()
           })
           .eq('id', purchase.id)
           .neq('payment_status', 'succeeded')
+          .neq('payment_status', 'processing')
           .select()
           .single();
 
-        // If no row returned, another callback already processed it
-        if (!updatedPurchase) {
+        // If no row returned, another callback already claimed or completed it
+        if (!claimedPurchase) {
           console.log('Purchase already processed by another callback, skipping');
           return { statusCode: 200, body: 'OK' };
         }
 
-        if (upErr) {
-          console.error('Error updating purchase:', upErr);
-          return { statusCode: 500, body: 'Error updating purchase' };
+        if (claimErr) {
+          console.error('Error claiming purchase:', claimErr);
+          return { statusCode: 500, body: 'Error claiming purchase' };
         }
 
-        // Add credits via atomic RPC (prevents race conditions and double-crediting)
+        // Add credits via atomic RPC BEFORE marking as succeeded
+        // This ensures credits are actually added before we mark the purchase as done
+        let creditsAdded = false;
         if (purchase.user_id && purchase.received_amount) {
           const { data: rpcResult, error: rpcError } = await supabase.rpc('add_credits', {
             p_user_id: purchase.user_id,
@@ -367,9 +378,30 @@ exports.handler = async (event) => {
 
           if (rpcError) {
             console.error('Error adding credits via RPC:', rpcError);
+            // CRITICAL: Revert purchase status to 'pending' so it can be retried
+            await supabase
+              .from('credit_wallet_purchases')
+              .update({ payment_status: 'pending' })
+              .eq('id', purchase.id);
+            console.error('Reverted purchase status to pending for retry');
+            return { statusCode: 500, body: 'Error adding credits' };
           } else {
+            creditsAdded = true;
             const result = rpcResult?.[0] || rpcResult;
             console.log(`Credits added via RPC: €${purchase.received_amount} to user ${purchase.user_id} (new balance: €${result?.new_balance})`);
+          }
+        }
+
+        // Only mark as 'succeeded' AFTER credits have been successfully added
+        if (creditsAdded) {
+          const { error: upErr } = await supabase
+            .from('credit_wallet_purchases')
+            .update({ payment_status: 'succeeded' })
+            .eq('id', purchase.id);
+
+          if (upErr) {
+            console.error('Error finalizing purchase status:', upErr);
+            // Credits were added but status not updated — not critical, balance is correct
           }
         }
       } else {
