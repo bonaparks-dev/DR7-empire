@@ -331,10 +331,26 @@ exports.handler = async (event) => {
         return { statusCode: 200, body: 'OK' };
       }
 
-      // If currently being processed by another callback, skip to avoid race condition
+      // If currently being processed by another callback, check for stale state.
+      // If stuck in 'processing' for more than 5 minutes (server crash), reset to 'pending' so it can be retried.
       if (purchase.payment_status === 'processing') {
-        console.log('Purchase currently being processed by another callback, skipping');
-        return { statusCode: 200, body: 'OK' };
+        const processingAge = purchase.payment_completed_at
+          ? (Date.now() - new Date(purchase.payment_completed_at).getTime()) / 1000
+          : 999999;
+
+        if (processingAge < 300) {
+          console.log('Purchase currently being processed by another callback, skipping');
+          return { statusCode: 200, body: 'OK' };
+        }
+
+        console.log(`Purchase stuck in 'processing' for ${Math.round(processingAge)}s — resetting to pending for retry`);
+        await supabase
+          .from('credit_wallet_purchases')
+          .update({ payment_status: 'pending' })
+          .eq('id', purchase.id)
+          .eq('payment_status', 'processing');
+        // Continue below to process it as pending
+        purchase.payment_status = 'pending';
       }
 
       if (isSuccess) {

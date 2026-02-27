@@ -332,7 +332,11 @@ const CreditWalletPage: React.FC = () => {
     setPaymentError(null);
 
     try {
-      // 1. Save credit wallet purchase as pending
+      // 1. Generate nexi_order_id upfront so it's included in the initial insert
+      //    (avoids a separate update that could silently fail, leaving no order ID for the callback)
+      const nexiOrderId = `DR7${Date.now()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+      // 2. Save credit wallet purchase as pending (with nexi_order_id already set)
       const { data, error: dbError } = await supabase
         .from('credit_wallet_purchases')
         .insert([{
@@ -347,6 +351,7 @@ const CreditWalletPage: React.FC = () => {
           payment_status: 'pending',
           payment_method: 'nexi',
           currency: 'EUR',
+          nexi_order_id: nexiOrderId,
           customer_name: formData.fullName,
           customer_email: formData.email,
           customer_phone: formData.phone,
@@ -366,18 +371,9 @@ const CreditWalletPage: React.FC = () => {
         throw new Error('Failed to save purchase record');
       }
 
-      console.log('Purchase record saved:', data.id);
+      console.log('Purchase record saved:', data.id, 'orderId:', nexiOrderId);
 
-      // 2. Generate nexi_order_id
-      const nexiOrderId = `DR7${Date.now()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-
-      // 3. Update with nexi_order_id
-      await supabase
-        .from('credit_wallet_purchases')
-        .update({ nexi_order_id: nexiOrderId })
-        .eq('id', data.id);
-
-      // 4. Create Nexi payment
+      // 3. Create Nexi payment
       const nexiResponse = await fetch('/.netlify/functions/create-nexi-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
