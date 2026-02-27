@@ -49,7 +49,21 @@ const TermsOfServicePage: React.FC = () => {
             <h2>8. Modifications to Terms and Services</h2>
             <p>We reserve the right to modify these Terms at any time. We will provide notice of any material changes by posting the new Terms on our platform. Your continued use of the Services after such changes constitutes your acceptance of the new Terms.</p>
             
-            <h2>9. Contact Information</h2>
+            <h2>9. Policy Operativa – Tempi di Servizio e Consegna</h2>
+            <p>I tempi indicati per i servizi (lavaggio, trattamenti, check-in, check-out e consegne veicoli) sono da intendersi come tempi stimati e indicativi, calcolati su condizioni operative standard.</p>
+            <p>La durata effettiva del servizio può variare in base a:</p>
+            <ul>
+                <li>Stato del veicolo</li>
+                <li>Livello di sporco o complessità dell'intervento</li>
+                <li>Verifiche tecniche e controlli qualitativi</li>
+                <li>Flussi operativi interni</li>
+                <li>Eventuali ritardi logistici non prevedibili</li>
+            </ul>
+            <p>L'orario di prenotazione o consegna rappresenta una fascia operativa programmata e non un orario tassativo di inizio o rilascio immediato del veicolo.</p>
+            <p>Eventuali variazioni contenute entro una normale tolleranza tecnica e organizzativa non costituiscono inadempimento contrattuale né danno diritto a riduzioni o rimborsi.</p>
+            <p>L'azienda si impegna comunque a garantire la massima puntualità compatibilmente con gli standard qualitativi e di sicurezza previsti.</p>
+
+            <h2>10. Contact Information</h2>
             <p>For any questions or legal notices regarding these Terms, please contact our legal department at <a href="mailto:legal@dr7.example.com">legal@dr7.example.com</a>.</p>
         </LegalPageLayout>
     );
