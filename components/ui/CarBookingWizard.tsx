@@ -897,19 +897,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
   }, [isCameraOpen, cameraStream]);
 
-  // Return time auto-calculation (smart: respects availability windows)
+  // Return time auto-calculation: default to same time as pickup
   useEffect(() => {
     if (formData.pickupTime && formData.pickupDate && formData.returnDate) {
-      // Calculate default: pickup - 1h30
-      const [hours, minutes] = formData.pickupTime.split(':').map(Number);
-      const tempDate = new Date(2000, 0, 1, hours, minutes);
-      tempDate.setHours(tempDate.getHours() - 1);
-      tempDate.setMinutes(tempDate.getMinutes() - 30);
-      let returnHours = tempDate.getHours();
-      let returnMinutes = tempDate.getMinutes();
-
-      const newReturnTime = `${String(returnHours).padStart(2, '0')}:${String(returnMinutes).padStart(2, '0')}`;
-      setFormData(prev => ({ ...prev, returnTime: newReturnTime }));
+      setFormData(prev => ({ ...prev, returnTime: formData.pickupTime }));
     }
   }, [formData.pickupTime, formData.pickupDate, formData.returnDate, availabilityWindows]);
 
@@ -3026,9 +3017,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           const value = e.target.value;
                           if (!value) return;
 
-                          // STRICT VALIDATION: Return Date cannot be before Pickup Date
-                          if (formData.pickupDate && value < formData.pickupDate) {
-                            setErrors(prev => ({ ...prev, returnDate: 'La data di riconsegna non può essere precedente alla data di ritiro.' }));
+                          // STRICT VALIDATION: Return Date must be at least the day after Pickup Date
+                          if (formData.pickupDate && value <= formData.pickupDate) {
+                            setErrors(prev => ({ ...prev, returnDate: 'Il noleggio minimo è di 1 giorno. Seleziona almeno il giorno successivo al ritiro.' }));
                             return;
                           }
 
@@ -3055,7 +3046,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
                           handleChange(e);
                         }}
-                        min={formData.pickupDate || today}
+                        min={formData.pickupDate ? (() => { const d = new Date(formData.pickupDate); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })() : today}
                         max={isUtilitaria ? UTILITARIE_MAX_DATE : undefined}
                         disabled={!formData.pickupDate || !formData.pickupTime}
                         required
@@ -3104,7 +3095,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           <option value="">Seleziona prima una data</option>
                         )}
                       </select>
-                      <p className="text-xs text-gray-400 mt-1">Ritiro - 1h30 (auto), adattato alla disponibilità</p>
+                      <p className="text-xs text-gray-400 mt-1">Stessa ora del ritiro (auto), modificabile</p>
                     </div>
                   </div>
                   {/* Vehicle Availability Check */}
