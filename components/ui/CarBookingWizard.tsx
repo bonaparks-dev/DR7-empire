@@ -722,16 +722,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // Allow all valid return times based on office hours
     const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
 
-    // Return time must be ≤ pickup time minus 1h30 (to avoid exceeding 24h per day)
-    const [pickupH, pickupM] = formData.pickupTime.split(':').map(Number);
-    const maxReturnMinutes = (pickupH * 60 + pickupM) - 90; // pickup time - 1h30
-
+    // Allow any return time as long as it's after pickup datetime
+    // Calendar day billing means no need to restrict return time based on pickup time
     return filteredTimes.filter(time => {
       const [hours, minutes] = time.split(':').map(Number);
       const returnDt = new Date(date);
       returnDt.setHours(hours, minutes, 0, 0);
-      const timeInMinutes = hours * 60 + minutes;
-      return returnDt > pickup && (maxReturnMinutes < 0 || timeInMinutes <= maxReturnMinutes);
+      return returnDt > pickup;
     });
   };
 
@@ -1622,19 +1619,21 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const returnD = new Date(`${formData.returnDate}T${formData.returnTime}`);
         const diffMs = returnD.getTime() - pickup.getTime();
         const diffHours = diffMs / (1000 * 60 * 60);
-        // Use 22.5 hour day system (22h30 = 1 rental day)
-        // Allow a small tolerance (0.99) to prevent floating point issues
-        const dayLength = 22.5;
-        const rentalDays = diffHours / dayLength;
 
-        // Check if rental is less than 1 day
-        if (rentalDays < 0.99) {
-          // Check if this is a constrained availability window (less than 24 hours between bookings)
+        // Calendar day logic: if there's a night between pickup and return, it counts as 1+ days
+        // This matches the billing logic (pickup 17:30, return next day 09:00 = 1 day)
+        const pDate = new Date(formData.pickupDate); pDate.setHours(0, 0, 0, 0);
+        const rDate = new Date(formData.returnDate); rDate.setHours(0, 0, 0, 0);
+        const calendarDays = Math.round((rDate.getTime() - pDate.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (diffMs <= 0) {
+          // Return is before or equal to pickup
+          newErrors.date = "La data di riconsegna deve essere successiva al ritiro.";
+        } else if (calendarDays < 1) {
+          // Same calendar day — check if constrained availability window
           let isConstrainedSlot = false;
-          let windowDurationHours = 0;
 
           if (availabilityWindows.length > 0 && hasBusyPeriods) {
-            // Find the window containing the pickup
             const pickupWindow = availabilityWindows.find(w => {
               const start = new Date(w.start);
               const end = new Date(w.end);
@@ -1644,12 +1643,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             if (pickupWindow) {
               const windowStart = new Date(pickupWindow.start);
               const windowEnd = new Date(pickupWindow.end);
-              windowDurationHours = (windowEnd.getTime() - windowStart.getTime()) / (1000 * 60 * 60);
+              const windowDurationHours = (windowEnd.getTime() - windowStart.getTime()) / (1000 * 60 * 60);
 
-              // If the window itself is less than 24 hours, allow the short rental
               if (windowDurationHours < 24) {
                 isConstrainedSlot = true;
-                // Set warning instead of error
                 const startStr = windowStart.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
                 const endStr = windowEnd.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
                 const startDateStr = windowStart.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
@@ -1661,13 +1658,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             }
           }
 
-          // Only show minimum 1 day error if NOT a constrained slot
           if (!isConstrainedSlot) {
             newErrors.date = "Il noleggio minimo è di 1 giorno.";
             setShortSlotWarning(null);
           }
         } else {
-          // Clear short slot warning if rental is 1+ days
+          // 1+ calendar days — valid rental
           setShortSlotWarning(null);
         }
 
@@ -4143,6 +4139,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     className="bg-gray-900 border border-gray-700 rounded-2xl p-5 sm:p-8 max-w-2xl w-full max-h-[92vh] overflow-y-auto"
                     onClick={(e) => e.stopPropagation()}
                   >
+                    {/* Header image */}
+                    <img
+                      src="/prime-wash-header.jpeg"
+                      alt="Prime Wash"
+                      className="w-full h-48 sm:h-56 object-cover rounded-xl mb-5"
+                    />
+
                     {/* Header */}
                     <div className="text-center mb-5 sm:mb-6">
                       <h3 className="text-xl sm:text-2xl font-bold text-white tracking-wide mb-1">
