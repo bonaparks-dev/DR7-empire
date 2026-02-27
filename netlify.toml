@@ -9,6 +9,21 @@
   status = 200
 
 [[redirects]]
+  from = "/cars"
+  to = "/supercar-luxury"
+  status = 301
+
+[[redirects]]
+  from = "/urban-cars"
+  to = "/urban"
+  status = 301
+
+[[redirects]]
+  from = "/car-wash-services"
+  to = "/prime-wash"
+  status = 301
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

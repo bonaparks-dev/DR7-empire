@@ -284,7 +284,7 @@ const MyBookings = () => {
                 {lang === 'it' ? 'Noleggio Auto' : 'Rent a Car'}
               </Link>
               <Link
-                to="/car-wash-services"
+                to="/prime-wash"
                 className="inline-block px-5 py-2.5 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors text-sm"
               >
                 {lang === 'it' ? 'Autolavaggio' : 'Car Wash'}

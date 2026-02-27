@@ -164,10 +164,10 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                   Servizi & Mobilità di Lusso
                 </h3>
                 <div className="space-y-1">
-                  <NavLink to="/cars" onClick={onClose} className={navLinkClasses}>
+                  <NavLink to="/supercar-luxury" onClick={onClose} className={navLinkClasses}>
                     <span>Supercar & Luxury Division</span>
                   </NavLink>
-                  <NavLink to="/urban-cars" onClick={onClose} className={navLinkClasses}>
+                  <NavLink to="/urban" onClick={onClose} className={navLinkClasses}>
                     <span>Urban Mobility Division</span>
                   </NavLink>
                   <NavLink to="/corporate-fleet" onClick={onClose} className={navLinkClasses}>
@@ -184,22 +184,31 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 
               {/* PRIME WASH */}
               <div>
-                <NavLink to="/car-wash-services" onClick={onClose}>
+                <NavLink to="/prime-wash" onClick={onClose}>
                   <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-3 px-1 hover:text-gray-300 transition-colors">
                     Prime Wash
                   </h3>
                 </NavLink>
                 <div className="space-y-1">
-                  <NavLink to="/car-wash-services" onClick={onClose} className={navLinkClasses}>
+                  <NavLink to="/prime-wash" onClick={onClose} className={navLinkClasses}>
                     <span>Detailing & Wash</span>
                   </NavLink>
-                  <NavLink to="/car-wash-services#mechanical" onClick={onClose} className={navLinkClasses}>
+                  <NavLink to="/prime-wash#mechanical" onClick={onClose} className={navLinkClasses}>
                     <span>Mechanical & Body Repair</span>
                   </NavLink>
-                  <NavLink to="/car-wash-services#courtesy" onClick={onClose} className={navLinkClasses}>
+                  <NavLink to="/prime-wash#courtesy" onClick={onClose} className={navLinkClasses}>
                     <span>Courtesy Car Service</span>
                   </NavLink>
                 </div>
+              </div>
+
+              {/* CONTATTACI */}
+              <div>
+                <NavLink to="/contact" onClick={onClose}>
+                  <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-3 px-1 hover:text-gray-300 transition-colors">
+                    Contattaci
+                  </h3>
+                </NavLink>
               </div>
 
               {/* DIGITAL INNOVATION */}

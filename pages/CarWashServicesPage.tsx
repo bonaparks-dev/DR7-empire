@@ -4,6 +4,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { useNavigate } from 'react-router-dom';
 import { classifyVehicle, type VehicleCategory } from '../utils/vehicleClassification';
 import { lookupTarga, isValidItalianPlate, normalizePlate, type TargaResult } from '../utils/lookupTarga';
+import SEOHead from '../components/seo/SEOHead';
 
 export interface WashService {
   id: string;
@@ -488,12 +489,13 @@ const TECH_SERVICES: WashService[] = [
     id: 'tech-brake',
     name: 'PRIME BRAKE SERVICE',
     nameEn: 'PRIME BRAKE SERVICE',
-    price: 29,
+    price: 49,
     duration: '30 min',
-    description: 'Controllo e manutenzione freni.',
-    descriptionEn: 'Brake check and maintenance.',
-    features: ['Controllo pastiglie', 'Controllo dischi', 'Verifica liquido freni'],
-    featuresEn: ['Brake pad check', 'Disc check', 'Brake fluid check'],
+    description: 'Cambio pastiglie freni. Anteriore o posteriore, prezzo identico.',
+    descriptionEn: 'Brake pad replacement. Front or rear, same price.',
+    features: ['Smontaggio gruppo freno', 'Sostituzione pastiglie', 'Controllo visivo di disco e pinza', 'Rimontaggio e verifica funzionamento'],
+    featuresEn: ['Brake assembly disassembly', 'Pad replacement', 'Visual disc and caliper check', 'Reassembly and function test'],
+    priceUnit: 'manodopera – anteriore o posteriore',
     image: '/brake.jpeg',
   },
   {
@@ -805,6 +807,12 @@ const CarWashServicesPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black pt-32 pb-32">
+      <SEOHead
+        title="Premium Car Wash Sardinia | Detailing & Luxury Care | DR7 Prime Wash"
+        description="Professional car wash, premium detailing, ceramic coating, and paint protection in Cagliari, Sardinia. Urban and maxi wash packages. DR7 Prime Wash by DR7 Empire."
+        canonical="/prime-wash"
+        jsonLd={{ '@type': 'AutoWash', name: 'DR7 Prime Wash', url: 'https://dr7empire.com/prime-wash', address: { '@type': 'PostalAddress', addressLocality: 'Cagliari', addressRegion: 'CA', addressCountry: 'IT' }, priceRange: '$$' }}
+      />
       {/* Main Tab Navigation: LAVAGGIO | MECCANICA */}
       <div className="container mx-auto px-4 mb-6">
         <div className="flex justify-center gap-4">

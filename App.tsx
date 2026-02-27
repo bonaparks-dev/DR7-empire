@@ -57,6 +57,7 @@ import AuthCallbackPage from './pages/AuthCallbackPage';
 import { DR7AIFloatingButton } from './components/ui/DR7AIChat';
 import MarketingConsentModal from './components/ui/MarketingConsentModal';
 import { supabase } from './supabaseClient';
+import { HelmetProvider } from 'react-helmet-async';
 
 import CancellationPolicyPage from './pages/CancellationPolicyPage';
 import MyBookings from './pages/account/MyBookings';
@@ -67,6 +68,7 @@ import AuthVerifyPage from './pages/AuthVerifyPage';
 import CheckEmailPage from './pages/CheckEmailPage';
 import CarWashServicesPage from './pages/CarWashServicesPage';
 import CarWashBookingPage from './pages/CarWashBookingPage';
+import ContactPage from './pages/ContactPage';
 import MechanicalServicesPage from './pages/MechanicalServicesPage';
 import MechanicalBookingPage from './pages/MechanicalBookingPage';
 import InvestitoriPage from './pages/InvestitoriPage';
@@ -218,12 +220,22 @@ const AnimatedRoutes = () => {
         <Route path="/jets/quote" element={<AviationQuoteRequestPage />} />
         <Route path="/helicopters/quote" element={<AviationQuoteRequestPage />} />
         <Route path="/aviation-quote" element={<AviationQuoteRequestPage />} />
-        <Route path="/car-wash-services" element={<CarWashServicesPage />} />
+        {/* Canonical SEO-friendly routes */}
+        <Route path="/supercar-luxury" element={<RentalPage categoryId="cars" />} />
+        <Route path="/urban" element={<RentalPage categoryId="urban-cars" />} />
+        <Route path="/prime-wash" element={<CarWashServicesPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+
+        {/* Legacy redirects */}
+        <Route path="/cars" element={<Navigate to="/supercar-luxury" replace />} />
+        <Route path="/urban-cars" element={<Navigate to="/urban" replace />} />
+        <Route path="/car-wash-services" element={<Navigate to="/prime-wash" replace />} />
+
         <Route path="/car-wash-booking" element={<CarWashBookingPage />} />
         <Route path="/mechanical-services" element={<MechanicalServicesPage />} />
         <Route path="/mechanical-booking" element={<MechanicalBookingPage />} />
         {RENTAL_CATEGORIES
-          .filter(category => !['car-wash-services', 'mechanical-services', 'membership', 'credit-wallet'].includes(category.id))
+          .filter(category => !['cars', 'urban-cars', 'car-wash-services', 'mechanical-services', 'membership', 'credit-wallet'].includes(category.id))
           .map(category => (
             <Route
               key={category.id}
@@ -378,6 +390,7 @@ const MainContent = () => {
 
 const App = () => {
   return (
+    <HelmetProvider>
     <LanguageProvider>
       <CurrencyProvider>
         <BookingProvider>
@@ -393,6 +406,7 @@ const App = () => {
         </BookingProvider>
       </CurrencyProvider>
     </LanguageProvider>
+    </HelmetProvider>
   );
 };
 

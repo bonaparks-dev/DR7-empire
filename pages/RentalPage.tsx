@@ -8,6 +8,7 @@ import { useBooking } from '../hooks/useBooking';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVerification } from '../hooks/useVerification';
 import { useVehicles } from '../hooks/useVehicles';
+import SEOHead from '../components/seo/SEOHead';
 
 interface RentalPageProps {
   categoryId: 'cars' | 'urban-cars' | 'corporate-fleet' | 'yachts' | 'villas' | 'jets' | 'helicopters';
@@ -380,6 +381,23 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
     return <div className="pt-32 text-center text-white">Category not found.</div>;
   }
 
+  const seoConfig: Record<string, { title: string; description: string; canonical: string; jsonLd?: Record<string, any> }> = {
+    cars: {
+      title: 'Luxury Car Rental Sardinia | Ferrari, Lamborghini, Porsche | DR7 Empire',
+      description: 'Rent Ferrari, Lamborghini, Porsche, and premium supercars in Sardinia. Short-term & long-term luxury car rental with delivery. DR7 Empire Supercar Division.',
+      canonical: '/supercar-luxury',
+      jsonLd: { '@type': 'AutoRental', name: 'DR7 Supercar Division', url: 'https://dr7empire.com/supercar-luxury', areaServed: { '@type': 'State', name: 'Sardegna' } },
+    },
+    'urban-cars': {
+      title: 'Affordable Car Rental Sardinia | Urban Cars | DR7 Empire',
+      description: 'Affordable urban car rental in Sardinia. City cars, compact SUVs, and practical vehicles for daily commutes and weekend trips. DR7 Urban Division.',
+      canonical: '/urban',
+      jsonLd: { '@type': 'AutoRental', name: 'DR7 Urban Division', url: 'https://dr7empire.com/urban', areaServed: { '@type': 'State', name: 'Sardegna' } },
+    },
+  };
+
+  const seo = seoConfig[categoryId];
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -387,6 +405,14 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
     >
+      {seo && (
+        <SEOHead
+          title={seo.title}
+          description={seo.description}
+          canonical={seo.canonical}
+          jsonLd={seo.jsonLd}
+        />
+      )}
       <div className="pt-32 pb-24 bg-black">
         <div className="container mx-auto px-6">
           <motion.div
