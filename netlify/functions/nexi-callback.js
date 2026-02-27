@@ -400,6 +400,27 @@ exports.handler = async (event) => {
               .update({ payment_status: 'pending' })
               .eq('id', purchase.id);
             console.error('Reverted purchase status to pending for retry');
+
+            // Alert admin via WhatsApp that a credit addition failed
+            try {
+              const alertMsg = `⚠️ ERRORE RICARICA WALLET\n\n` +
+                `Cliente: ${purchase.customer_name || 'N/A'}\n` +
+                `Email: ${purchase.customer_email || 'N/A'}\n` +
+                `Pacchetto: ${purchase.package_name}\n` +
+                `Importo pagato: €${purchase.recharge_amount}\n` +
+                `Crediti da aggiungere: €${purchase.received_amount}\n` +
+                `Errore: ${rpcError.message}\n\n` +
+                `Il pagamento è andato a buon fine ma i crediti NON sono stati aggiunti. Verificare manualmente.`;
+              const siteUrl = process.env.URL || 'https://dr7empire.com';
+              await fetch(`${siteUrl}/.netlify/functions/send-whatsapp-notification`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ customMessage: alertMsg }),
+              });
+            } catch (alertErr) {
+              console.error('Failed to send admin alert:', alertErr);
+            }
+
             return { statusCode: 500, body: 'Error adding credits' };
           } else {
             creditsAdded = true;
