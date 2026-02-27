@@ -381,27 +381,87 @@ exports.handler = async (event) => {
         }
 
         // Add credits via atomic RPC BEFORE marking as succeeded
-        // This ensures credits are actually added before we mark the purchase as done
+        // Retry up to 3 times to handle transient database errors
         let creditsAdded = false;
+        let lastError = null;
         if (purchase.user_id && purchase.received_amount) {
-          const { data: rpcResult, error: rpcError } = await supabase.rpc('add_credits', {
-            p_user_id: purchase.user_id,
-            p_amount: purchase.received_amount,
-            p_description: `Ricarica ${purchase.package_name} - Bonus ${purchase.bonus_percentage}%`,
-            p_reference_id: purchase.id,
-            p_reference_type: 'wallet_purchase'
-          });
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            const { data: rpcResult, error: rpcError } = await supabase.rpc('add_credits', {
+              p_user_id: purchase.user_id,
+              p_amount: purchase.received_amount,
+              p_description: `Ricarica ${purchase.package_name} - Bonus ${purchase.bonus_percentage}%`,
+              p_reference_id: purchase.id,
+              p_reference_type: 'wallet_purchase'
+            });
 
-          if (rpcError) {
-            console.error('Error adding credits via RPC:', rpcError);
-            // CRITICAL: Revert purchase status to 'pending' so it can be retried
+            if (!rpcError) {
+              creditsAdded = true;
+              const result = rpcResult?.[0] || rpcResult;
+              console.log(`Credits added via RPC (attempt ${attempt}): €${purchase.received_amount} to user ${purchase.user_id} (new balance: €${result?.new_balance})`);
+              break;
+            }
+
+            lastError = rpcError;
+            console.error(`RPC add_credits attempt ${attempt}/3 failed:`, rpcError.message);
+            if (attempt < 3) {
+              await new Promise(r => setTimeout(r, attempt * 1000)); // 1s, 2s backoff
+            }
+          }
+
+          // If all 3 RPC attempts failed, try direct balance update as last resort
+          if (!creditsAdded) {
+            console.log('All RPC attempts failed, trying direct balance update...');
+            try {
+              // Get current balance
+              const { data: balanceRow } = await supabase
+                .from('user_credit_balance')
+                .select('balance')
+                .eq('user_id', purchase.user_id)
+                .maybeSingle();
+
+              const currentBalance = balanceRow?.balance || 0;
+              const newBalance = currentBalance + purchase.received_amount;
+
+              // Upsert balance
+              const { error: balErr } = await supabase
+                .from('user_credit_balance')
+                .upsert({
+                  user_id: purchase.user_id,
+                  balance: newBalance,
+                  last_updated: new Date().toISOString()
+                }, { onConflict: 'user_id' });
+
+              if (!balErr) {
+                // Record transaction
+                await supabase
+                  .from('credit_transactions')
+                  .insert({
+                    user_id: purchase.user_id,
+                    transaction_type: 'credit',
+                    amount: purchase.received_amount,
+                    balance_after: newBalance,
+                    description: `Ricarica ${purchase.package_name} - Bonus ${purchase.bonus_percentage}% (fallback)`,
+                    reference_id: purchase.id,
+                    reference_type: 'wallet_purchase'
+                  });
+
+                creditsAdded = true;
+                console.log(`Credits added via direct fallback: €${purchase.received_amount} (new balance: €${newBalance})`);
+              }
+            } catch (directErr) {
+              console.error('Direct balance update also failed:', directErr);
+            }
+          }
+
+          // If everything failed, revert to pending and alert admin
+          if (!creditsAdded) {
             await supabase
               .from('credit_wallet_purchases')
               .update({ payment_status: 'pending' })
               .eq('id', purchase.id);
             console.error('Reverted purchase status to pending for retry');
 
-            // Alert admin via WhatsApp that a credit addition failed
+            // Alert admin via WhatsApp
             try {
               const alertMsg = `⚠️ ERRORE RICARICA WALLET\n\n` +
                 `Cliente: ${purchase.customer_name || 'N/A'}\n` +
@@ -409,8 +469,8 @@ exports.handler = async (event) => {
                 `Pacchetto: ${purchase.package_name}\n` +
                 `Importo pagato: €${purchase.recharge_amount}\n` +
                 `Crediti da aggiungere: €${purchase.received_amount}\n` +
-                `Errore: ${rpcError.message}\n\n` +
-                `Il pagamento è andato a buon fine ma i crediti NON sono stati aggiunti. Verificare manualmente.`;
+                `Errore: ${lastError?.message || 'Unknown'}\n\n` +
+                `Il pagamento è andato a buon fine ma i crediti NON sono stati aggiunti dopo 3 tentativi + fallback. Verificare manualmente.`;
               const siteUrl = process.env.URL || 'https://dr7empire.com';
               await fetch(`${siteUrl}/.netlify/functions/send-whatsapp-notification`, {
                 method: 'POST',
@@ -422,10 +482,6 @@ exports.handler = async (event) => {
             }
 
             return { statusCode: 500, body: 'Error adding credits' };
-          } else {
-            creditsAdded = true;
-            const result = rpcResult?.[0] || rpcResult;
-            console.log(`Credits added via RPC: €${purchase.received_amount} to user ${purchase.user_id} (new balance: €${result?.new_balance})`);
           }
         }
 
