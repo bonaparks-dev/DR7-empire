@@ -722,13 +722,29 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // Allow all valid return times based on office hours
     const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
 
-    // Allow any return time as long as it's after pickup datetime
-    // Calendar day billing means no need to restrict return time based on pickup time
+    // 1 rental day = 22h30 → return time capped at pickupTime - 1h30
+    // EXCEPTION: Saturday returns (Friday pickup) — Saturday has limited hours,
+    // so allow all available Saturday return times even if < 22h30
+    const returnDayOfWeek = getDayOfWeek(date);
+    const isSaturdayReturn = returnDayOfWeek === 6;
+
+    const [pickupH, pickupM] = formData.pickupTime.split(':').map(Number);
+    const maxReturnMinutes = (pickupH * 60 + pickupM) - 90; // pickup time - 1h30
+
     return filteredTimes.filter(time => {
       const [hours, minutes] = time.split(':').map(Number);
       const returnDt = new Date(date);
       returnDt.setHours(hours, minutes, 0, 0);
-      return returnDt > pickup;
+      const timeInMinutes = hours * 60 + minutes;
+
+      // Must be after pickup datetime
+      if (returnDt <= pickup) return false;
+
+      // Saturday return: allow all office-hour times (no 22h30 restriction)
+      if (isSaturdayReturn) return true;
+
+      // Other days: cap at pickupTime - 1h30
+      return maxReturnMinutes < 0 || timeInMinutes <= maxReturnMinutes;
     });
   };
 
@@ -897,10 +913,23 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
   }, [isCameraOpen, cameraStream]);
 
-  // Return time auto-calculation: default to same time as pickup
+  // Return time auto-calculation: default to pickupTime - 1h30 (22h30 = 1 day)
+  // On Saturday return: default to pickupTime (Saturday has limited hours)
   useEffect(() => {
     if (formData.pickupTime && formData.pickupDate && formData.returnDate) {
-      setFormData(prev => ({ ...prev, returnTime: formData.pickupTime }));
+      const returnDayOfWeek = getDayOfWeek(formData.returnDate);
+      if (returnDayOfWeek === 6) {
+        // Saturday return — just use pickup time or nearest valid time
+        setFormData(prev => ({ ...prev, returnTime: formData.pickupTime }));
+      } else {
+        // Normal day — pickup time - 1h30
+        const [hours, minutes] = formData.pickupTime.split(':').map(Number);
+        const tempDate = new Date(2000, 0, 1, hours, minutes);
+        tempDate.setHours(tempDate.getHours() - 1);
+        tempDate.setMinutes(tempDate.getMinutes() - 30);
+        const newReturnTime = `${String(tempDate.getHours()).padStart(2, '0')}:${String(tempDate.getMinutes()).padStart(2, '0')}`;
+        setFormData(prev => ({ ...prev, returnTime: newReturnTime }));
+      }
     }
   }, [formData.pickupTime, formData.pickupDate, formData.returnDate, availabilityWindows]);
 
@@ -1611,17 +1640,19 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const diffMs = returnD.getTime() - pickup.getTime();
         const diffHours = diffMs / (1000 * 60 * 60);
 
-        // Calendar day logic: if there's a night between pickup and return, it counts as 1+ days
-        // This matches the billing logic (pickup 17:30, return next day 09:00 = 1 day)
-        const pDate = new Date(formData.pickupDate); pDate.setHours(0, 0, 0, 0);
-        const rDate = new Date(formData.returnDate); rDate.setHours(0, 0, 0, 0);
-        const calendarDays = Math.round((rDate.getTime() - pDate.getTime()) / (1000 * 60 * 60 * 24));
+        // 1 rental day = 22h30 (22.5 hours)
+        // EXCEPTION: Friday pickup → Saturday return is always valid
+        // (Saturday has limited hours, so rental will naturally be < 22h30)
+        const dayLength = 22.5;
+        const rentalDays = diffHours / dayLength;
+        const pickupDayOfWeek = getDayOfWeek(formData.pickupDate);
+        const returnDayOfWeek = getDayOfWeek(formData.returnDate);
+        const isFridayToSaturday = pickupDayOfWeek === 5 && returnDayOfWeek === 6;
 
         if (diffMs <= 0) {
-          // Return is before or equal to pickup
           newErrors.date = "La data di riconsegna deve essere successiva al ritiro.";
-        } else if (calendarDays < 1) {
-          // Same calendar day — check if constrained availability window
+        } else if (rentalDays < 0.99 && !isFridayToSaturday) {
+          // Check if this is a constrained availability window
           let isConstrainedSlot = false;
 
           if (availabilityWindows.length > 0 && hasBusyPeriods) {
@@ -1650,11 +1681,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           }
 
           if (!isConstrainedSlot) {
-            newErrors.date = "Il noleggio minimo è di 1 giorno.";
+            newErrors.date = "Il noleggio minimo è di 1 giorno (22h30).";
             setShortSlotWarning(null);
           }
         } else {
-          // 1+ calendar days — valid rental
           setShortSlotWarning(null);
         }
 
@@ -1665,7 +1695,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         }
 
         // Check Sunday drop-off (CLOSED)
-        const returnDayOfWeek = getDayOfWeek(formData.returnDate);
+        // returnDayOfWeek already declared above
         if (returnDayOfWeek === 0) { // Sunday = 0
           newErrors.returnDate = "Siamo chiusi la domenica. Seleziona un altro giorno per la riconsegna.";
         }
@@ -3095,7 +3125,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           <option value="">Seleziona prima una data</option>
                         )}
                       </select>
-                      <p className="text-xs text-gray-400 mt-1">Stessa ora del ritiro (auto), modificabile</p>
+                      <p className="text-xs text-gray-400 mt-1">Ritiro - 1h30 (auto), modificabile</p>
                     </div>
                   </div>
                   {/* Vehicle Availability Check */}
