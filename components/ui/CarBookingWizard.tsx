@@ -1220,11 +1220,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const calculatedTaxes = 0;
     const calculatedTotal = calculatedSubtotal;
 
-    // Apply membership discount — NOT for special VIP clients (their pricing is already fixed)
-    // VIP clients can only get discounts via codice sconto
-    const discountInfo = isMassimo
-      ? { originalPrice: calculatedTotal, discountPercentage: 0, discountAmount: 0, finalPrice: calculatedTotal, hasDiscount: false }
-      : calculateDiscountedPrice(calculatedTotal, user, 'car_rental');
+    // Apply membership discount (requires active membership for all customers including VIP)
+    const discountInfo = calculateDiscountedPrice(calculatedTotal, user, 'car_rental');
     const membershipTierName = getMembershipTierName(user);
 
     return {
