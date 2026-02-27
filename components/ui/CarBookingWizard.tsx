@@ -695,7 +695,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       addTimes(16 * 60, 17 * 60, 15);  // 16:00 to 17:00
     } else if (dayOfWeek === 6) {
       // Saturday
-      addTimes(9 * 60, 12 * 60, 15);   // 09:00 to 12:00
+      addTimes(9 * 60, 12 * 60 + 30, 15);   // 09:00 to 12:30
     }
 
     // Filter out past times if today
@@ -1712,9 +1712,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               newErrors.returnTime = "Il sabato, la riconsegna in aeroporto deve essere entro le 11:00.";
             }
           } else {
-            // Office: maximum 12:00
-            if (returnTimeInMinutes > 12 * 60) {
-              newErrors.returnTime = "Il sabato, la riconsegna in ufficio deve essere entro le 12:00.";
+            // Office: maximum 12:30
+            if (returnTimeInMinutes > 12 * 60 + 30) {
+              newErrors.returnTime = "Il sabato, la riconsegna in ufficio deve essere entro le 12:30.";
             }
           }
         }
