@@ -75,15 +75,15 @@ const Footer: React.FC = () => {
         {/* Corporate & Legal Links */}
         <div className="flex flex-col items-center justify-center gap-4 text-sm my-8">
           <ul className="flex flex-wrap justify-center gap-x-8 gap-y-2">
-            <li><Link to="/about" className="hover:text-white transition-colors">Chi Siamo</Link></li>
-            <li><Link to="/press" className="hover:text-white transition-colors">Stampa & Media</Link></li>
-            <li><Link to="/careers" className="hover:text-white transition-colors">Lavora con Noi</Link></li>
+            <li><Link to="/about" className="hover:text-white transition-colors">Corporate Overview</Link></li>
+            <li><Link to="/press" className="hover:text-white transition-colors">Press & Media</Link></li>
+            <li><Link to="/careers" className="hover:text-white transition-colors">Careers & Opportunities</Link></li>
           </ul>
           <ul className="flex flex-wrap justify-center gap-x-8 gap-y-2">
-            <li><Link to="/terms" className="hover:text-white transition-colors">Termini di Servizio</Link></li>
-            <li><Link to="/cookie-policy" className="hover:text-white transition-colors">Politica dei Cookie</Link></li>
-            <li><Link to="/privacy" className="hover:text-white transition-colors">Politica sulla Privacy</Link></li>
-            <li><Link to="/cancellation-policy" className="hover:text-white transition-colors">Politica di Cancellazione</Link></li>
+            <li><Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
+            <li><Link to="/cookie-policy" className="hover:text-white transition-colors">Cookie Policy</Link></li>
+            <li><Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+            <li><Link to="/cancellation-policy" className="hover:text-white transition-colors">Cancellation Policy</Link></li>
           </ul>
         </div>
 
