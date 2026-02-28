@@ -80,6 +80,7 @@ const Footer: React.FC = () => {
             <li><Link to="/careers" className="hover:text-white transition-colors">Careers & Opportunities</Link></li>
           </ul>
           <ul className="flex flex-wrap justify-center gap-x-8 gap-y-2">
+            <li><Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
             <li><Link to="/cookie-policy" className="hover:text-white transition-colors">Cookie Policy</Link></li>
             <li><Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
             <li><Link to="/cancellation-policy" className="hover:text-white transition-colors">Cancellation Policy</Link></li>
