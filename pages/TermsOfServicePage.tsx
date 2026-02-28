@@ -64,7 +64,7 @@ const TermsOfServicePage: React.FC = () => {
             <p>L'azienda si impegna comunque a garantire la massima puntualità compatibilmente con gli standard qualitativi e di sicurezza previsti.</p>
 
             <h2>10. Informazioni di Contatto</h2>
-            <p>Per qualsiasi domanda o comunicazione legale riguardante i presenti Termini, si prega di contattare il nostro ufficio legale all'indirizzo <a href="mailto:info@dr7empire.com">info@dr7empire.com</a>.</p>
+            <p>Per qualsiasi domanda o comunicazione legale riguardante i presenti Termini, si prega di contattare il nostro ufficio legale all'indirizzo <a href="mailto:info@dr7.app">info@dr7.app</a>.</p>
         </LegalPageLayout>
     );
 };
