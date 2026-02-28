@@ -158,7 +158,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   // Urban/Corporate fleet availability deadline - last checkout March 25th 2026
   const UTILITARIE_MAX_DATE = '2026-03-25';
-  const isUtilitaria = isUrbanOrCorporate; // All urban + corporate vehicles blocked after March 25
+  const isUtilitaria = vehicleType === 'UTILITARIA';
   const [showMaxDatePopup, setShowMaxDatePopup] = useState(false);
 
   const [step, setStep] = useState(1);
