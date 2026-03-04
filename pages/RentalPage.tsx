@@ -539,7 +539,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
             >
               {categoryData.map(item => {
                 // Marketing "Da X/giorno" prices per category
-                const marketingPrice = categoryId === 'cars' ? 149
+                const marketingPrice = categoryId === 'cars' ? 199
                   : categoryId === 'urban-cars' ? 22
                   : categoryId === 'corporate-fleet'
                     ? (item.name?.toLowerCase().includes('vito') ? 198
