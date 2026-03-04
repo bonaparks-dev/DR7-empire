@@ -538,13 +538,9 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12"
             >
               {categoryData.map(item => {
-                // Marketing "Da X/giorno" prices per category
-                const marketingPrice = categoryId === 'cars' ? 199
-                  : categoryId === 'urban-cars' ? 22
-                  : categoryId === 'corporate-fleet'
-                    ? (item.name?.toLowerCase().includes('vito') ? 198
-                      : item.name?.toLowerCase().includes('ducato') ? 98
-                      : undefined)
+                // Marketing "Da X/giorno" — use daily_rate from database
+                const marketingPrice = (categoryId === 'cars' || categoryId === 'urban-cars' || categoryId === 'corporate-fleet')
+                  ? item.pricePerDay?.eur
                   : undefined;
                 // Tooltip for long rent availability
                 const marketingTooltip = categoryId === 'urban-cars'
