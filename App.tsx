@@ -76,6 +76,7 @@ import TokenPage from './pages/TokenPage';
 import CreditWalletPage from './pages/CreditWalletPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentCancelPage from './pages/PaymentCancelPage';
+import FirmaPage from './pages/FirmaPage';
 
 
 
@@ -398,8 +399,10 @@ const App = () => {
             <VerificationProvider>
               <BrowserRouter>
                 <ScrollToTop />
-                <AuthRedirector />
-                <MainContent />
+                <Routes>
+                  <Route path="/firma/:token" element={<FirmaPage />} />
+                  <Route path="*" element={<><AuthRedirector /><MainContent /></>} />
+                </Routes>
               </BrowserRouter>
             </VerificationProvider>
           </AuthProvider>
