@@ -324,7 +324,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   useEffect(() => {
     const vType = getVehicleType(item, categoryContext);
     if (vType === 'SUPERCAR') {
-      // Supercars default to 50km/day package at €149/day
+      // Supercars default to 50km/day package at €199/day
       setFormData(prev => ({
         ...prev,
         kmPackageType: '50km'
@@ -1128,14 +1128,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const billingDaysCalc = billingDays < 1 ? 1 : billingDays;
 
     // --- RENTAL COST ---
-    // Check if supercar with 50km/day package (flat €149/day, no discounts)
-    const SUPERCAR_50KM_DAILY_RATE = 149;
+    // Check if supercar with 50km/day package (flat €199/day, no discounts)
+    const SUPERCAR_50KM_DAILY_RATE = 199;
     const isSupercar50km = formData.kmPackageType === '50km' && getVehicleType(item, categoryContext) === 'SUPERCAR';
 
     let calculatedRentalCost = billingDays * pricePerDay;
 
     if (isSupercar50km) {
-      // 50km/day supercar package: flat €149/day, no multi-day discounts
+      // 50km/day supercar package: flat €199/day, no multi-day discounts
       calculatedRentalCost = billingDaysCalc * SUPERCAR_50KM_DAILY_RATE;
     } else if (isMassimo && getVehicleType(item, categoryContext) === 'SUPERCAR') {
       // Massimo Runchina: flat €339/day for supercars, NO tiered discounts
@@ -1978,7 +1978,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             cost: kmPackageCost,
             includedKm: includedKm,
             isPremium: isPremiumVehicle(item.name),
-            dailyRate: formData.kmPackageType === '50km' ? 149 : undefined
+            dailyRate: formData.kmPackageType === '50km' ? 199 : undefined
           },
           depositOption: formData.depositOption,
           noDepositSurcharge: noDepositSurcharge,
@@ -2369,7 +2369,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               cost: kmPackageCost,
               includedKm: includedKm,
               isPremium: isPremiumVehicle(item.name),
-              dailyRate: formData.kmPackageType === '50km' ? 149 : undefined
+              dailyRate: formData.kmPackageType === '50km' ? 199 : undefined
             },
             vehicle_id: formData.selectedVehicleId,
             depositOption: formData.depositOption,
@@ -2619,7 +2619,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               cost: kmPackageCost,
               includedKm: includedKm,
               isPremium: isPremiumVehicle(item.name),
-              dailyRate: formData.kmPackageType === '50km' ? 149 : undefined
+              dailyRate: formData.kmPackageType === '50km' ? 199 : undefined
             },
             vehicle_id: formData.selectedVehicleId,
             depositOption: formData.depositOption,
@@ -3529,7 +3529,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               {displayVehicleType === 'SUPERCAR' && !isMassimo ? (
                 // Supercar km package selection: 50km/day or unlimited
                 <div className="space-y-3">
-                  {/* Option 1: 50km/day at €149/day */}
+                  {/* Option 1: 50km/day at €199/day */}
                   <div
                     className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType === '50km'
                       ? 'border-yellow-400 bg-yellow-400/10'
@@ -3541,7 +3541,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         <span className="font-bold text-white">50 km al giorno</span>
                         <p className="text-sm text-gray-400">Ideale per uso cittadino</p>
                       </div>
-                      <span className="font-bold text-yellow-400">{formatPrice(149)}/giorno</span>
+                      <span className="font-bold text-yellow-400">{formatPrice(199)}/giorno</span>
                     </div>
                   </div>
                   {/* Option 2: Unlimited km at standard pricing */}
