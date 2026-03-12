@@ -65,40 +65,38 @@ export async function checkGroupedVehicleAvailability(
     // Actually, usually they share the main name. Let's assume we check for the *name of the first vehicle* essentially?
     // Or we should query for ANY of the names in the group.
 
-    // Simplification: We query bookings where vehicle_name matches ANY of the group's names
-    const names = Array.from(new Set(vehicles.map(v => v.name)));
     const ids = vehicles.map(v => v.id);
 
-    // Fetch bookings for these names
+    // Fetch bookings by vehicle_id (NOT vehicle_name — avoids cross-vehicle contamination)
     const { data: bookings } = await supabase
       .from('bookings')
-      .select('pickup_date, dropoff_date, vehicle_name, booking_details')
-      .in('vehicle_name', names)
-      .neq('status', 'cancelled');
+      .select('pickup_date, dropoff_date, vehicle_id, vehicle_name, booking_details')
+      .in('vehicle_id', ids)
+      .not('status', 'in', '(cancelled,annullata,completed,completata)');
 
     // Fetch reservations for these IDs
     const { data: reservations } = await supabase
       .from('reservations')
-      .select('start_at, end_at, vehicle_id, vehicle_name') // vehicle_name for fallback
+      .select('start_at, end_at, vehicle_id, vehicle_name')
       .in('vehicle_id', ids)
-      .in('status', ['confirmed', 'pending', 'active']);
+      .not('status', 'in', '(cancelled,annullata,completed,completata)');
 
     // 2. Identify Unavailable Vehicles (Specific ID conflicts)
     const blockedVehicleIds = new Set<string>();
     let genericConflictCount = 0;
     const relevantConflicts: BookingConflict[] = [];
 
-    // Process Specific ID conflicts first
+    // Process booking conflicts by vehicle_id (already filtered by vehicle_id in query)
     if (bookings) {
       for (const b of bookings) {
         const p = safeDate(b.pickup_date);
         const d = safeDate(b.dropoff_date);
         if (hasConflict(p, d)) {
-          const bookedId = (b.booking_details as any)?.vehicle_id;
+          // Use top-level vehicle_id (from query), fallback to booking_details
+          const bookedId = b.vehicle_id || (b.booking_details as any)?.vehicle_id;
           if (bookedId && ids.includes(bookedId)) {
             blockedVehicleIds.add(bookedId);
           } else {
-            // Generic conflict (no ID or ID not in list but name matches)
             genericConflictCount++;
           }
           relevantConflicts.push({ pickup_date: b.pickup_date, dropoff_date: b.dropoff_date, vehicle_name: b.vehicle_name });
@@ -227,7 +225,7 @@ export async function getUnavailableDateRanges(vehicleName: string): Promise<Arr
       .from('bookings')
       .select('pickup_date, dropoff_date')
       .eq('vehicle_name', vehicleName)
-      .neq('status', 'cancelled') // Only exclude cancelled bookings
+      .not('status', 'in', '(cancelled,annullata,completed,completata)')
       .order('pickup_date', { ascending: true });
 
     if (error) {
