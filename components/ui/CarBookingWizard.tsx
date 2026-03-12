@@ -3873,6 +3873,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         : 'Senza cauzione (supplemento +30% applicato)'}
                     </p>
                   )}
+                  {!isUrbanOrCorporate && !isMassimo && !isLoyalCustomer && getMembershipTierName(user) !== 'gold' && getMembershipTierName(user) !== 'platinum' && (
+                    <p className="text-green-400">
+                      Cauzione al ritiro: €{getDeposit()} (patente {licenseYears >= 5 ? '≥' : '<'} 5 anni)
+                    </p>
+                  )}
                 </div>
 
                 <div>
