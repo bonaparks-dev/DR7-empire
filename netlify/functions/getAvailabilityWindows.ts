@@ -86,7 +86,7 @@ export const handler: Handler = async (event) => {
     }
 
     try {
-        const { vehicleIds, startDate, endDate } = JSON.parse(event.body || '{}');
+        const { vehicleIds, vehiclePlates, startDate, endDate } = JSON.parse(event.body || '{}');
 
         if (!vehicleIds || vehicleIds.length === 0) {
             return {
@@ -100,8 +100,8 @@ export const handler: Handler = async (event) => {
         const horizonStart = startDate ? new Date(startDate) : now;
         const horizonEnd = endDate ? new Date(endDate) : new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
 
-        // Fetch all bookings for these vehicles in the time range
-        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,service_type&vehicle_id=in.(${vehicleIds.join(',')})&status=not.in.(cancelled,annullata,completed,completata)&dropoff_date=gte.${horizonStart.toISOString()}&pickup_date=lte.${horizonEnd.toISOString()}`;
+        // Fetch bookings by vehicle_id
+        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,service_type&vehicle_id=in.(${vehicleIds.join(',')})&status=not.in.(cancelled,annullata,completed,completata)&dropoff_date=gte.${horizonStart.toISOString()}&pickup_date=lte.${horizonEnd.toISOString()}`;
 
         const bookingsResponse = await fetch(bookingsUrl, {
             headers: {
@@ -111,7 +111,31 @@ export const handler: Handler = async (event) => {
             },
         });
 
-        const bookings = await bookingsResponse.json();
+        let bookings = await bookingsResponse.json();
+
+        // Also fetch bookings by plate (targa) to catch mismatched vehicle_id
+        const plates = vehiclePlates || [];
+        if (plates.length > 0) {
+            const plateBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,service_type&vehicle_plate=in.(${plates.join(',')})&status=not.in.(cancelled,annullata,completed,completata)&dropoff_date=gte.${horizonStart.toISOString()}&pickup_date=lte.${horizonEnd.toISOString()}`;
+            const plateResponse = await fetch(plateBookingsUrl, {
+                headers: {
+                    'apikey': SUPABASE_SERVICE_ROLE_KEY!,
+                    'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            const plateBookings = await plateResponse.json();
+            if (Array.isArray(plateBookings)) {
+                const seenKeys = new Set((bookings || []).map((b: any) => `${b.pickup_date}_${b.dropoff_date}_${b.vehicle_id}`));
+                for (const pb of plateBookings) {
+                    const key = `${pb.pickup_date}_${pb.dropoff_date}_${pb.vehicle_id}`;
+                    if (!seenKeys.has(key)) {
+                        bookings.push(pb);
+                        seenKeys.add(key);
+                    }
+                }
+            }
+        }
 
         // Fetch reservations
         const reservationsUrl = `${SUPABASE_URL}/rest/v1/reservations?select=start_at,end_at,vehicle_id,status&vehicle_id=in.(${vehicleIds.join(',')})&status=not.in.(cancelled,annullata,completed,completata)&end_at=gte.${horizonStart.toISOString()}&start_at=lte.${horizonEnd.toISOString()}`;

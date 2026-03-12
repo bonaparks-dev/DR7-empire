@@ -40,7 +40,7 @@ export function safeDate(dateStr: string | Date): Date {
  * @returns Object with availability info and first available vehicle name/id
  */
 export async function checkGroupedVehicleAvailability(
-  vehicles: Array<{ name: string; id: string }>,
+  vehicles: Array<{ name: string; id: string; plate?: string }>,
   pickupDate: string,
   dropoffDate: string
 ): Promise<{ isAvailable: boolean; availableVehicleName?: string; availableVehicleId?: string; conflicts?: BookingConflict[]; closestAvailableDate?: Date }> {
@@ -66,13 +66,36 @@ export async function checkGroupedVehicleAvailability(
     // Or we should query for ANY of the names in the group.
 
     const ids = vehicles.map(v => v.id);
+    const plates = vehicles.map(v => v.plate).filter(Boolean) as string[];
 
-    // Fetch bookings by vehicle_id (NOT vehicle_name — avoids cross-vehicle contamination)
-    const { data: bookings } = await supabase
+    // Fetch bookings by vehicle_id (primary match)
+    const { data: bookingsByIds } = await supabase
       .from('bookings')
-      .select('pickup_date, dropoff_date, vehicle_id, vehicle_name, booking_details')
+      .select('pickup_date, dropoff_date, vehicle_id, vehicle_plate, vehicle_name, booking_details')
       .in('vehicle_id', ids)
       .not('status', 'in', '(cancelled,annullata,completed,completata)');
+
+    // Also fetch bookings by plate (targa) to catch bookings where vehicle_id might be wrong/missing
+    let bookingsByPlate: any[] = [];
+    if (plates.length > 0) {
+      const { data: plateBookings } = await supabase
+        .from('bookings')
+        .select('pickup_date, dropoff_date, vehicle_id, vehicle_plate, vehicle_name, booking_details')
+        .in('vehicle_plate', plates)
+        .not('status', 'in', '(cancelled,annullata,completed,completata)');
+      bookingsByPlate = plateBookings || [];
+    }
+
+    // Merge and deduplicate bookings (some may match both by id AND plate)
+    const seenBookingKeys = new Set<string>();
+    const bookings: any[] = [];
+    for (const b of [...(bookingsByIds || []), ...bookingsByPlate]) {
+      const key = `${b.pickup_date}_${b.dropoff_date}_${b.vehicle_id || b.vehicle_plate}`;
+      if (!seenBookingKeys.has(key)) {
+        seenBookingKeys.add(key);
+        bookings.push(b);
+      }
+    }
 
     // Fetch reservations for these IDs
     const { data: reservations } = await supabase
@@ -86,14 +109,32 @@ export async function checkGroupedVehicleAvailability(
     let genericConflictCount = 0;
     const relevantConflicts: BookingConflict[] = [];
 
-    // Process booking conflicts by vehicle_id (already filtered by vehicle_id in query)
+    // Build plate-to-id lookup for resolving bookings matched by plate
+    const plateToId = new Map<string, string>();
+    for (const v of vehicles) {
+      if (v.plate) plateToId.set(v.plate.toLowerCase().trim(), v.id);
+    }
+
+    // Process booking conflicts — match by vehicle_id first, then by plate (targa)
     if (bookings) {
       for (const b of bookings) {
         const p = safeDate(b.pickup_date);
         const d = safeDate(b.dropoff_date);
         if (hasConflict(p, d)) {
-          // Use top-level vehicle_id (from query), fallback to booking_details
-          const bookedId = b.vehicle_id || (b.booking_details as any)?.vehicle_id;
+          // Resolve which vehicle this booking belongs to: vehicle_id > plate > booking_details
+          let bookedId = b.vehicle_id;
+          if (!bookedId || !ids.includes(bookedId)) {
+            // Try matching by plate (targa)
+            const bookingPlate = (b.vehicle_plate || (b.booking_details as any)?.vehicle?.plate || '').toLowerCase().trim();
+            if (bookingPlate && plateToId.has(bookingPlate)) {
+              bookedId = plateToId.get(bookingPlate)!;
+            }
+          }
+          if (!bookedId || !ids.includes(bookedId)) {
+            // Last resort: booking_details.vehicle_id
+            bookedId = (b.booking_details as any)?.vehicle_id;
+          }
+
           if (bookedId && ids.includes(bookedId)) {
             blockedVehicleIds.add(bookedId);
           } else {

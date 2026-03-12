@@ -366,6 +366,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             vehicleIds,
+            vehiclePlates: (item as any).plates || [],
             startDate: new Date().toISOString(),
             endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString()
           })
@@ -963,7 +964,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           // We assume item.vehicleIds and item.displayNames are aligned by index
           const vehicleObjects = (item.vehicleIds || []).map((id: string, index: number) => ({
             id,
-            name: item.displayNames?.[index] || item.name // fallback to main name if specific name missing
+            name: item.displayNames?.[index] || item.name, // fallback to main name if specific name missing
+            plate: (item as any).plates?.[index] || undefined // targa for precise matching
           }));
 
           // Check availability for all vehicles in the group

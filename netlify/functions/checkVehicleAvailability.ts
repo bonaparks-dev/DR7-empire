@@ -121,8 +121,13 @@ export const handler: Handler = async (event) => {
             ? [targetVehicleId]
             : vehicles.map((v: any) => v.id);
 
-        // Fetch bookings for ALL these vehicles
-        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_name&status=not.in.(cancelled,annullata,completed,completata)&vehicle_id=in.(${vehicleIds.join(',')})&order=pickup_date.asc`;
+        // Get plates for the target vehicles (for plate-based matching)
+        const targetPlates = targetVehicleId
+            ? vehicles.filter((v: any) => v.id === targetVehicleId).map((v: any) => v.plate).filter(Boolean)
+            : vehicles.map((v: any) => v.plate).filter(Boolean);
+
+        // Fetch bookings by vehicle_id
+        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name&status=not.in.(cancelled,annullata,completed,completata)&vehicle_id=in.(${vehicleIds.join(',')})&order=pickup_date.asc`;
 
         const bookingsResponse = await fetch(bookingsUrl, {
             headers: {
@@ -132,7 +137,37 @@ export const handler: Handler = async (event) => {
             },
         });
 
-        const bookings = await bookingsResponse.json();
+        let bookings = await bookingsResponse.json();
+
+        // Also fetch bookings by plate (targa) to catch mismatched vehicle_id
+        if (targetPlates.length > 0) {
+            const plateBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name&status=not.in.(cancelled,annullata,completed,completata)&vehicle_plate=in.(${targetPlates.join(',')})&order=pickup_date.asc`;
+            const plateResponse = await fetch(plateBookingsUrl, {
+                headers: {
+                    'apikey': SUPABASE_SERVICE_ROLE_KEY!,
+                    'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            const plateBookings = await plateResponse.json();
+
+            // Merge and deduplicate
+            if (Array.isArray(plateBookings)) {
+                const seenKeys = new Set((bookings || []).map((b: any) => `${b.pickup_date}_${b.dropoff_date}_${b.vehicle_id}`));
+                for (const pb of plateBookings) {
+                    const key = `${pb.pickup_date}_${pb.dropoff_date}_${pb.vehicle_id}`;
+                    if (!seenKeys.has(key)) {
+                        // Map plate booking to the correct vehicle_id
+                        const plateVehicle = vehicles.find((v: any) => v.plate === pb.vehicle_plate);
+                        if (plateVehicle) {
+                            pb.vehicle_id = plateVehicle.id;
+                        }
+                        bookings.push(pb);
+                        seenKeys.add(key);
+                    }
+                }
+            }
+        }
 
         // Fetch reservations for ALL these vehicles
         const reservationsUrl = `${SUPABASE_URL}/rest/v1/reservations?select=start_at,end_at,vehicle_id&vehicle_id=in.(${vehicleIds.join(',')})&status=not.in.(cancelled,annullata,completed,completata)&order=start_at.asc`;

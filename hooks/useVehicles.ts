@@ -37,6 +37,7 @@ interface TransformedVehicle {
   }>;
   vehicleIds?: string[]; // For grouped vehicles, stores all actual vehicle IDs
   displayNames?: string[]; // For grouped vehicles, stores all actual vehicle display names
+  plates?: string[]; // For grouped vehicles, stores all license plates (targa)
 }
 
 // Helper function to get vehicle image based on name
@@ -481,6 +482,7 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
               ...firstAvailable, // Use the available one's ID and details (image, name, etc)
               vehicleIds: group.originals.map(v => v.id),
               displayNames: group.originals.map(v => v.display_name),
+              plates: group.originals.map(v => v.plate).filter(Boolean),
               // A group is available if ANY member is available
               available: group.members.some(v => v.available)
             };
