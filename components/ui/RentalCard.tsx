@@ -32,8 +32,8 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
   const isHelicopter = item.id.startsWith('heli');
   const isYacht = item.id.startsWith('yacht');
   const isCar = item.id.startsWith('car-');
-  // Hide booking button for vehicles with unavailable_from in metadata
-  const isBlockedCar = isCar && (item as any).unavailableFrom;
+  // Hide booking button for vehicles with booking_disabled flag in metadata
+  const isBlockedCar = isCar && (item as any).bookingDisabled;
 
   // Jets, yachts, and helicopters use landscape format, others use vertical format
   const imageAspectRatio = (isJet || isYacht || isHelicopter) ? 'aspect-[16/9]' : 'aspect-[9/16]';
