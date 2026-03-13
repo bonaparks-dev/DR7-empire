@@ -3,6 +3,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getCorsOrigin } from './utils/cors';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 function getCorsHeaders(origin?: string) {
   return {
@@ -11,25 +13,71 @@ function getCorsHeaders(origin?: string) {
   };
 }
 
-const SYSTEM_PROMPT = `Sei l'Assistente AI di DR7, un consulente esperto e disponibile per i servizi di lusso offerti dalla società Dubai Rent 7.0 S.p.A.
+// Fetch live vehicle prices from database
+async function getVehiclePrices(): Promise<string> {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    return '(Prezzi non disponibili - configurazione mancante)';
+  }
+  try {
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/vehicles?select=display_name,daily_rate,price_resident_daily,price_nonresident_daily,category,status,metadata&status=neq.retired&order=category.asc,display_name.asc`,
+      {
+        headers: {
+          'apikey': SUPABASE_SERVICE_ROLE_KEY,
+          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    const vehicles = await response.json();
+    if (!Array.isArray(vehicles) || vehicles.length === 0) {
+      return '(Nessun veicolo trovato)';
+    }
 
-## FLOTTA VEICOLI DISPONIBILE (inventario reale):
+    const exotic: string[] = [];
+    const urban: string[] = [];
 
-**AUTO SPORTIVE E SUPERCAR** (disponibili su /cars):
-- Audi RS3 (Verde e Rossa) - 400Cv, 0-100 in 3.8s - da €40/giorno
-- Mercedes A45 S AMG - 421Cv, 0-100 in 3.9s - €70/giorno
-- BMW M3 Competition - 510Cv, 0-100 in 3.9s - €70/giorno
-- BMW M4 Competition - 510Cv, 0-100 in 3.8s - €80/giorno
-- Mercedes C63 S AMG - 510Cv, 0-100 in 3.9s - €100/giorno
-- Porsche 992 Carrera 4S - 450Cv, 0-100 in 3.6s - €150/giorno
-- Porsche Macan GTS - 440Cv - €80/giorno
-- Mercedes GLE 63 AMG - 612Cv - €80/giorno
+    for (const v of vehicles) {
+      // Skip vehicles with booking disabled
+      if (v.metadata?.booking_disabled) continue;
 
-**AUTO URBANE E VAN** (disponibili su /urban-cars):
-- Fiat Panda Benzina/Diesel - da €29.90/giorno
-- Renault Captur - €44.90/giorno
-- Mercedes V Class VIP DR7 (7 posti) - €249/giorno
-- Furgone DR7 Fiat Ducato Maxi (9 posti) - €79/giorno
+      const price = v.price_resident_daily || v.daily_rate;
+      const priceNR = v.price_nonresident_daily;
+      const hasDual = priceNR && priceNR !== price;
+
+      const priceStr = hasDual
+        ? `Residenti €${price}/giorno, Non Residenti €${priceNR}/giorno`
+        : `da €${price}/giorno`;
+
+      const line = `- ${v.display_name} - ${priceStr}`;
+
+      if (v.category === 'exotic') {
+        exotic.push(line);
+      } else {
+        urban.push(line);
+      }
+    }
+
+    let result = '';
+    if (exotic.length > 0) {
+      result += `**AUTO SPORTIVE E SUPERCAR** (disponibili su /cars):\n${exotic.join('\n')}\n\n`;
+    }
+    if (urban.length > 0) {
+      result += `**AUTO URBANE E VAN** (disponibili su /urban-cars):\n${urban.join('\n')}`;
+    }
+    return result;
+  } catch (error) {
+    console.error('Error fetching vehicle prices for AI:', error);
+    return '(Errore nel recupero prezzi)';
+  }
+}
+
+function buildSystemPrompt(vehiclePrices: string): string {
+  return `Sei l'Assistente AI di DR7, un consulente esperto e disponibile per i servizi di lusso offerti dalla società Dubai Rent 7.0 S.p.A.
+
+## FLOTTA VEICOLI DISPONIBILE (prezzi reali dal database):
+
+${vehiclePrices}
 
 **ALTRI SERVIZI:**
 - **Yacht**: Esperienze di lusso nel Mediterraneo (/yachts)
@@ -41,12 +89,19 @@ const SYSTEM_PROMPT = `Sei l'Assistente AI di DR7, un consulente esperto e dispo
 - **Investimenti**: Club Azionisti DR7 - Opportunità di partecipazione al capitale sociale (/investitori)
 
 ## IL TUO RUOLO:
-1. Fornire informazioni accurate SOLO sui veicoli e servizi realmente disponibili
+1. Fornire informazioni generali SOLO sui veicoli e servizi realmente disponibili
 2. NON menzionare mai Ferrari, Lamborghini, McLaren, Bugatti o Rolls Royce (non disponibili)
 3. Guidare gli utenti alle pagine corrette con link in formato markdown [testo](url)
-4. Rispondere a domande su prezzi, specifiche tecniche e disponibilità
-5. Informare sulle opportunità di investimento quando richiesto
-6. Essere professionale, genuino e competente
+4. Informare sulle opportunità di investimento quando richiesto
+5. Essere professionale, genuino e competente
+
+## REGOLE CRITICHE SUI PREZZI:
+- NON fare MAI preventivi o calcoli di prezzo (es. "3 giorni = €X")
+- NON moltiplicare MAI i prezzi per il numero di giorni
+- Puoi indicare SOLO il prezzo giornaliero BASE come mostrato sopra, specificando sempre che è INDICATIVO
+- Per il prezzo esatto, SEMPRE rimandare alla pagina di prenotazione: [Prenota qui](/cars) o [Auto urbane](/urban-cars)
+- Il prezzo finale dipende da periodo, durata, assicurazione e servizi aggiuntivi
+- Se il cliente chiede "quanto costa per X giorni", rispondi: "Il prezzo varia in base al periodo. Per un preventivo preciso, procedi con la prenotazione su [la nostra pagina](/cars) dove vedrai il prezzo finale esatto."
 
 ## INVESTIMENTI E AZIONARIATO:
 Dubai Rent 7.0 S.p.A. offre opportunità di partecipazione al capitale sociale tramite il Club Azionisti DR7:
@@ -73,6 +128,7 @@ Dubai Rent 7.0 S.p.A. offre opportunità di partecipazione al capitale sociale t
 - /membership - Membership VIP
 - /token - DR7 Token e crypto
 - /investitori - Opportunità investimento azionario`;
+}
 
 export const handler: Handler = async (event) => {
   if (event.httpMethod === "OPTIONS") {
@@ -124,10 +180,14 @@ export const handler: Handler = async (event) => {
       },
     ];
 
+    // Fetch live prices from database
+    const vehiclePrices = await getVehiclePrices();
+    const systemPrompt = buildSystemPrompt(vehiclePrices);
+
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 1500,
-      system: SYSTEM_PROMPT + `\n\nRispondi SEMPRE in italiano.`,
+      system: systemPrompt + `\n\nRispondi SEMPRE in italiano.\n\nIMPORTANTE: Aggiungi SEMPRE alla fine di ogni risposta che include prezzi questa nota:\n"⚠️ *I prezzi indicati sono puramente indicativi. Il prezzo definitivo viene calcolato al momento della prenotazione e può variare in base a periodo, durata e disponibilità. Solo il prezzo mostrato nella pagina di prenotazione è vincolante.*"`,
       messages,
     });
 

@@ -93,7 +93,7 @@ const DR7AIChat: React.FC<DR7AIChatProps> = ({ isOpen, onClose }) => {
       // Welcome message
       const welcomeMessage: Message = {
         id: '1',
-        content: "Benvenuto in DR7 Empire.\nCome posso assisterLa?",
+        content: "Benvenuto in DR7 Empire.\nCome posso assisterLa?\n\n⚠️ _Questo assistente è un'intelligenza artificiale. I prezzi e le informazioni fornite sono puramente indicativi e non vincolanti. Solo il prezzo mostrato nella pagina di prenotazione fa fede._",
         isUser: false,
         timestamp: new Date()
       };

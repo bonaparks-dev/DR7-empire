@@ -9,10 +9,11 @@ const sections = [
   { id: 'pagamenti', num: '4', title: 'Prenotazioni e Pagamenti' },
   { id: 'proprietari', num: '5', title: 'Ruolo dei Proprietari Terzi' },
   { id: 'responsabilita', num: '6', title: 'Limitazione di Responsabilità' },
-  { id: 'legge', num: '7', title: 'Legge Applicabile' },
-  { id: 'modifiche', num: '8', title: 'Modifiche ai Termini' },
-  { id: 'policy-operativa', num: '9', title: 'Policy Operativa' },
-  { id: 'contatto', num: '10', title: 'Informazioni di Contatto' },
+  { id: 'assistente-ai', num: '7', title: 'Assistente Virtuale (AI)' },
+  { id: 'legge', num: '8', title: 'Legge Applicabile' },
+  { id: 'modifiche', num: '9', title: 'Modifiche ai Termini' },
+  { id: 'policy-operativa', num: '10', title: 'Policy Operativa' },
+  { id: 'contatto', num: '11', title: 'Informazioni di Contatto' },
 ];
 
 const TermsOfServicePage: React.FC = () => {
@@ -263,6 +264,46 @@ const TermsOfServicePage: React.FC = () => {
 
           <div className="border-t border-gray-800/60 mb-16" />
 
+          {/* Section 7: AI Assistant */}
+          <section
+            id="assistente-ai"
+            ref={el => { sectionRefs.current['assistente-ai'] = el; }}
+            className="scroll-mt-32 mb-16"
+          >
+            <div className="flex items-baseline gap-4 mb-6">
+              <span className="text-5xl font-bold text-white/10">07</span>
+              <h2 className="text-2xl font-semibold text-white">Assistente Virtuale (AI)</h2>
+            </div>
+            <div className="space-y-4 text-gray-400 leading-relaxed">
+              <p>Il sito web di DR7 Empire mette a disposizione un assistente virtuale basato su intelligenza artificiale (di seguito "Assistente AI") a scopo puramente informativo e orientativo.</p>
+              <p className="font-semibold text-white">L'utente prende atto e accetta che:</p>
+              <ul className="space-y-3 ml-1">
+                <li className="flex items-start gap-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white/30 mt-2 shrink-0" />
+                  <span>L'Assistente AI è un sistema automatizzato che può generare risposte imprecise, incomplete o errate, inclusi prezzi, disponibilità e specifiche tecniche dei veicoli.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white/30 mt-2 shrink-0" />
+                  <span><strong className="text-white">Le informazioni fornite dall'Assistente AI, inclusi prezzi e preventivi, non sono in alcun modo vincolanti</strong> e non costituiscono un'offerta contrattuale ai sensi degli artt. 1326 e seguenti del Codice Civile italiano.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white/30 mt-2 shrink-0" />
+                  <span><strong className="text-white">L'unico prezzo vincolante è quello visualizzato e confermato nella pagina di prenotazione</strong> al momento della finalizzazione dell'ordine.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white/30 mt-2 shrink-0" />
+                  <span>DR7 Empire declina ogni responsabilità per decisioni prese dall'utente sulla base delle informazioni fornite dall'Assistente AI.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white/30 mt-2 shrink-0" />
+                  <span>L'utente è invitato a verificare sempre le informazioni attraverso la pagina di prenotazione ufficiale o contattando direttamente il servizio clienti.</span>
+                </li>
+              </ul>
+            </div>
+          </section>
+
+          <div className="border-t border-gray-800/60 mb-16" />
+
           {/* Section 7 */}
           <section
             id="legge"
@@ -270,7 +311,7 @@ const TermsOfServicePage: React.FC = () => {
             className="scroll-mt-28 mb-16"
           >
             <div className="flex items-baseline gap-4 mb-6">
-              <span className="text-5xl font-bold text-white/10">07</span>
+              <span className="text-5xl font-bold text-white/10">08</span>
               <h2 className="text-2xl font-semibold text-white">Legge Applicabile e Foro Competente</h2>
             </div>
             <div className="space-y-4 text-gray-400 leading-relaxed">
@@ -287,7 +328,7 @@ const TermsOfServicePage: React.FC = () => {
             className="scroll-mt-28 mb-16"
           >
             <div className="flex items-baseline gap-4 mb-6">
-              <span className="text-5xl font-bold text-white/10">08</span>
+              <span className="text-5xl font-bold text-white/10">09</span>
               <h2 className="text-2xl font-semibold text-white">Modifiche ai Termini e ai Servizi</h2>
             </div>
             <div className="space-y-4 text-gray-400 leading-relaxed">
@@ -304,7 +345,7 @@ const TermsOfServicePage: React.FC = () => {
             className="scroll-mt-28 mb-16"
           >
             <div className="flex items-baseline gap-4 mb-6">
-              <span className="text-5xl font-bold text-white/10">09</span>
+              <span className="text-5xl font-bold text-white/10">10</span>
               <h2 className="text-2xl font-semibold text-white">Policy Operativa – Tempi di Servizio e Consegna</h2>
             </div>
             <div className="space-y-4 text-gray-400 leading-relaxed">
@@ -348,7 +389,7 @@ const TermsOfServicePage: React.FC = () => {
             className="scroll-mt-28 mb-16"
           >
             <div className="flex items-baseline gap-4 mb-6">
-              <span className="text-5xl font-bold text-white/10">10</span>
+              <span className="text-5xl font-bold text-white/10">11</span>
               <h2 className="text-2xl font-semibold text-white">Informazioni di Contatto</h2>
             </div>
             <div className="space-y-4 text-gray-400 leading-relaxed">
