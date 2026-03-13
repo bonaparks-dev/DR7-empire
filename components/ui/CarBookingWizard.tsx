@@ -274,6 +274,26 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [isLoadingWindows, setIsLoadingWindows] = useState(false);
   const [hasBusyPeriods, setHasBusyPeriods] = useState(false); // Track if there are actual bookings
 
+  // Compute max bookable pickup date from availability windows
+  // If there's a block (e.g., vehicle unavailable from March 16), the last free window's end becomes the max date
+  const maxBookableDate = useMemo(() => {
+    if (availabilityWindows.length === 0 || !hasBusyPeriods) return undefined;
+    // Find the last free window — its end is the latest possible return
+    const lastWindow = availabilityWindows[availabilityWindows.length - 1];
+    const lastEnd = new Date(lastWindow.end);
+    // Max pickup = lastEnd - 1 day (minimum 1-day rental)
+    const maxPickup = new Date(lastEnd);
+    maxPickup.setDate(maxPickup.getDate() - 1);
+    return maxPickup.toISOString().split('T')[0];
+  }, [availabilityWindows, hasBusyPeriods]);
+
+  // Max return date from availability windows
+  const maxReturnDate = useMemo(() => {
+    if (availabilityWindows.length === 0 || !hasBusyPeriods) return undefined;
+    const lastWindow = availabilityWindows[availabilityWindows.length - 1];
+    return new Date(lastWindow.end).toISOString().split('T')[0];
+  }, [availabilityWindows, hasBusyPeriods]);
+
   // Credit wallet state
   const [creditBalance, setCreditBalance] = useState<number>(0);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
@@ -3013,7 +3033,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         min={earliestAvailability?.earliestAvailableDate && earliestAvailability.earliestAvailableDate > today
                           ? earliestAvailability.earliestAvailableDate
                           : today}
-                        max={isUtilitaria ? UTILITARIE_MAX_DATE : undefined}
+                        max={isUtilitaria ? UTILITARIE_MAX_DATE : maxBookableDate}
                         required
                         className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors cursor-pointer ${errors.pickupDate || (formData.pickupDate && availabilityError)
                           ? 'border-red-500 focus:border-red-400'
@@ -3115,7 +3135,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           handleChange(e);
                         }}
                         min={formData.pickupDate ? (() => { const d = new Date(formData.pickupDate); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })() : today}
-                        max={isUtilitaria ? UTILITARIE_MAX_DATE : undefined}
+                        max={isUtilitaria ? UTILITARIE_MAX_DATE : maxReturnDate}
                         disabled={!formData.pickupDate || !formData.pickupTime}
                         required
                         className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors ${!formData.pickupDate || !formData.pickupTime
