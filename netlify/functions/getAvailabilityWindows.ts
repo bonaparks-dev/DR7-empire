@@ -100,6 +100,17 @@ export const handler: Handler = async (event) => {
         const horizonStart = startDate ? new Date(startDate) : now;
         const horizonEnd = endDate ? new Date(endDate) : new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
 
+        // Fetch vehicle metadata for unavailability blocks
+        const vehiclesMetaUrl = `${SUPABASE_URL}/rest/v1/vehicles?select=id,metadata&id=in.(${vehicleIds.join(',')})`;
+        const vehiclesMetaResponse = await fetch(vehiclesMetaUrl, {
+            headers: {
+                'apikey': SUPABASE_SERVICE_ROLE_KEY!,
+                'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                'Content-Type': 'application/json',
+            },
+        });
+        const vehiclesMeta = await vehiclesMetaResponse.json();
+
         // Fetch bookings by vehicle_id
         const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,service_type&vehicle_id=in.(${vehicleIds.join(',')})&status=not.in.(cancelled,annullata,completed,completata)&dropoff_date=gte.${horizonStart.toISOString()}&pickup_date=lte.${horizonEnd.toISOString()}`;
 
@@ -163,6 +174,24 @@ export const handler: Handler = async (event) => {
         // Initialize all vehicles with empty intervals
         for (const vehicleId of vehicleIds) {
             busyByVehicle.set(vehicleId, []);
+        }
+
+        // Add maintenance/unavailability blocks from vehicle metadata
+        if (vehiclesMeta && Array.isArray(vehiclesMeta)) {
+            for (const vehicle of vehiclesMeta) {
+                if (!vehicle.metadata) continue;
+                const { unavailable_from, unavailable_until, unavailable_from_time, unavailable_until_time } = vehicle.metadata;
+                if (!unavailable_from) continue;
+                const fromTime = unavailable_from_time || '00:00';
+                const untilTime = unavailable_until_time || '23:59';
+                const blockStart = new Date(`${unavailable_from}T${fromTime}:00`);
+                const blockEnd = unavailable_until
+                    ? new Date(`${unavailable_until}T${untilTime}:00`)
+                    : new Date('2099-12-31T23:59:00');
+                const vehicleBusy = busyByVehicle.get(vehicle.id) || [];
+                vehicleBusy.push({ start: blockStart, end: blockEnd });
+                busyByVehicle.set(vehicle.id, vehicleBusy);
+            }
         }
 
         // Add bookings to respective vehicles

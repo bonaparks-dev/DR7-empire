@@ -28,7 +28,7 @@ CREATE POLICY "Users can delete own pending bookings" ON pending_nexi_bookings
   FOR DELETE TO authenticated
   USING ((booking_data->>'user_id')::uuid = auth.uid());
 
--- Auto-cleanup: pending records older than 24 hours (optional cron job)
--- SELECT cron.schedule('cleanup-pending-nexi', '0 */6 * * *', $$
---   DELETE FROM pending_nexi_bookings WHERE created_at < NOW() - INTERVAL '24 hours';
--- $$);
+-- Auto-cleanup: pending records older than 24 hours
+SELECT cron.schedule('cleanup-pending-nexi', '0 */6 * * *', $$
+  DELETE FROM pending_nexi_bookings WHERE created_at < NOW() - INTERVAL '24 hours';
+$$);

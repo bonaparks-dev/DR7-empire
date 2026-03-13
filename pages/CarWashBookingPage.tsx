@@ -1144,6 +1144,10 @@ const CarWashBookingPage: React.FC = () => {
         if (nexiData.success && nexiData.paymentUrl) {
           console.log('Redirecting to Nexi:', nexiData.paymentUrl);
           isRedirecting = true;
+          try {
+            sessionStorage.setItem('dr7_pending_order', nexiOrderId);
+            sessionStorage.setItem('dr7_pending_type', 'booking');
+          } catch (e) { /* sessionStorage may be unavailable */ }
           window.location.href = nexiData.paymentUrl;
           return;
         } else {

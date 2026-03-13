@@ -82,10 +82,8 @@ const MembershipEnrollmentPage: React.FC = () => {
                 throw new Error(`Failed to save purchase record: ${dbError.message}`);
             }
 
-            // 2. Generate nexi_order_id
-            const timestamp = Date.now().toString().substring(5);
-            const random = Math.floor(100 + Math.random() * 900).toString();
-            const nexiOrderId = `${timestamp}${random}`;
+            // 2. Generate nexi_order_id (same format as car/carwash bookings)
+            const nexiOrderId = `DR7${Date.now()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
             // 3. Update with nexi_order_id
             await supabase

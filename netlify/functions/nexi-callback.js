@@ -66,7 +66,7 @@ function parseCallback(event) {
   // Old XPay uses: codTrans, esito (OK/KO), codAut, mac, importo, divisa, messaggio
   const orderId = rawParams.orderId || rawParams.codTrans || rawParams.order_id || null;
 
-  let isSuccess = false;
+  let isSuccess = false; // May be overridden by server-side verification for HPP v1
   if (rawParams.operationResult) {
     // HPP v1: AUTHORIZED, EXECUTED, DECLINED, DENIED, CANCELLED, etc.
     isSuccess = rawParams.operationResult === 'AUTHORIZED' || rawParams.operationResult === 'EXECUTED';
@@ -122,9 +122,53 @@ exports.handler = async (event) => {
 
       console.log('MAC verified successfully');
     } else {
-      // HPP v1: Verify using X-API-KEY header if present, or accept trusted notification
-      // Nexi S2S notifications come from Nexi's servers to our notificationUrl
-      console.log('HPP API v1 notification — MAC not required');
+      // HPP v1: Verify payment by calling Nexi's order status API (server-to-server)
+      // This prevents forged callbacks — we trust Nexi's API response, not the callback body
+      const apiKey = process.env.NEXI_API_KEY;
+      if (!apiKey) {
+        console.error('NEXI_API_KEY not configured — cannot verify HPP callback');
+        return { statusCode: 500, body: 'API key not configured' };
+      }
+
+      const nexiEnv = process.env.NEXI_ENVIRONMENT || 'production';
+      const verifyBaseUrl = nexiEnv === 'production'
+        ? 'https://xpay.nexigroup.com/api/phoenix-0.0/psp/api/v1'
+        : 'https://xpaysandbox.nexigroup.com/api/phoenix-0.0/psp/api/v1';
+
+      const correlationId = crypto.randomBytes(16).toString('hex').replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
+
+      try {
+        const verifyResponse = await fetch(`${verifyBaseUrl}/orders/${orderId}`, {
+          method: 'GET',
+          headers: {
+            'X-API-KEY': apiKey,
+            'Correlation-Id': correlationId,
+          },
+        });
+
+        if (!verifyResponse.ok) {
+          console.error('Nexi order verification failed:', verifyResponse.status);
+          return { statusCode: 400, body: 'Order verification failed' };
+        }
+
+        const verifyData = await verifyResponse.json();
+        console.log('Nexi order verification response:', JSON.stringify(verifyData, null, 2));
+
+        // Override isSuccess with the verified status from Nexi's API
+        const verifiedResult = verifyData.operationResult || verifyData.orderStatus?.lastOperationResult;
+        if (verifiedResult) {
+          const verifiedSuccess = verifiedResult === 'AUTHORIZED' || verifiedResult === 'EXECUTED';
+          if (verifiedSuccess !== isSuccess) {
+            console.warn(`Callback claimed ${isSuccess ? 'success' : 'failure'} but Nexi API says ${verifiedSuccess ? 'success' : 'failure'} — using verified result`);
+            isSuccess = verifiedSuccess;
+          }
+        }
+
+        console.log('HPP API v1 notification verified via order status API');
+      } catch (verifyErr) {
+        console.error('Error verifying order with Nexi API:', verifyErr.message);
+        return { statusCode: 500, body: 'Order verification error' };
+      }
     }
 
     if (!orderId) {

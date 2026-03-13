@@ -52,6 +52,7 @@ const getVehicleImage = (name: string): string => {
   if (lowerName.includes('c63')) return '/c63.jpeg';
   if (lowerName.includes('a45')) return '/mercedes_amg.jpeg';
   if (lowerName.includes('cayenne')) return '/cayenne.jpeg';
+  if (lowerName.includes('macan')) return '/macan.jpeg';
   if (lowerName.includes('gle')) return '/mercedes-gle.jpeg';
   if (lowerName.includes('m4')) return '/bmw-m4.jpeg';
   if (lowerName.includes('ducato')) return '/ducato.jpeg';

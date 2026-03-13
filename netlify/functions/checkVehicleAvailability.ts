@@ -95,7 +95,7 @@ export const handler: Handler = async (event) => {
 
         // Get ALL vehicles with this name (not just the first one!)
         const vehiclesResponse = await fetch(
-            `${SUPABASE_URL}/rest/v1/vehicles?select=id,plate&display_name=eq.${encodeURIComponent(vehicleName)}`,
+            `${SUPABASE_URL}/rest/v1/vehicles?select=id,plate,metadata&display_name=eq.${encodeURIComponent(vehicleName)}`,
             {
                 headers: {
                     'apikey': SUPABASE_SERVICE_ROLE_KEY!,
@@ -188,6 +188,25 @@ export const handler: Handler = async (event) => {
         // Initialize all vehicles with empty intervals
         for (const vehicleId of vehicleIds) {
             busyByVehicle.set(vehicleId, []);
+        }
+
+        // Add maintenance/unavailability blocks from vehicle metadata
+        const vehicleLookup = targetVehicleId
+            ? vehicles.filter((v: any) => v.id === targetVehicleId)
+            : vehicles;
+        for (const vehicle of vehicleLookup) {
+            if (!vehicle.metadata) continue;
+            const { unavailable_from, unavailable_until, unavailable_from_time, unavailable_until_time } = vehicle.metadata;
+            if (!unavailable_from) continue;
+            const fromTime = unavailable_from_time || '00:00';
+            const untilTime = unavailable_until_time || '23:59';
+            const blockStart = new Date(`${unavailable_from}T${fromTime}:00`);
+            const blockEnd = unavailable_until
+                ? new Date(`${unavailable_until}T${untilTime}:00`)
+                : new Date('2099-12-31T23:59:00');
+            const vehicleBusy = busyByVehicle.get(vehicle.id) || [];
+            vehicleBusy.push({ start: blockStart, end: blockEnd });
+            busyByVehicle.set(vehicle.id, vehicleBusy);
         }
 
         // Add bookings to respective vehicles

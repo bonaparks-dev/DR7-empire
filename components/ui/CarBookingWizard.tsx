@@ -176,7 +176,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       returnLocation: PICKUP_LOCATIONS[0].id,
       pickupDate: today,
       pickupTime: '10:30',
-      returnDate: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0],
+      returnDate: (() => {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        return tomorrow.toLocaleString('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).split(',')[0];
+      })(),
       returnTime: '09:00',
 
       // Step 2
@@ -1055,11 +1059,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, kmPackageCost: 0, pickupFee: 0, dropoffFee: 0, subtotal: 0, taxes: 0, total: 0, includedKm: 0, driverAge: 0, licenseYears: 0, youngDriverFee: 0, recentLicenseFee: 0, secondDriverFee: 0, recommendedKm: null, membershipDiscount: 0, membershipTier: null, originalTotal: 0, finalTotal: 0,
       isMassimo: false, specialDiscountAmount: 0, carWashFee: 0, noDepositSurcharge: 0
     };
-    if (!item || !item.pricePerDay) return zero;
+    if (!item || (!item.pricePerDay && !item.priceResidentDaily && !item.priceNonresidentDaily)) return zero;
 
     // === DUAL PRICING LOGIC ===
     // Determine which price to use based on residency and usage zone
-    let pricePerDay = item.pricePerDay[currency]; // fallback to legacy pricing
+    let pricePerDay = item.pricePerDay?.[currency] || 0; // fallback to legacy pricing
 
     if (item.priceResidentDaily && item.priceNonresidentDaily) {
       // Dual pricing available for this vehicle
@@ -1076,7 +1080,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         willApplyResidentPrice: formData.usageZone === 'CAGLIARI_SUD'
       });
 
-      // NEW LOGIC: Apply resident pricing based on USAGE ZONE selection
+      // Apply resident pricing based on USAGE ZONE selection
       // This allows users without the database residency_zone field to still get resident pricing
       // when they select "Cagliari e Sud Sardegna" usage zone
       if (formData.usageZone === 'CAGLIARI_SUD') {
@@ -1270,7 +1274,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       specialDiscountAmount,
       carWashFee,
       noDepositSurcharge: calculatedNoDepositSurcharge,
-      effectivePricePerDay: isSupercar50km ? SUPERCAR_50KM_DAILY_RATE : pricePerDay // Expose the calculated price per day
+      effectivePricePerDay: isSupercar50km ? SUPERCAR_50KM_DAILY_RATE : pricePerDay
     };
   }, [
     formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime,
@@ -1665,7 +1669,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const returnDayOfWeek = getDayOfWeek(formData.returnDate);
         const isFridayToSaturday = pickupDayOfWeek === 5 && returnDayOfWeek === 6;
 
-        if (diffMs <= 0) {
+        // Hard block: return date must be at least the next day
+        if (formData.returnDate <= formData.pickupDate) {
+          newErrors.date = "Il noleggio minimo è di 1 giorno. Seleziona almeno il giorno successivo al ritiro.";
+        } else if (diffMs <= 0) {
           newErrors.date = "La data di riconsegna deve essere successiva al ritiro.";
         } else if (rentalDays < 0.99 && !isFridayToSaturday) {
           // Check if this is a constrained availability window
@@ -2991,9 +2998,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           const newPickup = value;
                           const currentReturn = formData.returnDate;
 
-                          if (currentReturn && newPickup > currentReturn) {
-                            // Reset return date if it becomes invalid
-                            setFormData(prev => ({ ...prev, pickupDate: value, returnDate: '', returnTime: '' }));
+                          if (currentReturn && newPickup >= currentReturn) {
+                            // Reset return date if same day or before pickup (minimum 1 day rental)
+                            const nextDay = new Date(value);
+                            nextDay.setDate(nextDay.getDate() + 1);
+                            const nextDayStr = nextDay.toISOString().split('T')[0];
+                            setFormData(prev => ({ ...prev, pickupDate: value, returnDate: nextDayStr, returnTime: prev.returnTime || '09:00' }));
                           } else {
                             // Just update pickup
                             handleChange(e);

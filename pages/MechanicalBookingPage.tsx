@@ -445,6 +445,10 @@ const MechanicalBookingPage: React.FC = () => {
           // 5. Redirect to Nexi HPP
           console.log('Redirecting to Nexi:', nexiData.paymentUrl);
           isRedirecting = true;
+          try {
+            sessionStorage.setItem('dr7_pending_order', nexiOrderId);
+            sessionStorage.setItem('dr7_pending_type', 'booking');
+          } catch (e) { /* sessionStorage may be unavailable */ }
           window.location.href = nexiData.paymentUrl;
           return;
         } else {
