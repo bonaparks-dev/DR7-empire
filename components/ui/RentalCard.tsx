@@ -32,7 +32,8 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
   const isHelicopter = item.id.startsWith('heli');
   const isYacht = item.id.startsWith('yacht');
   const isCar = item.id.startsWith('car-');
-  const isUnavailableCar = false; // M3 and M4 now available
+  // Hide booking button for vehicles with unavailable_from in metadata
+  const isBlockedCar = isCar && (item as any).unavailableFrom;
 
   // Jets, yachts, and helicopters use landscape format, others use vertical format
   const imageAspectRatio = (isJet || isYacht || isHelicopter) ? 'aspect-[16/9]' : 'aspect-[9/16]';
@@ -155,11 +156,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
             >
               {t('Discover_More')}
             </Link>
-          ) : isUnavailableCar ? (
-            <span className="inline-block bg-transparent border-2 border-gray-600 text-gray-500 px-6 py-2 rounded-full font-semibold text-sm cursor-not-allowed">
-              Non disponibile
-            </span>
-          ) : (
+          ) : isBlockedCar ? null : (
             <button
               onClick={() => {
                 console.log('RentalCard button clicked for:', item.name, 'ID:', item.id, 'isJet:', isJet);

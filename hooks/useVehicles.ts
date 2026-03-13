@@ -38,6 +38,7 @@ interface TransformedVehicle {
   vehicleIds?: string[]; // For grouped vehicles, stores all actual vehicle IDs
   displayNames?: string[]; // For grouped vehicles, stores all actual vehicle display names
   plates?: string[]; // For grouped vehicles, stores all license plates (targa)
+  unavailableFrom?: string; // ISO date string when vehicle becomes unavailable
 }
 
 // Helper function to get vehicle image based on name
@@ -247,7 +248,8 @@ const transformVehicle = (vehicle: Vehicle): TransformedVehicle => {
     } : undefined,
     priceResidentDaily: vehicle.price_resident_daily ?? undefined,
     priceNonresidentDaily: vehicle.price_nonresident_daily ?? undefined,
-    specs: specsArray
+    specs: specsArray,
+    unavailableFrom: vehicle.metadata?.unavailable_from || undefined
   };
 };
 
