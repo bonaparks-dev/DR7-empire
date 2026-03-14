@@ -1,7 +1,7 @@
 import { Handler } from '@netlify/functions';
 import { getCorsOrigin } from './utils/cors';
 
-const ADMIN_URL = process.env.ADMIN_URL || 'https://dr7-empire-admin.netlify.app';
+const ADMIN_URL = process.env.ADMIN_URL || 'https://admin.dr7empire.com';
 
 /**
  * Proxy function to call the admin's generate-invoice-from-booking function.
