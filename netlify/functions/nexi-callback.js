@@ -270,6 +270,18 @@ exports.handler = async (event) => {
         } catch (e) {
           console.error('WhatsApp notification failed:', e);
         }
+
+        // Generate fattura automatically
+        try {
+          await fetch(`${siteUrl}/.netlify/functions/generate-fattura`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bookingId: booking.id, includeIVA: true }),
+          });
+          console.log(`Fattura generated for booking ${booking.id}`);
+        } catch (e) {
+          console.error('Fattura generation failed:', e);
+        }
       }
 
       return { statusCode: 200, body: 'OK' };
@@ -339,6 +351,18 @@ exports.handler = async (event) => {
           });
         } catch (e) {
           console.error('WhatsApp notification failed:', e);
+        }
+
+        // Generate fattura automatically
+        try {
+          await fetch(`${siteUrl}/.netlify/functions/generate-fattura`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bookingId: newBooking.id, includeIVA: true }),
+          });
+          console.log(`Fattura generated for booking ${newBooking.id}`);
+        } catch (e) {
+          console.error('Fattura generation failed:', e);
         }
 
         return { statusCode: 200, body: 'OK' };

@@ -135,25 +135,52 @@ exports.handler = async (event) => {
 
                     const emailPayload = {
                         from: `DR7 Empire <${fromAddress}>`,
+                        reply_to: 'info@dr7.app',
                         to: [email],
                         subject: 'Conferma il tuo indirizzo email — DR7 Empire',
+                        text: `Ciao ${customerName},\n\nGrazie per esserti registrato su DR7 Empire, il portale di Dubai Rent 7.0 S.p.A. dedicato al noleggio auto di lusso, servizi premium e molto altro.\n\nPer completare la registrazione e accedere a tutti i nostri servizi, conferma il tuo indirizzo email visitando il seguente link:\n\n${confirmationLink}\n\nUna volta confermato, potrai:\n- Prenotare veicoli dalla nostra flotta esclusiva\n- Accedere ai servizi di autolavaggio premium\n- Gestire le tue prenotazioni dal tuo account personale\n\nSe non hai creato un account su DR7 Empire, puoi ignorare questa email.\n\nCordiali saluti,\nIl Team DR7 Empire\n\nDubai Rent 7.0 S.p.A.\nVia Ostiense 131/L, 00154 Roma (RM)\nP.IVA: 17530781006\nTel: +39 345 790 5205\nEmail: info@dr7.app\nSito web: https://dr7empire.com`,
                         html: `
-                            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #000; color: #fff; padding: 40px; border-radius: 12px;">
-                                <div style="text-align: center; margin-bottom: 30px;">
-                                    <h1 style="color: #fff; font-size: 28px; margin: 0;">DR7 Empire</h1>
+                            <div style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; color: #333333; padding: 0;">
+                                <div style="background-color: #000000; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+                                    <h1 style="color: #ffffff; font-size: 26px; margin: 0; letter-spacing: 2px;">DR7 EMPIRE</h1>
+                                    <p style="color: #cccccc; font-size: 13px; margin: 8px 0 0 0;">Dubai Rent 7.0 S.p.A.</p>
                                 </div>
-                                <h2 style="color: #fff; font-size: 22px;">Ciao ${customerName},</h2>
-                                <p style="color: #ccc; font-size: 16px; line-height: 1.6;">
-                                    Grazie per esserti registrato su DR7 Empire. Per completare la registrazione, conferma il tuo indirizzo email cliccando il pulsante qui sotto.
-                                </p>
-                                <div style="text-align: center; margin: 30px 0;">
-                                    <a href="${confirmationLink}" style="background: #fff; color: #000; padding: 14px 32px; border-radius: 50px; text-decoration: none; font-weight: bold; font-size: 16px; display: inline-block;">
-                                        Conferma Email
-                                    </a>
+                                <div style="padding: 35px 30px;">
+                                    <h2 style="color: #333333; font-size: 20px; margin: 0 0 15px 0;">Ciao ${customerName},</h2>
+                                    <p style="color: #555555; font-size: 15px; line-height: 1.7; margin: 0 0 15px 0;">
+                                        Grazie per esserti registrato su <strong>DR7 Empire</strong>, il portale dedicato al noleggio auto di lusso, servizi premium e molto altro.
+                                    </p>
+                                    <p style="color: #555555; font-size: 15px; line-height: 1.7; margin: 0 0 25px 0;">
+                                        Per completare la registrazione e accedere a tutti i nostri servizi, conferma il tuo indirizzo email cliccando il pulsante qui sotto:
+                                    </p>
+                                    <div style="text-align: center; margin: 30px 0;">
+                                        <a href="${confirmationLink}" style="background-color: #000000; color: #ffffff; padding: 14px 36px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 15px; display: inline-block;">
+                                            Conferma il tuo indirizzo email
+                                        </a>
+                                    </div>
+                                    <p style="color: #555555; font-size: 15px; line-height: 1.7; margin: 25px 0 10px 0;">
+                                        Una volta confermato, potrai:
+                                    </p>
+                                    <ul style="color: #555555; font-size: 15px; line-height: 1.8; padding-left: 20px; margin: 0 0 20px 0;">
+                                        <li>Prenotare veicoli dalla nostra flotta esclusiva</li>
+                                        <li>Accedere ai servizi di autolavaggio premium</li>
+                                        <li>Gestire le tue prenotazioni dal tuo account personale</li>
+                                    </ul>
+                                    <p style="color: #999999; font-size: 13px; line-height: 1.6; margin: 25px 0 0 0; border-top: 1px solid #eeeeee; padding-top: 20px;">
+                                        Se non hai creato un account su DR7 Empire, puoi ignorare questa email. Il link di conferma scadrà automaticamente.
+                                    </p>
                                 </div>
-                                <p style="color: #888; font-size: 13px; text-align: center;">
-                                    Se non hai creato un account su DR7 Empire, puoi ignorare questa email.
-                                </p>
+                                <div style="background-color: #f8f8f8; padding: 25px 30px; border-radius: 0 0 8px 8px; border-top: 1px solid #eeeeee;">
+                                    <p style="color: #888888; font-size: 12px; line-height: 1.6; margin: 0; text-align: center;">
+                                        <strong>Dubai Rent 7.0 S.p.A.</strong><br>
+                                        Via Ostiense 131/L, 00154 Roma (RM) — P.IVA: 17530781006<br>
+                                        Tel: +39 345 790 5205 — Email: info@dr7.app<br>
+                                        <a href="https://dr7empire.com" style="color: #888888;">dr7empire.com</a>
+                                    </p>
+                                    <p style="color: #aaaaaa; font-size: 11px; text-align: center; margin: 12px 0 0 0;">
+                                        Hai ricevuto questa email perch\u00e9 ti sei registrato su DR7 Empire.
+                                    </p>
+                                </div>
                             </div>
                         `,
                     };
