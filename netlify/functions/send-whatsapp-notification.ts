@@ -98,18 +98,21 @@ const handler: Handler = async (event) => {
 
       const paymentDisplay = (booking.payment_status === 'paid' || booking.payment_status === 'succeeded' || booking.payment_status === 'completed') ? 'Pagato' : 'Da saldare';
 
-      // Customer-facing message via Green API — plain text, no bold
+      // Customer-facing message via Green API — full details like admin
       let customerMessage = `Salve ${sanitizeForWhatsApp(firstName)},\n\n`;
       customerMessage += `Confermiamo il suo appuntamento.\n\n`;
-      customerMessage += `NUOVA PRENOTAZIONE AUTOLAVAGGIO\n\n`;
-      customerMessage += `ID: DR7-${bookingId}\n`;
-      customerMessage += `Servizio: ${sanitizeForWhatsApp(serviceName)}\n`;
+      customerMessage += `*NUOVA PRENOTAZIONE AUTOLAVAGGIO*\n\n`;
+      customerMessage += `*ID:* DR7-${bookingId}\n`;
+      customerMessage += `*Cliente:* ${sanitizeForWhatsApp(customerName)}\n`;
+      customerMessage += `*Email:* ${sanitizeForWhatsApp(customerEmail)}\n`;
+      customerMessage += `*Telefono:* ${sanitizeForWhatsApp(customerPhone)}\n`;
+      customerMessage += `*Servizio:* ${sanitizeForWhatsApp(serviceName)}\n`;
       if (vehiclePlate) {
-        customerMessage += `Targa:${sanitizeForWhatsApp(vehiclePlate)}\n`;
+        customerMessage += `*Targa:* ${sanitizeForWhatsApp(vehiclePlate)}\n`;
       }
-      customerMessage += `Data e Ora: ${formattedDate} alle ${formattedTime}\n`;
-      customerMessage += `Totale: €${totalPrice}\n`;
-      customerMessage += `Pagamento: ${paymentDisplay}\n\n`;
+      customerMessage += `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n`;
+      customerMessage += `*Totale:* €${totalPrice}\n`;
+      customerMessage += `*Pagamento:* ${paymentDisplay}\n\n`;
       customerMessage += `Cordiali Saluti,\nDR7`;
 
       // Send to customer if phone is available
