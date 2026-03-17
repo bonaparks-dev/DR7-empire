@@ -425,16 +425,53 @@ exports.handler = async (event) => {
 
         // Add credits via atomic RPC (prevents race conditions and double-crediting)
         if (purchase.user_id && purchase.received_amount) {
+          const creditDesc = `Ricarica ${purchase.package_name} - Bonus ${purchase.bonus_percentage}%`;
           const { data: rpcResult, error: rpcError } = await supabase.rpc('add_credits', {
             p_user_id: purchase.user_id,
-            p_amount: purchase.received_amount,
-            p_description: `Ricarica ${purchase.package_name} - Bonus ${purchase.bonus_percentage}%`,
+            p_amount: parseFloat(purchase.received_amount),
+            p_description: creditDesc,
             p_reference_id: purchase.id,
             p_reference_type: 'wallet_purchase'
           });
 
           if (rpcError) {
             console.error('Error adding credits via RPC:', rpcError);
+            // Fallback: insert directly if RPC fails (e.g. overload ambiguity)
+            console.log('Attempting direct insert fallback...');
+            try {
+              const { data: balanceRow } = await supabase
+                .from('user_credit_balance')
+                .select('balance')
+                .eq('user_id', purchase.user_id)
+                .single();
+
+              const currentBalance = balanceRow?.balance ? parseFloat(balanceRow.balance) : 0;
+              const newBalance = currentBalance + parseFloat(purchase.received_amount);
+
+              await supabase
+                .from('user_credit_balance')
+                .upsert({
+                  user_id: purchase.user_id,
+                  balance: newBalance,
+                  last_updated: new Date().toISOString()
+                }, { onConflict: 'user_id' });
+
+              await supabase
+                .from('credit_transactions')
+                .insert({
+                  user_id: purchase.user_id,
+                  transaction_type: 'credit',
+                  amount: parseFloat(purchase.received_amount),
+                  balance_after: newBalance,
+                  description: creditDesc,
+                  reference_id: purchase.id,
+                  reference_type: 'wallet_purchase'
+                });
+
+              console.log(`Credits added via fallback: €${purchase.received_amount} (new balance: €${newBalance})`);
+            } catch (fallbackErr) {
+              console.error('Fallback credit insert also failed:', fallbackErr);
+            }
           } else {
             const result = rpcResult?.[0] || rpcResult;
             console.log(`Credits added via RPC: €${purchase.received_amount} to user ${purchase.user_id} (new balance: €${result?.new_balance})`);
