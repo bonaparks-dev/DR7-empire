@@ -2095,6 +2095,29 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         }, 1000);
       }
 
+      // Auto-generate contract + fattura on admin side (fire-and-forget)
+      const ADMIN_BASE = 'https://admin.dr7empire.com';
+      fetchWithTimeout(`${ADMIN_BASE}/.netlify/functions/generate-contract`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId: data.id }),
+      }).then(async (res) => {
+        if (res.ok) {
+          console.log('[booking] Contract generated, sending signing link...');
+          fetchWithTimeout(`${ADMIN_BASE}/.netlify/functions/signature-init`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bookingId: data.id }),
+          }).catch(e => console.error('[booking] Signature init error:', e));
+        }
+      }).catch(e => console.error('[booking] Contract error:', e));
+
+      fetchWithTimeout(`${ADMIN_BASE}/.netlify/functions/generate-invoice-from-booking`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId: data.id, includeIVA: true }),
+      }).catch(e => console.error('[booking] Fattura error:', e));
+
       // Mark birthday discount code as used
       if (appliedDiscount && data.id) {
         await markDiscountCodeAsUsed(data.id);
@@ -2492,6 +2515,30 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ booking: finalBookingData }),
           }).catch(e => console.error('WhatsApp error', e));
+
+          // Auto-generate contract + fattura on admin side (fire-and-forget)
+          const ADMIN_BASE = 'https://admin.dr7empire.com';
+          fetchWithTimeout(`${ADMIN_BASE}/.netlify/functions/generate-contract`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bookingId: data.booking_id }),
+          }).then(async (res) => {
+            if (res.ok) {
+              console.log('[credit-booking] Contract generated, sending signing link...');
+              // signature-init accepts bookingId to find the contract
+              fetchWithTimeout(`${ADMIN_BASE}/.netlify/functions/signature-init`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bookingId: data.booking_id }),
+              }).catch(e => console.error('[credit-booking] Signature init error:', e));
+            }
+          }).catch(e => console.error('[credit-booking] Contract error:', e));
+
+          fetchWithTimeout(`${ADMIN_BASE}/.netlify/functions/generate-invoice-from-booking`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bookingId: data.booking_id, includeIVA: true }),
+          }).catch(e => console.error('[credit-booking] Fattura error:', e));
 
           // Mark birthday discount code as used
           if (appliedDiscount) {
