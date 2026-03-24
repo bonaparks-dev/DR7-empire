@@ -20,7 +20,7 @@ const MembershipEnrollmentPage: React.FC = () => {
     const { user } = useAuth();
 
     const billingParam = searchParams.get('billing');
-    const [billingCycle] = useState<'monthly' | 'annually'>(billingParam === 'monthly' ? 'monthly' : 'annually');
+    const [billingCycle] = useState<'monthly' | 'annually'>(billingParam === 'annually' ? 'annually' : 'monthly');
     const [isProcessing, setIsProcessing] = useState(false);
     const [paymentError, setPaymentError] = useState<string | null>(null);
 
@@ -57,8 +57,12 @@ const MembershipEnrollmentPage: React.FC = () => {
                     baseDate = currentExpiry; // Extend from current expiry, don't lose remaining days
                 }
             }
-            const daysToAdd = billingCycle === 'monthly' ? 30 : 365;
-            const renewalDate = new Date(baseDate.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
+            const renewalDate = new Date(baseDate);
+            if (billingCycle === 'monthly') {
+                renewalDate.setMonth(renewalDate.getMonth() + 1);
+            } else {
+                renewalDate.setFullYear(renewalDate.getFullYear() + 1);
+            }
 
             // 1. Save membership purchase as pending (with recurring flag)
             const { data: purchaseData, error: dbError } = await supabase
