@@ -78,7 +78,43 @@ export async function addCredits(
 
   if (error) {
     console.error('Error in addCredits RPC:', error);
-    return { success: false, newBalance: 0, error: error.message };
+    // Fallback: direct insert if RPC fails (e.g. overload ambiguity)
+    try {
+      const { data: balanceRow } = await supabase
+        .from('user_credit_balance')
+        .select('balance')
+        .eq('user_id', userId)
+        .single();
+
+      const currentBalance = balanceRow?.balance ? parseFloat(balanceRow.balance) : 0;
+      const newBalance = currentBalance + amount;
+
+      await supabase
+        .from('user_credit_balance')
+        .upsert({
+          user_id: userId,
+          balance: newBalance,
+          last_updated: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+
+      await supabase
+        .from('credit_transactions')
+        .insert({
+          user_id: userId,
+          transaction_type: 'credit',
+          amount: amount,
+          balance_after: newBalance,
+          description: description,
+          reference_id: referenceId || null,
+          reference_type: referenceType || 'purchase'
+        });
+
+      console.log(`Credits added via fallback: €${amount} (new balance: €${newBalance})`);
+      return { success: true, newBalance };
+    } catch (fallbackErr: any) {
+      console.error('Fallback credit insert also failed:', fallbackErr);
+      return { success: false, newBalance: 0, error: fallbackErr.message };
+    }
   }
 
   const result = data?.[0] || data;
