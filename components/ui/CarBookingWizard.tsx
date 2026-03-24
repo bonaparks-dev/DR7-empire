@@ -2045,6 +2045,37 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
 
       if (data) {
+        // Upsert customer into customers_extended (find by user_id, don't duplicate)
+        if (user?.id) {
+          supabase.from('customers_extended')
+            .select('id')
+            .eq('user_id', user.id)
+            .maybeSingle()
+            .then(({ data: existing }) => {
+              const customerRecord: Record<string, any> = {
+                nome: formData.firstName,
+                cognome: formData.lastName,
+                email: formData.email,
+                telefono: formData.phone,
+                tipo_cliente: 'persona_fisica',
+                source: 'website_booking',
+              };
+              if (formData.birthDate) customerRecord.data_nascita = formData.birthDate;
+
+              if (existing?.id) {
+                // Update existing record
+                supabase.from('customers_extended').update(customerRecord).eq('id', existing.id)
+                  .then(() => console.log('[booking] customers_extended updated'))
+                  .catch(e => console.error('[booking] customers_extended update error:', e));
+              } else {
+                // Insert new record with user_id
+                supabase.from('customers_extended').insert({ ...customerRecord, user_id: user.id })
+                  .then(() => console.log('[booking] customers_extended created'))
+                  .catch(e => console.error('[booking] customers_extended insert error:', e));
+              }
+            }).catch(e => console.error('[booking] customers_extended lookup error:', e));
+        }
+
         // Send email confirmation
         fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
           method: 'POST',
@@ -2112,7 +2143,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         }
       }).catch(e => console.error('[booking] Contract error:', e));
 
-      fetchWithTimeout(`${ADMIN_BASE}/.netlify/functions/generate-invoice-from-booking`, {
+      fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/generate-fattura`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bookingId: data.id, includeIVA: true }),
@@ -2502,6 +2533,35 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
           console.log("Calling onBookingComplete...", finalBookingData);
 
+          // Upsert customer into customers_extended (find by user_id, don't duplicate)
+          if (user?.id) {
+            supabase.from('customers_extended')
+              .select('id')
+              .eq('user_id', user.id)
+              .maybeSingle()
+              .then(({ data: existing }) => {
+                const customerRecord: Record<string, any> = {
+                  nome: formData.firstName,
+                  cognome: formData.lastName,
+                  email: formData.email,
+                  telefono: formData.phone,
+                  tipo_cliente: 'persona_fisica',
+                  source: 'website_booking',
+                };
+                if (formData.birthDate) customerRecord.data_nascita = formData.birthDate;
+
+                if (existing?.id) {
+                  supabase.from('customers_extended').update(customerRecord).eq('id', existing.id)
+                    .then(() => console.log('[credit-booking] customers_extended updated'))
+                    .catch(e => console.error('[credit-booking] customers_extended update error:', e));
+                } else {
+                  supabase.from('customers_extended').insert({ ...customerRecord, user_id: user.id })
+                    .then(() => console.log('[credit-booking] customers_extended created'))
+                    .catch(e => console.error('[credit-booking] customers_extended insert error:', e));
+                }
+              }).catch(e => console.error('[credit-booking] customers_extended lookup error:', e));
+          }
+
           // Send Email Confirmation
           fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
             method: 'POST',
@@ -2534,7 +2594,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             }
           }).catch(e => console.error('[credit-booking] Contract error:', e));
 
-          fetchWithTimeout(`${ADMIN_BASE}/.netlify/functions/generate-invoice-from-booking`, {
+          fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/generate-fattura`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ bookingId: data.booking_id, includeIVA: true }),
