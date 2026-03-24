@@ -171,14 +171,23 @@ const SignUpPage: React.FC = () => {
         if (!formData.documentoLuogoRilascio) newErrors.documentoLuogoRilascio = 'Luogo rilascio documento è obbligatorio';
       }
 
-      // Persona Fisica specific - Only require: Nome, Telefono, Email
+      // Persona Fisica specific
       if (tipoCliente === 'persona_fisica') {
         if (!formData.nome) newErrors.nome = 'Nome è obbligatorio';
+        if (!formData.cognome) newErrors.cognome = 'Cognome è obbligatorio';
         if (!formData.telefono) {
           newErrors.telefono = 'Telefono è obbligatorio';
         } else if (!validateItalianPhone(formData.telefono)) {
           newErrors.telefono = 'Formato telefono non valido';
         }
+        if (formData.nazione === 'Italia') {
+          if (!formData.codiceFiscale) {
+            newErrors.codiceFiscale = 'Codice Fiscale è obbligatorio';
+          } else if (!validateCodiceFiscale(formData.codiceFiscale)) {
+            newErrors.codiceFiscale = 'Codice Fiscale non valido (16 caratteri alfanumerici)';
+          }
+        }
+        if (!formData.indirizzo) newErrors.indirizzo = 'Residenza è obbligatoria';
         // Email is already validated in common validations above
       }
 
@@ -645,7 +654,7 @@ const SignUpPage: React.FC = () => {
                   {formData.nazione === 'Italia' && (
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Codice Fiscale
+                        Codice Fiscale <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -654,6 +663,7 @@ const SignUpPage: React.FC = () => {
                         onChange={handleChange}
                         placeholder="RSSMRA80A01H501U"
                         maxLength={16}
+                        required
                         className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
                       />
                       {errors.codiceFiscale && <p className="text-xs text-red-400 mt-1">{errors.codiceFiscale}</p>}
@@ -774,7 +784,7 @@ const SignUpPage: React.FC = () => {
                   <div className="grid grid-cols-3 gap-4">
                     <div className="col-span-2">
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Indirizzo
+                        Indirizzo (Residenza) <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -782,6 +792,7 @@ const SignUpPage: React.FC = () => {
                         value={formData.indirizzo}
                         onChange={handleChange}
                         placeholder="Via Roma"
+                        required
                         className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
                       />
                       {errors.indirizzo && <p className="text-xs text-red-400 mt-1">{errors.indirizzo}</p>}

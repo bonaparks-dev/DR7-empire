@@ -477,6 +477,30 @@ exports.handler = async (event) => {
             console.log(`Credits added via RPC: €${purchase.received_amount} to user ${purchase.user_id} (new balance: €${result?.new_balance})`);
           }
         }
+
+        // Generate fattura for wallet purchase
+        try {
+          const siteUrl = process.env.URL || 'https://dr7empire.com';
+          await fetch(`${siteUrl}/.netlify/functions/generate-fattura`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              purchaseType: 'wallet_purchase',
+              purchaseId: purchase.id,
+              includeIVA: true,
+              purchaseData: {
+                userId: purchase.user_id,
+                packageName: purchase.package_name,
+                amount: purchase.amount,
+                receivedAmount: purchase.received_amount,
+                bonusPercentage: purchase.bonus_percentage,
+              }
+            }),
+          });
+          console.log(`Fattura generated for wallet purchase ${purchase.id}`);
+        } catch (e) {
+          console.error('Fattura generation failed for wallet purchase:', e);
+        }
       } else {
         // Payment failed
         await supabase
@@ -578,6 +602,29 @@ exports.handler = async (event) => {
           });
         } catch (whatsErr) {
           console.error('WhatsApp notification failed:', whatsErr);
+        }
+
+        // Generate fattura for membership purchase
+        try {
+          const membershipSiteUrl = process.env.URL || 'https://dr7empire.com';
+          await fetch(`${membershipSiteUrl}/.netlify/functions/generate-fattura`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              purchaseType: 'membership_purchase',
+              purchaseId: membership.id,
+              includeIVA: true,
+              purchaseData: {
+                userId: membership.user_id,
+                tierName: membership.tier_name,
+                billingCycle: membership.billing_cycle,
+                price: membership.price,
+              }
+            }),
+          });
+          console.log(`Fattura generated for membership ${membership.id}`);
+        } catch (e) {
+          console.error('Fattura generation failed for membership:', e);
         }
 
         console.log(`Membership ${membership.id} activated with contractId: ${contractId}`);

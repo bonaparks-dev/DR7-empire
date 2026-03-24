@@ -189,6 +189,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       email: '',
       phone: '',
       birthDate: '',
+      codiceFiscale: '',
+      residenza: '',
       licenseNumber: '',
       licenseIssueDate: '',
       licenseImage: null, // File or dataURL
@@ -878,6 +880,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           email: customerData.email || prev.email || user.email || '',
           phone: customerData.telefono || prev.phone || user.phone || '',
           birthDate: customerData.data_nascita || prev.birthDate,
+          codiceFiscale: customerData.codice_fiscale || prev.codiceFiscale,
+          residenza: customerData.indirizzo || prev.residenza,
           // License fields from metadata
           licenseNumber: customerData.metadata?.numero_patente || prev.licenseNumber,
           licenseIssueDate: customerData.metadata?.patente_data_rilascio || prev.licenseIssueDate,
@@ -1779,6 +1783,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       if (!formData.lastName) newErrors.lastName = "Il cognome è obbligatorio.";
       if (!formData.email) newErrors.email = "L'email è obbligatoria.";
       if (!formData.phone) newErrors.phone = "Il telefono è obbligatorio.";
+      if (!formData.codiceFiscale) newErrors.codiceFiscale = "Il codice fiscale è obbligatorio per la fatturazione.";
+      if (!formData.residenza) newErrors.residenza = "La residenza è obbligatoria per la fatturazione.";
       if (!formData.birthDate) {
         newErrors.birthDate = "La data di nascita è obbligatoria.";
       } else {
@@ -1984,6 +1990,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             phone: rPhone,
             birthDate: formData.birthDate,
             age: driverAge,
+            codiceFiscale: formData.codiceFiscale,
+            residenza: formData.residenza,
             licenseNumber: formData.licenseNumber,
             licenseIssueDate: formData.licenseIssueDate,
             licenseYears: licenseYears,
@@ -2057,6 +2065,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 cognome: formData.lastName,
                 email: formData.email,
                 telefono: formData.phone,
+                codice_fiscale: formData.codiceFiscale,
+                indirizzo: formData.residenza,
                 tipo_cliente: 'persona_fisica',
                 source: 'website_booking',
               };
@@ -2429,6 +2439,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               phone: formData.phone,
               birthDate: formData.birthDate,
               age: driverAge,
+              codiceFiscale: formData.codiceFiscale,
+              residenza: formData.residenza,
               licenseNumber: formData.licenseNumber,
               licenseIssueDate: formData.licenseIssueDate,
               licenseYears: licenseYears,
@@ -2545,6 +2557,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   cognome: formData.lastName,
                   email: formData.email,
                   telefono: formData.phone,
+                  codice_fiscale: formData.codiceFiscale,
+                  indirizzo: formData.residenza,
                   tipo_cliente: 'persona_fisica',
                   source: 'website_booking',
                 };
@@ -2594,11 +2608,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             }
           }).catch(e => console.error('[credit-booking] Contract error:', e));
 
-          fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/generate-fattura`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bookingId: data.booking_id, includeIVA: true }),
-          }).catch(e => console.error('[credit-booking] Fattura error:', e));
+          // No fattura for credit wallet bookings — fattura was already generated when credits were purchased
 
           // Mark birthday discount code as used
           if (appliedDiscount) {
@@ -2732,6 +2742,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               phone: nPhone,
               birthDate: formData.birthDate,
               age: driverAge,
+              codiceFiscale: formData.codiceFiscale,
+              residenza: formData.residenza,
               licenseNumber: formData.licenseNumber,
               licenseIssueDate: formData.licenseIssueDate,
               licenseYears: licenseYears,
@@ -3332,6 +3344,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               <div><label className="text-sm text-gray-400">Cognome *</label><input type="text" name={`${prefix}lastName`} value={(driverData as any).lastName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}lastName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}lastName`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Email *</label><input type="email" name={`${prefix}email`} value={(driverData as any).email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}email`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}email`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Telefono *</label><input type="tel" name={`${prefix}phone`} value={(driverData as any).phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}phone`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}phone`]}</p>}</div>
+              {driverType === 'main' && (
+                <>
+                  <div><label className="text-sm text-gray-400">Codice Fiscale *</label><input type="text" name="codiceFiscale" value={formData.codiceFiscale} onChange={handleChange} placeholder="es. RSSMRA85M01H501Z" className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm uppercase" />{errors.codiceFiscale && <p className="text-xs text-red-400 mt-1">{errors.codiceFiscale}</p>}</div>
+                  <div className="md:col-span-2"><label className="text-sm text-gray-400">Residenza (indirizzo completo) *</label><input type="text" name="residenza" value={formData.residenza} onChange={handleChange} placeholder="es. Via Roma 1, 09100 Cagliari (CA)" className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors.residenza && <p className="text-xs text-red-400 mt-1">{errors.residenza}</p>}</div>
+                </>
+              )}
               <div><label className="text-sm text-gray-400">Data di nascita *</label><input type="date" name={`${prefix}birthDate`} value={(driverData as any).birthDate} onChange={handleChange} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}birthDate`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Numero patente *</label><input type="text" name={`${prefix}licenseNumber`} value={(driverData as any).licenseNumber} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}licenseNumber`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseNumber`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Data rilascio patente *</label><input type="date" name={`${prefix}licenseIssueDate`} value={(driverData as any).licenseIssueDate} onChange={handleChange} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseIssueDate`]}</p>}</div>

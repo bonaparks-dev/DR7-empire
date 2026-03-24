@@ -26,18 +26,28 @@ export const handler: Handler = async (event) => {
 
     try {
         const body = JSON.parse(event.body || '{}');
-        const { bookingId, includeIVA } = body;
+        const { bookingId, includeIVA, purchaseType, purchaseId, purchaseData } = body;
 
-        if (!bookingId) {
-            return { statusCode: 400, headers, body: JSON.stringify({ error: 'bookingId required' }) };
+        // Support both booking fattura and purchase fattura (wallet/membership)
+        if (!bookingId && !purchaseId) {
+            return { statusCode: 400, headers, body: JSON.stringify({ error: 'bookingId or purchaseId required' }) };
         }
 
-        console.log(`[generate-fattura] Proxying to admin for booking ${bookingId}`);
+        const payload: Record<string, any> = { includeIVA: includeIVA ?? true };
+        if (bookingId) {
+            payload.bookingId = bookingId;
+            console.log(`[generate-fattura] Proxying to admin for booking ${bookingId}`);
+        } else {
+            payload.purchaseType = purchaseType; // 'wallet_purchase' | 'membership_purchase'
+            payload.purchaseId = purchaseId;
+            if (purchaseData) payload.purchaseData = purchaseData;
+            console.log(`[generate-fattura] Proxying to admin for ${purchaseType} ${purchaseId}`);
+        }
 
         const response = await fetch(`${ADMIN_URL}/.netlify/functions/generate-invoice-from-booking`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bookingId, includeIVA: includeIVA ?? true }),
+            body: JSON.stringify(payload),
         });
 
         const responseText = await response.text();
