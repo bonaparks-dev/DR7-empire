@@ -33,7 +33,7 @@ const TierCard: React.FC<{ tier: MembershipTier; billingCycle: 'monthly' | 'annu
             <h3 className="text-2xl font-bold text-white text-center">{tier.name[lang]}</h3>
             <div className="my-6 text-center">
                 <span className="text-5xl font-extrabold text-white">{formattedPrice}</span>
-                <span className="text-gray-400" translate="no">/anno</span>
+                <span className="text-gray-400" translate="no">/{billingCycle === 'monthly' ? 'mese' : 'anno'}</span>
             </div>
             <ul className="space-y-4 text-gray-300 mb-8 flex-grow">
                 {tier.features[lang].map((feature, index) => (
@@ -67,13 +67,13 @@ const MembershipPage: React.FC = () => {
     const { t, lang } = useTranslation();
     const navigate = useNavigate();
     const { user } = useAuth();
-    const [billingCycle] = useState<'monthly' | 'annually'>('annually');
+    const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('monthly');
 
     const handleSelectTier = (tierId: string) => {
         if (user) {
-            navigate(`/membership/enroll/${tierId}?billing=annually`);
+            navigate(`/membership/enroll/${tierId}?billing=${billingCycle}`);
         } else {
-            navigate('/signin', { state: { from: { pathname: `/membership/enroll/${tierId}`, search: `?billing=annually` } } });
+            navigate('/signin', { state: { from: { pathname: `/membership/enroll/${tierId}`, search: `?billing=${billingCycle}` } } });
         }
     };
 
@@ -112,12 +112,34 @@ const MembershipPage: React.FC = () => {
                         Diventa parte del DR7 Luxury Empire — accesso, vantaggi, precedenza.
                     </p>
 
-                    {/* Annual Plan Only */}
+                    {/* Billing Cycle Toggle */}
                     <div className="inline-flex items-center bg-gray-900/50 border border-gray-800 rounded-full p-1 mt-4">
-                        <span className="px-6 py-2 rounded-full font-semibold bg-white text-black">
-                            Abbonamento Annuale
-                        </span>
+                        <button
+                            onClick={() => setBillingCycle('monthly')}
+                            className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 ${
+                                billingCycle === 'monthly'
+                                    ? 'bg-white text-black'
+                                    : 'text-gray-400 hover:text-white'
+                            }`}
+                        >
+                            <span translate="no">Mensile</span>
+                        </button>
+                        <button
+                            onClick={() => setBillingCycle('annually')}
+                            className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 ${
+                                billingCycle === 'annually'
+                                    ? 'bg-white text-black'
+                                    : 'text-gray-400 hover:text-white'
+                            }`}
+                        >
+                            <span translate="no">Annuale</span>
+                        </button>
                     </div>
+                    {billingCycle === 'annually' && (
+                        <p className="text-sm text-green-400 mt-2">
+                            Risparmia 2 mesi pagando annualmente
+                        </p>
+                    )}
                 </motion.div>
 
                 <motion.div
