@@ -271,16 +271,55 @@ exports.handler = async (event) => {
           console.error('WhatsApp notification failed:', e);
         }
 
-        // Generate fattura automatically
-        try {
-          await fetch(`${siteUrl}/.netlify/functions/generate-fattura`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bookingId: booking.id, includeIVA: true }),
-          });
-          console.log(`Fattura generated for booking ${booking.id}`);
-        } catch (e) {
-          console.error('Fattura generation failed:', e);
+        // Generate contract + signing links + invoice (car rental only)
+        const serviceType = booking.service_type || booking.booking_details?.type || '';
+        const isWashOrMech = serviceType === 'car_wash' || serviceType === 'mechanical_service' || serviceType === 'mechanical';
+        if (!isWashOrMech) {
+          const adminUrl = 'https://admin.dr7empire.com';
+          try {
+            const contractRes = await fetch(`${adminUrl}/.netlify/functions/generate-contract`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ bookingId: booking.id }),
+            });
+            const contractData = await contractRes.json();
+
+            if (contractRes.ok && contractData.success) {
+              console.log('[nexi-callback] Contract generated:', contractData.url);
+
+              const { data: contractRow } = await supabase
+                .from('contracts')
+                .select('id')
+                .eq('booking_id', booking.id)
+                .single();
+
+              if (contractRow) {
+                try {
+                  await fetch(`${adminUrl}/.netlify/functions/signature-init`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contractId: contractRow.id, bookingId: booking.id }),
+                  });
+                  console.log('[nexi-callback] Signing links sent');
+                } catch (sigErr) {
+                  console.error('[nexi-callback] Signature init failed:', sigErr);
+                }
+              }
+            }
+          } catch (contractErr) {
+            console.error('[nexi-callback] Contract generation error:', contractErr);
+          }
+
+          try {
+            await fetch(`${adminUrl}/.netlify/functions/generate-invoice-from-booking`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ bookingId: booking.id, includeIVA: true }),
+            });
+            console.log('[nexi-callback] Invoice generated');
+          } catch (invErr) {
+            console.error('[nexi-callback] Invoice generation failed:', invErr);
+          }
         }
       }
 
@@ -353,16 +392,106 @@ exports.handler = async (event) => {
           console.error('WhatsApp notification failed:', e);
         }
 
-        // Generate fattura automatically
-        try {
-          await fetch(`${siteUrl}/.netlify/functions/generate-fattura`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bookingId: newBooking.id, includeIVA: true }),
-          });
-          console.log(`Fattura generated for booking ${newBooking.id}`);
-        } catch (e) {
-          console.error('Fattura generation failed:', e);
+        // Send WhatsApp confirmation to CUSTOMER
+        const custPhone = newBooking.customer_phone || newBooking.booking_details?.customer?.phone;
+        if (custPhone) {
+          try {
+            const custName = newBooking.customer_name || newBooking.booking_details?.customer?.fullName || 'Cliente';
+            const custFirstName = custName.split(' ')[0] || 'Cliente';
+            const bookingRef = newBooking.id.substring(0, 8).toUpperCase();
+            const totalEur = newBooking.price_total ? (newBooking.price_total / 100).toFixed(2) : '0.00';
+            const fmtDate = (d) => new Date(d).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Rome' });
+            const fmtTime = (d) => new Date(d).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Rome' });
+
+            const details = newBooking.booking_details || {};
+            const vehicleName = newBooking.vehicle_name || details.vehicle?.name || 'N/A';
+            const pickupDate = newBooking.pickup_date ? `${fmtDate(newBooking.pickup_date)} ${fmtTime(newBooking.pickup_date)}` : 'N/A';
+            const dropoffDate = newBooking.dropoff_date ? `${fmtDate(newBooking.dropoff_date)} ${fmtTime(newBooking.dropoff_date)}` : 'N/A';
+            const pickupLoc = newBooking.pickup_location || details.pickupLocation || 'Sede DR7';
+            const dropoffLoc = newBooking.dropoff_location || details.dropoffLocation || pickupLoc;
+
+            const insuranceMap = { 'RCA': 'Kasko', 'KASKO': 'Kasko', 'KASKO_BASE': 'Kasko', 'KASKO_BLACK': 'Kasko Black', 'KASKO_SIGNATURE': 'Kasko Signature', 'DR7': 'Kasko DR7' };
+            const insurance = insuranceMap[newBooking.insurance_option || details.insurance?.type] || 'Kasko';
+
+            let custMsg = `*MESSAGGIO AUTOMATICO GENERATO DA RENTORA*\n_Questo messaggio è stato inviato tramite il sistema automatizzato sviluppato da Rentora._\n\n`;
+            custMsg += `Gentile ${custFirstName},\n\nLa sua prenotazione è stata *confermata* con successo!\n\n`;
+            custMsg += `*Rif:* ${bookingRef}\n`;
+            custMsg += `*Veicolo:* ${vehicleName}\n`;
+            custMsg += `*Ritiro:* ${pickupDate}\n`;
+            custMsg += `*Luogo ritiro:* ${pickupLoc}\n`;
+            custMsg += `*Riconsegna:* ${dropoffDate}\n`;
+            custMsg += `*Luogo riconsegna:* ${dropoffLoc}\n`;
+            custMsg += `*Assicurazione:* ${insurance}\n`;
+            custMsg += `*Totale:* €${totalEur}\n`;
+            custMsg += `*Pagamento:* Pagato (Nexi)\n`;
+            custMsg += `\nRiceverà a breve il contratto da firmare digitalmente.\n`;
+            custMsg += `\nCordiali Saluti,\nDR7`;
+
+            await fetch(`${siteUrl}/.netlify/functions/send-whatsapp-notification`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ customPhone: custPhone, customMessage: custMsg }),
+            });
+            console.log('[nexi-callback] WhatsApp booking confirmation sent to customer');
+          } catch (custErr) {
+            console.error('[nexi-callback] Customer WhatsApp failed:', custErr);
+          }
+        }
+
+        // Generate contract + signing links (car rental only, not car wash/mechanical)
+        const serviceType = newBooking.service_type || newBooking.booking_details?.type || '';
+        const isWashOrMech = serviceType === 'car_wash' || serviceType === 'mechanical_service' || serviceType === 'mechanical';
+        if (!isWashOrMech) {
+          const adminUrl = 'https://admin.dr7empire.com';
+          try {
+            const contractRes = await fetch(`${adminUrl}/.netlify/functions/generate-contract`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ bookingId: newBooking.id }),
+            });
+            const contractData = await contractRes.json();
+
+            if (contractRes.ok && contractData.success) {
+              console.log('[nexi-callback] Contract generated:', contractData.url);
+
+              // Fetch contract record to get ID for signature-init
+              const { data: contractRow } = await supabase
+                .from('contracts')
+                .select('id')
+                .eq('booking_id', newBooking.id)
+                .single();
+
+              if (contractRow) {
+                try {
+                  const sigRes = await fetch(`${adminUrl}/.netlify/functions/signature-init`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contractId: contractRow.id, bookingId: newBooking.id }),
+                  });
+                  const sigData = await sigRes.json();
+                  console.log('[nexi-callback] Signing links sent:', sigData.success ? 'OK' : sigData.error);
+                } catch (sigErr) {
+                  console.error('[nexi-callback] Signature init failed:', sigErr);
+                }
+              }
+            } else {
+              console.error('[nexi-callback] Contract generation failed:', contractData.error);
+            }
+          } catch (contractErr) {
+            console.error('[nexi-callback] Contract generation error:', contractErr);
+          }
+
+          // Generate invoice/fattura
+          try {
+            await fetch(`${adminUrl}/.netlify/functions/generate-invoice-from-booking`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ bookingId: newBooking.id }),
+            });
+            console.log('[nexi-callback] Invoice generated');
+          } catch (invErr) {
+            console.error('[nexi-callback] Invoice generation failed:', invErr);
+          }
         }
 
         return { statusCode: 200, body: 'OK' };
