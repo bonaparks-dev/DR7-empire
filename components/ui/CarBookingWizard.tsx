@@ -1457,12 +1457,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       maximumFractionDigits: 0
     }).format(price).replace(/\./g, ' ');
 
-  // Calculate deposit based on customer loyalty, license years, and vehicle type
+  // Calculate deposit based on customer loyalty, license years, age, residency, and vehicle type
   const getDeposit = () => {
     // Determine vehicle type
     const vType = getVehicleType(item, categoryContext);
     const isUtilitaria = vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS';
-    const isSupercar = !isUtilitaria;
 
     // Special client with noDeposit = always €0
     if (isMassimo) return 0;
@@ -1478,15 +1477,25 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (membershipTier === 'gold' || membershipTier === 'platinum') return 0;
     if (isLoyalCustomer) return 0; // 3+ supercar rentals
 
-    // Rule 2: Standard customer - calculate deposit based on vehicle type and license years
-    const depositRules = isUtilitaria ? DEPOSIT_RULES.UTILITARIA : DEPOSIT_RULES.SUPERCAR;
+    // Rule 2: Supercar deposit — depends on age, license years, residency, payment method
+    // "Young" = 21-25 anni OR patente 2-4 anni
+    const isYoung = (driverAge >= 21 && driverAge <= 25) || (licenseYears >= 2 && licenseYears <= 4);
+    // Non-resident = usage zone FUORI_ZONA
+    const isNonResident = formData.usageZone === 'FUORI_ZONA';
 
-    // Use license years from pricing calculation (≥5 years = lower deposit)
-    if (licenseYears >= 5) {
-      return depositRules.LICENSE_5_OR_MORE;
-    } else {
-      return depositRules.LICENSE_UNDER_5;
+    if (isNonResident) {
+      // Non residenti: SOLO carta di credito
+      return isYoung
+        ? DEPOSIT_RULES.SUPERCAR_NON_RESIDENT.YOUNG      // €5000
+        : DEPOSIT_RULES.SUPERCAR_NON_RESIDENT.STANDARD;  // €3500
     }
+
+    // Residenti in Sardegna — depends on payment method
+    // Online payments (Nexi/credit wallet) = carta di credito
+    // Cash/prepaid is only possible at pickup, not online — default to card rates
+    return isYoung
+      ? DEPOSIT_RULES.SUPERCAR.CARD_YOUNG      // €2000
+      : DEPOSIT_RULES.SUPERCAR.CARD_STANDARD;  // €1000
   };
 
   // Handlers
@@ -4037,7 +4046,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   )}
                   {!isUrbanOrCorporate && !isMassimo && !isLoyalCustomer && getMembershipTierName(user) !== 'gold' && getMembershipTierName(user) !== 'platinum' && (
                     <p className="text-green-400">
-                      Cauzione al ritiro: €{getDeposit()} (patente {licenseYears >= 5 ? '≥' : '<'} 5 anni)
+                      Cauzione al ritiro: €{getDeposit()}
                     </p>
                   )}
                 </div>

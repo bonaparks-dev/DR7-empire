@@ -552,10 +552,19 @@ export const DEPOSIT_RULES = {
     LICENSE_UNDER_5: 500,     // Micro cauzione < 5 years
     LICENSE_5_OR_MORE: 250,   // Micro cauzione ≥ 5 years
   },
+  // Supercar (veicolo dal 2020 in poi) — Residenti in Sardegna
   SUPERCAR: {
-    LOYAL_CUSTOMER: 0,        // 3+ rentals
-    LICENSE_UNDER_5: 2000,    // < 5 years
-    LICENSE_5_OR_MORE: 1000,  // ≥ 5 years
+    LOYAL_CUSTOMER: 0,
+    // Carta di credito
+    CARD_YOUNG: 2000,         // 21-25 anni o patente 2-4 anni
+    CARD_STANDARD: 1000,      // 26-69 anni, patente 5+ anni
+    // Contanti o carta prepagata
+    CASH_PREPAID: 4999,       // Qualsiasi età/patente
+  },
+  // Supercar — Non residenti in Sardegna (SOLO carta di credito)
+  SUPERCAR_NON_RESIDENT: {
+    YOUNG: 5000,              // 21-25 anni o patente 2-4 anni
+    STANDARD: 3500,           // 26-69 anni, patente 5+ anni
   },
   LOYAL_CUSTOMER_THRESHOLD: 3, // Minimum rentals for loyalty
 };
