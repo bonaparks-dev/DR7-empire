@@ -419,8 +419,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             const minute = windowStart.getMinutes();
             const timeInMinutes = hour * 60 + minute;
 
-            // Office closing time: 18:30 (last pickup time)
-            const officeClosingTime = 18 * 60 + 30; // 18:30
+            // Office closing time: 19:00 (last pickup time)
+            const officeClosingTime = 19 * 60; // 19:00
 
             // If same-day availability starts after office hours, exclude it
             // (it will show as next-day availability instead)
@@ -666,15 +666,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     };
 
     // Office hours with 15-minute intervals
-    // Mon-Fri: Morning 10:30-12:30, Afternoon 17:30-18:30
-    // Saturday: Morning only 10:30-13:30 (closed at 14:00, no afternoon)
+    // Mon-Fri: Morning 9:00-13:00, Afternoon 16:00-19:00
+    // Saturday: 9:00-14:00
     if (dayOfWeek >= 1 && dayOfWeek <= 5) {
       // Monday to Friday
-      addTimes(10 * 60 + 30, 12 * 60 + 30, 15);  // 10:30 to 12:30
-      addTimes(17 * 60 + 30, 18 * 60 + 30, 15);  // 17:30 to 18:30
+      addTimes(9 * 60, 13 * 60, 15);   // 09:00 to 13:00
+      addTimes(16 * 60, 19 * 60, 15);  // 16:00 to 19:00
     } else if (dayOfWeek === 6) {
-      // Saturday - morning only (close at 14:00)
-      addTimes(10 * 60 + 30, 13 * 60 + 30, 15);  // 10:30 to 13:30
+      // Saturday
+      addTimes(9 * 60, 14 * 60, 15);   // 09:00 to 14:00
     }
 
     const selectedDate = safeDate(date);
@@ -714,16 +714,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
     };
 
-    // RETURN (Check-out) hours - DIFFERENT from pickup
-    // Mon-Fri: 09:00-11:00, 16:00-17:00
-    // Saturday: 09:00-12:00
+    // RETURN (Check-out) hours - same as rental operating hours
+    // Mon-Fri: 09:00-13:00, 16:00-19:00
+    // Saturday: 09:00-14:00
     if (dayOfWeek >= 1 && dayOfWeek <= 5) {
       // Monday to Friday
-      addTimes(9 * 60, 11 * 60, 15);   // 09:00 to 11:00
-      addTimes(16 * 60, 17 * 60, 15);  // 16:00 to 17:00
+      addTimes(9 * 60, 13 * 60, 15);   // 09:00 to 13:00
+      addTimes(16 * 60, 19 * 60, 15);  // 16:00 to 19:00
     } else if (dayOfWeek === 6) {
       // Saturday
-      addTimes(9 * 60, 12 * 60 + 30, 15);   // 09:00 to 12:30
+      addTimes(9 * 60, 14 * 60, 15);   // 09:00 to 14:00
     }
 
     // Filter out past times if today
@@ -1759,9 +1759,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               newErrors.returnTime = "Il sabato, la riconsegna in aeroporto deve essere entro le 11:00.";
             }
           } else {
-            // Office: maximum 12:30
-            if (returnTimeInMinutes > 12 * 60 + 30) {
-              newErrors.returnTime = "Il sabato, la riconsegna in ufficio deve essere entro le 12:30.";
+            // Office: maximum 14:00
+            if (returnTimeInMinutes > 14 * 60) {
+              newErrors.returnTime = "Il sabato, la riconsegna in ufficio deve essere entro le 14:00.";
             }
           }
         }

@@ -878,7 +878,7 @@ const MechanicalBookingPage: React.FC = () => {
                     {lang === 'it' ? 'Orari di apertura:' : 'Opening hours:'}
                   </span>
                   {' '}
-                  {lang === 'it' ? 'Lunedì - Sabato, 9:00 - 19:00' : 'Monday - Saturday, 9:00 AM - 7:00 PM'}
+                  {lang === 'it' ? 'Lun-Ven 9:00-13:00 / 15:00-19:00 | Sabato 9:00-13:00 / 14:00-18:00' : 'Mon-Fri 9:00-1:00 PM / 3:00-7:00 PM | Saturday 9:00-1:00 PM / 2:00-6:00 PM'}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
                   {lang === 'it' ? 'Chiusi la domenica' : 'Closed on Sundays'}
