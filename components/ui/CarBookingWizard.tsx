@@ -260,6 +260,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [upsellCarCategory, setUpsellCarCategory] = useState<'urban' | 'maxi' | null>(null);
   const [upsellCarModel, setUpsellCarModel] = useState<string | null>(null);
 
+  // Subscription upsell state
+  const [showSubscriptionUpsell, setShowSubscriptionUpsell] = useState(false);
+  const [selectedSubscription, setSelectedSubscription] = useState<'monthly' | 'annual' | null>(null);
+
   // Wash upsell targa state
   const [upsellTargaInput, setUpsellTargaInput] = useState('');
   const [upsellTargaLoading, setUpsellTargaLoading] = useState(false);
@@ -1375,6 +1379,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const extrasUpsellCost = selectedUpsellExtras.reduce((sum, svc) => sum + roundToTwoDecimals(svc.price * 0.90), 0);
   const totalWashUpsellCost = roundToTwoDecimals(washUpsellCost + extrasUpsellCost);
   const grandTotal = finalPriceWithBirthdayDiscount + totalWashUpsellCost;
+
+  // Calculate dynamic wallet credit for subscription upsell
+  // Based on ~8-12% of booking total, rounded to look natural (not generic)
+  const subscriptionWalletCredit = useMemo(() => {
+    const base = finalTotal || grandTotal || 100;
+    // Use a percentage that varies slightly based on the total to feel personalized
+    const pct = base > 500 ? 0.08 : base > 200 ? 0.10 : 0.12;
+    const raw = base * pct;
+    // Round to nearest whole euro, min €5, max €120
+    return Math.max(5, Math.min(120, Math.round(raw)));
+  }, [finalTotal, grandTotal]);
 
   // Forcer horaires valides et pas de dimanche
   useEffect(() => {
@@ -3076,7 +3091,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   const handleWashUpsellAccept = () => {
     setShowWashUpsell(false);
-    setStep(4);
+    setShowSubscriptionUpsell(true);
   };
 
   const handleWashUpsellDecline = () => {
@@ -3091,6 +3106,29 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     setUpsellTargaLoading(false);
     setUpsellTargaManualCategory(null);
     setShowWashUpsell(false);
+    setShowSubscriptionUpsell(true);
+  };
+
+  const handleSubscriptionAccept = () => {
+    setShowSubscriptionUpsell(false);
+    // Store selected subscription in formData extras
+    if (selectedSubscription) {
+      const subExtra = selectedSubscription === 'monthly' ? 'subscription_monthly' : 'subscription_annual';
+      setFormData(prev => ({
+        ...prev,
+        extras: [...prev.extras.filter(e => !e.startsWith('subscription_')), subExtra]
+      }));
+    }
+    setStep(4);
+  };
+
+  const handleSubscriptionDecline = () => {
+    setShowSubscriptionUpsell(false);
+    setSelectedSubscription(null);
+    setFormData(prev => ({
+      ...prev,
+      extras: prev.extras.filter(e => !e.startsWith('subscription_'))
+    }));
     setStep(4);
   };
 
@@ -4799,6 +4837,133 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <button
                         type="button"
                         onClick={handleWashUpsellDecline}
+                        className="w-full py-3 text-gray-400 hover:text-white text-sm transition-colors"
+                      >
+                        No, grazie
+                      </button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+              {/* Subscription Upsell Popup */}
+              {showSubscriptionUpsell && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4"
+                  onClick={handleSubscriptionDecline}
+                >
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                    className="bg-gray-900 border border-gray-700 rounded-2xl p-5 sm:p-8 max-w-lg w-full"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Animated gift icon */}
+                    <div className="text-center mb-4">
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
+                        className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400/20 to-yellow-600/20 border border-yellow-500/30 mb-3"
+                      >
+                        <span className="text-3xl">🎁</span>
+                      </motion.div>
+                      <motion.h3
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="text-xl sm:text-2xl font-bold text-white"
+                      >
+                        Ricevi subito <span className="text-green-400">+€{subscriptionWalletCredit}</span> di credito wallet
+                      </motion.h3>
+                      <div className="w-12 h-0.5 bg-white/30 mx-auto my-3"></div>
+                      <p className="text-gray-400 text-sm">
+                        Attiva DR7 Club e ricevi <strong className="text-white">€{subscriptionWalletCredit}</strong> di credito immediato sul tuo wallet, utilizzabile per il prossimo noleggio o servizio lavaggio.
+                      </p>
+                    </div>
+
+                    {/* Subscription options */}
+                    <div className="space-y-3 mb-5">
+                      {/* Monthly */}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSubscription('monthly')}
+                        className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                          selectedSubscription === 'monthly'
+                            ? 'border-white bg-white/5'
+                            : 'border-gray-700 hover:border-gray-500'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-white font-bold text-base">Mensile</p>
+                            <p className="text-gray-400 text-xs mt-0.5">Cancella quando vuoi, senza vincoli</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-white font-bold text-lg">€4,90<span className="text-gray-400 text-xs font-normal">/mese</span></p>
+                          </div>
+                        </div>
+                      </button>
+
+                      {/* Annual */}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSubscription('annual')}
+                        className={`w-full text-left p-4 rounded-xl border-2 transition-all relative overflow-hidden ${
+                          selectedSubscription === 'annual'
+                            ? 'border-green-400 bg-green-400/5'
+                            : 'border-gray-700 hover:border-gray-500'
+                        }`}
+                      >
+                        <div className="absolute top-0 right-0 bg-green-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-bl-lg">
+                          6 MESI GRATIS
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-white font-bold text-base">Annuale</p>
+                            <p className="text-gray-400 text-xs mt-0.5">Paga 6 mesi, ricevi 12 — il piano migliore</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-white font-bold text-lg">€29<span className="text-gray-400 text-xs font-normal">/anno</span></p>
+                            <p className="text-gray-500 line-through text-xs">€58,80/anno</p>
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+
+                    {/* What you get */}
+                    <div className="bg-gray-800/50 rounded-xl p-4 mb-5 text-sm">
+                      <p className="text-white font-semibold mb-2">Con DR7 Club ottieni:</p>
+                      <ul className="space-y-1.5 text-gray-300">
+                        <li className="flex items-start gap-2"><span className="text-green-400 mt-0.5">✓</span> €{subscriptionWalletCredit} di credito wallet immediato</li>
+                        <li className="flex items-start gap-2"><span className="text-green-400 mt-0.5">✓</span> Sconti esclusivi su noleggi e lavaggi</li>
+                        <li className="flex items-start gap-2"><span className="text-green-400 mt-0.5">✓</span> Accesso prioritario alle nuove supercar</li>
+                        <li className="flex items-start gap-2"><span className="text-green-400 mt-0.5">✓</span> Promozioni riservate ai membri</li>
+                      </ul>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex flex-col gap-3">
+                      <button
+                        type="button"
+                        onClick={handleSubscriptionAccept}
+                        disabled={!selectedSubscription}
+                        className={`w-full py-3.5 rounded-full font-bold text-sm sm:text-base transition-all ${
+                          selectedSubscription
+                            ? 'bg-white text-black hover:bg-gray-100'
+                            : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        {selectedSubscription
+                          ? `Attiva DR7 Club — €${selectedSubscription === 'monthly' ? '4,90/mese' : '29/anno'}`
+                          : 'Seleziona un piano'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSubscriptionDecline}
                         className="w-full py-3 text-gray-400 hover:text-white text-sm transition-colors"
                       >
                         No, grazie
