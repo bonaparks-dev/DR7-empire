@@ -202,3 +202,43 @@ export interface StripeContextType {
   stripe: Stripe | null;
   elements: StripeElements | null;
 }
+
+// === TIER-BASED BOOKING SYSTEM ===
+
+export type DriverTier = 'TIER_1' | 'TIER_2' | 'BLOCKED';
+
+export interface TierClassification {
+  tier: DriverTier;
+  reason: string;
+  driverAge: number;
+  licenseYears: number;
+}
+
+export interface InsuranceTierOption {
+  id: string;
+  name: string;
+  dailyPrice: number;
+  deductible: string;
+  mandatoryDeposit?: number; // Only for RCA (no kasko)
+  coverage: string;
+}
+
+export interface DepositOption {
+  id: string;
+  label: string;
+  amount: number;
+  surchargePerDay?: number;
+  description: string;
+  requiresVehicle2020?: boolean;
+}
+
+export interface ExperienceService {
+  id: string;
+  name: string;
+  price: number;
+  unit: 'per_day' | 'per_hour' | 'per_item' | 'flat';
+  tierOnly?: DriverTier;
+  description: string;
+}
+
+export type PaymentMode = 'full' | 'deposit_30';

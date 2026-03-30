@@ -640,3 +640,80 @@ export const RENTAL_EXTRAS = [
   }
 ];
 
+// === TIER-BASED CONDITIONAL BOOKING SYSTEM ===
+
+import type { InsuranceTierOption, ExperienceService, DepositOption, DriverTier } from './types';
+
+export const INSURANCE_COVERAGE_TEXT = 'RCA - Furto (solo in caso di restituzione chiave, altrimenti 100% del valore del veicolo) - Atti vandalici - Agenti atmosferici - Incendio - Danni & distruzione totale';
+
+export const INSURANCE_OPTIONS_BY_TIER: Record<'TIER_1' | 'TIER_2', InsuranceTierOption[]> = {
+  TIER_1: [
+    { id: 'RCA', name: 'Nessuna Kasko (solo RCA)', dailyPrice: 0, deductible: 'Nessuna copertura aggiuntiva', mandatoryDeposit: 15000, coverage: 'Solo RCA base' },
+    { id: 'KASKO_BASE', name: 'Kasko Base', dailyPrice: 119, deductible: '€5.000 + 30% del danno', coverage: INSURANCE_COVERAGE_TEXT },
+  ],
+  TIER_2: [
+    { id: 'RCA', name: 'Nessuna Kasko (solo RCA)', dailyPrice: 0, deductible: 'Nessuna copertura aggiuntiva', mandatoryDeposit: 10000, coverage: 'Solo RCA base' },
+    { id: 'KASKO_BASE', name: 'Kasko Base', dailyPrice: 89, deductible: '€5.000 + 30% del danno', coverage: INSURANCE_COVERAGE_TEXT },
+    { id: 'KASKO_BLACK', name: 'Kasko Black', dailyPrice: 149, deductible: '€5.000 + 10% del danno', coverage: INSURANCE_COVERAGE_TEXT },
+    { id: 'KASKO_SIGNATURE', name: 'Kasko Signature', dailyPrice: 189, deductible: '€5.000 fisso', coverage: INSURANCE_COVERAGE_TEXT },
+    { id: 'KASKO_DR7', name: 'Kasko DR7', dailyPrice: 289, deductible: '€0', coverage: INSURANCE_COVERAGE_TEXT },
+  ],
+};
+
+export const TIER_PRICING = {
+  TIER_1: { unlimitedKmPerDay: 289, secondDriverPerDay: 20, lavaggio: 9.90 },
+  TIER_2: { unlimitedKmPerDay: 189, secondDriverPerDay: 10, lavaggio: 9.90 },
+} as const;
+
+export const NO_DEPOSIT_SURCHARGE_PER_DAY = 49; // €49/day for "nessuna cauzione" (Tier 2 Sardinia only)
+
+export const TIER_DEPOSIT_OPTIONS: Record<string, DepositOption[]> = {
+  // Tier 1 + Sardinia resident
+  'TIER_1_RESIDENT': [
+    { id: 'vehicle_deposit', label: 'Cauzione con veicolo', amount: 0, surchargePerDay: 20, description: 'Veicolo di proprietà immatricolato dal 2020 in poi — €20/giorno', requiresVehicle2020: true },
+    { id: 'credit_card', label: 'Carta di credito', amount: 2000, description: 'Blocco su carta di credito di €2.000' },
+    { id: 'cash_prepaid', label: 'Contanti o prepagata', amount: 4999, description: 'Fino a €4.999 in contanti o carta prepagata' },
+  ],
+  // Tier 2 + Sardinia resident
+  'TIER_2_RESIDENT': [
+    { id: 'no_deposit', label: 'Nessuna cauzione', amount: 0, surchargePerDay: 49, description: 'Supplemento di €49/giorno — nessun deposito richiesto (solo con acquisto Kasko)' },
+    { id: 'vehicle_deposit', label: 'Cauzione con veicolo', amount: 0, surchargePerDay: 20, description: 'Veicolo di proprietà immatricolato dal 2020 in poi — €20/giorno', requiresVehicle2020: true },
+    { id: 'credit_card', label: 'Carta di credito', amount: 1000, description: 'Blocco su carta di credito di €1.000' },
+    { id: 'cash_prepaid', label: 'Contanti o prepagata', amount: 4999, description: 'Fino a €4.999 in contanti o carta prepagata' },
+  ],
+  // Tier 1 + Non-resident (PRIORITY RULE)
+  'TIER_1_NON_RESIDENT': [
+    { id: 'credit_card', label: 'Carta di credito', amount: 5000, description: 'Blocco su carta di credito di €5.000' },
+    { id: 'vehicle_deposit', label: 'Cauzione con veicolo', amount: 0, surchargePerDay: 20, description: 'Veicolo di proprietà immatricolato dal 2020 in poi — €20/giorno', requiresVehicle2020: true },
+  ],
+  // Tier 2 + Non-resident (PRIORITY RULE)
+  'TIER_2_NON_RESIDENT': [
+    { id: 'credit_card', label: 'Carta di credito', amount: 3500, description: 'Blocco su carta di credito di €3.500' },
+    { id: 'vehicle_deposit', label: 'Cauzione con veicolo', amount: 0, surchargePerDay: 20, description: 'Veicolo di proprietà immatricolato dal 2020 in poi — €20/giorno', requiresVehicle2020: true },
+  ],
+};
+
+export const DELIVERY_PRICE_PER_KM = 3; // €3/km for home delivery/pickup
+
+export const EXPERIENCE_SERVICES: ExperienceService[] = [
+  { id: 'bouquet', name: 'Bouquet di rose', price: 7.90, unit: 'per_item', description: 'Rose fresche per un\'occasione speciale' },
+  { id: 'wedding', name: 'Allestimento matrimonio interno/esterno', price: 150, unit: 'flat', description: 'Decorazione veicolo per cerimonia' },
+  { id: 'personal_driver', name: 'Autista personale', price: 150, unit: 'per_hour', description: 'Autista privato professionista' },
+  { id: 'restaurant', name: 'Prenotazione ristorante', price: 10, unit: 'flat', description: 'Prenotazione presso ristoranti selezionati' },
+  { id: 'video_drone', name: 'Video maker personale + drone shooting', price: 200, unit: 'per_hour', description: 'Riprese professionali con drone' },
+  { id: 'premium_24h', name: 'Assistenza premium 24h dedicata', price: 19.90, unit: 'per_day', description: 'Assistenza dedicata 24 ore su 24' },
+  { id: 'vehicle_replacement', name: 'Sostituzione immediata veicolo', price: 19.90, unit: 'per_day', tierOnly: 'TIER_2', description: 'Sostituzione con veicolo della stessa categoria (max 7 giorni)' },
+  { id: 'chauffeur_vip', name: 'Noleggio con autista + itinerario VIP', price: 189, unit: 'per_hour', description: 'Chauffeur con itinerario personalizzato VIP' },
+];
+
+export const DR7_FLEX = {
+  dailyPrice: 19.90,
+  refundPercent: 90,
+  description: 'Cancella fino al giorno del noleggio — rimborso del 90% come credito DR7 Wallet',
+} as const;
+
+export const PAYMENT_MODES = [
+  { id: 'full' as const, label: 'Paga tutto subito', savingsLabel: 'Risparmia il 50%', description: 'Paga l\'intero importo e assicurati il veicolo con priorità assoluta e la migliore tariffa disponibile.' },
+  { id: 'deposit_30' as const, label: 'Prenota con il 30%', surchargePercent: 50, description: 'Paga il 30% ora e il resto al ritiro. Sovrapprezzo fino al 50% e priorità inferiore sulla disponibilità.' },
+] as const;
+

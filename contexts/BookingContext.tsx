@@ -1,6 +1,24 @@
 import React, { createContext, useState, useMemo, useEffect, useCallback } from 'react';
 import type { RentalItem } from '../types';
 
+export interface PrefilledBookingData {
+  pickupLocation: string;
+  returnLocation: string;
+  pickupDate: string;
+  pickupTime: string;
+  returnDate: string;
+  returnTime: string;
+  ageBracket: 'under26' | '26to69';
+  vehicleId: string;
+  vehicleIds: string[];
+  availableVehicleIds: string[];
+  plates: string[];
+  dailyRate: number;
+  rentalDays: number;
+  totalPrice: number;
+  isUrban: boolean;
+}
+
 interface BookingContextType {
   bookingItem: RentalItem | null;
   isBookingOpen: boolean;
@@ -11,9 +29,11 @@ interface BookingContextType {
   // Car booking wizard state
   isCarWizardOpen: boolean;
   openCarWizard: (item: RentalItem, categoryContext?: string) => void;
+  openCarWizardWithPrefill: (item: RentalItem, categoryContext: string, prefill: PrefilledBookingData) => void;
   closeCarWizard: () => void;
   selectedCar: RentalItem | null;
   wizardCategory: string | null;
+  prefilledData: PrefilledBookingData | null;
 }
 
 export const BookingContext = createContext<BookingContextType | undefined>(undefined);

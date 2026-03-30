@@ -7,8 +7,9 @@ import { isMassimoRunchina, SPECIAL_CLIENTS } from '../../utils/clientPricingRul
 import { calculateMultiDayPrice } from '../../utils/multiDayPricing';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../supabaseClient';
-import { PICKUP_LOCATIONS, AUTO_INSURANCE, INSURANCE_DEDUCTIBLES, RENTAL_EXTRAS, DEPOSIT_RULES } from '../../constants';
-import type { Booking, RentalItem } from '../../types';
+import { PICKUP_LOCATIONS, AUTO_INSURANCE, INSURANCE_DEDUCTIBLES, RENTAL_EXTRAS, DEPOSIT_RULES, INSURANCE_OPTIONS_BY_TIER, INSURANCE_COVERAGE_TEXT, TIER_PRICING, TIER_DEPOSIT_OPTIONS, NO_DEPOSIT_SURCHARGE_PER_DAY, EXPERIENCE_SERVICES as BOOKING_EXPERIENCE_SERVICES, DR7_FLEX, PAYMENT_MODES, DELIVERY_PRICE_PER_KM } from '../../constants';
+import type { Booking, RentalItem, DriverTier, TierClassification, PaymentMode } from '../../types';
+import { classifyDriverTier, getInsuranceForTier, getDepositOptionsForTier, getKmPricingForTier, getExperienceServicesForTier } from '../../utils/tierClassification';
 import DocumentUploader from './DocumentUploader';
 import CalendarPicker from './CalendarPicker';
 import {
@@ -214,13 +215,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       },
 
       // Step 3
-      insuranceOption: 'KASKO',
-      depositOption: '' as '' | 'with_deposit' | 'micro_deposit',
+      insuranceOption: 'KASKO_BASE', // Default to Kasko Base
+      depositOption: '' as string, // deposit option id from TIER_DEPOSIT_OPTIONS
       extras: [] as string[],
-      kmPackageType: 'unlimited' as 'none' | 'unlimited' | '50km', // 'none' = only free included km, '50km' = 50km/day supercar package
-      kmPackageDistance: 100, // default 100km package
-      expectedKm: 0, // user's expected distance for recommendation
-      usageZone: '' as 'CAGLIARI_SUD' | 'FUORI_ZONA' | '', // Will be set by useEffect after user data loads
+      kmPackageType: 'unlimited' as 'none' | 'unlimited' | '50km',
+      kmPackageDistance: 100,
+      expectedKm: 0,
+      usageZone: '' as 'CAGLIARI_SUD' | 'FUORI_ZONA' | '',
+      // New tier-based fields
+      selectedExperiences: {} as Record<string, number>, // { serviceId: quantity }
+      dr7Flex: false,
+      paymentMode: 'full' as PaymentMode,
 
       // Step 4
       paymentMethod: 'nexi' as 'nexi' | 'credit',
@@ -232,6 +237,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
 
 
+
+  // Tier classification state
+  const [driverTierInfo, setDriverTierInfo] = useState<TierClassification | null>(null);
+  const driverTier: DriverTier | null = driverTierInfo?.tier || null;
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedInsurance, setExpandedInsurance] = useState<string | null>(null);
@@ -963,6 +972,20 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
   }, [formData.pickupTime, formData.pickupDate, formData.returnDate, availabilityWindows]);
 
+  // Classify driver tier when age/license changes
+  useEffect(() => {
+    if (formData.birthDate && formData.licenseIssueDate) {
+      const age = calculateAgeFromDDMMYYYY(formData.birthDate);
+      const years = calculateYearsSince(formData.licenseIssueDate);
+      if (age > 0 && years >= 0) {
+        const classification = classifyDriverTier(age, years);
+        setDriverTierInfo(classification);
+        // Reset insurance to Kasko Base when tier changes (to avoid invalid selection)
+        setFormData(prev => ({ ...prev, insuranceOption: 'KASKO_BASE', depositOption: '' }));
+      }
+    }
+  }, [formData.birthDate, formData.licenseIssueDate]);
+
   // Check vehicle availability when dates change
   useEffect(() => {
     const checkAvailability = async () => {
@@ -1077,11 +1100,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     driverAge, licenseYears, youngDriverFee, recentLicenseFee, secondDriverFee, recommendedKm,
     membershipDiscount, membershipTier, originalTotal, finalTotal,
     isMassimo, specialDiscountAmount, carWashFee, noDepositSurcharge,
-    effectivePricePerDay // Calculated price per day (resident or non-resident)
+    effectivePricePerDay, // Calculated price per day (resident or non-resident)
+    lavaggioFee, experienceCost, flexCost, supercarDepositSurcharge
   } = useMemo(() => {
     const zero = {
       duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, kmPackageCost: 0, pickupFee: 0, dropoffFee: 0, subtotal: 0, taxes: 0, total: 0, includedKm: 0, driverAge: 0, licenseYears: 0, youngDriverFee: 0, recentLicenseFee: 0, secondDriverFee: 0, recommendedKm: null, membershipDiscount: 0, membershipTier: null, originalTotal: 0, finalTotal: 0,
-      isMassimo: false, specialDiscountAmount: 0, carWashFee: 0, noDepositSurcharge: 0
+      isMassimo: false, specialDiscountAmount: 0, carWashFee: 0, noDepositSurcharge: 0,
+      lavaggioFee: 0, experienceCost: 0, flexCost: 0, supercarDepositSurcharge: 0
     };
     if (!item || (!item.pricePerDay && !item.priceResidentDaily && !item.priceNonresidentDaily)) return zero;
 
@@ -1180,95 +1205,105 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
 
 
-    // --- INSURANCE COST ---
-    // KASKO is now INCLUDED in the rental price at NO ADDITIONAL COST
-    // All insurance costs are €0 regardless of vehicle type
-    let insuranceDailyPrice = 0;
-    const tier = formData.insuranceOption;
-
-    // Type checking for VehicleType specific logic
+    // --- INSURANCE COST (tier-conditional) ---
     const vType = getVehicleType(item, categoryContext);
+    const activeTierForCalc: 'TIER_1' | 'TIER_2' = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2';
+    const tierPricingForCalc = TIER_PRICING[activeTierForCalc];
 
-    // Insurance pricing - KASKO is now INCLUDED (free)
-    // All tiers have €0 cost since insurance is included in the base rental price
-    insuranceDailyPrice = 0;
+    // Find selected insurance option and its daily price
+    const allInsuranceOpts = INSURANCE_OPTIONS_BY_TIER[activeTierForCalc] || [];
+    const selectedInsOpt = allInsuranceOpts.find(o => o.id === formData.insuranceOption);
+    const insuranceDailyPrice = selectedInsOpt?.dailyPrice || 0;
+    let calculatedInsuranceCost = roundToTwoDecimals(insuranceDailyPrice * billingDaysCalc);
 
-    let calculatedInsuranceCost = 0; // Always 0 since insurance is included
-
-    // Calculate extras cost
+    // --- EXTRAS COST ---
     const calculatedExtrasCost = formData.extras.reduce((acc, extraId) => {
       const extra = RENTAL_EXTRAS.find(e => e.id === extraId);
       if (!extra) return acc;
-      if (extra.oneTime) {
-        return acc + (extra.pricePerDay[currency] || 0);
-      }
+      if (extra.oneTime) return acc + (extra.pricePerDay[currency] || 0);
       return acc + (extra.pricePerDay[currency] || 0) * billingDays;
     }, 0);
 
     const calculatedDriverAge = calculateAgeFromDDMMYYYY(formData.birthDate);
     const calculatedLicenseYears = calculateYearsSince(formData.licenseIssueDate);
 
-    // Get young driver fee from RENTAL_EXTRAS
-    // 2 GUIDATORI / UNDER 25 / UNDER 5 ANNI PATENTE Logic
-    // Utilitarie e Furgone: €5 (Add.Driver / Under 25), €10 (Recent Lic)
-    // Supercar e V Class: €10 (Add.Driver / Under 25), €20 (Recent Lic)
+    // --- SECOND DRIVER FEE (tier-conditional) ---
+    const calculatedSecondDriverFee = formData.addSecondDriver
+      ? roundToTwoDecimals(tierPricingForCalc.secondDriverPerDay * billingDaysCalc)
+      : 0;
 
-    // Grouping for Extras:
-    // ALL ADDITIONAL FEES REMOVED - No extra charges for young drivers or recent licenses
-    const isCheapExtras = vType === 'UTILITARIA' || vType === 'FURGONE';
-    const feeAddDriver = 0; // Second driver is FREE - no additional charge
-    const calculatedSecondDriverFee = 0; // Second driver is always free
-    const feeYoungDriver = 0; // Young driver fee REMOVED - now FREE
-    const feeRecentLic = 0; // Recent license fee REMOVED - now FREE
+    // Young driver / recent license fees removed (handled by tier pricing)
+    const calculatedYoungDriverFee = 0;
+    const calculatedRecentLicenseFee = 0;
 
-    const calculatedYoungDriverFee = 0; // No young driver fee
-    const calculatedRecentLicenseFee = 0; // No recent license fee
+    // --- LAVAGGIO (pulizia finale) ---
+    const calculatedLavaggioFee = tierPricingForCalc.lavaggio; // flat €9.90
 
-
-
-    // KM package handling
+    // --- KM PACKAGE ---
     let calculatedKmPackageCost = 0;
-    let calculatedIncludedKm = 9999; // Default: unlimited for all vehicles
+    let calculatedIncludedKm = 9999;
     if (isSupercar50km) {
-      // 50km/day package: km cost is already baked into the flat daily rate
       calculatedIncludedKm = 50 * billingDaysCalc;
-      calculatedKmPackageCost = 0; // Included in rental cost
+      calculatedKmPackageCost = 0; // baked into 199/day rental
+    } else if (vType === 'SUPERCAR' && formData.kmPackageType === 'unlimited' && !isMassimo) {
+      // Unlimited km for supercars — tier-conditional price
+      calculatedKmPackageCost = roundToTwoDecimals(tierPricingForCalc.unlimitedKmPerDay * billingDaysCalc);
     }
 
-    // Get recommendation
     const calculatedRecommendedKm = recommendKmPackage(formData.expectedKm, item.name, billingDays);
-
-    // Pickup and Drop-off fees (€50 each)
-    // Airport fees removed
     const calculatedPickupFee = 0;
     const calculatedDropoffFee = 0;
 
-    // Car Wash Fee (Mandatory for most clients, excluded for special clients)
-    // Utilitarie / Furgone / V-Class: €30 (Updated per user request to flat 30)
-    // Supercar: €30
-    // Car wash is now included in the rental price - no additional fee
+    // --- EXPERIENCE SERVICES ---
+    let calculatedExperienceCost = 0;
+    for (const [svcId, qty] of Object.entries(formData.selectedExperiences)) {
+      if (qty <= 0) continue;
+      const svc = BOOKING_EXPERIENCE_SERVICES.find(s => s.id === svcId);
+      if (!svc) continue;
+      if (svc.unit === 'per_day') {
+        calculatedExperienceCost += roundToTwoDecimals(svc.price * billingDaysCalc * qty);
+      } else {
+        calculatedExperienceCost += roundToTwoDecimals(svc.price * qty);
+      }
+    }
+
+    // --- DR7 FLEX ---
+    const calculatedFlexCost = formData.dr7Flex ? roundToTwoDecimals(DR7_FLEX.dailyPrice * billingDaysCalc) : 0;
+
+    // Car wash included in price - no additional fee
     let carWashFee = 0;
 
+    let calculatedSubtotal = calculatedRentalCost + calculatedInsuranceCost + calculatedExtrasCost +
+      calculatedKmPackageCost + calculatedSecondDriverFee + calculatedLavaggioFee +
+      calculatedExperienceCost + calculatedFlexCost +
+      calculatedPickupFee + calculatedDropoffFee + carWashFee;
 
-    let calculatedSubtotal = calculatedRentalCost + calculatedInsuranceCost + calculatedExtrasCost + calculatedKmPackageCost + calculatedYoungDriverFee + calculatedRecentLicenseFee + calculatedSecondDriverFee + calculatedPickupFee + calculatedDropoffFee + carWashFee;
-
-    // No-deposit surcharge: +30% on subtotal for urban/corporate vehicles when customer opts out of deposit
+    // --- DEPOSIT SURCHARGES ---
     const vTypeForDeposit = getVehicleType(item, categoryContext);
     const isUrbanForDeposit = vTypeForDeposit === 'UTILITARIA' || vTypeForDeposit === 'FURGONE' || vTypeForDeposit === 'V_CLASS';
-    const calculatedNoDepositSurcharge = (isUrbanForDeposit && formData.depositOption === 'micro_deposit')
-      ? roundToTwoDecimals(calculatedSubtotal * 0.30)
-      : 0;
+
+    // Urban/corporate: +30% for micro_deposit
+    const urbanNoDepositSurcharge = (isUrbanForDeposit && formData.depositOption === 'micro_deposit')
+      ? roundToTwoDecimals(calculatedSubtotal * 0.30) : 0;
+
+    // Supercar: deposit option surcharges (no_deposit = €49/day, vehicle_deposit = €20/day)
+    let supercarDepositSurcharge = 0;
+    if (!isUrbanForDeposit && formData.depositOption) {
+      const depositKey = `${activeTierForCalc}_${formData.isSardinianResident ? 'RESIDENT' : 'NON_RESIDENT'}`;
+      const depOpts = TIER_DEPOSIT_OPTIONS[depositKey] || [];
+      const selectedDep = depOpts.find(d => d.id === formData.depositOption);
+      if (selectedDep?.surchargePerDay) {
+        supercarDepositSurcharge = roundToTwoDecimals(selectedDep.surchargePerDay * billingDaysCalc);
+      }
+    }
+
+    const calculatedNoDepositSurcharge = urbanNoDepositSurcharge + supercarDepositSurcharge;
     calculatedSubtotal = calculatedSubtotal + calculatedNoDepositSurcharge;
 
     let specialDiscountAmount = 0;
-
-    // Tax calculation
-    // ALL PRICES ARE TAX-INCLUSIVE (IVA/TVA already included)
-    // No additional tax should be added
     const calculatedTaxes = 0;
     const calculatedTotal = calculatedSubtotal;
 
-    // Apply membership discount (same for all customers including Massimo)
     const discountInfo = calculateDiscountedPrice(calculatedTotal, user, 'car_rental');
     const membershipTierName = getMembershipTierName(user);
 
@@ -1298,14 +1333,20 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       specialDiscountAmount,
       carWashFee,
       noDepositSurcharge: calculatedNoDepositSurcharge,
-      effectivePricePerDay: isSupercar50km ? SUPERCAR_50KM_DAILY_RATE : pricePerDay
+      effectivePricePerDay: isSupercar50km ? SUPERCAR_50KM_DAILY_RATE : pricePerDay,
+      // New fields
+      lavaggioFee: calculatedLavaggioFee,
+      experienceCost: calculatedExperienceCost,
+      flexCost: calculatedFlexCost,
+      supercarDepositSurcharge,
     };
   }, [
     formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime,
     formData.insuranceOption, formData.extras, formData.birthDate, formData.licenseIssueDate, formData.addSecondDriver,
     formData.kmPackageType, formData.kmPackageDistance, formData.expectedKm,
-    formData.email, formData.usageZone, formData.depositOption,
-    item, currency, user, isUrbanOrCorporate, categoryContext
+    formData.email, formData.usageZone, formData.depositOption, formData.isSardinianResident,
+    formData.selectedExperiences, formData.dr7Flex,
+    item, currency, user, isUrbanOrCorporate, categoryContext, driverTier
   ]);
 
   // Online booking discount (5%) — NOT for supercars, NOT for Massimo
@@ -1816,6 +1857,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
       if (!formData.confirmsInformation) newErrors.confirmsInformation = "Devi confermare che le informazioni sono corrette.";
 
+      // Tier classification check — block if BLOCKED
+      if (driverTierInfo?.tier === 'BLOCKED') {
+        newErrors.tierBlocked = driverTierInfo.reason;
+      }
+
       // License requirements: 3 years minimum, 5 years for BMW M4
       const isBMW_M4 = item.name?.includes('BMW M4') || item.name?.includes('M4 Competition');
       const requiredYears = isBMW_M4 ? 5 : 3;
@@ -2031,7 +2077,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           },
           depositOption: formData.depositOption,
           noDepositSurcharge: noDepositSurcharge,
-          vehicle_id: formData.selectedVehicleId, // Store specific vehicle ID to avoid grouping collisions
+          // Tier-based booking fields
+          driver_tier: driverTier,
+          insurance_cost: insuranceCost,
+          second_driver_fee: secondDriverFee,
+          lavaggio_fee: lavaggioFee,
+          km_cost: kmPackageCost,
+          experience_services: formData.selectedExperiences,
+          experience_cost: experienceCost,
+          dr7_flex: formData.dr7Flex,
+          flex_cost: flexCost,
+          deposit_surcharge: noDepositSurcharge,
+          vehicle_id: formData.selectedVehicleId,
           driverLicenseImage: licenseImageUrl,
           driverIdImage: idImageUrl,
           ...(selectedUpsellWash || selectedUpsellExtras.length > 0 ? { washUpsell: {
@@ -2478,9 +2535,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               isPremium: isPremiumVehicle(item.name),
               dailyRate: formData.kmPackageType === '50km' ? 199 : undefined
             },
-            vehicle_id: formData.selectedVehicleId,
             depositOption: formData.depositOption,
             noDepositSurcharge: noDepositSurcharge,
+            driver_tier: driverTier,
+            insurance_cost: insuranceCost,
+            second_driver_fee: secondDriverFee,
+            lavaggio_fee: lavaggioFee,
+            km_cost: kmPackageCost,
+            experience_services: formData.selectedExperiences,
+            experience_cost: experienceCost,
+            dr7_flex: formData.dr7Flex,
+            flex_cost: flexCost,
             driverLicenseImage: licenseImageUrl,
             driverIdImage: idImageUrl,
             ...(selectedUpsellWash || selectedUpsellExtras.length > 0 ? { washUpsell: {
@@ -2781,9 +2846,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               isPremium: isPremiumVehicle(item.name),
               dailyRate: formData.kmPackageType === '50km' ? 199 : undefined
             },
-            vehicle_id: formData.selectedVehicleId,
             depositOption: formData.depositOption,
             noDepositSurcharge: noDepositSurcharge,
+            driver_tier: driverTier,
+            insurance_cost: insuranceCost,
+            second_driver_fee: secondDriverFee,
+            lavaggio_fee: lavaggioFee,
+            km_cost: kmPackageCost,
+            experience_services: formData.selectedExperiences,
+            experience_cost: experienceCost,
+            dr7_flex: formData.dr7Flex,
+            flex_cost: flexCost,
             driverLicenseImage: licenseImageUrl,
             driverIdImage: idImageUrl,
             ...(selectedUpsellWash || selectedUpsellExtras.length > 0 ? { washUpsell: {
@@ -3439,19 +3512,46 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               )}
             </section>
 
-            {/* Automatic Validation */}
+            {/* Automatic Validation & Tier Classification */}
             <section className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-bold text-white mb-4">C. AUTOMATIC VALIDATION AND CALCULATION</h3>
+              <h3 className="text-lg font-bold text-white mb-4">C. VERIFICA REQUISITI</h3>
               <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 space-y-2">
                 <p>Età conducente: {driverAgeLocal || '--'} anni</p>
                 <p>Anzianità patente: {licenseYearsLocal || '--'} anni</p>
+                {driverTierInfo && (
+                  <div className={`mt-3 p-3 rounded-lg border ${
+                    driverTierInfo.tier === 'TIER_2' ? 'bg-green-900/20 border-green-600' :
+                    driverTierInfo.tier === 'TIER_1' ? 'bg-yellow-900/20 border-yellow-600' :
+                    'bg-red-900/20 border-red-600'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${
+                        driverTierInfo.tier === 'TIER_2' ? 'bg-green-600 text-white' :
+                        driverTierInfo.tier === 'TIER_1' ? 'bg-yellow-500 text-black' :
+                        'bg-red-600 text-white'
+                      }`}>
+                        {driverTierInfo.tier === 'TIER_2' ? 'TIER 2' : driverTierInfo.tier === 'TIER_1' ? 'TIER 1' : 'NON IDONEO'}
+                      </span>
+                      <span className={`text-sm ${
+                        driverTierInfo.tier === 'BLOCKED' ? 'text-red-300 font-bold' : 'text-gray-300'
+                      }`}>
+                        {driverTierInfo.reason}
+                      </span>
+                    </div>
+                    {driverTierInfo.tier === 'BLOCKED' && (
+                      <p className="text-red-400 text-sm mt-2 font-semibold">
+                        Non è possibile procedere con la prenotazione.
+                      </p>
+                    )}
+                  </div>
+                )}
                 {(() => {
                   const isBMW_M4 = item.name?.includes('BMW M4') || item.name?.includes('M4 Competition');
                   const requiredYears = isBMW_M4 ? 5 : 3;
 
                   if (licenseYearsLocal < requiredYears && formData.licenseIssueDate) {
                     return (
-                      <p className="text-red-500 font-bold">
+                      <p className="text-red-500 font-bold mt-2">
                         ATTENZIONE: {isBMW_M4
                           ? 'Per la BMW M4 è richiesta una patente con almeno 5 anni di anzianità.'
                           : 'È richiesta una patente con almeno 3 anni di anzianità per noleggiare.'}
@@ -3556,151 +3656,87 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             </section>
           </div>
         );
-      case 3:
+      case 3: {
         const unlimitedOptions = getUnlimitedKmOptions(item.name);
         const isPremium = isPremiumVehicle(item.name);
-
-        // Check if vehicle requires higher deductible (for urban cars only)
-        // Removed old isPremiumUrbanVehicle logic as granular logic handles it better
-        // const isPremiumUrbanVehicle = ...
-
-
-        // Define detailed insurance coverage info
-        // Define detailed insurance coverage info
         const displayVehicleType = getVehicleType(item);
+        const activeTier = driverTier || 'TIER_2'; // fallback
+        const tierPricing = getKmPricingForTier(activeTier);
+        const insuranceOptions = getInsuranceForTier(activeTier);
+        const depositOptions = getDepositOptionsForTier(activeTier, formData.isSardinianResident);
+        const experienceServices = getExperienceServicesForTier(activeTier);
 
-        const insuranceDetails: Record<string, { title: string; requirements: string; standard: string }> = {
-          KASKO: {
-            title: 'KASKO',
-            requirements: displayVehicleType === 'UTILITARIA' || displayVehicleType === 'FURGONE' || displayVehicleType === 'V_CLASS'
-              ? 'DISPONIBILE SOLO PER CLIENTI CON ALMENO 3 ANNI DI PATENTE'
-              : 'DISPONIBILE SOLO PER CLIENTI CON ALMENO 2 ANNI DI PATENTE', // Supercar logic might differ? User said "Minimo 3 anni obbligatori" generally? No, standard is 3 years now. User said "UNDER 5 ANNI PATENTE (Minimo 3 anni...)"
-            standard: displayVehicleType === 'UTILITARIA' ? 'FRANCHIGIA EUR €2.000 + 30% DEL DANNO' // Wait, user said Base Utilitarie €15. Franchise? Standard Base Franchise €2k+30%? Urban standard.
-              : displayVehicleType === 'FURGONE' ? 'FRANCHIGIA EUR €2.000 + 30% DEL DANNO'
-                : displayVehicleType === 'V_CLASS' ? 'FRANCHIGIA EUR €2.000 + 30% DEL DANNO' // Corporate Fleet uses Urban rules per task
-                  : 'FRANCHIGIA EUR €5.000 + 30% DEL DANNO' // Supercar
-          },
-          KASKO_BLACK: {
-            title: 'KASKO BLACK',
-            requirements: "DISPONIBILE SOLO PER CLIENTI CON 25 ANNI DI ETA' E 5 ANNI DI PATENTE",
-            standard: displayVehicleType === 'SUPERCAR' ? 'FRANCHIGIA EUR €5.000 + 10% DEL DANNO'
-              : 'FRANCHIGIA EUR €1.000 + 10% DEL DANNO' // Urban/Other
-          },
-          KASKO_SIGNATURE: {
-            title: 'KASKO SIGNATURE',
-            requirements: "DISPONIBILE SOLO PER CLIENTI CON 30 ANNI DI ETA' E 10 ANNI DI PATENTE",
-            standard: displayVehicleType === 'SUPERCAR' ? 'FRANCHIGIA EUR €5.000 ( FISSA )'
-              : 'FRANCHIGIA EUR €800 ( FISSA )' // Urban/Other
-          },
-          KASKO_DR7: {
-            title: 'DR7',
-            requirements: "DISPONIBILE SOLO PER CLIENTI CON 30 ANNI DI ETA' E 10 ANNI DI PATENTE",
-            standard: 'FRANCHIGIA EUR €0 ( FISSA )'
-          }
-        };
+        // Check if "no deposit" requires Kasko (cannot select no_deposit with RCA only)
+        const selectedInsuranceIsRCA = formData.insuranceOption === 'RCA';
+        const noDepositRequiresKasko = formData.depositOption === 'no_deposit' && selectedInsuranceIsRCA;
 
         return (
           <div className="space-y-8">
-            {/* Insurance is now automatic (KASKO included) - no selection UI */}
+            {/* === A. ASSICURAZIONE (tier-conditional) === */}
             <section>
-              <h3 className="text-lg font-bold text-white mb-4">A. ASSICURAZIONE INCLUSA</h3>
-              <div className="p-4 bg-green-900/20 border border-green-600 rounded-lg">
-                <p className="text-green-300 font-semibold">KASKO inclusa automaticamente nel prezzo</p>
-                <p className="text-sm text-gray-400 mt-2">Copertura completa KASKO per tutti i veicoli</p>
+              <h3 className="text-lg font-bold text-white mb-4">A. COPERTURA ASSICURATIVA</h3>
+              <p className="text-sm text-gray-400 mb-4">Seleziona il livello di protezione desiderato.</p>
+              <div className="space-y-3">
+                {insuranceOptions.map(opt => {
+                  const isSelected = formData.insuranceOption === opt.id;
+                  const isRCA = opt.id === 'RCA';
+                  return (
+                    <div
+                      key={opt.id}
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${isSelected
+                        ? isRCA ? 'border-red-500 bg-red-500/10' : 'border-green-500 bg-green-500/10'
+                        : 'border-gray-600 hover:border-gray-500'}`}
+                      onClick={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          insuranceOption: opt.id,
+                          // If selecting RCA and current deposit is no_deposit, reset deposit
+                          depositOption: opt.id === 'RCA' && prev.depositOption === 'no_deposit' ? '' : prev.depositOption,
+                        }));
+                      }}
+                    >
+                      <div className="flex items-center">
+                        <input
+                          type="radio"
+                          name="insuranceOption"
+                          value={opt.id}
+                          checked={isSelected}
+                          onChange={() => {}}
+                          className="w-4 h-4 flex-shrink-0"
+                        />
+                        <div className="ml-3 flex-1">
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold text-white">{opt.name}</span>
+                            <span className={`font-bold ${isRCA ? 'text-gray-400' : opt.id === 'KASKO_DR7' ? 'text-green-400' : 'text-yellow-400'}`}>
+                              {opt.dailyPrice > 0 ? `€${opt.dailyPrice}/giorno` : 'Inclusa'}
+                            </span>
+                          </div>
+                          {!isRCA && (
+                            <p className="text-xs text-gray-400 mt-1">{opt.coverage}</p>
+                          )}
+                          <p className={`text-xs mt-1 ${opt.id === 'KASKO_DR7' ? 'text-green-400 font-semibold' : 'text-gray-300'}`}>
+                            Da risarcire: {opt.deductible}
+                          </p>
+                          {isRCA && isSelected && opt.mandatoryDeposit && (
+                            <div className="mt-2 p-2 bg-red-900/30 border border-red-500/50 rounded">
+                              <p className="text-red-300 text-xs font-semibold">
+                                ATTENZIONE: Senza Kasko è richiesta una cauzione obbligatoria di €{opt.mandatoryDeposit.toLocaleString()}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </section>
 
-
-            {/* === DEPOSIT CHOICE (Urban/Corporate only) === */}
-            {isUrbanOrCorporate && (
-              <section className="border-t border-gray-700 pt-6">
-                <h3 className="text-lg font-bold text-white mb-2">B. CAUZIONE</h3>
-                <p className="text-sm text-gray-400 mb-4">
-                  Scegli il tipo di cauzione: cauzione standard a tariffa base o micro cauzione con supplemento.
-                </p>
-                {!formData.depositOption && (
-                  <div className="p-3 bg-amber-900/20 border border-amber-500/50 rounded-lg mb-3">
-                    <p className="text-amber-300 text-sm font-medium">
-                      Seleziona un'opzione per la cauzione per continuare
-                    </p>
-                  </div>
-                )}
-                <div className="space-y-3">
-                  {/* Option 1: Full deposit — base tariff */}
-                  <div
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.depositOption === 'with_deposit'
-                      ? 'border-green-500 bg-green-500/10'
-                      : 'border-gray-600 hover:border-gray-500'}`}
-                    onClick={() => setFormData(prev => ({ ...prev, depositOption: 'with_deposit' as const }))}
-                  >
-                    <div className="flex items-center">
-                      <input
-                        type="radio"
-                        name="depositOption"
-                        value="with_deposit"
-                        checked={formData.depositOption === 'with_deposit'}
-                        onChange={() => setFormData(prev => ({ ...prev, depositOption: 'with_deposit' as const }))}
-                        className="w-4 h-4 text-green-500"
-                      />
-                      <div className="ml-3 flex-1">
-                        <div className="flex justify-between items-center">
-                          <span className="font-bold text-white">Cauzione</span>
-                          <span className="font-bold text-green-400">
-                            {formatDeposit(DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT)}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-400 mt-1">
-                          Cauzione di €{DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT} — Tariffa base del noleggio
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Option 2: Micro deposit + 30% surcharge */}
-                  <div
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.depositOption === 'micro_deposit'
-                      ? 'border-yellow-400 bg-yellow-400/10'
-                      : 'border-gray-600 hover:border-gray-500'}`}
-                    onClick={() => setFormData(prev => ({ ...prev, depositOption: 'micro_deposit' as const }))}
-                  >
-                    <div className="flex items-center">
-                      <input
-                        type="radio"
-                        name="depositOption"
-                        value="micro_deposit"
-                        checked={formData.depositOption === 'micro_deposit'}
-                        onChange={() => setFormData(prev => ({ ...prev, depositOption: 'micro_deposit' as const }))}
-                        className="w-4 h-4 text-yellow-400"
-                      />
-                      <div className="ml-3 flex-1">
-                        <div className="flex justify-between items-center">
-                          <span className="font-bold text-white">Micro Cauzione</span>
-                          <span className="font-bold text-yellow-400">
-                            {formatDeposit(licenseYears >= 5 ? DEPOSIT_RULES.UTILITARIA.LICENSE_5_OR_MORE : DEPOSIT_RULES.UTILITARIA.LICENSE_UNDER_5)} + 30%
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-400 mt-1">
-                          {licenseYears >= 5
-                            ? `Micro cauzione di €${DEPOSIT_RULES.UTILITARIA.LICENSE_5_OR_MORE} (patente ≥ 5 anni)`
-                            : `Micro cauzione di €${DEPOSIT_RULES.UTILITARIA.LICENSE_UNDER_5} (patente < 5 anni)`
-                          } — Supplemento del 30% applicato al totale
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {errors.depositOption && (
-                  <p className="text-xs text-red-400 mt-2">{errors.depositOption}</p>
-                )}
-              </section>
-            )}
-
+            {/* === B. CHILOMETRI (tier-conditional pricing) === */}
             <section className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-bold text-white mb-4">{isUrbanOrCorporate ? 'C' : 'B'}. CHILOMETRI</h3>
+              <h3 className="text-lg font-bold text-white mb-4">B. CHILOMETRI</h3>
               {displayVehicleType === 'SUPERCAR' && !isMassimo ? (
-                // Supercar km package selection: 50km/day or unlimited
                 <div className="space-y-3">
-                  {/* Option 1: 50km/day at €199/day */}
                   <div
                     className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType === '50km'
                       ? 'border-yellow-400 bg-yellow-400/10'
@@ -3712,10 +3748,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         <span className="font-bold text-white">50 km al giorno</span>
                         <p className="text-sm text-gray-400">Ideale per uso cittadino</p>
                       </div>
-                      <span className="font-bold text-yellow-400">{formatPrice(199)}/giorno</span>
+                      <span className="font-bold text-yellow-400">€199/giorno</span>
                     </div>
                   </div>
-                  {/* Option 2: Unlimited km at standard pricing */}
                   <div
                     className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType === 'unlimited'
                       ? 'border-yellow-400 bg-yellow-400/10'
@@ -3727,13 +3762,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         <span className="font-bold text-white">Km illimitati</span>
                         <p className="text-sm text-gray-400">Senza limiti di percorrenza</p>
                       </div>
-                      <span className="font-bold text-white">Prezzo variabile</span>
+                      <span className="font-bold text-yellow-400">€{tierPricing.unlimitedKmPerDay}/giorno</span>
                     </div>
                   </div>
                 </div>
               ) : (
-                // Non-supercar: km included based on vehicle type
-                <div className={`p-4 rounded-lg border-2 cursor-pointer transition-colors border-green-500 bg-green-500/10`}>
+                <div className="p-4 rounded-lg border-2 border-green-500 bg-green-500/10">
                   <div className="flex justify-between items-center">
                     <div>
                       <span className="font-bold text-white">Km inclusi nel noleggio</span>
@@ -3745,15 +3779,138 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               )}
             </section>
 
-            {/* === USAGE ZONE SELECTOR === */}
-            {/* Hidden for Massimo (auto-set FUORI_ZONA) */}
+            {/* === C. SERVIZI AGGIUNTIVI (tier-conditional prices) === */}
+            <section className="border-t border-gray-700 pt-6">
+              <h3 className="text-lg font-bold text-white mb-4">C. SERVIZI AGGIUNTIVI</h3>
+              <div className="space-y-3">
+                {/* Lavaggio finale */}
+                <div className="flex items-center p-3 bg-gray-800/50 rounded-md border border-gray-700">
+                  <input type="checkbox" checked disabled className="h-4 w-4" />
+                  <span className="ml-3 text-white">Pulizia finale</span>
+                  <span className="ml-auto font-semibold text-yellow-400">€{tierPricing.lavaggio.toFixed(2)}</span>
+                </div>
+
+                {/* Second driver with tier price */}
+                <div
+                  className={`p-3 rounded-md border cursor-pointer transition-all ${formData.addSecondDriver
+                    ? 'border-white bg-white/5' : 'border-gray-700 hover:border-gray-500'}`}
+                  onClick={() => setFormData(prev => ({ ...prev, addSecondDriver: !prev.addSecondDriver }))}
+                >
+                  <div className="flex items-center">
+                    <input type="checkbox" checked={formData.addSecondDriver} onChange={() => {}} className="h-4 w-4" />
+                    <span className="ml-3 text-white">Secondo guidatore</span>
+                    <span className="ml-auto font-semibold text-white">€{tierPricing.secondDriverPerDay}/giorno</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* === D. CAUZIONE === */}
+            {isUrbanOrCorporate ? (
+              /* Urban/Corporate: keep existing deposit logic */
+              <section className="border-t border-gray-700 pt-6">
+                <h3 className="text-lg font-bold text-white mb-2">D. CAUZIONE</h3>
+                <p className="text-sm text-gray-400 mb-4">Scegli il tipo di cauzione.</p>
+                {!formData.depositOption && (
+                  <div className="p-3 bg-amber-900/20 border border-amber-500/50 rounded-lg mb-3">
+                    <p className="text-amber-300 text-sm font-medium">Seleziona un'opzione per la cauzione per continuare</p>
+                  </div>
+                )}
+                <div className="space-y-3">
+                  <div
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.depositOption === 'with_deposit'
+                      ? 'border-green-500 bg-green-500/10' : 'border-gray-600 hover:border-gray-500'}`}
+                    onClick={() => setFormData(prev => ({ ...prev, depositOption: 'with_deposit' }))}
+                  >
+                    <div className="flex items-center">
+                      <input type="radio" name="depositOption" checked={formData.depositOption === 'with_deposit'} onChange={() => {}} className="w-4 h-4" />
+                      <div className="ml-3 flex-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-white">Cauzione</span>
+                          <span className="font-bold text-green-400">{formatDeposit(DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT)}</span>
+                        </div>
+                        <p className="text-sm text-gray-400 mt-1">Cauzione di €{DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT} — Tariffa base</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.depositOption === 'micro_deposit'
+                      ? 'border-yellow-400 bg-yellow-400/10' : 'border-gray-600 hover:border-gray-500'}`}
+                    onClick={() => setFormData(prev => ({ ...prev, depositOption: 'micro_deposit' }))}
+                  >
+                    <div className="flex items-center">
+                      <input type="radio" name="depositOption" checked={formData.depositOption === 'micro_deposit'} onChange={() => {}} className="w-4 h-4" />
+                      <div className="ml-3 flex-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-white">Micro Cauzione</span>
+                          <span className="font-bold text-yellow-400">
+                            {formatDeposit(licenseYears >= 5 ? DEPOSIT_RULES.UTILITARIA.LICENSE_5_OR_MORE : DEPOSIT_RULES.UTILITARIA.LICENSE_UNDER_5)} + 30%
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-400 mt-1">
+                          {licenseYears >= 5
+                            ? `Micro cauzione di €${DEPOSIT_RULES.UTILITARIA.LICENSE_5_OR_MORE} (patente ≥ 5 anni)`
+                            : `Micro cauzione di €${DEPOSIT_RULES.UTILITARIA.LICENSE_UNDER_5} (patente < 5 anni)`
+                          } — Supplemento del 30% sul totale
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {errors.depositOption && <p className="text-xs text-red-400 mt-2">{errors.depositOption}</p>}
+              </section>
+            ) : !isMassimo && !isLoyalCustomer && getMembershipTierName(user) !== 'gold' && getMembershipTierName(user) !== 'platinum' ? (
+              /* Supercar: tier-based deposit options */
+              <section className="border-t border-gray-700 pt-6">
+                <h3 className="text-lg font-bold text-white mb-2">D. CAUZIONE</h3>
+                <p className="text-sm text-gray-400 mb-4">
+                  {!formData.isSardinianResident
+                    ? 'Per i non residenti in Sardegna: solo carta di credito o veicolo (dal 2020).'
+                    : 'Scegli come gestire la cauzione.'}
+                </p>
+                <div className="space-y-3">
+                  {depositOptions.map(opt => {
+                    const isSelected = formData.depositOption === opt.id;
+                    // Disable "no_deposit" if insurance is RCA (solo con acquisto Kasko)
+                    const isDisabled = opt.id === 'no_deposit' && selectedInsuranceIsRCA;
+                    return (
+                      <div
+                        key={opt.id}
+                        className={`p-4 rounded-lg border-2 transition-colors ${isDisabled
+                          ? 'border-gray-700 opacity-50 cursor-not-allowed'
+                          : isSelected
+                            ? 'border-green-500 bg-green-500/10 cursor-pointer'
+                            : 'border-gray-600 hover:border-gray-500 cursor-pointer'}`}
+                        onClick={() => !isDisabled && setFormData(prev => ({ ...prev, depositOption: opt.id }))}
+                      >
+                        <div className="flex items-center">
+                          <input type="radio" name="depositOption" checked={isSelected} disabled={isDisabled} onChange={() => {}} className="w-4 h-4" />
+                          <div className="ml-3 flex-1">
+                            <div className="flex justify-between items-center">
+                              <span className="font-bold text-white">{opt.label}</span>
+                              <span className="font-bold text-yellow-400">
+                                {opt.surchargePerDay ? `€${opt.surchargePerDay}/giorno` : opt.amount > 0 ? `€${opt.amount.toLocaleString()}` : ''}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-400 mt-1">{opt.description}</p>
+                            {isDisabled && (
+                              <p className="text-xs text-red-400 mt-1">Disponibile solo con acquisto Kasko</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {errors.depositOption && <p className="text-xs text-red-400 mt-2">{errors.depositOption}</p>}
+              </section>
+            ) : null}
+
+            {/* === USAGE ZONE SELECTOR (Supercar unlimited only) === */}
             {vehicleType === 'SUPERCAR' && !isMassimo && formData.kmPackageType === 'unlimited' && (
               <section className="border-t border-gray-700 pt-6">
-                <h3 className="text-lg font-bold text-white mb-2">C. ZONA DI UTILIZZO *</h3>
-                <p className="text-sm text-gray-400 mb-4">
-                  Seleziona dove utilizzerai il veicolo durante il noleggio.
-                </p>
-
+                <h3 className="text-lg font-bold text-white mb-2">E. ZONA DI UTILIZZO *</h3>
+                <p className="text-sm text-gray-400 mb-4">Seleziona dove utilizzerai il veicolo durante il noleggio.</p>
                 <div className="space-y-3">
                   {/* Option 1: Cagliari e Sud Sardegna */}
                   <div
@@ -3839,56 +3996,52 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             )}
 
 
+            {/* === F. SERVIZI EXPERIENCE === */}
             <section className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-bold text-white mb-2">C. SERVIZI AGGIUNTIVI</h3>
-              <p className="text-sm text-gray-400 mb-4">
-                Aggiungi servizi extra per un viaggio più confortevole e sicuro.
-              </p>
+              <h3 className="text-lg font-bold text-white mb-2">F. SERVIZI EXPERIENCE</h3>
+              <p className="text-sm text-gray-400 mb-4">Personalizza la tua esperienza con servizi esclusivi.</p>
               <div className="space-y-3">
-                {/* Mandatory car wash */}
-                <div className="flex items-center p-3 bg-gray-800/50 rounded-md border border-gray-700">
-                  <input type="checkbox" checked disabled className="h-4 w-4" />
-                  <span className="ml-3 text-white">LAVAGGIO COMPLETO [OBBLIGATORIO]</span>
-                  <span className="ml-auto font-semibold text-green-400">INCLUSO</span>
-                </div>
-
-                {/* Rental Extras from constants */}
-                {RENTAL_EXTRAS.filter(extra => !extra.autoApply && extra.id !== 'additional_driver').map(extra => {
-                  const isSelected = formData.extras.includes(extra.id);
-                  const priceDisplay = extra.oneTime
-                    ? `€${extra.pricePerDay.eur}`
-                    : `€${extra.pricePerDay.eur}/giorno`;
-
+                {experienceServices.map(svc => {
+                  const qty = formData.selectedExperiences[svc.id] || 0;
+                  const isSelected = qty > 0;
+                  const unitLabel = svc.unit === 'per_day' ? '/giorno' : svc.unit === 'per_hour' ? '/ora' : svc.unit === 'per_item' ? '/unità' : '';
                   return (
                     <div
-                      key={extra.id}
-                      className={`p-3 rounded-md border cursor-pointer transition-all ${isSelected
-                        ? 'border-white bg-white/5'
-                        : 'border-gray-700 hover:border-gray-500'
-                        }`}
-                      onClick={() => {
-                        setFormData(prev => ({
-                          ...prev,
-                          extras: isSelected
-                            ? prev.extras.filter(id => id !== extra.id)
-                            : [...prev.extras, extra.id]
-                        }));
-                      }}
+                      key={svc.id}
+                      className={`p-3 rounded-md border transition-all ${isSelected
+                        ? 'border-white bg-white/5' : 'border-gray-700 hover:border-gray-500'}`}
                     >
-                      <div className="flex items-start">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => { }}
-                          className="h-4 w-4 mt-1 text-white"
-                        />
-                        <div className="ml-3 flex-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-white font-medium">{getTranslated(extra.label)}</span>
-                            <span className="font-semibold text-white">{priceDisplay}</span>
-                          </div>
-                          {extra.description && (
-                            <p className="text-xs text-gray-400 mt-1">{getTranslated(extra.description)}</p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <span className="text-white font-medium">{svc.name}</span>
+                          <p className="text-xs text-gray-400 mt-0.5">{svc.description}</p>
+                        </div>
+                        <div className="flex items-center gap-2 ml-4">
+                          <span className="font-semibold text-yellow-400 text-sm whitespace-nowrap">€{svc.price.toFixed(2)}{unitLabel}</span>
+                          {(svc.unit === 'per_item' || svc.unit === 'per_hour') ? (
+                            <div className="flex items-center gap-1">
+                              <button type="button" className="w-7 h-7 rounded bg-gray-700 text-white font-bold hover:bg-gray-600"
+                                onClick={() => setFormData(prev => ({
+                                  ...prev,
+                                  selectedExperiences: { ...prev.selectedExperiences, [svc.id]: Math.max(0, qty - 1) }
+                                }))}>-</button>
+                              <span className="w-6 text-center text-white text-sm">{qty}</span>
+                              <button type="button" className="w-7 h-7 rounded bg-gray-700 text-white font-bold hover:bg-gray-600"
+                                onClick={() => setFormData(prev => ({
+                                  ...prev,
+                                  selectedExperiences: { ...prev.selectedExperiences, [svc.id]: qty + 1 }
+                                }))}>+</button>
+                            </div>
+                          ) : (
+                            <button type="button"
+                              className={`px-3 py-1 rounded text-sm font-bold ${isSelected ? 'bg-white text-black' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+                              onClick={() => setFormData(prev => ({
+                                ...prev,
+                                selectedExperiences: { ...prev.selectedExperiences, [svc.id]: isSelected ? 0 : 1 }
+                              }))}
+                            >
+                              {isSelected ? 'Aggiunto' : svc.unit === 'per_day' ? 'Aggiungi' : 'Aggiungi'}
+                            </button>
                           )}
                         </div>
                       </div>
@@ -3897,8 +4050,30 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 })}
               </div>
             </section>
+
+            {/* === G. DR7 FLEX === */}
+            <section className="border-t border-gray-700 pt-6">
+              <h3 className="text-lg font-bold text-white mb-2">G. DR7 FLEX — Cancellazione Premium</h3>
+              <div
+                className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.dr7Flex
+                  ? 'border-green-500 bg-green-500/10' : 'border-gray-600 hover:border-gray-500'}`}
+                onClick={() => setFormData(prev => ({ ...prev, dr7Flex: !prev.dr7Flex }))}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <input type="checkbox" checked={formData.dr7Flex} onChange={() => {}} className="h-5 w-5" />
+                    <div>
+                      <span className="font-bold text-white">DR7 Flex</span>
+                      <p className="text-sm text-gray-400 mt-1">{DR7_FLEX.description}</p>
+                    </div>
+                  </div>
+                  <span className="font-bold text-yellow-400 whitespace-nowrap ml-4">€{DR7_FLEX.dailyPrice.toFixed(2)}/giorno</span>
+                </div>
+              </div>
+            </section>
           </div>
         );
+      }
       case 4:
         return (
           <div className="space-y-8">
@@ -4031,98 +4206,158 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   )}
                 </div>
 
-                <div>
-                  <p className="font-bold text-base text-white mb-2">ASSICURAZIONE E SERVIZI</p>
-                  <hr className="border-gray-600 mb-2" />
-                  <p>Assicurazione: KASKO (inclusa)</p>
-                  <p>Lavaggio completo obbligatorio</p>
-                  {formData.addSecondDriver && <p>Secondo guidatore</p>}
-                  {isUrbanOrCorporate && formData.depositOption && (
-                    <p className={formData.depositOption === 'micro_deposit' ? 'text-yellow-400' : 'text-green-400'}>
-                      {formData.depositOption === 'with_deposit'
-                        ? `Cauzione: €${getDeposit()} — Tariffa base`
-                        : `Micro Cauzione: €${getDeposit()} (patente ${licenseYears >= 5 ? '≥' : '<'} 5 anni) — +30% sul totale`}
-                    </p>
-                  )}
-                  {!isUrbanOrCorporate && !isMassimo && !isLoyalCustomer && getMembershipTierName(user) !== 'gold' && getMembershipTierName(user) !== 'platinum' && (
-                    <p className="text-green-400">
-                      Cauzione al ritiro: €{getDeposit()}
-                    </p>
-                  )}
-                </div>
-
+                {/* DETTAGLIO COSTI — Full itemized breakdown */}
                 <div>
                   <p className="font-bold text-base text-white mb-2">DETTAGLIO COSTI</p>
                   <hr className="border-gray-600 mb-2" />
+
+                  {/* Noleggio base */}
                   <div className="flex justify-between">
-                    <span>
-                      Noleggio ({duration.days} gg × {effectivePricePerDay ? formatPrice(effectivePricePerDay) : '€0'})
-                    </span>
+                    <span>Noleggio ({duration.days} gg × {effectivePricePerDay ? formatPrice(effectivePricePerDay) : '€0'})</span>
                     <span>{formatPrice(rentalCost)}</span>
                   </div>
-                  <div className="flex justify-between"><span>Pacchetto km ({formData.kmPackageType === '50km' ? `50 km/giorno` : isUrbanOrCorporate ? 'inclusi' : (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'illimitati' : `${includedKm} km`})</span> <span>{formData.kmPackageType === '50km' ? 'Incluso' : formatPrice(kmPackageCost)}</span></div>
-                  <div className="flex justify-between"><span className="notranslate">Assicurazione {formData.insuranceOption?.replace(/_/g, ' ') || 'KASKO'}</span> <span>{formatPrice(insuranceCost)}</span></div>
-                  {/* Lavaggio is now included in the price - no additional fee */}
-                  <div className="flex justify-between"><span>Spese di ritiro</span> <span>{formatPrice(pickupFee)}</span></div>
-                  <div className="flex justify-between"><span>Spese di riconsegna</span> <span>{formatPrice(dropoffFee)}</span></div>
-                  {noDepositSurcharge > 0 && <div className="flex justify-between text-yellow-400"><span>Supplemento Micro Cauzione (+30%)</span> <span>{formatPrice(noDepositSurcharge)}</span></div>}
-                  {secondDriverFee > 0 && <div className="flex justify-between"><span>Secondo guidatore ({duration.days} gg × €10)</span> <span>{formatPrice(secondDriverFee)}</span></div>}
-                  {youngDriverFee > 0 && <div className="flex justify-between"><span>Supplemento under 25 ({duration.days} gg × €10)</span> <span>{formatPrice(youngDriverFee)}</span></div>}
-                  {recentLicenseFee > 0 && <div className="flex justify-between"><span>Supplemento patente recente ({duration.days} gg × €20)</span> <span>{formatPrice(recentLicenseFee)}</span></div>}
+
+                  {/* Assicurazione */}
+                  {insuranceCost > 0 && (
+                    <div className="flex justify-between">
+                      <span>Assicurazione {(() => {
+                        const opt = (INSURANCE_OPTIONS_BY_TIER[(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'] || []).find(o => o.id === formData.insuranceOption);
+                        return opt?.name || formData.insuranceOption?.replace(/_/g, ' ');
+                      })()} ({duration.days} gg × €{(() => {
+                        const opt = (INSURANCE_OPTIONS_BY_TIER[(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'] || []).find(o => o.id === formData.insuranceOption);
+                        return opt?.dailyPrice || 0;
+                      })()})</span>
+                      <span>{formatPrice(insuranceCost)}</span>
+                    </div>
+                  )}
+                  {insuranceCost === 0 && (
+                    <div className="flex justify-between text-gray-400">
+                      <span>Assicurazione ({formData.insuranceOption === 'RCA' ? 'Solo RCA' : 'Inclusa'})</span>
+                      <span>€0,00</span>
+                    </div>
+                  )}
+
+                  {/* KM package */}
+                  {kmPackageCost > 0 && (
+                    <div className="flex justify-between">
+                      <span>Km illimitati ({duration.days} gg × €{(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? TIER_PRICING[driverTier].unlimitedKmPerDay : 189})</span>
+                      <span>{formatPrice(kmPackageCost)}</span>
+                    </div>
+                  )}
+                  {formData.kmPackageType === '50km' && (
+                    <div className="flex justify-between text-gray-400"><span>Pacchetto km (50 km/giorno)</span> <span>Incluso nel noleggio</span></div>
+                  )}
+
+                  {/* Secondo guidatore */}
+                  {secondDriverFee > 0 && (
+                    <div className="flex justify-between">
+                      <span>Secondo guidatore ({duration.days} gg × €{(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? TIER_PRICING[driverTier].secondDriverPerDay : 10})</span>
+                      <span>{formatPrice(secondDriverFee)}</span>
+                    </div>
+                  )}
+
+                  {/* Lavaggio / pulizia finale */}
+                  {lavaggioFee > 0 && (
+                    <div className="flex justify-between">
+                      <span>Pulizia finale</span>
+                      <span>{formatPrice(lavaggioFee)}</span>
+                    </div>
+                  )}
+
+                  {/* Experience services */}
+                  {experienceCost > 0 && Object.entries(formData.selectedExperiences).filter(([_, qty]) => qty > 0).map(([svcId, qty]) => {
+                    const svc = BOOKING_EXPERIENCE_SERVICES.find(s => s.id === svcId);
+                    if (!svc) return null;
+                    const unitLabel = svc.unit === 'per_day' ? `${duration.days} gg` : `${qty}x`;
+                    const lineCost = svc.unit === 'per_day' ? svc.price * duration.days * qty : svc.price * qty;
+                    return (
+                      <div key={svcId} className="flex justify-between">
+                        <span>{svc.name} ({unitLabel} × €{svc.price.toFixed(2)})</span>
+                        <span>{formatPrice(lineCost)}</span>
+                      </div>
+                    );
+                  })}
+
+                  {/* DR7 Flex */}
+                  {flexCost > 0 && (
+                    <div className="flex justify-between">
+                      <span>DR7 Flex ({duration.days} gg × €{DR7_FLEX.dailyPrice.toFixed(2)})</span>
+                      <span>{formatPrice(flexCost)}</span>
+                    </div>
+                  )}
+
+                  {/* Deposit surcharges */}
+                  {noDepositSurcharge > 0 && (
+                    <div className="flex justify-between text-yellow-400">
+                      <span>{isUrbanOrCorporate ? 'Supplemento Micro Cauzione (+30%)' : `Supplemento cauzione (${formData.depositOption === 'no_deposit' ? `${duration.days} gg × €49` : formData.depositOption === 'vehicle_deposit' ? `${duration.days} gg × €20` : ''})`}</span>
+                      <span>{formatPrice(noDepositSurcharge)}</span>
+                    </div>
+                  )}
+
                   <hr className="border-gray-500 my-2" />
 
+                  {/* Subtotal, discounts, total */}
+                  <div className="flex justify-between text-gray-400"><span>Subtotale</span> <span>{formatPrice(finalTotal)}</span></div>
 
-                  {membershipDiscount > 0 ? (
-                    <>
-                      <div className="flex justify-between text-gray-400 line-through"><span>Totale</span> <span>{formatPrice(originalTotal)}</span></div>
-                      <div className="flex justify-between text-green-400 text-sm">
-                        <span>Sconto {membershipTier} ({(membershipDiscount / originalTotal * 100).toFixed(0)}%)</span>
-                        <span>-{formatPrice(membershipDiscount)}</span>
-                      </div>
-                      {onlineDiscountAmount > 0 && (
-                        <div className="flex justify-between text-green-400 text-sm">
-                          <span>Sconto Online -5%</span>
-                          <span>-{formatPrice(onlineDiscountAmount)}</span>
-                        </div>
-                      )}
-                      {discountAmount > 0 && (
-                        <div className="flex justify-between text-yellow-400 text-sm">
-                          <span>Codice Sconto ({appliedDiscount?.code})</span>
-                          <span>-{formatPrice(discountAmount)}</span>
-                        </div>
-                      )}
-                      {selectedUpsellWash && (
-                        <div className="flex justify-between text-blue-400 text-sm">
-                          <span>Lavaggio {selectedUpsellWash.name} (-10%)</span>
-                          <span>+{formatPrice(washUpsellCost)}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between font-bold text-lg text-white"><span>TOTALE</span> <span>{formatPrice(grandTotal)}</span></div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex justify-between text-gray-400"><span>Subtotale</span> <span>{formatPrice(finalTotal)}</span></div>
-                      {onlineDiscountAmount > 0 && (
-                        <div className="flex justify-between text-green-400 text-sm">
-                          <span>Sconto Online -5%</span>
-                          <span>-{formatPrice(onlineDiscountAmount)}</span>
-                        </div>
-                      )}
-                      {discountAmount > 0 && (
-                        <div className="flex justify-between text-yellow-400 text-sm">
-                          <span>Codice Sconto ({appliedDiscount?.code})</span>
-                          <span>-{formatPrice(discountAmount)}</span>
-                        </div>
-                      )}
-                      {selectedUpsellWash && (
-                        <div className="flex justify-between text-blue-400 text-sm">
-                          <span>Lavaggio {selectedUpsellWash.name} (-10%)</span>
-                          <span>+{formatPrice(washUpsellCost)}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between font-bold text-lg"><span>TOTALE</span> <span>{formatPrice(grandTotal)}</span></div>
-                    </>
+                  {membershipDiscount > 0 && (
+                    <div className="flex justify-between text-green-400 text-sm">
+                      <span>Sconto {membershipTier} ({(membershipDiscount / originalTotal * 100).toFixed(0)}%)</span>
+                      <span>-{formatPrice(membershipDiscount)}</span>
+                    </div>
                   )}
+                  {onlineDiscountAmount > 0 && (
+                    <div className="flex justify-between text-green-400 text-sm">
+                      <span>Sconto Online -5%</span>
+                      <span>-{formatPrice(onlineDiscountAmount)}</span>
+                    </div>
+                  )}
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between text-yellow-400 text-sm">
+                      <span>Codice Sconto ({appliedDiscount?.code})</span>
+                      <span>-{formatPrice(discountAmount)}</span>
+                    </div>
+                  )}
+                  {selectedUpsellWash && (
+                    <div className="flex justify-between text-blue-400 text-sm">
+                      <span>Lavaggio {selectedUpsellWash.name} (-10%)</span>
+                      <span>+{formatPrice(washUpsellCost)}</span>
+                    </div>
+                  )}
+
+                  <hr className="border-gray-500 my-2" />
+                  <div className="flex justify-between font-bold text-lg text-white"><span>TOTALE</span> <span>{formatPrice(grandTotal)}</span></div>
+
+                  {/* Cauzione info */}
+                  {(() => {
+                    const depositAmt = getDeposit();
+                    if (depositAmt > 0 || formData.depositOption) {
+                      return (
+                        <div className="mt-3 p-3 bg-gray-700/50 rounded-lg">
+                          <p className="text-sm font-semibold text-white">CAUZIONE AL RITIRO</p>
+                          {isUrbanOrCorporate && formData.depositOption && (
+                            <p className="text-sm text-gray-300 mt-1">
+                              {formData.depositOption === 'with_deposit'
+                                ? `Cauzione: €${DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT}`
+                                : `Micro Cauzione: €${licenseYears >= 5 ? DEPOSIT_RULES.UTILITARIA.LICENSE_5_OR_MORE : DEPOSIT_RULES.UTILITARIA.LICENSE_UNDER_5}`}
+                            </p>
+                          )}
+                          {!isUrbanOrCorporate && depositAmt > 0 && (
+                            <p className="text-sm text-gray-300 mt-1">Importo: €{depositAmt.toLocaleString()}</p>
+                          )}
+                          {formData.depositOption && !isUrbanOrCorporate && (
+                            <p className="text-sm text-gray-400 mt-1">
+                              Tipo: {(() => {
+                                const depKey = `${(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'}_${formData.isSardinianResident ? 'RESIDENT' : 'NON_RESIDENT'}`;
+                                const opt = (TIER_DEPOSIT_OPTIONS[depKey] || []).find((d: any) => d.id === formData.depositOption);
+                                return opt?.label || formData.depositOption;
+                              })()}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
 
                 {/* Codice Sconto - Hidden for Supercars (except special clients who get dedicated codes) */}
@@ -4180,30 +4415,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       Maggiori informazioni
                     </summary>
                     <div className="mt-3 pl-4 space-y-3 border-l-2 border-gray-600">
-                      <div>
-                        {isPremiumVehicle(item.name) ? (
-                          <>
-                            <p className="text-sm text-gray-300">
-                              Al Check-in vi verrà richiesto un deposito cauzionale di 5000€
-                            </p>
-                            <p className="text-sm text-gray-300 mt-2">
-                              O un veicolo dal 2020 in poi di proprietà in buone condizioni,con un supplemento di servizio di 20€ al gg
-                            </p>
-                            <p className="text-sm text-gray-300 mt-2">
-                              Non residente in sardegna 10.000€
-                            </p>
-                          </>
-                        ) : (
-                          <>
-                            <p className="text-sm text-gray-300">
-                              {/* Automatic deposit calculation - single amount based on loyalty and license years */}
-                              Cauzione: {formatDeposit(getDeposit())}
-                              {getDeposit() === 0 && formData.depositOption === 'micro_deposit' && ' (Micro Cauzione — supplemento +30% applicato)'}
-                              {getDeposit() === 0 && formData.depositOption !== 'micro_deposit' && isLoyalCustomer && ' (Cliente Fedele)'}
-                            </p>
-                          </>
-                        )}
-                      </div>
+                      <p className="text-sm text-gray-300">
+                        Profilo conducente: {driverTierInfo?.tier === 'TIER_1' ? 'Tier 1 (21-25 anni o patente 2-4 anni)' : 'Tier 2 (26-69 anni, patente 5+ anni)'}
+                      </p>
+                      <p className="text-sm text-gray-300">
+                        Prenotazione soggetta a verifica documenti. Se i documenti non sono validi, la prenotazione potrà essere annullata.
+                      </p>
                     </div>
                   </details>
                 </div>
