@@ -159,8 +159,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const vehicleType = useMemo(() => getVehicleType(item, categoryContext), [item, categoryContext]);
   const isUrbanOrCorporate = vehicleType === 'UTILITARIA' || vehicleType === 'FURGONE' || vehicleType === 'V_CLASS';
 
-  // Urban/Corporate fleet availability deadline - last checkout March 25th 2026
-  const UTILITARIE_MAX_DATE = '2026-03-25';
+  // Urban/Corporate fleet availability deadline (removed — no longer restricted)
+  const UTILITARIE_MAX_DATE = '2027-12-31';
   const isUtilitaria = vehicleType === 'UTILITARIA';
   const [showMaxDatePopup, setShowMaxDatePopup] = useState(false);
 
@@ -902,6 +902,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const [pickupH, pickupM] = formData.pickupTime.split(':').map(Number);
     const maxReturnMinutes = (pickupH * 60 + pickupM) - 90; // pickup time - 1h30
 
+    // Check if this is a single-day rental (return = pickup + 1 day)
+    const pickupDateObj = new Date(formData.pickupDate);
+    const returnDateObj = new Date(date);
+    pickupDateObj.setHours(0, 0, 0, 0);
+    returnDateObj.setHours(0, 0, 0, 0);
+    const daysDiff = Math.round((returnDateObj.getTime() - pickupDateObj.getTime()) / (1000 * 60 * 60 * 24));
+    const isMinimumRental = daysDiff <= 1;
+
     return filteredTimes.filter(time => {
       const [hours, minutes] = time.split(':').map(Number);
       const returnDt = new Date(date);
@@ -914,8 +922,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // Saturday return: allow all office-hour times (no 22h30 restriction)
       if (isSaturdayReturn) return true;
 
-      // Other days: cap at pickupTime - 1h30
-      return maxReturnMinutes < 0 || timeInMinutes <= maxReturnMinutes;
+      // Only apply the 22h30 cap (pickupTime - 1h30) for minimum 1-day rentals
+      // For multi-day rentals, allow any valid office-hour return time
+      if (isMinimumRental) {
+        return maxReturnMinutes < 0 || timeInMinutes <= maxReturnMinutes;
+      }
+
+      return true;
     });
   };
 
