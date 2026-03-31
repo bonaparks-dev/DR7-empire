@@ -95,7 +95,7 @@ const MarketingConsentModal: React.FC<MarketingConsentModalProps> = ({ isOpen, o
                             <div className="bg-gray-900/50 rounded-lg p-4 mb-6 border border-gray-800">
                                 <p className="text-white font-semibold text-sm mb-3">Vantaggi immediati:</p>
                                 <ul className="text-gray-300 text-sm space-y-2">
-                                    <li>• Credito immediato di 15€ da utilizzare sulla piattaforma</li>
+                                    <li>• Credito immediato ogni volta che acquisti</li>
                                     <li>• Accesso a premi ed estrazioni riservate gratuite ogni mese</li>
                                     <li>• Sconti esclusivi e priorità sulle offerte</li>
                                 </ul>
