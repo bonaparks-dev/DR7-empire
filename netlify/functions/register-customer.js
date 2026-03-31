@@ -286,6 +286,28 @@ exports.handler = async (event) => {
             }
         }
 
+        // 4. Grant €10 welcome bonus (idempotent — safe to call multiple times)
+        try {
+            const { data: bonusResult, error: bonusError } = await supabase
+                .rpc('grant_welcome_bonus', { p_user_id: userId });
+
+            if (bonusError) {
+                console.warn('Welcome bonus RPC error (non-fatal):', bonusError.message);
+            } else if (bonusResult && bonusResult[0]) {
+                const r = bonusResult[0];
+                if (r.already_granted) {
+                    console.log('Welcome bonus already granted for user:', userId);
+                } else if (r.success) {
+                    console.log('Welcome bonus €10 credited for user:', userId, 'new balance:', r.new_balance);
+                } else {
+                    console.warn('Welcome bonus failed:', r.error_message);
+                }
+            }
+        } catch (bonusErr) {
+            // Non-fatal: account is created, bonus can be retried
+            console.warn('Welcome bonus error (non-fatal):', bonusErr.message);
+        }
+
         return {
             statusCode: 200,
             body: JSON.stringify({ success: true, user: authData.user })
