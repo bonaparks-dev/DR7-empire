@@ -1241,7 +1241,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const calculatedRecentLicenseFee = 0;
 
     // --- LAVAGGIO (pulizia finale) ---
-    const calculatedLavaggioFee = tierPricingForCalc.lavaggio; // flat €9.90
+    // Massimo Runchina: excludeCarWash = true → no lavaggio fee
+    const calculatedLavaggioFee = isMassimo ? 0 : tierPricingForCalc.lavaggio; // flat €9.90
 
     // --- KM PACKAGE ---
     let calculatedKmPackageCost = 0;
@@ -1465,7 +1466,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const emailToCheck = formData.email || user?.email || '';
     if (isMassimoRunchina(emailToCheck)) {
       // Auto-set options so Massimo skips selection steps
-      if (formData.insuranceOption !== 'KASKO') updates.insuranceOption = 'KASKO';
+      if (formData.insuranceOption !== 'KASKO_BASE') updates.insuranceOption = 'KASKO_BASE';
       if (formData.kmPackageType !== 'unlimited') updates.kmPackageType = 'unlimited';
       if (formData.usageZone !== 'FUORI_ZONA') updates.usageZone = 'FUORI_ZONA';
 
