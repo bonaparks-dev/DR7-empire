@@ -1678,8 +1678,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (isLoyalCustomer) return 0; // 3+ supercar rentals
 
     // Rule 2: Supercar deposit — depends on age, license years, residency, payment method
-    // "Young" = 21-25 anni OR patente 2-4 anni
-    const isYoung = (driverAge >= 21 && driverAge <= 25) || (licenseYears >= 2 && licenseYears <= 4);
+    // "Young" = 21-25 anni OR patente 3-4 anni
+    const isYoung = (driverAge >= 21 && driverAge <= 25) || (licenseYears >= 3 && licenseYears <= 4);
     // Non-resident = usage zone FUORI_ZONA
     const isNonResident = formData.usageZone === 'FUORI_ZONA';
 
@@ -4734,7 +4734,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     </summary>
                     <div className="mt-3 pl-4 space-y-3 border-l-2 border-gray-600">
                       <p className="text-sm text-gray-300">
-                        Profilo conducente: {driverTierInfo?.tier === 'TIER_1' ? 'Tier 1 (21-25 anni o patente 2-4 anni)' : 'Tier 2 (26-69 anni, patente 5+ anni)'}
+                        Profilo conducente: {driverTierInfo?.tier === 'TIER_1' ? 'Tier 1 (21-25 anni o patente 3-4 anni)' : 'Tier 2 (26-69 anni, patente 5+ anni)'}
                       </p>
                       <p className="text-sm text-gray-300">
                         Prenotazione soggetta a verifica documenti. Se i documenti non sono validi, la prenotazione potrà essere annullata.
@@ -5433,7 +5433,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         type="button"
                         onClick={handleNext}
                         className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={(step === 1 && !!availabilityError) || (step === 1 && isCheckingAvailability) || (licenseYears < 2 && step === 2) || (step === 2 && !formData.confirmsInformation) || (step === 3 && isUrbanOrCorporate && !formData.depositOption)}
+                        disabled={(step === 1 && !!availabilityError) || (step === 1 && isCheckingAvailability) || (licenseYears < 3 && step === 2) || (step === 2 && !formData.confirmsInformation) || (step === 3 && isUrbanOrCorporate && !formData.depositOption)}
                       >
                         Continua
                       </button>

@@ -9,9 +9,9 @@ import {
 /**
  * Classify a driver into Tier 1, Tier 2, or Blocked based on age and license years.
  *
- * Tier 1: Age 21-25 OR license held 2-4 years
- * Tier 2: Age 26-69 AND license held 5+ years
- * Blocked: All other cases
+ * Tier 1 (Fascia B): Age 21-25 OR license held 3-4 years
+ * Tier 2 (Fascia A): Age 26-69 AND license held 5+ years
+ * Blocked: All other cases (age <21, age >=70, license <3 years)
  */
 export function classifyDriverTier(driverAge: number, licenseYears: number): TierClassification {
   const base = { driverAge, licenseYears };
@@ -23,12 +23,12 @@ export function classifyDriverTier(driverAge: number, licenseYears: number): Tie
   if (driverAge >= 70) {
     return { ...base, tier: 'BLOCKED', reason: 'Noleggio non disponibile per età superiore a 69 anni. Contattaci per una verifica personalizzata.' };
   }
-  if (licenseYears < 2) {
-    return { ...base, tier: 'BLOCKED', reason: 'Patente da almeno 2 anni richiesta. Contattaci per una verifica personalizzata.' };
+  if (licenseYears < 3) {
+    return { ...base, tier: 'BLOCKED', reason: 'Patente da almeno 3 anni richiesta. Contattaci per una verifica personalizzata.' };
   }
 
-  // Tier 1: Age 21-25 OR license 2-4 years
-  if ((driverAge >= 21 && driverAge <= 25) || (licenseYears >= 2 && licenseYears <= 4)) {
+  // Tier 1 (Fascia B): Age 21-25 OR license 3-4 years
+  if ((driverAge >= 21 && driverAge <= 25) || (licenseYears >= 3 && licenseYears <= 4)) {
     return { ...base, tier: 'TIER_1', reason: 'Profilo Tier 1 — Conducente giovane o patente recente' };
   }
 
