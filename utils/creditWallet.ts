@@ -22,40 +22,23 @@ export interface UserCreditBalance {
  * Get user's current credit balance
  */
 export async function getUserCreditBalance(userId: string): Promise<number> {
-  const fetchBalance = async (retryCount = 0): Promise<number> => {
-    try {
-      // Get auth token for authenticated request
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = {};
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-      }
+  try {
+    const { data, error } = await supabase
+      .from('user_credit_balance')
+      .select('balance')
+      .eq('user_id', userId)
+      .maybeSingle();
 
-      // Fetch balance via Netlify Function instead of direct Supabase REST
-      const response = await fetch(`/.netlify/functions/getCreditBalance?user_id=${userId}`, { headers });
-
-      if (!response.ok) {
-        // If error and we haven't retried too many times, retry
-        if (retryCount < 2) {
-          console.warn(`Got ${response.status} error for balance check, retrying... (${retryCount + 1})`);
-          await new Promise(resolve => setTimeout(resolve, 500));
-          return fetchBalance(retryCount + 1);
-        }
-
-        // After retries, return 0 as fallback
-        console.warn('Failed to fetch credit balance after retries, returning 0');
-        return 0;
-      }
-
-      const data = await response.json();
-      return data.balance || 0;
-    } catch (error) {
+    if (error) {
       console.error('Error fetching credit balance:', error);
       return 0;
     }
-  };
 
-  return fetchBalance();
+    return data?.balance ? parseFloat(data.balance) : 0;
+  } catch (error) {
+    console.error('Error fetching credit balance:', error);
+    return 0;
+  }
 }
 
 /**
