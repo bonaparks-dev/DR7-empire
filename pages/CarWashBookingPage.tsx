@@ -1009,19 +1009,24 @@ const CarWashBookingPage: React.FC = () => {
           console.error('WhatsApp error (non-blocking):', whatsappError);
         }
 
-        // Generate fattura (non-blocking) — via website proxy function
-        try {
-          console.log('Triggering fattura for car wash booking:', data.id);
-          fetch('/.netlify/functions/generate-fattura', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bookingId: data.id, includeIVA: true })
-          }).then(res => {
-            if (res.ok) console.log('Fattura generated successfully');
-            else console.warn('Fattura generation failed:', res.status);
-          }).catch(err => console.warn('Fattura generation error (non-blocking):', err));
-        } catch (fatturaError) {
-          console.warn('Fattura trigger error (non-blocking):', fatturaError);
+        // Generate fattura (non-blocking) — skip for Wallet/Gift Card payments
+        const skipFatturaForMethod = bookingDataWithPayment.payment_method === 'credit_wallet' || bookingDataWithPayment.payment_method === 'gift_card';
+        if (!skipFatturaForMethod) {
+          try {
+            console.log('Triggering fattura for car wash booking:', data.id);
+            fetch('/.netlify/functions/generate-fattura', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ bookingId: data.id, includeIVA: true })
+            }).then(res => {
+              if (res.ok) console.log('Fattura generated successfully');
+              else console.warn('Fattura generation failed:', res.status);
+            }).catch(err => console.warn('Fattura generation error (non-blocking):', err));
+          } catch (fatturaError) {
+            console.warn('Fattura trigger error (non-blocking):', fatturaError);
+          }
+        } else {
+          console.log('Skipping fattura for Wallet/Gift Card payment');
         }
 
         // Log notification status for debugging
