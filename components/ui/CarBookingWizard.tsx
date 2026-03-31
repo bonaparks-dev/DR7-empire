@@ -3714,6 +3714,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             {/* === A. ASSICURAZIONE (tier-conditional) === */}
             <section>
               <h3 className="text-lg font-bold text-white mb-4">A. COPERTURA ASSICURATIVA</h3>
+              {isMassimo ? (
+                <div className="p-4 rounded-lg border-2 border-green-500 bg-green-500/10">
+                  <div className="flex items-center">
+                    <span className="font-bold text-white">Kasko Base</span>
+                    <span className="ml-auto text-green-400 font-bold">Inclusa</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">Copertura assicurativa inclusa nel tuo piano VIP.</p>
+                </div>
+              ) : (
+              <>
               <p className="text-sm text-gray-400 mb-4">Seleziona il livello di protezione desiderato.</p>
               <div className="space-y-3">
                 {insuranceOptions.map(opt => {
@@ -3769,6 +3779,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   );
                 })}
               </div>
+              </>
+              )}
             </section>
 
             {/* === B. CHILOMETRI (tier-conditional pricing) === */}
