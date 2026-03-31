@@ -522,7 +522,11 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
 
 export const PICKUP_LOCATIONS = [
   { id: 'dr7_office', label: { en: 'DR7 Office (Viale Marconi, 229, 09131 Cagliari CA)', it: 'Viale Marconi, 229, 09131 Cagliari CA' } },
+  { id: 'cagliari_airport', label: { en: 'Cagliari Elmas Airport', it: 'Aeroporto di Cagliari Elmas' } },
+  { id: 'home_delivery', label: { en: 'Home Delivery', it: 'Consegna a domicilio' } },
 ];
+
+export const DR7_OFFICE_ADDRESS = 'Viale Marconi 229, 09131 Cagliari CA, Italy';
 
 // Automatic KASKO Insurance - Applied to all bookings
 export const AUTO_INSURANCE = {
