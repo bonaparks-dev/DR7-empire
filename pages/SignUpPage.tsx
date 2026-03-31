@@ -1076,19 +1076,19 @@ const SignUpPage: React.FC = () => {
                     {errors.confirmPassword && <p className="text-xs text-red-400 mt-1">{errors.confirmPassword}</p>}
                   </div>
 
-                  <div className="flex items-center">
+                  <div className="flex items-start">
                     <input
                       id="terms"
                       name="terms"
                       type="checkbox"
                       checked={agreedToTerms}
                       onChange={e => setAgreedToTerms(e.target.checked)}
-                      className="h-4 w-4 text-white bg-gray-700 border-gray-600 rounded focus:ring-white"
+                      className="h-4 w-4 mt-0.5 text-white bg-gray-700 border-gray-600 rounded focus:ring-white"
                     />
                     <label htmlFor="terms" className="ml-2 block text-sm text-gray-400">
-                      {t('I_agree_to_the')}{' '}
-                      <Link to="/terms" className="font-medium text-white hover:underline">
-                        {t('Terms_and_Privacy_Policy')}
+                      Acconsento a ricevere offerte e comunicazioni promozionali da partner selezionati da DR7 tramite email, telefono, SMS o WhatsApp.{' '}
+                      <Link to="/privacy-policy" className="font-medium text-white hover:underline">
+                        Privacy Policy
                       </Link>
                     </label>
                   </div>
