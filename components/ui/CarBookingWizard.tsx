@@ -1127,8 +1127,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       if (age > 0 && years >= 0) {
         const classification = classifyDriverTier(age, years);
         setDriverTierInfo(classification);
-        // Reset insurance to Kasko Base when tier changes (to avoid invalid selection)
-        setFormData(prev => ({ ...prev, insuranceOption: 'KASKO_BASE', depositOption: '' }));
+        // Reset insurance and tier-restricted options when tier changes
+        setFormData(prev => ({
+          ...prev,
+          insuranceOption: 'KASKO_BASE',
+          depositOption: '',
+          // DR7 Flex only available for TIER_2 (Fascia A)
+          ...(classification.tier === 'TIER_1' ? { dr7Flex: false } : {}),
+        }));
       }
     }
   }, [formData.birthDate, formData.licenseIssueDate]);
@@ -4382,7 +4388,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               </div>
             </section>
 
-            {/* === G. DR7 FLEX === */}
+            {/* === G. DR7 FLEX === (Only Fascia A / TIER_2) */}
+            {driverTier === 'TIER_2' && (
             <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-2">G. DR7 FLEX — Cancellazione Premium</h3>
               <div
@@ -4402,6 +4409,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 </div>
               </div>
             </section>
+            )}
           </div>
         );
       }
