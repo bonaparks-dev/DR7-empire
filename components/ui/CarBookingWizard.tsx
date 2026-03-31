@@ -11,6 +11,7 @@ import { PICKUP_LOCATIONS, AUTO_INSURANCE, INSURANCE_DEDUCTIBLES, RENTAL_EXTRAS,
 import type { Booking, RentalItem, DriverTier, TierClassification, PaymentMode } from '../../types';
 import { classifyDriverTier, getInsuranceForTier, getDepositOptionsForTier, getKmPricingForTier, getExperienceServicesForTier } from '../../utils/tierClassification';
 import DocumentUploader from './DocumentUploader';
+import CompilaButton from './CompilaButton';
 import CalendarPicker from './CalendarPicker';
 import {
   getUnlimitedKmOptions,
@@ -28,6 +29,7 @@ import { URBAN_SERVICES, MAXI_SERVICES, EXTRA_CARE_SERVICES, EXPERIENCE_SERVICES
 import type { WashService } from '../../pages/CarWashServicesPage';
 import { classifyVehicle } from '../../utils/vehicleClassification';
 import { lookupTarga, isValidItalianPlate, normalizePlate, type TargaResult } from '../../utils/lookupTarga';
+import CalcolaCFButton from './CalcolaCFButton';
 
 // Filter out dummy/placeholder names from auth profiles (e.g. "No Name", "User", "Test")
 const DUMMY_NAMES = ['no name', 'no-name', 'noname', 'user', 'test', 'unknown', 'n/a', 'none', 'cliente'];
@@ -190,6 +192,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       email: '',
       phone: '',
       birthDate: '',
+      sesso: '',
+      luogoNascita: '',
+      provinciaNascita: '',
       codiceFiscale: '',
       residenza: '',
       licenseNumber: '',
@@ -226,6 +231,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       selectedExperiences: {} as Record<string, number>, // { serviceId: quantity }
       dr7Flex: false,
       paymentMode: 'full' as PaymentMode,
+
+      // Delivery
+      deliveryAddress: '',
+
+      // Vehicle assignment (set by availability check)
+      selectedVehicleId: '' as string,
 
       // Step 4
       paymentMethod: 'nexi' as 'nexi' | 'credit',
@@ -288,6 +299,26 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [selectedWindow, setSelectedWindow] = useState<AvailabilityWindow | null>(null);
   const [isLoadingWindows, setIsLoadingWindows] = useState(false);
   const [hasBusyPeriods, setHasBusyPeriods] = useState(false); // Track if there are actual bookings
+
+  // Delivery distance calculation
+  const [deliveryInfo, setDeliveryInfo] = useState<{
+    distanceKm: number
+    roundTripKm: number
+    deliveryFee: number
+    durationText: string
+    destinationAddress: string
+  } | null>(null)
+  const [isCalculatingDelivery, setIsCalculatingDelivery] = useState(false)
+  const [deliveryError, setDeliveryError] = useState<string | null>(null)
+
+  // Dynamic pricing from revenue_config (admin-controlled)
+  const [dynamicPricing, setDynamicPricing] = useState<{
+    enabled: boolean
+    mode?: string
+    finalDailyRateEur?: number
+    finalTotalEur?: number
+    rentalDays?: number
+  } | null>(null)
 
   // Compute max bookable pickup date from availability windows
   // If there's a block (e.g., vehicle unavailable from March 16), the last free window's end becomes the max date
@@ -463,6 +494,105 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     fetchAvailabilityWindows();
   }, [item.id, item.vehicleIds]);
+
+  // Fetch dynamic pricing from revenue_config when dates change
+  useEffect(() => {
+    const fetchDynamicPrice = async () => {
+      if (!formData.pickupDate || !formData.returnDate) return;
+
+      // Get the vehicle ID to query (use selectedVehicleId, or first of vehicleIds, or derive from item.id)
+      const vehicleId = formData.selectedVehicleId
+        || (item.vehicleIds && item.vehicleIds[0])
+        || item.id?.replace('car-', '');
+
+      if (!vehicleId) return;
+
+      const pickupISO = `${formData.pickupDate}T${formData.pickupTime || '10:00'}`;
+      const dropoffISO = `${formData.returnDate}T${formData.returnTime || '10:00'}`;
+
+      try {
+        const res = await fetchWithTimeout('/.netlify/functions/calculate-dynamic-price', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            vehicle_id: vehicleId,
+            pickup_date: pickupISO,
+            dropoff_date: dropoffISO,
+          }),
+        }, 8000);
+
+        if (res.ok) {
+          const data = await res.json();
+          setDynamicPricing(data);
+        } else {
+          setDynamicPricing(null);
+        }
+      } catch (err) {
+        console.warn('Dynamic pricing fetch failed, using fallback:', err);
+        setDynamicPricing(null);
+      }
+    };
+
+    const timeoutId = setTimeout(fetchDynamicPrice, 300);
+    return () => clearTimeout(timeoutId);
+  }, [formData.pickupDate, formData.returnDate, formData.pickupTime, formData.returnTime, formData.selectedVehicleId, item.id, item.vehicleIds]);
+
+  // Calculate delivery distance when address changes
+  useEffect(() => {
+    const isDeliveryPickup = formData.pickupLocation === 'home_delivery';
+    const isDeliveryReturn = formData.returnLocation === 'home_delivery';
+
+    if (!isDeliveryPickup && !isDeliveryReturn) {
+      setDeliveryInfo(null);
+      setDeliveryError(null);
+      return;
+    }
+
+    const address = formData.deliveryAddress?.trim();
+    if (!address || address.length < 5) {
+      setDeliveryInfo(null);
+      return;
+    }
+
+    setIsCalculatingDelivery(true);
+    setDeliveryError(null);
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const res = await fetchWithTimeout('/.netlify/functions/calculate-delivery-distance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ address }),
+        }, 10000);
+
+        if (res.ok) {
+          const data = await res.json();
+          // If only one direction is delivery, halve the round-trip (one-way delivery)
+          const bothDirections = isDeliveryPickup && isDeliveryReturn;
+          const adjustedFee = bothDirections ? data.deliveryFee : Math.ceil(data.deliveryFee / 2);
+          const adjustedKm = bothDirections ? data.roundTripKm : data.distanceKm;
+          setDeliveryInfo({
+            ...data,
+            roundTripKm: adjustedKm,
+            deliveryFee: adjustedFee,
+          });
+          setDeliveryError(null);
+        } else {
+          const err = await res.json();
+          setDeliveryError(err.error || 'Errore nel calcolo della distanza');
+          setDeliveryInfo(null);
+        }
+      } catch (err) {
+        console.warn('Delivery distance calculation failed:', err);
+        setDeliveryError('Impossibile calcolare la distanza. Riprova.');
+        setDeliveryInfo(null);
+      } finally {
+        setIsCalculatingDelivery(false);
+      }
+    }, 800); // Debounce 800ms for address typing
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.deliveryAddress, formData.pickupLocation, formData.returnLocation]);
 
   // Fetch credit balance with safe fallback
   useEffect(() => {
@@ -1105,12 +1235,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     membershipDiscount, membershipTier, originalTotal, finalTotal,
     isMassimo, specialDiscountAmount, carWashFee, noDepositSurcharge,
     effectivePricePerDay, // Calculated price per day (resident or non-resident)
-    lavaggioFee, experienceCost, flexCost, supercarDepositSurcharge
+    lavaggioFee, experienceCost, flexCost, supercarDepositSurcharge, deliveryFee
   } = useMemo(() => {
     const zero = {
       duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, kmPackageCost: 0, pickupFee: 0, dropoffFee: 0, subtotal: 0, taxes: 0, total: 0, includedKm: 0, driverAge: 0, licenseYears: 0, youngDriverFee: 0, recentLicenseFee: 0, secondDriverFee: 0, recommendedKm: null, membershipDiscount: 0, membershipTier: null, originalTotal: 0, finalTotal: 0,
       isMassimo: false, specialDiscountAmount: 0, carWashFee: 0, noDepositSurcharge: 0,
-      lavaggioFee: 0, experienceCost: 0, flexCost: 0, supercarDepositSurcharge: 0
+      lavaggioFee: 0, experienceCost: 0, flexCost: 0, supercarDepositSurcharge: 0, deliveryFee: 0
     };
     if (!item || (!item.pricePerDay && !item.priceResidentDaily && !item.priceNonresidentDaily)) return zero;
 
@@ -1200,8 +1330,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // Massimo Runchina: flat €339/day for supercars, NO tiered discounts
       // Additional discounts ONLY via codice sconto
       calculatedRentalCost = billingDaysCalc * SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseRate;
+    } else if (dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.finalTotalEur) {
+      // Admin-controlled dynamic pricing (revenue management auto_apply mode)
+      calculatedRentalCost = dynamicPricing.finalTotalEur;
     } else {
-      // Standard multi-day pricing for all other customers
+      // Standard multi-day pricing (fallback when dynamic pricing is disabled or unavailable)
       const vType = getVehicleType(item, categoryContext);
       const isResident = formData.usageZone === 'CAGLIARI_SUD';
 
@@ -1256,6 +1389,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
 
     const calculatedRecommendedKm = recommendKmPackage(formData.expectedKm, item.name, billingDays);
+    // --- DELIVERY FEE (consegna a domicilio) ---
+    const isDeliveryPickup = formData.pickupLocation === 'home_delivery';
+    const isDeliveryReturn = formData.returnLocation === 'home_delivery';
+    const calculatedDeliveryFee = (isDeliveryPickup || isDeliveryReturn) && deliveryInfo?.deliveryFee
+      ? deliveryInfo.deliveryFee : 0;
+
     const calculatedPickupFee = 0;
     const calculatedDropoffFee = 0;
 
@@ -1281,7 +1420,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     let calculatedSubtotal = calculatedRentalCost + calculatedInsuranceCost + calculatedExtrasCost +
       calculatedKmPackageCost + calculatedSecondDriverFee + calculatedLavaggioFee +
       calculatedExperienceCost + calculatedFlexCost +
-      calculatedPickupFee + calculatedDropoffFee + carWashFee;
+      calculatedPickupFee + calculatedDropoffFee + calculatedDeliveryFee + carWashFee;
 
     // --- DEPOSIT SURCHARGES ---
     const vTypeForDeposit = getVehicleType(item, categoryContext);
@@ -1338,20 +1477,24 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       specialDiscountAmount,
       carWashFee,
       noDepositSurcharge: calculatedNoDepositSurcharge,
-      effectivePricePerDay: isSupercar50km ? SUPERCAR_50KM_DAILY_RATE : pricePerDay,
+      effectivePricePerDay: isSupercar50km ? SUPERCAR_50KM_DAILY_RATE
+        : (dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.finalDailyRateEur)
+          ? dynamicPricing.finalDailyRateEur
+          : pricePerDay,
       // New fields
       lavaggioFee: calculatedLavaggioFee,
       experienceCost: calculatedExperienceCost,
       flexCost: calculatedFlexCost,
       supercarDepositSurcharge,
+      deliveryFee: calculatedDeliveryFee,
     };
   }, [
     formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime,
     formData.insuranceOption, formData.extras, formData.birthDate, formData.licenseIssueDate, formData.addSecondDriver,
     formData.kmPackageType, formData.kmPackageDistance, formData.expectedKm,
     formData.email, formData.usageZone, formData.depositOption, formData.isSardinianResident,
-    formData.selectedExperiences, formData.dr7Flex,
-    item, currency, user, isUrbanOrCorporate, categoryContext, driverTier
+    formData.selectedExperiences, formData.dr7Flex, formData.pickupLocation, formData.returnLocation,
+    item, currency, user, isUrbanOrCorporate, categoryContext, driverTier, dynamicPricing, deliveryInfo
   ]);
 
   // Online booking discount (5%) — NOT for supercars, NOT for Massimo
@@ -2038,6 +2181,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         dropoff_date: dropoffDateTime.toISOString(),
         pickup_location: formData.pickupLocation,
         dropoff_location: formData.returnLocation,
+        delivery_address: formData.deliveryAddress || null,
+        delivery_distance_km: deliveryInfo?.roundTripKm || null,
+        delivery_fee: deliveryFee || null,
         price_total: eurosToCents(grandTotal),
         currency: currency.toUpperCase(),
         status: 'pending',
@@ -2062,6 +2208,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             birthDate: formData.birthDate,
             age: driverAge,
             codiceFiscale: formData.codiceFiscale,
+            sesso: formData.sesso,
+            luogoNascita: formData.luogoNascita,
+            provinciaNascita: formData.provinciaNascita,
             residenza: formData.residenza,
             licenseNumber: formData.licenseNumber,
             licenseIssueDate: formData.licenseIssueDate,
@@ -2153,6 +2302,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 source: 'website_booking',
               };
               if (formData.birthDate) customerRecord.data_nascita = formData.birthDate;
+              if (formData.sesso) customerRecord.sesso = formData.sesso;
+              if (formData.luogoNascita) customerRecord.luogo_nascita = formData.luogoNascita;
+              if (formData.provinciaNascita) customerRecord.provincia_nascita = formData.provinciaNascita;
 
               if (existing?.id) {
                 // Update existing record
@@ -2502,6 +2654,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           dropoff_date: dropoffDateTime.toISOString(),
           pickup_location: formData.pickupLocation,
           dropoff_location: formData.returnLocation,
+          delivery_address: formData.deliveryAddress || null,
+          delivery_distance_km: deliveryInfo?.roundTripKm || null,
+          delivery_fee: deliveryFee || null,
           price_total: Math.round(grandTotal * 100),
           currency: currency.toUpperCase(),
           booking_source: 'website',
@@ -2653,6 +2808,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   source: 'website_booking',
                 };
                 if (formData.birthDate) customerRecord.data_nascita = formData.birthDate;
+                if (formData.sesso) customerRecord.sesso = formData.sesso;
+                if (formData.luogoNascita) customerRecord.luogo_nascita = formData.luogoNascita;
+                if (formData.provinciaNascita) customerRecord.provincia_nascita = formData.provinciaNascita;
 
                 if (existing?.id) {
                   supabase.from('customers_extended').update(customerRecord).eq('id', existing.id)
@@ -2808,6 +2966,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           dropoff_date: dropoffDateTime.toISOString(),
           pickup_location: formData.pickupLocation,
           dropoff_location: formData.returnLocation,
+          delivery_address: formData.deliveryAddress || null,
+          delivery_distance_km: deliveryInfo?.roundTripKm || null,
+          delivery_fee: deliveryFee || null,
           price_total: Math.round(grandTotal * 100), // Store in cents
           currency: 'EUR',
           status: 'pending',
@@ -3216,6 +3377,47 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   ))}
                 </div>
               </div>
+
+              {/* Delivery address input — shown when home_delivery is selected */}
+              {(formData.pickupLocation === 'home_delivery' || formData.returnLocation === 'home_delivery') && (
+                <div className="mt-4 p-4 rounded-lg border border-gray-700 bg-gray-800/40">
+                  <label className="text-sm text-gray-400 font-semibold mb-2 block">
+                    Indirizzo di consegna *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Es: Via Roma 15, Alghero, SS"
+                    value={formData.deliveryAddress}
+                    onChange={(e) => setFormData(prev => ({ ...prev, deliveryAddress: e.target.value }))}
+                    className="w-full px-4 py-3 rounded-lg bg-gray-900 border border-gray-600 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+                  />
+                  {isCalculatingDelivery && (
+                    <p className="text-sm text-gray-400 mt-2 animate-pulse">Calcolo distanza in corso...</p>
+                  )}
+                  {deliveryError && (
+                    <p className="text-sm text-red-400 mt-2">{deliveryError}</p>
+                  )}
+                  {deliveryInfo && !isCalculatingDelivery && (
+                    <div className="mt-3 p-3 rounded bg-gray-900/60 border border-gray-700">
+                      <p className="text-sm text-gray-300">
+                        <span className="text-white font-medium">{deliveryInfo.destinationAddress}</span>
+                      </p>
+                      <p className="text-sm text-gray-400 mt-1">
+                        Distanza: <span className="text-white">{deliveryInfo.distanceKm} km</span> ({deliveryInfo.durationText})
+                      </p>
+                      <p className="text-sm text-gray-400 mt-1">
+                        {formData.pickupLocation === 'home_delivery' && formData.returnLocation === 'home_delivery'
+                          ? `Andata e ritorno: ${deliveryInfo.roundTripKm} km × €3/km`
+                          : `Solo ${formData.pickupLocation === 'home_delivery' ? 'consegna' : 'ritiro'}: ${deliveryInfo.roundTripKm} km × €3/km`
+                        }
+                      </p>
+                      <p className="text-white font-semibold mt-2">
+                        Costo consegna: €{deliveryInfo.deliveryFee.toLocaleString('it-IT')}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
 
@@ -3467,7 +3669,39 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               <div><label className="text-sm text-gray-400">Telefono *</label><input type="tel" name={`${prefix}phone`} value={(driverData as any).phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}phone`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}phone`]}</p>}</div>
               {driverType === 'main' && (
                 <>
-                  <div><label className="text-sm text-gray-400">Codice Fiscale *</label><input type="text" name="codiceFiscale" value={formData.codiceFiscale} onChange={handleChange} placeholder="es. RSSMRA85M01H501Z" className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm uppercase" />{errors.codiceFiscale && <p className="text-xs text-red-400 mt-1">{errors.codiceFiscale}</p>}</div>
+                  <div>
+                    <label className="text-sm text-gray-400">Codice Fiscale *</label>
+                    <div className="flex gap-2 mt-1">
+                      <input type="text" name="codiceFiscale" value={formData.codiceFiscale} onChange={handleChange} placeholder="es. RSSMRA85M01H501Z" className="flex-1 bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 text-white text-sm uppercase" />
+                      <CalcolaCFButton
+                        className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded-md whitespace-nowrap transition-colors"
+                        config={{
+                          getCognome: () => formData.lastName,
+                          getNome: () => formData.firstName,
+                          getDataNascita: () => formData.birthDate,
+                          getSesso: () => formData.sesso,
+                          getLuogoNascita: () => formData.luogoNascita,
+                          getCodiceFiscale: () => formData.codiceFiscale,
+                          setCodiceFiscale: (v) => setFormData(p => ({ ...p, codiceFiscale: v })),
+                          setSesso: (v) => setFormData(p => ({ ...p, sesso: v })),
+                          setDataNascita: (v) => setFormData(p => ({ ...p, birthDate: v })),
+                          setLuogoNascita: (v) => setFormData(p => ({ ...p, luogoNascita: v })),
+                          setProvinciaNascita: (v) => setFormData(p => ({ ...p, provinciaNascita: v })),
+                        }}
+                      />
+                    </div>
+                    {errors.codiceFiscale && <p className="text-xs text-red-400 mt-1">{errors.codiceFiscale}</p>}
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-400">Sesso</label>
+                    <select name="sesso" value={formData.sesso} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm">
+                      <option value="">Seleziona...</option>
+                      <option value="M">Maschio</option>
+                      <option value="F">Femmina</option>
+                    </select>
+                  </div>
+                  <div><label className="text-sm text-gray-400">Luogo di nascita</label><input type="text" name="luogoNascita" value={formData.luogoNascita} onChange={handleChange} placeholder="es. Cagliari" className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" /></div>
+                  <div><label className="text-sm text-gray-400">Provincia di nascita</label><input type="text" name="provinciaNascita" value={formData.provinciaNascita} onChange={(e) => setFormData(p => ({ ...p, provinciaNascita: e.target.value.toUpperCase() }))} placeholder="es. CA" maxLength={2} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm uppercase" /></div>
                   <div className="md:col-span-2"><label className="text-sm text-gray-400">Residenza (indirizzo completo) *</label><input type="text" name="residenza" value={formData.residenza} onChange={handleChange} placeholder="es. Via Roma 1, 09100 Cagliari (CA)" className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors.residenza && <p className="text-xs text-red-400 mt-1">{errors.residenza}</p>}</div>
                 </>
               )}
@@ -3546,6 +3780,39 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       />
                       {errors.idImage && <p className="text-xs text-red-400 mt-1">{errors.idImage}</p>}
                     </>
+                  )}
+
+                  {/* Compila button — auto-fill from uploaded documents */}
+                  {(formData.licenseImage || formData.idImage) && (
+                    <div className="mt-4">
+                      <CompilaButton
+                        documents={[
+                          { file: formData.licenseImage, label: 'Patente' },
+                          { file: formData.idImage, label: 'Documento Identità' },
+                        ]}
+                        currentData={{
+                          nome: formData.firstName,
+                          cognome: formData.lastName,
+                          data_nascita: formData.birthDate,
+                          codice_fiscale: formData.codiceFiscale,
+                          patente_numero: formData.licenseNumber,
+                          patente_rilascio: formData.licenseIssueDate,
+                        }}
+                        onDataExtracted={(data) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            ...(data.nome && !prev.firstName && { firstName: data.nome }),
+                            ...(data.cognome && !prev.lastName && { lastName: data.cognome }),
+                            ...(data.data_nascita && !prev.birthDate && { birthDate: data.data_nascita }),
+                            ...(data.codice_fiscale && !prev.codiceFiscale && { codiceFiscale: data.codice_fiscale }),
+                            ...(data.indirizzo && !prev.residenza && { residenza: `${data.indirizzo}${data.numero_civico ? ' ' + data.numero_civico : ''}, ${data.codice_postale || ''} ${data.citta_residenza || ''} ${data.provincia_residenza || ''}`.trim() }),
+                            ...(data.patente_numero && !prev.licenseNumber && { licenseNumber: data.patente_numero }),
+                            ...(data.patente_rilascio && !prev.licenseIssueDate && { licenseIssueDate: data.patente_rilascio }),
+                          }))
+                        }}
+                        onError={(err) => console.error('Compila error:', err)}
+                      />
+                    </div>
                   )}
                 </div>
               )}
@@ -5024,8 +5291,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <div className="flex justify-between"><span className="text-gray-400">Pacchetto chilometrici</span><span className="text-white font-medium">{formData.kmPackageType === '50km' ? 'Incluso' : formatPrice(kmPackageCost)}</span></div>
                       <div className="flex justify-between"><span className="text-gray-400 notranslate">Assicurazione {formData.insuranceOption?.replace(/_/g, ' ') || 'KASKO'}</span><span className="text-white font-medium">{formatPrice(insuranceCost)}</span></div>
                       {/* Lavaggio is now included in the price - no additional fee */}
-                      <div className="flex justify-between"><span className="text-gray-400">Spese di ritiro</span><span className="text-white font-medium">{formatPrice(pickupFee)}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-400">Spese di riconsegna</span><span className="text-white font-medium">{formatPrice(dropoffFee)}</span></div>
+                      {pickupFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Spese di ritiro</span><span className="text-white font-medium">{formatPrice(pickupFee)}</span></div>}
+                      {dropoffFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Spese di riconsegna</span><span className="text-white font-medium">{formatPrice(dropoffFee)}</span></div>}
+                      {deliveryFee > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Consegna a domicilio ({deliveryInfo?.roundTripKm} km × €3/km)</span>
+                          <span className="text-white font-medium">{formatPrice(deliveryFee)}</span>
+                        </div>
+                      )}
                       {secondDriverFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Secondo guidatore</span><span className="text-white font-medium">{formatPrice(secondDriverFee)}</span></div>}
                       {youngDriverFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Supplemento under 25</span><span className="text-white font-medium">{formatPrice(youngDriverFee)}</span></div>}
                       {recentLicenseFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Supplemento patente recente</span><span className="text-white font-medium">{formatPrice(recentLicenseFee)}</span></div>}

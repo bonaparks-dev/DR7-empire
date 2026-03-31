@@ -8,6 +8,7 @@ import DocumentUploadModal from '../components/ui/DocumentUploadModal';
 import MarketingConsentModal from '../components/ui/MarketingConsentModal';
 import { countries } from '../utils/countries';
 import { AppleStyleSelect } from '../components/ui/AppleStyleSelect';
+import CalcolaCFButton from '../components/ui/CalcolaCFButton';
 
 const PasswordStrengthMeter: React.FC<{ password?: string }> = ({ password = '' }) => {
   const { t } = useTranslation();
@@ -656,16 +657,34 @@ const SignUpPage: React.FC = () => {
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         Codice Fiscale <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        type="text"
-                        name="codiceFiscale"
-                        value={formData.codiceFiscale}
-                        onChange={handleChange}
-                        placeholder="RSSMRA80A01H501U"
-                        maxLength={16}
-                        required
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
-                      />
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          name="codiceFiscale"
+                          value={formData.codiceFiscale}
+                          onChange={handleChange}
+                          placeholder="RSSMRA80A01H501U"
+                          maxLength={16}
+                          required
+                          className="flex-1 bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
+                        />
+                        <CalcolaCFButton
+                          className="px-4 py-3 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-md whitespace-nowrap transition-colors"
+                          config={{
+                            getCognome: () => formData.cognome,
+                            getNome: () => formData.nome,
+                            getDataNascita: () => formData.dataNascita,
+                            getSesso: () => formData.sesso,
+                            getLuogoNascita: () => formData.cittaNascita,
+                            getCodiceFiscale: () => formData.codiceFiscale,
+                            setCodiceFiscale: (v) => setFormData(p => ({ ...p, codiceFiscale: v })),
+                            setSesso: (v) => setFormData(p => ({ ...p, sesso: v })),
+                            setDataNascita: (v) => setFormData(p => ({ ...p, dataNascita: v })),
+                            setLuogoNascita: (v) => setFormData(p => ({ ...p, cittaNascita: v })),
+                            setProvinciaNascita: (v) => setFormData(p => ({ ...p, provinciaNascita: v })),
+                          }}
+                        />
+                      </div>
                       {errors.codiceFiscale && <p className="text-xs text-red-400 mt-1">{errors.codiceFiscale}</p>}
                     </div>
                   )}

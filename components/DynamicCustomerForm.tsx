@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import CalcolaCFButton from './ui/CalcolaCFButton'
 
 interface CustomerFormData {
   tipoCliente: 'azienda' | 'persona_fisica' | 'pubblica_amministrazione' | ''
@@ -11,6 +12,10 @@ interface CustomerFormData {
   // Persona Fisica fields
   nome: string
   cognome: string
+  sesso: string
+  dataNascita: string
+  luogoNascita: string
+  provinciaNascita: string
   telefono: string
   email: string
   pec: string
@@ -35,6 +40,10 @@ export default function DynamicCustomerForm({ onSubmit, isAdminMode = false }: D
     indirizzo: '',
     nome: '',
     cognome: '',
+    sesso: '',
+    dataNascita: '',
+    luogoNascita: '',
+    provinciaNascita: '',
     telefono: '',
     email: '',
     pec: '',
@@ -470,16 +479,64 @@ export default function DynamicCustomerForm({ onSubmit, isAdminMode = false }: D
               <label className="form-label required" htmlFor="codiceFiscale">
                 Codice Fiscale
               </label>
-              <input
-                type="text"
-                id="codiceFiscale"
-                name="codiceFiscale"
-                className="form-input"
-                value={formData.codiceFiscale}
-                onChange={handleChange}
-                placeholder="RSSMRA80A01H501U"
-                required
-              />
+              <div className="input-with-button">
+                <input
+                  type="text"
+                  id="codiceFiscale"
+                  name="codiceFiscale"
+                  className="form-input"
+                  value={formData.codiceFiscale}
+                  onChange={(e) => setFormData(p => ({ ...p, codiceFiscale: e.target.value.toUpperCase() }))}
+                  placeholder="RSSMRA80A01H501U"
+                  maxLength={16}
+                  required
+                  style={{ textTransform: 'uppercase' }}
+                />
+                <CalcolaCFButton
+                  className="btn-search"
+                  config={{
+                    getCognome: () => formData.cognome,
+                    getNome: () => formData.nome,
+                    getDataNascita: () => formData.dataNascita,
+                    getSesso: () => formData.sesso,
+                    getLuogoNascita: () => formData.luogoNascita,
+                    getCodiceFiscale: () => formData.codiceFiscale,
+                    setCodiceFiscale: (v) => setFormData(p => ({ ...p, codiceFiscale: v })),
+                    setSesso: (v) => setFormData(p => ({ ...p, sesso: v })),
+                    setDataNascita: (v) => setFormData(p => ({ ...p, dataNascita: v })),
+                    setLuogoNascita: (v) => setFormData(p => ({ ...p, luogoNascita: v })),
+                    setProvinciaNascita: (v) => setFormData(p => ({ ...p, provinciaNascita: v })),
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Sesso */}
+            <div className="form-group">
+              <label className="form-label" htmlFor="sesso">Sesso</label>
+              <select id="sesso" name="sesso" className="form-select" value={formData.sesso} onChange={handleChange}>
+                <option value="">Seleziona...</option>
+                <option value="M">Maschio</option>
+                <option value="F">Femmina</option>
+              </select>
+            </div>
+
+            {/* Data di Nascita */}
+            <div className="form-group">
+              <label className="form-label" htmlFor="dataNascita">Data di Nascita</label>
+              <input type="date" id="dataNascita" name="dataNascita" className="form-input" value={formData.dataNascita} onChange={handleChange} />
+            </div>
+
+            {/* Luogo di Nascita */}
+            <div className="form-group">
+              <label className="form-label" htmlFor="luogoNascita">Luogo di Nascita</label>
+              <input type="text" id="luogoNascita" name="luogoNascita" className="form-input" value={formData.luogoNascita} onChange={handleChange} placeholder="es. Cagliari" />
+            </div>
+
+            {/* Provincia di Nascita */}
+            <div className="form-group">
+              <label className="form-label" htmlFor="provinciaNascita">Provincia di Nascita</label>
+              <input type="text" id="provinciaNascita" name="provinciaNascita" className="form-input" value={formData.provinciaNascita} onChange={(e) => setFormData(p => ({ ...p, provinciaNascita: e.target.value.toUpperCase() }))} placeholder="es. CA" maxLength={2} style={{ textTransform: 'uppercase' }} />
             </div>
 
             {/* Indirizzo */}
