@@ -1086,7 +1086,7 @@ const SignUpPage: React.FC = () => {
                       className="h-4 w-4 mt-0.5 text-white bg-gray-700 border-gray-600 rounded focus:ring-white"
                     />
                     <label htmlFor="terms" className="ml-2 block text-sm text-gray-400">
-                      Acconsento a ricevere offerte e comunicazioni promozionali da partner selezionati da DR7 tramite email, telefono, SMS o WhatsApp.{' '}
+                      Accetto di ricevere aggiornamenti e novità da DR7 e dai suoi partner.{' '}
                       <Link to="/privacy-policy" className="font-medium text-white hover:underline">
                         Privacy Policy
                       </Link>
