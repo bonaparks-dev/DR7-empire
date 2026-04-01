@@ -172,6 +172,10 @@ exports.handler = async (event) => {
     }
 
     // --- HPP payment (initial payment, optionally with contract creation for recurring) ---
+    // Payment link expires in 1 hour (Europe/Rome)
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    const expirationDate = expiresAt.toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '.0');
+
     const requestBody = {
       order: {
         orderId: sanitizedOrderId,
@@ -184,6 +188,7 @@ exports.handler = async (event) => {
         actionType: 'PAY',
         amount: amount.toString(),
         language: 'ITA',
+        expirationDate: expirationDate,
         resultUrl: `${siteUrl}/payment-success?orderId=${sanitizedOrderId}`,
         cancelUrl: `${siteUrl}/payment-cancel`,
         notificationUrl: `${siteUrl}/.netlify/functions/nexi-callback`,

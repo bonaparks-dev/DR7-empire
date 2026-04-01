@@ -494,6 +494,59 @@ exports.handler = async (event) => {
           }
         }
 
+        // Cashback 3% — credit wallet after successful payment
+        if (newBooking.user_id && newBooking.price_total > 0) {
+          try {
+            // Check if cashback already applied (idempotency)
+            const { data: existingCashback } = await supabase
+              .from('credit_transactions')
+              .select('id')
+              .eq('user_id', newBooking.user_id)
+              .eq('reference_id', newBooking.id)
+              .eq('reference_type', 'cashback_3_percent')
+              .limit(1);
+
+            if (!existingCashback || existingCashback.length === 0) {
+              const paidEur = newBooking.price_total / 100;
+              const cashbackAmount = Math.floor(paidEur * 3) / 100; // 3%, round down to cents
+
+              if (cashbackAmount >= 0.01) {
+                // Add to balance
+                const { data: balanceRow } = await supabase
+                  .from('user_credit_balance')
+                  .select('balance')
+                  .eq('user_id', newBooking.user_id)
+                  .single();
+
+                const currentBalance = balanceRow?.balance ? parseFloat(balanceRow.balance) : 0;
+                const newBalance = currentBalance + cashbackAmount;
+
+                await supabase
+                  .from('user_credit_balance')
+                  .upsert({ user_id: newBooking.user_id, balance: newBalance, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+
+                // Record transaction in ledger
+                await supabase
+                  .from('credit_transactions')
+                  .insert({
+                    user_id: newBooking.user_id,
+                    amount: cashbackAmount,
+                    type: 'credit',
+                    description: `Cashback 3% su prenotazione DR7-${newBooking.id.substring(0, 8).toUpperCase()}`,
+                    reference_id: newBooking.id,
+                    reference_type: 'cashback_3_percent'
+                  });
+
+                console.log(`[nexi-callback] Cashback €${cashbackAmount.toFixed(2)} credited to user ${newBooking.user_id}`);
+              }
+            } else {
+              console.log('[nexi-callback] Cashback already applied for booking:', newBooking.id);
+            }
+          } catch (cashbackErr) {
+            console.error('[nexi-callback] Cashback failed (non-blocking):', cashbackErr);
+          }
+        }
+
         return { statusCode: 200, body: 'OK' };
       } else {
         // Payment failed — delete pending record, no booking created
