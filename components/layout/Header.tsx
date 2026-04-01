@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { RENTAL_CATEGORIES } from '../../constants';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,6 +12,12 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
   const { user, logout } = useAuth();
   const [creditBalance, setCreditBalance] = useState<number>(0);
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
+  const [showBookingPopup, setShowBookingPopup] = useState(false);
+  const [bookingPickupDate, setBookingPickupDate] = useState('');
+  const [bookingPickupTime, setBookingPickupTime] = useState('10:00');
+  const [bookingReturnDate, setBookingReturnDate] = useState('');
+  const [bookingReturnTime, setBookingReturnTime] = useState('10:00');
+  const nav = useNavigate();
 
   useEffect(() => {
     if (isOpen) {
@@ -119,48 +125,28 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               </div>
             )}
 
-            <nav className="flex-grow flex flex-col space-y-6">
-              {/* ESPERIENZE & ACCESSO ESCLUSIVO */}
-              <div>
-                <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-3 px-1">
-                  Esperienze & Accesso Esclusivo
-                </h3>
-                <div className="space-y-1">
-                  <NavLink to="/membership" onClick={onClose} className={navLinkClasses}>
-                    <span>Exclusive Members Club</span>
-                  </NavLink>
-                  <NavLink to="/credit-wallet" onClick={onClose} className={navLinkClasses}>
-                    <span className="flex items-center justify-between w-full">
-                      <span>DR7 Credit Wallet</span>
-                      {user && (
-                        <span className="text-white font-bold ml-2">
-                          {isLoadingBalance ? '...' : `€${creditBalance.toFixed(2)}`}
-                        </span>
-                      )}
-                    </span>
-                  </NavLink>
-                </div>
-              </div>
+            <nav className="flex-grow flex flex-col space-y-5">
+              {/* PRENOTA ORA — golden CTA */}
+              <button
+                onClick={() => setShowBookingPopup(true)}
+                className="w-full py-3.5 bg-gradient-to-r from-yellow-600 to-yellow-500 text-black font-bold text-lg tracking-widest uppercase rounded-sm hover:from-yellow-500 hover:to-yellow-400 transition-all"
+              >
+                PRENOTA ORA
+              </button>
 
-
-              {/* BUSINESS & CORPORATE */}
-              <div>
-                <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-3 px-1">
-                  Business & Corporate
-                </h3>
-                <div className="space-y-1">
-                  <NavLink to="/franchising" onClick={onClose} className={navLinkClasses}>
-                    <span>Global Franchising</span>
-                  </NavLink>
-                  <NavLink to="/investitori" onClick={onClose} className={navLinkClasses}>
-                    <span>Investor Relations</span>
-                  </NavLink>
-                </div>
+              {/* LA NOSTRA FLOTTA + OFFERTE ATTIVE */}
+              <div className="flex flex-col items-center space-y-1 pb-4 border-b border-gray-800">
+                <NavLink to="/supercar-luxury" onClick={onClose} className="text-sm font-semibold text-gray-300 hover:text-white tracking-widest uppercase transition-colors">
+                  LA NOSTRA FLOTTA
+                </NavLink>
+                <NavLink to="/membership" onClick={onClose} className="text-sm font-semibold text-gray-300 hover:text-white tracking-widest uppercase transition-colors">
+                  OFFERTE ATTIVE
+                </NavLink>
               </div>
 
               {/* SERVIZI & MOBILITÀ DI LUSSO */}
-              <div>
-                <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-3 px-1">
+              <div className="border-b border-gray-800 pb-4">
+                <h3 className="text-sm font-bold text-yellow-500 uppercase tracking-wider mb-3 px-1">
                   Servizi & Mobilità di Lusso
                 </h3>
                 <div className="space-y-1">
@@ -182,13 +168,33 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                 </div>
               </div>
 
+              {/* ESPERIENZE & ACCESSO ESCLUSIVO */}
+              <div className="border-b border-gray-800 pb-4">
+                <h3 className="text-sm font-bold text-yellow-500 uppercase tracking-wider mb-3 px-1">
+                  Esperienze & Accesso Esclusivo
+                </h3>
+                <div className="space-y-1">
+                  <NavLink to="/membership" onClick={onClose} className={navLinkClasses}>
+                    <span>Exclusive Members Club</span>
+                  </NavLink>
+                  <NavLink to="/credit-wallet" onClick={onClose} className={navLinkClasses}>
+                    <span className="flex items-center justify-between w-full">
+                      <span>DR7 Credit Wallet</span>
+                      {user && (
+                        <span className="ml-2 px-3 py-0.5 bg-gray-800 border border-gray-700 rounded-full text-white text-xs font-bold">
+                          {isLoadingBalance ? '...' : `€${creditBalance.toFixed(2)}`}
+                        </span>
+                      )}
+                    </span>
+                  </NavLink>
+                </div>
+              </div>
+
               {/* PRIME WASH */}
-              <div>
-                <NavLink to="/prime-wash" onClick={onClose}>
-                  <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-3 px-1 hover:text-gray-300 transition-colors">
-                    Prime Wash
-                  </h3>
-                </NavLink>
+              <div className="border-b border-gray-800 pb-4">
+                <h3 className="text-sm font-bold text-yellow-500 uppercase tracking-wider mb-3 px-1">
+                  Prime Wash
+                </h3>
                 <div className="space-y-1">
                   <NavLink to="/prime-wash" onClick={onClose} className={navLinkClasses}>
                     <span>Detailing & Wash</span>
@@ -202,18 +208,24 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                 </div>
               </div>
 
-              {/* CONTATTACI */}
-              <div>
-                <NavLink to="/contact" onClick={onClose}>
-                  <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-3 px-1 hover:text-gray-300 transition-colors">
-                    Contattaci
-                  </h3>
-                </NavLink>
+              {/* BUSINESS & CORPORATE */}
+              <div className="border-b border-gray-800 pb-4">
+                <h3 className="text-sm font-bold text-yellow-500 uppercase tracking-wider mb-3 px-1">
+                  Business & Corporate
+                </h3>
+                <div className="space-y-1">
+                  <NavLink to="/franchising" onClick={onClose} className={navLinkClasses}>
+                    <span>Global Franchising</span>
+                  </NavLink>
+                  <NavLink to="/investitori" onClick={onClose} className={navLinkClasses}>
+                    <span>Investor Relations</span>
+                  </NavLink>
+                </div>
               </div>
 
               {/* DIGITAL INNOVATION */}
-              <div>
-                <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-3 px-1">
+              <div className="border-b border-gray-800 pb-4">
+                <h3 className="text-sm font-bold text-yellow-500 uppercase tracking-wider mb-3 px-1">
                   Digital Innovation
                 </h3>
                 <div className="space-y-1">
@@ -222,7 +234,132 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                   </NavLink>
                 </div>
               </div>
+
+              {/* CONTATTACI */}
+              <div>
+                <NavLink to="/contact" onClick={onClose}>
+                  <h3 className="text-sm font-bold text-yellow-500 uppercase tracking-widest text-center hover:text-yellow-400 transition-colors">
+                    CONTATTACI
+                  </h3>
+                </NavLink>
+              </div>
             </nav>
+
+            {/* PRENOTA ORA POPUP */}
+            <AnimatePresence>
+              {showBookingPopup && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
+                  onClick={() => setShowBookingPopup(false)}
+                >
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                    className="bg-gray-900 border border-gray-700 rounded-2xl p-6 sm:p-8 max-w-md w-full"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      onClick={() => setShowBookingPopup(false)}
+                      className="absolute top-4 right-4 text-gray-400 hover:text-white p-2"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+
+                    <h3 className="text-xl font-bold text-white text-center mb-1">PRENOTA ORA</h3>
+                    <p className="text-gray-400 text-sm text-center mb-6">Seleziona le date per vedere i veicoli disponibili</p>
+
+                    <div className="space-y-4">
+                      {/* Pickup */}
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Data di ritiro</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="date"
+                            value={bookingPickupDate}
+                            min={new Date().toISOString().split('T')[0]}
+                            onChange={(e) => {
+                              setBookingPickupDate(e.target.value);
+                              if (!bookingReturnDate || e.target.value > bookingReturnDate) {
+                                const next = new Date(e.target.value);
+                                next.setDate(next.getDate() + 1);
+                                setBookingReturnDate(next.toISOString().split('T')[0]);
+                              }
+                            }}
+                            className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+                          />
+                          <select
+                            value={bookingPickupTime}
+                            onChange={(e) => setBookingPickupTime(e.target.value)}
+                            className="w-24 bg-gray-800 border border-gray-600 rounded-lg px-2 py-2.5 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+                          >
+                            {Array.from({ length: 24 }, (_, h) => [`${String(h).padStart(2,'0')}:00`, `${String(h).padStart(2,'0')}:30`]).flat().map(t => (
+                              <option key={`p-${t}`} value={t}>{t}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Return */}
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Data di restituzione</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="date"
+                            value={bookingReturnDate}
+                            min={bookingPickupDate || new Date().toISOString().split('T')[0]}
+                            onChange={(e) => setBookingReturnDate(e.target.value)}
+                            className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+                          />
+                          <select
+                            value={bookingReturnTime}
+                            onChange={(e) => setBookingReturnTime(e.target.value)}
+                            className="w-24 bg-gray-800 border border-gray-600 rounded-lg px-2 py-2.5 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+                          >
+                            {Array.from({ length: 24 }, (_, h) => [`${String(h).padStart(2,'0')}:00`, `${String(h).padStart(2,'0')}:30`]).flat().map(t => (
+                              <option key={`r-${t}`} value={t}>{t}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Days count badge */}
+                      {bookingPickupDate && bookingReturnDate && (
+                        <div className="text-center">
+                          <span className="inline-block px-3 py-1 bg-gray-800 border border-gray-600 rounded-full text-sm text-gray-300">
+                            {Math.max(1, Math.ceil((new Date(bookingReturnDate).getTime() - new Date(bookingPickupDate).getTime()) / (1000 * 60 * 60 * 24)))} giorni
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Search button */}
+                      <button
+                        onClick={() => {
+                          if (bookingPickupDate && bookingReturnDate) {
+                            setShowBookingPopup(false);
+                            onClose();
+                            nav(`/supercar-luxury?pickup=${bookingPickupDate}&pickupTime=${bookingPickupTime}&return=${bookingReturnDate}&returnTime=${bookingReturnTime}`);
+                          }
+                        }}
+                        disabled={!bookingPickupDate || !bookingReturnDate}
+                        className={`w-full py-3.5 rounded-full font-bold text-base uppercase tracking-wider transition-all ${
+                          bookingPickupDate && bookingReturnDate
+                            ? 'bg-white text-black hover:bg-gray-200'
+                            : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        Cerca Auto
+                      </button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <div className="mt-auto pt-8 border-t border-gray-800">
               {user && (
