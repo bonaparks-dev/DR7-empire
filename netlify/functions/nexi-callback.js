@@ -311,12 +311,16 @@ exports.handler = async (event) => {
           }
 
           try {
-            await fetch(`${adminUrl}/.netlify/functions/generate-invoice-from-booking`, {
+            const invRes = await fetch(`${adminUrl}/.netlify/functions/generate-invoice-from-booking`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ bookingId: booking.id, includeIVA: true }),
             });
-            console.log('[nexi-callback] Invoice generated');
+            if (invRes.ok) {
+              console.log('[nexi-callback] Invoice generated for existing booking');
+            } else {
+              console.error(`[nexi-callback] Invoice failed (${invRes.status}):`, await invRes.text().catch(() => ''));
+            }
           } catch (invErr) {
             console.error('[nexi-callback] Invoice generation failed:', invErr);
           }
@@ -483,12 +487,31 @@ exports.handler = async (event) => {
 
           // Generate invoice/fattura
           try {
-            await fetch(`${adminUrl}/.netlify/functions/generate-invoice-from-booking`, {
+            const invRes = await fetch(`${adminUrl}/.netlify/functions/generate-invoice-from-booking`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ bookingId: newBooking.id }),
+              body: JSON.stringify({ bookingId: newBooking.id, includeIVA: true }),
             });
-            console.log('[nexi-callback] Invoice generated');
+            if (invRes.ok) {
+              const invData = await invRes.json();
+              console.log('[nexi-callback] Invoice generated:', invData.invoice?.numero_fattura || 'OK');
+            } else {
+              const errText = await invRes.text().catch(() => 'unknown');
+              console.error(`[nexi-callback] Invoice generation failed (${invRes.status}):`, errText);
+              // Retry once after 3 seconds
+              setTimeout(async () => {
+                try {
+                  const retryRes = await fetch(`${adminUrl}/.netlify/functions/generate-invoice-from-booking`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bookingId: newBooking.id, includeIVA: true }),
+                  });
+                  console.log('[nexi-callback] Invoice retry:', retryRes.ok ? 'SUCCESS' : `FAILED (${retryRes.status})`);
+                } catch (retryErr) {
+                  console.error('[nexi-callback] Invoice retry failed:', retryErr);
+                }
+              }, 3000);
+            }
           } catch (invErr) {
             console.error('[nexi-callback] Invoice generation failed:', invErr);
           }
