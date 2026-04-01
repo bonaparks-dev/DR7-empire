@@ -275,6 +275,58 @@ exports.handler = async (event) => {
             console.warn('Welcome bonus error (non-fatal):', bonusErr.message);
         }
 
+        // 5. Send welcome message via WhatsApp (or email fallback)
+        try {
+            const custName = customerData?.nome
+                ? `${customerData.nome} ${customerData.cognome || ''}`.trim()
+                : 'Cliente';
+
+            const welcomeMsg = `Gentile ${custName},\n\n`
+                + `La ringraziamo per essersi registrato sul nostro sito e per aver scelto di entrare nel mondo DR7.\n\n`
+                + `Con la Sua registrazione, entra ufficialmente in un ecosistema esclusivo dedicato alla mobilità premium, ai servizi personalizzati e a un'esperienza superiore.\n\n`
+                + `Per darle il benvenuto, abbiamo appena accreditato *10€ di credito omaggio* sul Suo wallet DR7, già disponibili e utilizzabili per le Sue prossime prenotazioni.\n\n`
+                + `Inoltre, ogni acquisto Le permetterà di accumulare ulteriore credito: più utilizza i servizi DR7, più il Suo wallet crescerà nel tempo.\n\n`
+                + `La invitiamo ad approfittarne subito per prenotare il Suo servizio e vivere in prima persona lo standard DR7: rapido, elegante e senza compromessi.\n\n`
+                + `Può procedere immediatamente da qui:\nhttps://dr7empire.com/\n\n`
+                + `Restiamo a Sua completa disposizione.\n\n`
+                + `Cordiali saluti,\nDR7`;
+
+            const custPhone = customerData?.telefono;
+            const siteUrl = process.env.URL || 'https://dr7empire.com';
+
+            if (custPhone) {
+                // Send via WhatsApp
+                await fetch(`${siteUrl}/.netlify/functions/send-whatsapp-notification`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ customPhone: custPhone, customMessage: welcomeMsg }),
+                });
+                console.log('[register-customer] Welcome WhatsApp sent to:', custPhone);
+            } else {
+                // Fallback: send via email
+                const resendApiKey = process.env.RESEND_API_KEY || process.env.SMTP_PASSWORD;
+                if (resendApiKey) {
+                    const fromAddress = process.env.SMTP_FROM || 'info@dr7.app';
+                    await fetch('https://api.resend.com/emails', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${resendApiKey}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            from: `DR7 Empire <${fromAddress}>`,
+                            to: [email],
+                            subject: 'Benvenuto in DR7 Empire — 10€ di credito omaggio',
+                            text: welcomeMsg.replace(/\*/g, ''),
+                        }),
+                    });
+                    console.log('[register-customer] Welcome email sent to:', email);
+                }
+            }
+        } catch (welcomeErr) {
+            console.warn('[register-customer] Welcome message failed (non-fatal):', welcomeErr.message);
+        }
+
         return {
             statusCode: 200,
             body: JSON.stringify({ success: true, user: authData.user })
