@@ -41,7 +41,7 @@ const CarBookingConfirmationPage: React.FC = () => {
           <h1 className="text-4xl font-bold text-white">PRENOTAZIONE CONFERMATA!</h1>
           <p className="text-gray-300 mt-2">Grazie per la tua prenotazione!</p>
           <p className="text-gray-300 mt-1">
-            Abbiamo inviato una conferma via email a: <span className="font-semibold text-white">{customerEmail}</span>
+            Riceverai una conferma via WhatsApp
           </p>
           <p className="text-lg mt-4">
             NUMERO PRENOTAZIONE: <span className="font-bold tracking-wider">{`DR7-${booking.id.substring(0, 4).toUpperCase()}-${booking.id.substring(4, 8).toUpperCase()}`}</span>

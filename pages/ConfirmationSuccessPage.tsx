@@ -55,7 +55,7 @@ const BookingConfirmationDetails: React.FC<{ booking: any }> = ({ booking }) => 
           <span className="font-bold text-white">{formatPrice(totalPrice)}</span>
         </div>
         <p className="text-xs text-gray-400 text-center pt-2">
-          Riceverai una conferma via email a {booking.customer_email || booking.booking_details?.customer?.email}
+          Riceverai una conferma via WhatsApp
         </p>
       </div>
     );
