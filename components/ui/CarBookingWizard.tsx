@@ -1367,9 +1367,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const tierPricingForCalc = TIER_PRICING[activeTierForCalc];
 
     // Find selected insurance option and its daily price
+    // Massimo Runchina: insurance is INCLUDED (€0)
     const allInsuranceOpts = INSURANCE_OPTIONS_BY_TIER[activeTierForCalc] || [];
     const selectedInsOpt = allInsuranceOpts.find(o => o.id === formData.insuranceOption);
-    const insuranceDailyPrice = selectedInsOpt?.dailyPrice || 0;
+    const insuranceDailyPrice = isMassimo ? 0 : (selectedInsOpt?.dailyPrice || 0);
     let calculatedInsuranceCost = roundToTwoDecimals(insuranceDailyPrice * billingDaysCalc);
 
     // --- EXTRAS COST ---
