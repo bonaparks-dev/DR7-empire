@@ -98,8 +98,8 @@ export function useRealtimeBookings(
           matchesService = !booking.service_type || booking.service_type !== 'car_wash';
         } else if (serviceType === 'car_wash') {
           matchesService = booking.service_type === 'car_wash';
-          // Exclude rientro auto-washes ("Lavaggio Completo") — they don't block booking slots
-          if (booking.service_name === 'Lavaggio Completo') {
+          // Exclude "Lavaggio Rientro" (internal return washes) — they don't block external booking slots
+          if (booking.customer_name === 'Lavaggio Rientro') {
             matchesService = false;
           }
         }
