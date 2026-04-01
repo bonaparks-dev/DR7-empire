@@ -30,6 +30,8 @@ import type { WashService } from '../../pages/CarWashServicesPage';
 import { classifyVehicle } from '../../utils/vehicleClassification';
 import { lookupTarga, isValidItalianPlate, normalizePlate, type TargaResult } from '../../utils/lookupTarga';
 import CalcolaCFButton from './CalcolaCFButton';
+import { useRentalConfig } from '../../hooks/useRentalConfig';
+import { buildWebsiteConfigOverlay } from '../../utils/configOverlay';
 
 // Filter out dummy/placeholder names from auth profiles (e.g. "No Name", "User", "Test")
 const DUMMY_NAMES = ['no name', 'no-name', 'noname', 'user', 'test', 'unknown', 'n/a', 'none', 'cliente'];
@@ -252,6 +254,30 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   // Tier classification state
   const [driverTierInfo, setDriverTierInfo] = useState<TierClassification | null>(null);
   const driverTier: DriverTier | null = driverTierInfo?.tier || null;
+
+  // --- Centralina Config Overlay ---
+  // Loads pricing from Supabase via Netlify function. Falls back to hardcoded constants.
+  const { config: rentalConfig } = useRentalConfig();
+  const configOverlay = useMemo(() => buildWebsiteConfigOverlay(rentalConfig), [rentalConfig]);
+
+  // Override constants with config values when available
+  const ACTIVE_INSURANCE_BY_TIER = useMemo(() => {
+    if (!configOverlay) return INSURANCE_OPTIONS_BY_TIER;
+    return {
+      TIER_1: configOverlay.insuranceTier1.length > 0 ? configOverlay.insuranceTier1 : INSURANCE_OPTIONS_BY_TIER.TIER_1,
+      TIER_2: configOverlay.insuranceTier2.length > 0 ? configOverlay.insuranceTier2 : INSURANCE_OPTIONS_BY_TIER.TIER_2,
+    };
+  }, [configOverlay]);
+
+  const ACTIVE_TIER_PRICING = useMemo(() => {
+    if (!configOverlay) return TIER_PRICING;
+    return configOverlay.tierPricing;
+  }, [configOverlay]);
+
+  const ACTIVE_NO_DEPOSIT_SURCHARGE = configOverlay?.noDepositSurchargePerDay ?? NO_DEPOSIT_SURCHARGE_PER_DAY;
+  const ACTIVE_DELIVERY_PRICE_PER_KM = configOverlay?.deliveryPricePerKm ?? DELIVERY_PRICE_PER_KM;
+  const ACTIVE_DR7_FLEX = configOverlay ? { dailyPrice: configOverlay.dr7Flex.dailyPrice, refundPercent: configOverlay.dr7Flex.refundPercent, description: DR7_FLEX.description } : DR7_FLEX;
+  const ACTIVE_EXPERIENCE_SERVICES = configOverlay?.experienceServices?.length ? configOverlay.experienceServices : BOOKING_EXPERIENCE_SERVICES;
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedInsurance, setExpandedInsurance] = useState<string | null>(null);
@@ -1364,11 +1390,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // --- INSURANCE COST (tier-conditional) ---
     const vType = getVehicleType(item, categoryContext);
     const activeTierForCalc: 'TIER_1' | 'TIER_2' = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2';
-    const tierPricingForCalc = TIER_PRICING[activeTierForCalc];
+    const tierPricingForCalc = ACTIVE_TIER_PRICING[activeTierForCalc];
 
     // Find selected insurance option and its daily price
     // Massimo Runchina: insurance is INCLUDED (€0)
-    const allInsuranceOpts = INSURANCE_OPTIONS_BY_TIER[activeTierForCalc] || [];
+    const allInsuranceOpts = ACTIVE_INSURANCE_BY_TIER[activeTierForCalc] || [];
     const selectedInsOpt = allInsuranceOpts.find(o => o.id === formData.insuranceOption);
     const insuranceDailyPrice = isMassimo ? 0 : (selectedInsOpt?.dailyPrice || 0);
     let calculatedInsuranceCost = roundToTwoDecimals(insuranceDailyPrice * billingDaysCalc);
@@ -1422,7 +1448,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     let calculatedExperienceCost = 0;
     for (const [svcId, qty] of Object.entries(formData.selectedExperiences)) {
       if (qty <= 0) continue;
-      const svc = BOOKING_EXPERIENCE_SERVICES.find(s => s.id === svcId);
+      const svc = ACTIVE_EXPERIENCE_SERVICES.find(s => s.id === svcId);
       if (!svc) continue;
       if (svc.unit === 'per_day') {
         calculatedExperienceCost += roundToTwoDecimals(svc.price * billingDaysCalc * qty);
@@ -1432,7 +1458,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
 
     // --- DR7 FLEX ---
-    const calculatedFlexCost = formData.dr7Flex ? roundToTwoDecimals(DR7_FLEX.dailyPrice * billingDaysCalc) : 0;
+    const calculatedFlexCost = formData.dr7Flex ? roundToTwoDecimals(ACTIVE_DR7_FLEX.dailyPrice * billingDaysCalc) : 0;
 
     // Car wash included in price - no additional fee
     let carWashFee = 0;
@@ -4403,10 +4429,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     <input type="checkbox" checked={formData.dr7Flex} onChange={() => {}} className="h-5 w-5" />
                     <div>
                       <span className="font-bold text-white">DR7 Flex</span>
-                      <p className="text-sm text-gray-400 mt-1">{DR7_FLEX.description}</p>
+                      <p className="text-sm text-gray-400 mt-1">{ACTIVE_DR7_FLEX.description}</p>
                     </div>
                   </div>
-                  <span className="font-bold text-yellow-400 whitespace-nowrap ml-4">€{DR7_FLEX.dailyPrice.toFixed(2)}/giorno</span>
+                  <span className="font-bold text-yellow-400 whitespace-nowrap ml-4">€{ACTIVE_DR7_FLEX.dailyPrice.toFixed(2)}/giorno</span>
                 </div>
               </div>
             </section>
@@ -4561,10 +4587,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {insuranceCost > 0 && (
                     <div className="flex justify-between">
                       <span>Assicurazione {(() => {
-                        const opt = (INSURANCE_OPTIONS_BY_TIER[(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'] || []).find(o => o.id === formData.insuranceOption);
+                        const opt = (ACTIVE_INSURANCE_BY_TIER[(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'] || []).find(o => o.id === formData.insuranceOption);
                         return opt?.name || formData.insuranceOption?.replace(/_/g, ' ');
                       })()} ({duration.days} gg × €{(() => {
-                        const opt = (INSURANCE_OPTIONS_BY_TIER[(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'] || []).find(o => o.id === formData.insuranceOption);
+                        const opt = (ACTIVE_INSURANCE_BY_TIER[(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'] || []).find(o => o.id === formData.insuranceOption);
                         return opt?.dailyPrice || 0;
                       })()})</span>
                       <span>{formatPrice(insuranceCost)}</span>
@@ -4580,7 +4606,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {/* KM package */}
                   {kmPackageCost > 0 && (
                     <div className="flex justify-between">
-                      <span>Km illimitati ({duration.days} gg × €{(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? TIER_PRICING[driverTier].unlimitedKmPerDay : 189})</span>
+                      <span>Km illimitati ({duration.days} gg × €{(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? ACTIVE_TIER_PRICING[driverTier].unlimitedKmPerDay : 189})</span>
                       <span>{formatPrice(kmPackageCost)}</span>
                     </div>
                   )}
@@ -4591,7 +4617,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {/* Secondo guidatore */}
                   {secondDriverFee > 0 && (
                     <div className="flex justify-between">
-                      <span>Secondo guidatore ({duration.days} gg × €{(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? TIER_PRICING[driverTier].secondDriverPerDay : 10})</span>
+                      <span>Secondo guidatore ({duration.days} gg × €{(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? ACTIVE_TIER_PRICING[driverTier].secondDriverPerDay : 10})</span>
                       <span>{formatPrice(secondDriverFee)}</span>
                     </div>
                   )}
@@ -4606,7 +4632,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
                   {/* Experience services */}
                   {experienceCost > 0 && Object.entries(formData.selectedExperiences).filter(([_, qty]) => qty > 0).map(([svcId, qty]) => {
-                    const svc = BOOKING_EXPERIENCE_SERVICES.find(s => s.id === svcId);
+                    const svc = ACTIVE_EXPERIENCE_SERVICES.find(s => s.id === svcId);
                     if (!svc) return null;
                     const unitLabel = svc.unit === 'per_day' ? `${duration.days} gg` : `${qty}x`;
                     const lineCost = svc.unit === 'per_day' ? svc.price * duration.days * qty : svc.price * qty;
@@ -4621,7 +4647,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {/* DR7 Flex */}
                   {flexCost > 0 && (
                     <div className="flex justify-between">
-                      <span>DR7 Flex ({duration.days} gg × €{DR7_FLEX.dailyPrice.toFixed(2)})</span>
+                      <span>DR7 Flex ({duration.days} gg × €{ACTIVE_DR7_FLEX.dailyPrice.toFixed(2)})</span>
                       <span>{formatPrice(flexCost)}</span>
                     </div>
                   )}
