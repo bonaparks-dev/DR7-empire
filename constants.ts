@@ -521,12 +521,12 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
 
 
 export const PICKUP_LOCATIONS = [
-  { id: 'dr7_office', label: { en: 'Pickup at DR7 Office', it: 'Ritiro in sede — Viale Marconi 229, Cagliari' } },
+  { id: 'dr7_cagliari', label: { en: 'DR7 Cagliari — Viale Marconi 229, 09131', it: 'DR7 Cagliari — Viale Marconi 229, 09131' } },
   { id: 'home_delivery', label: { en: 'Home Delivery', it: 'Consegna a domicilio' } },
 ];
 
 export const RETURN_LOCATIONS = [
-  { id: 'dr7_office', label: { en: 'Return at DR7 Office', it: 'Riconsegna in sede — Viale Marconi 229, Cagliari' } },
+  { id: 'dr7_cagliari', label: { en: 'DR7 Cagliari — Viale Marconi 229, 09131', it: 'DR7 Cagliari — Viale Marconi 229, 09131' } },
   { id: 'home_delivery', label: { en: 'Home Pickup', it: 'Ritiro/riconsegna a domicilio' } },
 ];
 

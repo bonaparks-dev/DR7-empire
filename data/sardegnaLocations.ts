@@ -12,12 +12,12 @@ export interface SardegnaLocation {
 
 // DR7 Office location
 export const DR7_OFFICE_LOCATION: SardegnaLocation = {
-  id: 'dr7-office-cagliari',
-  name: 'DR7 Empire',
+  id: 'dr7-cagliari',
+  name: 'DR7 Cagliari',
   type: 'city',
   province: 'CA',
-  label: 'DR7 Empire — Sede Cagliari',
-  aliases: ['dr7', 'sede', 'ufficio', 'office', 'noleggio'],
+  label: 'DR7 Cagliari — Viale Marconi 229, 09131',
+  aliases: ['dr7', 'sede', 'ufficio', 'office', 'noleggio', 'marconi', 'viale marconi'],
 };
 
 export const SARDEGNA_LOCATIONS: SardegnaLocation[] = [
