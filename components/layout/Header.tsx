@@ -17,6 +17,9 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
   const [bookingPickupTime, setBookingPickupTime] = useState('10:00');
   const [bookingReturnDate, setBookingReturnDate] = useState('');
   const [bookingReturnTime, setBookingReturnTime] = useState('10:00');
+  const [bookingPickupLocation, setBookingPickupLocation] = useState('dr7_office');
+  const [bookingReturnLocation, setBookingReturnLocation] = useState('dr7_office');
+  const [bookingSameReturn, setBookingSameReturn] = useState(true);
   const nav = useNavigate();
 
   useEffect(() => {
@@ -270,12 +273,59 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                     </button>
 
                     <h3 className="text-xl font-semibold text-white text-center mb-1">Prenota Ora</h3>
-                    <p className="text-gray-500 text-sm text-center mb-6">Seleziona le date per vedere i veicoli disponibili</p>
+                    <p className="text-gray-500 text-sm text-center mb-6">Seleziona luogo, date e orari</p>
 
                     <div className="space-y-4">
-                      {/* Pickup */}
+                      {/* Pickup location */}
                       <div>
-                        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Data di ritiro</label>
+                        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Luogo di ritiro</label>
+                        <select
+                          value={bookingPickupLocation}
+                          onChange={(e) => {
+                            setBookingPickupLocation(e.target.value);
+                            if (bookingSameReturn) setBookingReturnLocation(e.target.value);
+                          }}
+                          className="w-full bg-[#2c2c2e] border border-white/10 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
+                        >
+                          {PICKUP_LOCATIONS.map(loc => (
+                            <option key={loc.id} value={loc.id}>{loc.label.it}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Same return location toggle */}
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={bookingSameReturn}
+                          onChange={(e) => {
+                            setBookingSameReturn(e.target.checked);
+                            if (e.target.checked) setBookingReturnLocation(bookingPickupLocation);
+                          }}
+                          className="w-4 h-4 rounded bg-[#2c2c2e] border-white/20"
+                        />
+                        <span className="text-sm text-gray-400">Riconsegna nello stesso luogo</span>
+                      </label>
+
+                      {/* Return location (if different) */}
+                      {!bookingSameReturn && (
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Luogo di riconsegna</label>
+                          <select
+                            value={bookingReturnLocation}
+                            onChange={(e) => setBookingReturnLocation(e.target.value)}
+                            className="w-full bg-[#2c2c2e] border border-white/10 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
+                          >
+                            {PICKUP_LOCATIONS.map(loc => (
+                              <option key={loc.id} value={loc.id}>{loc.label.it}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {/* Pickup date + time */}
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Ritiro</label>
                         <div className="flex gap-2">
                           <input
                             type="date"
@@ -303,9 +353,9 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                         </div>
                       </div>
 
-                      {/* Return */}
+                      {/* Return date + time */}
                       <div>
-                        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Data di restituzione</label>
+                        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Restituzione</label>
                         <div className="flex gap-2">
                           <input
                             type="date"
@@ -329,7 +379,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                       {/* Days count badge */}
                       {bookingPickupDate && bookingReturnDate && (
                         <div className="text-center">
-                          <span className="inline-block px-3 py-1 bg-gray-800 border border-gray-600 rounded-full text-sm text-gray-300">
+                          <span className="inline-block px-3 py-1 bg-[#2c2c2e] border border-white/10 rounded-full text-sm text-gray-300">
                             {Math.max(1, Math.ceil((new Date(bookingReturnDate).getTime() - new Date(bookingPickupDate).getTime()) / (1000 * 60 * 60 * 24)))} giorni
                           </span>
                         </div>
@@ -341,17 +391,25 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                           if (bookingPickupDate && bookingReturnDate) {
                             setShowBookingPopup(false);
                             onClose();
-                            nav(`/supercar-luxury?pickup=${bookingPickupDate}&pickupTime=${bookingPickupTime}&return=${bookingReturnDate}&returnTime=${bookingReturnTime}`);
+                            const params = new URLSearchParams({
+                              pickup: bookingPickupDate,
+                              pickupTime: bookingPickupTime,
+                              return: bookingReturnDate,
+                              returnTime: bookingReturnTime,
+                              pickupLoc: bookingPickupLocation,
+                              returnLoc: bookingReturnLocation,
+                            });
+                            nav(`/supercar-luxury?${params.toString()}`);
                           }
                         }}
                         disabled={!bookingPickupDate || !bookingReturnDate}
-                        className={`w-full py-3.5 rounded-full font-bold text-base uppercase tracking-wider transition-all ${
+                        className={`w-full py-3.5 rounded-xl font-semibold text-base transition-all duration-200 ${
                           bookingPickupDate && bookingReturnDate
-                            ? 'bg-white text-black hover:bg-gray-200'
-                            : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                            ? 'bg-white text-black hover:bg-gray-100 active:scale-[0.98]'
+                            : 'bg-[#2c2c2e] text-gray-500 cursor-not-allowed'
                         }`}
                       >
-                        Cerca Auto
+                        Cerca Auto Disponibili
                       </button>
                     </div>
                   </motion.div>

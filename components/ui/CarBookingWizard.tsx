@@ -175,18 +175,27 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   }, []);
 
   const [formData, setFormData] = useState(() => {
+    // Read pre-filled values from URL params (set by Prenota Ora popup)
+    const urlParams = new URLSearchParams(window.location.search);
+    const prefillPickup = urlParams.get('pickup') || today;
+    const prefillReturn = urlParams.get('return') || (() => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return tomorrow.toLocaleString('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).split(',')[0];
+    })();
+    const prefillPickupTime = urlParams.get('pickupTime') || '10:30';
+    const prefillReturnTime = urlParams.get('returnTime') || '09:00';
+    const prefillPickupLoc = urlParams.get('pickupLoc') || PICKUP_LOCATIONS[0].id;
+    const prefillReturnLoc = urlParams.get('returnLoc') || PICKUP_LOCATIONS[0].id;
+
     return {
       // Step 1
-      pickupLocation: PICKUP_LOCATIONS[0].id,
-      returnLocation: PICKUP_LOCATIONS[0].id,
-      pickupDate: today,
-      pickupTime: '10:30',
-      returnDate: (() => {
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        return tomorrow.toLocaleString('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).split(',')[0];
-      })(),
-      returnTime: '09:00',
+      pickupLocation: prefillPickupLoc,
+      returnLocation: prefillReturnLoc,
+      pickupDate: prefillPickup,
+      pickupTime: prefillPickupTime,
+      returnDate: prefillReturn,
+      returnTime: prefillReturnTime,
 
       // Step 2
       firstName: '',
