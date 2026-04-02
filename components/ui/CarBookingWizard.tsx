@@ -2295,28 +2295,30 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
 
     try {
-      // Upload secure documents or use existing
+      // Upload secure documents or use existing — non-blocking fallback to stored docs
       let licenseImageUrl = null;
       let idImageUrl = null;
 
       // License Logic
       if (formData.licenseImage) {
-        licenseImageUrl = await uploadToBucket('driver-licenses', user.id, formData.licenseImage, 'license');
+        try {
+          licenseImageUrl = await uploadToBucket('driver-licenses', user.id, formData.licenseImage, 'license');
+        } catch (uploadErr) {
+          console.warn('License upload failed, using stored path:', uploadErr);
+          licenseImageUrl = hasStoredDocs.licensePath || 'upload_pending';
+        }
       } else if (hasStoredDocs.licensePath) {
         licenseImageUrl = hasStoredDocs.licensePath;
       }
 
       // ID Logic
       if (formData.idImage) {
+        try {
         idImageUrl = await uploadToBucket('carta-identita', user.id, formData.idImage, 'id'); // Note: changed bucket from 'driver-ids' to 'carta-identita' to match AdminPage?
-        // Wait, check original code usage. Original used 'driver-ids' at line 1044?
-        // AdminPage lists 'carta-identita'. I should match AdminPage!
-        // But if I change bucket name for new uploads, I might break existing standard?
-        // Let's check what 'driver-ids' maps to.
-        // If AdminPage says 'carta-identita', I should probably use that bucket.
-        // Safest is to use the same bucket I checked: 'carta-identita'.
-        // But if original code used 'driver-ids', maybe 'carta-identita' is a legacy name or vice versa?
-        // Let's stick to what AdminPage reads: 'carta-identita'.
+        } catch (uploadErr) {
+          console.warn('ID upload failed, using stored path:', uploadErr);
+          idImageUrl = hasStoredDocs.idPath || 'upload_pending';
+        }
       } else if (hasStoredDocs.idPath) {
         idImageUrl = hasStoredDocs.idPath;
       }
@@ -2829,18 +2831,20 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     if (normalizedPaymentMethod === 'credit' && step === 4) {
       try {
-        // 1. Prepare Documents (Upload if needed)
+        // 1. Prepare Documents (Upload if needed — non-blocking fallback)
         let licenseImageUrl = null;
         let idImageUrl = null;
 
         if (formData.licenseImage) {
-          licenseImageUrl = await uploadToBucket('driver-licenses', user.id, formData.licenseImage, 'license');
+          try { licenseImageUrl = await uploadToBucket('driver-licenses', user.id, formData.licenseImage, 'license'); }
+          catch { licenseImageUrl = hasStoredDocs.licensePath || 'upload_pending'; }
         } else if (hasStoredDocs.licensePath) {
           licenseImageUrl = hasStoredDocs.licensePath;
         }
 
         if (formData.idImage) {
-          idImageUrl = await uploadToBucket('carta-identita', user.id, formData.idImage, 'id');
+          try { idImageUrl = await uploadToBucket('carta-identita', user.id, formData.idImage, 'id'); }
+          catch { idImageUrl = hasStoredDocs.idPath || 'upload_pending'; }
         } else if (hasStoredDocs.idPath) {
           idImageUrl = hasStoredDocs.idPath;
         }
@@ -3155,17 +3159,19 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
         // Let's implement the "Save Pending Record" pattern directly here.
 
-        // 1a. Upload Images First (Critical)
+        // 1a. Upload Images (non-blocking fallback if upload fails)
         let licenseImageUrl = null;
         let idImageUrl = null;
         const userId = user?.id || 'guest';
         if (formData.licenseImage) {
-          licenseImageUrl = await uploadToBucket('driver-licenses', userId, formData.licenseImage, 'license');
+          try { licenseImageUrl = await uploadToBucket('driver-licenses', userId, formData.licenseImage, 'license'); }
+          catch { licenseImageUrl = hasStoredDocs.licensePath || 'upload_pending'; }
         } else if (hasStoredDocs.licensePath) {
           licenseImageUrl = hasStoredDocs.licensePath;
         }
         if (formData.idImage) {
-          idImageUrl = await uploadToBucket('carta-identita', userId, formData.idImage, 'id');
+          try { idImageUrl = await uploadToBucket('carta-identita', userId, formData.idImage, 'id'); }
+          catch { idImageUrl = hasStoredDocs.idPath || 'upload_pending'; }
         } else if (hasStoredDocs.idPath) {
           idImageUrl = hasStoredDocs.idPath;
         }
