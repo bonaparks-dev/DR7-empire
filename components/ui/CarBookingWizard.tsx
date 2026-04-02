@@ -3837,15 +3837,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
         return (
           <div className="space-y-8">
-            {/* Main Driver */}
+            {/* Document Upload — FIRST, for automatic data extraction */}
             <section>
-              <h3 className="text-lg font-bold text-white mb-4">A. MAIN DRIVER</h3>
-              {renderDriverForm('main')}
-            </section>
-
-            {/* Document Upload */}
-            <section className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-bold text-white mb-4">DOCUMENTI RICHIESTI (OBBLIGATORI)</h3>
+              <h3 className="text-lg font-bold text-white mb-4">A. CARICA DOCUMENTI</h3>
+              <p className="text-sm text-gray-400 mb-4">Carica i documenti per compilare automaticamente i dati del conducente.</p>
 
               {/* Check if documents are already on file */}
               {(hasStoredDocs.licensePath && hasStoredDocs.idPath) ? (
@@ -3930,6 +3925,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   )}
                 </div>
               )}
+            </section>
+
+            {/* Main Driver Form — after documents for auto-fill */}
+            <section className="border-t border-gray-700 pt-6">
+              <h3 className="text-lg font-bold text-white mb-4">B. DATI CONDUCENTE</h3>
+              {renderDriverForm('main')}
             </section>
 
             {/* Automatic Validation & Tier Classification */}
