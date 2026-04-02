@@ -259,6 +259,31 @@ const transformVehicle = (vehicle: Vehicle): TransformedVehicle => {
 const CACHE_KEY_PREFIX = 'dr7_vehicles_cache_';
 const CACHE_EXPIRY_MS = 2 * 60 * 1000; // 2 minutes (reduced for debugging)
 
+/**
+ * Invalidate vehicle cache for a specific category or all categories.
+ * Call this after a successful booking to ensure fresh availability data.
+ */
+export const invalidateVehicleCache = (category?: string) => {
+  try {
+    if (category) {
+      localStorage.removeItem(`${CACHE_KEY_PREFIX}${category}`);
+    } else {
+      // Invalidate all vehicle cache keys
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(CACHE_KEY_PREFIX)) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+    }
+    console.log('[useVehicles] Cache invalidata dopo prenotazione');
+  } catch (err) {
+    console.warn('[useVehicles] Impossibile invalidare cache:', err);
+  }
+};
+
 export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
   const [vehicles, setVehicles] = useState<TransformedVehicle[]>([]);
   const [loading, setLoading] = useState(true);
