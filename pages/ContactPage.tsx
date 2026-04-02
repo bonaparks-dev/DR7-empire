@@ -30,7 +30,7 @@ const ContactPage: React.FC = () => {
             legalName: 'Dubai Rent 7.0 S.p.A.',
             image: 'https://dr7empire.com/DR7logo1.png',
             telephone: '+39 345 790 5205',
-            email: 'info@dr7empire.com',
+            email: 'info@dr7.app',
             url: 'https://dr7empire.com',
             address: {
               '@type': 'PostalAddress',
@@ -117,10 +117,10 @@ const ContactPage: React.FC = () => {
             </div>
             <h2 className="text-xl font-bold text-white mb-2">Email</h2>
             <a
-              href="mailto:info@dr7empire.com"
+              href="mailto:info@dr7.app"
               className="text-lg text-gray-300 hover:text-white transition-colors"
             >
-              info@dr7empire.com
+              info@dr7.app
             </a>
           </div>
 
