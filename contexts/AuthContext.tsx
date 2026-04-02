@@ -65,6 +65,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user) {
         const appUser = mapSupabaseUserToAppUser(session.user);
 
+        // FIX 7: Don't set residencyZone until it's actually fetched.
+        // Set user WITHOUT residencyZone first, then update after async fetch.
+        // This prevents the pricing wizard from using 'NON_RESIDENTE' as incorrect default.
+        setUser(appUser); // User is available immediately (without residencyZone)
+
         // Fetch residency_zone from Netlify Function with safe fallback
         try {
           const response = await fetch(`/.netlify/functions/getResidencyZone?user_id=${session.user.id}`, {
@@ -78,7 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               userId: session.user.id,
               networkOnline: navigator.onLine,
             });
-            // Safe default: treat as non-resident if fetch fails
+            // Fallback only after confirmed failure — not during loading
             (appUser as any).residencyZone = 'NON_RESIDENTE';
           } else {
             const data = await response.json();
@@ -91,11 +96,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             userId: session.user.id,
             networkOnline: navigator.onLine,
           });
-          // Safe default: treat as non-resident if fetch fails
+          // Fallback only after confirmed failure
           (appUser as any).residencyZone = 'NON_RESIDENTE';
         }
 
-        setUser(appUser);
+        // Update user with resolved residencyZone
+        setUser({ ...appUser });
       } else {
         setUser(null);
       }
