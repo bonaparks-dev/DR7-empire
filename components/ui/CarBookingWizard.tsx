@@ -1779,11 +1779,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   // Calculate deposit based on customer loyalty, license years, age, residency, and vehicle type
   const getDeposit = () => {
-    // Determine vehicle type
     const vType = getVehicleType(item, categoryContext);
     const isUtilitaria = vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS';
 
-    // Special client with noDeposit = always €0
+    // Special client = always €0
     if (isMassimo) return 0;
 
     // Urban/corporate vehicles: full cauzione = €1000, micro cauzione = €250/€500
@@ -1792,30 +1791,24 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       return licenseYears >= 5 ? DEPOSIT_RULES.UTILITARIA.LICENSE_5_OR_MORE : DEPOSIT_RULES.UTILITARIA.LICENSE_UNDER_5;
     }
 
-    // Rule 1: Fidelizzato (Gold/Platinum) OR 3+ supercar rentals = NO deposit for ANY vehicle
-    const membershipTier = getMembershipTierName(user);
-    if (membershipTier === 'gold' || membershipTier === 'platinum') return 0;
-    if (isLoyalCustomer) return 0; // 3+ supercar rentals
+    // Gold/Platinum members OR 3+ rentals = NO deposit
+    const memberTier = getMembershipTierName(user);
+    if (memberTier === 'gold' || memberTier === 'platinum') return 0;
+    if (isLoyalCustomer) return 0;
 
-    // Rule 2: Supercar deposit — depends on age, license years, residency, payment method
-    // "Young" = 21-25 anni OR patente 3-4 anni
-    const isYoung = (driverAge >= 21 && driverAge <= 25) || (licenseYears >= 3 && licenseYears <= 4);
-    // Non-resident = usage zone FUORI_ZONA
-    const isNonResident = formData.usageZone === 'FUORI_ZONA';
+    // Supercars: use tier-based deposit options (always RESIDENT since distinction removed)
+    const activeTier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2';
+    const depositKey = `${activeTier}_RESIDENT`;
+    const depOptions = TIER_DEPOSIT_OPTIONS[depositKey] || [];
+    const selectedDep = depOptions.find(d => d.id === formData.depositOption);
 
-    if (isNonResident) {
-      // Non residenti: SOLO carta di credito
-      return isYoung
-        ? DEPOSIT_RULES.SUPERCAR_NON_RESIDENT.YOUNG      // €5000
-        : DEPOSIT_RULES.SUPERCAR_NON_RESIDENT.STANDARD;  // €3500
+    if (selectedDep) {
+      return selectedDep.amount; // The fixed deposit amount (€0 for no_deposit/vehicle, €1000/€2000 for card, €4999 for cash)
     }
 
-    // Residenti in Sardegna — depends on payment method
-    // Online payments (Nexi/credit wallet) = carta di credito
-    // Cash/prepaid is only possible at pickup, not online — default to card rates
-    return isYoung
-      ? DEPOSIT_RULES.SUPERCAR.CARD_YOUNG      // €2000
-      : DEPOSIT_RULES.SUPERCAR.CARD_STANDARD;  // €1000
+    // Fallback: if no deposit option selected yet, show default card amount
+    const isYoung = (driverAge >= 21 && driverAge <= 25) || (licenseYears >= 3 && licenseYears <= 4);
+    return isYoung ? DEPOSIT_RULES.SUPERCAR.CARD_YOUNG : DEPOSIT_RULES.SUPERCAR.CARD_STANDARD;
   };
 
   // Handlers
