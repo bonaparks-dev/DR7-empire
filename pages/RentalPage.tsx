@@ -9,9 +9,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useVerification } from '../hooks/useVerification';
 import { useVehicles } from '../hooks/useVehicles';
 import SEOHead from '../components/seo/SEOHead';
-import RentalSearchBar, { type SearchParams } from '../components/ui/RentalSearchBar';
-import RentalFilters from '../components/ui/RentalFilters';
-import { useSearchAvailability } from '../hooks/useSearchAvailability';
 
 interface RentalPageProps {
   categoryId: 'cars' | 'urban-cars' | 'corporate-fleet' | 'yachts' | 'villas' | 'jets' | 'helicopters';
@@ -224,12 +221,6 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   const { checkVerificationAndProceed } = useVerification();
   const [searchParams] = useSearchParams();
 
-  // Search & filter state
-  const [searchData, setSearchData] = useState<SearchParams | null>(null);
-  const [sortBy, setSortBy] = useState('default');
-  const [maxBudget, setMaxBudget] = useState<number | null>(null);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-
   // Read pre-selected dates from Prenota Ora popup
   const prePickup = searchParams.get('pickup');
   const preReturn = searchParams.get('return');
@@ -237,6 +228,37 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
     if (!prePickup || !preReturn) return 0;
     return Math.max(1, Math.ceil((new Date(preReturn).getTime() - new Date(prePickup).getTime()) / (1000 * 60 * 60 * 24)));
   }, [prePickup, preReturn]);
+
+  // Dynamic pricing from revenue config (coefficients: occupation, advance, duration, season)
+  const [dynamicPrices, setDynamicPrices] = useState<Record<string, { dailyRate: number; total: number }>>({});
+
+  useEffect(() => {
+    if (!prePickup || !preReturn || !vehicleCategory) return;
+    // Fetch dynamic prices for all vehicles in parallel
+    const fetchPrices = async (vehicles: RentalItem[]) => {
+      const results: Record<string, { dailyRate: number; total: number }> = {};
+      await Promise.all(
+        vehicles.map(async (v) => {
+          try {
+            const vehicleId = v.id.replace('car-', '');
+            const res = await fetch('/.netlify/functions/calculate-dynamic-price', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ vehicle_id: vehicleId, pickup_date: prePickup, dropoff_date: preReturn }),
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.enabled && data.finalDailyRateEur) {
+                results[v.id] = { dailyRate: data.finalDailyRateEur, total: data.finalTotalEur };
+              }
+            }
+          } catch (e) { /* fallback to simple calculation */ }
+        })
+      );
+      setDynamicPrices(results);
+    };
+    if (categoryData.length > 0) fetchPrices(categoryData);
+  }, [prePickup, preReturn, categoryData.length, vehicleCategory]);
 
   // Determine if this is a vehicle category and map to database category
   const vehicleCategory = categoryId === 'cars' ? 'exotic'
@@ -246,17 +268,6 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
 
   // Fetch vehicles from database if it's a vehicle category
   const { vehicles: fetchedVehicles, loading: vehiclesLoading, error: vehiclesError, usingCache } = useVehicles(vehicleCategory);
-
-  // Availability search hook
-  const { results: availabilityResults, isSearching, hasSearched, search: runSearch } = useSearchAvailability(categoryId);
-
-  const handleSearch = (params: SearchParams) => {
-    setSearchData(params);
-    const vehicleData = vehicleCategory ? fetchedVehicles : (category?.data || []);
-    if (vehicleData.length > 0) {
-      runSearch(vehicleData, params);
-    }
-  };
 
   // Chrome-specific debug hint (dev-only)
   const [showChromeDebugHint, setShowChromeDebugHint] = useState(false);
@@ -452,17 +463,6 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
 
           </motion.div>
 
-          {/* Search bar — only for vehicle categories */}
-          {vehicleCategory && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
-              <RentalSearchBar onSearch={handleSearch} isSearching={isSearching} />
-            </motion.div>
-          )}
-
           {/* Yacht Service - Quiet Luxury Message */}
           {categoryId === 'yachts' && (
             <motion.div
@@ -551,8 +551,9 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
             </div>
           )}
 
-          {vehiclesLoading || isSearching ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
+          {vehiclesLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
+              {/* Loading skeleton - 3 placeholder cards */}
               {[1, 2, 3].map((i) => (
                 <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-2xl overflow-hidden animate-pulse">
                   <div className="h-64 bg-gray-800"></div>
@@ -568,103 +569,36 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
                 </div>
               ))}
             </div>
-          ) : (() => {
-            // Filter + sort vehicles based on search results
-            let displayData = [...categoryData];
+          ) : categoryData.length === 0 ? (
+            <div className="text-center text-gray-400 mt-12">
+              <p>No vehicles found in this category.</p>
+            </div>
+          ) : (
+            <div
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12"
+            >
+              {categoryData.map(item => {
+                // Marketing "Da X/giorno" — use daily_rate from database
+                const marketingPrice = (categoryId === 'cars' || categoryId === 'urban-cars' || categoryId === 'corporate-fleet')
+                  ? item.pricePerDay?.eur
+                  : undefined;
+                // Tooltip for long rent availability
+                const marketingTooltip = categoryId === 'urban-cars'
+                  ? 'Disponibile con formula long rent'
+                  : undefined;
+                // Use dynamic price from revenue config if available, else fallback to simple calc
+                const dynPrice = dynamicPrices[item.id];
+                const itemTotalPrice = dynPrice ? dynPrice.total
+                  : preDays > 0 ? Math.round((item.pricePerDay?.eur || item.priceResidentDaily || 0) * preDays)
+                  : undefined;
 
-            if (hasSearched && availabilityResults.size > 0) {
-              // Filter to only available vehicles
-              displayData = displayData.filter(item => {
-                const result = availabilityResults.get(item.id);
-                return result ? result.available : false;
-              });
-            }
+                return (
+                  <RentalCard key={item.id} item={item} onBook={handleBook} marketingPrice={preDays > 0 ? undefined : marketingPrice} marketingTooltip={marketingTooltip} categoryId={categoryId} totalPrice={itemTotalPrice} totalDays={preDays || undefined} />
+                );
+              })}
+            </div>
 
-            // Apply category filter
-            if (selectedCategories.length > 0 && hasSearched) {
-              displayData = displayData.filter(item => {
-                const result = availabilityResults.get(item.id);
-                return result ? selectedCategories.includes(result.vehicleType) : true;
-              });
-            }
-
-            // Apply budget filter
-            if (maxBudget !== null && hasSearched) {
-              displayData = displayData.filter(item => {
-                const result = availabilityResults.get(item.id);
-                return result ? result.totalPrice <= maxBudget : true;
-              });
-            }
-
-            // Sort
-            if (sortBy !== 'default' && hasSearched) {
-              displayData.sort((a, b) => {
-                const priceA = availabilityResults.get(a.id)?.totalPrice || 0;
-                const priceB = availabilityResults.get(b.id)?.totalPrice || 0;
-                return sortBy === 'price-asc' ? priceA - priceB : priceB - priceA;
-              });
-            }
-
-            // Get unique categories for filter pills
-            const availableCategories = hasSearched
-              ? [...new Set(displayData.map(item => availabilityResults.get(item.id)?.vehicleType).filter(Boolean) as string[])]
-              : [];
-
-            return (
-              <>
-                {/* Filters — only show after search */}
-                {hasSearched && (
-                  <RentalFilters
-                    sortBy={sortBy}
-                    onSortChange={setSortBy}
-                    maxBudget={maxBudget}
-                    onBudgetChange={setMaxBudget}
-                    categories={availableCategories}
-                    selectedCategories={selectedCategories}
-                    onCategoryChange={setSelectedCategories}
-                    totalResults={displayData.length}
-                  />
-                )}
-
-                {displayData.length === 0 ? (
-                  <div className="text-center text-gray-400 mt-12 py-16">
-                    {hasSearched
-                      ? <p className="text-lg">Nessun veicolo disponibile per le date selezionate.</p>
-                      : <p>Nessun veicolo trovato in questa categoria.</p>
-                    }
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-4">
-                    {displayData.map(item => {
-                      const searchResult = hasSearched ? availabilityResults.get(item.id) : null;
-                      const marketingPrice = (!hasSearched && (categoryId === 'cars' || categoryId === 'urban-cars' || categoryId === 'corporate-fleet'))
-                        ? item.pricePerDay?.eur
-                        : undefined;
-                      const marketingTooltip = categoryId === 'urban-cars' ? 'Disponibile con formula long rent' : undefined;
-                      const dailyRate = item.pricePerDay?.eur || item.priceResidentDaily || 0;
-                      const itemTotalPrice = searchResult ? searchResult.totalPrice
-                        : (preDays > 0 && dailyRate ? Math.round(dailyRate * preDays) : undefined);
-                      const itemDays = searchResult ? searchResult.days : (preDays || undefined);
-
-                      return (
-                        <RentalCard
-                          key={item.id}
-                          item={item}
-                          onBook={handleBook}
-                          marketingPrice={itemTotalPrice ? undefined : marketingPrice}
-                          marketingTooltip={marketingTooltip}
-                          categoryId={categoryId}
-                          totalPrice={itemTotalPrice}
-                          totalDays={itemDays}
-                        />
-                      );
-                    })}
-                  </div>
-                )}
-              </>
-            );
-          })()}
-          </div>
+          )}     </div>
 
       </div>
     </motion.div>
