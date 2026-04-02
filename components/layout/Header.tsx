@@ -453,21 +453,24 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                 onClick={() => setShowBookingPopup(false)}
               >
                 <motion.div
-                  initial={{ scale: 0.95, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.95, opacity: 0 }}
-                  className="bg-[#1c1c1e] border border-white/10 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative"
+                  initial={{ scale: 0.96, opacity: 0, y: 10 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.96, opacity: 0, y: 10 }}
+                  transition={{ type: 'spring', duration: 0.4, bounce: 0.15 }}
+                  className="bg-[#1c1c1e]/95 backdrop-blur-3xl border border-white/[0.08] rounded-[24px] p-7 sm:p-8 max-w-[420px] w-full relative"
+                  style={{ boxShadow: '0 0 0 0.5px rgba(255,255,255,0.06), 0 25px 60px -12px rgba(0,0,0,0.7)' }}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <button
                     onClick={() => setShowBookingPopup(false)}
-                    className="absolute top-4 right-4 text-gray-400 hover:text-white p-2 z-10"
+                    className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-white/[0.06] text-white/40 hover:text-white hover:bg-white/10 transition-all z-10"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
-                  <h3 className="text-xl font-semibold text-white text-center mb-4">Prenota Ora</h3>
+                  <h3 className="text-[20px] font-semibold text-white text-center mb-1 tracking-tight">Prenota Ora</h3>
+                  <p className="text-[13px] text-white/30 text-center mb-6">Seleziona date e orari</p>
                   <BookingSearchBox variant="popup" onClose={() => { setShowBookingPopup(false); onClose(); }} />
                 </motion.div>
               </motion.div>
