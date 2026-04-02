@@ -141,9 +141,10 @@ const calculateIncludedKm = (days: number) => {
   if (days === 2) return 180;
   if (days === 3) return 240;
   if (days === 4) return 280;
-  // From day 5 onward: 280 (day 4 baseline) + 60 km/day for each extra day
-  // e.g. 5 days = 340, 6 days = 400, 7 days = 460
-  return 280 + (days - 4) * 60;
+  if (days === 5) return 300;
+  // From day 6 onward: 300 (day 5 baseline) + 60 km/day for each extra day
+  // Source: DR7-empire-admin rentalConfigDefaults.ts → km_included._global.extra_per_day = 60
+  return 300 + (days - 5) * 60;
 };
 
 interface CarBookingWizardProps {
