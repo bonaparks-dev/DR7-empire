@@ -185,9 +185,6 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
           </div>
         )}
 
-        {/* Tariff warning */}
-        <p className="text-[11px] text-red-400/80 text-center tracking-wide">La tariffa puo subire variazioni</p>
-
         {/* Error */}
         {error && (
           <p className="text-[12px] text-red-400 text-center font-medium">{error}</p>
