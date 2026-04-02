@@ -7,7 +7,7 @@ import { isMassimoRunchina, SPECIAL_CLIENTS } from '../../utils/clientPricingRul
 import { calculateMultiDayPrice } from '../../utils/multiDayPricing';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../supabaseClient';
-import { PICKUP_LOCATIONS, AUTO_INSURANCE, INSURANCE_DEDUCTIBLES, RENTAL_EXTRAS, DEPOSIT_RULES, INSURANCE_OPTIONS_BY_TIER, INSURANCE_COVERAGE_TEXT, TIER_PRICING, TIER_DEPOSIT_OPTIONS, NO_DEPOSIT_SURCHARGE_PER_DAY, EXPERIENCE_SERVICES as BOOKING_EXPERIENCE_SERVICES, DR7_FLEX, PAYMENT_MODES, DELIVERY_PRICE_PER_KM } from '../../constants';
+import { PICKUP_LOCATIONS, RETURN_LOCATIONS, AUTO_INSURANCE, INSURANCE_DEDUCTIBLES, RENTAL_EXTRAS, DEPOSIT_RULES, INSURANCE_OPTIONS_BY_TIER, INSURANCE_COVERAGE_TEXT, TIER_PRICING, TIER_DEPOSIT_OPTIONS, NO_DEPOSIT_SURCHARGE_PER_DAY, EXPERIENCE_SERVICES as BOOKING_EXPERIENCE_SERVICES, DR7_FLEX, PAYMENT_MODES, DELIVERY_PRICE_PER_KM } from '../../constants';
 import type { Booking, RentalItem, DriverTier, TierClassification, PaymentMode } from '../../types';
 import { classifyDriverTier, getInsuranceForTier, getDepositOptionsForTier, getKmPricingForTier, getExperienceServicesForTier } from '../../utils/tierClassification';
 import DocumentUploader from './DocumentUploader';
@@ -141,8 +141,8 @@ const calculateIncludedKm = (days: number) => {
   if (days === 2) return 180;
   if (days === 3) return 240;
   if (days === 4) return 280;
-  if (days === 5) return 300;
-  return 300 + ((days - 5) * 60);
+  // From day 5 onward: 60 km/day base
+  return days * 60;
 };
 
 interface CarBookingWizardProps {
@@ -203,7 +203,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       licenseIssueDate: '',
       licenseImage: null, // File or dataURL
       idImage: null,
-      isSardinianResident: false,
       confirmsInformation: false,
 
       addSecondDriver: false,
@@ -234,8 +233,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       dr7Flex: false,
       paymentMode: 'full' as PaymentMode,
 
-      // Delivery
-      deliveryAddress: '',
+      // Delivery — structured address fields
+      deliveryAddress: '', // legacy
+      deliveryPickupVia: '', deliveryPickupNumero: '', deliveryPickupCap: '', deliveryPickupCitta: '', deliveryPickupProvincia: '', deliveryPickupKm: 0,
+      deliveryReturnVia: '', deliveryReturnNumero: '', deliveryReturnCap: '', deliveryReturnCitta: '', deliveryReturnProvincia: '', deliveryReturnKm: 0,
 
       // Vehicle assignment (set by availability check)
       selectedVehicleId: '' as string,
@@ -834,36 +835,27 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
     };
 
-    // Office hours with 15-minute intervals
-    // Mon-Fri: Morning 9:00-13:00, Afternoon 16:00-19:00
-    // Saturday: 9:00-14:00
+    // PICKUP hours (15-minute intervals)
+    // Mon-Fri: Morning 10:30-12:30, Afternoon 17:30-18:30
+    // Saturday: 10:30-12:30
     if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-      // Monday to Friday
-      addTimes(9 * 60, 13 * 60, 15);   // 09:00 to 13:00
-      addTimes(16 * 60, 19 * 60, 15);  // 16:00 to 19:00
+      addTimes(10 * 60 + 30, 12 * 60 + 30, 15); // 10:30 to 12:30
+      addTimes(17 * 60 + 30, 18 * 60 + 30, 15); // 17:30 to 18:30
     } else if (dayOfWeek === 6) {
-      // Saturday
-      addTimes(9 * 60, 14 * 60, 15);   // 09:00 to 14:00
+      addTimes(10 * 60 + 30, 12 * 60 + 30, 15); // 10:30 to 12:30
     }
 
     const selectedDate = safeDate(date);
     const now = new Date();
     const isToday = selectedDate.toDateString() === now.toDateString();
 
-    // Filter out past times if the selected date is today
     let filteredTimes = times;
     if (isToday) {
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-      const currentTimeInMinutes = currentHour * 60 + currentMinute;
-
-      // Add 1 hour buffer (60 minutes) to allow preparation time
-      const minTimeInMinutes = currentTimeInMinutes + 60;
-
+      const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+      const minTimeInMinutes = currentTimeInMinutes + 60; // 1 hour buffer
       filteredTimes = times.filter(time => {
         const [hours, minutes] = time.split(':').map(Number);
-        const timeInMinutes = hours * 60 + minutes;
-        return timeInMinutes >= minTimeInMinutes;
+        return (hours * 60 + minutes) >= minTimeInMinutes;
       });
     }
 
@@ -883,16 +875,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
     };
 
-    // RETURN (Check-out) hours - same as rental operating hours
-    // Mon-Fri: 09:00-13:00, 16:00-19:00
-    // Saturday: 09:00-14:00
+    // RETURN (Check-out) hours (15-minute intervals)
+    // Mon-Fri: Morning 09:00-12:30, Afternoon 16:00-17:30
+    // Saturday: 09:00-12:30
     if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-      // Monday to Friday
-      addTimes(9 * 60, 13 * 60, 15);   // 09:00 to 13:00
-      addTimes(16 * 60, 19 * 60, 15);  // 16:00 to 19:00
+      addTimes(9 * 60, 12 * 60 + 30, 15);  // 09:00 to 12:30
+      addTimes(16 * 60, 17 * 60 + 30, 15); // 16:00 to 17:30
     } else if (dayOfWeek === 6) {
-      // Saturday
-      addTimes(9 * 60, 14 * 60, 15);   // 09:00 to 14:00
+      addTimes(9 * 60, 12 * 60 + 30, 15);  // 09:00 to 12:30
     }
 
     // Filter out past times if today
@@ -1126,21 +1116,41 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   }, [isCameraOpen, cameraStream]);
 
   // Return time auto-calculation: default to pickupTime - 1h30 (22h30 = 1 day)
-  // On Saturday return: default to pickupTime (Saturday has limited hours)
+  // Snaps to nearest valid return slot if calculated time is outside valid slots
   useEffect(() => {
     if (formData.pickupTime && formData.pickupDate && formData.returnDate) {
-      const returnDayOfWeek = getDayOfWeek(formData.returnDate);
-      if (returnDayOfWeek === 6) {
-        // Saturday return — just use pickup time or nearest valid time
-        setFormData(prev => ({ ...prev, returnTime: formData.pickupTime }));
+      // Calculate ideal return time: pickup - 1h30
+      const [hours, minutes] = formData.pickupTime.split(':').map(Number);
+      const tempDate = new Date(2000, 0, 1, hours, minutes);
+      tempDate.setHours(tempDate.getHours() - 1);
+      tempDate.setMinutes(tempDate.getMinutes() - 30);
+      const idealReturn = `${String(tempDate.getHours()).padStart(2, '0')}:${String(tempDate.getMinutes()).padStart(2, '0')}`;
+
+      // Get valid return times for the return date
+      const validTimes = getValidReturnTimes(formData.returnDate);
+      if (validTimes.length === 0) {
+        // No valid times — just set the ideal (will be validated later)
+        setFormData(prev => ({ ...prev, returnTime: idealReturn }));
+        return;
+      }
+
+      // If ideal time is in valid slots, use it
+      if (validTimes.includes(idealReturn)) {
+        setFormData(prev => ({ ...prev, returnTime: idealReturn }));
       } else {
-        // Normal day — pickup time - 1h30
-        const [hours, minutes] = formData.pickupTime.split(':').map(Number);
-        const tempDate = new Date(2000, 0, 1, hours, minutes);
-        tempDate.setHours(tempDate.getHours() - 1);
-        tempDate.setMinutes(tempDate.getMinutes() - 30);
-        const newReturnTime = `${String(tempDate.getHours()).padStart(2, '0')}:${String(tempDate.getMinutes()).padStart(2, '0')}`;
-        setFormData(prev => ({ ...prev, returnTime: newReturnTime }));
+        // Snap to nearest valid slot that's <= ideal time, or first available
+        const idealMinutes = tempDate.getHours() * 60 + tempDate.getMinutes();
+        const closest = validTimes.reduce((best, time) => {
+          const [h, m] = time.split(':').map(Number);
+          const tMin = h * 60 + m;
+          const [bh, bm] = best.split(':').map(Number);
+          const bMin = bh * 60 + bm;
+          // Prefer times <= ideal, closest to ideal
+          if (tMin <= idealMinutes && (bMin > idealMinutes || tMin > bMin)) return time;
+          if (bMin > idealMinutes && tMin < bMin) return time;
+          return best;
+        }, validTimes[0]);
+        setFormData(prev => ({ ...prev, returnTime: closest }));
       }
     }
   }, [formData.pickupTime, formData.pickupDate, formData.returnDate, availabilityWindows]);
@@ -1435,11 +1445,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
 
     const calculatedRecommendedKm = recommendKmPackage(formData.expectedKm, item.name, billingDays);
-    // --- DELIVERY FEE (consegna a domicilio) ---
+    // --- DELIVERY FEE (consegna a domicilio) — separate pickup + return ---
     const isDeliveryPickup = formData.pickupLocation === 'home_delivery';
     const isDeliveryReturn = formData.returnLocation === 'home_delivery';
-    const calculatedDeliveryFee = (isDeliveryPickup || isDeliveryReturn) && deliveryInfo?.deliveryFee
-      ? deliveryInfo.deliveryFee : 0;
+    const pickupDeliveryFee = isDeliveryPickup && formData.deliveryPickupKm > 0
+      ? roundToTwoDecimals(formData.deliveryPickupKm * ACTIVE_DELIVERY_PRICE_PER_KM * 2) : 0;
+    const returnDeliveryFee = isDeliveryReturn && formData.deliveryReturnKm > 0
+      ? roundToTwoDecimals(formData.deliveryReturnKm * ACTIVE_DELIVERY_PRICE_PER_KM * 2) : 0;
+    const calculatedDeliveryFee = pickupDeliveryFee + returnDeliveryFee;
 
     const calculatedPickupFee = 0;
     const calculatedDropoffFee = 0;
@@ -1479,7 +1492,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // Supercar: deposit option surcharges (no_deposit = €49/day, vehicle_deposit = €20/day)
     let supercarDepositSurcharge = 0;
     if (!isUrbanForDeposit && formData.depositOption) {
-      const depositKey = `${activeTierForCalc}_${formData.isSardinianResident ? 'RESIDENT' : 'NON_RESIDENT'}`;
+      const depositKey = `${activeTierForCalc}_${'RESIDENT'}`;
       const depOpts = TIER_DEPOSIT_OPTIONS[depositKey] || [];
       const selectedDep = depOpts.find(d => d.id === formData.depositOption);
       if (selectedDep?.surchargePerDay) {
@@ -1538,9 +1551,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime,
     formData.insuranceOption, formData.extras, formData.birthDate, formData.licenseIssueDate, formData.addSecondDriver,
     formData.kmPackageType, formData.kmPackageDistance, formData.expectedKm,
-    formData.email, formData.usageZone, formData.depositOption, formData.isSardinianResident,
+    formData.email, formData.usageZone, formData.depositOption,
     formData.selectedExperiences, formData.dr7Flex, formData.pickupLocation, formData.returnLocation,
-    item, currency, user, isUrbanOrCorporate, categoryContext, driverTier, dynamicPricing, deliveryInfo
+    formData.deliveryPickupKm, formData.deliveryReturnKm,
+    item, currency, user, isUrbanOrCorporate, categoryContext, driverTier, dynamicPricing
   ]);
 
   // Online booking discount (5%) — NOT for supercars, NOT for Massimo
@@ -2031,6 +2045,24 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       if (availabilityError) {
         newErrors.availability = availabilityError;
       }
+
+      // Delivery address validation
+      if (formData.pickupLocation === 'home_delivery') {
+        if (!formData.deliveryPickupVia?.trim()) newErrors.deliveryPickupVia = "Via obbligatoria.";
+        if (!formData.deliveryPickupNumero?.trim()) newErrors.deliveryPickupNumero = "Numero civico obbligatorio.";
+        if (!formData.deliveryPickupCap?.trim()) newErrors.deliveryPickupCap = "CAP obbligatorio.";
+        if (!formData.deliveryPickupCitta?.trim()) newErrors.deliveryPickupCitta = "Città obbligatoria.";
+        if (!formData.deliveryPickupProvincia?.trim()) newErrors.deliveryPickupProvincia = "Provincia obbligatoria.";
+        if (!formData.deliveryPickupKm || formData.deliveryPickupKm <= 0) newErrors.deliveryPickupKm = "Inserisci la distanza in km.";
+      }
+      if (formData.returnLocation === 'home_delivery') {
+        if (!formData.deliveryReturnVia?.trim()) newErrors.deliveryReturnVia = "Via obbligatoria.";
+        if (!formData.deliveryReturnNumero?.trim()) newErrors.deliveryReturnNumero = "Numero civico obbligatorio.";
+        if (!formData.deliveryReturnCap?.trim()) newErrors.deliveryReturnCap = "CAP obbligatorio.";
+        if (!formData.deliveryReturnCitta?.trim()) newErrors.deliveryReturnCitta = "Città obbligatoria.";
+        if (!formData.deliveryReturnProvincia?.trim()) newErrors.deliveryReturnProvincia = "Provincia obbligatoria.";
+        if (!formData.deliveryReturnKm || formData.deliveryReturnKm <= 0) newErrors.deliveryReturnKm = "Inserisci la distanza in km.";
+      }
     }
     if (step === 2) {
       const ly = calculateYearsSince(formData.licenseIssueDate);
@@ -2261,7 +2293,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             licenseNumber: formData.licenseNumber,
             licenseIssueDate: formData.licenseIssueDate,
             licenseYears: licenseYears,
-            isSardinianResident: formData.isSardinianResident,
+            // isSardinianResident removed
           },
           secondDriver: formData.addSecondDriver ? {
             fullName: `${formData.secondDriver.firstName} ${formData.secondDriver.lastName}`,
@@ -2727,7 +2759,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               licenseNumber: formData.licenseNumber,
               licenseIssueDate: formData.licenseIssueDate,
               licenseYears: licenseYears,
-              isSardinianResident: formData.isSardinianResident,
+              // isSardinianResident removed
             },
             secondDriver: formData.addSecondDriver ? {
               fullName: `${formData.secondDriver.firstName} ${formData.secondDriver.lastName}`,
@@ -2904,6 +2936,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
           // No fattura for credit wallet bookings — fattura was already generated when credits were purchased
 
+          // DR7 Club 3% cashback — grant wallet credit on payment
+          try {
+            const paidEur = grandTotal;
+            const cashbackAmount = Math.floor(paidEur * 3) / 100; // 3%, round down to cents
+            if (cashbackAmount >= 0.01 && user?.id) {
+              await addCredits(user.id, cashbackAmount, `DR7 Club 3% — Prenotazione ${data.booking_id?.substring(0, 8) || ''}`, data.booking_id, 'cashback_3_percent');
+              console.log(`[credit-booking] DR7 Club 3% cashback: €${cashbackAmount.toFixed(2)} → wallet`);
+            }
+          } catch (cashbackErr) {
+            console.error('[credit-booking] DR7 Club cashback error (non-blocking):', cashbackErr);
+          }
+
           // Mark birthday discount code as used
           if (appliedDiscount) {
             try {
@@ -3044,7 +3088,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               licenseNumber: formData.licenseNumber,
               licenseIssueDate: formData.licenseIssueDate,
               licenseYears: licenseYears,
-              isSardinianResident: formData.isSardinianResident,
+              // isSardinianResident removed
             },
             secondDriver: formData.addSecondDriver ? {
               fullName: `${formData.secondDriver.firstName} ${formData.secondDriver.lastName}`,
@@ -3413,7 +3457,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 </div>
                 <div>
                   <label className="text-sm text-gray-400 font-semibold mb-2 block">Luogo di riconsegna *</label>
-                  {PICKUP_LOCATIONS.map(loc => (
+                  {RETURN_LOCATIONS.map(loc => (
                     <div key={loc.id} className="flex items-start mt-2 p-2 rounded hover:bg-gray-800/30 transition-colors">
                       <input type="radio" id={`return-${loc.id}`} name="returnLocation" value={loc.id} checked={formData.returnLocation === loc.id} onChange={handleChange} className="w-4 h-4 mt-1 text-white bg-gray-700 border-gray-600 focus:ring-white" />
                       <label htmlFor={`return-${loc.id}`} className="ml-2 text-white flex-1">
@@ -3424,46 +3468,61 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 </div>
               </div>
 
-              {/* Delivery address input — shown when home_delivery is selected */}
-              {(formData.pickupLocation === 'home_delivery' || formData.returnLocation === 'home_delivery') && (
+              {/* Delivery address — PICKUP domicilio */}
+              {formData.pickupLocation === 'home_delivery' && (
                 <div className="mt-4 p-4 rounded-lg border border-gray-700 bg-gray-800/40">
-                  <label className="text-sm text-gray-400 font-semibold mb-2 block">
-                    Indirizzo di consegna *
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Es: Via Roma 15, Alghero, SS"
-                    value={formData.deliveryAddress}
-                    onChange={(e) => setFormData(prev => ({ ...prev, deliveryAddress: e.target.value }))}
-                    className="w-full px-4 py-3 rounded-lg bg-gray-900 border border-gray-600 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
-                  />
-                  {isCalculatingDelivery && (
-                    <p className="text-sm text-gray-400 mt-2 animate-pulse">Calcolo distanza in corso...</p>
-                  )}
-                  {deliveryError && (
-                    <p className="text-sm text-red-400 mt-2">{deliveryError}</p>
-                  )}
-                  {deliveryInfo && !isCalculatingDelivery && (
-                    <div className="mt-3 p-3 rounded bg-gray-900/60 border border-gray-700">
-                      <p className="text-sm text-gray-300">
-                        <span className="text-white font-medium">{deliveryInfo.destinationAddress}</span>
-                      </p>
-                      <p className="text-sm text-gray-400 mt-1">
-                        Distanza: <span className="text-white">{deliveryInfo.distanceKm} km</span> ({deliveryInfo.durationText})
-                      </p>
-                      <p className="text-sm text-gray-400 mt-1">
-                        {formData.pickupLocation === 'home_delivery' && formData.returnLocation === 'home_delivery'
-                          ? `Andata e ritorno: ${deliveryInfo.roundTripKm} km × €3/km`
-                          : `Solo ${formData.pickupLocation === 'home_delivery' ? 'consegna' : 'ritiro'}: ${deliveryInfo.roundTripKm} km × €3/km`
-                        }
-                      </p>
-                      <p className="text-white font-semibold mt-2">
-                        Costo consegna: €{deliveryInfo.deliveryFee.toLocaleString('it-IT')}
-                      </p>
+                  <label className="text-sm text-yellow-400 font-semibold mb-3 block">Indirizzo consegna veicolo *</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2 sm:col-span-1">
+                      <input type="text" placeholder="Via *" value={formData.deliveryPickupVia || ''} onChange={(e) => setFormData(prev => ({ ...prev, deliveryPickupVia: e.target.value }))} className="w-full px-3 py-2 rounded bg-gray-900 border border-gray-600 text-white text-sm placeholder-gray-500 focus:border-white focus:outline-none" />
                     </div>
+                    <div className="col-span-2 sm:col-span-1">
+                      <input type="text" placeholder="N. civico *" value={formData.deliveryPickupNumero || ''} onChange={(e) => setFormData(prev => ({ ...prev, deliveryPickupNumero: e.target.value }))} className="w-full px-3 py-2 rounded bg-gray-900 border border-gray-600 text-white text-sm placeholder-gray-500 focus:border-white focus:outline-none" />
+                    </div>
+                    <input type="text" placeholder="CAP *" value={formData.deliveryPickupCap || ''} onChange={(e) => setFormData(prev => ({ ...prev, deliveryPickupCap: e.target.value }))} className="w-full px-3 py-2 rounded bg-gray-900 border border-gray-600 text-white text-sm placeholder-gray-500 focus:border-white focus:outline-none" />
+                    <input type="text" placeholder="Città *" value={formData.deliveryPickupCitta || ''} onChange={(e) => setFormData(prev => ({ ...prev, deliveryPickupCitta: e.target.value }))} className="w-full px-3 py-2 rounded bg-gray-900 border border-gray-600 text-white text-sm placeholder-gray-500 focus:border-white focus:outline-none" />
+                    <input type="text" placeholder="Provincia *" value={formData.deliveryPickupProvincia || ''} onChange={(e) => setFormData(prev => ({ ...prev, deliveryPickupProvincia: e.target.value }))} className="w-full px-3 py-2 rounded bg-gray-900 border border-gray-600 text-white text-sm placeholder-gray-500 focus:border-white focus:outline-none" />
+                    <div>
+                      <input type="number" min="1" placeholder="Km dalla sede *" value={formData.deliveryPickupKm || ''} onChange={(e) => setFormData(prev => ({ ...prev, deliveryPickupKm: parseInt(e.target.value) || 0 }))} className="w-full px-3 py-2 rounded bg-gray-900 border border-gray-600 text-white text-sm placeholder-gray-500 focus:border-white focus:outline-none" />
+                    </div>
+                  </div>
+                  {formData.deliveryPickupKm > 0 && (
+                    <p className="text-sm text-yellow-400 mt-3 font-semibold">
+                      Costo consegna: {formData.deliveryPickupKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM} × 2 (A/R) = €{(formData.deliveryPickupKm * ACTIVE_DELIVERY_PRICE_PER_KM * 2).toFixed(2)}
+                    </p>
                   )}
+                  <p className="text-xs text-gray-500 mt-2">La distanza sarà verificata da DR7. In caso di discrepanza, verrà applicata la distanza reale.</p>
                 </div>
               )}
+
+              {/* Delivery address — RETURN domicilio */}
+              {formData.returnLocation === 'home_delivery' && (
+                <div className="mt-4 p-4 rounded-lg border border-gray-700 bg-gray-800/40">
+                  <label className="text-sm text-yellow-400 font-semibold mb-3 block">Indirizzo ritiro/riconsegna veicolo *</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2 sm:col-span-1">
+                      <input type="text" placeholder="Via *" value={formData.deliveryReturnVia || ''} onChange={(e) => setFormData(prev => ({ ...prev, deliveryReturnVia: e.target.value }))} className="w-full px-3 py-2 rounded bg-gray-900 border border-gray-600 text-white text-sm placeholder-gray-500 focus:border-white focus:outline-none" />
+                    </div>
+                    <div className="col-span-2 sm:col-span-1">
+                      <input type="text" placeholder="N. civico *" value={formData.deliveryReturnNumero || ''} onChange={(e) => setFormData(prev => ({ ...prev, deliveryReturnNumero: e.target.value }))} className="w-full px-3 py-2 rounded bg-gray-900 border border-gray-600 text-white text-sm placeholder-gray-500 focus:border-white focus:outline-none" />
+                    </div>
+                    <input type="text" placeholder="CAP *" value={formData.deliveryReturnCap || ''} onChange={(e) => setFormData(prev => ({ ...prev, deliveryReturnCap: e.target.value }))} className="w-full px-3 py-2 rounded bg-gray-900 border border-gray-600 text-white text-sm placeholder-gray-500 focus:border-white focus:outline-none" />
+                    <input type="text" placeholder="Città *" value={formData.deliveryReturnCitta || ''} onChange={(e) => setFormData(prev => ({ ...prev, deliveryReturnCitta: e.target.value }))} className="w-full px-3 py-2 rounded bg-gray-900 border border-gray-600 text-white text-sm placeholder-gray-500 focus:border-white focus:outline-none" />
+                    <input type="text" placeholder="Provincia *" value={formData.deliveryReturnProvincia || ''} onChange={(e) => setFormData(prev => ({ ...prev, deliveryReturnProvincia: e.target.value }))} className="w-full px-3 py-2 rounded bg-gray-900 border border-gray-600 text-white text-sm placeholder-gray-500 focus:border-white focus:outline-none" />
+                    <div>
+                      <input type="number" min="1" placeholder="Km dalla sede *" value={formData.deliveryReturnKm || ''} onChange={(e) => setFormData(prev => ({ ...prev, deliveryReturnKm: parseInt(e.target.value) || 0 }))} className="w-full px-3 py-2 rounded bg-gray-900 border border-gray-600 text-white text-sm placeholder-gray-500 focus:border-white focus:outline-none" />
+                    </div>
+                  </div>
+                  {formData.deliveryReturnKm > 0 && (
+                    <p className="text-sm text-yellow-400 mt-3 font-semibold">
+                      Costo riconsegna: {formData.deliveryReturnKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM} × 2 (A/R) = €{(formData.deliveryReturnKm * ACTIVE_DELIVERY_PRICE_PER_KM * 2).toFixed(2)}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-2">La distanza sarà verificata da DR7. In caso di discrepanza, verrà applicata la distanza reale.</p>
+                </div>
+              )}
+
+              {/* Legacy delivery info removed — replaced by structured address fields above */}
             </div>
 
 
@@ -3979,24 +4038,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               </AnimatePresence>
             </section>
 
-            {/* Security Deposit - Sixt Style */}
-            <section className="border-t border-gray-700 pt-6">
-              {!isUrbanOrCorporate && (
-                <div className="mt-4">
-                  <p className="text-base font-semibold text-white mb-3">Sei residente in Sardegna? *</p>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center">
-                      <input type="radio" id="resident-yes" name="isSardinianResident" checked={formData.isSardinianResident} onChange={() => setFormData(p => ({ ...p, isSardinianResident: true }))} className="w-4 h-4 text-white" />
-                      <label htmlFor="resident-yes" className="ml-2 text-white">Sì - Residente in Sardegna</label>
-                    </div>
-                    <div className="flex items-center">
-                      <input type="radio" id="resident-no" name="isSardinianResident" checked={!formData.isSardinianResident} onChange={() => setFormData(p => ({ ...p, isSardinianResident: false }))} className="w-4 h-4 text-white" />
-                      <label htmlFor="resident-no" className="ml-2 text-white">No - Non residente</label>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </section>
+            {/* Sardinian residency question REMOVED — deposit now same for all */}
 
             {/* Final Checkbox */}
             <section className="border-t border-gray-700 pt-6">
@@ -4015,7 +4057,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const activeTier = driverTier || 'TIER_2'; // fallback
         const tierPricing = getKmPricingForTier(activeTier);
         const insuranceOptions = getInsuranceForTier(activeTier);
-        const depositOptions = getDepositOptionsForTier(activeTier, formData.isSardinianResident);
+        const depositOptions = getDepositOptionsForTier(activeTier, true); // residency distinction removed
         const experienceServices = getExperienceServicesForTier(activeTier);
 
         // Check if "no deposit" requires Kasko (cannot select no_deposit with RCA only)
@@ -4227,11 +4269,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               /* Supercar: tier-based deposit options */
               <section className="border-t border-gray-700 pt-6">
                 <h3 className="text-lg font-bold text-white mb-2">D. CAUZIONE</h3>
-                <p className="text-sm text-gray-400 mb-4">
-                  {!formData.isSardinianResident
-                    ? 'Per i non residenti in Sardegna: solo carta di credito o veicolo (dal 2020).'
-                    : 'Scegli come gestire la cauzione.'}
-                </p>
+                <p className="text-sm text-gray-400 mb-4">Scegli come gestire la cauzione.</p>
                 <div className="space-y-3">
                   {depositOptions.map(opt => {
                     const isSelected = formData.depositOption === opt.id;
@@ -4693,6 +4731,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   <hr className="border-gray-500 my-2" />
                   <div className="flex justify-between font-bold text-lg text-white"><span>TOTALE</span> <span>{formatPrice(grandTotal)}</span></div>
 
+                  {/* DR7 Club 3% cashback info */}
+                  {grandTotal > 0 && (
+                    <div className="flex justify-between text-green-400 text-sm mt-1">
+                      <span>DR7 Club: riceverai credito wallet (3%)</span>
+                      <span>+€{(Math.floor(grandTotal * 3) / 100).toFixed(2)}</span>
+                    </div>
+                  )}
+
                   {/* Cauzione info */}
                   {(() => {
                     const depositAmt = getDeposit();
@@ -4713,7 +4759,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           {formData.depositOption && !isUrbanOrCorporate && (
                             <p className="text-sm text-gray-400 mt-1">
                               Tipo: {(() => {
-                                const depKey = `${(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'}_${formData.isSardinianResident ? 'RESIDENT' : 'NON_RESIDENT'}`;
+                                const depKey = `${(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'}_${'RESIDENT'}`;
                                 const opt = (TIER_DEPOSIT_OPTIONS[depKey] || []).find((d: any) => d.id === formData.depositOption);
                                 return opt?.label || formData.depositOption;
                               })()}
@@ -5341,10 +5387,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       {/* Lavaggio is now included in the price - no additional fee */}
                       {pickupFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Spese di ritiro</span><span className="text-white font-medium">{formatPrice(pickupFee)}</span></div>}
                       {dropoffFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Spese di riconsegna</span><span className="text-white font-medium">{formatPrice(dropoffFee)}</span></div>}
-                      {deliveryFee > 0 && (
+                      {formData.pickupLocation === 'home_delivery' && formData.deliveryPickupKm > 0 && (
                         <div className="flex justify-between">
-                          <span className="text-gray-400">Consegna a domicilio ({deliveryInfo?.roundTripKm} km × €3/km)</span>
-                          <span className="text-white font-medium">{formatPrice(deliveryFee)}</span>
+                          <span className="text-gray-400">Consegna a domicilio ({formData.deliveryPickupKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM} × 2 A/R)</span>
+                          <span className="text-white font-medium">{formatPrice(formData.deliveryPickupKm * ACTIVE_DELIVERY_PRICE_PER_KM * 2)}</span>
+                        </div>
+                      )}
+                      {formData.returnLocation === 'home_delivery' && formData.deliveryReturnKm > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Riconsegna a domicilio ({formData.deliveryReturnKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM} × 2 A/R)</span>
+                          <span className="text-white font-medium">{formatPrice(formData.deliveryReturnKm * ACTIVE_DELIVERY_PRICE_PER_KM * 2)}</span>
                         </div>
                       )}
                       {secondDriverFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Secondo guidatore</span><span className="text-white font-medium">{formatPrice(secondDriverFee)}</span></div>}

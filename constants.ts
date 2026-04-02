@@ -521,9 +521,13 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
 
 
 export const PICKUP_LOCATIONS = [
-  { id: 'dr7_office', label: { en: 'DR7 Office (Viale Marconi, 229, 09131 Cagliari CA)', it: 'Viale Marconi, 229, 09131 Cagliari CA' } },
-  { id: 'cagliari_airport', label: { en: 'Cagliari Elmas Airport', it: 'Aeroporto di Cagliari Elmas' } },
+  { id: 'dr7_office', label: { en: 'Pickup at DR7 Office', it: 'Ritiro in sede — Viale Marconi 229, Cagliari' } },
   { id: 'home_delivery', label: { en: 'Home Delivery', it: 'Consegna a domicilio' } },
+];
+
+export const RETURN_LOCATIONS = [
+  { id: 'dr7_office', label: { en: 'Return at DR7 Office', it: 'Riconsegna in sede — Viale Marconi 229, Cagliari' } },
+  { id: 'home_delivery', label: { en: 'Home Pickup', it: 'Ritiro/riconsegna a domicilio' } },
 ];
 
 export const DR7_OFFICE_ADDRESS = 'Viale Marconi 229, 09131 Cagliari CA, Italy';
@@ -675,24 +679,24 @@ export const TIER_DEPOSIT_OPTIONS: Record<string, DepositOption[]> = {
   // Tier 1 + Sardinia resident
   'TIER_1_RESIDENT': [
     { id: 'vehicle_deposit', label: 'Cauzione con veicolo', amount: 0, surchargePerDay: 20, description: 'Veicolo di proprietà immatricolato dal 2020 in poi — €20/giorno', requiresVehicle2020: true },
-    { id: 'credit_card', label: 'Carta di credito', amount: 2000, description: 'Blocco su carta di credito di €2.000' },
+    { id: 'credit_card', label: 'Carta di credito o debito', amount: 2000, description: 'Blocco su carta di credito o debito di €2.000' },
     { id: 'cash_prepaid', label: 'Contanti o prepagata', amount: 4999, description: 'Fino a €4.999 in contanti o carta prepagata' },
   ],
   // Tier 2 + Sardinia resident
   'TIER_2_RESIDENT': [
     { id: 'no_deposit', label: 'Nessuna cauzione', amount: 0, surchargePerDay: 49, description: 'Supplemento di €49/giorno — nessun deposito richiesto (solo con acquisto Kasko)' },
     { id: 'vehicle_deposit', label: 'Cauzione con veicolo', amount: 0, surchargePerDay: 20, description: 'Veicolo di proprietà immatricolato dal 2020 in poi — €20/giorno', requiresVehicle2020: true },
-    { id: 'credit_card', label: 'Carta di credito', amount: 1000, description: 'Blocco su carta di credito di €1.000' },
+    { id: 'credit_card', label: 'Carta di credito o debito', amount: 1000, description: 'Blocco su carta di credito o debito di €1.000' },
     { id: 'cash_prepaid', label: 'Contanti o prepagata', amount: 4999, description: 'Fino a €4.999 in contanti o carta prepagata' },
   ],
   // Tier 1 + Non-resident (PRIORITY RULE)
   'TIER_1_NON_RESIDENT': [
-    { id: 'credit_card', label: 'Carta di credito', amount: 5000, description: 'Blocco su carta di credito di €5.000' },
+    { id: 'credit_card', label: 'Carta di credito o debito', amount: 5000, description: 'Blocco su carta di credito o debito di €5.000' },
     { id: 'vehicle_deposit', label: 'Cauzione con veicolo', amount: 0, surchargePerDay: 20, description: 'Veicolo di proprietà immatricolato dal 2020 in poi — €20/giorno', requiresVehicle2020: true },
   ],
   // Tier 2 + Non-resident (PRIORITY RULE)
   'TIER_2_NON_RESIDENT': [
-    { id: 'credit_card', label: 'Carta di credito', amount: 3500, description: 'Blocco su carta di credito di €3.500' },
+    { id: 'credit_card', label: 'Carta di credito o debito', amount: 3500, description: 'Blocco su carta di credito o debito di €3.500' },
     { id: 'vehicle_deposit', label: 'Cauzione con veicolo', amount: 0, surchargePerDay: 20, description: 'Veicolo di proprietà immatricolato dal 2020 in poi — €20/giorno', requiresVehicle2020: true },
   ],
 };
