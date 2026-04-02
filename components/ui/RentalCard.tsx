@@ -12,6 +12,8 @@ interface RentalCardProps {
   marketingPrice?: number;
   marketingTooltip?: string;
   categoryId?: string;
+  calculatedTotalPrice?: number;
+  rentalDays?: number;
   jetSearchData?: {
     departure?: string;
     arrival?: string;
@@ -22,7 +24,7 @@ interface RentalCardProps {
   };
 }
 
-const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, marketingTooltip, categoryId, jetSearchData }) => {
+const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, marketingTooltip, categoryId, calculatedTotalPrice, rentalDays, jetSearchData }) => {
   const { t, getTranslated } = useTranslation();
   const { currency } = useCurrency();
   const { user } = useAuth();
@@ -91,7 +93,19 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
       <div className="px-6 pt-6 pb-4 flex-grow flex flex-col">
         <div className="mt-auto space-y-2">
           <div>
-            {marketingPrice ? (
+            {calculatedTotalPrice && calculatedTotalPrice > 0 ? (
+              <div className="space-y-0.5">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-bold text-white">{formatPrice(calculatedTotalPrice)}</span>
+                  <span className="text-sm text-gray-400">totale</span>
+                </div>
+                {rentalDays && rentalDays > 0 && (
+                  <p className="text-xs text-gray-400">
+                    {rentalDays} giorn{rentalDays === 1 ? 'o' : 'i'} — {formatPrice(Math.round(calculatedTotalPrice / rentalDays))}/giorno
+                  </p>
+                )}
+              </div>
+            ) : marketingPrice ? (
               // Marketing "Da X/giorno" display
               <div className="flex items-baseline flex-wrap gap-x-1">
                 <span className="text-sm text-gray-400">Da </span>

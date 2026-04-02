@@ -1,6 +1,16 @@
 import React, { createContext, useState, useMemo, useEffect, useCallback } from 'react';
 import type { RentalItem } from '../types';
 
+export interface SearchParams {
+  pickupLocation: string;
+  dropoffLocation: string;
+  sameDropoffLocation: boolean;
+  pickupDate: string;
+  pickupTime: string;
+  dropoffDate: string;
+  dropoffTime: string;
+}
+
 interface BookingContextType {
   bookingItem: RentalItem | null;
   isBookingOpen: boolean;
@@ -14,6 +24,12 @@ interface BookingContextType {
   closeCarWizard: () => void;
   selectedCar: RentalItem | null;
   wizardCategory: string | null;
+
+  // Search parameters - single source of truth for the booking funnel
+  searchParams: SearchParams | null;
+  setSearchParams: (params: SearchParams) => void;
+  clearSearchParams: () => void;
+  searchPerformed: boolean;
 }
 
 export const BookingContext = createContext<BookingContextType | undefined>(undefined);
@@ -25,8 +41,11 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const [isCarWizardOpen, setCarWizardOpen] = useState(false);
   const [selectedCar, setSelectedCar] = useState<RentalItem | null>(null);
-
   const [wizardCategory, setWizardCategory] = useState<string | null>(null);
+
+  // Search params: single source of truth for dates/locations across the funnel
+  const [searchParams, setSearchParamsState] = useState<SearchParams | null>(null);
+  const [searchPerformed, setSearchPerformed] = useState(false);
 
   useEffect(() => {
     if (isBookingOpen || isCarWizardOpen) {
@@ -69,6 +88,16 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }, 300);
   }, []);
 
+  const setSearchParams = useCallback((params: SearchParams) => {
+    setSearchParamsState(params);
+    setSearchPerformed(true);
+  }, []);
+
+  const clearSearchParams = useCallback(() => {
+    setSearchParamsState(null);
+    setSearchPerformed(false);
+  }, []);
+
   const value = useMemo(() => ({
     bookingItem,
     isBookingOpen,
@@ -79,8 +108,12 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     openCarWizard,
     closeCarWizard,
     selectedCar,
-    wizardCategory
-  }), [bookingItem, isBookingOpen, bookingCategory, openBooking, closeBooking, isCarWizardOpen, openCarWizard, closeCarWizard, selectedCar, wizardCategory]);
+    wizardCategory,
+    searchParams,
+    setSearchParams,
+    clearSearchParams,
+    searchPerformed
+  }), [bookingItem, isBookingOpen, bookingCategory, openBooking, closeBooking, isCarWizardOpen, openCarWizard, closeCarWizard, selectedCar, wizardCategory, searchParams, setSearchParams, clearSearchParams, searchPerformed]);
 
   return (
     <BookingContext.Provider value={value}>

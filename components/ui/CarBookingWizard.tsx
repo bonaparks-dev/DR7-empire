@@ -2,6 +2,8 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Link } from 'react-router-dom';
+import { useBooking } from '../../hooks/useBooking';
+import type { SearchParams } from '../../contexts/BookingContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import { isMassimoRunchina, SPECIAL_CLIENTS } from '../../utils/clientPricingRules';
 import { calculateMultiDayPrice } from '../../utils/multiDayPricing';
@@ -151,6 +153,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const { t, getTranslated } = useTranslation();
   const { currency } = useCurrency();
   const { user, loading: authLoading } = useAuth();
+  const { searchParams } = useBooking();
 
   // Determine vehicle type
   const vehicleType = useMemo(() => getVehicleType(item, categoryContext), [item, categoryContext]);
@@ -171,17 +174,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   const [formData, setFormData] = useState(() => {
     return {
-      // Step 1
-      pickupLocation: PICKUP_LOCATIONS[0].id,
-      returnLocation: PICKUP_LOCATIONS[0].id,
-      pickupDate: today,
-      pickupTime: '10:30',
-      returnDate: (() => {
+      // Step 1 — pre-filled from search params if available
+      pickupLocation: searchParams?.pickupLocation || PICKUP_LOCATIONS[0].id,
+      returnLocation: searchParams?.dropoffLocation || PICKUP_LOCATIONS[0].id,
+      pickupDate: searchParams?.pickupDate || today,
+      pickupTime: searchParams?.pickupTime || '10:30',
+      returnDate: searchParams?.dropoffDate || (() => {
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         return tomorrow.toLocaleString('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).split(',')[0];
       })(),
-      returnTime: '09:00',
+      returnTime: searchParams?.dropoffTime || '09:00',
 
       // Step 2
       firstName: '',
@@ -337,14 +340,34 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
     };
 
-    // Push initial state to enable back button handling
+    // Reset isSubmittingRef on pageshow (fixes stuck state after Nexi redirect + browser back)
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        isSubmittingRef.current = false;
+        setIsProcessing(false);
+      }
+    };
+
     window.history.pushState(null, '', window.location.href);
     window.addEventListener('popstate', handlePopState);
+    window.addEventListener('pageshow', handlePageShow);
 
     return () => {
       window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('pageshow', handlePageShow);
     };
   }, [step, onClose]);
+
+  // Auto-advance to Step 2 when search params are pre-filled
+  useEffect(() => {
+    if (searchParams && step === 1) {
+      // Validate that search params are complete
+      if (searchParams.pickupDate && searchParams.pickupTime && searchParams.dropoffDate && searchParams.dropoffTime) {
+        setStep(2);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only on mount
 
   // Auto-set km package based on vehicle type
   useEffect(() => {
@@ -3063,6 +3086,48 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     switch (step) {
       case 1:
+        // If search params pre-filled from search page, show read-only summary
+        if (searchParams && searchParams.pickupDate && searchParams.dropoffDate) {
+          const pickupLocLabel = PICKUP_LOCATIONS.find(l => l.id === formData.pickupLocation)?.label;
+          const returnLocLabel = PICKUP_LOCATIONS.find(l => l.id === formData.returnLocation)?.label;
+          return (
+            <div className="space-y-6">
+              <div className="mb-6">
+                <img src={item.image} alt={item.name} className="w-full h-48 object-contain rounded-lg border border-gray-700 bg-gray-800/30" />
+                <h2 className="text-2xl font-bold text-white mt-3">{item.name}</h2>
+              </div>
+              <div className="p-4 rounded-lg border border-gray-700 bg-gray-800/30">
+                <h3 className="text-lg font-semibold text-white mb-3">Riepilogo Noleggio</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-400">Ritiro</p>
+                    <p className="text-white font-medium">{typeof pickupLocLabel === 'object' ? pickupLocLabel.it : pickupLocLabel}</p>
+                    <p className="text-white">{formData.pickupDate} alle {formData.pickupTime}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400">Riconsegna</p>
+                    <p className="text-white font-medium">{typeof returnLocLabel === 'object' ? returnLocLabel.it : returnLocLabel}</p>
+                    <p className="text-white">{formData.returnDate} alle {formData.returnTime}</p>
+                  </div>
+                </div>
+                <button type="button" onClick={() => { window.history.back(); }}
+                  className="mt-3 text-sm text-gray-400 hover:text-white underline transition-colors">
+                  Modifica ricerca
+                </button>
+              </div>
+              {isCheckingAvailability && (
+                <div className="p-3 bg-blue-900/20 border border-blue-600 rounded-lg">
+                  <p className="text-blue-300 text-sm">Verifica disponibilità veicolo...</p>
+                </div>
+              )}
+              {availabilityError && (
+                <div className="p-4 bg-red-900/30 border-2 border-red-500 rounded-lg">
+                  <p className="text-red-300 font-semibold">{availabilityError}</p>
+                </div>
+              )}
+            </div>
+          );
+        }
         return (
           <div className="space-y-6">
             {/* Car Image Preview */}
