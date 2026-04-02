@@ -7,6 +7,20 @@
 import type { RentalConfig } from '../types/rentalConfig'
 import type { InsuranceTierOption, DepositOption, ExperienceService } from '../types'
 
+export interface RentalDayRates {
+  exotic: {
+    resident: Record<string, number>
+    non_resident: Record<string, number>
+  }
+  urban: { flat: Record<string, number>; extrapolation: string }
+  furgone: { flat: Record<string, number> }
+}
+
+export interface KmIncludedConfig {
+  table: Record<string, number>
+  extra_per_day: number
+}
+
 export interface WebsiteConfigOverlay {
   insuranceTier1: InsuranceTierOption[]
   insuranceTier2: InsuranceTierOption[]
@@ -24,6 +38,10 @@ export interface WebsiteConfigOverlay {
     TIER_1_NON_RESIDENT: DepositOption[]
     TIER_2_NON_RESIDENT: DepositOption[]
   }
+  // Dynamic rental day rates from admin Centralina
+  rentalDayRates: RentalDayRates | null
+  // Dynamic km included config from admin Centralina
+  kmIncluded: KmIncludedConfig | null
 }
 
 /** Build overlay from Centralina config. Returns null if config is not loaded yet. */
@@ -57,6 +75,39 @@ export function buildWebsiteConfigOverlay(config: RentalConfig | null): WebsiteC
       requiresVehicle2020: o.requires_vehicle_2020,
       description: o.description || '',
     }))
+  }
+
+  // Build dynamic rental day rates from config
+  let rentalDayRates: RentalDayRates | null = null
+  if (config.rental_day_rates) {
+    const exotic = config.rental_day_rates.exotic
+    const urban = config.rental_day_rates.urban
+    const furgone = config.rental_day_rates.furgone
+    if (exotic?.resident && exotic?.non_resident) {
+      rentalDayRates = {
+        exotic: {
+          resident: exotic.resident,
+          non_resident: exotic.non_resident,
+        },
+        urban: {
+          flat: urban?.flat || {},
+          extrapolation: urban?.extrapolation || 'interpolate_7_30',
+        },
+        furgone: {
+          flat: furgone?.flat || {},
+        },
+      }
+    }
+  }
+
+  // Build km included config from admin
+  let kmIncluded: KmIncludedConfig | null = null
+  const globalKm = (config.km_included as Record<string, { table?: Record<string, number>; extra_per_day?: number }>)?._global
+  if (globalKm?.table && typeof globalKm.extra_per_day === 'number') {
+    kmIncluded = {
+      table: globalKm.table,
+      extra_per_day: globalKm.extra_per_day,
+    }
   }
 
   return {
@@ -97,5 +148,7 @@ export function buildWebsiteConfigOverlay(config: RentalConfig | null): WebsiteC
       TIER_1_NON_RESIDENT: toDepositOpts(config.deposits?.TIER_1_NON_RESIDENT),
       TIER_2_NON_RESIDENT: toDepositOpts(config.deposits?.TIER_2_NON_RESIDENT),
     },
+    rentalDayRates,
+    kmIncluded,
   }
 }
