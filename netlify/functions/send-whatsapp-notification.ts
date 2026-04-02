@@ -1,11 +1,5 @@
 import type { Handler } from "@netlify/functions";
 
-const sanitizeForWhatsApp = (str: string | undefined | null): string => {
-  if (!str) return '';
-  // Remove markdown-sensitive characters that could be exploited
-  return str.replace(/[*_~`]/g, '').substring(0, 500);
-};
-
 const GREEN_API_INSTANCE_ID = process.env.GREEN_API_INSTANCE_ID;
 const GREEN_API_TOKEN = process.env.GREEN_API_TOKEN;
 const NOTIFICATION_PHONE = process.env.NOTIFICATION_PHONE || "393457905205"; // Your phone to receive notifications
@@ -22,7 +16,7 @@ const handler: Handler = async (event) => {
     };
   }
 
-  const { booking, customMessage, customPhone } = JSON.parse(event.body || '{}');
+  const { booking, ticket, type, customMessage, customPhone } = JSON.parse(event.body || '{}');
 
   // Check if Green API is configured
   if (!GREEN_API_INSTANCE_ID || !GREEN_API_TOKEN) {
@@ -33,39 +27,44 @@ const handler: Handler = async (event) => {
     };
   }
 
-  // Helper to clean phone numbers for Green API format: 393457905205 (no + or spaces)
-  const cleanPhone = (phone: string): string => {
-    let cleaned = phone.replace(/[\s\-\+]/g, '');
-    if (cleaned.startsWith('0')) {
-      cleaned = '39' + cleaned.substring(1);
-    }
-    if (!cleaned.startsWith('39') && cleaned.length === 10) {
-      cleaned = '39' + cleaned;
-    }
-    return cleaned;
-  };
-
-  // Helper to send a single Green API message
-  const sendGreenApiMessage = async (phone: string, msg: string) => {
-    const greenApiUrl = `https://api.green-api.com/waInstance${GREEN_API_INSTANCE_ID}/sendMessage/${GREEN_API_TOKEN}`;
-    const response = await fetch(greenApiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chatId: `${phone}@c.us`, message: msg }),
-    });
-    const result = await response.json();
-    if (!response.ok || result.error) {
-      throw new Error(result.error || 'Green API error');
-    }
-    return result;
-  };
-
   let message = '';
-  let targetPhone = cleanPhone(customPhone || NOTIFICATION_PHONE);
+  let targetPhone = customPhone || NOTIFICATION_PHONE;
+
+  // Clean phone number - Green API format: 393457905205 (no + or spaces)
+  targetPhone = targetPhone.replace(/[\s\-\+]/g, '');
+  if (targetPhone.startsWith('0')) {
+    targetPhone = '39' + targetPhone.substring(1);
+  }
+  if (!targetPhone.startsWith('39') && targetPhone.length === 10) {
+    targetPhone = '39' + targetPhone;
+  }
 
   // Handle custom message (for birthdays, marketing, etc.)
   if (customMessage) {
     message = customMessage;
+  }
+  // Handle ticket purchase notifications
+  else if (ticket || type === 'ticket') {
+    const ticketData = ticket || {};
+    const customerName = ticketData.customer_name || ticketData.name || 'Cliente';
+    const customerEmail = ticketData.customer_email || ticketData.email;
+    const customerPhone = ticketData.customer_phone || ticketData.phone;
+    const ticketQuantity = ticketData.quantity || 1;
+    const totalPrice = ticketData.total_price ? (ticketData.total_price / 100).toFixed(2) : 'N/A';
+    const ticketNumbers = ticketData.ticket_numbers || [];
+
+    message = `🎟️ *NUOVA VENDITA BIGLIETTI*\n\n`;
+    message += `*Cliente:* ${customerName}\n`;
+    message += `*Email:* ${customerEmail}\n`;
+    if (customerPhone) {
+      message += `*Telefono:* ${customerPhone}\n`;
+    }
+    message += `*Quantità:* ${ticketQuantity} bigliett${ticketQuantity > 1 ? 'i' : 'o'}\n`;
+    message += `*Totale:* €${totalPrice}\n`;
+    if (ticketNumbers.length > 0) {
+      message += `*Numeri:* ${ticketNumbers.join(', ')}\n`;
+    }
+    message += `*Data:* ${new Date().toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })} alle ${new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })}`;
   }
   // Handle booking notifications
   else if (booking) {
@@ -80,65 +79,37 @@ const handler: Handler = async (event) => {
       // Car Wash Booking
       const appointmentDate = new Date(booking.appointment_date);
       const serviceName = booking.service_name;
-      const vehiclePlate = booking.booking_details?.customerVehicle?.plate || booking.vehicle_plate || '';
-      const firstName = customerName.split(' ')[0];
+      const additionalService = booking.booking_details?.additionalService;
+      const notes = booking.booking_details?.notes;
 
       const formattedDate = appointmentDate.toLocaleDateString('it-IT', {
         weekday: 'long',
-        day: 'numeric',
+        day: '2-digit',
         month: 'long',
         year: 'numeric',
         timeZone: 'Europe/Rome'
       });
-      const formattedTime = booking.appointment_time || appointmentDate.toLocaleTimeString('it-IT', {
+      const formattedTime = appointmentDate.toLocaleTimeString('it-IT', {
         hour: '2-digit',
         minute: '2-digit',
         timeZone: 'Europe/Rome'
       });
 
-      const paymentDisplay = (booking.payment_status === 'paid' || booking.payment_status === 'succeeded' || booking.payment_status === 'completed') ? 'Pagato' : 'Da saldare';
-
-      // Customer-facing message via Green API — full details like admin
-      let customerMessage = `Salve ${sanitizeForWhatsApp(firstName)},\n\n`;
-      customerMessage += `Confermiamo il suo appuntamento.\n\n`;
-      customerMessage += `*NUOVA PRENOTAZIONE AUTOLAVAGGIO*\n\n`;
-      customerMessage += `*ID:* DR7-${bookingId}\n`;
-      customerMessage += `*Cliente:* ${sanitizeForWhatsApp(customerName)}\n`;
-      customerMessage += `*Email:* ${sanitizeForWhatsApp(customerEmail)}\n`;
-      customerMessage += `*Telefono:* ${sanitizeForWhatsApp(customerPhone)}\n`;
-      customerMessage += `*Servizio:* ${sanitizeForWhatsApp(serviceName)}\n`;
-      if (vehiclePlate) {
-        customerMessage += `*Targa:* ${sanitizeForWhatsApp(vehiclePlate)}\n`;
-      }
-      customerMessage += `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n`;
-      customerMessage += `*Totale:* €${totalPrice}\n`;
-      customerMessage += `*Pagamento:* ${paymentDisplay}\n\n`;
-      customerMessage += `Cordiali Saluti,\nDR7`;
-
-      // Send to customer if phone is available
-      if (customerPhone) {
-        try {
-          const custPhone = cleanPhone(customerPhone);
-          await sendGreenApiMessage(custPhone, customerMessage);
-          console.log('Car wash confirmation sent to customer:', custPhone);
-        } catch (custErr: any) {
-          console.error('Failed to send car wash confirmation to customer:', custErr.message);
-        }
-      }
-
-      // Office notification with full details
-      message = `*NUOVA PRENOTAZIONE AUTOLAVAGGIO*\n\n`;
+      message = `🚗 *NUOVA PRENOTAZIONE AUTOLAVAGGIO*\n\n`;
       message += `*ID:* DR7-${bookingId}\n`;
-      message += `*Cliente:* ${sanitizeForWhatsApp(customerName)}\n`;
-      message += `*Email:* ${sanitizeForWhatsApp(customerEmail)}\n`;
-      message += `*Telefono:* ${sanitizeForWhatsApp(customerPhone)}\n`;
-      message += `*Servizio:* ${sanitizeForWhatsApp(serviceName)}\n`;
-      if (vehiclePlate) {
-        message += `*Targa:* ${sanitizeForWhatsApp(vehiclePlate)}\n`;
-      }
+      message += `*Cliente:* ${customerName}\n`;
+      message += `*Email:* ${customerEmail}\n`;
+      message += `*Telefono:* ${customerPhone}\n`;
+      message += `*Servizio:* ${serviceName}\n`;
       message += `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n`;
+      if (additionalService) {
+        message += `*Servizio Aggiuntivo:* ${additionalService}\n`;
+      }
+      if (notes) {
+        message += `*Note:* ${notes}\n`;
+      }
       message += `*Totale:* €${totalPrice}\n`;
-      message += `*Pagamento:* ${paymentDisplay}`;
+      message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa'}`;
     } else if (serviceType === 'mechanical') {
       // Mechanical Booking
       const appointmentDate = new Date(booking.appointment_date);
@@ -159,36 +130,20 @@ const handler: Handler = async (event) => {
         timeZone: 'Europe/Rome'
       });
 
-      message = `*NUOVA PRENOTAZIONE MECCANICA*\n\n`;
+      message = `🔧 *NUOVA PRENOTAZIONE MECCANICA*\n\n`;
       message += `*ID:* DR7-${bookingId}\n`;
-      message += `*Cliente:* ${sanitizeForWhatsApp(customerName)}\n`;
-      message += `*Email:* ${sanitizeForWhatsApp(customerEmail)}\n`;
-      message += `*Telefono:* ${sanitizeForWhatsApp(customerPhone)}\n`;
-      message += `*Servizio:* ${sanitizeForWhatsApp(serviceName)}\n`;
+      message += `*Cliente:* ${customerName}\n`;
+      message += `*Email:* ${customerEmail}\n`;
+      message += `*Telefono:* ${customerPhone}\n`;
+      message += `*Servizio:* ${serviceName}\n`;
       if (vehicleInfo.brand || vehicleInfo.model) {
-        message += `*Veicolo:* ${sanitizeForWhatsApp(vehicleInfo.brand)} ${sanitizeForWhatsApp(vehicleInfo.model)}\n`;
+        message += `*Veicolo:* ${vehicleInfo.brand || ''} ${vehicleInfo.model || ''}\n`;
       }
       message += `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n`;
       if (notes) {
-        message += `*Note:* ${sanitizeForWhatsApp(notes)}\n`;
+        message += `*Note:* ${notes}\n`;
       }
-      message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded' || booking.payment_status === 'completed') ? 'Pagato' : 'In attesa'}`;
-
-      // Second driver info
-      const secondDriver = booking.booking_details?.secondDriver;
-      if (secondDriver) {
-        message += `\n\n*SECONDO GUIDATORE*\n`;
-        message += `*Nome:* ${sanitizeForWhatsApp(secondDriver.firstName)} ${sanitizeForWhatsApp(secondDriver.lastName)}\n`;
-        message += `*Email:* ${sanitizeForWhatsApp(secondDriver.email)}\n`;
-        message += `*Telefono:* ${sanitizeForWhatsApp(secondDriver.phone)}\n`;
-        message += `*Patente:* ${sanitizeForWhatsApp(secondDriver.licenseNumber) || 'N/A'}`;
-        if (secondDriver.licenseExpiryDate) {
-          message += ` (scad. ${secondDriver.licenseExpiryDate})`;
-        }
-        if (secondDriver.countryOfIssue) {
-          message += `\n*Paese Rilascio:* ${sanitizeForWhatsApp(secondDriver.countryOfIssue)}`;
-        }
-      }
+      message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa'}`;
     } else {
       // Car Rental Booking
       const vehicleName = booking.vehicle_name;
@@ -211,54 +166,69 @@ const handler: Handler = async (event) => {
       const dropoffDateFormatted = dropoffDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' });
       const dropoffTimeFormatted = dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
 
-      message = `*NUOVA PRENOTAZIONE NOLEGGIO*\n\n`;
+      message = `🚘 *NUOVA PRENOTAZIONE NOLEGGIO*\n\n`;
       message += `*ID:* DR7-${bookingId}\n`;
-      message += `*Cliente:* ${sanitizeForWhatsApp(customerName)}\n`;
-      message += `*Email:* ${sanitizeForWhatsApp(customerEmail)}\n`;
-      message += `*Telefono:* ${sanitizeForWhatsApp(customerPhone)}\n`;
-      message += `*Veicolo:* ${sanitizeForWhatsApp(vehicleName)}\n`;
+      message += `*Cliente:* ${customerName}\n`;
+      message += `*Email:* ${customerEmail}\n`;
+      message += `*Telefono:* ${customerPhone}\n`;
+      message += `*Veicolo:* ${vehicleName}\n`;
       message += `*Ritiro:* ${pickupDateFormatted} alle ${pickupTimeFormatted}\n`;
       message += `*Riconsegna:* ${dropoffDateFormatted} alle ${dropoffTimeFormatted}\n`;
-      message += `*Luogo Ritiro:* ${sanitizeForWhatsApp(pickupLocation)}\n`;
+      message += `*Luogo Ritiro:* ${pickupLocation}\n`;
       message += `*Assicurazione:* ${insuranceOption}\n`;
       message += `*Totale:* €${totalPrice}\n`;
 
-      // Cauzione (deposit) info — always show
-      const rawDeposit = booking.deposit_amount ?? booking.booking_details?.deposit ?? null;
-      const depositAmount = rawDeposit !== null ? Number(rawDeposit) : null;
+      // Cauzione (deposit) info
+      const depositAmount = booking.deposit_amount || booking.booking_details?.deposit || 0;
       const depositOption = booking.booking_details?.depositOption;
       if (depositOption === 'no_deposit') {
         const surcharge = booking.booking_details?.noDepositSurcharge || 0;
-        message += `*Cauzione:* Senza cauzione (+30% = €${Number(surcharge).toFixed(2)})\n`;
-      } else if (depositAmount !== null && depositAmount > 0) {
+        message += `*Cauzione:* Senza cauzione (+30% = €${surcharge.toFixed(2)})\n`;
+      } else if (depositAmount > 0) {
         message += `*Cauzione:* €${depositAmount}\n`;
-      } else if (depositAmount !== null && depositAmount === 0) {
-        message += `*Cauzione:* €0\n`;
-      } else {
-        message += `*Cauzione:* N/D\n`;
       }
 
       // Second driver info
       const secondDriver = booking.booking_details?.secondDriver;
       if (secondDriver) {
-        message += `\n*SECONDO CONDUCENTE:*\n`;
+        message += `\n👤 *SECONDO CONDUCENTE:*\n`;
         message += `*Nome:* ${secondDriver.fullName || `${secondDriver.firstName} ${secondDriver.lastName}`}\n`;
         if (secondDriver.phone) message += `*Telefono:* ${secondDriver.phone}\n`;
         if (secondDriver.licenseNumber) message += `*Patente:* ${secondDriver.licenseNumber}\n`;
       }
 
-      message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? 'Pagato' : 'In attesa'}`;
+      message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa'}`;
     }
   } else {
     return {
       statusCode: 400,
-      body: JSON.stringify({ message: 'No booking or custom message provided' }),
+      body: JSON.stringify({ message: 'No booking, ticket, or custom message provided' }),
     };
   }
 
   try {
-    const result = await sendGreenApiMessage(targetPhone, message);
-    console.log('WhatsApp notification sent via Green API:', result.idMessage);
+    // Send via Green API
+    const greenApiUrl = `https://api.green-api.com/waInstance${GREEN_API_INSTANCE_ID}/sendMessage/${GREEN_API_TOKEN}`;
+
+    const response = await fetch(greenApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        chatId: `${targetPhone}@c.us`,
+        message: message,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || result.error) {
+      console.error('Green API error:', result);
+      throw new Error(result.error || 'Green API error');
+    }
+
+    console.log('✅ WhatsApp notification sent via Green API:', result.idMessage);
 
     return {
       statusCode: 200,
