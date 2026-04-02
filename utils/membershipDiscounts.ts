@@ -1,10 +1,12 @@
 import { User } from '../types';
 
 // Membership tier discount percentages
+// DR7 Club: NO price discount — members get 3% cashback as wallet credit instead
+// Cashback is granted on payment confirmation (nexi-callback + wallet path)
 export const MEMBERSHIP_DISCOUNTS = {
-    argento: 0.10,  // 10%
-    oro: 0.15,      // 15%
-    platino: 0.20   // 20%
+    argento: 0,  // 0% discount — 3% cashback only
+    oro: 0,      // 0% discount — 3% cashback only
+    platino: 0   // 0% discount — 3% cashback only
 } as const;
 
 // Service eligibility for each tier
