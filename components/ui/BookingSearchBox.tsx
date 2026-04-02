@@ -1,7 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LocationAutocomplete from './LocationAutocomplete';
 import { DR7_OFFICE_LOCATION, type SardegnaLocation } from '../../data/sardegnaLocations';
+
+// Auto return time: pickup time minus 1h30, snapped to nearest :00 or :30
+function calcAutoReturnTime(pickupTime: string): string {
+  const [h, m] = pickupTime.split(':').map(Number);
+  let totalMin = h * 60 + m - 90;
+  if (totalMin < 0) totalMin = 0;
+  // Snap to nearest 30-min slot
+  const snapped = Math.round(totalMin / 30) * 30;
+  const rh = Math.floor(snapped / 60);
+  const rm = snapped % 60;
+  return `${String(rh).padStart(2, '0')}:${String(rm).padStart(2, '0')}`;
+}
 
 interface BookingSearchBoxProps {
   variant?: 'hero' | 'popup';
@@ -14,10 +26,24 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
   const [returnLocation, setReturnLocation] = useState<SardegnaLocation>(DR7_OFFICE_LOCATION);
   const [sameReturn, setSameReturn] = useState(true);
   const [pickupDate, setPickupDate] = useState('');
-  const [pickupTime, setPickupTime] = useState('10:00');
+  const [pickupTime, setPickupTimeRaw] = useState('10:00');
   const [returnDate, setReturnDate] = useState('');
-  const [returnTime, setReturnTime] = useState('10:00');
+  const [returnTime, setReturnTime] = useState(calcAutoReturnTime('10:00'));
+  const [returnTimeManual, setReturnTimeManual] = useState(false);
   const [error, setError] = useState('');
+
+  // When pickup time changes, auto-set return time (unless user manually changed it)
+  const setPickupTime = useCallback((time: string) => {
+    setPickupTimeRaw(time);
+    if (!returnTimeManual) {
+      setReturnTime(calcAutoReturnTime(time));
+    }
+  }, [returnTimeManual]);
+
+  const handleReturnTimeChange = useCallback((time: string) => {
+    setReturnTime(time);
+    setReturnTimeManual(true);
+  }, []);
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -149,7 +175,7 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
             <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Ora restituzione</label>
             <select
               value={returnTime}
-              onChange={(e) => setReturnTime(e.target.value)}
+              onChange={(e) => handleReturnTimeChange(e.target.value)}
               className="w-full bg-[#2c2c2e] border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-white/30 transition-colors"
             >
               {Array.from({ length: 24 }, (_, h) => [`${String(h).padStart(2, '0')}:00`, `${String(h).padStart(2, '0')}:30`]).flat().map(t => (
@@ -168,9 +194,12 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
           </div>
         )}
 
+        {/* Tariff warning */}
+        <p className="text-xs text-red-400 text-center">La tariffa puo subire variazioni</p>
+
         {/* Error */}
         {error && (
-          <p className="text-xs text-red-400 text-center">{error}</p>
+          <p className="text-xs text-red-400 text-center font-semibold">{error}</p>
         )}
 
         {/* Search button */}

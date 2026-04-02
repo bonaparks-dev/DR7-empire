@@ -352,19 +352,41 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
       : categoryId === 'corporate-fleet' ? 'aziendali'
         : undefined;
 
-  // Fetch vehicles from database if it's a vehicle category
+  // Fetch vehicles for this category (default display)
   const { vehicles: fetchedVehicles, loading: vehiclesLoading, error: vehiclesError, usingCache } = useVehicles(vehicleCategory);
+
+  // Fetch ALL vehicles (for cross-category search)
+  const { vehicles: allVehicles, loading: allVehiclesLoading } = useVehicles(undefined);
 
   // Availability search hook
   const { results: availabilityResults, isSearching, hasSearched, search: runSearch } = useSearchAvailability(categoryId);
 
   const handleSearch = (params: SearchParams) => {
     setSearchData(params);
-    const vehicleData = vehicleCategory ? fetchedVehicles : (category?.data || []);
-    if (vehicleData.length > 0) {
-      runSearch(vehicleData, params);
+    const searchPool = allVehicles.length > 0 ? allVehicles : (vehicleCategory ? fetchedVehicles : (category?.data || []));
+    if (searchPool.length > 0) {
+      runSearch(searchPool, params);
     }
   };
+
+  // Auto-search when coming from Prenota Ora (URL has pickup/return params)
+  const prePickupTime = searchParams.get('pickupTime') || '10:30';
+  const preReturnTime = searchParams.get('returnTime') || '09:00';
+  const prePickupLoc = searchParams.get('pickupLoc') || 'dr7_office';
+  const preReturnLoc = searchParams.get('returnLoc') || prePickupLoc;
+
+  useEffect(() => {
+    if (prePickup && preReturn && allVehicles.length > 0 && !hasSearched && !isSearching) {
+      runSearch(allVehicles, {
+        pickupLocation: prePickupLoc,
+        returnLocation: preReturnLoc,
+        pickupDate: prePickup,
+        pickupTime: prePickupTime,
+        returnDate: preReturn,
+        returnTime: preReturnTime,
+      });
+    }
+  }, [prePickup, preReturn, allVehicles.length, hasSearched, isSearching]);
 
   // Chrome-specific debug hint (dev-only)
   const [showChromeDebugHint, setShowChromeDebugHint] = useState(false);
@@ -560,14 +582,29 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
 
           </motion.div>
 
-          {/* Search bar — only for vehicle categories */}
-          {vehicleCategory && (
+          {/* Search summary when coming from Prenota Ora */}
+          {prePickup && preReturn && vehicleCategory && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
+              className="mb-6 bg-gray-900/60 border border-gray-800 rounded-xl px-5 py-4"
             >
-              <RentalSearchBar onSearch={handleSearch} isSearching={isSearching} />
+              <div className="flex flex-wrap items-center gap-4 text-sm">
+                <div>
+                  <span className="text-gray-500 text-xs block">Ritiro</span>
+                  <span className="text-white font-medium">{new Date(prePickup).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })} {prePickupTime}</span>
+                </div>
+                <span className="text-gray-600">→</span>
+                <div>
+                  <span className="text-gray-500 text-xs block">Restituzione</span>
+                  <span className="text-white font-medium">{new Date(preReturn).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })} {preReturnTime}</span>
+                </div>
+                <div className="ml-auto">
+                  <span className="px-3 py-1 bg-white/10 rounded-full text-xs text-gray-300">{preDays} {preDays === 1 ? 'giorno' : 'giorni'}</span>
+                </div>
+              </div>
+              <p className="text-xs text-red-400 mt-2">La tariffa puo subire variazioni</p>
             </motion.div>
           )}
 
@@ -678,7 +715,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
             </div>
           ) : (
             <VehicleResults
-              categoryData={categoryData}
+              categoryData={hasSearched && allVehicles.length > 0 ? allVehicles : categoryData}
               categoryId={categoryId}
               hasSearched={hasSearched}
               availabilityResults={availabilityResults}

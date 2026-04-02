@@ -3585,7 +3585,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   </div>
                   <div className="col-span-2">
                     <span className="text-gray-500 block text-xs">Luogo</span>
-                    <span className="text-white">{PICKUP_LOCATIONS.find(l => l.id === formData.pickupLocation)?.label?.it || formData.pickupLocation}</span>
+                    <span className="text-white">{
+                      PICKUP_LOCATIONS.find(l => l.id === formData.pickupLocation)?.label?.it
+                      || (formData.pickupLocation === 'dr7-cagliari' ? 'DR7 Cagliari — Viale Marconi 229, 09131' : null)
+                      || new URLSearchParams(window.location.search).get('pickupLocLabel')
+                      || formData.pickupLocation
+                    }</span>
                   </div>
                 </div>
               </div>
