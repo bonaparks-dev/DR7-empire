@@ -4,7 +4,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { Link } from 'react-router-dom';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import { isMassimoRunchina, SPECIAL_CLIENTS } from '../../utils/clientPricingRules';
-import { calculateMultiDayPrice } from '../../utils/multiDayPricing';
+import { calculateMultiDayPrice, calculateIncludedKmFromConfig } from '../../utils/multiDayPricing';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../supabaseClient';
 import { PICKUP_LOCATIONS, RETURN_LOCATIONS, AUTO_INSURANCE, INSURANCE_DEDUCTIBLES, RENTAL_EXTRAS, DEPOSIT_RULES, INSURANCE_OPTIONS_BY_TIER, INSURANCE_COVERAGE_TEXT, TIER_PRICING, TIER_DEPOSIT_OPTIONS, NO_DEPOSIT_SURCHARGE_PER_DAY, EXPERIENCE_SERVICES as BOOKING_EXPERIENCE_SERVICES, DR7_FLEX, PAYMENT_MODES, DELIVERY_PRICE_PER_KM } from '../../constants';
@@ -135,16 +135,10 @@ const createItalyDateTime = (dateStr: string, timeStr: string) => {
 
 // === Km inclusi per durata ===
 // 1gg=100, 2gg=180, 3gg=240, 4gg=280, 5gg=300, dal 5° giorno in poi +60/giorno
-const calculateIncludedKm = (days: number) => {
-  if (days <= 0) return 0;
-  if (days === 1) return 100;
-  if (days === 2) return 180;
-  if (days === 3) return 240;
-  if (days === 4) return 280;
-  if (days === 5) return 300;
-  // From day 6 onward: 300 (day 5 baseline) + 60 km/day for each extra day
-  // Source: DR7-empire-admin rentalConfigDefaults.ts → km_included._global.extra_per_day = 60
-  return 300 + (days - 5) * 60;
+// calculateIncludedKm is now driven by admin config via calculateIncludedKmFromConfig.
+// The inline wrapper is kept for backward compat; receives config at call site.
+const calculateIncludedKm = (days: number, kmConfig?: { table: Record<string, number>; extra_per_day: number } | null) => {
+  return calculateIncludedKmFromConfig(days, kmConfig);
 };
 
 interface CarBookingWizardProps {
@@ -299,6 +293,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const ACTIVE_DELIVERY_PRICE_PER_KM = configOverlay?.deliveryPricePerKm ?? DELIVERY_PRICE_PER_KM;
   const ACTIVE_DR7_FLEX = configOverlay ? { dailyPrice: configOverlay.dr7Flex.dailyPrice, refundPercent: configOverlay.dr7Flex.refundPercent, description: DR7_FLEX.description } : DR7_FLEX;
   const ACTIVE_EXPERIENCE_SERVICES = configOverlay?.experienceServices?.length ? configOverlay.experienceServices : BOOKING_EXPERIENCE_SERVICES;
+  const ACTIVE_RENTAL_DAY_RATES = configOverlay?.rentalDayRates ?? null;
+  const ACTIVE_KM_INCLUDED = configOverlay?.kmIncluded ?? null;
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedInsurance, setExpandedInsurance] = useState<string | null>(null);
@@ -1413,7 +1409,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       const vType = getVehicleType(item, categoryContext);
       const isResident = formData.usageZone === 'CAGLIARI_SUD';
 
-      calculatedRentalCost = calculateMultiDayPrice(vType, billingDaysCalc, pricePerDay, isResident);
+      calculatedRentalCost = calculateMultiDayPrice(vType, billingDaysCalc, pricePerDay, isResident, ACTIVE_RENTAL_DAY_RATES);
     }
 
 
@@ -1462,6 +1458,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     } else if (vType === 'SUPERCAR' && formData.kmPackageType === 'unlimited' && !isMassimo) {
       // Unlimited km for supercars — tier-conditional price
       calculatedKmPackageCost = roundToTwoDecimals(tierPricingForCalc.unlimitedKmPerDay * billingDaysCalc);
+    } else if (vType === 'SUPERCAR' && formData.kmPackageType === '50km') {
+      // Already handled above
+    } else if (vType !== 'SUPERCAR') {
+      // Urban/Furgone/VClass: use dynamic km included table from admin config
+      calculatedIncludedKm = calculateIncludedKm(billingDaysCalc, ACTIVE_KM_INCLUDED);
     }
 
     const calculatedRecommendedKm = recommendKmPackage(formData.expectedKm, item.name, billingDays);
@@ -1574,7 +1575,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     formData.email, formData.usageZone, formData.depositOption,
     formData.selectedExperiences, formData.dr7Flex, formData.pickupLocation, formData.returnLocation,
     formData.deliveryPickupKm, formData.deliveryReturnKm,
-    item, currency, user, isUrbanOrCorporate, categoryContext, driverTier, dynamicPricing
+    item, currency, user, isUrbanOrCorporate, categoryContext, driverTier, dynamicPricing,
+    ACTIVE_RENTAL_DAY_RATES, ACTIVE_KM_INCLUDED
   ]);
 
   // Online booking discount (5%) — NOT for supercars, NOT for Massimo
