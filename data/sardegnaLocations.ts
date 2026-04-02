@@ -12,7 +12,7 @@ export interface SardegnaLocation {
 
 // DR7 Office location
 export const DR7_OFFICE_LOCATION: SardegnaLocation = {
-  id: 'dr7-cagliari',
+  id: 'dr7_cagliari',
   name: 'DR7 Cagliari',
   type: 'city',
   province: 'CA',
