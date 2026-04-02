@@ -12,30 +12,23 @@
 
   <!-- Supercar Division -->
   <url>
-    <loc>https://dr7empire.com/supercar-luxury</loc>
+    <loc>https://dr7empire.com/cars</loc>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>
 
   <!-- Urban Division -->
   <url>
-    <loc>https://dr7empire.com/urban</loc>
+    <loc>https://dr7empire.com/urban-cars</loc>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>
 
   <!-- Prime Car Wash -->
   <url>
-    <loc>https://dr7empire.com/prime-wash</loc>
+    <loc>https://dr7empire.com/car-wash-services</loc>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
-  </url>
-
-  <!-- Contact -->
-  <url>
-    <loc>https://dr7empire.com/contact</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
   </url>
 
   <!-- ===== OTHER PAGES ===== -->
