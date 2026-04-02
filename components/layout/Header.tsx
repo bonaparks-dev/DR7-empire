@@ -129,7 +129,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               {/* PRENOTA ORA — golden CTA */}
               <button
                 onClick={() => setShowBookingPopup(true)}
-                className="w-full py-3.5 bg-gradient-to-r from-yellow-600 to-yellow-500 text-black font-bold text-lg tracking-widest uppercase rounded-sm hover:from-yellow-500 hover:to-yellow-400 transition-all"
+                className="w-full py-3.5 bg-white text-black font-bold text-lg tracking-widest uppercase rounded-sm hover:bg-gray-200 transition-all"
               >
                 PRENOTA ORA
               </button>
@@ -146,7 +146,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 
               {/* SERVIZI & MOBILITÀ DI LUSSO */}
               <div className="border-b border-gray-800 pb-4">
-                <h3 className="text-sm font-bold text-yellow-500 uppercase tracking-wider mb-3 px-1">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
                   Servizi & Mobilità di Lusso
                 </h3>
                 <div className="space-y-1">
@@ -170,7 +170,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 
               {/* ESPERIENZE & ACCESSO ESCLUSIVO */}
               <div className="border-b border-gray-800 pb-4">
-                <h3 className="text-sm font-bold text-yellow-500 uppercase tracking-wider mb-3 px-1">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
                   Esperienze & Accesso Esclusivo
                 </h3>
                 <div className="space-y-1">
@@ -192,7 +192,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 
               {/* PRIME WASH */}
               <div className="border-b border-gray-800 pb-4">
-                <h3 className="text-sm font-bold text-yellow-500 uppercase tracking-wider mb-3 px-1">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
                   Prime Wash
                 </h3>
                 <div className="space-y-1">
@@ -210,7 +210,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 
               {/* BUSINESS & CORPORATE */}
               <div className="border-b border-gray-800 pb-4">
-                <h3 className="text-sm font-bold text-yellow-500 uppercase tracking-wider mb-3 px-1">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
                   Business & Corporate
                 </h3>
                 <div className="space-y-1">
@@ -225,7 +225,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 
               {/* DIGITAL INNOVATION */}
               <div className="border-b border-gray-800 pb-4">
-                <h3 className="text-sm font-bold text-yellow-500 uppercase tracking-wider mb-3 px-1">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
                   Digital Innovation
                 </h3>
                 <div className="space-y-1">
@@ -238,7 +238,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               {/* CONTATTACI */}
               <div>
                 <NavLink to="/contact" onClick={onClose}>
-                  <h3 className="text-sm font-bold text-yellow-500 uppercase tracking-widest text-center hover:text-yellow-400 transition-colors">
+                  <h3 className="text-sm font-bold text-white uppercase tracking-widest text-center hover:text-white transition-colors">
                     CONTATTACI
                   </h3>
                 </NavLink>
@@ -291,12 +291,12 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                                 setBookingReturnDate(next.toISOString().split('T')[0]);
                               }
                             }}
-                            className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+                            className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
                           />
                           <select
                             value={bookingPickupTime}
                             onChange={(e) => setBookingPickupTime(e.target.value)}
-                            className="w-24 bg-gray-800 border border-gray-600 rounded-lg px-2 py-2.5 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+                            className="w-24 bg-gray-800 border border-gray-600 rounded-lg px-2 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
                           >
                             {Array.from({ length: 24 }, (_, h) => [`${String(h).padStart(2,'0')}:00`, `${String(h).padStart(2,'0')}:30`]).flat().map(t => (
                               <option key={`p-${t}`} value={t}>{t}</option>
@@ -314,12 +314,12 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                             value={bookingReturnDate}
                             min={bookingPickupDate || new Date().toISOString().split('T')[0]}
                             onChange={(e) => setBookingReturnDate(e.target.value)}
-                            className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+                            className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
                           />
                           <select
                             value={bookingReturnTime}
                             onChange={(e) => setBookingReturnTime(e.target.value)}
-                            className="w-24 bg-gray-800 border border-gray-600 rounded-lg px-2 py-2.5 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+                            className="w-24 bg-gray-800 border border-gray-600 rounded-lg px-2 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
                           >
                             {Array.from({ length: 24 }, (_, h) => [`${String(h).padStart(2,'0')}:00`, `${String(h).padStart(2,'0')}:30`]).flat().map(t => (
                               <option key={`r-${t}`} value={t}>{t}</option>
