@@ -1963,24 +1963,48 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         uploadHeaders['Authorization'] = `Bearer ${session.access_token}`;
       }
 
-      const response = await fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/upload-file`, {
-        method: 'POST',
-        headers: uploadHeaders,
-        body,
-      });
+      let uploadPath: string | null = null;
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: `Server error: ${response.status}` }));
-        console.error('Upload error response:', errorData);
-        throw new Error(errorData.details || errorData.error || 'Upload failed');
+      // Try Netlify function first
+      try {
+        const response = await fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/upload-file`, {
+          method: 'POST',
+          headers: uploadHeaders,
+          body,
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.path) {
+            uploadPath = result.path;
+          }
+        } else {
+          const errorData = await response.json().catch(() => ({ error: `Server error: ${response.status}` }));
+          console.warn('Netlify upload failed, trying direct Supabase upload:', errorData);
+        }
+      } catch (netlifyErr) {
+        console.warn('Netlify upload error, trying direct Supabase upload:', netlifyErr);
       }
 
-      const result = await response.json();
-      if (!result.path) {
-        throw new Error('Upload succeeded but no path was returned from function.');
+      // Fallback: upload directly via Supabase client
+      if (!uploadPath) {
+        const directPath = `${userId}/${prefix}_${Date.now()}.${fileName.split('.').pop() || 'jpg'}`;
+        const { error: directErr } = await supabase.storage
+          .from(bucket)
+          .upload(directPath, fileToUpload, {
+            contentType: fileToUpload.type || 'image/jpeg',
+            upsert: true,
+          });
+
+        if (directErr) {
+          console.error('Direct Supabase upload also failed:', directErr);
+          throw new Error(directErr.message || 'Upload failed');
+        }
+        uploadPath = directPath;
+        console.log('Direct Supabase upload succeeded:', directPath);
       }
 
-      return result.path;
+      return uploadPath;
 
     } catch (e: any) {
       console.error(`Upload failed for ${prefix}:`, e);

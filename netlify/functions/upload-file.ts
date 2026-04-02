@@ -12,11 +12,11 @@ function getCorsHeaders(origin?: string) {
   };
 }
 
-const supabaseUrl = process.env.SUPABASE_URL!;
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL!;
 const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 if (!supabaseUrl || !serviceRole) {
-  console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+  console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY. Available env vars:', Object.keys(process.env).filter(k => k.includes('SUPA')).join(', '));
   throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
 }
 
@@ -212,11 +212,11 @@ export const handler: Handler = async (event) => {
       }),
     };
   } catch (e: any) {
-    console.error('Function fatal error:', e);
+    console.error('Function fatal error:', e?.message || e, e?.stack);
     return {
       statusCode: 500,
       headers: getCorsHeaders(event.headers['origin']),
-      body: JSON.stringify({ error: 'Server error' }),
+      body: JSON.stringify({ error: 'Server error', details: e?.message || 'Unknown error' }),
     };
   }
 };
