@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import { isMassimoRunchina, SPECIAL_CLIENTS } from '../../utils/clientPricingRules';
 import { calculateMultiDayPrice, calculateIncludedKmFromConfig } from '../../utils/multiDayPricing';
+import { invalidateVehicleCache } from '../../hooks/useVehicles';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../supabaseClient';
 import { PICKUP_LOCATIONS, RETURN_LOCATIONS, AUTO_INSURANCE, INSURANCE_DEDUCTIBLES, RENTAL_EXTRAS, DEPOSIT_RULES, INSURANCE_OPTIONS_BY_TIER, INSURANCE_COVERAGE_TEXT, TIER_PRICING, TIER_DEPOSIT_OPTIONS, NO_DEPOSIT_SURCHARGE_PER_DAY, EXPERIENCE_SERVICES as BOOKING_EXPERIENCE_SERVICES, DR7_FLEX, PAYMENT_MODES, DELIVERY_PRICE_PER_KM } from '../../constants';
@@ -333,6 +334,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     earliestAvailableDatetime?: string;
   } | null>(null);
 
+  // FIX 7: Track residencyZone loading to avoid wrong pricing fallback
+  const residencyZoneLoaded = useMemo(() => {
+    const rz = (user as any)?.residencyZone;
+    // If user exists but residencyZone is not yet set (undefined), it's still loading
+    return !user || rz !== undefined;
+  }, [user]);
+
   // Availability windows for gap detection
   interface AvailabilityWindow {
     start: string; // ISO timestamp
@@ -393,6 +401,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   // Nexi payment state
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  // FIX 5: WhatsApp fallback URL — shown as button if popup is blocked
+  const [whatsAppFallbackUrl, setWhatsAppFallbackUrl] = useState<string | null>(null);
+  const openWhatsApp = (url: string) => {
+    const win = window.open(url, '_blank');
+    if (!win || win.closed || typeof win.closed === 'undefined') {
+      // Popup was blocked — store URL for fallback button
+      setWhatsAppFallbackUrl(url);
+    }
+  };
 
   // Birthday discount code state
   const [discountCode, setDiscountCode] = useState<string>('');
@@ -412,6 +429,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isSubmittingRef = useRef(false);
+  // FIX 6: Anti-race ref for availability checks — only the latest request updates state
+  const availabilityRequestIdRef = useRef(0);
 
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
@@ -1194,6 +1213,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   // Check vehicle availability when dates change
   useEffect(() => {
     const checkAvailability = async () => {
+      // FIX 6: Anti-race — each invocation gets a unique ID; only the latest updates state
+      const requestId = ++availabilityRequestIdRef.current;
+      const isStale = () => requestId !== availabilityRequestIdRef.current;
       if (!item || !formData.pickupDate || !formData.returnDate || !formData.pickupTime || !formData.returnTime) {
         setAvailabilityError(null);
         setPartialUnavailabilityWarning(null);
@@ -1257,6 +1279,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         }
 
 
+        // FIX 6: Ignore stale responses
+        if (isStale()) return;
+
         if (conflicts.length > 0) {
           const conflictEnd = new Date(conflicts[0].dropoff_date);
           const conflictEndFormatted = conflictEnd.toLocaleDateString('it-IT', {
@@ -1314,6 +1339,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       lavaggioFee: 0, experienceCost: 0, flexCost: 0, supercarDepositSurcharge: 0, deliveryFee: 0
     };
     if (!item || (!item.pricePerDay && !item.priceResidentDaily && !item.priceNonresidentDaily)) return zero;
+    // FIX 7: If user exists but residencyZone hasn't loaded yet, defer pricing
+    // to avoid showing the wrong (non-resident = higher) price during async load
+    const rz = (user as any)?.residencyZone;
+    if (user && rz === undefined) {
+      // residencyZone is still loading — return zero so UI shows loading state, not wrong price
+      return { ...zero, isMassimo: false };
+    }
 
     // === DUAL PRICING LOGIC ===
     // Determine which price to use based on residency and usage zone
@@ -2197,6 +2229,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * FIX 3: finalizeBooking is the CANONICAL booking insert path (Stripe/card flow).
+   * The credit wallet path in handleSubmit replicates this payload intentionally
+   * because it needs atomic RPC. Both paths must stay in sync.
+   * TODO: extract buildBookingPayload() helper when wizard is refactored.
+   */
   const finalizeBooking = async (paymentIntentId?: string) => {
     if (!user) {
       setErrors(prev => ({ ...prev, form: "You must be logged in to book." }));
@@ -2208,6 +2246,22 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       setErrors(prev => ({ ...prev, form: "Pickup and return dates are required." }));
       setIsProcessing(false);
       return;
+    }
+
+    // FIX 4: Re-check availability immediately before insert to close the race window
+    try {
+      const pickupDT = `${formData.pickupDate}T${formData.pickupTime}:00`;
+      const dropoffDT = `${formData.returnDate}T${formData.returnTime}:00`;
+      const specificId = formData.selectedVehicleId || item.id.replace('car-', '');
+      const preInsertConflicts = await checkVehicleAvailability(item.name, pickupDT, dropoffDT, specificId);
+      if (preInsertConflicts.length > 0) {
+        setErrors(prev => ({ ...prev, form: 'Il veicolo è stato appena prenotato da un altro utente. Seleziona date diverse.' }));
+        setIsProcessing(false);
+        return;
+      }
+    } catch (e) {
+      // Non-blocking: if the re-check fails, proceed (availability check errors should not block booking)
+      console.warn('[finalizeBooking] Pre-insert availability re-check failed (non-blocking):', e);
     }
 
     try {
@@ -2464,10 +2518,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const officeWhatsAppNumber = '393457905205';
         const whatsappUrl = `https://wa.me/${officeWhatsAppNumber}?text=${encodeURIComponent(whatsappMessage)}`;
 
-        // Open WhatsApp in a new tab after a short delay
-        setTimeout(() => {
-          window.open(whatsappUrl, '_blank');
-        }, 1000);
+        // FIX 5: Robust WhatsApp open with popup-blocker fallback
+        openWhatsApp(whatsappUrl);
       }
 
       // Auto-generate contract + fattura on admin side (fire-and-forget)
@@ -2497,6 +2549,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       if (appliedDiscount && data.id) {
         await markDiscountCodeAsUsed(data.id);
       }
+
+      // FIX 2: Invalidate vehicle cache so availability is fresh after booking
+      invalidateVehicleCache();
 
       onBookingComplete(data);
       setIsProcessing(false);
@@ -2993,6 +3048,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             }
           }
 
+          // FIX 2: Invalidate vehicle cache after successful booking
+          invalidateVehicleCache();
           // Completed - Pass the full object with ID so UI can redirect
           onBookingComplete(finalBookingData);
 
@@ -3015,7 +3072,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             `Grazie!`;
 
           const whatsappUrl = `https://wa.me/393457905205?text=${encodeURIComponent(whatsappMessage)}`;
-          setTimeout(() => window.open(whatsappUrl, '_blank'), 1000);
+          // FIX 5: Robust WhatsApp open with popup-blocker fallback
+          openWhatsApp(whatsappUrl);
 
           // CRITICAL: Reset processing state after successful booking
           console.log("Resetting processing state to false");
@@ -3248,6 +3306,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             }).catch(e => console.error('Redeem discount error', e));
           }
 
+          // FIX 2: Invalidate vehicle cache after successful booking
+          invalidateVehicleCache();
+
           onBookingComplete(insertedBooking);
 
           // WhatsApp customer message
@@ -3264,7 +3325,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             `*Totale:* €0.00 (coperto da codice sconto)\n\n` +
             `Grazie!`;
           const whatsappUrl = `https://wa.me/393457905205?text=${encodeURIComponent(whatsappMessage)}`;
-          setTimeout(() => window.open(whatsappUrl, '_blank'), 1000);
+          // FIX 5: Robust WhatsApp open with popup-blocker fallback
+          openWhatsApp(whatsappUrl);
 
           isSubmittingRef.current = false;
           setIsProcessing(false);
@@ -5517,7 +5579,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                               <span>+{formatPrice(totalWashUpsellCost)}</span>
                             </div>
                           )}
-                          <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(grandTotal)}</span></div>
+                          <div className="flex justify-between text-xl font-bold">
+                      <span className="text-white">TOTALE</span>
+                      {/* FIX 7: Show loading placeholder until residencyZone is resolved */}
+                      {!residencyZoneLoaded
+                        ? <span className="text-gray-400 text-base animate-pulse">Calcolo...</span>
+                        : <span className="text-white">{formatPrice(grandTotal)}</span>
+                      }
+                    </div>
                         </>
                       ) : (
                         <>
@@ -5540,7 +5609,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                               <span>+{formatPrice(totalWashUpsellCost)}</span>
                             </div>
                           )}
-                          <div className="flex justify-between text-xl font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(grandTotal)}</span></div>
+                          <div className="flex justify-between text-xl font-bold">
+                      <span className="text-white">TOTALE</span>
+                      {/* FIX 7: Show loading placeholder until residencyZone is resolved */}
+                      {!residencyZoneLoaded
+                        ? <span className="text-gray-400 text-base animate-pulse">Calcolo...</span>
+                        : <span className="text-white">{formatPrice(grandTotal)}</span>
+                      }
+                    </div>
                         </>
                       )}
                       {isUrbanOrCorporate && formData.depositOption === 'with_deposit' && getDeposit() > 0 && (
@@ -5592,6 +5668,21 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {paymentError && step === steps.length && (
                     <div className="mt-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg">
                       <p className="text-sm text-red-400 text-center">{paymentError}</p>
+                    </div>
+                  )}
+                  {/* FIX 5: WhatsApp fallback button if popup was blocked after successful booking */}
+                  {whatsAppFallbackUrl && (
+                    <div className="mt-4 p-4 bg-green-900/20 border border-green-500/50 rounded-lg text-center">
+                      <p className="text-green-300 text-sm font-semibold mb-2">Prenotazione completata ✓</p>
+                      <p className="text-gray-400 text-xs mb-3">Il popup WhatsApp è stato bloccato dal browser.</p>
+                      <a
+                        href={whatsAppFallbackUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block px-6 py-2 bg-green-600 text-white font-bold rounded-full hover:bg-green-500 transition-colors text-sm"
+                      >
+                        Apri WhatsApp
+                      </a>
                     </div>
                   )}
 
