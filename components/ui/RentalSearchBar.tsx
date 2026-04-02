@@ -1,0 +1,243 @@
+/**
+ * RentalSearchBar — Booking search box for rental pages
+ * Shows pickup/return location, date, time with auto return time (-1h30)
+ */
+import { useState, useMemo, useCallback, useEffect } from 'react'
+import { PICKUP_LOCATIONS } from '../../constants'
+
+export interface SearchParams {
+  pickupLocation: string
+  returnLocation: string
+  pickupDate: string
+  pickupTime: string
+  returnDate: string
+  returnTime: string
+}
+
+interface Props {
+  onSearch: (params: SearchParams) => void
+  isSearching: boolean
+}
+
+// Business hours time slots (15-min intervals)
+function getPickupTimes(dateStr: string): string[] {
+  const day = new Date(dateStr + 'T12:00:00').getDay()
+  if (day === 0) return [] // Sunday closed
+  const times: string[] = []
+  const add = (start: number, end: number) => {
+    for (let i = start; i <= end; i += 15) {
+      times.push(`${String(Math.floor(i / 60)).padStart(2, '0')}:${String(i % 60).padStart(2, '0')}`)
+    }
+  }
+  if (day >= 1 && day <= 5) { add(10 * 60 + 30, 12 * 60 + 30); add(17 * 60 + 30, 18 * 60 + 30) }
+  else if (day === 6) { add(10 * 60 + 30, 12 * 60 + 30) }
+  return times
+}
+
+function getReturnTimes(dateStr: string): string[] {
+  const day = new Date(dateStr + 'T12:00:00').getDay()
+  if (day === 0) return []
+  const times: string[] = []
+  const add = (start: number, end: number) => {
+    for (let i = start; i <= end; i += 15) {
+      times.push(`${String(Math.floor(i / 60)).padStart(2, '0')}:${String(i % 60).padStart(2, '0')}`)
+    }
+  }
+  if (day >= 1 && day <= 5) { add(9 * 60, 12 * 60 + 30); add(16 * 60, 17 * 60 + 30) }
+  else if (day === 6) { add(9 * 60, 12 * 60 + 30) }
+  return times
+}
+
+// Subtract 90 minutes from a time string, return nearest valid return time
+function autoReturnTime(pickupTime: string, returnDate: string): string {
+  const [h, m] = pickupTime.split(':').map(Number)
+  let totalMin = h * 60 + m - 90
+  if (totalMin < 0) totalMin = 0
+
+  const validTimes = getReturnTimes(returnDate)
+  if (validTimes.length === 0) return '09:00'
+
+  // Find closest valid time <= target
+  const target = `${String(Math.floor(totalMin / 60)).padStart(2, '0')}:${String(totalMin % 60).padStart(2, '0')}`
+  let best = validTimes[0]
+  for (const t of validTimes) {
+    if (t <= target) best = t
+  }
+  return best
+}
+
+export default function RentalSearchBar({ onSearch, isSearching }: Props) {
+  const today = new Date()
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
+  const dayAfter = new Date(today); dayAfter.setDate(dayAfter.getDate() + 2)
+  const fmt = (d: Date) => d.toISOString().split('T')[0]
+
+  // Skip to next non-Sunday
+  const skipSunday = (d: Date) => {
+    const result = new Date(d)
+    if (result.getDay() === 0) result.setDate(result.getDate() + 1)
+    return result
+  }
+
+  const defaultPickupDate = fmt(skipSunday(tomorrow))
+  const defaultReturnDate = fmt(skipSunday(dayAfter))
+
+  const [pickupLocation, setPickupLocation] = useState('dr7_office')
+  const [returnLocation, setReturnLocation] = useState('dr7_office')
+  const [sameLocation, setSameLocation] = useState(true)
+  const [pickupDate, setPickupDate] = useState(defaultPickupDate)
+  const [pickupTime, setPickupTime] = useState('10:30')
+  const [returnDate, setReturnDate] = useState(defaultReturnDate)
+  const [returnTime, setReturnTime] = useState('09:00')
+  const [returnTimeManual, setReturnTimeManual] = useState(false)
+
+  const pickupTimes = useMemo(() => getPickupTimes(pickupDate), [pickupDate])
+  const returnTimes = useMemo(() => getReturnTimes(returnDate), [returnDate])
+
+  // Auto-set return time when pickup time changes (unless manually modified)
+  useEffect(() => {
+    if (!returnTimeManual && pickupTime && returnDate) {
+      const auto = autoReturnTime(pickupTime, returnDate)
+      setReturnTime(auto)
+    }
+  }, [pickupTime, returnDate, returnTimeManual])
+
+  // Reset auto mode when pickup time changes
+  const handlePickupTimeChange = useCallback((value: string) => {
+    setPickupTime(value)
+    setReturnTimeManual(false) // re-enable auto
+  }, [])
+
+  const handleReturnTimeChange = useCallback((value: string) => {
+    setReturnTime(value)
+    setReturnTimeManual(true) // user took control
+  }, [])
+
+  const isSunday = (d: string) => new Date(d + 'T12:00:00').getDay() === 0
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSearch({
+      pickupLocation,
+      returnLocation: sameLocation ? pickupLocation : returnLocation,
+      pickupDate,
+      pickupTime,
+      returnDate,
+      returnTime,
+    })
+  }
+
+  const isValid = pickupDate && pickupTime && returnDate && returnTime && !isSunday(pickupDate) && !isSunday(returnDate)
+
+  return (
+    <form onSubmit={handleSubmit} className="bg-gray-900/60 backdrop-blur-sm border border-gray-800 rounded-2xl p-5 md:p-6 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+        {/* Pickup Location */}
+        <div className="col-span-2 md:col-span-3 lg:col-span-2">
+          <label className="text-xs text-gray-400 font-medium mb-1 block">Luogo di ritiro</label>
+          <select
+            value={pickupLocation}
+            onChange={e => { setPickupLocation(e.target.value); if (sameLocation) setReturnLocation(e.target.value) }}
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm focus:ring-1 focus:ring-white focus:border-white"
+          >
+            {PICKUP_LOCATIONS.map(loc => (
+              <option key={loc.id} value={loc.id}>{typeof loc.label === 'string' ? loc.label : loc.label.it}</option>
+            ))}
+          </select>
+          <label className="flex items-center gap-2 mt-2 cursor-pointer">
+            <input type="checkbox" checked={sameLocation} onChange={e => setSameLocation(e.target.checked)} className="w-3.5 h-3.5 rounded bg-gray-700 border-gray-600 text-white focus:ring-white" />
+            <span className="text-xs text-gray-400">Stesso luogo di riconsegna</span>
+          </label>
+          {!sameLocation && (
+            <div className="mt-2">
+              <label className="text-xs text-gray-400 font-medium mb-1 block">Luogo di riconsegna</label>
+              <select
+                value={returnLocation}
+                onChange={e => setReturnLocation(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm focus:ring-1 focus:ring-white focus:border-white"
+              >
+                {PICKUP_LOCATIONS.map(loc => (
+                  <option key={loc.id} value={loc.id}>{typeof loc.label === 'string' ? loc.label : loc.label.it}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        {/* Pickup Date */}
+        <div>
+          <label className="text-xs text-gray-400 font-medium mb-1 block">Data ritiro</label>
+          <input
+            type="date"
+            value={pickupDate}
+            min={fmt(today)}
+            onChange={e => {
+              setPickupDate(e.target.value)
+              // Ensure return date >= pickup date
+              if (e.target.value > returnDate) setReturnDate(e.target.value)
+            }}
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm focus:ring-1 focus:ring-white focus:border-white"
+          />
+          {isSunday(pickupDate) && <p className="text-xs text-red-400 mt-1">Chiusi la domenica</p>}
+        </div>
+
+        {/* Pickup Time */}
+        <div>
+          <label className="text-xs text-gray-400 font-medium mb-1 block">Ora ritiro</label>
+          <select
+            value={pickupTime}
+            onChange={e => handlePickupTimeChange(e.target.value)}
+            disabled={pickupTimes.length === 0}
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm focus:ring-1 focus:ring-white focus:border-white disabled:opacity-50"
+          >
+            {pickupTimes.length > 0
+              ? pickupTimes.map(t => <option key={t} value={t}>{t}</option>)
+              : <option>Non disponibile</option>
+            }
+          </select>
+        </div>
+
+        {/* Return Date */}
+        <div>
+          <label className="text-xs text-gray-400 font-medium mb-1 block">Data restituzione</label>
+          <input
+            type="date"
+            value={returnDate}
+            min={pickupDate}
+            onChange={e => setReturnDate(e.target.value)}
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm focus:ring-1 focus:ring-white focus:border-white"
+          />
+          {isSunday(returnDate) && <p className="text-xs text-red-400 mt-1">Chiusi la domenica</p>}
+        </div>
+
+        {/* Return Time */}
+        <div>
+          <label className="text-xs text-gray-400 font-medium mb-1 block">Ora restituzione</label>
+          <select
+            value={returnTime}
+            onChange={e => handleReturnTimeChange(e.target.value)}
+            disabled={returnTimes.length === 0}
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm focus:ring-1 focus:ring-white focus:border-white disabled:opacity-50"
+          >
+            {returnTimes.length > 0
+              ? returnTimes.map(t => <option key={t} value={t}>{t}</option>)
+              : <option>Non disponibile</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      {/* Red warning + Search button */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-4 gap-3">
+        <p className="text-xs text-red-400 font-medium">La tariffa puo subire variazioni</p>
+        <button
+          type="submit"
+          disabled={!isValid || isSearching}
+          className="px-8 py-3 bg-white text-black font-bold uppercase tracking-wider text-sm rounded-full hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+        >
+          {isSearching ? 'Ricerca...' : 'Verifica Disponibilita'}
+        </button>
+      </div>
+    </form>
+  )
+}
