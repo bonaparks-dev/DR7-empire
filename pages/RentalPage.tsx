@@ -453,7 +453,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
 
                   <div className="pt-8">
                     <button
-                      onClick={() => window.location.href = 'https://wa.me/393517375375?text=Ciao%2C%20vorrei%20informazioni%20sul%20servizio%20Yachting'}
+                      onClick={() => window.location.href = 'https://wa.me/393457905205?text=Ciao%2C%20vorrei%20informazioni%20sul%20servizio%20Yachting'}
                       className="text-white/80 hover:text-white text-sm tracking-widest uppercase font-light transition-colors duration-300 border-b border-white/20 hover:border-white/60 pb-1"
                     >
                       Richiesta Privata
