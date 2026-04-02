@@ -141,8 +141,9 @@ const calculateIncludedKm = (days: number) => {
   if (days === 2) return 180;
   if (days === 3) return 240;
   if (days === 4) return 280;
-  // From day 5 onward: 60 km/day base
-  return days * 60;
+  // From day 5 onward: 280 (day 4 baseline) + 60 km/day for each extra day
+  // e.g. 5 days = 340, 6 days = 400, 7 days = 460
+  return 280 + (days - 4) * 60;
 };
 
 interface CarBookingWizardProps {
@@ -2753,7 +2754,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           delivery_address: formData.deliveryAddress || null,
           delivery_distance_km: deliveryInfo?.roundTripKm || null,
           delivery_fee: deliveryFee || null,
-          price_total: Math.round(grandTotal * 100),
+          price_total: eurosToCents(grandTotal),
           currency: currency.toUpperCase(),
           booking_source: 'website',
           customer_name: `${formData.firstName} ${formData.lastName}`,
@@ -2838,7 +2839,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         console.log("Starting credit booking RPC call...", { user: user.id, amount: Math.round(grandTotal * 100), vehicle: item.name });
         const { data, error } = await supabase.rpc('book_with_credits', {
           p_user_id: user.id,
-          p_amount_cents: Math.round(grandTotal * 100),
+          p_amount_cents: eurosToCents(grandTotal),
           p_vehicle_name: item.name,
           p_booking_payload: bookingPayload
         });
@@ -3077,7 +3078,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           delivery_address: formData.deliveryAddress || null,
           delivery_distance_km: deliveryInfo?.roundTripKm || null,
           delivery_fee: deliveryFee || null,
-          price_total: Math.round(grandTotal * 100), // Store in cents
+          price_total: eurosToCents(grandTotal), // Store in cents
           currency: 'EUR',
           status: 'pending',
           payment_status: 'pending',
@@ -3269,7 +3270,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         }
 
         // 4. Validate amount before calling Nexi
-        const amountCents = Math.round(grandTotal * 100);
+        const amountCents = eurosToCents(grandTotal);
         if (!amountCents || isNaN(amountCents) || amountCents <= 0) {
           console.error('Invalid payment amount:', { grandTotal, amountCents });
           throw new Error("Importo non valido per il pagamento. Controlla i dati della prenotazione.");
