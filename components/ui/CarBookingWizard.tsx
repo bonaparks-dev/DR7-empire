@@ -2347,6 +2347,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         booked_at: new Date().toISOString(),
         booking_usage_zone: formData.usageZone || null,
         vehicle_id: formData.selectedVehicleId || null,
+        // FIX: Persist vehicle_plate so availability check backend can match by targa
+        vehicle_plate: (() => {
+          if (!formData.selectedVehicleId || !item.vehicleIds || !Array.isArray((item as any).plates)) return null;
+          const idx = item.vehicleIds.indexOf(formData.selectedVehicleId);
+          return idx >= 0 ? (item as any).plates[idx] || null : null;
+        })(),
         deposit_amount: getDeposit(),
         insurance_option: formData.insuranceOption,
         customer_name: rFullName,
@@ -2834,6 +2840,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           customer_phone: formData.phone,
           deposit_amount: getDeposit(),
           vehicle_id: formData.selectedVehicleId || null,
+          vehicle_plate: (() => {
+          if (!formData.selectedVehicleId || !item.vehicleIds || !Array.isArray((item as any).plates)) return null;
+          const idx = item.vehicleIds.indexOf(formData.selectedVehicleId);
+          return idx >= 0 ? (item as any).plates[idx] || null : null;
+        })(),
           insurance_option: formData.insuranceOption,
           booking_usage_zone: formData.usageZone || null,
           booking_details: {
@@ -3159,6 +3170,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           payment_status: 'pending',
           payment_method: 'nexi',
           booked_at: new Date().toISOString(),
+          vehicle_id: formData.selectedVehicleId || null,
+          vehicle_plate: (() => {
+          if (!formData.selectedVehicleId || !item.vehicleIds || !Array.isArray((item as any).plates)) return null;
+          const idx = item.vehicleIds.indexOf(formData.selectedVehicleId);
+          return idx >= 0 ? (item as any).plates[idx] || null : null;
+        })(),
           customer_name: nFullName,
           customer_email: nEmail,
           customer_phone: nPhone,
@@ -3166,6 +3183,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             nexi_order_id: nexiOrderId,
             vehicle_image_url: item.image,
             vehicle_id: formData.selectedVehicleId || null,
+            vehicle_plate: (() => {
+          if (!formData.selectedVehicleId || !item.vehicleIds || !Array.isArray((item as any).plates)) return null;
+          const idx = item.vehicleIds.indexOf(formData.selectedVehicleId);
+          return idx >= 0 ? (item as any).plates[idx] || null : null;
+        })(),
             insurance_option: formData.insuranceOption,
             deposit_amount: getDeposit(),
             booking_usage_zone: formData.usageZone || null,
