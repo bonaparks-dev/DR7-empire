@@ -4,6 +4,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { RENTAL_CATEGORIES } from '../constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import SEOHead from '../components/seo/SEOHead';
+import BookingSearchBox from '../components/ui/BookingSearchBox';
 
 // Display titles matching the menu division names
 const DISPLAY_TITLE: Record<string, string> = {
@@ -149,6 +150,17 @@ const HeroSection: React.FC = () => {
           </motion.div>
         ))}
       </AnimatePresence>
+
+      {/* Booking Search Box - floating over hero */}
+      <div className="absolute inset-0 z-10 flex items-center justify-center px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.6 }}
+        >
+          <BookingSearchBox variant="hero" />
+        </motion.div>
+      </div>
 
       {/* Navigation dots - Ferrari style */}
       <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-20 flex space-x-4">
