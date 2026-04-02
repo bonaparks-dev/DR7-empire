@@ -4751,8 +4751,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 <div>
                   <p className="font-bold text-base text-white mb-2">DATE E LOCALITÀ</p>
                   <hr className="border-gray-600 mb-2" />
-                  <p>Ritiro: {formData.pickupDate} alle {formData.pickupTime} - {getTranslated(PICKUP_LOCATIONS.find(l => l.id === formData.pickupLocation)?.label)}</p>
-                  <p>Riconsegna: {formData.returnDate} alle {formData.returnTime} - {getTranslated(PICKUP_LOCATIONS.find(l => l.id === formData.returnLocation)?.label)}</p>
+                  <p>Ritiro: {formData.pickupDate} alle {formData.pickupTime} - {PICKUP_LOCATIONS.find(l => l.id === formData.pickupLocation)?.label?.it || formData.pickupLocation}</p>
+                  <p>Riconsegna: {formData.returnDate} alle {formData.returnTime} - {RETURN_LOCATIONS.find(l => l.id === formData.returnLocation)?.label?.it || formData.returnLocation}</p>
                   <p>Durata: {duration.days} giorni</p>
                   <p>Pacchetto km: {formData.kmPackageType === '50km' ? `50 km/giorno (${includedKm} km totali)` : isUrbanOrCorporate ? 'Inclusi' : (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}</p>
                 </div>
