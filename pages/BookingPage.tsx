@@ -8,6 +8,7 @@ import { supabase } from '../supabaseClient';
 import { RENTAL_CATEGORIES, YACHT_PICKUP_MARINAS, AIRPORTS, HELI_DEPARTURE_POINTS, HELI_ARRIVAL_POINTS } from '../constants';
 import type { Booking, Inquiry, RentalItem } from '../types';
 import CarBookingWizard from '../components/ui/CarBookingWizard';
+import BookingErrorBoundary from '../components/ui/BookingErrorBoundary';
 import HelicopterBookingForm from '../components/ui/HelicopterBookingForm';
 
 
@@ -344,7 +345,11 @@ const BookingPage: React.FC = () => {
     }
 
     if (isCar) {
-      return <CarBookingWizard item={item} onBookingComplete={handleBookingComplete} onClose={() => location.state?.from ? navigate(location.state.from) : navigate('/')} />;
+      return (
+        <BookingErrorBoundary>
+          <CarBookingWizard item={item} onBookingComplete={handleBookingComplete} onClose={() => location.state?.from ? navigate(location.state.from) : navigate('/')} />
+        </BookingErrorBoundary>
+      );
     }
 
     if (isHelicopter) {
