@@ -2684,6 +2684,20 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     try {
 
+    // Normalize paymentMethod — guard against null/undefined/unsupported values
+    // Default declared in formData initializer is 'nexi'; fallback to it if corrupted
+    const SUPPORTED_PAYMENT_METHODS = ['credit', 'nexi'] as const;
+    type SupportedPaymentMethod = typeof SUPPORTED_PAYMENT_METHODS[number];
+    const rawPaymentMethod = formData.paymentMethod;
+    const normalizedPaymentMethod: SupportedPaymentMethod =
+      SUPPORTED_PAYMENT_METHODS.includes(rawPaymentMethod as SupportedPaymentMethod)
+        ? (rawPaymentMethod as SupportedPaymentMethod)
+        : 'nexi';
+
+    if (!SUPPORTED_PAYMENT_METHODS.includes(rawPaymentMethod as SupportedPaymentMethod)) {
+      console.warn('[handleSubmit] paymentMethod non supportato:', rawPaymentMethod, '— fallback a nexi');
+    }
+
     // SAFETY NET: Re-validate critical customer fields before ANY booking
     const customerName = `${formData.firstName} ${formData.lastName}`.trim();
     if (!customerName || !formData.firstName.trim() || !formData.lastName.trim()) {
@@ -2702,7 +2716,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
 
     // Credit wallet requires login
-    if (formData.paymentMethod === 'credit' && !user?.id) {
+    if (normalizedPaymentMethod === 'credit' && !user?.id) {
       clearTimeout(safetyTimer);
       setPaymentError('Devi effettuare il login per procedere.');
       isSubmittingRef.current = false;
@@ -2711,7 +2725,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
 
     // Check sufficient balance only for credit wallet payments
-    if (formData.paymentMethod === 'credit') {
+    if (normalizedPaymentMethod === 'credit') {
       const hasBalance = await hasSufficientBalance(user.id, grandTotal);
       if (!hasBalance) {
         clearTimeout(safetyTimer);
@@ -2722,7 +2736,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
     }
 
-    if (formData.paymentMethod === 'credit' && step === 4) {
+    if (normalizedPaymentMethod === 'credit' && step === 4) {
       try {
         // 1. Prepare Documents (Upload if needed)
         let licenseImageUrl = null;
@@ -3018,7 +3032,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         setPaymentError(err.message || "Errore sconosciuto durante la prenotazione.");
         setIsProcessing(false);
       }
-    } else if (formData.paymentMethod === 'nexi' && step === 4) {
+    } else if (normalizedPaymentMethod === 'nexi' && step === 4) {
       setPaymentError(null);
       setIsProcessing(true);
 
@@ -3319,6 +3333,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         isSubmittingRef.current = false;
         setIsProcessing(false);
       }
+    } else {
+      // Fallback: should never reach here after normalization, but guard against it explicitly
+      console.error('[handleSubmit] Ramo non raggiungibile — paymentMethod:', rawPaymentMethod, 'normalized:', normalizedPaymentMethod);
+      clearTimeout(safetyTimer);
+      setPaymentError('Metodo di pagamento non riconosciuto. Ricarica la pagina e riprova.');
+      isSubmittingRef.current = false;
+      setIsProcessing(false);
     }
 
     } catch (outerErr: any) {
