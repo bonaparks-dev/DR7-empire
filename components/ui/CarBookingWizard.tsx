@@ -218,12 +218,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
       // Step 3
       insuranceOption: 'KASKO',
-      depositOption: '' as '' | 'with_deposit' | 'micro_deposit',
+      depositOption: 'with_deposit' as '' | 'with_deposit' | 'micro_deposit', // Default to with_deposit so urban/corporate vehicles don't silently block checkout
       extras: [] as string[],
       kmPackageType: 'unlimited' as 'none' | 'unlimited' | '50km', // 'none' = only free included km, '50km' = 50km/day supercar package
       kmPackageDistance: 100, // default 100km package
       expectedKm: 0, // user's expected distance for recommendation
-      usageZone: '' as 'CAGLIARI_SUD' | 'FUORI_ZONA' | '', // Will be set by useEffect after user data loads
+      usageZone: 'FUORI_ZONA' as 'CAGLIARI_SUD' | 'FUORI_ZONA' | '', // Default to FUORI_ZONA to prevent silent validation block
 
       // Step 4
       paymentMethod: 'nexi' as 'nexi' | 'credit',
@@ -4630,26 +4630,21 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
                     {/* Action buttons */}
                     <div className="flex flex-col gap-3">
-                      <button
-                        type="button"
-                        onClick={handleWashUpsellAccept}
-                        disabled={!selectedUpsellWash && selectedUpsellExtras.length === 0}
-                        className={`w-full py-3.5 rounded-full font-bold text-sm sm:text-base transition-all ${
-                          selectedUpsellWash || selectedUpsellExtras.length > 0
-                            ? 'bg-white text-black hover:bg-gray-100'
-                            : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                        }`}
-                      >
-                        {selectedUpsellWash || selectedUpsellExtras.length > 0
-                          ? `Aggiungi servizi – €${totalWashUpsellCost % 1 === 0 ? totalWashUpsellCost : totalWashUpsellCost.toFixed(2)}`
-                          : 'Seleziona un servizio'}
-                      </button>
+                      {(selectedUpsellWash || selectedUpsellExtras.length > 0) && (
+                        <button
+                          type="button"
+                          onClick={handleWashUpsellAccept}
+                          className="w-full py-3.5 rounded-full font-bold text-sm sm:text-base transition-all bg-white text-black hover:bg-gray-100"
+                        >
+                          {`Aggiungi servizi – €${totalWashUpsellCost % 1 === 0 ? totalWashUpsellCost : totalWashUpsellCost.toFixed(2)}`}
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={handleWashUpsellDecline}
-                        className="w-full py-3 text-gray-400 hover:text-white text-sm transition-colors"
+                        className="w-full py-3.5 rounded-full font-bold text-sm sm:text-base transition-all border-2 border-white text-white hover:bg-white hover:text-black"
                       >
-                        No, grazie
+                        {selectedUpsellWash || selectedUpsellExtras.length > 0 ? 'No, grazie' : 'Prosegui senza servizi aggiuntivi'}
                       </button>
                     </div>
                   </motion.div>
@@ -4830,7 +4825,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         type="button"
                         onClick={handleNext}
                         className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={(step === 1 && !!availabilityError) || (step === 1 && isCheckingAvailability) || (licenseYears < 2 && step === 2) || (step === 2 && !formData.confirmsInformation) || (step === 3 && isUrbanOrCorporate && !formData.depositOption)}
+                        disabled={(step === 1 && !!availabilityError) || (step === 1 && isCheckingAvailability) || (licenseYears < 2 && step === 2) || (step === 2 && !formData.confirmsInformation)}
                       >
                         Continua
                       </button>
