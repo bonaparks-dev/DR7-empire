@@ -166,6 +166,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const isUtilitaria = vehicleType === 'UTILITARIA';
   const [showMaxDatePopup, setShowMaxDatePopup] = useState(false);
 
+  // Check if booking was initiated from search (Prenota Ora)
+  const isFromSearch = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return !!(params.get('pickup') && params.get('return'));
+  }, []);
+
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const today = useMemo(() => {
@@ -177,6 +183,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [formData, setFormData] = useState(() => {
     // Read pre-filled values from URL params (set by Prenota Ora popup)
     const urlParams = new URLSearchParams(window.location.search);
+    const hasSearchParams = !!(urlParams.get('pickup') && urlParams.get('return'));
     const prefillPickup = urlParams.get('pickup') || today;
     const prefillReturn = urlParams.get('return') || (() => {
       const tomorrow = new Date();
@@ -187,6 +194,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const prefillReturnTime = urlParams.get('returnTime') || '09:00';
     const prefillPickupLoc = urlParams.get('pickupLoc') || PICKUP_LOCATIONS[0].id;
     const prefillReturnLoc = urlParams.get('returnLoc') || PICKUP_LOCATIONS[0].id;
+    const prefillPickupLocLabel = urlParams.get('pickupLocLabel') || '';
+    const prefillReturnLocLabel = urlParams.get('returnLocLabel') || '';
 
     return {
       // Step 1
@@ -3450,6 +3459,29 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               )}
             </div>
 
+            {isFromSearch ? (
+              /* Read-only summary when coming from Prenota Ora search */
+              <div className="p-4 rounded-lg border border-gray-700 bg-gray-800/30 space-y-2">
+                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Riepilogo Prenotazione</h3>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-gray-500 block text-xs">Ritiro</span>
+                    <span className="text-white">{new Date(formData.pickupDate).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Europe/Rome' })}</span>
+                    <span className="text-gray-400 ml-1">{formData.pickupTime}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 block text-xs">Restituzione</span>
+                    <span className="text-white">{new Date(formData.returnDate).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Europe/Rome' })}</span>
+                    <span className="text-gray-400 ml-1">{formData.returnTime}</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-gray-500 block text-xs">Luogo</span>
+                    <span className="text-white">{PICKUP_LOCATIONS.find(l => l.id === formData.pickupLocation)?.label?.it || formData.pickupLocation}</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+            <>
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">LOCATION SELECTION</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -3768,6 +3800,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
               {/* Info message about KM */}
             </div>
+            </>
+            )}
           </div>
         );
       case 2:
