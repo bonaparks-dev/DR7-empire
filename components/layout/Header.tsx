@@ -94,7 +94,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
             {/* Logo centered at top */}
             <div className="flex flex-col items-center mb-8">
               <NavLink to="/" onClick={onClose} className="mb-6">
-                <img src="/DR7logo1.png" alt="DR7 Empire Logo" className="h-14 md:h-16 w-auto" />
+                <img src="/DR7logo1.png" alt="DR7 Logo" className="h-14 md:h-16 w-auto" />
               </NavLink>
               <button
                 onClick={onClose}
@@ -555,7 +555,7 @@ const Header: React.FC = () => {
           {/* Logo centered */}
           <div className="absolute left-1/2 transform -translate-x-1/2">
             <NavLink to="/" className="flex items-center">
-              <img src="/DR7logo1.png" alt="DR7 Empire Logo" className="h-14 md:h-16 w-auto" />
+              <img src="/DR7logo1.png" alt="DR7 Logo" className="h-14 md:h-16 w-auto" />
             </NavLink>
           </div>
 

@@ -325,7 +325,7 @@ export default function ReviewsSection() {
     <ReviewsMarquee
       reviews={reviews}
       business={{
-        name: "DR7 Empire",
+        name: "DR7 Cagliari",
         url: "https://dr7empire.com",
         image: "https://dr7empire.com/logo.png",
         telephone: "+39 345 790 5205",
