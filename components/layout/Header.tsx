@@ -53,7 +53,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
   }, [isOpen, user?.id]);
 
   const navLinkClasses =
-    'block py-2.5 text-base font-normal text-gray-300 hover:text-white transition-colors duration-300';
+    'block py-3 pl-3 text-[15px] font-normal text-gray-400 hover:text-white transition-all duration-200 rounded-lg hover:bg-white/5';
 
   const handleLogout = () => {
     logout();
@@ -84,7 +84,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
             animate="visible"
             exit="hidden"
             transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/70 backdrop-blur-xl"
             onClick={onClose}
           />
           <motion.div
@@ -93,7 +93,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
             animate="visible"
             exit="hidden"
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed top-0 left-0 bottom-0 w-full max-w-sm bg-black border-r border-gray-800 shadow-2xl flex flex-col p-6 overflow-y-auto"
+            className="fixed top-0 left-0 bottom-0 w-full max-w-sm bg-[#0a0a0a] border-r border-white/10 shadow-2xl flex flex-col px-5 py-8 overflow-y-auto"
           >
             {/* Logo centered at top */}
             <div className="flex flex-col items-center mb-8">
@@ -126,27 +126,27 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
             )}
 
             <nav className="flex-grow flex flex-col space-y-5">
-              {/* PRENOTA ORA — golden CTA */}
+              {/* PRENOTA ORA */}
               <button
                 onClick={() => setShowBookingPopup(true)}
-                className="w-full py-3.5 bg-white text-black font-bold text-lg tracking-widest uppercase rounded-sm hover:bg-gray-200 transition-all"
+                className="w-full py-3.5 bg-white text-black font-semibold text-base tracking-wide rounded-xl hover:bg-gray-100 active:scale-[0.98] transition-all duration-200"
               >
-                PRENOTA ORA
+                Prenota Ora
               </button>
 
               {/* LA NOSTRA FLOTTA + OFFERTE ATTIVE */}
-              <div className="flex flex-col items-center space-y-1 pb-4 border-b border-gray-800">
-                <NavLink to="/supercar-luxury" onClick={onClose} className="text-sm font-semibold text-gray-300 hover:text-white tracking-widest uppercase transition-colors">
-                  LA NOSTRA FLOTTA
+              <div className="flex flex-col items-center space-y-2 pb-5 border-b border-white/[0.06]">
+                <NavLink to="/supercar-luxury" onClick={onClose} className="text-[13px] font-medium text-gray-400 hover:text-white tracking-widest uppercase transition-all duration-200">
+                  La Nostra Flotta
                 </NavLink>
-                <NavLink to="/membership" onClick={onClose} className="text-sm font-semibold text-gray-300 hover:text-white tracking-widest uppercase transition-colors">
-                  OFFERTE ATTIVE
+                <NavLink to="/membership" onClick={onClose} className="text-[13px] font-medium text-gray-400 hover:text-white tracking-widest uppercase transition-all duration-200">
+                  Offerte Attive
                 </NavLink>
               </div>
 
               {/* SERVIZI & MOBILITÀ DI LUSSO */}
-              <div className="border-b border-gray-800 pb-4">
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
+              <div className="border-b border-white/[0.06] pb-5">
+                <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-[0.2em] mb-2 pl-3">
                   Servizi & Mobilità di Lusso
                 </h3>
                 <div className="space-y-1">
@@ -169,8 +169,8 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               </div>
 
               {/* ESPERIENZE & ACCESSO ESCLUSIVO */}
-              <div className="border-b border-gray-800 pb-4">
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
+              <div className="border-b border-white/[0.06] pb-5">
+                <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-[0.2em] mb-2 pl-3">
                   Esperienze & Accesso Esclusivo
                 </h3>
                 <div className="space-y-1">
@@ -191,8 +191,8 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               </div>
 
               {/* PRIME WASH */}
-              <div className="border-b border-gray-800 pb-4">
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
+              <div className="border-b border-white/[0.06] pb-5">
+                <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-[0.2em] mb-2 pl-3">
                   Prime Wash
                 </h3>
                 <div className="space-y-1">
@@ -209,8 +209,8 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               </div>
 
               {/* BUSINESS & CORPORATE */}
-              <div className="border-b border-gray-800 pb-4">
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
+              <div className="border-b border-white/[0.06] pb-5">
+                <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-[0.2em] mb-2 pl-3">
                   Business & Corporate
                 </h3>
                 <div className="space-y-1">
@@ -224,8 +224,8 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               </div>
 
               {/* DIGITAL INNOVATION */}
-              <div className="border-b border-gray-800 pb-4">
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1">
+              <div className="border-b border-white/[0.06] pb-5">
+                <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-[0.2em] mb-2 pl-3">
                   Digital Innovation
                 </h3>
                 <div className="space-y-1">
@@ -236,11 +236,9 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               </div>
 
               {/* CONTATTACI */}
-              <div>
-                <NavLink to="/contact" onClick={onClose}>
-                  <h3 className="text-sm font-bold text-white uppercase tracking-widest text-center hover:text-white transition-colors">
-                    CONTATTACI
-                  </h3>
+              <div className="pt-2">
+                <NavLink to="/contact" onClick={onClose} className="block py-3 text-center text-[13px] font-medium text-gray-400 hover:text-white tracking-widest uppercase rounded-lg hover:bg-white/5 transition-all duration-200">
+                  Contattaci
                 </NavLink>
               </div>
             </nav>
@@ -252,14 +250,14 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
+                  className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-xl flex items-center justify-center p-4"
                   onClick={() => setShowBookingPopup(false)}
                 >
                   <motion.div
                     initial={{ scale: 0.9, opacity: 0, y: 20 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                    className="bg-gray-900 border border-gray-700 rounded-2xl p-6 sm:p-8 max-w-md w-full"
+                    className="bg-[#1c1c1e] border border-white/10 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <button
@@ -271,8 +269,8 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                       </svg>
                     </button>
 
-                    <h3 className="text-xl font-bold text-white text-center mb-1">PRENOTA ORA</h3>
-                    <p className="text-gray-400 text-sm text-center mb-6">Seleziona le date per vedere i veicoli disponibili</p>
+                    <h3 className="text-xl font-semibold text-white text-center mb-1">Prenota Ora</h3>
+                    <p className="text-gray-500 text-sm text-center mb-6">Seleziona le date per vedere i veicoli disponibili</p>
 
                     <div className="space-y-4">
                       {/* Pickup */}
@@ -291,12 +289,12 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                                 setBookingReturnDate(next.toISOString().split('T')[0]);
                               }
                             }}
-                            className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
+                            className="flex-1 bg-[#2c2c2e] border border-white/10 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
                           />
                           <select
                             value={bookingPickupTime}
                             onChange={(e) => setBookingPickupTime(e.target.value)}
-                            className="w-24 bg-gray-800 border border-gray-600 rounded-lg px-2 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
+                            className="w-24 bg-[#2c2c2e] border border-white/10 rounded-xl px-2 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
                           >
                             {Array.from({ length: 24 }, (_, h) => [`${String(h).padStart(2,'0')}:00`, `${String(h).padStart(2,'0')}:30`]).flat().map(t => (
                               <option key={`p-${t}`} value={t}>{t}</option>
@@ -314,12 +312,12 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                             value={bookingReturnDate}
                             min={bookingPickupDate || new Date().toISOString().split('T')[0]}
                             onChange={(e) => setBookingReturnDate(e.target.value)}
-                            className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
+                            className="flex-1 bg-[#2c2c2e] border border-white/10 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
                           />
                           <select
                             value={bookingReturnTime}
                             onChange={(e) => setBookingReturnTime(e.target.value)}
-                            className="w-24 bg-gray-800 border border-gray-600 rounded-lg px-2 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
+                            className="w-24 bg-[#2c2c2e] border border-white/10 rounded-xl px-2 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
                           >
                             {Array.from({ length: 24 }, (_, h) => [`${String(h).padStart(2,'0')}:00`, `${String(h).padStart(2,'0')}:30`]).flat().map(t => (
                               <option key={`r-${t}`} value={t}>{t}</option>
