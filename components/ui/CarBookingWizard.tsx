@@ -1617,10 +1617,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     ACTIVE_RENTAL_DAY_RATES, ACTIVE_KM_INCLUDED
   ]);
 
-  // Online booking discount (5%) — NOT for supercars, NOT for Massimo
-  const isEligibleForOnlineDiscount = vehicleType !== 'SUPERCAR' && !isMassimo;
-  const onlineDiscountAmount = isEligibleForOnlineDiscount ? finalTotal * 0.05 : 0;
-  const finalTotalWithOnlineDiscount = isEligibleForOnlineDiscount ? finalTotal * 0.95 : finalTotal;
+  // Online booking discount REMOVED — no automatic discount
+  const onlineDiscountAmount = 0;
+  const finalTotalWithOnlineDiscount = finalTotal;
 
   // Calculate discount code amount — supercars excluded (except special clients with dedicated codes)
   const discountAmount = useMemo(() => {
