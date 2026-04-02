@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../hooks/useTranslation';
-import { RENTAL_CATEGORIES } from '../constants';
+import { RENTAL_CATEGORIES, COMMERCIAL_OPERATION_GIVEAWAY } from '../constants';
 import { motion, AnimatePresence } from 'framer-motion';
-import SEOHead from '../components/seo/SEOHead';
-import BookingSearchBox from '../components/ui/BookingSearchBox';
 
 // Display titles matching the menu division names
 const DISPLAY_TITLE: Record<string, string> = {
@@ -151,17 +149,6 @@ const HeroSection: React.FC = () => {
         ))}
       </AnimatePresence>
 
-      {/* Booking Search Box - floating over hero */}
-      <div className="absolute inset-0 z-10 flex items-center justify-center px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.6 }}
-        >
-          <BookingSearchBox variant="hero" />
-        </motion.div>
-      </div>
-
       {/* Navigation dots - Ferrari style */}
       <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-20 flex space-x-4">
         {HERO_SLIDES.map((slide, index) => (
@@ -180,13 +167,6 @@ const HeroSection: React.FC = () => {
   );
 };
 
-// Map category IDs to canonical SEO-friendly URLs
-const CANONICAL_URLS: Record<string, string> = {
-  cars: '/supercar-luxury',
-  'urban-cars': '/urban',
-  'car-wash-services': '/prime-wash',
-};
-
 const HomePage: React.FC = () => {
   const { t, getTranslated } = useTranslation();
 
@@ -197,27 +177,6 @@ const HomePage: React.FC = () => {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <SEOHead
-        title="DR7 Empire – Luxury Cars, Supercars & Premium Services in Sardinia"
-        description="Noleggio supercar, auto di lusso, yachting e aviazione privata in Sardegna. Scopri Prime Car Wash, il nostro servizio di autolavaggio premium. DR7 Empire – global luxury mobility."
-        canonical="/"
-        jsonLd={[
-          {
-            '@type': 'Organization',
-            '@id': 'https://dr7empire.com/#organization',
-            name: 'DR7 Empire',
-            url: 'https://dr7empire.com',
-            logo: 'https://dr7empire.com/DR7logo1.png',
-          },
-          {
-            '@type': 'WebSite',
-            '@id': 'https://dr7empire.com/#website',
-            name: 'DR7 Empire',
-            url: 'https://dr7empire.com',
-            publisher: { '@id': 'https://dr7empire.com/#organization' },
-          },
-        ]}
-      />
       <h1 style={{ position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0,0,0,0)' }}>
         DR7 Empire — Noleggio Auto di Lusso, Supercar e Servizi Premium in Sardegna
       </h1>
@@ -250,7 +209,7 @@ const HomePage: React.FC = () => {
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                 >
                   <Link
-                    to={CANONICAL_URLS[category.id] || `/${category.id}`}
+                    to={`/${category.id}`}
                     className="block group relative rounded-lg overflow-hidden"
                   >
                     <img
