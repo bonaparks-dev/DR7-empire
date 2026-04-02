@@ -1213,6 +1213,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   // Check vehicle availability when dates change
   useEffect(() => {
     const checkAvailability = async () => {
+      // Skip availability check if coming from search — already verified
+      if (isFromSearch) {
+        setAvailabilityError(null);
+        setIsCheckingAvailability(false);
+        return;
+      }
       // FIX 6: Anti-race — each invocation gets a unique ID; only the latest updates state
       const requestId = ++availabilityRequestIdRef.current;
       const isStale = () => requestId !== availabilityRequestIdRef.current;
@@ -5720,7 +5726,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         type="button"
                         onClick={handleNext}
                         className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={(step === 1 && !!availabilityError) || (step === 1 && isCheckingAvailability) || (licenseYears < 3 && step === 2) || (step === 2 && !formData.confirmsInformation) || (step === 3 && isUrbanOrCorporate && !formData.depositOption)}
+                        disabled={(step === 1 && !isFromSearch && !!availabilityError) || (step === 1 && !isFromSearch && isCheckingAvailability) || (licenseYears < 3 && step === 2) || (step === 2 && !formData.confirmsInformation) || (step === 3 && isUrbanOrCorporate && !formData.depositOption)}
                       >
                         Continua
                       </button>
