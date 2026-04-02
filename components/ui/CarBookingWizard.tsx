@@ -4,7 +4,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { Link } from 'react-router-dom';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import { isMassimoRunchina, SPECIAL_CLIENTS } from '../../utils/clientPricingRules';
-import { calculateMultiDayPrice } from '../../utils/multiDayPricing';
+import { calculateMultiDayPrice, calculateIncludedKmFromConfig } from '../../utils/multiDayPricing';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../supabaseClient';
 import { PICKUP_LOCATIONS, RETURN_LOCATIONS, AUTO_INSURANCE, INSURANCE_DEDUCTIBLES, RENTAL_EXTRAS, DEPOSIT_RULES, INSURANCE_OPTIONS_BY_TIER, INSURANCE_COVERAGE_TEXT, TIER_PRICING, TIER_DEPOSIT_OPTIONS, NO_DEPOSIT_SURCHARGE_PER_DAY, EXPERIENCE_SERVICES as BOOKING_EXPERIENCE_SERVICES, DR7_FLEX, PAYMENT_MODES, DELIVERY_PRICE_PER_KM } from '../../constants';
@@ -135,14 +135,10 @@ const createItalyDateTime = (dateStr: string, timeStr: string) => {
 
 // === Km inclusi per durata ===
 // 1gg=100, 2gg=180, 3gg=240, 4gg=280, 5gg=300, dal 5° giorno in poi +60/giorno
-const calculateIncludedKm = (days: number) => {
-  if (days <= 0) return 0;
-  if (days === 1) return 100;
-  if (days === 2) return 180;
-  if (days === 3) return 240;
-  if (days === 4) return 280;
-  // From day 5 onward: 60 km/day base
-  return days * 60;
+// calculateIncludedKm is now driven by admin config via calculateIncludedKmFromConfig.
+// The inline wrapper is kept for backward compat; receives config at call site.
+const calculateIncludedKm = (days: number, kmConfig?: { table: Record<string, number>; extra_per_day: number } | null) => {
+  return calculateIncludedKmFromConfig(days, kmConfig);
 };
 
 interface CarBookingWizardProps {
@@ -297,6 +293,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const ACTIVE_DELIVERY_PRICE_PER_KM = configOverlay?.deliveryPricePerKm ?? DELIVERY_PRICE_PER_KM;
   const ACTIVE_DR7_FLEX = configOverlay ? { dailyPrice: configOverlay.dr7Flex.dailyPrice, refundPercent: configOverlay.dr7Flex.refundPercent, description: DR7_FLEX.description } : DR7_FLEX;
   const ACTIVE_EXPERIENCE_SERVICES = configOverlay?.experienceServices?.length ? configOverlay.experienceServices : BOOKING_EXPERIENCE_SERVICES;
+  const ACTIVE_RENTAL_DAY_RATES = configOverlay?.rentalDayRates ?? null;
+  const ACTIVE_KM_INCLUDED = configOverlay?.kmIncluded ?? null;
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedInsurance, setExpandedInsurance] = useState<string | null>(null);
@@ -1411,7 +1409,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       const vType = getVehicleType(item, categoryContext);
       const isResident = formData.usageZone === 'CAGLIARI_SUD';
 
-      calculatedRentalCost = calculateMultiDayPrice(vType, billingDaysCalc, pricePerDay, isResident);
+      calculatedRentalCost = calculateMultiDayPrice(vType, billingDaysCalc, pricePerDay, isResident, ACTIVE_RENTAL_DAY_RATES);
     }
 
 
@@ -1460,6 +1458,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     } else if (vType === 'SUPERCAR' && formData.kmPackageType === 'unlimited' && !isMassimo) {
       // Unlimited km for supercars — tier-conditional price
       calculatedKmPackageCost = roundToTwoDecimals(tierPricingForCalc.unlimitedKmPerDay * billingDaysCalc);
+    } else if (vType === 'SUPERCAR' && formData.kmPackageType === '50km') {
+      // Already handled above
+    } else if (vType !== 'SUPERCAR') {
+      // Urban/Furgone/VClass: use dynamic km included table from admin config
+      calculatedIncludedKm = calculateIncludedKm(billingDaysCalc, ACTIVE_KM_INCLUDED);
     }
 
     const calculatedRecommendedKm = recommendKmPackage(formData.expectedKm, item.name, billingDays);
@@ -1572,7 +1575,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     formData.email, formData.usageZone, formData.depositOption,
     formData.selectedExperiences, formData.dr7Flex, formData.pickupLocation, formData.returnLocation,
     formData.deliveryPickupKm, formData.deliveryReturnKm,
-    item, currency, user, isUrbanOrCorporate, categoryContext, driverTier, dynamicPricing
+    item, currency, user, isUrbanOrCorporate, categoryContext, driverTier, dynamicPricing,
+    ACTIVE_RENTAL_DAY_RATES, ACTIVE_KM_INCLUDED
   ]);
 
   // Online booking discount (5%) — NOT for supercars, NOT for Massimo
@@ -2680,6 +2684,20 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     try {
 
+    // Normalize paymentMethod — guard against null/undefined/unsupported values
+    // Default declared in formData initializer is 'nexi'; fallback to it if corrupted
+    const SUPPORTED_PAYMENT_METHODS = ['credit', 'nexi'] as const;
+    type SupportedPaymentMethod = typeof SUPPORTED_PAYMENT_METHODS[number];
+    const rawPaymentMethod = formData.paymentMethod;
+    const normalizedPaymentMethod: SupportedPaymentMethod =
+      SUPPORTED_PAYMENT_METHODS.includes(rawPaymentMethod as SupportedPaymentMethod)
+        ? (rawPaymentMethod as SupportedPaymentMethod)
+        : 'nexi';
+
+    if (!SUPPORTED_PAYMENT_METHODS.includes(rawPaymentMethod as SupportedPaymentMethod)) {
+      console.warn('[handleSubmit] paymentMethod non supportato:', rawPaymentMethod, '— fallback a nexi');
+    }
+
     // SAFETY NET: Re-validate critical customer fields before ANY booking
     const customerName = `${formData.firstName} ${formData.lastName}`.trim();
     if (!customerName || !formData.firstName.trim() || !formData.lastName.trim()) {
@@ -2698,7 +2716,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
 
     // Credit wallet requires login
-    if (formData.paymentMethod === 'credit' && !user?.id) {
+    if (normalizedPaymentMethod === 'credit' && !user?.id) {
       clearTimeout(safetyTimer);
       setPaymentError('Devi effettuare il login per procedere.');
       isSubmittingRef.current = false;
@@ -2707,7 +2725,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
 
     // Check sufficient balance only for credit wallet payments
-    if (formData.paymentMethod === 'credit') {
+    if (normalizedPaymentMethod === 'credit') {
       const hasBalance = await hasSufficientBalance(user.id, grandTotal);
       if (!hasBalance) {
         clearTimeout(safetyTimer);
@@ -2718,7 +2736,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
     }
 
-    if (formData.paymentMethod === 'credit' && step === 4) {
+    if (normalizedPaymentMethod === 'credit' && step === 4) {
       try {
         // 1. Prepare Documents (Upload if needed)
         let licenseImageUrl = null;
@@ -2753,7 +2771,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           delivery_address: formData.deliveryAddress || null,
           delivery_distance_km: deliveryInfo?.roundTripKm || null,
           delivery_fee: deliveryFee || null,
-          price_total: Math.round(grandTotal * 100),
+          price_total: eurosToCents(grandTotal),
           currency: currency.toUpperCase(),
           booking_source: 'website',
           customer_name: `${formData.firstName} ${formData.lastName}`,
@@ -2838,7 +2856,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         console.log("Starting credit booking RPC call...", { user: user.id, amount: Math.round(grandTotal * 100), vehicle: item.name });
         const { data, error } = await supabase.rpc('book_with_credits', {
           p_user_id: user.id,
-          p_amount_cents: Math.round(grandTotal * 100),
+          p_amount_cents: eurosToCents(grandTotal),
           p_vehicle_name: item.name,
           p_booking_payload: bookingPayload
         });
@@ -3014,7 +3032,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         setPaymentError(err.message || "Errore sconosciuto durante la prenotazione.");
         setIsProcessing(false);
       }
-    } else if (formData.paymentMethod === 'nexi' && step === 4) {
+    } else if (normalizedPaymentMethod === 'nexi' && step === 4) {
       setPaymentError(null);
       setIsProcessing(true);
 
@@ -3077,7 +3095,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           delivery_address: formData.deliveryAddress || null,
           delivery_distance_km: deliveryInfo?.roundTripKm || null,
           delivery_fee: deliveryFee || null,
-          price_total: Math.round(grandTotal * 100), // Store in cents
+          price_total: eurosToCents(grandTotal), // Store in cents
           currency: 'EUR',
           status: 'pending',
           payment_status: 'pending',
@@ -3269,7 +3287,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         }
 
         // 4. Validate amount before calling Nexi
-        const amountCents = Math.round(grandTotal * 100);
+        const amountCents = eurosToCents(grandTotal);
         if (!amountCents || isNaN(amountCents) || amountCents <= 0) {
           console.error('Invalid payment amount:', { grandTotal, amountCents });
           throw new Error("Importo non valido per il pagamento. Controlla i dati della prenotazione.");
@@ -3315,6 +3333,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         isSubmittingRef.current = false;
         setIsProcessing(false);
       }
+    } else {
+      // Fallback: should never reach here after normalization, but guard against it explicitly
+      console.error('[handleSubmit] Ramo non raggiungibile — paymentMethod:', rawPaymentMethod, 'normalized:', normalizedPaymentMethod);
+      clearTimeout(safetyTimer);
+      setPaymentError('Metodo di pagamento non riconosciuto. Ricarica la pagina e riprova.');
+      isSubmittingRef.current = false;
+      setIsProcessing(false);
     }
 
     } catch (outerErr: any) {
