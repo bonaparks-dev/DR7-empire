@@ -2007,6 +2007,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const validateStep = () => {
     const newErrors: Record<string, string> = {};
     if (step === 1) {
+      // When coming from search, dates/locations are already validated — skip step 1 validation
+      if (isFromSearch) {
+        setErrors({});
+        return true;
+      }
       if (!formData.pickupDate || formData.pickupDate.trim() === '') {
         newErrors.pickupDate = "La data di ritiro è obbligatoria.";
       }
@@ -2117,8 +2122,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         newErrors.pickupDate = "Siamo chiusi la domenica. Seleziona un altro giorno per il ritiro.";
       }
 
-      // Check if there's an availability error
-      if (availabilityError) {
+      // Check if there's an availability error (skip when coming from search — already validated)
+      if (availabilityError && !isFromSearch) {
         newErrors.availability = availabilityError;
       }
 
