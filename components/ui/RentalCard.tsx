@@ -12,6 +12,8 @@ interface RentalCardProps {
   marketingPrice?: number;
   marketingTooltip?: string;
   categoryId?: string;
+  totalPrice?: number;
+  totalDays?: number;
   jetSearchData?: {
     departure?: string;
     arrival?: string;
@@ -22,7 +24,7 @@ interface RentalCardProps {
   };
 }
 
-const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, marketingTooltip, categoryId, jetSearchData }) => {
+const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, marketingTooltip, categoryId, totalPrice, totalDays, jetSearchData }) => {
   const { t, getTranslated } = useTranslation();
   const { currency } = useCurrency();
   const { user } = useAuth();
@@ -91,7 +93,18 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
       <div className="px-6 pt-6 pb-4 flex-grow flex flex-col">
         <div className="mt-auto space-y-2">
           <div>
-            {marketingPrice ? (
+            {totalPrice && totalDays ? (
+              // Total price for selected dates
+              <div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-bold text-white">{formatPrice(totalPrice)}</span>
+                  <span className="text-sm text-gray-400">totale</span>
+                </div>
+                <div className="text-xs text-gray-500 mt-0.5">
+                  {totalDays} {totalDays === 1 ? 'giorno' : 'giorni'} — {formatPrice(Math.round(totalPrice / totalDays))}/giorno
+                </div>
+              </div>
+            ) : marketingPrice ? (
               // Marketing "Da X/giorno" display
               <div className="flex items-baseline flex-wrap gap-x-1">
                 <span className="text-sm text-gray-400">Da </span>
@@ -109,8 +122,6 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
                 )}
               </div>
             ) : hasDualPricing ? (
-              // Dual pricing display for cars with residency-based rates
-              // Always show CHEAPER price (resident) as LARGER text
               <div className="space-y-0.5">
                 <div className={`flex items-baseline gap-2 ${isResident ? 'text-yellow-400' : 'text-white'}`}>
                   <span className="text-2xl font-bold">
@@ -131,7 +142,6 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
                 )}
               </div>
             ) : item.pricePerDay && !isYacht ? (
-              // Standard single pricing
               <>
                 <span className="text-xl font-bold text-white">{formatPrice(item.pricePerDay[currency])}</span>
                 <span className="text-sm text-gray-400 ml-1">/{t('per_day')}</span>

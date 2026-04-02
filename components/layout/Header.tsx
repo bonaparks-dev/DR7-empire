@@ -246,9 +246,9 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               </div>
             </nav>
 
-            {/* PRENOTA ORA POPUP */}
+            {/* Old popup location removed — moved outside scroll container */}
             <AnimatePresence>
-              {showBookingPopup && (
+              {false && showBookingPopup && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -448,6 +448,177 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               </div>
             </div>
           </motion.div>
+
+          {/* PRENOTA ORA POPUP — outside scroll container for proper z-index */}
+          <AnimatePresence>
+            {showBookingPopup && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-xl flex items-center justify-center p-4"
+                onClick={() => setShowBookingPopup(false)}
+              >
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                  className="bg-[#1c1c1e] border border-white/10 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    onClick={() => setShowBookingPopup(false)}
+                    className="absolute top-4 right-4 text-gray-400 hover:text-white p-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+
+                  <h3 className="text-xl font-semibold text-white text-center mb-1">Prenota Ora</h3>
+                  <p className="text-gray-500 text-sm text-center mb-6">Seleziona luogo, date e orari</p>
+
+                  <div className="space-y-4">
+                    {/* Pickup location */}
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Luogo di ritiro</label>
+                      <select
+                        value={bookingPickupLocation}
+                        onChange={(e) => {
+                          setBookingPickupLocation(e.target.value);
+                          if (bookingSameReturn) setBookingReturnLocation(e.target.value);
+                        }}
+                        className="w-full bg-[#2c2c2e] border border-white/10 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
+                      >
+                        {PICKUP_LOCATIONS.map(loc => (
+                          <option key={loc.id} value={loc.id}>{loc.label.it}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Same return toggle */}
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={bookingSameReturn}
+                        onChange={(e) => {
+                          setBookingSameReturn(e.target.checked);
+                          if (e.target.checked) setBookingReturnLocation(bookingPickupLocation);
+                        }}
+                        className="w-4 h-4 rounded bg-[#2c2c2e] border-white/20"
+                      />
+                      <span className="text-sm text-gray-400">Riconsegna nello stesso luogo</span>
+                    </label>
+
+                    {/* Return location */}
+                    {!bookingSameReturn && (
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Luogo di riconsegna</label>
+                        <select
+                          value={bookingReturnLocation}
+                          onChange={(e) => setBookingReturnLocation(e.target.value)}
+                          className="w-full bg-[#2c2c2e] border border-white/10 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
+                        >
+                          {PICKUP_LOCATIONS.map(loc => (
+                            <option key={loc.id} value={loc.id}>{loc.label.it}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Pickup */}
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Ritiro</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="date"
+                          value={bookingPickupDate}
+                          min={new Date().toISOString().split('T')[0]}
+                          onChange={(e) => {
+                            setBookingPickupDate(e.target.value);
+                            if (!bookingReturnDate || e.target.value > bookingReturnDate) {
+                              const next = new Date(e.target.value);
+                              next.setDate(next.getDate() + 1);
+                              setBookingReturnDate(next.toISOString().split('T')[0]);
+                            }
+                          }}
+                          className="flex-1 bg-[#2c2c2e] border border-white/10 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
+                        />
+                        <select
+                          value={bookingPickupTime}
+                          onChange={(e) => setBookingPickupTime(e.target.value)}
+                          className="w-24 bg-[#2c2c2e] border border-white/10 rounded-xl px-2 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
+                        >
+                          {Array.from({ length: 24 }, (_, h) => [`${String(h).padStart(2,'0')}:00`, `${String(h).padStart(2,'0')}:30`]).flat().map(t => (
+                            <option key={`p2-${t}`} value={t}>{t}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Return */}
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Restituzione</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="date"
+                          value={bookingReturnDate}
+                          min={bookingPickupDate || new Date().toISOString().split('T')[0]}
+                          onChange={(e) => setBookingReturnDate(e.target.value)}
+                          className="flex-1 bg-[#2c2c2e] border border-white/10 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
+                        />
+                        <select
+                          value={bookingReturnTime}
+                          onChange={(e) => setBookingReturnTime(e.target.value)}
+                          className="w-24 bg-[#2c2c2e] border border-white/10 rounded-xl px-2 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
+                        >
+                          {Array.from({ length: 24 }, (_, h) => [`${String(h).padStart(2,'0')}:00`, `${String(h).padStart(2,'0')}:30`]).flat().map(t => (
+                            <option key={`r2-${t}`} value={t}>{t}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Days badge */}
+                    {bookingPickupDate && bookingReturnDate && (
+                      <div className="text-center">
+                        <span className="inline-block px-3 py-1 bg-[#2c2c2e] border border-white/10 rounded-full text-sm text-gray-300">
+                          {Math.max(1, Math.ceil((new Date(bookingReturnDate).getTime() - new Date(bookingPickupDate).getTime()) / (1000 * 60 * 60 * 24)))} giorni
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Search */}
+                    <button
+                      onClick={() => {
+                        if (bookingPickupDate && bookingReturnDate) {
+                          setShowBookingPopup(false);
+                          onClose();
+                          const params = new URLSearchParams({
+                            pickup: bookingPickupDate,
+                            pickupTime: bookingPickupTime,
+                            return: bookingReturnDate,
+                            returnTime: bookingReturnTime,
+                            pickupLoc: bookingPickupLocation,
+                            returnLoc: bookingReturnLocation,
+                          });
+                          nav(`/supercar-luxury?${params.toString()}`);
+                        }
+                      }}
+                      disabled={!bookingPickupDate || !bookingReturnDate}
+                      className={`w-full py-3.5 rounded-xl font-semibold text-base transition-all duration-200 ${
+                        bookingPickupDate && bookingReturnDate
+                          ? 'bg-white text-black hover:bg-gray-100 active:scale-[0.98]'
+                          : 'bg-[#2c2c2e] text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      Cerca Auto Disponibili
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
     </AnimatePresence>

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { RENTAL_CATEGORIES, AIRPORTS } from '../constants';
 import type { RentalItem } from '../types';
 import RentalCard from '../components/ui/RentalCard';
@@ -219,6 +219,15 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   const navigate = useNavigate();
   const { openBooking, openCarWizard } = useBooking();
   const { checkVerificationAndProceed } = useVerification();
+  const [searchParams] = useSearchParams();
+
+  // Read pre-selected dates from Prenota Ora popup
+  const prePickup = searchParams.get('pickup');
+  const preReturn = searchParams.get('return');
+  const preDays = useMemo(() => {
+    if (!prePickup || !preReturn) return 0;
+    return Math.max(1, Math.ceil((new Date(preReturn).getTime() - new Date(prePickup).getTime()) / (1000 * 60 * 60 * 24)));
+  }, [prePickup, preReturn]);
 
   // Determine if this is a vehicle category and map to database category
   const vehicleCategory = categoryId === 'cars' ? 'exotic'
@@ -546,8 +555,12 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
                 const marketingTooltip = categoryId === 'urban-cars'
                   ? 'Disponibile con formula long rent'
                   : undefined;
+                // Calculate total price if dates are pre-selected
+                const dailyRate = item.pricePerDay?.eur || item.priceResidentDaily || 0;
+                const itemTotalPrice = preDays > 0 && dailyRate ? Math.round(dailyRate * preDays) : undefined;
+
                 return (
-                  <RentalCard key={item.id} item={item} onBook={handleBook} marketingPrice={marketingPrice} marketingTooltip={marketingTooltip} categoryId={categoryId} />
+                  <RentalCard key={item.id} item={item} onBook={handleBook} marketingPrice={preDays > 0 ? undefined : marketingPrice} marketingTooltip={marketingTooltip} categoryId={categoryId} totalPrice={itemTotalPrice} totalDays={preDays || undefined} />
                 );
               })}
             </div>
