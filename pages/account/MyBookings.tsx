@@ -123,8 +123,8 @@ const MyBookings = () => {
     const daysUntilPickup = (pickup.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
 
     if (hasFlex) {
-      // DR7 Flex: 90% refund as DR7 Wallet credit, anytime before pickup
-      return { canCancel: true, hasFlex: true, refundPercent: 90, penaltyPercent: 0, message: 'Con DR7 Flex: rimborso del 90% come credito DR7 Wallet.' };
+      // DR7 Flex: 100% refund as DR7 Wallet credit, anytime before pickup
+      return { canCancel: true, hasFlex: true, refundPercent: 100, penaltyPercent: 0, message: 'Con DR7 Flex: rimborso del 100% come credito DR7 Wallet.' };
     }
     if (daysUntilPickup >= 5) {
       // More than 5 days before pickup: cancellable with 5% penalty

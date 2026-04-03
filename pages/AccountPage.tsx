@@ -13,6 +13,7 @@ const AccountPage = () => {
         { path: '/account/profile', label: t('Profile') },
         { path: '/account/security', label: t('Security') },
         { path: '/account/documents', label: t('Documents') },
+        { path: '/account/club', label: 'DR7 Club' },
         { path: '/account/membership', label: t('My_Membership') },
         { path: '/account/bookings', label: t('My_Bookings') },
         { path: '/account/notifications', label: t('Notifications') },

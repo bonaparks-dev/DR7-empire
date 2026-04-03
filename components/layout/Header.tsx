@@ -167,6 +167,9 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                   Esperienze & Accesso Esclusivo
                 </h3>
                 <div className="space-y-1">
+                  <NavLink to="/account/club" onClick={onClose} className={navLinkClasses}>
+                    <span>DR7 Club</span>
+                  </NavLink>
                   <NavLink to="/membership" onClick={onClose} className={navLinkClasses}>
                     <span>Exclusive Members Club</span>
                   </NavLink>
