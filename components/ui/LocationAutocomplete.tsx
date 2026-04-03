@@ -92,9 +92,9 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     if (text.length < 3) { setNominatimResults([]); return; }
     setLoading(true);
     try {
-      // Search Sardinia first, then all Italy
+      // Search Italy — street-level results included
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(text + ' Sardegna')}&format=json&addressdetails=1&limit=4&countrycodes=it`,
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(text)}&format=json&addressdetails=1&limit=5&countrycodes=it`,
         { headers: { 'Accept-Language': 'it' } }
       );
       if (res.ok) {
