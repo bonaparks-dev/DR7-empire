@@ -4959,11 +4959,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   <hr className="border-gray-500 my-2" />
                   <div className="flex justify-between font-bold text-lg text-white"><span>TOTALE</span> <span>{formatPrice(grandTotal)}</span></div>
 
-                  {/* DR7 Club 3% cashback info */}
+                  {/* DR7 Club reward preview */}
                   {grandTotal > 0 && (
                     <div className="flex justify-between text-green-400 text-sm mt-1">
-                      <span>DR7 Club: riceverai credito wallet (3%)</span>
-                      <span>+€{(Math.floor(grandTotal * 3) / 100).toFixed(2)}</span>
+                      <span>Guadagna fino al 4% in credito wallet con DR7 Club</span>
+                      <span>fino a +€{(Math.floor(grandTotal * 4) / 100).toFixed(2)}</span>
                     </div>
                   )}
 

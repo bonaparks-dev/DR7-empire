@@ -61,6 +61,7 @@ import { HelmetProvider } from 'react-helmet-async';
 
 import CancellationPolicyPage from './pages/CancellationPolicyPage';
 import MyBookings from './pages/account/MyBookings';
+import DR7Club from './pages/account/DR7Club';
 import ConfirmationSuccessPage from './pages/ConfirmationSuccessPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
@@ -268,6 +269,7 @@ const AnimatedRoutes = () => {
           <Route path="profile" element={<ProfileSettings />} />
           <Route path="security" element={<SecuritySettings />} />
           <Route path="documents" element={<DocumentsVerification />} />
+          <Route path="club" element={<DR7Club />} />
           <Route path="membership" element={<MembershipStatus />} />
           <Route path="bookings" element={<MyBookings />} />
           <Route path="notifications" element={<NotificationSettings />} />
