@@ -3646,6 +3646,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               )}
             </div>
 
+            {/* Tariffa warning */}
+            <div className="p-3 bg-red-900/30 border border-red-500 rounded-lg">
+              <p className="text-red-300 font-semibold text-sm">La tariffa potrebbe variare.</p>
+            </div>
+
             {isFromSearch ? (
               /* Read-only summary when coming from Prenota Ora search */
               <div className="p-4 rounded-lg border border-gray-700 bg-gray-800/30 space-y-2">
@@ -3974,26 +3979,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       )}
                     </div>
                   </div>
-                  {/* Warning when return time is later than default (pickup - 1h30) */}
-                  {(() => {
-                    if (!formData.pickupTime || !formData.returnTime) return null;
-                    const [ph, pm] = formData.pickupTime.split(':').map(Number);
-                    const idealMin = (ph * 60 + pm) - 90; // pickup minus 1h30
-                    const [rh, rm] = formData.returnTime.split(':').map(Number);
-                    const returnMin = rh * 60 + rm;
-                    // Show warning if return time is later than ideal (accounting for wrap-around)
-                    const idealNorm = idealMin < 0 ? idealMin + 1440 : idealMin;
-                    if (returnMin > idealNorm) {
-                      return (
-                        <div className="mt-3 p-3 bg-red-900/30 border-2 border-red-500 rounded-lg">
-                          <p className="text-red-300 font-semibold text-sm">
-                            La tariffa potrebbe variare.
-                          </p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
                   {/* Vehicle Availability Check */}
                   {isCheckingAvailability && (
                     <div className="mt-4 p-3 bg-blue-900/20 border border-blue-600 rounded-lg">
