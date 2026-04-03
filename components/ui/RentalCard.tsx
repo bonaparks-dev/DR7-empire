@@ -94,74 +94,74 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
       </div>
       <div className="px-6 pt-6 pb-4 flex-grow flex flex-col">
         <div className="mt-auto space-y-2">
-          {!hidePrice && <div>
-            {totalPrice && totalDays ? (
-              // Total price for selected dates
+          {!hidePrice && (
+            <>
               <div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-bold text-white">{formatPrice(totalPrice)}</span>
-                  <span className="text-sm text-gray-400">totale</span>
-                </div>
-                <div className="text-xs text-gray-500 mt-0.5">
-                  {totalDays} {totalDays === 1 ? 'giorno' : 'giorni'} — {formatPrice(Math.round(totalPrice / totalDays))}/giorno
-                </div>
+                {totalPrice && totalDays ? (
+                  <div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-2xl font-bold text-white">{formatPrice(totalPrice)}</span>
+                      <span className="text-sm text-gray-400">totale</span>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      {totalDays} {totalDays === 1 ? 'giorno' : 'giorni'} — {formatPrice(Math.round(totalPrice / totalDays))}/giorno
+                    </div>
+                  </div>
+                ) : marketingPrice ? (
+                  <div className="flex items-baseline flex-wrap gap-x-1">
+                    <span className="text-sm text-gray-400">Da </span>
+                    <span className="text-2xl font-bold text-white">{formatPrice(marketingPrice)}</span>
+                    <span className="text-sm text-gray-400">/{t('per_day')}</span>
+                    {marketingTooltip && (
+                      <span className="relative group/tip inline-flex items-center ml-1 self-center">
+                        <svg className="w-3.5 h-3.5 text-gray-500 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1 bg-gray-800 border border-gray-700 text-gray-300 text-[10px] leading-tight rounded whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                          {marketingTooltip}
+                        </span>
+                      </span>
+                    )}
+                  </div>
+                ) : hasDualPricing ? (
+                  <div className="space-y-0.5">
+                    <div className={`flex items-baseline gap-2 ${isResident ? 'text-yellow-400' : 'text-white'}`}>
+                      <span className="text-2xl font-bold">
+                        {formatPrice(item.priceResidentDaily!)}/giorno
+                      </span>
+                      <span className="text-xs uppercase tracking-wide">Residenti</span>
+                    </div>
+                    <div className={`flex items-baseline gap-2 text-gray-400`}>
+                      <span className="text-base">
+                        {formatPrice(item.priceNonresidentDaily!)}/giorno
+                      </span>
+                      <span className="text-xs uppercase tracking-wide">Non Residenti</span>
+                    </div>
+                    {!user && (
+                      <p className="text-xs text-gray-400 mt-1.5 leading-tight">
+                        Accedi per applicare automaticamente la tariffa corretta.
+                      </p>
+                    )}
+                  </div>
+                ) : item.pricePerDay && !isYacht ? (
+                  <>
+                    <span className="text-xl font-bold text-white">{formatPrice(item.pricePerDay[currency])}</span>
+                    <span className="text-sm text-gray-400 ml-1">/{t('per_day')}</span>
+                  </>
+                ) : null}
               </div>
-            ) : marketingPrice ? (
-              // Marketing "Da X/giorno" display
-              <div className="flex items-baseline flex-wrap gap-x-1">
-                <span className="text-sm text-gray-400">Da </span>
-                <span className="text-2xl font-bold text-white">{formatPrice(marketingPrice)}</span>
-                <span className="text-sm text-gray-400">/{t('per_day')}</span>
-                {marketingTooltip && (
-                  <span className="relative group/tip inline-flex items-center ml-1 self-center">
-                    <svg className="w-3.5 h-3.5 text-gray-500 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1 bg-gray-800 border border-gray-700 text-gray-300 text-[10px] leading-tight rounded whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
-                      {marketingTooltip}
-                    </span>
-                  </span>
-                )}
-              </div>
-            ) : hasDualPricing ? (
-              <div className="space-y-0.5">
-                <div className={`flex items-baseline gap-2 ${isResident ? 'text-yellow-400' : 'text-white'}`}>
-                  <span className="text-2xl font-bold">
-                    {formatPrice(item.priceResidentDaily!)}/giorno
-                  </span>
-                  <span className="text-xs uppercase tracking-wide">Residenti</span>
+              {isCar && (
+                <div className="flex items-center text-xs text-green-400">
+                  <svg className="h-4 w-4 mr-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                  <span>Assicurazione inclusa</span>
                 </div>
-                <div className={`flex items-baseline gap-2 text-gray-400`}>
-                  <span className="text-base">
-                    {formatPrice(item.priceNonresidentDaily!)}/giorno
-                  </span>
-                  <span className="text-xs uppercase tracking-wide">Non Residenti</span>
-                </div>
-                {!user && (
-                  <p className="text-xs text-gray-400 mt-1.5 leading-tight">
-                    Accedi per applicare automaticamente la tariffa corretta.
-                  </p>
-                )}
-              </div>
-            ) : item.pricePerDay && !isYacht ? (
-              <>
-                <span className="text-xl font-bold text-white">{formatPrice(item.pricePerDay[currency])}</span>
-                <span className="text-sm text-gray-400 ml-1">/{t('per_day')}</span>
-              </>
-            ) : null}
-          </div>
-          {/* Insurance Indicator */}
-          {isCar && (
-            <div className="flex items-center text-xs text-green-400">
-              <svg className="h-4 w-4 mr-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-              <span>Assicurazione inclusa</span>
-            </div>
+              )}
+            </>
           )}
-          </>}
         </div>
-        {!hideBookButton && <div className={`mt-3 ${categoryId === 'cars' ? 'text-right' : ''}`}>
+        {!hideBookButton && (<div className={`mt-3 ${categoryId === 'cars' ? 'text-right' : ''}`}>
           {isVilla ? (
             <Link
               to={`/villas/${item.id}`}
@@ -184,7 +184,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
               {t('Book_Now')}
             </button>
           )}
-        </div>}
+        </div>)}
       </div>
     </motion.div >
   );
