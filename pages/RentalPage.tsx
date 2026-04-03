@@ -753,6 +753,8 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
             </motion.div>
           )}
 
+          {/* Yachts: only show the quote form, no vehicle cards */}
+          {categoryId === 'yachts' ? null : (<>
           {/* Chrome-specific debug hint (dev-only) */}
           {showChromeDebugHint && (
             <div className="mb-4 bg-blue-900/20 border border-blue-500/50 rounded-lg p-4">
@@ -842,6 +844,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
               setSelectedCategories={setSelectedCategories}
             />
           )}
+          </>)}
           </div>
 
       </div>
