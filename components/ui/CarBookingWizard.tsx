@@ -373,7 +373,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   useEffect(() => {
     const vType = getVehicleType(item, categoryContext);
     if (vType === 'SUPERCAR') {
-      // Supercars default to 50km/day package at €199/day
+      // Supercars default to km limitati (inclusi nella tariffa base)
       setFormData(prev => ({
         ...prev,
         kmPackageType: '50km'
@@ -1181,15 +1181,21 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const billingDaysCalc = billingDays < 1 ? 1 : billingDays;
 
     // --- RENTAL COST ---
-    // Check if supercar with 50km/day package (flat €199/day, no discounts)
-    const SUPERCAR_50KM_DAILY_RATE = 199;
+    // Revenue config: km limitati = inclusi nella tariffa base (delta 0)
+    // km illimitati = unica opzione con eventuale sovrapprezzo
+    const revenueKmLimit = (item as any).revenueConfig?.dailyKmLimit as number | undefined;
+    const revenueUnlimitedSurcharge = (item as any).revenueConfig?.unlimitedKmSurcharge as number | undefined;
     const isSupercar50km = formData.kmPackageType === '50km' && getVehicleType(item, categoryContext) === 'SUPERCAR';
 
     let calculatedRentalCost = billingDays * pricePerDay;
 
     if (isSupercar50km) {
-      // 50km/day supercar package: flat €199/day, no multi-day discounts
-      calculatedRentalCost = billingDaysCalc * SUPERCAR_50KM_DAILY_RATE;
+      // Km limitati: INCLUSI nella tariffa base — nessun override, si usa il prezzo standard
+      // Il prezzo base del veicolo già include i km limitati
+      // Applica comunque multi-day discounts normali
+      const vType = getVehicleType(item, categoryContext);
+      const isResident = formData.usageZone === 'CAGLIARI_SUD';
+      calculatedRentalCost = calculateMultiDayPrice(vType, billingDaysCalc, pricePerDay, isResident);
     } else if (isMassimo && getVehicleType(item, categoryContext) === 'SUPERCAR') {
       // Massimo Runchina: flat €339/day for supercars, NO tiered discounts
       // Additional discounts ONLY via codice sconto
@@ -1250,12 +1256,23 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
 
     // KM package handling
+    // Regola business: km limitati = inclusi nella tariffa base (costo 0)
+    // km illimitati = unica opzione con eventuale sovrapprezzo
     let calculatedKmPackageCost = 0;
     let calculatedIncludedKm = 9999; // Default: unlimited for all vehicles
     if (isSupercar50km) {
-      // 50km/day package: km cost is already baked into the flat daily rate
-      calculatedIncludedKm = 50 * billingDaysCalc;
-      calculatedKmPackageCost = 0; // Included in rental cost
+      // Km limitati: inclusi nella tariffa base, delta prezzo = 0
+      const dailyKm = revenueKmLimit ?? 50; // Fallback 50 if Rentora hasn't set the value
+      calculatedIncludedKm = dailyKm * billingDaysCalc;
+      calculatedKmPackageCost = 0; // Sempre 0 — inclusi nella base
+    } else if (formData.kmPackageType === 'unlimited' && getVehicleType(item, categoryContext) === 'SUPERCAR' && !isMassimo) {
+      // Km illimitati: applica sovrapprezzo da revenue management o fallback a calcolo esistente
+      calculatedIncludedKm = 9999;
+      if (revenueUnlimitedSurcharge != null && revenueUnlimitedSurcharge > 0) {
+        calculatedKmPackageCost = revenueUnlimitedSurcharge * billingDaysCalc;
+      } else {
+        calculatedKmPackageCost = calculateUnlimitedKmPrice(item.name, billingDaysCalc, true);
+      }
     }
 
     // Get recommendation
@@ -1321,7 +1338,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       specialDiscountAmount,
       carWashFee,
       noDepositSurcharge: calculatedNoDepositSurcharge,
-      effectivePricePerDay: isSupercar50km ? SUPERCAR_50KM_DAILY_RATE : pricePerDay
+      effectivePricePerDay: pricePerDay // Km limitati = tariffa base, nessun override
     };
   }, [
     formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime,
@@ -1393,9 +1410,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         setFormData(prev => ({ ...prev, usageZone: 'FUORI_ZONA' }));
       }
     } else if (formData.kmPackageType === '50km') {
-      // SUPERCAR with 50km/day: no zone restriction, auto-set FUORI_ZONA
+      // SUPERCAR with km limitati: no zone restriction, auto-set FUORI_ZONA
       if (formData.usageZone !== 'FUORI_ZONA') {
-        console.log('Auto-setting usageZone to FUORI_ZONA for supercar 50km/day package');
+        console.log('Auto-setting usageZone to FUORI_ZONA for supercar km limitati');
         setFormData(prev => ({ ...prev, usageZone: 'FUORI_ZONA' }));
       }
     } else {
@@ -2046,11 +2063,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           extras: formData.extras,
           kmPackage: {
             type: formData.kmPackageType === '50km' ? '50km' : (includedKm >= 9999 ? 'unlimited' : formData.kmPackageType),
-            distance: formData.kmPackageType === '50km' ? `50km/day (${includedKm} total)` : (includedKm >= 9999 ? 'unlimited' : (formData.kmPackageType === 'unlimited' ? 'unlimited' : formData.kmPackageDistance)),
+            distance: formData.kmPackageType === '50km' ? `${(item as any).revenueConfig?.dailyKmLimit ?? 50}km/day (${includedKm} total)` : (includedKm >= 9999 ? 'unlimited' : (formData.kmPackageType === 'unlimited' ? 'unlimited' : formData.kmPackageDistance)),
             cost: kmPackageCost,
             includedKm: includedKm,
             isPremium: isPremiumVehicle(item.name),
-            dailyRate: formData.kmPackageType === '50km' ? 199 : undefined
+            dailyRate: formData.kmPackageType === '50km' ? effectivePricePerDay : undefined
           },
           depositOption: formData.depositOption,
           noDepositSurcharge: noDepositSurcharge,
@@ -2495,11 +2512,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             extras: formData.extras,
             kmPackage: {
               type: formData.kmPackageType === '50km' ? '50km' : (includedKm >= 9999 ? 'unlimited' : formData.kmPackageType),
-              distance: formData.kmPackageType === '50km' ? `50km/day (${includedKm} total)` : (includedKm >= 9999 ? 'unlimited' : (formData.kmPackageType === 'unlimited' ? 'unlimited' : formData.kmPackageDistance)),
+              distance: formData.kmPackageType === '50km' ? `${(item as any).revenueConfig?.dailyKmLimit ?? 50}km/day (${includedKm} total)` : (includedKm >= 9999 ? 'unlimited' : (formData.kmPackageType === 'unlimited' ? 'unlimited' : formData.kmPackageDistance)),
               cost: kmPackageCost,
               includedKm: includedKm,
               isPremium: isPremiumVehicle(item.name),
-              dailyRate: formData.kmPackageType === '50km' ? 199 : undefined
+              dailyRate: formData.kmPackageType === '50km' ? effectivePricePerDay : undefined
             },
             vehicle_id: formData.selectedVehicleId,
             depositOption: formData.depositOption,
@@ -2798,11 +2815,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             extras: formData.extras,
             kmPackage: {
               type: formData.kmPackageType === '50km' ? '50km' : recommendedKm.type,
-              distance: formData.kmPackageType === '50km' ? `50km/day (${includedKm} total)` : recommendedKm.value,
+              distance: formData.kmPackageType === '50km' ? `${(item as any).revenueConfig?.dailyKmLimit ?? 50}km/day (${includedKm} total)` : recommendedKm.value,
               cost: kmPackageCost,
               includedKm: includedKm,
               isPremium: isPremiumVehicle(item.name),
-              dailyRate: formData.kmPackageType === '50km' ? 199 : undefined
+              dailyRate: formData.kmPackageType === '50km' ? effectivePricePerDay : undefined
             },
             vehicle_id: formData.selectedVehicleId,
             depositOption: formData.depositOption,
@@ -3763,38 +3780,53 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-4">{isUrbanOrCorporate ? 'C' : 'B'}. CHILOMETRI</h3>
               {displayVehicleType === 'SUPERCAR' && !isMassimo ? (
-                // Supercar km package selection: 50km/day or unlimited
+                // Supercar km package selection: km limitati (inclusi) or km illimitati (con sovrapprezzo)
                 <div className="space-y-3">
-                  {/* Option 1: 50km/day at €199/day */}
-                  <div
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType === '50km'
-                      ? 'border-yellow-400 bg-yellow-400/10'
-                      : 'border-gray-600 hover:border-gray-500'}`}
-                    onClick={() => setFormData(prev => ({ ...prev, kmPackageType: '50km' as any }))}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <span className="font-bold text-white">50 km al giorno</span>
-                        <p className="text-sm text-gray-400">Ideale per uso cittadino</p>
+                  {/* Option 1: Km limitati — INCLUSI nella tariffa base */}
+                  {(() => {
+                    const dailyKm = (item as any).revenueConfig?.dailyKmLimit as number | undefined;
+                    const kmLabel = (item as any).revenueConfig?.kmLimitLabel as string | undefined;
+                    const displayLabel = kmLabel || (dailyKm ? `${dailyKm} km al giorno` : 'Km limitati');
+                    return (
+                      <div
+                        className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType === '50km'
+                          ? 'border-yellow-400 bg-yellow-400/10'
+                          : 'border-gray-600 hover:border-gray-500'}`}
+                        onClick={() => setFormData(prev => ({ ...prev, kmPackageType: '50km' as any }))}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <span className="font-bold text-white">{displayLabel}</span>
+                            <p className="text-sm text-gray-400">Inclusi nella tariffa base</p>
+                          </div>
+                          <span className="font-bold text-green-400">Incluso</span>
+                        </div>
                       </div>
-                      <span className="font-bold text-yellow-400">{formatPrice(199)}/giorno</span>
-                    </div>
-                  </div>
-                  {/* Option 2: Unlimited km at standard pricing */}
-                  <div
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType === 'unlimited'
-                      ? 'border-yellow-400 bg-yellow-400/10'
-                      : 'border-gray-600 hover:border-gray-500'}`}
-                    onClick={() => setFormData(prev => ({ ...prev, kmPackageType: 'unlimited' as any }))}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <span className="font-bold text-white">Km illimitati</span>
-                        <p className="text-sm text-gray-400">Senza limiti di percorrenza</p>
+                    );
+                  })()}
+                  {/* Option 2: Km illimitati — unica opzione con eventuale sovrapprezzo */}
+                  {(() => {
+                    const surcharge = (item as any).revenueConfig?.unlimitedKmSurcharge as number | undefined;
+                    const surchargeLabel = surcharge != null && surcharge > 0
+                      ? `+${formatPrice(surcharge)}/giorno`
+                      : 'Prezzo variabile';
+                    return (
+                      <div
+                        className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType === 'unlimited'
+                          ? 'border-yellow-400 bg-yellow-400/10'
+                          : 'border-gray-600 hover:border-gray-500'}`}
+                        onClick={() => setFormData(prev => ({ ...prev, kmPackageType: 'unlimited' as any }))}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <span className="font-bold text-white">Km illimitati</span>
+                            <p className="text-sm text-gray-400">Senza limiti di percorrenza</p>
+                          </div>
+                          <span className="font-bold text-white">{surchargeLabel}</span>
+                        </div>
                       </div>
-                      <span className="font-bold text-white">Prezzo variabile</span>
-                    </div>
-                  </div>
+                    );
+                  })()}
                 </div>
               ) : (
                 // Non-supercar: km included based on vehicle type
@@ -4076,7 +4108,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   <p>Ritiro: {formData.pickupDate} alle {formData.pickupTime} - {getTranslated(PICKUP_LOCATIONS.find(l => l.id === formData.pickupLocation)?.label)}</p>
                   <p>Riconsegna: {formData.returnDate} alle {formData.returnTime} - {getTranslated(PICKUP_LOCATIONS.find(l => l.id === formData.returnLocation)?.label)}</p>
                   <p>Durata: {duration.days} giorni</p>
-                  <p>Pacchetto km: {formData.kmPackageType === '50km' ? `50 km/giorno (${includedKm} km totali)` : isUrbanOrCorporate ? 'Inclusi' : (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}</p>
+                  <p>Pacchetto km: {formData.kmPackageType === '50km' ? `${(item as any).revenueConfig?.dailyKmLimit ?? 50} km/giorno (${includedKm} km totali)` : isUrbanOrCorporate ? 'Inclusi' : (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}</p>
                 </div>
 
                 <div>
@@ -4125,7 +4157,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     </span>
                     <span>{formatPrice(rentalCost)}</span>
                   </div>
-                  <div className="flex justify-between"><span>Pacchetto km ({formData.kmPackageType === '50km' ? `50 km/giorno` : isUrbanOrCorporate ? 'inclusi' : (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'illimitati' : `${includedKm} km`})</span> <span>{formData.kmPackageType === '50km' ? 'Incluso' : formatPrice(kmPackageCost)}</span></div>
+                  <div className="flex justify-between"><span>Pacchetto km ({formData.kmPackageType === '50km' ? `${(item as any).revenueConfig?.dailyKmLimit ?? 50} km/giorno` : isUrbanOrCorporate ? 'inclusi' : (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'illimitati' : `${includedKm} km`})</span> <span>{formData.kmPackageType === '50km' ? 'Incluso' : formatPrice(kmPackageCost)}</span></div>
                   <div className="flex justify-between"><span className="notranslate">Assicurazione {formData.insuranceOption?.replace(/_/g, ' ') || 'KASKO'}</span> <span>{formatPrice(insuranceCost)}</span></div>
                   {/* Lavaggio is now included in the price - no additional fee */}
                   <div className="flex justify-between"><span>Spese di ritiro</span> <span>{formatPrice(pickupFee)}</span></div>
@@ -4679,7 +4711,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <div className="flex justify-between">
                         <span className="text-gray-400">Km pacchetto:</span>
                         <span className="text-white font-medium">
-                          {formData.kmPackageType === '50km' ? `50 km/giorno` : (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}
+                          {formData.kmPackageType === '50km' ? `${(item as any).revenueConfig?.dailyKmLimit ?? 50} km/giorno` : (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}
                         </span>
                       </div>
 

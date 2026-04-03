@@ -40,6 +40,12 @@ interface TransformedVehicle {
   plates?: string[]; // For grouped vehicles, stores all license plates (targa)
   unavailableFrom?: string; // ISO date string when vehicle becomes unavailable
   bookingDisabled?: boolean; // Hide booking button on card
+  // Revenue management config from Rentora (vehicles.metadata)
+  revenueConfig?: {
+    dailyKmLimit?: number;
+    unlimitedKmSurcharge?: number;
+    kmLimitLabel?: string;
+  };
 }
 
 // Helper function to get vehicle image based on name
@@ -251,7 +257,15 @@ const transformVehicle = (vehicle: Vehicle): TransformedVehicle => {
     priceNonresidentDaily: vehicle.price_nonresident_daily ?? undefined,
     specs: specsArray,
     unavailableFrom: vehicle.metadata?.unavailable_from || undefined,
-    bookingDisabled: vehicle.metadata?.booking_disabled || false
+    bookingDisabled: vehicle.metadata?.booking_disabled || false,
+    // Forward revenue management config from Rentora (stored in vehicles.metadata)
+    revenueConfig: vehicle.metadata?.daily_km_limit != null || vehicle.metadata?.unlimited_km_surcharge != null
+      ? {
+          dailyKmLimit: typeof vehicle.metadata?.daily_km_limit === 'number' ? vehicle.metadata.daily_km_limit : undefined,
+          unlimitedKmSurcharge: typeof vehicle.metadata?.unlimited_km_surcharge === 'number' ? vehicle.metadata.unlimited_km_surcharge : undefined,
+          kmLimitLabel: typeof vehicle.metadata?.km_limit_label === 'string' ? vehicle.metadata.km_limit_label : undefined,
+        }
+      : undefined,
   };
 };
 

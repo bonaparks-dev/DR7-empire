@@ -49,6 +49,13 @@ export interface RentalItem {
   // New optional fields for jets
   petsAllowed?: boolean;
   smokingAllowed?: boolean;
+
+  // Revenue management config (read from Rentora via vehicles.metadata)
+  revenueConfig?: {
+    dailyKmLimit?: number;           // e.g. 50 — km included per day in base rate
+    unlimitedKmSurcharge?: number;   // daily surcharge in EUR for unlimited km option
+    kmLimitLabel?: string;           // optional custom label from Rentora
+  };
 }
 
 export interface RentalCategory {
