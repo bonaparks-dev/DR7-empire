@@ -24,7 +24,7 @@ export interface ClubSubscription {
   id: string
   user_id: string
   plan: 'monthly' | 'annual'
-  status: 'active' | 'cancelled' | 'expired'
+  status: 'pending' | 'active' | 'cancelled' | 'expired'
   price: number
   started_at: string
   expires_at: string
