@@ -125,7 +125,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               {/* PRENOTA ORA */}
               <button
                 onClick={() => setShowBookingPopup(true)}
-                className="w-full py-3.5 bg-white text-black font-semibold text-base tracking-wide rounded-xl hover:bg-gray-100 active:scale-[0.98] transition-all duration-200"
+                className="w-full py-3 border border-white text-white font-semibold text-sm tracking-wider rounded-full hover:bg-white hover:text-black active:scale-[0.98] transition-all duration-300"
               >
                 Prenota Ora
               </button>

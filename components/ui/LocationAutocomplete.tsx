@@ -92,16 +92,21 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     if (text.length < 3) { setNominatimResults([]); return; }
     setLoading(true);
     try {
-      // Search Italy — street-level results included
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(text)}&format=json&addressdetails=1&limit=5&countrycodes=it`,
-        { headers: { 'Accept-Language': 'it' } }
+        { headers: { 'Accept-Language': 'it', 'User-Agent': 'DR7Empire/1.0' } }
       );
       if (res.ok) {
         const data: NominatimResult[] = await res.json();
         setNominatimResults(data);
+        // Re-open dropdown when results arrive (may have been closed by blur)
+        if (data.length > 0 && document.activeElement === inputRef.current) {
+          setIsOpen(true);
+        }
       }
-    } catch { /* silent */ }
+    } catch (e) {
+      console.error('[LocationAutocomplete] Nominatim error:', e);
+    }
     setLoading(false);
   }, []);
 
