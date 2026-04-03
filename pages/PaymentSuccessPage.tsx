@@ -8,7 +8,7 @@ const PaymentSuccessPage: React.FC = () => {
     const [searchParams] = useSearchParams();
     const [updating, setUpdating] = useState(true);
     const [updateError, setUpdateError] = useState<string | null>(null);
-    const [purchaseType, setPurchaseType] = useState<'booking' | 'wallet' | 'membership' | null>(null);
+    const [purchaseType, setPurchaseType] = useState<'booking' | 'wallet' | 'membership' | 'dr7_club' | null>(null);
     const [walletInfo, setWalletInfo] = useState<{ packageName: string; receivedAmount: number } | null>(null);
     const [membershipInfo, setMembershipInfo] = useState<{ tierName: string; billingCycle: string } | null>(null);
 
@@ -341,6 +341,33 @@ const PaymentSuccessPage: React.FC = () => {
                     return;
                 }
 
+                // 4. Try DR7 Club subscriptions
+                const { data: clubSubs, error: clubError } = await supabase
+                    .from('dr7_club_subscriptions')
+                    .select('*')
+                    .eq('nexi_order_id', orderId)
+                    .limit(1);
+
+                if (!clubError && clubSubs && clubSubs.length > 0) {
+                    const clubSub = clubSubs[0];
+                    console.log('Found DR7 Club subscription:', clubSub.id);
+                    setPurchaseType('dr7_club');
+
+                    // Activate if callback hasn't done it yet
+                    if (clubSub.status === 'pending') {
+                        await supabase
+                            .from('dr7_club_subscriptions')
+                            .update({
+                                status: 'active',
+                                updated_at: new Date().toISOString(),
+                            })
+                            .eq('id', clubSub.id);
+                    }
+
+                    setUpdating(false);
+                    return;
+                }
+
                 // Nothing found
                 console.error('No order found for orderId:', orderId);
                 setUpdateError('Order not found');
@@ -390,7 +417,9 @@ const PaymentSuccessPage: React.FC = () => {
                     </h1>
 
                     <p className="text-gray-600 mb-8">
-                        {purchaseType === 'membership'
+                        {purchaseType === 'dr7_club'
+                            ? 'La tua iscrizione al DR7 Club è stata attivata con successo! Benvenuto nel club.'
+                            : purchaseType === 'membership'
                             ? `La tua membership ${membershipInfo?.tierName || ''} (${membershipInfo?.billingCycle === 'monthly' ? 'Mensile' : 'Annuale'}) è stata attivata con successo!`
                             : purchaseType === 'wallet'
                             ? `La tua ricarica ${walletInfo?.packageName || ''} è stata completata! €${walletInfo?.receivedAmount?.toFixed(2) || ''} sono stati aggiunti al tuo wallet.`

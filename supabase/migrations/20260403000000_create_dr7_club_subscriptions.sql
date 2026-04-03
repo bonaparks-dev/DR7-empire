@@ -6,11 +6,13 @@ CREATE TABLE IF NOT EXISTS dr7_club_subscriptions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   plan text NOT NULL CHECK (plan IN ('monthly', 'annual')),
-  status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'cancelled', 'expired')),
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'cancelled', 'expired')),
   price numeric(10,2) NOT NULL,
   started_at timestamptz NOT NULL DEFAULT now(),
   expires_at timestamptz NOT NULL,
-  payment_reference text, -- Nexi order ID or other payment reference
+  payment_reference text,
+  nexi_order_id text,
+  nexi_contract_id text, -- Nexi recurring token for MIT renewals
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );

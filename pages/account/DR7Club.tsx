@@ -74,7 +74,7 @@ const DR7Club = () => {
         .insert({
           user_id: user.id,
           plan,
-          status: 'active',
+          status: 'pending',
           price,
           expires_at: expiresAt.toISOString(),
         })
@@ -86,7 +86,7 @@ const DR7Club = () => {
       // 2. Generate Nexi order ID
       const nexiOrderId = `DR7CLUB${Date.now()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`
 
-      // 3. Create Nexi payment
+      // 3. Create Nexi payment with recurring tokenization
       const nexiResponse = await fetch('/.netlify/functions/create-nexi-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -97,16 +97,18 @@ const DR7Club = () => {
           description: `DR7 Club - Piano ${planInfo.label}`,
           customerEmail: user.email,
           customerName: user.fullName,
+          recurringType: 'MIT_SCHEDULED',
+          billingCycle: plan,
         }),
       })
 
       const nexiData = await nexiResponse.json()
       if (!nexiResponse.ok) throw new Error(nexiData.error || 'Errore creazione pagamento')
 
-      // 4. Save order reference
+      // 4. Save order reference + nexi_order_id for callback matching
       await supabase
         .from('dr7_club_subscriptions')
-        .update({ payment_reference: nexiOrderId })
+        .update({ payment_reference: nexiOrderId, nexi_order_id: nexiOrderId })
         .eq('id', subData.id)
 
       sessionStorage.setItem('dr7_pending_order', nexiOrderId)

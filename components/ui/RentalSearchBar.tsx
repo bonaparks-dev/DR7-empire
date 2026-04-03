@@ -29,8 +29,8 @@ function getPickupTimes(dateStr: string): string[] {
       times.push(`${String(Math.floor(i / 60)).padStart(2, '0')}:${String(i % 60).padStart(2, '0')}`)
     }
   }
-  if (day >= 1 && day <= 5) { add(10 * 60 + 30, 12 * 60 + 30); add(17 * 60 + 30, 18 * 60 + 30) }
-  else if (day === 6) { add(10 * 60 + 30, 12 * 60 + 30) }
+  if (day >= 1 && day <= 5) { add(10 * 60 + 30, 12 * 60 + 30); add(16 * 60 + 30, 18 * 60 + 30) }
+  else if (day === 6) { add(10 * 60 + 30, 12 * 60 + 30); add(15 * 60 + 30, 17 * 60 + 30) }
   return times
 }
 
@@ -43,8 +43,8 @@ function getReturnTimes(dateStr: string): string[] {
       times.push(`${String(Math.floor(i / 60)).padStart(2, '0')}:${String(i % 60).padStart(2, '0')}`)
     }
   }
-  if (day >= 1 && day <= 5) { add(9 * 60, 12 * 60 + 30); add(16 * 60, 17 * 60 + 30) }
-  else if (day === 6) { add(9 * 60, 12 * 60 + 30) }
+  if (day >= 1 && day <= 5) { add(9 * 60, 11 * 60); add(15 * 60, 17 * 60) }
+  else if (day === 6) { add(9 * 60, 11 * 60); add(14 * 60, 16 * 60) }
   return times
 }
 

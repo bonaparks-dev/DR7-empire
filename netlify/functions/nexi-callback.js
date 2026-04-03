@@ -164,6 +164,22 @@ exports.handler = async (event) => {
           }
         }
 
+        // Extract contractId from verification response (needed for recurring MIT)
+        // Nexi returns it in recurrence.contractId or operations[].additionalData
+        if (verifyData.recurrence?.contractId) {
+          rawParams.contractId = verifyData.recurrence.contractId;
+          console.log('Extracted contractId from recurrence:', rawParams.contractId);
+        } else if (verifyData.operations) {
+          for (const op of verifyData.operations) {
+            const cid = op.additionalData?.contractId || op.recurrence?.contractId;
+            if (cid) {
+              rawParams.contractId = cid;
+              console.log('Extracted contractId from operations:', rawParams.contractId);
+              break;
+            }
+          }
+        }
+
         console.log('HPP API v1 notification verified via order status API');
       } catch (verifyErr) {
         console.error('Error verifying order with Nexi API:', verifyErr.message);
@@ -843,6 +859,106 @@ exports.handler = async (event) => {
           .eq('id', membership.id);
 
         console.log(`Membership ${membership.id} payment failed: ${errorMessage}`);
+      }
+
+      return { statusCode: 200, body: 'OK' };
+    }
+
+    // 5. Try dr7_club_subscriptions
+    const { data: clubSubs, error: clubError } = await supabase
+      .from('dr7_club_subscriptions')
+      .select('*')
+      .eq('nexi_order_id', orderId)
+      .limit(1);
+
+    if (clubError) {
+      console.error('Error fetching DR7 Club subscription:', clubError);
+    }
+
+    if (clubSubs && clubSubs.length > 0) {
+      const clubSub = clubSubs[0];
+      console.log('Found DR7 Club subscription:', clubSub.id);
+
+      // Idempotency: skip if already active
+      if (clubSub.status === 'active') {
+        console.log('DR7 Club subscription already active, skipping duplicate callback');
+        return { statusCode: 200, body: 'OK' };
+      }
+
+      if (isSuccess) {
+        // Extract contractId for recurring MIT charges
+        const contractId = rawParams.contractId || rawParams.contract_id || orderId;
+
+        const { error: upErr } = await supabase
+          .from('dr7_club_subscriptions')
+          .update({
+            status: 'active',
+            nexi_contract_id: contractId,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', clubSub.id);
+
+        if (upErr) {
+          console.error('Error updating DR7 Club subscription:', upErr);
+          return { statusCode: 500, body: 'Error updating club subscription' };
+        }
+
+        // Credit signup bonus
+        if (clubSub.user_id) {
+          try {
+            const { data: balanceRow } = await supabase
+              .from('user_credit_balance')
+              .select('balance')
+              .eq('user_id', clubSub.user_id)
+              .single();
+
+            const currentBalance = balanceRow?.balance ? parseFloat(balanceRow.balance) : 0;
+            const signupBonus = 10; // €10 signup bonus (matches SIGNUP_BONUS constant)
+            const newBalance = currentBalance + signupBonus;
+
+            await supabase
+              .from('user_credit_balance')
+              .upsert({ user_id: clubSub.user_id, balance: newBalance, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+
+            await supabase
+              .from('credit_transactions')
+              .insert({
+                user_id: clubSub.user_id,
+                amount: signupBonus,
+                type: 'credit',
+                description: 'Bonus iscrizione DR7 Club',
+                reference_id: clubSub.id,
+                reference_type: 'dr7_club_signup_bonus',
+              });
+
+            console.log(`[nexi-callback] DR7 Club signup bonus €${signupBonus} credited to user ${clubSub.user_id}`);
+          } catch (bonusErr) {
+            console.error('[nexi-callback] DR7 Club signup bonus failed (non-blocking):', bonusErr);
+          }
+        }
+
+        // WhatsApp admin notification
+        try {
+          await fetch(`${process.env.URL || 'https://dr7empire.com'}/.netlify/functions/send-whatsapp-notification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              customMessage: `Nuova Iscrizione DR7 Club!\n\nPiano: ${clubSub.plan}\nPrezzo: €${clubSub.price}\nUser ID: ${clubSub.user_id}`,
+            }),
+          });
+        } catch (whatsErr) {
+          console.error('WhatsApp notification failed:', whatsErr);
+        }
+
+        console.log(`DR7 Club subscription ${clubSub.id} activated with contractId: ${contractId}`);
+      } else {
+        // Payment failed — delete pending subscription
+        await supabase
+          .from('dr7_club_subscriptions')
+          .delete()
+          .eq('id', clubSub.id);
+
+        console.log(`DR7 Club subscription ${clubSub.id} payment failed, record deleted`);
       }
 
       return { statusCode: 200, body: 'OK' };
