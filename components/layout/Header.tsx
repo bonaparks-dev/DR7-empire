@@ -130,13 +130,10 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                 Prenota Ora
               </button>
 
-              {/* LA NOSTRA FLOTTA + OFFERTE ATTIVE */}
+              {/* LA NOSTRA FLOTTA */}
               <div className="flex flex-col items-center space-y-2 pb-5 border-b border-white/[0.06]">
                 <NavLink to="/supercar-luxury" onClick={onClose} className="text-[13px] font-medium text-gray-400 hover:text-white tracking-widest uppercase transition-all duration-200">
                   La Nostra Flotta
-                </NavLink>
-                <NavLink to="/membership" onClick={onClose} className="text-[13px] font-medium text-gray-400 hover:text-white tracking-widest uppercase transition-all duration-200">
-                  Offerte Attive
                 </NavLink>
               </div>
 
