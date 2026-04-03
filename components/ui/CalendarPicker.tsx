@@ -129,6 +129,9 @@ const CalendarPicker: React.FC<CalendarPickerProps> = ({
 
     if (min && dateStr < min) return true;
     if (max && dateStr > max) return true;
+    // Block Sundays — DR7 is closed
+    const date = new Date(year, month, day);
+    if (date.getDay() === 0) return true;
     return false;
   };
 

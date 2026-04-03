@@ -51,11 +51,15 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
     ? Math.max(1, Math.ceil((new Date(returnDate).getTime() - new Date(pickupDate).getTime()) / (1000 * 60 * 60 * 24)))
     : 0;
 
+  const isSunday = (d: string) => d && new Date(d + 'T12:00:00').getDay() === 0;
+
   const handleSearch = () => {
     setError('');
 
     if (!pickupDate) { setError('Seleziona la data di ritiro'); return; }
     if (!returnDate) { setError('Seleziona la data di restituzione'); return; }
+    if (isSunday(pickupDate)) { setError('Siamo chiusi la domenica. Seleziona un altro giorno per il ritiro.'); return; }
+    if (isSunday(returnDate)) { setError('Siamo chiusi la domenica. Seleziona un altro giorno per la restituzione.'); return; }
     if (returnDate < pickupDate) { setError('La data di restituzione deve essere successiva al ritiro'); return; }
     if (returnDate === pickupDate && returnTime <= pickupTime) {
       setError("L'orario di restituzione deve essere successivo al ritiro");
@@ -143,6 +147,7 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
               }}
               className={inputStyle}
             />
+            {isSunday(pickupDate) && <p className="text-[11px] text-red-400 mt-1">Chiusi la domenica</p>}
           </div>
           <div>
             <label className={labelStyle}>Restituzione</label>
@@ -153,6 +158,7 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
               onChange={(e) => setReturnDate(e.target.value)}
               className={inputStyle}
             />
+            {isSunday(returnDate) && <p className="text-[11px] text-red-400 mt-1">Chiusi la domenica</p>}
           </div>
         </div>
 
