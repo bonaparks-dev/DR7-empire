@@ -3974,14 +3974,26 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       )}
                     </div>
                   </div>
-                  {/* Extra day warning — shown in Step 1 when return time exceeds grace period */}
-                  {extraDayApplied && formData.returnTime && (
-                    <div className="mt-3 p-3 bg-red-900/30 border-2 border-red-500 rounded-lg">
-                      <p className="text-red-300 font-semibold text-sm">
-                        La tariffa potrebbe variare: l&apos;orario di riconsegna supera il margine di 1h30 — viene conteggiato 1 giorno aggiuntivo.
-                      </p>
-                    </div>
-                  )}
+                  {/* Warning when return time is later than default (pickup - 1h30) */}
+                  {(() => {
+                    if (!formData.pickupTime || !formData.returnTime) return null;
+                    const [ph, pm] = formData.pickupTime.split(':').map(Number);
+                    const idealMin = (ph * 60 + pm) - 90; // pickup minus 1h30
+                    const [rh, rm] = formData.returnTime.split(':').map(Number);
+                    const returnMin = rh * 60 + rm;
+                    // Show warning if return time is later than ideal (accounting for wrap-around)
+                    const idealNorm = idealMin < 0 ? idealMin + 1440 : idealMin;
+                    if (returnMin > idealNorm) {
+                      return (
+                        <div className="mt-3 p-3 bg-red-900/30 border-2 border-red-500 rounded-lg">
+                          <p className="text-red-300 font-semibold text-sm">
+                            La tariffa potrebbe variare.
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                   {/* Vehicle Availability Check */}
                   {isCheckingAvailability && (
                     <div className="mt-4 p-3 bg-blue-900/20 border border-blue-600 rounded-lg">
