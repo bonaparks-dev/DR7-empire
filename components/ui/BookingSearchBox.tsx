@@ -47,9 +47,18 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
 
   const today = new Date().toISOString().split('T')[0];
 
-  const days = pickupDate && returnDate
-    ? Math.max(1, Math.ceil((new Date(returnDate).getTime() - new Date(pickupDate).getTime()) / (1000 * 60 * 60 * 24)))
-    : 0;
+  const days = (() => {
+    if (!pickupDate || !returnDate) return 0;
+    const baseDays = Math.max(1, Math.ceil((new Date(returnDate).getTime() - new Date(pickupDate).getTime()) / (1000 * 60 * 60 * 24)));
+    // If return time is NOT at least 1h30 before pickup time, count an extra day
+    const [pH, pM] = pickupTime.split(':').map(Number);
+    const [rH, rM] = returnTime.split(':').map(Number);
+    const pickupMin = pH * 60 + pM;
+    const returnMin = rH * 60 + rM;
+    const diff = pickupMin - returnMin; // positive = return is earlier than pickup
+    if (diff < 90) return baseDays + 1; // less than 1h30 before pickup → extra day
+    return baseDays;
+  })();
 
   const isSunday = (d: string) => d && new Date(d + 'T12:00:00').getDay() === 0;
 
