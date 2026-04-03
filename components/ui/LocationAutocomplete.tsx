@@ -49,11 +49,10 @@ function formatNominatimAddress(result: NominatimResult): string {
 
 function nominatimToSardegnaLocation(result: NominatimResult): SardegnaLocation {
   const formatted = formatNominatimAddress(result);
-  const city = result.address?.city || result.address?.town || result.address?.village || result.address?.municipality || '';
   return {
     id: `nominatim-${result.place_id}`,
     name: formatted,
-    type: 'city',
+    type: result.address?.road ? 'town' : 'city',
     province: result.address?.state || '',
     label: formatted,
     aliases: [],
@@ -99,8 +98,8 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       if (res.ok) {
         const data: NominatimResult[] = await res.json();
         setNominatimResults(data);
-        // Re-open dropdown when results arrive (may have been closed by blur)
-        if (data.length > 0 && document.activeElement === inputRef.current) {
+        // Always re-open dropdown when results arrive
+        if (data.length > 0) {
           setIsOpen(true);
         }
       }
@@ -174,7 +173,13 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   }, [query]);
 
   const handleBlur = useCallback(() => {
-    setTimeout(() => setIsOpen(false), 200);
+    // Longer timeout: Nominatim debounce is 300ms + network time
+    setTimeout(() => {
+      // Only close if input is not focused (user clicked away)
+      if (document.activeElement !== inputRef.current) {
+        setIsOpen(false);
+      }
+    }, 500);
   }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
