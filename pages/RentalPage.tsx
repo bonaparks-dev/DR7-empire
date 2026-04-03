@@ -268,9 +268,14 @@ const VehicleResults: React.FC<{
   }, [categoryData, hasSearched, availabilityResults, selectedCategories, maxBudget, sortBy]);
 
   const availableCategories = useMemo(() => {
-    if (!hasSearched) return [];
-    return [...new Set(displayData.map(item => availabilityResults.get(item.id)?.vehicleType).filter(Boolean) as string[])];
-  }, [displayData, hasSearched, availabilityResults]);
+    if (!hasSearched || availabilityResults.size === 0) return [];
+    // Use ALL available vehicles (not filtered displayData) so category buttons don't disappear
+    const allAvailable = categoryData.filter(item => {
+      const r = availabilityResults.get(item.id);
+      return r?.available;
+    });
+    return [...new Set(allAvailable.map(item => availabilityResults.get(item.id)?.vehicleType).filter(Boolean) as string[])];
+  }, [categoryData, hasSearched, availabilityResults]);
 
   return (
     <>
