@@ -68,7 +68,6 @@ const Footer: React.FC = () => {
         <div className="flex flex-col items-center justify-center gap-4 text-sm my-8">
           <ul className="flex flex-wrap justify-center gap-x-8 gap-y-2">
             <li><Link to="/supercar-luxury" className="hover:text-white transition-colors font-semibold">Supercar & Luxury Division</Link></li>
-            <li><Link to="/urban" className="hover:text-white transition-colors font-semibold">Urban Division</Link></li>
             <li><Link to="/prime-wash" className="hover:text-white transition-colors font-semibold">Prime Wash</Link></li>
             <li><Link to="/contact" className="hover:text-white transition-colors font-semibold">Contattaci</Link></li>
           </ul>
