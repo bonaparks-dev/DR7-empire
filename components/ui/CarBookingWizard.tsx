@@ -5098,6 +5098,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               )}
             </AnimatePresence>
 
+            <AnimatePresence>
               {/* Wash Upsell Modal */}
               {showWashUpsell && (
                 <motion.div
