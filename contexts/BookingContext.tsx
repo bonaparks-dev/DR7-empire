@@ -19,6 +19,15 @@ export interface PrefilledBookingData {
   isUrban: boolean;
 }
 
+export interface SearchDates {
+  pickupDate: string;       // YYYY-MM-DD
+  pickupTime: string;       // HH:MM
+  returnDate: string;       // YYYY-MM-DD
+  returnTime: string;       // HH:MM
+  pickupLocation: string;   // location id
+  returnLocation: string;   // location id
+}
+
 interface BookingContextType {
   bookingItem: RentalItem | null;
   isBookingOpen: boolean;
@@ -34,6 +43,10 @@ interface BookingContextType {
   selectedCar: RentalItem | null;
   wizardCategory: string | null;
   prefilledData: PrefilledBookingData | null;
+
+  // URL-derived search dates to pre-fill the wizard
+  initialSearchDates: SearchDates | null;
+  setInitialSearchDates: (dates: SearchDates | null) => void;
 }
 
 export const BookingContext = createContext<BookingContextType | undefined>(undefined);
@@ -47,6 +60,9 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [selectedCar, setSelectedCar] = useState<RentalItem | null>(null);
 
   const [wizardCategory, setWizardCategory] = useState<string | null>(null);
+  const [prefilledData, setPrefilledData] = useState<PrefilledBookingData | null>(null);
+
+  const [initialSearchDates, setInitialSearchDates] = useState<SearchDates | null>(null);
 
   useEffect(() => {
     if (isBookingOpen || isCarWizardOpen) {
@@ -78,6 +94,14 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     console.log('BookingContext openCarWizard called with:', item, 'categoryContext:', categoryContext);
     setSelectedCar(item);
     setWizardCategory(categoryContext || null);
+    setPrefilledData(null);
+    setCarWizardOpen(true);
+  }, []);
+
+  const openCarWizardWithPrefill = useCallback((item: RentalItem, categoryContext: string, prefill: PrefilledBookingData) => {
+    setSelectedCar(item);
+    setWizardCategory(categoryContext);
+    setPrefilledData(prefill);
     setCarWizardOpen(true);
   }, []);
 
@@ -86,6 +110,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setTimeout(() => {
       setSelectedCar(null);
       setWizardCategory(null);
+      setPrefilledData(null);
     }, 300);
   }, []);
 
@@ -97,10 +122,14 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     closeBooking,
     isCarWizardOpen,
     openCarWizard,
+    openCarWizardWithPrefill,
     closeCarWizard,
     selectedCar,
-    wizardCategory
-  }), [bookingItem, isBookingOpen, bookingCategory, openBooking, closeBooking, isCarWizardOpen, openCarWizard, closeCarWizard, selectedCar, wizardCategory]);
+    wizardCategory,
+    prefilledData,
+    initialSearchDates,
+    setInitialSearchDates,
+  }), [bookingItem, isBookingOpen, bookingCategory, openBooking, closeBooking, isCarWizardOpen, openCarWizard, openCarWizardWithPrefill, closeCarWizard, selectedCar, wizardCategory, prefilledData, initialSearchDates]);
 
   return (
     <BookingContext.Provider value={value}>

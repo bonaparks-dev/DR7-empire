@@ -428,94 +428,38 @@ export const RENTAL_CATEGORIES: RentalCategory[] = [
   },
 ];
 
-// FIX: Export missing constants
+// DR7 Club — single membership plan
 export const MEMBERSHIP_TIERS: MembershipTier[] = [
   {
-    id: 'silver',
-    name: { en: 'Silver', it: 'Argento' },
+    id: 'dr7club',
+    name: { en: 'DR7 Club', it: 'DR7 Club' },
     price: {
-      monthly: { usd: 99, eur: 90, crypto: 0 },
-      annually: { usd: 990, eur: 900, crypto: 0 },
+      monthly: { usd: 5.39, eur: 4.90, crypto: 0 },
+      annually: { usd: 42.90, eur: 39, crypto: 0 },
     },
     features: {
       en: [
-        '10% discount on all car rentals and premium washes',
+        'Wallet reward system activated on every booking',
+        '2% cashback on full prepayment bookings (up to 4%)',
+        '1% cashback on deposit bookings (30% advance)',
+        '2% cashback on extra services',
+        '3% cashback on Prime Wash services',
         'Priority booking access',
-        'Zero deposit option with "No Deposit" service',
-        'Monthly invitations to partner events (restaurants, clubs, luxury brands)',
-        'Access to "DR7 Members Priority" WhatsApp group for flash offers',
+        'Access to "DR7 Members" WhatsApp group for flash offers',
+        'Invitations to exclusive DR7 events and partner evenings',
       ],
       it: [
-        'Sconto del 10% su tutti i noleggi auto e lavaggi premium',
+        'Sistema wallet reward attivo su ogni prenotazione',
+        '2% di cashback su prenotazioni con pagamento anticipato (fino al 4%)',
+        '1% di cashback su prenotazioni con acconto (30%)',
+        '2% di cashback su servizi extra',
+        '3% di cashback su servizi Prime Wash',
         'Accesso prioritario alle prenotazioni',
-        'Possibilità di azzerare la cauzione con il servizio "No Cauzione"',
-        'Inviti mensili a eventi partner (ristoranti, club, luxury brands)',
-        'Accesso al gruppo WhatsApp "DR7 Members Priority" per offerte lampo',
-      ],
-    },
-  },
-  {
-    id: 'gold',
-    name: { en: 'Gold', it: 'Oro' },
-    price: {
-      monthly: { usd: 253, eur: 230, crypto: 0 },
-      annually: { usd: 2530, eur: 2300, crypto: 0 },
-    },
-    features: {
-      en: [
-        '15% discount on all rentals (cars, yachts, villas, helicopters)',
-        '24/7 personal concierge service (WhatsApp VIP Line)',
-        '2 complimentary airport transfers per month (Cagliari area)',
-        'Absolute priority for last-minute bookings',
-        'Cancel bookings up to 24h before without penalties',
-        'Invitations to private DR7 events and partner evenings',
-        'Access to off-market assets (exclusive cars, yachts, villas)',
-        '€150 annual voucher for DR7 services',
-      ],
-      it: [
-        'Sconto del 15% su tutti i noleggi auto, yacht, ville ed elicotteri',
-        'Servizio di portineria personale 24/7 (WhatsApp VIP Line)',
-        'Trasferimenti aeroportuali gratuiti (2 al mese, area Cagliari)',
-        'Priorità assoluta nelle prenotazioni last-minute',
-        'Possibilità di annullare una prenotazione fino a 24h prima senza penali',
-        'Inviti a eventi privati DR7 e serate partner',
-        'Accesso a beni fuori mercato (auto, yacht, ville esclusive non pubblicate)',
-        'Voucher annuale da €150 da utilizzare in servizi DR7',
+        'Accesso al gruppo WhatsApp "DR7 Members" per offerte lampo',
+        'Inviti a eventi esclusivi DR7 e serate partner',
       ],
     },
     isPopular: true,
-  },
-  {
-    id: 'platinum',
-    name: { en: 'Platinum', it: 'Platino' },
-    price: {
-      monthly: { usd: 506, eur: 460, crypto: 0 },
-      annually: { usd: 5060, eur: 4600, crypto: 0 },
-    },
-    features: {
-      en: [
-        '20% discount on all DR7 services (cars, yachts, helicopters, villas, Luxury Wash)',
-        'Dedicated personal manager (lifestyle & travel)',
-        'Guaranteed availability with 48h notice, even in high season',
-        'VIP access to off-market assets and reserved DR7 auctions',
-        '"Zero Deposit" service always included',
-        'Complete concierge for travel, restaurants, and special requests',
-        'Priority on events, previews, and new models',
-        'Welcome Gift DR7 (box with merchandise + €300 voucher)',
-        'Access to DR7 Private Club with lounge and exclusive party invitations',
-      ],
-      it: [
-        'Sconto del 20% su tutti i servizi DR7 (auto, yacht, elicotteri, ville, Luxury Wash)',
-        'Manager personale dedicato (lifestyle & travel)',
-        'Disponibilità garantita con 48 ore di preavviso, anche in alta stagione',
-        'Accesso VIP a beni fuori mercato e aste riservate DR7',
-        'Servizio "Zero Cauzione" sempre incluso',
-        'Concierge completo per viaggi, ristoranti e richieste speciali',
-        'Priorità su eventi, anteprime e nuovi modelli',
-        'Welcome Gift DR7 (box con merchandising + voucher €300)',
-        'Accesso al DR7 Private Club, con lounge e inviti alle serate più esclusive',
-      ],
-    },
   },
 ];
 

@@ -7,19 +7,22 @@ import { isMassimoRunchina, SPECIAL_CLIENTS } from '../../utils/clientPricingRul
 import { calculateMultiDayPrice, calculateIncludedKmFromConfig } from '../../utils/multiDayPricing';
 import { invalidateVehicleCache } from '../../hooks/useVehicles';
 import { useAuth } from '../../hooks/useAuth';
+import { useBooking } from '../../hooks/useBooking';
 import { supabase } from '../../supabaseClient';
 import { PICKUP_LOCATIONS, RETURN_LOCATIONS, AUTO_INSURANCE, INSURANCE_DEDUCTIBLES, RENTAL_EXTRAS, DEPOSIT_RULES, INSURANCE_OPTIONS_BY_TIER, INSURANCE_COVERAGE_TEXT, TIER_PRICING, TIER_DEPOSIT_OPTIONS, NO_DEPOSIT_SURCHARGE_PER_DAY, EXPERIENCE_SERVICES as BOOKING_EXPERIENCE_SERVICES, DR7_FLEX, PAYMENT_MODES, DELIVERY_PRICE_PER_KM } from '../../constants';
 import type { Booking, RentalItem, DriverTier, TierClassification, PaymentMode } from '../../types';
 import { classifyDriverTier, getInsuranceForTier, getDepositOptionsForTier, getKmPricingForTier, getExperienceServicesForTier } from '../../utils/tierClassification';
 import DocumentUploader from './DocumentUploader';
 import CompilaButton from './CompilaButton';
+import AddressAutocomplete from './AddressAutocomplete';
 import CalendarPicker from './CalendarPicker';
 import {
   getUnlimitedKmOptions,
   calculateUnlimitedKmPrice,
   recommendKmPackage,
   isPremiumVehicle,
-  isDucatoVehicle
+  isDucatoVehicle,
+  isUrbanVehicle
 } from '../../data/kmPricingData';
 import { checkVehicleAvailability, checkVehiclePartialUnavailability, checkGroupedVehicleAvailability, safeDate } from '../../utils/bookingValidation';
 import { getUserCreditBalance, deductCredits, hasSufficientBalance } from '../../utils/creditWallet';
@@ -153,6 +156,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const { t, getTranslated } = useTranslation();
   const { currency } = useCurrency();
   const { user, loading: authLoading } = useAuth();
+  const { initialSearchDates } = useBooking();
 
   // Determine vehicle type
   const vehicleType = useMemo(() => getVehicleType(item, categoryContext), [item, categoryContext]);
@@ -218,6 +222,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       licenseIssueDate: '',
       licenseImage: null, // File or dataURL
       idImage: null,
+      address: '',
+      city: '',
+      isSardinianResident: false,
       confirmsInformation: false,
 
       addSecondDriver: false,
@@ -264,7 +271,20 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     };
   });
 
-
+  // Apply URL-derived search dates on first mount (from the Modifica bar on RentalPage)
+  useEffect(() => {
+    if (!initialSearchDates) return;
+    setFormData(prev => ({
+      ...prev,
+      pickupDate: initialSearchDates.pickupDate,
+      pickupTime: initialSearchDates.pickupTime,
+      returnDate: initialSearchDates.returnDate,
+      returnTime: initialSearchDates.returnTime,
+      pickupLocation: initialSearchDates.pickupLocation,
+      returnLocation: initialSearchDates.returnLocation,
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally runs once on mount only
 
 
   // Tier classification state
@@ -463,10 +483,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         kmPackageType: '50km'
       }));
     } else {
-      // Urban/utility/corporate vehicles get unlimited km
+      // Urban vehicles get free unlimited km; others get standard calculated km
+      const isUrban = isUrbanVehicle(item.name);
       setFormData(prev => ({
         ...prev,
-        kmPackageType: 'unlimited'
+        kmPackageType: isUrban ? 'unlimited' : 'none'
       }));
     }
   }, [item.name, categoryContext]);
@@ -1503,7 +1524,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     // --- KM PACKAGE ---
     let calculatedKmPackageCost = 0;
-    let calculatedIncludedKm = 9999;
+    let calculatedIncludedKm: number;
     if (isSupercar50km) {
       calculatedIncludedKm = 50 * billingDaysCalc;
       calculatedKmPackageCost = 0; // baked into 50km/day rental rate
@@ -1512,6 +1533,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       calculatedKmPackageCost = roundToTwoDecimals(tierPricingForCalc.unlimitedKmPerDay * billingDaysCalc);
     } else if (vType === 'SUPERCAR' && formData.kmPackageType === '50km') {
       // Already handled above
+    } else if (formData.kmPackageType === 'unlimited') {
+      calculatedIncludedKm = 9999;
+      // Urban vehicles get free unlimited, others pay
+      if (!isUrbanVehicle(item.name)) {
+        calculatedKmPackageCost = calculateUnlimitedKmPrice(item.name, billingDaysCalc);
+      }
     } else if (vType !== 'SUPERCAR') {
       // Urban/Furgone/VClass: use dynamic km included table from admin config
       calculatedIncludedKm = calculateIncludedKm(billingDaysCalc, ACTIVE_KM_INCLUDED);
@@ -2419,7 +2446,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             licenseNumber: formData.licenseNumber,
             licenseIssueDate: formData.licenseIssueDate,
             licenseYears: licenseYears,
-            // isSardinianResident removed
+            address: formData.address,
+            isSardinianResident: formData.isSardinianResident,
           },
           secondDriver: formData.addSecondDriver ? {
             fullName: `${formData.secondDriver.firstName} ${formData.secondDriver.lastName}`,
@@ -2907,7 +2935,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               licenseNumber: formData.licenseNumber,
               licenseIssueDate: formData.licenseIssueDate,
               licenseYears: licenseYears,
-              // isSardinianResident removed
+              address: formData.address,
+              isSardinianResident: formData.isSardinianResident,
             },
             secondDriver: formData.addSecondDriver ? {
               fullName: `${formData.secondDriver.firstName} ${formData.secondDriver.lastName}`,
@@ -3252,7 +3281,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               licenseNumber: formData.licenseNumber,
               licenseIssueDate: formData.licenseIssueDate,
               licenseYears: licenseYears,
-              // isSardinianResident removed
+              address: formData.address,
+              isSardinianResident: formData.isSardinianResident,
             },
             secondDriver: formData.addSecondDriver ? {
               fullName: `${formData.secondDriver.firstName} ${formData.secondDriver.lastName}`,
@@ -3933,7 +3963,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           <option value="">Seleziona prima una data</option>
                         )}
                       </select>
-                      <p className="text-xs text-gray-400 mt-1">Ritiro - 1h30 (auto), modificabile</p>
+                      <p className="text-xs text-gray-400 mt-1">Ritiro - 1h30 (auto), adattato alla disponibilità</p>
+                      {formData.returnTime !== '09:00' && (
+                        <p className="text-yellow-400 text-xs mt-2 flex items-center gap-1">
+                          <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                          La tariffa può subire variazioni in base all'orario selezionato
+                        </p>
+                      )}
                     </div>
                   </div>
                   {/* Extra day warning — shown in Step 1 when return time exceeds grace period */}
@@ -3969,6 +4007,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               </div>
 
               {/* Info message about KM */}
+              <div className="mt-6 p-3 bg-gray-800/50 border border-gray-700 rounded-lg">
+                <p className="text-gray-400 text-xs text-center">
+                  La tariffa finale può subire variazioni in base a orari, disponibilità e durata effettiva del noleggio.
+                </p>
+              </div>
             </div>
             </>
             )}
@@ -3981,10 +4024,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
           return (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><label className="text-sm text-gray-400">Nome *</label><input type="text" name={`${prefix}firstName`} value={(driverData as any).firstName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}firstName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}firstName`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Cognome *</label><input type="text" name={`${prefix}lastName`} value={(driverData as any).lastName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}lastName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}lastName`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Email *</label><input type="email" name={`${prefix}email`} value={(driverData as any).email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}email`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}email`]}</p>}</div>
-              <div><label className="text-sm text-gray-400">Telefono *</label><input type="tel" name={`${prefix}phone`} value={(driverData as any).phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}phone`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}phone`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Nome *</label><input type="text" name={`${prefix}firstName`} value={(driverData as any).firstName} onChange={handleChange} autoComplete="given-name" className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}firstName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}firstName`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Cognome *</label><input type="text" name={`${prefix}lastName`} value={(driverData as any).lastName} onChange={handleChange} autoComplete="family-name" className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}lastName`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}lastName`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Email *</label><input type="email" name={`${prefix}email`} value={(driverData as any).email} onChange={handleChange} autoComplete="email" className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}email`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}email`]}</p>}</div>
+              <div><label className="text-sm text-gray-400">Telefono *</label><input type="tel" name={`${prefix}phone`} value={(driverData as any).phone} onChange={handleChange} autoComplete="tel" className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}phone`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}phone`]}</p>}</div>
               {driverType === 'main' && (
                 <>
                   <div>
@@ -4026,6 +4069,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               <div><label className="text-sm text-gray-400">Data di nascita *</label><input type="date" name={`${prefix}birthDate`} value={(driverData as any).birthDate} onChange={handleChange} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}birthDate`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Numero patente *</label><input type="text" name={`${prefix}licenseNumber`} value={(driverData as any).licenseNumber} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}licenseNumber`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseNumber`]}</p>}</div>
               <div><label className="text-sm text-gray-400">Data rilascio patente *</label><input type="date" name={`${prefix}licenseIssueDate`} value={(driverData as any).licenseIssueDate} onChange={handleChange} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}licenseIssueDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseIssueDate`]}</p>}</div>
+              {driverType === 'main' && (
+                <div className="md:col-span-2">
+                  <label className="text-sm text-gray-400">Indirizzo di residenza *</label>
+                  <AddressAutocomplete
+                    value={formData.address}
+                    onChange={(val) => setFormData(prev => ({ ...prev, address: val }))}
+                    className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"
+                    placeholder="Via Roma 10, 09100 Cagliari"
+                  />
+                  {errors.address && <p className="text-xs text-red-400 mt-1">{errors.address}</p>}
+                </div>
+              )}
               {driverType === 'second' && (
                 <>
                   <div><label className="text-sm text-gray-400">Data scadenza patente *</label><input type="date" name={`${prefix}licenseExpiryDate`} value={(driverData as any).licenseExpiryDate} onChange={handleChange} min={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}licenseExpiryDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}licenseExpiryDate`]}</p>}</div>
@@ -4390,19 +4445,39 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   </div>
                 </div>
               ) : (
-                <div className="p-4 rounded-lg border-2 border-green-500 bg-green-500/10">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className="font-bold text-white">Km inclusi nel noleggio</span>
-                      <p className="text-sm text-gray-400">Basato sulla durata del noleggio</p>
+                // Non-supercar km selection
+                <div className="space-y-3">
+                  {/* Standard auto-calculated km option */}
+                  <div
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType !== 'unlimited'
+                      ? 'border-green-500 bg-green-500/10'
+                      : 'border-gray-600 hover:border-gray-500'}`}
+                    onClick={() => setFormData(prev => ({ ...prev, kmPackageType: 'none' as any }))}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="font-bold text-white">{calculateIncludedKm(duration.days || 1)} km inclusi</span>
+                        <p className="text-sm text-gray-400">Calcolati sulla durata del noleggio ({duration.days || 1} {(duration.days || 1) === 1 ? 'giorno' : 'giorni'})</p>
+                      </div>
+                      <span className="font-bold text-green-400">Incluso</span>
                     </div>
-                    {includedKm >= 9999 ? (
-                      <span className="font-bold text-green-400">Illimitati</span>
-                    ) : includedKm > 0 ? (
-                      <span className="font-bold text-white">{includedKm} km</span>
-                    ) : (
-                      <span className="font-bold text-white">Incluso</span>
-                    )}
+                  </div>
+                  {/* Unlimited km option */}
+                  <div
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType === 'unlimited'
+                      ? 'border-green-500 bg-green-500/10'
+                      : 'border-gray-600 hover:border-gray-500'}`}
+                    onClick={() => setFormData(prev => ({ ...prev, kmPackageType: 'unlimited' as any }))}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="font-bold text-white">Km illimitati</span>
+                        <p className="text-sm text-gray-400">Senza limiti di percorrenza</p>
+                      </div>
+                      <span className="font-bold text-white">
+                        {isUrbanVehicle(item.name) ? 'Gratis' : formatPrice(calculateUnlimitedKmPrice(item.name, duration.days || 1))}
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}
@@ -4926,6 +5001,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     </div>
                   )}
 
+                  {/* Additional surcharges from ours */}
+                  {youngDriverFee > 0 && <div className="flex justify-between"><span>Supplemento under 25 ({duration.days} gg × €10)</span> <span>{formatPrice(youngDriverFee)}</span></div>}
+                  {recentLicenseFee > 0 && <div className="flex justify-between"><span>Supplemento patente recente ({duration.days} gg × €20)</span> <span>{formatPrice(recentLicenseFee)}</span></div>}
+
                   <hr className="border-gray-500 my-2" />
 
                   {/* Subtotal, discounts, total */}
@@ -5107,7 +5186,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   return (
     <>
       {/* Full-screen modal overlay */}
-      <div className="fixed inset-0 z-50 overflow-y-auto bg-black/90 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-black/95">
         <div className="min-h-screen px-2 sm:px-4 py-4 sm:py-8">
           <div className="max-w-6xl mx-auto">
 
@@ -5615,7 +5694,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <div className="border-t border-gray-700 my-2"></div>
 
                       <div className="flex justify-between"><span className="text-gray-400">Noleggio {item.name}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-400">Pacchetto chilometrici</span><span className="text-white font-medium">{formData.kmPackageType === '50km' ? 'Incluso' : formatPrice(kmPackageCost)}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-400">Pacchetto chilometrici</span><span className="text-white font-medium">{formData.kmPackageType === '50km' || kmPackageCost === 0 ? 'Incluso' : formatPrice(kmPackageCost)}</span></div>
                       <div className="flex justify-between"><span className="text-gray-400 notranslate">Assicurazione {formData.insuranceOption?.replace(/_/g, ' ') || 'KASKO'}</span><span className="text-white font-medium">{formatPrice(insuranceCost)}</span></div>
                       {/* Lavaggio is now included in the price - no additional fee */}
                       {pickupFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Spese di ritiro</span><span className="text-white font-medium">{formatPrice(pickupFee)}</span></div>}
@@ -5748,13 +5827,19 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     >
                       <button
                         type="button"
-                        onClick={onClose}
+                        onClick={step > 1 ? handleBack : onClose}
                         className="absolute top-2 right-2 sm:top-4 sm:right-4 text-gray-400 hover:text-white transition-colors z-10 p-2"
-                        aria-label="Close"
+                        aria-label={step > 1 ? "Indietro" : "Chiudi"}
                       >
-                        <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                        {step > 1 ? (
+                          <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        )}
                       </button>
                       {renderStepContent()}
                     </motion.div>

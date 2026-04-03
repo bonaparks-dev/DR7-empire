@@ -3,6 +3,7 @@ import { supabase } from '../supabaseClient'
 import { countries } from '../utils/countries'
 import { AppleStyleSelect } from './ui/AppleStyleSelect'
 import CalcolaCFButton from './ui/CalcolaCFButton'
+import AddressAutocomplete from './ui/AddressAutocomplete'
 
 interface NewClientModalProps {
   isOpen: boolean
@@ -522,12 +523,11 @@ export default function NewClientModal({ isOpen, onClose, onClientCreated }: New
                 <label className="block text-sm font-medium text-white mb-1">
                   Indirizzo di Residenza *
                 </label>
-                <input
-                  type="text"
+                <AddressAutocomplete
                   value={formData.indirizzo}
-                  onChange={(e) => setFormData({ ...formData, indirizzo: e.target.value })}
+                  onChange={(val) => setFormData({ ...formData, indirizzo: val })}
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-white focus:border-white text-white"
-                  placeholder="Via Roma"
+                  placeholder="Via Roma, 10, 09100 Cagliari"
                 />
                 {errors.indirizzo && <p className="text-red-500 text-xs mt-1">{errors.indirizzo}</p>}
               </div>
@@ -711,10 +711,9 @@ export default function NewClientModal({ isOpen, onClose, onClientCreated }: New
                 <label className="block text-sm font-medium text-white mb-1">
                   Sede Legale *
                 </label>
-                <input
-                  type="text"
+                <AddressAutocomplete
                   value={formData.indirizzo_azienda}
-                  onChange={(e) => setFormData({ ...formData, indirizzo_azienda: e.target.value })}
+                  onChange={(val) => setFormData({ ...formData, indirizzo_azienda: val })}
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-white focus:border-white text-white"
                   placeholder="Via Roma, 10 - 20100 Milano (MI)"
                 />
@@ -725,10 +724,9 @@ export default function NewClientModal({ isOpen, onClose, onClientCreated }: New
                 <label className="block text-sm font-medium text-white mb-1">
                   Sede Operativa (se diversa)
                 </label>
-                <input
-                  type="text"
+                <AddressAutocomplete
                   value={formData.sede_operativa}
-                  onChange={(e) => setFormData({ ...formData, sede_operativa: e.target.value })}
+                  onChange={(val) => setFormData({ ...formData, sede_operativa: val })}
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-white focus:border-white text-white"
                   placeholder="Via Torino, 20 - 20100 Milano (MI)"
                 />
@@ -861,11 +859,11 @@ export default function NewClientModal({ isOpen, onClose, onClientCreated }: New
                 <label className="block text-sm font-medium text-white mb-1">
                   Indirizzo per DDT
                 </label>
-                <input
-                  type="text"
+                <AddressAutocomplete
                   value={formData.indirizzo_ddt}
-                  onChange={(e) => setFormData({ ...formData, indirizzo_ddt: e.target.value })}
+                  onChange={(val) => setFormData({ ...formData, indirizzo_ddt: val })}
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-white focus:border-white text-white"
+                  placeholder="Indirizzo DDT"
                 />
               </div>
 

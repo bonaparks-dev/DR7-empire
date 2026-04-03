@@ -27,6 +27,7 @@ import CareersPage from './pages/CareersPage';
 import FranchisingPage from './pages/FranchisingPage';
 import PressPage from './pages/PressPage';
 import FAQPage from './pages/FAQPage';
+import ContactPage from './pages/ContactPage';
 import AuthPage from './pages/AuthPage';
 import SignUpPage from './pages/SignUpPage';
 import ScrollToTop from './components/routing/ScrollToTop';
@@ -302,6 +303,7 @@ const AnimatedRoutes = () => {
         <Route path="/franchising" element={<FranchisingPage />} />
         <Route path="/press" element={<PressPage />} />
         <Route path="/faq" element={<FAQPage />} />
+        <Route path="/contact" element={<ContactPage />} />
         <Route path="/signin" element={<AuthPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />

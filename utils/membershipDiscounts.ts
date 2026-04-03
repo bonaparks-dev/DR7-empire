@@ -1,16 +1,19 @@
 import { User } from '../types';
 
-// Membership tier discount percentages
+// DR7 Club — single tier, reward-based (not discount-based)
+// Legacy tier IDs kept for backwards compatibility with existing members
 // DR7 Club: NO price discount — members get 3% cashback as wallet credit instead
 // Cashback is granted on payment confirmation (nexi-callback + wallet path)
 export const MEMBERSHIP_DISCOUNTS = {
+    dr7club: 0,     // DR7 Club uses wallet reward, not direct discounts
     argento: 0,  // 0% discount — 3% cashback only
     oro: 0,      // 0% discount — 3% cashback only
     platino: 0   // 0% discount — 3% cashback only
 } as const;
 
-// Service eligibility for each tier
+// All services eligible for DR7 Club members
 export const SERVICE_ELIGIBILITY = {
+    dr7club: ['car_rental', 'car_wash', 'car_wash_premium', 'mechanical', 'luxury_wash', 'yacht', 'villa', 'helicopter'],
     argento: ['car_rental', 'car_wash_premium'],
     oro: ['car_rental', 'yacht', 'villa', 'helicopter', 'car_wash', 'mechanical'],
     platino: ['car_rental', 'yacht', 'villa', 'helicopter', 'car_wash', 'mechanical', 'luxury_wash']
@@ -89,11 +92,12 @@ export function getMembershipTierName(user: User | null): string | null {
     if (!user?.membership?.tierId) return null;
 
     const tierId = user.membership.tierId.toLowerCase();
-    const tierNames = {
+    const tierNames: Record<string, string> = {
+        dr7club: 'DR7 Club',
         argento: 'Argento',
         oro: 'Oro',
         platino: 'Platino'
     };
 
-    return tierNames[tierId as keyof typeof tierNames] || null;
+    return tierNames[tierId] || null;
 }

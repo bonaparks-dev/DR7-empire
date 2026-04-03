@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import CalcolaCFButton from './ui/CalcolaCFButton'
+import AddressAutocomplete from './ui/AddressAutocomplete'
 
 interface CustomerFormData {
   tipoCliente: 'azienda' | 'persona_fisica' | 'pubblica_amministrazione' | ''
@@ -397,13 +398,12 @@ export default function DynamicCustomerForm({ onSubmit, isAdminMode = false }: D
               <label className="form-label required" htmlFor="indirizzo">
                 Indirizzo
               </label>
-              <input
-                type="text"
+              <AddressAutocomplete
                 id="indirizzo"
                 name="indirizzo"
                 className="form-input"
                 value={formData.indirizzo}
-                onChange={handleChange}
+                onChange={(val) => setFormData(prev => ({ ...prev, indirizzo: val }))}
                 placeholder="Via, Numero Civico, CAP, Città"
                 required
               />
@@ -544,13 +544,12 @@ export default function DynamicCustomerForm({ onSubmit, isAdminMode = false }: D
               <label className="form-label required" htmlFor="indirizzo">
                 Indirizzo
               </label>
-              <input
-                type="text"
+              <AddressAutocomplete
                 id="indirizzo"
                 name="indirizzo"
                 className="form-input"
                 value={formData.indirizzo}
-                onChange={handleChange}
+                onChange={(val) => setFormData(prev => ({ ...prev, indirizzo: val }))}
                 placeholder="Via, Numero Civico, CAP, Città"
                 required
               />

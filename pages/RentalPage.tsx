@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { RENTAL_CATEGORIES, AIRPORTS } from '../constants';
+import { RENTAL_CATEGORIES, AIRPORTS, PICKUP_LOCATIONS } from '../constants';
 import type { RentalItem } from '../types';
 import RentalCard from '../components/ui/RentalCard';
 import { useTranslation } from '../hooks/useTranslation';
@@ -327,12 +327,217 @@ const VehicleResults: React.FC<{
   );
 };
 
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+const ITALIAN_MONTHS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+
+/** Format a YYYY-MM-DD + HH:MM pair as "06 Apr 2026, 10:00" */
+function formatItalianDateTime(date: string, time: string): string {
+  if (!date || !time) return '';
+  const [year, month, day] = date.split('-');
+  const monthLabel = ITALIAN_MONTHS[parseInt(month, 10) - 1] ?? month;
+  return `${day} ${monthLabel} ${year}, ${time}`;
+}
+
+/** Map a URL location param to a wizard-compatible PICKUP_LOCATIONS id */
+function resolveLocationId(param: string | null): string {
+  if (!param) return PICKUP_LOCATIONS[0].id;
+  const match = PICKUP_LOCATIONS.find(l => l.id === param);
+  return match ? match.id : PICKUP_LOCATIONS[0].id;
+}
+
+const AVAILABLE_TIMES = [
+  '08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30',
+  '12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30',
+  '16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00',
+];
+
+// ─── SearchBar component ─────────────────────────────────────────────────────
+
+interface SearchBarState {
+  pickupDate: string;
+  pickupTime: string;
+  returnDate: string;
+  returnTime: string;
+  pickupLoc: string;
+  pickupLocLabel: string;
+  returnLoc: string;
+  returnLocLabel: string;
+}
+
+interface ModificaBarProps {
+  initial: SearchBarState;
+  onUpdate: (next: SearchBarState) => void;
+}
+
+const ModificaBar: React.FC<ModificaBarProps> = ({ initial, onUpdate }) => {
+  const [expanded, setExpanded] = useState(false);
+  const [draft, setDraft] = useState<SearchBarState>(initial);
+
+  // Keep draft in sync when initial changes (e.g. URL navigation)
+  useEffect(() => {
+    setDraft(initial);
+  }, [initial]);
+
+  const handleSave = () => {
+    // Basic validation: pickup must be before return
+    if (draft.pickupDate > draft.returnDate ||
+      (draft.pickupDate === draft.returnDate && draft.pickupTime >= draft.returnTime)) {
+      return; // silently ignore invalid ranges (inputs will show natural browser validation)
+    }
+    onUpdate(draft);
+    setExpanded(false);
+  };
+
+  const set = (key: keyof SearchBarState) => (value: string) =>
+    setDraft(prev => ({ ...prev, [key]: value }));
+
+  const inputClass = 'bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-white transition-colors w-full';
+  const labelClass = 'text-xs text-gray-400 mb-1 block';
+
+  return (
+    <div className="sticky top-20 z-30 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800">
+      <div className="container mx-auto px-6">
+        {/* ── Collapsed summary row ── */}
+        {!expanded && (
+          <div className="flex items-center gap-4 py-3 flex-wrap">
+            <div className="flex items-center gap-2 text-sm text-gray-300 min-w-0">
+              <span className="text-gray-500 shrink-0">Ritiro</span>
+              <span className="text-white font-medium truncate">
+                {formatItalianDateTime(initial.pickupDate, initial.pickupTime)}
+              </span>
+              {initial.pickupLocLabel && (
+                <span className="text-gray-500 truncate hidden sm:inline">— {initial.pickupLocLabel}</span>
+              )}
+            </div>
+            <span className="text-gray-600 hidden sm:block">→</span>
+            <div className="flex items-center gap-2 text-sm text-gray-300 min-w-0">
+              <span className="text-gray-500 shrink-0">Riconsegna</span>
+              <span className="text-white font-medium truncate">
+                {formatItalianDateTime(initial.returnDate, initial.returnTime)}
+              </span>
+              {initial.returnLocLabel && (
+                <span className="text-gray-500 truncate hidden sm:inline">— {initial.returnLocLabel}</span>
+              )}
+            </div>
+            <button
+              onClick={() => setExpanded(true)}
+              className="ml-auto shrink-0 text-sm font-semibold text-white border border-white rounded-full px-4 py-1.5 hover:bg-white hover:text-black transition-colors"
+            >
+              Modifica
+            </button>
+          </div>
+        )}
+
+        {/* ── Expanded edit row ── */}
+        {expanded && (
+          <div className="py-4 space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {/* Ritiro date + time */}
+              <div>
+                <label className={labelClass}>Ritiro — data</label>
+                <input
+                  type="date"
+                  value={draft.pickupDate}
+                  min={new Date().toISOString().split('T')[0]}
+                  onChange={e => set('pickupDate')(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Ritiro — ora</label>
+                <select value={draft.pickupTime} onChange={e => set('pickupTime')(e.target.value)} className={inputClass}>
+                  {AVAILABLE_TIMES.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+              {/* Riconsegna date + time */}
+              <div>
+                <label className={labelClass}>Riconsegna — data</label>
+                <input
+                  type="date"
+                  value={draft.returnDate}
+                  min={draft.pickupDate || new Date().toISOString().split('T')[0]}
+                  onChange={e => set('returnDate')(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Riconsegna — ora</label>
+                <select value={draft.returnTime} onChange={e => set('returnTime')(e.target.value)} className={inputClass}>
+                  {AVAILABLE_TIMES.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Location selects — only show if there are multiple pickup locations */}
+            {PICKUP_LOCATIONS.length > 1 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Luogo Ritiro</label>
+                  <select value={draft.pickupLoc} onChange={e => {
+                    const loc = PICKUP_LOCATIONS.find(l => l.id === e.target.value);
+                    setDraft(prev => ({
+                      ...prev,
+                      pickupLoc: e.target.value,
+                      pickupLocLabel: loc?.label?.it ?? loc?.label?.en ?? e.target.value,
+                    }));
+                  }} className={inputClass}>
+                    {PICKUP_LOCATIONS.map(l => (
+                      <option key={l.id} value={l.id}>{l.label?.it ?? l.label?.en}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Luogo Riconsegna</label>
+                  <select value={draft.returnLoc} onChange={e => {
+                    const loc = PICKUP_LOCATIONS.find(l => l.id === e.target.value);
+                    setDraft(prev => ({
+                      ...prev,
+                      returnLoc: e.target.value,
+                      returnLocLabel: loc?.label?.it ?? loc?.label?.en ?? e.target.value,
+                    }));
+                  }} className={inputClass}>
+                    {PICKUP_LOCATIONS.map(l => (
+                      <option key={l.id} value={l.id}>{l.label?.it ?? l.label?.en}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleSave}
+                className="bg-white text-black font-bold text-sm px-6 py-2.5 rounded-full hover:bg-gray-200 transition-colors"
+              >
+                Aggiorna
+              </button>
+              <button
+                onClick={() => { setDraft(initial); setExpanded(false); }}
+                className="text-gray-400 hover:text-white text-sm transition-colors"
+              >
+                Annulla
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ─── RentalPage ──────────────────────────────────────────────────────────────
+
 const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   const { t, getTranslated } = useTranslation();
   const navigate = useNavigate();
-  const { openBooking, openCarWizard } = useBooking();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { openBooking, openCarWizard, setInitialSearchDates } = useBooking();
   const { checkVerificationAndProceed } = useVerification();
-  const [searchParams] = useSearchParams();
 
   // Search & filter state
   const [searchData, setSearchData] = useState<SearchParams | null>(null);
@@ -347,6 +552,69 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
     if (!prePickup || !preReturn) return 0;
     return Math.max(1, Math.ceil((new Date(preReturn).getTime() - new Date(prePickup).getTime()) / (1000 * 60 * 60 * 24)));
   }, [prePickup, preReturn]);
+
+  // ── Read URL search params ──────────────────────────────────────────────
+  const isVehicleCategory = categoryId === 'cars' || categoryId === 'urban-cars' || categoryId === 'corporate-fleet';
+
+  const urlPickupDate = searchParams.get('pickup') ?? '';
+  const urlPickupTime = searchParams.get('pickupTime') ?? '';
+  const urlReturnDate = searchParams.get('return') ?? '';
+  const urlReturnTime = searchParams.get('returnTime') ?? '';
+  const urlPickupLoc = searchParams.get('pickupLoc') ?? '';
+  const urlPickupLocLabel = searchParams.get('pickupLocLabel') ?? '';
+  const urlReturnLoc = searchParams.get('returnLoc') ?? '';
+  const urlReturnLocLabel = searchParams.get('returnLocLabel') ?? '';
+
+  const hasSearchParams = isVehicleCategory && !!(urlPickupDate && urlReturnDate);
+
+  // State that drives both the bar display and the wizard pre-fill
+  const [barState, setBarState] = useState<SearchBarState>(() => ({
+    pickupDate: urlPickupDate,
+    pickupTime: urlPickupTime || '10:00',
+    returnDate: urlReturnDate,
+    returnTime: urlReturnTime || '10:00',
+    pickupLoc: urlPickupLoc || PICKUP_LOCATIONS[0].id,
+    pickupLocLabel: urlPickupLocLabel,
+    returnLoc: urlReturnLoc || PICKUP_LOCATIONS[0].id,
+    returnLocLabel: urlReturnLocLabel,
+  }));
+
+  // Sync context so the wizard initializes with these dates
+  useEffect(() => {
+    if (!hasSearchParams) {
+      setInitialSearchDates(null);
+      return;
+    }
+    setInitialSearchDates({
+      pickupDate: barState.pickupDate,
+      pickupTime: barState.pickupTime,
+      returnDate: barState.returnDate,
+      returnTime: barState.returnTime,
+      pickupLocation: resolveLocationId(barState.pickupLoc),
+      returnLocation: resolveLocationId(barState.returnLoc),
+    });
+  }, [barState, hasSearchParams, setInitialSearchDates]);
+
+  // Clean up context dates when leaving the page
+  useEffect(() => {
+    return () => { setInitialSearchDates(null); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleBarUpdate = (next: SearchBarState) => {
+    setBarState(next);
+    // Update URL to reflect the new search
+    const params = new URLSearchParams(searchParams);
+    params.set('pickup', next.pickupDate);
+    params.set('pickupTime', next.pickupTime);
+    params.set('return', next.returnDate);
+    params.set('returnTime', next.returnTime);
+    if (next.pickupLoc) params.set('pickupLoc', next.pickupLoc);
+    if (next.pickupLocLabel) params.set('pickupLocLabel', next.pickupLocLabel);
+    if (next.returnLoc) params.set('returnLoc', next.returnLoc);
+    if (next.returnLocLabel) params.set('returnLocLabel', next.returnLocLabel);
+    setSearchParams(params, { replace: true });
+  };
 
   // Determine if this is a vehicle category and map to database category
   const vehicleCategory = categoryId === 'cars' ? 'exotic'
@@ -573,6 +841,10 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
           canonical={seo.canonical}
           jsonLd={seo.jsonLd}
         />
+      )}
+      {/* Modifica search bar — only shown for vehicle categories with URL params */}
+      {hasSearchParams && (
+        <ModificaBar initial={barState} onUpdate={handleBarUpdate} />
       )}
       <div className="pt-32 pb-24 bg-black">
         <div className="container mx-auto px-6">
