@@ -93,7 +93,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(text)}&format=json&addressdetails=1&limit=5&countrycodes=it`,
-        { headers: { 'Accept-Language': 'it', 'User-Agent': 'DR7Empire/1.0' } }
+        { headers: { 'Accept-Language': 'it' } }
       );
       if (res.ok) {
         const data: NominatimResult[] = await res.json();
@@ -172,14 +172,16 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     setIsOpen(true);
   }, [query]);
 
-  const handleBlur = useCallback(() => {
-    // Longer timeout: Nominatim debounce is 300ms + network time
-    setTimeout(() => {
-      // Only close if input is not focused (user clicked away)
-      if (document.activeElement !== inputRef.current) {
+  // Close on click outside (more reliable than blur for mobile)
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const container = inputRef.current?.parentElement;
+      if (container && !container.contains(e.target as Node)) {
         setIsOpen(false);
       }
-    }, 500);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -215,7 +217,6 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
         value={query}
         onChange={(e) => handleSearch(e.target.value)}
         onFocus={handleFocus}
-        onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         className="w-full bg-[#2c2c2e] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-white/30 transition-colors text-sm"
