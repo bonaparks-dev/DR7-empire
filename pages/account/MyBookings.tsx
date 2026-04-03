@@ -30,6 +30,10 @@ const MyBookings = () => {
   const { t, lang } = useTranslation();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [cancelSuccess, setCancelSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -104,6 +108,74 @@ const MyBookings = () => {
         {isPaid ? 'Pagato' : paymentStatus === 'pending' ? 'In attesa' : paymentStatus}
       </span>
     );
+  };
+
+  const canCancel = (booking: Booking): boolean => {
+    if (booking.status === 'cancelled' || booking.status === 'annullata' || booking.status === 'completed' || booking.status === 'completata') return false;
+    if (!booking.pickup_date) return false;
+    return getCancelPolicy(booking).canCancel;
+  };
+
+  const getCancelPolicy = (booking: Booking): { canCancel: boolean; hasFlex: boolean; refundPercent: number; penaltyPercent: number; message: string } => {
+    const hasFlex = booking.booking_details?.dr7Flex === true || booking.booking_details?.extras?.dr7_flex === true;
+    const pickup = new Date(booking.pickup_date || '');
+    const now = new Date();
+    const daysUntilPickup = (pickup.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+
+    if (hasFlex) {
+      // DR7 Flex: 90% refund as DR7 Wallet credit, anytime before pickup
+      return { canCancel: true, hasFlex: true, refundPercent: 90, penaltyPercent: 0, message: 'Con DR7 Flex: rimborso del 90% come credito DR7 Wallet.' };
+    }
+    if (daysUntilPickup >= 5) {
+      // More than 5 days before pickup: cancellable with 5% penalty
+      return { canCancel: true, hasFlex: false, refundPercent: 95, penaltyPercent: 5, message: 'Cancellazione con penale del 5% sul totale pagato (più di 5 giorni dal ritiro).' };
+    }
+    if (daysUntilPickup > 0) {
+      // Less than 5 days: no cancellation without Flex
+      return { canCancel: false, hasFlex: false, refundPercent: 0, penaltyPercent: 0, message: 'Meno di 5 giorni dal ritiro: cancellazione non disponibile senza DR7 Flex.' };
+    }
+    return { canCancel: false, hasFlex: false, refundPercent: 0, penaltyPercent: 0, message: 'Non è più possibile cancellare questa prenotazione.' };
+  };
+
+  const handleCancel = async (booking: Booking) => {
+    setCancellingId(booking.id);
+    setCancelError(null);
+    setCancelSuccess(null);
+    try {
+      const policy = getCancelPolicy(booking);
+
+      // Update booking status to cancelled
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status: 'cancelled' })
+        .eq('id', booking.id);
+      if (error) throw error;
+
+      // If refund applies, add credits to wallet
+      if (policy.refundPercent > 0 && booking.price_total > 0) {
+        const refundAmount = Math.round(booking.price_total * policy.refundPercent / 100);
+        await supabase.from('credit_transactions').insert({
+          user_id: user!.id,
+          amount: refundAmount,
+          type: 'refund',
+          description: policy.hasFlex
+            ? `Rimborso DR7 Flex (${policy.refundPercent}%) — ${booking.service_name}`
+            : `Rimborso cancellazione — ${booking.service_name}`,
+          reference_id: booking.id,
+        });
+      }
+
+      // Update local state
+      setBookings(prev => prev.map(b => b.id === booking.id ? { ...b, status: 'cancelled' } : b));
+      setCancelSuccess(policy.refundPercent > 0
+        ? `Prenotazione cancellata. Rimborso del ${policy.refundPercent}% accreditato sul tuo DR7 Wallet.`
+        : 'Prenotazione cancellata.');
+    } catch (err: any) {
+      setCancelError(err.message || 'Errore durante la cancellazione');
+    } finally {
+      setCancellingId(null);
+      setConfirmCancelId(null);
+    }
   };
 
   return (
@@ -258,10 +330,62 @@ const MyBookings = () => {
                         <p className="text-white">{formatDate(booking.booked_at)}</p>
                       </div>
                     </div>
+
+                    {/* Cancel button */}
+                    {canCancel(booking) && (
+                      <div className="mt-4 pt-4 border-t border-gray-700">
+                        {confirmCancelId === booking.id ? (
+                          <div className="space-y-3">
+                            <div className="p-3 bg-amber-900/30 border border-amber-500/50 rounded-lg">
+                              <p className="text-amber-300 text-sm font-semibold">
+                                {getCancelPolicy(booking).message}
+                              </p>
+                              <p className="text-amber-200/70 text-xs mt-1">
+                                Sei sicuro di voler cancellare questa prenotazione?
+                              </p>
+                            </div>
+                            <div className="flex gap-3">
+                              <button
+                                onClick={() => handleCancel(booking)}
+                                disabled={cancellingId === booking.id}
+                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-colors disabled:opacity-50"
+                              >
+                                {cancellingId === booking.id ? 'Cancellazione...' : 'Conferma cancellazione'}
+                              </button>
+                              <button
+                                onClick={() => setConfirmCancelId(null)}
+                                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors"
+                              >
+                                Annulla
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => { setConfirmCancelId(booking.id); setCancelError(null); setCancelSuccess(null); }}
+                            className="px-4 py-2 bg-transparent border border-red-500/50 text-red-400 hover:bg-red-500/10 text-sm font-medium rounded-lg transition-colors"
+                          >
+                            Cancella prenotazione
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             ))}
+
+            {/* Success/Error messages */}
+            {cancelSuccess && (
+              <div className="p-4 bg-green-900/30 border border-green-500/50 rounded-lg">
+                <p className="text-green-300 text-sm font-semibold">{cancelSuccess}</p>
+              </div>
+            )}
+            {cancelError && (
+              <div className="p-4 bg-red-900/30 border border-red-500/50 rounded-lg">
+                <p className="text-red-300 text-sm font-semibold">{cancelError}</p>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-12 border-2 border-dashed border-gray-700 rounded-lg">

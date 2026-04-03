@@ -91,11 +91,12 @@ const ProfileSettings = () => {
 
     useEffect(() => {
         if (user) {
-            setFormData({
-                fullName: user.fullName || '',
-                email: user.email || '',
-                phone: user.phone || ''
-            });
+            setFormData(prev => ({
+                ...prev,
+                fullName: prev.fullName || user.fullName || '',
+                email: prev.email || user.email || '',
+                phone: prev.phone || user.phone || ''
+            }));
         }
     }, [user]);
 
