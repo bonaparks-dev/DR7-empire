@@ -14,6 +14,8 @@ interface RentalCardProps {
   categoryId?: string;
   totalPrice?: number;
   totalDays?: number;
+  hidePrice?: boolean;
+  hideBookButton?: boolean;
   jetSearchData?: {
     departure?: string;
     arrival?: string;
@@ -24,7 +26,7 @@ interface RentalCardProps {
   };
 }
 
-const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, marketingTooltip, categoryId, totalPrice, totalDays, jetSearchData }) => {
+const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, marketingTooltip, categoryId, totalPrice, totalDays, hidePrice, hideBookButton, jetSearchData }) => {
   const { t, getTranslated } = useTranslation();
   const { currency } = useCurrency();
   const { user } = useAuth();
@@ -92,7 +94,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
       </div>
       <div className="px-6 pt-6 pb-4 flex-grow flex flex-col">
         <div className="mt-auto space-y-2">
-          <div>
+          {!hidePrice && <div>
             {totalPrice && totalDays ? (
               // Total price for selected dates
               <div>
@@ -157,8 +159,9 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
               <span>Assicurazione inclusa</span>
             </div>
           )}
+          </>}
         </div>
-        <div className={`mt-3 ${categoryId === 'cars' ? 'text-right' : ''}`}>
+        {!hideBookButton && <div className={`mt-3 ${categoryId === 'cars' ? 'text-right' : ''}`}>
           {isVilla ? (
             <Link
               to={`/villas/${item.id}`}
@@ -181,7 +184,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
               {t('Book_Now')}
             </button>
           )}
-        </div>
+        </div>}
       </div>
     </motion.div >
   );

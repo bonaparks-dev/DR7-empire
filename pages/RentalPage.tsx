@@ -316,6 +316,8 @@ const VehicleResults: React.FC<{
                 categoryId={categoryId}
                 totalPrice={itemTotalPrice}
                 totalDays={itemDays}
+                hidePrice={categoryId === 'cars' || categoryId === 'corporate-fleet'}
+                hideBookButton={categoryId === 'cars' || categoryId === 'corporate-fleet'}
               />
             );
           })}
