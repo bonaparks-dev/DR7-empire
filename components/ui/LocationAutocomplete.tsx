@@ -214,10 +214,10 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
         aria-expanded={isOpen}
       />
 
-      {isOpen && displayItems.length > 0 && (
+      {isOpen && (displayItems.length > 0 || loading) && (
         <div
           ref={dropdownRef}
-          className="absolute top-full left-0 right-0 mt-1 bg-[#1c1c1e] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 max-h-64 overflow-y-auto"
+          className="absolute top-full left-0 right-0 mt-1 bg-[#1c1c1e] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[999] max-h-64 overflow-y-auto"
           role="listbox"
         >
           {/* Local results header */}
