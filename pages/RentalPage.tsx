@@ -425,12 +425,24 @@ const ModificaBar: React.FC<ModificaBarProps> = ({ initial, onUpdate }) => {
                 <span className="text-gray-500 truncate hidden sm:inline">— {initial.returnLocLabel}</span>
               )}
             </div>
-            <button
-              onClick={() => setExpanded(true)}
-              className="ml-auto shrink-0 text-sm font-semibold text-white border border-white rounded-full px-4 py-1.5 hover:bg-white hover:text-black transition-colors"
-            >
-              Modifica
-            </button>
+            <div className="ml-auto flex items-center gap-3 shrink-0">
+              <span className="px-3 py-1 bg-white/10 rounded-full text-xs text-gray-300 hidden sm:inline">
+                {(() => {
+                  const baseDays = Math.max(1, Math.ceil((new Date(initial.returnDate).getTime() - new Date(initial.pickupDate).getTime()) / (1000 * 60 * 60 * 24)));
+                  const [pH, pM] = initial.pickupTime.split(':').map(Number);
+                  const [rH, rM] = initial.returnTime.split(':').map(Number);
+                  const diff = (pH * 60 + pM) - (rH * 60 + rM);
+                  const days = diff < 90 ? baseDays + 1 : baseDays;
+                  return `${days} ${days === 1 ? 'giorno' : 'giorni'}`;
+                })()}
+              </span>
+              <button
+                onClick={() => setExpanded(true)}
+                className="text-sm font-semibold text-white border border-white rounded-full px-4 py-1.5 hover:bg-white hover:text-black transition-colors"
+              >
+                Modifica
+              </button>
+            </div>
           </div>
         )}
 
@@ -861,31 +873,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
 
           </motion.div>
 
-          {/* Search summary when coming from Prenota Ora */}
-          {prePickup && preReturn && vehicleCategory && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="mb-6 bg-gray-900/60 border border-gray-800 rounded-xl px-5 py-4"
-            >
-              <div className="flex flex-wrap items-center gap-4 text-sm">
-                <div>
-                  <span className="text-gray-500 text-xs block">Ritiro</span>
-                  <span className="text-white font-medium">{new Date(prePickup).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })} {prePickupTime}</span>
-                </div>
-                <span className="text-gray-600">→</span>
-                <div>
-                  <span className="text-gray-500 text-xs block">Restituzione</span>
-                  <span className="text-white font-medium">{new Date(preReturn).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })} {preReturnTime}</span>
-                </div>
-                <div className="ml-auto">
-                  <span className="px-3 py-1 bg-white/10 rounded-full text-xs text-gray-300">{preDays} {preDays === 1 ? 'giorno' : 'giorni'}</span>
-                </div>
-              </div>
-              <p className="text-xs text-red-400 mt-2">La tariffa puo subire variazioni</p>
-            </motion.div>
-          )}
+          {/* Search summary removed — ModificaBar already shows dates + Modifica button */}
 
           {/* Yacht Service - Quote Request Form */}
           {categoryId === 'yachts' && (
