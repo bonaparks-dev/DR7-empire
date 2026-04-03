@@ -5032,7 +5032,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 </div>
               </div>
             </section>
-          </div >
+          </div>
         );
       default:
         return null;
@@ -5718,7 +5718,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             </div>
           </div>
         </div>
-      </div >
+      </div>
 
       {/* Popup: Urban/Corporate vehicles blocked after March 25 — Apple style */}
       {showMaxDatePopup && (
