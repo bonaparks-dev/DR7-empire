@@ -92,13 +92,8 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
       className="bg-black border border-gray-800 rounded-lg overflow-hidden group transition-all duration-300 hover:border-white/50 hover:shadow-2xl hover:shadow-white/10 flex flex-col"
     >
       <div className="relative overflow-hidden">
-        <img src={item.image} alt={item.name} className={`w-full ${isFlottaMode ? 'aspect-[3/4]' : imageAspectRatio} object-cover transition-transform duration-500 group-hover:scale-105`} />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-        {isFlottaMode && (
-          <div className="absolute bottom-0 left-0 right-0 p-5">
-            <h3 className="text-xl font-bold text-white tracking-wide">{item.name}</h3>
-          </div>
-        )}
+        <img src={item.image} alt={item.name} className={`w-full ${isFlottaMode ? '' : imageAspectRatio + ' object-cover'} transition-transform duration-500 group-hover:scale-105`} />
+        {!isFlottaMode && <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>}
       </div>
       {!isFlottaMode && <div className="px-6 pt-6 pb-4 flex-grow flex flex-col">
         <div className="mt-auto space-y-2">
