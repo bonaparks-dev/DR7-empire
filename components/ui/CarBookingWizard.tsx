@@ -296,6 +296,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const ACTIVE_EXPERIENCE_SERVICES = configOverlay?.experienceServices?.length ? configOverlay.experienceServices : BOOKING_EXPERIENCE_SERVICES;
   const ACTIVE_RENTAL_DAY_RATES = configOverlay?.rentalDayRates ?? null;
   const ACTIVE_KM_INCLUDED = configOverlay?.kmIncluded ?? null;
+  const ACTIVE_SUPERCAR_50KM_RATE = configOverlay?.kmPackagePrices?.supercar50kmPerDay ?? 199;
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedInsurance, setExpandedInsurance] = useState<string | null>(null);
@@ -456,7 +457,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   useEffect(() => {
     const vType = getVehicleType(item, categoryContext);
     if (vType === 'SUPERCAR') {
-      // Supercars default to 50km/day package at €199/day
+      // Supercars default to 50km/day package (price from admin config)
       setFormData(prev => ({
         ...prev,
         kmPackageType: '50km'
@@ -1337,12 +1338,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     membershipDiscount, membershipTier, originalTotal, finalTotal,
     isMassimo, specialDiscountAmount, carWashFee, noDepositSurcharge,
     effectivePricePerDay, // Calculated price per day (resident or non-resident)
-    lavaggioFee, experienceCost, flexCost, supercarDepositSurcharge, deliveryFee
+    lavaggioFee, experienceCost, flexCost, supercarDepositSurcharge, deliveryFee,
+    extraDayApplied
   } = useMemo(() => {
     const zero = {
       duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, kmPackageCost: 0, pickupFee: 0, dropoffFee: 0, subtotal: 0, taxes: 0, total: 0, includedKm: 0, driverAge: 0, licenseYears: 0, youngDriverFee: 0, recentLicenseFee: 0, secondDriverFee: 0, recommendedKm: null, membershipDiscount: 0, membershipTier: null, originalTotal: 0, finalTotal: 0,
       isMassimo: false, specialDiscountAmount: 0, carWashFee: 0, noDepositSurcharge: 0,
-      lavaggioFee: 0, experienceCost: 0, flexCost: 0, supercarDepositSurcharge: 0, deliveryFee: 0
+      effectivePricePerDay: 0,
+      lavaggioFee: 0, experienceCost: 0, flexCost: 0, supercarDepositSurcharge: 0, deliveryFee: 0,
+      extraDayApplied: false
     };
     if (!item || (!item.pricePerDay && !item.priceResidentDaily && !item.priceNonresidentDaily)) return zero;
     // FIX 7: If user exists but residencyZone hasn't loaded yet, defer pricing
@@ -1390,6 +1394,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     let billingDays = 0;
     let days = 0;
     let hours = 0;
+    let extraDay = false;
     if (formData.pickupDate && formData.returnDate) {
       const pickup = safeDate(`${formData.pickupDate}T${formData.pickupTime}`);
       const ret = safeDate(`${formData.returnDate}T${formData.returnTime}`);
@@ -1409,8 +1414,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         // Unified Duration & Billing Logic
         // Ensures that if price is for 4 days, display says "4 days"
         billingDays = Math.max(1, diffDaysCalendar);
-        days = billingDays;
 
+        // Extra day rule: if return time exceeds pickup time minus 1h30 grace,
+        // add 1 billing day (client returned past the grace window)
+        const pickupMinutes = pickup.getHours() * 60 + pickup.getMinutes();
+        const returnMinutes = ret.getHours() * 60 + ret.getMinutes();
+        const graceThreshold = pickupMinutes - 90; // 1h30 before pickup time
+        if (diffDaysCalendar > 0 && returnMinutes > graceThreshold) {
+          billingDays += 1;
+          extraDay = true;
+        }
+
+        days = billingDays;
         hours = Math.floor(standardHours % 24);
 
         if (billingDays < 1) billingDays = 1;
@@ -1426,15 +1441,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const billingDaysCalc = billingDays < 1 ? 1 : billingDays;
 
     // --- RENTAL COST ---
-    // Check if supercar with 50km/day package (flat €199/day, no discounts)
-    const SUPERCAR_50KM_DAILY_RATE = 199;
+    // Check if supercar with 50km/day package (price from admin Revenue management)
     const isSupercar50km = formData.kmPackageType === '50km' && getVehicleType(item, categoryContext) === 'SUPERCAR';
 
     let calculatedRentalCost = billingDays * pricePerDay;
 
     if (isSupercar50km) {
-      // 50km/day supercar package: flat €199/day, no multi-day discounts
-      calculatedRentalCost = billingDaysCalc * SUPERCAR_50KM_DAILY_RATE;
+      // 50km/day supercar package: price from admin config, no multi-day discounts
+      calculatedRentalCost = billingDaysCalc * ACTIVE_SUPERCAR_50KM_RATE;
     } else if (isMassimo && getVehicleType(item, categoryContext) === 'SUPERCAR') {
       // Massimo Runchina: flat €339/day for supercars, NO tiered discounts
       // Additional discounts ONLY via codice sconto
@@ -1492,7 +1506,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     let calculatedIncludedKm = 9999;
     if (isSupercar50km) {
       calculatedIncludedKm = 50 * billingDaysCalc;
-      calculatedKmPackageCost = 0; // baked into 199/day rental
+      calculatedKmPackageCost = 0; // baked into 50km/day rental rate
     } else if (vType === 'SUPERCAR' && formData.kmPackageType === 'unlimited' && !isMassimo) {
       // Unlimited km for supercars — tier-conditional price
       calculatedKmPackageCost = roundToTwoDecimals(tierPricingForCalc.unlimitedKmPerDay * billingDaysCalc);
@@ -1595,7 +1609,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       specialDiscountAmount,
       carWashFee,
       noDepositSurcharge: calculatedNoDepositSurcharge,
-      effectivePricePerDay: isSupercar50km ? SUPERCAR_50KM_DAILY_RATE
+      effectivePricePerDay: isSupercar50km ? ACTIVE_SUPERCAR_50KM_RATE
         : (dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.finalDailyRateEur)
           ? dynamicPricing.finalDailyRateEur
           : pricePerDay,
@@ -1605,6 +1619,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       flexCost: calculatedFlexCost,
       supercarDepositSurcharge,
       deliveryFee: calculatedDeliveryFee,
+      extraDayApplied: extraDay,
     };
   }, [
     formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime,
@@ -1614,7 +1629,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     formData.selectedExperiences, formData.dr7Flex, formData.pickupLocation, formData.returnLocation,
     formData.deliveryPickupKm, formData.deliveryReturnKm,
     item, currency, user, isUrbanOrCorporate, categoryContext, driverTier, dynamicPricing,
-    ACTIVE_RENTAL_DAY_RATES, ACTIVE_KM_INCLUDED
+    ACTIVE_RENTAL_DAY_RATES, ACTIVE_KM_INCLUDED, ACTIVE_SUPERCAR_50KM_RATE
   ]);
 
   // Online booking discount REMOVED — no automatic discount
@@ -2427,7 +2442,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             cost: kmPackageCost,
             includedKm: includedKm,
             isPremium: isPremiumVehicle(item.name),
-            dailyRate: formData.kmPackageType === '50km' ? 199 : undefined
+            dailyRate: formData.kmPackageType === '50km' ? ACTIVE_SUPERCAR_50KM_RATE : undefined
           },
           depositOption: formData.depositOption,
           noDepositSurcharge: noDepositSurcharge,
@@ -2915,7 +2930,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               cost: kmPackageCost,
               includedKm: includedKm,
               isPremium: isPremiumVehicle(item.name),
-              dailyRate: formData.kmPackageType === '50km' ? 199 : undefined
+              dailyRate: formData.kmPackageType === '50km' ? ACTIVE_SUPERCAR_50KM_RATE : undefined
             },
             depositOption: formData.depositOption,
             noDepositSurcharge: noDepositSurcharge,
@@ -3260,7 +3275,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               cost: kmPackageCost,
               includedKm: includedKm,
               isPremium: isPremiumVehicle(item.name),
-              dailyRate: formData.kmPackageType === '50km' ? 199 : undefined
+              dailyRate: formData.kmPackageType === '50km' ? ACTIVE_SUPERCAR_50KM_RATE : undefined
             },
             depositOption: formData.depositOption,
             noDepositSurcharge: noDepositSurcharge,
@@ -4344,8 +4359,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <div>
                         <span className="font-bold text-white">50 km al giorno</span>
                         <p className="text-sm text-gray-400">Ideale per uso cittadino</p>
+                        {formData.kmPackageType === '50km' && duration.days > 0 && (
+                          <p className="text-sm text-yellow-300 mt-1 font-semibold">Totale: {50 * Math.max(1, duration.days)} km per {Math.max(1, duration.days)} {Math.max(1, duration.days) === 1 ? 'giorno' : 'giorni'}</p>
+                        )}
                       </div>
-                      <span className="font-bold text-yellow-400">€199/giorno</span>
+                      <span className="font-bold text-yellow-400">€{ACTIVE_SUPERCAR_50KM_RATE}/giorno</span>
                     </div>
                   </div>
                   <div
@@ -4370,7 +4388,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <span className="font-bold text-white">Km inclusi nel noleggio</span>
                       <p className="text-sm text-gray-400">Basato sulla durata del noleggio</p>
                     </div>
-                    <span className="font-bold text-white">Incluso</span>
+                    {includedKm >= 9999 ? (
+                      <span className="font-bold text-green-400">Illimitati</span>
+                    ) : includedKm > 0 ? (
+                      <span className="font-bold text-white">{includedKm} km</span>
+                    ) : (
+                      <span className="font-bold text-white">Incluso</span>
+                    )}
                   </div>
                 </div>
               )}
@@ -4781,6 +4805,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   <p>Ritiro: {formData.pickupDate} alle {formData.pickupTime} - {PICKUP_LOCATIONS.find(l => l.id === formData.pickupLocation)?.label?.it || formData.pickupLocation}</p>
                   <p>Riconsegna: {formData.returnDate} alle {formData.returnTime} - {RETURN_LOCATIONS.find(l => l.id === formData.returnLocation)?.label?.it || formData.returnLocation}</p>
                   <p>Durata: {duration.days} giorni</p>
+                  {extraDayApplied && (
+                    <div className="mt-1 p-2 bg-amber-900/30 border border-amber-500/50 rounded">
+                      <p className="text-amber-300 text-xs font-semibold">L'orario di riconsegna supera il margine di 1h30 prima del ritiro: viene conteggiato 1 giorno aggiuntivo.</p>
+                    </div>
+                  )}
                   <p>Pacchetto km: {formData.kmPackageType === '50km' ? `50 km/giorno (${includedKm} km totali)` : isUrbanOrCorporate ? 'Inclusi' : (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}</p>
                 </div>
 
@@ -5563,6 +5592,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     <img src={item.image} alt={item.name} className="w-full h-40 object-contain rounded-md mb-4 bg-gray-800/30" />
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between"><span className="text-gray-400">Durata noleggio:</span><span className="text-white font-medium">{duration.days} giorni</span></div>
+                      {extraDayApplied && (
+                        <div className="p-2 bg-amber-900/30 border border-amber-500/50 rounded">
+                          <p className="text-amber-300 text-xs font-semibold">+1 giorno: l'orario di riconsegna supera il margine di 1h30 prima dell'orario di ritiro.</p>
+                        </div>
+                      )}
                       <div className="flex justify-between">
                         <span className="text-gray-400">Km pacchetto:</span>
                         <span className="text-white font-medium">
@@ -5758,14 +5792,21 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         Continua
                       </button>
                     ) : (
-                      <button
-                        type="submit"
-                        disabled={isProcessing || !formData.agreesToTerms || !formData.agreesToPrivacy || !formData.confirmsDocuments}
-                        className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed"
-                        style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
-                      >
-                        {isProcessing ? 'Elaborazione in corso...' : 'CONFERMA PRENOTAZIONE'}
-                      </button>
+                      <>
+                        {extraDayApplied && (
+                          <div className="w-full mb-4 p-3 bg-amber-900/30 border border-amber-500/50 rounded-lg">
+                            <p className="text-amber-300 text-sm font-semibold">Attenzione: l'orario di riconsegna selezionato supera il margine di 1h30 prima dell'orario di ritiro. Viene conteggiato 1 giorno aggiuntivo ({duration.days} giorni totali invece di {duration.days - 1}).</p>
+                          </div>
+                        )}
+                        <button
+                          type="submit"
+                          disabled={isProcessing || !formData.agreesToTerms || !formData.agreesToPrivacy || !formData.confirmsDocuments}
+                          className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed"
+                          style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+                        >
+                          {isProcessing ? 'Elaborazione in corso...' : 'CONFERMA PRENOTAZIONE'}
+                        </button>
+                      </>
                     )}
                   </div>
                 </form>

@@ -21,6 +21,14 @@ export interface KmIncludedConfig {
   extra_per_day: number
 }
 
+export interface KmPackagePrices {
+  supercar50kmPerDay: number
+  unlimitedSupercarT1PerDay: number
+  unlimitedSupercarT2PerDay: number
+  unlimitedFurgonePerDay: number
+  unlimitedNccPerDay: number
+}
+
 export interface WebsiteConfigOverlay {
   insuranceTier1: InsuranceTierOption[]
   insuranceTier2: InsuranceTierOption[]
@@ -42,6 +50,8 @@ export interface WebsiteConfigOverlay {
   rentalDayRates: RentalDayRates | null
   // Dynamic km included config from admin Centralina
   kmIncluded: KmIncludedConfig | null
+  // KM package prices from admin Revenue management
+  kmPackagePrices: KmPackagePrices
 }
 
 /** Build overlay from Centralina config. Returns null if config is not loaded yet. */
@@ -110,17 +120,31 @@ export function buildWebsiteConfigOverlay(config: RentalConfig | null): WebsiteC
     }
   }
 
+  // Build km package prices from admin Revenue tab
+  const kmPkgs = (config as Record<string, unknown>).km_packages as { id: string; price: number; is_active?: boolean }[] | undefined
+  const findKmPrice = (id: string, fallback: number): number => {
+    const item = kmPkgs?.find(p => p.id === id && p.is_active !== false)
+    return item?.price ?? fallback
+  }
+  const kmPackagePrices: KmPackagePrices = {
+    supercar50kmPerDay: findKmPrice('supercar_50km', 199),
+    unlimitedSupercarT1PerDay: findKmPrice('unlimited_km_supercar_t1', 289),
+    unlimitedSupercarT2PerDay: findKmPrice('unlimited_km_supercar_t2', 189),
+    unlimitedFurgonePerDay: findKmPrice('unlimited_km_furgone', 94.50),
+    unlimitedNccPerDay: findKmPrice('unlimited_km_ncc', 189),
+  }
+
   return {
     insuranceTier1: toInsOpts(exoticT1) || [],
     insuranceTier2: toInsOpts(exoticT2) || [],
     tierPricing: {
       TIER_1: {
-        unlimitedKmPerDay: config.unlimited_km?.exotic?.TIER_1?.per_day ?? 289,
+        unlimitedKmPerDay: kmPackagePrices.unlimitedSupercarT1PerDay,
         secondDriverPerDay: config.second_driver?.TIER_1 ?? 20,
         lavaggio: config.lavaggio?.fee ?? 9.90,
       },
       TIER_2: {
-        unlimitedKmPerDay: config.unlimited_km?.exotic?.TIER_2?.per_day ?? 189,
+        unlimitedKmPerDay: kmPackagePrices.unlimitedSupercarT2PerDay,
         secondDriverPerDay: config.second_driver?.TIER_2 ?? 10,
         lavaggio: config.lavaggio?.fee ?? 9.90,
       },
@@ -150,5 +174,6 @@ export function buildWebsiteConfigOverlay(config: RentalConfig | null): WebsiteC
     },
     rentalDayRates,
     kmIncluded,
+    kmPackagePrices,
   }
 }

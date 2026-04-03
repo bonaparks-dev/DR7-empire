@@ -68,8 +68,21 @@ export interface PaymentMode {
   description?: string
 }
 
+export interface KmPackageItem {
+  id: string
+  name: string
+  price: number
+  price_unit: 'per_day' | 'one_time'
+  is_active: boolean
+  display_order: number
+  description?: string
+}
+
 export interface RentalConfig {
   schema_version: number
+
+  /** KM package prices managed from admin Revenue tab */
+  km_packages?: KmPackageItem[]
 
   tier_rules: {
     blocked: {
