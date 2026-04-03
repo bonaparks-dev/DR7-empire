@@ -9,10 +9,7 @@
  */
 
 export interface MultiDayPriceTable {
-    [days: number]: {
-        resident: number;
-        nonResident: number;
-    };
+    [days: number]: number;
 }
 
 // ========================================
@@ -21,13 +18,13 @@ export interface MultiDayPriceTable {
 // ========================================
 
 export const SUPERCAR_PRICES: MultiDayPriceTable = {
-    1: { resident: 349, nonResident: 449 },
-    2: { resident: 698, nonResident: 898 },
-    3: { resident: 980, nonResident: 1289 },
-    4: { resident: 1290, nonResident: 1690 },
-    5: { resident: 1590, nonResident: 2190 },
-    6: { resident: 1990, nonResident: 2590 },
-    7: { resident: 2290, nonResident: 2890 },
+    1: 349,
+    2: 698,
+    3: 980,
+    4: 1290,
+    5: 1590,
+    6: 1990,
+    7: 2290,
 };
 
 export const UTILITARIA_PRICES: { [days: number]: number } = {
@@ -68,7 +65,7 @@ export const FURGONE_PRICES: { [days: number]: number } = {
 export interface DynamicRentalDayRates {
     exotic: {
         resident: Record<string, number>;
-        non_resident: Record<string, number>;
+        non_resident?: Record<string, number>;
     };
     urban: { flat: Record<string, number>; extrapolation?: string };
     furgone: { flat: Record<string, number> };
@@ -84,47 +81,36 @@ export interface DynamicRentalDayRates {
  */
 export function calculateSupercarMultiDayPrice(
     days: number,
-    isResident: boolean,
+    _isResident?: boolean,
     dynamicRates?: DynamicRentalDayRates | null
 ): number {
-    const residentRates = dynamicRates?.exotic?.resident
-    const nonResidentRates = dynamicRates?.exotic?.non_resident
+    // Always use resident rates (single pricing, no resident/non-resident distinction)
+    const rateTable = dynamicRates?.exotic?.resident
+    const hasRates = rateTable && Object.keys(rateTable).length > 0
 
-    const rateTable = isResident
-        ? (residentRates && Object.keys(residentRates).length > 0 ? residentRates : null)
-        : (nonResidentRates && Object.keys(nonResidentRates).length > 0 ? nonResidentRates : null)
-
-    if (rateTable) {
-        // Use dynamic config rates
+    if (hasRates) {
         if (rateTable[String(days)] !== undefined) {
             return rateTable[String(days)]
         }
-        // Extrapolate beyond day 7 using day7_average
         const day7 = rateTable['7']
         if (day7 !== undefined && days > 7) {
             const avgRate = day7 / 7
             return Math.round(day7 + (days - 7) * avgRate)
         }
-        // Extrapolate below day 1 (edge case)
         const day1 = rateTable['1']
         if (day1 !== undefined) return days * day1
     }
 
     // Fallback: hardcoded table
-    const table = isResident
-        ? Object.fromEntries(Object.entries(SUPERCAR_PRICES).map(([k, v]) => [k, v.resident]))
-        : Object.fromEntries(Object.entries(SUPERCAR_PRICES).map(([k, v]) => [k, v.nonResident]))
-
-    if (days >= 1 && days <= 7 && table[days] !== undefined) {
-        return table[days]
+    if (days >= 1 && days <= 7 && SUPERCAR_PRICES[days] !== undefined) {
+        return SUPERCAR_PRICES[days]
     }
     if (days > 7) {
-        const day7Price = table[7]
+        const day7Price = SUPERCAR_PRICES[7]
         const day7AvgRate = day7Price / 7
         return Math.round(day7Price + (days - 7) * day7AvgRate)
     }
-    const oneDayRate = table[1]
-    return days * oneDayRate
+    return days * SUPERCAR_PRICES[1]
 }
 
 /**
@@ -223,12 +209,12 @@ export function calculateMultiDayPrice(
     vehicleType: string,
     days: number,
     baseDailyRate: number,
-    isResident: boolean = false,
+    _isResident?: boolean,
     dynamicRates?: DynamicRentalDayRates | null
 ): number {
     switch (vehicleType) {
         case 'SUPERCAR':
-            return calculateSupercarMultiDayPrice(days, isResident, dynamicRates)
+            return calculateSupercarMultiDayPrice(days, undefined, dynamicRates)
 
         case 'UTILITARIA':
             return calculateUtilitariaMultiDayPrice(days, dynamicRates)
@@ -251,10 +237,10 @@ export function getEffectiveDailyRate(
     vehicleType: string,
     days: number,
     baseDailyRate: number,
-    isResident: boolean = false,
+    _isResident?: boolean,
     dynamicRates?: DynamicRentalDayRates | null
 ): number {
-    const totalCost = calculateMultiDayPrice(vehicleType, days, baseDailyRate, isResident, dynamicRates)
+    const totalCost = calculateMultiDayPrice(vehicleType, days, baseDailyRate, undefined, dynamicRates)
     return totalCost / days
 }
 

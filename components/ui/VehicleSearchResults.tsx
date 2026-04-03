@@ -10,8 +10,6 @@ export interface AvailableVehicleResult {
     displayName: string;
     displayGroup: string;
     dailyRate: number;
-    priceResidentDaily: number | null;
-    priceNonresidentDaily: number | null;
     category: string;
     metadata: Record<string, any> | null;
     availableCount: number;

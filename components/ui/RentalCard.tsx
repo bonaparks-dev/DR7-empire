@@ -2,7 +2,6 @@ import React from 'react';
 import type { RentalItem } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useCurrency } from '../../contexts/CurrencyContext';
-import { useAuth } from '../../hooks/useAuth';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
@@ -29,7 +28,6 @@ interface RentalCardProps {
 const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, marketingTooltip, categoryId, totalPrice, totalDays, hidePrice, hideBookButton, jetSearchData }) => {
   const { t, getTranslated } = useTranslation();
   const { currency } = useCurrency();
-  const { user } = useAuth();
 
   const isVilla = item.id.startsWith('villa');
   const isJet = item.id.startsWith('jet');
@@ -39,15 +37,8 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
   // Hide booking button for vehicles with booking_disabled flag in metadata
   const isBlockedCar = isCar && (item as any).bookingDisabled;
 
-  // Jets, yachts, and helicopters use landscape format, others use vertical format
-  const imageAspectRatio = (isJet || isYacht || isHelicopter) ? 'aspect-[16/9]' : 'aspect-[4/5]';
-
-  // Determine user's residency zone (treat null as NON_RESIDENTE)
-  const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
-  const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA' || userResidencyZone === 'RESIDENTE_CA' || userResidencyZone === 'RESIDENTE_SU';
-
-  // Check if dual pricing is available for this vehicle
-  const hasDualPricing = isCar && item.priceResidentDaily && item.priceNonresidentDaily;
+  // Jets, yachts, and helicopters use landscape format, cars use tall portrait, others use vertical format
+  const imageAspectRatio = (isJet || isYacht || isHelicopter) ? 'aspect-[16/9]' : isCar ? 'aspect-[9/16]' : 'aspect-[4/5]';
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', {
@@ -121,26 +112,6 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
                           {marketingTooltip}
                         </span>
                       </span>
-                    )}
-                  </div>
-                ) : hasDualPricing ? (
-                  <div className="space-y-0.5">
-                    <div className={`flex items-baseline gap-2 ${isResident ? 'text-yellow-400' : 'text-white'}`}>
-                      <span className="text-2xl font-bold">
-                        {formatPrice(item.priceResidentDaily!)}/giorno
-                      </span>
-                      <span className="text-xs uppercase tracking-wide">Residenti</span>
-                    </div>
-                    <div className={`flex items-baseline gap-2 text-gray-400`}>
-                      <span className="text-base">
-                        {formatPrice(item.priceNonresidentDaily!)}/giorno
-                      </span>
-                      <span className="text-xs uppercase tracking-wide">Non Residenti</span>
-                    </div>
-                    {!user && (
-                      <p className="text-xs text-gray-400 mt-1.5 leading-tight">
-                        Accedi per applicare automaticamente la tariffa corretta.
-                      </p>
                     )}
                   </div>
                 ) : item.pricePerDay && !isYacht ? (

@@ -513,11 +513,6 @@ export const DEPOSIT_RULES = {
     // Contanti o carta prepagata
     CASH_PREPAID: 4999,       // Qualsiasi età/patente
   },
-  // Supercar — Non residenti in Sardegna (SOLO carta di credito)
-  SUPERCAR_NON_RESIDENT: {
-    YOUNG: 5000,              // 21-25 anni o patente 2-4 anni
-    STANDARD: 3500,           // 26-69 anni, patente 5+ anni
-  },
   LOYAL_CUSTOMER_THRESHOLD: 3, // Minimum rentals for loyalty
 };
 
@@ -620,28 +615,16 @@ export const TIER_PRICING = {
 export const NO_DEPOSIT_SURCHARGE_PER_DAY = 49; // €49/day for "nessuna cauzione" (Tier 2 Sardinia only)
 
 export const TIER_DEPOSIT_OPTIONS: Record<string, DepositOption[]> = {
-  // Tier 1 + Sardinia resident
-  'TIER_1_RESIDENT': [
+  'TIER_1': [
     { id: 'vehicle_deposit', label: 'Cauzione con veicolo', amount: 0, surchargePerDay: 20, description: 'Veicolo di proprietà immatricolato dal 2020 in poi — €20/giorno', requiresVehicle2020: true },
     { id: 'credit_card', label: 'Carta di credito o debito', amount: 2000, description: 'Blocco su carta di credito o debito di €2.000' },
     { id: 'cash_prepaid', label: 'Contanti o prepagata', amount: 4999, description: 'Fino a €4.999 in contanti o carta prepagata' },
   ],
-  // Tier 2 + Sardinia resident
-  'TIER_2_RESIDENT': [
+  'TIER_2': [
     { id: 'no_deposit', label: 'Nessuna cauzione', amount: 0, surchargePerDay: 49, description: 'Supplemento di €49/giorno — nessun deposito richiesto (solo con acquisto Kasko)' },
     { id: 'vehicle_deposit', label: 'Cauzione con veicolo', amount: 0, surchargePerDay: 20, description: 'Veicolo di proprietà immatricolato dal 2020 in poi — €20/giorno', requiresVehicle2020: true },
     { id: 'credit_card', label: 'Carta di credito o debito', amount: 1000, description: 'Blocco su carta di credito o debito di €1.000' },
     { id: 'cash_prepaid', label: 'Contanti o prepagata', amount: 4999, description: 'Fino a €4.999 in contanti o carta prepagata' },
-  ],
-  // Tier 1 + Non-resident (PRIORITY RULE)
-  'TIER_1_NON_RESIDENT': [
-    { id: 'credit_card', label: 'Carta di credito o debito', amount: 5000, description: 'Blocco su carta di credito o debito di €5.000' },
-    { id: 'vehicle_deposit', label: 'Cauzione con veicolo', amount: 0, surchargePerDay: 20, description: 'Veicolo di proprietà immatricolato dal 2020 in poi — €20/giorno', requiresVehicle2020: true },
-  ],
-  // Tier 2 + Non-resident (PRIORITY RULE)
-  'TIER_2_NON_RESIDENT': [
-    { id: 'credit_card', label: 'Carta di credito o debito', amount: 3500, description: 'Blocco su carta di credito o debito di €3.500' },
-    { id: 'vehicle_deposit', label: 'Cauzione con veicolo', amount: 0, surchargePerDay: 20, description: 'Veicolo di proprietà immatricolato dal 2020 in poi — €20/giorno', requiresVehicle2020: true },
   ],
 };
 

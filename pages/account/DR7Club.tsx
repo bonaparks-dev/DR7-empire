@@ -71,7 +71,7 @@ const DR7Club = () => {
   const tierColors: Record<string, { bg: string; border: string; text: string; badge: string }> = {
     access: { bg: 'bg-gray-800/50', border: 'border-gray-600', text: 'text-gray-300', badge: 'bg-gray-600 text-white' },
     black: { bg: 'bg-gray-900/80', border: 'border-white/30', text: 'text-white', badge: 'bg-black text-white border border-white/30' },
-    signature: { bg: 'bg-yellow-900/20', border: 'border-yellow-500/50', text: 'text-yellow-400', badge: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50' },
+    signature: { bg: 'bg-[#C9A96E]/10', border: 'border-[#C9A96E]/40', text: 'text-[#D4B896]', badge: 'bg-[#C9A96E]/15 text-[#D4B896] border border-[#C9A96E]/40' },
   }
 
   const currentColors = tierColors[tierInfo?.tier || 'access']
@@ -124,22 +124,22 @@ const DR7Club = () => {
             </div>
 
             {/* Annual */}
-            <div className="border-2 border-yellow-500/50 rounded-lg p-5 relative">
-              <div className="absolute -top-3 left-4 px-2 py-0.5 bg-yellow-500 text-black text-xs font-bold rounded">RISPARMIA 33%</div>
+            <div className="border-2 border-[#C9A96E]/50 rounded-lg p-5 relative">
+              <div className="absolute -top-3 left-4 px-2 py-0.5 bg-[#C9A96E] text-black text-xs font-bold rounded">RISPARMIA 33%</div>
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <h4 className="text-white font-bold text-lg">{CLUB_PLANS.annual.label}</h4>
                   <p className="text-gray-400 text-sm">+ €{ANNUAL_RENEWAL_BONUS} bonus rinnovo</p>
                 </div>
                 <div className="text-right">
-                  <span className="text-2xl font-bold text-yellow-400">€{CLUB_PLANS.annual.price}</span>
+                  <span className="text-2xl font-bold text-[#D4B896]">€{CLUB_PLANS.annual.price}</span>
                   <span className="text-gray-400 text-sm">{CLUB_PLANS.annual.period}</span>
                 </div>
               </div>
               <button
                 onClick={() => handleSubscribe('annual')}
                 disabled={subscribing}
-                className="w-full mt-3 py-2.5 bg-yellow-500 text-black font-bold rounded-lg hover:bg-yellow-400 transition-colors text-sm"
+                className="w-full mt-3 py-2.5 bg-[#C9A96E] text-black font-bold rounded-lg hover:bg-[#D4B896] transition-colors text-sm"
               >
                 Iscriviti ora
               </button>
@@ -196,7 +196,7 @@ const DR7Club = () => {
               </div>
               <div className="w-full bg-gray-700 rounded-full h-2.5">
                 <div
-                  className="bg-yellow-500 h-2.5 rounded-full transition-all duration-500"
+                  className="bg-[#C9A96E] h-2.5 rounded-full transition-all duration-500"
                   style={{ width: `${tierInfo.progress}%` }}
                 />
               </div>
@@ -207,7 +207,7 @@ const DR7Club = () => {
           )}
 
           {!tierInfo.nextTier && (
-            <p className="mt-3 text-sm text-yellow-400 font-medium">Hai raggiunto il livello massimo! Reward del {tierInfo.rewardPercent}% su ogni noleggio.</p>
+            <p className="mt-3 text-sm text-[#D4B896] font-medium">Hai raggiunto il livello massimo! Reward del {tierInfo.rewardPercent}% su ogni noleggio.</p>
           )}
         </div>
       )}
@@ -229,7 +229,7 @@ const DR7Club = () => {
               <p className="text-gray-500 text-xs mt-1">
                 {t.max === Infinity ? `da €${t.min.toLocaleString()}` : `€${t.min.toLocaleString()} – €${t.max.toLocaleString()}`}
               </p>
-              <p className={`text-2xl font-bold mt-2 ${tierInfo?.tier === t.tier ? 'text-yellow-400' : 'text-gray-500'}`}>
+              <p className={`text-2xl font-bold mt-2 ${tierInfo?.tier === t.tier ? 'text-[#D4B896]' : 'text-gray-500'}`}>
                 {t.rewardPercent}%
               </p>
               <p className="text-gray-500 text-xs">reward</p>
@@ -242,7 +242,7 @@ const DR7Club = () => {
       <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-white">DR7 Wallet</h3>
-          <span className="text-2xl font-bold text-green-400">€{(walletBalance / 100).toFixed(2)}</span>
+          <span className="text-2xl font-bold text-green-400">€{walletBalance.toFixed(2)}</span>
         </div>
         <p className="text-gray-400 text-sm mb-4">
           Utilizzabile fino al {WALLET_MAX_ORDER_PERCENT}% di un ordine. Non convertibile in denaro. Validità 12 mesi.
@@ -262,7 +262,7 @@ const DR7Club = () => {
                     </p>
                   </div>
                   <span className={`font-bold text-sm ${tx.transaction_type === 'credit' ? 'text-green-400' : 'text-red-400'}`}>
-                    {tx.transaction_type === 'credit' ? '+' : '-'}€{(tx.amount / 100).toFixed(2)}
+                    {tx.transaction_type === 'credit' ? '+' : '-'}€{tx.amount.toFixed(2)}
                   </span>
                 </div>
               ))}
@@ -292,7 +292,7 @@ const DR7Club = () => {
             <span>Servizi extra: reward 2%</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-yellow-400 mt-0.5">!</span>
+            <span className="text-[#D4B896] mt-0.5">!</span>
             <span>Il credito viene accreditato solo a noleggio completato</span>
           </li>
           <li className="flex items-start gap-2">

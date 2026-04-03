@@ -98,11 +98,13 @@ export function isDr7FlexAvailable(config: RentalConfig, tier: DriverTier): bool
   return tier === restriction
 }
 
-/** Get deposit options for a tier + residency combo */
-export function getConfigDepositOptions(config: RentalConfig, tier: DriverTier, isResident: boolean): DepositOption[] {
+/** Get deposit options for a tier */
+export function getConfigDepositOptions(config: RentalConfig, tier: DriverTier): DepositOption[] {
   if (tier === 'BLOCKED') return []
-  const key = `${tier}_${isResident ? 'RESIDENT' : 'NON_RESIDENT'}` as keyof typeof config.deposits
-  return (config.deposits?.[key] as DepositOption[]) ?? []
+  // Try direct tier key first, then fallback to RESIDENT variant for backward compat with admin config
+  const directKey = tier as keyof typeof config.deposits
+  const residentKey = `${tier}_RESIDENT` as keyof typeof config.deposits
+  return (config.deposits?.[directKey] as DepositOption[]) ?? (config.deposits?.[residentKey] as DepositOption[]) ?? []
 }
 
 /** Get lavaggio fee */

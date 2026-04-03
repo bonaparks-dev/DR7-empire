@@ -224,7 +224,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       idImage: null,
       address: '',
       city: '',
-      isSardinianResident: false,
       confirmsInformation: false,
 
       addSecondDriver: false,
@@ -325,8 +324,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [partialUnavailabilityWarning, setPartialUnavailabilityWarning] = useState<string | null>(null);
   const [shortSlotWarning, setShortSlotWarning] = useState<string | null>(null); // Warning for short availability slots
   const [availableVehicleName, setAvailableVehicleName] = useState<string | null>(null);
-  const [usageZoneError, setUsageZoneError] = useState<string | null>(null); // Error for resident blocking
-  const [showZoneConfirmation, setShowZoneConfirmation] = useState(false); // Zone confirmation modal
+  const [usageZoneError, setUsageZoneError] = useState<string | null>(null);
+
 
   // Wash upsell state
   const [showWashUpsell, setShowWashUpsell] = useState(false);
@@ -355,12 +354,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     earliestAvailableDatetime?: string;
   } | null>(null);
 
-  // FIX 7: Track residencyZone loading to avoid wrong pricing fallback
-  const residencyZoneLoaded = useMemo(() => {
-    const rz = (user as any)?.residencyZone;
-    // If user exists but residencyZone is not yet set (undefined), it's still loading
-    return !user || rz !== undefined;
-  }, [user]);
 
   // Availability windows for gap detection
   interface AvailabilityWindow {
@@ -1358,7 +1351,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     driverAge, licenseYears, youngDriverFee, recentLicenseFee, secondDriverFee, recommendedKm,
     membershipDiscount, membershipTier, originalTotal, finalTotal,
     isMassimo, specialDiscountAmount, carWashFee, noDepositSurcharge,
-    effectivePricePerDay, // Calculated price per day (resident or non-resident)
+    effectivePricePerDay,
     lavaggioFee, experienceCost, flexCost, supercarDepositSurcharge, deliveryFee,
     extraDayApplied
   } = useMemo(() => {
@@ -1369,48 +1362,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       lavaggioFee: 0, experienceCost: 0, flexCost: 0, supercarDepositSurcharge: 0, deliveryFee: 0,
       extraDayApplied: false
     };
-    if (!item || (!item.pricePerDay && !item.priceResidentDaily && !item.priceNonresidentDaily)) return zero;
-    // FIX 7: If user exists but residencyZone hasn't loaded yet, defer pricing
-    // to avoid showing the wrong (non-resident = higher) price during async load
-    const rz = (user as any)?.residencyZone;
-    if (user && rz === undefined) {
-      // residencyZone is still loading — return zero so UI shows loading state, not wrong price
-      return { ...zero, isMassimo: false };
-    }
+    if (!item || !item.pricePerDay) return zero;
 
-    // === DUAL PRICING LOGIC ===
-    // Determine which price to use based on residency and usage zone
-    let pricePerDay = item.pricePerDay?.[currency] || 0; // fallback to legacy pricing
-
-    if (item.priceResidentDaily && item.priceNonresidentDaily) {
-      // Dual pricing available for this vehicle
-      const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
-      const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA' || userResidencyZone === 'RESIDENTE_CA' || userResidencyZone === 'RESIDENTE_SU';
-
-      // Debug logging for pricing
-      console.log('Pricing Debug:', {
-        userResidencyZone,
-        isResidentInDB: isResident,
-        usageZone: formData.usageZone,
-        priceResidentDaily: item.priceResidentDaily,
-        priceNonresidentDaily: item.priceNonresidentDaily,
-        willApplyResidentPrice: formData.usageZone === 'CAGLIARI_SUD'
-      });
-
-      // Apply resident pricing based on USAGE ZONE selection
-      // This allows users without the database residency_zone field to still get resident pricing
-      // when they select "Cagliari e Sud Sardegna" usage zone
-      if (formData.usageZone === 'CAGLIARI_SUD') {
-        pricePerDay = item.priceResidentDaily;
-        console.log('Applied RESIDENT pricing (based on usage zone selection):', pricePerDay);
-      } else {
-        // All other cases use non-resident pricing:
-        // - FUORI_ZONA selected
-        // - No zone selected yet (defaults to non-resident)
-        pricePerDay = item.priceNonresidentDaily;
-        console.log('Applied NON-RESIDENT pricing:', pricePerDay);
-      }
-    }
+    const pricePerDay = item.pricePerDay?.[currency] || 0;
 
     let billingDays = 0;
     let days = 0;
@@ -1480,9 +1434,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     } else {
       // Standard multi-day pricing (fallback when dynamic pricing is disabled or unavailable)
       const vType = getVehicleType(item, categoryContext);
-      const isResident = formData.usageZone === 'CAGLIARI_SUD';
-
-      calculatedRentalCost = calculateMultiDayPrice(vType, billingDaysCalc, pricePerDay, isResident, ACTIVE_RENTAL_DAY_RATES);
+      calculatedRentalCost = calculateMultiDayPrice(vType, billingDaysCalc, pricePerDay, undefined, ACTIVE_RENTAL_DAY_RATES);
     }
 
 
@@ -1592,7 +1544,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // Supercar: deposit option surcharges (no_deposit = €49/day, vehicle_deposit = €20/day)
     let supercarDepositSurcharge = 0;
     if (!isUrbanForDeposit && formData.depositOption) {
-      const depositKey = `${activeTierForCalc}_${'RESIDENT'}`;
+      const depositKey = `${activeTierForCalc}`;
       const depOpts = TIER_DEPOSIT_OPTIONS[depositKey] || [];
       const selectedDep = depOpts.find(d => d.id === formData.depositOption);
       if (selectedDep?.surchargePerDay) {
@@ -1707,47 +1659,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   }, [formData.pickupDate]);
 
 
-  // Auto-set usage zone for residents to ensure correct pricing
+  // Auto-set usage zone based on vehicle type
   useEffect(() => {
-    const userResidencyZone = (user as any)?.residencyZone || 'NON_RESIDENTE';
-    const isResident = userResidencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA' || userResidencyZone === 'RESIDENTE_CA' || userResidencyZone === 'RESIDENTE_SU';
     const vType = getVehicleType(item, categoryContext);
-
-    console.log('Usage Zone Auto-Set Check:', {
-      userExists: !!user,
-      userId: user?.id,
-      userResidencyZone,
-      isResident,
-      vehicleType: vType,
-      currentUsageZone: formData.usageZone,
-      willAutoSet: isResident && !formData.usageZone
-    });
-
-    // Auto-set logic based on vehicle type and km package
-    if (vType !== 'SUPERCAR') {
-      // Utility vehicles (UTILITARIA, FURGONE, V_CLASS) always use FUORI_ZONA
+    if (vType !== 'SUPERCAR' || formData.kmPackageType === '50km') {
       if (formData.usageZone !== 'FUORI_ZONA') {
-        console.log('Auto-setting usageZone to FUORI_ZONA for utility vehicle');
         setFormData(prev => ({ ...prev, usageZone: 'FUORI_ZONA' }));
-      }
-    } else if (formData.kmPackageType === '50km') {
-      // SUPERCAR with 50km/day: no zone restriction, auto-set FUORI_ZONA
-      if (formData.usageZone !== 'FUORI_ZONA') {
-        console.log('Auto-setting usageZone to FUORI_ZONA for supercar 50km/day package');
-        setFormData(prev => ({ ...prev, usageZone: 'FUORI_ZONA' }));
-      }
-    } else {
-      // SUPERCAR with unlimited km: Default to CAGLIARI_SUD for residents if not already set
-      if (isResident && !formData.usageZone) {
-        console.log('Auto-setting usageZone to CAGLIARI_SUD for resident user with supercar unlimited km');
-        setFormData(prev => ({ ...prev, usageZone: 'CAGLIARI_SUD' }));
-      } else if (!isResident && !formData.usageZone) {
-        console.log('Non-resident user with supercar unlimited km - usageZone will remain empty until manually selected');
-      } else if (formData.usageZone) {
-        console.log(`usageZone already set to: ${formData.usageZone}`);
       }
     }
-  }, [user, formData.usageZone, formData.kmPackageType, item, categoryContext]);
+  }, [formData.usageZone, formData.kmPackageType, item, categoryContext]);
 
   // Force Massimo Runchina settings & Pre-fill Personal Data
   useEffect(() => {
@@ -1839,7 +1759,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     // Supercars: use tier-based deposit options (always RESIDENT since distinction removed)
     const activeTier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2';
-    const depositKey = `${activeTier}_RESIDENT`;
+    const depositKey = `${activeTier}`;
     const depOptions = TIER_DEPOSIT_OPTIONS[depositKey] || [];
     const selectedDep = depOptions.find(d => d.id === formData.depositOption);
 
@@ -2447,7 +2367,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             licenseIssueDate: formData.licenseIssueDate,
             licenseYears: licenseYears,
             address: formData.address,
-            isSardinianResident: formData.isSardinianResident,
           },
           secondDriver: formData.addSecondDriver ? {
             fullName: `${formData.secondDriver.firstName} ${formData.secondDriver.lastName}`,
@@ -2936,8 +2855,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               licenseIssueDate: formData.licenseIssueDate,
               licenseYears: licenseYears,
               address: formData.address,
-              isSardinianResident: formData.isSardinianResident,
-            },
+              },
             secondDriver: formData.addSecondDriver ? {
               fullName: `${formData.secondDriver.firstName} ${formData.secondDriver.lastName}`,
               firstName: formData.secondDriver.firstName,
@@ -3282,8 +3200,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               licenseIssueDate: formData.licenseIssueDate,
               licenseYears: licenseYears,
               address: formData.address,
-              isSardinianResident: formData.isSardinianResident,
-            },
+              },
             secondDriver: formData.addSecondDriver ? {
               fullName: `${formData.secondDriver.firstName} ${formData.secondDriver.lastName}`,
               firstName: formData.secondDriver.firstName,
@@ -3518,32 +3435,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const handleNext = () => {
     if (!validateStep()) return;
 
-    // Intercept Step 3 → Step 4 transition for resident zone confirmation
-    // Only show confirmation modal for SUPERCAR vehicles with CAGLIARI_SUD selection
-    const vType = getVehicleType(item, categoryContext);
-    if (step === 3 && vType === 'SUPERCAR' && formData.usageZone === 'CAGLIARI_SUD') {
-      setShowZoneConfirmation(true);
-      return;
-    }
-
-    // Show wash upsell modal on Step 3 → 4 transition (if zone confirmation didn't trigger)
+    // Show wash upsell modal on Step 3 → 4 transition
     if (step === 3) {
       setShowWashUpsell(true);
       return;
     }
 
     setStep(s => s + 1);
-  };
-
-  const handleZoneConfirmation = () => {
-    setShowZoneConfirmation(false);
-    // Chain to wash upsell instead of going directly to Step 4
-    setShowWashUpsell(true);
-  };
-
-  const handleZoneModification = () => {
-    setShowZoneConfirmation(false);
-    // Stay on Step 3 so user can modify their selection
   };
 
   const handleWashUpsellAccept = () => {
@@ -4326,7 +4224,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const activeTier = driverTier || 'TIER_2'; // fallback
         const tierPricing = getKmPricingForTier(activeTier);
         const insuranceOptions = getInsuranceForTier(activeTier);
-        const depositOptions = getDepositOptionsForTier(activeTier, true); // residency distinction removed
+        const depositOptions = getDepositOptionsForTier(activeTier);
         const experienceServices = getExperienceServicesForTier(activeTier);
 
         // Check if "no deposit" requires Kasko (cannot select no_deposit with RCA only)
@@ -4666,14 +4564,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     <p className="ml-7 text-xs text-gray-400 mt-1">
                       Utilizzo al di fuori dell'area di Cagliari e Sud Sardegna (solo Sardegna, non Italia continentale)
                     </p>
-                    {/* Pricing warning for residents */}
-                    {user && ((user as any)?.residencyZone === 'RESIDENTE_CAGLIARI_SUD_SARDEGNA' || (user as any)?.residencyZone === 'RESIDENTE_CA' || (user as any)?.residencyZone === 'RESIDENTE_SU') && item.priceResidentDaily && item.priceNonresidentDaily && (
-                      <div className="ml-7 mt-2 p-2 bg-yellow-900/20 border border-yellow-600/50 rounded">
-                        <p className="text-yellow-300 text-xs font-semibold">
-                          Attenzione: Selezionando questa opzione, si applica la tariffa non residente: €{item.priceNonresidentDaily}/giorno invece di €{item.priceResidentDaily}/giorno
-                        </p>
-                      </div>
-                    )}
                   </div>
 
                   {/* Error message for residents trying to select Fuori zona */}
@@ -5211,74 +5101,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               )}
             </AnimatePresence>
 
-            {/* Resident Zone Confirmation Modal */}
-            <AnimatePresence>
-              {showZoneConfirmation && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-                  onClick={() => setShowZoneConfirmation(false)}
-                >
-                  <motion.div
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-gray-900 border-2 border-yellow-500 rounded-lg p-6 sm:p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="text-center mb-4 sm:mb-6">
-                      <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-yellow-500/20 rounded-full mb-3 sm:mb-4">
-                        <svg className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                      </div>
-                      <h3 className="text-lg sm:text-2xl font-bold text-yellow-500 mb-2">
-                        ATTENZIONE – LIMITI DI UTILIZZO DEL VEICOLO
-                      </h3>
-                    </div>
-
-                    <div className="space-y-3 sm:space-y-4 text-white mb-6 sm:mb-8">
-                      <p className="text-sm sm:text-lg">
-                        Hai selezionato <strong>"Cagliari e Sud Sardegna"</strong> come zona di utilizzo.
-                      </p>
-                      <div className="bg-yellow-900/20 border border-yellow-600/50 rounded-lg p-3 sm:p-4">
-                        <p className="text-yellow-300 text-xs sm:text-sm font-semibold mb-2">
-                          LIMITAZIONI GEOGRAFICHE
-                        </p>
-                        <p className="text-yellow-100 text-xs sm:text-sm">
-                          Il veicolo è autorizzato <strong>SOLO</strong> all'interno dell'area di Cagliari e provincia del Sud Sardegna. L'utilizzo al di fuori di questa zona comporterà:
-                        </p>
-                        <ul className="list-disc list-inside mt-2 text-yellow-100 text-xs sm:text-sm space-y-1">
-                          <li>Tracciamento GPS attivo</li>
-                          <li>Penali economiche</li>
-                          <li>Possibile sospensione del servizio</li>
-                        </ul>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                      <button
-                        onClick={handleZoneModification}
-                        className="flex-1 px-4 sm:px-6 py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors text-sm sm:text-base"
-                      >
-                        Modifica selezione
-                      </button>
-                      <button
-                        onClick={handleZoneConfirmation}
-                        className="flex-1 px-4 sm:px-6 py-3 bg-yellow-500 text-black font-bold rounded-full hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
-                      >
-                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        Confermo
-                      </button>
-                    </div>
-                  </motion.div>
-                </motion.div>
-              )}
-
               {/* Wash Upsell Modal */}
               {showWashUpsell && (
                 <motion.div
@@ -5762,11 +5584,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           )}
                           <div className="flex justify-between text-xl font-bold">
                       <span className="text-white">TOTALE</span>
-                      {/* FIX 7: Show loading placeholder until residencyZone is resolved */}
-                      {!residencyZoneLoaded
-                        ? <span className="text-gray-400 text-base animate-pulse">Calcolo...</span>
-                        : <span className="text-white">{formatPrice(grandTotal)}</span>
-                      }
+                      <span className="text-white">{formatPrice(grandTotal)}</span>
                     </div>
                         </>
                       ) : (
@@ -5792,11 +5610,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           )}
                           <div className="flex justify-between text-xl font-bold">
                       <span className="text-white">TOTALE</span>
-                      {/* FIX 7: Show loading placeholder until residencyZone is resolved */}
-                      {!residencyZoneLoaded
-                        ? <span className="text-gray-400 text-base animate-pulse">Calcolo...</span>
-                        : <span className="text-white">{formatPrice(grandTotal)}</span>
-                      }
+                      <span className="text-white">{formatPrice(grandTotal)}</span>
                     </div>
                         </>
                       )}

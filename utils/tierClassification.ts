@@ -51,13 +51,10 @@ export function getInsuranceForTier(tier: DriverTier): InsuranceTierOption[] {
 
 /**
  * Get deposit options based on tier.
- * Sardinia residency distinction removed — always uses RESIDENT options.
- * @param isSardinianResident kept for backward compat but ignored
  */
-export function getDepositOptionsForTier(tier: DriverTier, _isSardinianResident: boolean = true): DepositOption[] {
+export function getDepositOptionsForTier(tier: DriverTier): DepositOption[] {
   if (tier === 'BLOCKED') return [];
-  const key = `${tier}_RESIDENT`;
-  return TIER_DEPOSIT_OPTIONS[key] || [];
+  return TIER_DEPOSIT_OPTIONS[tier] || [];
 }
 
 /**

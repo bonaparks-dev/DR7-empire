@@ -20,7 +20,7 @@ async function getVehiclePrices(): Promise<string> {
   }
   try {
     const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/vehicles?select=display_name,daily_rate,price_resident_daily,price_nonresident_daily,category,status,metadata&status=neq.retired&order=category.asc,display_name.asc`,
+      `${SUPABASE_URL}/rest/v1/vehicles?select=display_name,daily_rate,category,status,metadata&status=neq.retired&order=category.asc,display_name.asc`,
       {
         headers: {
           'apikey': SUPABASE_SERVICE_ROLE_KEY,
@@ -41,13 +41,8 @@ async function getVehiclePrices(): Promise<string> {
       // Skip vehicles with booking disabled
       if (v.metadata?.booking_disabled) continue;
 
-      const price = v.price_resident_daily || v.daily_rate;
-      const priceNR = v.price_nonresident_daily;
-      const hasDual = priceNR && priceNR !== price;
-
-      const priceStr = hasDual
-        ? `Residenti €${price}/giorno, Non Residenti €${priceNR}/giorno`
-        : `da €${price}/giorno`;
+      const price = v.daily_rate;
+      const priceStr = `da €${price}/giorno`;
 
       const line = `- ${v.display_name} - ${priceStr}`;
 

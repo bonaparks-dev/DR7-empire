@@ -34,7 +34,7 @@ const mapSupabaseUserToAppUser = (supabaseUser: SupabaseUser): AppUser => {
   return {
     id: supabaseUser.id,
     email: supabaseUser.email || '',
-    fullName: user_metadata.full_name || user_metadata.name || 'No Name',
+    fullName: user_metadata.full_name || user_metadata.fullName || user_metadata.name || 'No Name',
     provider: app_metadata.provider,
     role: user_metadata.role || 'personal',
     companyName: user_metadata.company_name,
@@ -64,44 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const setSessionUser = async (session: Session | null) => {
       if (session?.user) {
         const appUser = mapSupabaseUserToAppUser(session.user);
-
-        // FIX 7: Don't set residencyZone until it's actually fetched.
-        // Set user WITHOUT residencyZone first, then update after async fetch.
-        // This prevents the pricing wizard from using 'NON_RESIDENTE' as incorrect default.
-        setUser(appUser); // User is available immediately (without residencyZone)
-
-        // Fetch residency_zone from Netlify Function with safe fallback
-        try {
-          const response = await fetch(`/.netlify/functions/getResidencyZone?user_id=${session.user.id}`, {
-            headers: { 'Authorization': `Bearer ${session.access_token}` },
-          });
-
-          if (!response.ok) {
-            console.warn('Unable to fetch residency_zone from Netlify Function:', {
-              status: response.status,
-              statusText: response.statusText,
-              userId: session.user.id,
-              networkOnline: navigator.onLine,
-            });
-            // Fallback only after confirmed failure — not during loading
-            (appUser as any).residencyZone = 'NON_RESIDENTE';
-          } else {
-            const data = await response.json();
-            (appUser as any).residencyZone = data.residency_zone || 'NON_RESIDENTE';
-          }
-        } catch (error) {
-          console.error('Error fetching residency zone:', {
-            error,
-            errorMessage: (error as Error).message,
-            userId: session.user.id,
-            networkOnline: navigator.onLine,
-          });
-          // Fallback only after confirmed failure
-          (appUser as any).residencyZone = 'NON_RESIDENTE';
-        }
-
-        // Update user with resolved residencyZone
-        setUser({ ...appUser });
+        setUser(appUser);
       } else {
         setUser(null);
       }
@@ -217,8 +180,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateUser = useCallback(async (updates: Partial<AppUser>) => {
     const currentMeta = user ? (await supabase.auth.getUser()).data.user?.user_metadata : {};
+    // Map camelCase AppUser fields to snake_case user_metadata keys
+    const metaUpdates: Record<string, any> = { ...updates };
+    if (updates.fullName !== undefined) {
+      metaUpdates.full_name = updates.fullName;
+      delete metaUpdates.fullName;
+    }
     const { data, error } = await supabase.auth.updateUser({
-      data: { ...currentMeta, ...updates }
+      data: { ...currentMeta, ...metaUpdates }
     });
 
     if (error) return { data: null, error };

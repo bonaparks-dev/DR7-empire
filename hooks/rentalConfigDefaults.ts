@@ -145,7 +145,6 @@ export const DEFAULT_RENTAL_CONFIG: RentalConfig = {
   rental_day_rates: {
     exotic: {
       resident: { '1': 349, '2': 698, '3': 980, '4': 1290, '5': 1590, '6': 1990, '7': 2290 },
-      non_resident: { '1': 449, '2': 898, '3': 1289, '4': 1690, '5': 2190, '6': 2590, '7': 2890 },
       extrapolation: 'day7_average',
     },
     urban: {

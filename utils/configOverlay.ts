@@ -10,7 +10,7 @@ import type { InsuranceTierOption, DepositOption, ExperienceService } from '../t
 export interface RentalDayRates {
   exotic: {
     resident: Record<string, number>
-    non_resident: Record<string, number>
+    non_resident?: Record<string, number>
   }
   urban: { flat: Record<string, number>; extrapolation: string }
   furgone: { flat: Record<string, number> }
