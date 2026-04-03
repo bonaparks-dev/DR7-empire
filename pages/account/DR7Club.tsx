@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../hooks/useAuth'
+import { supabase } from '../../supabaseClient'
 import { getUserCreditBalance, getCreditTransactions } from '../../utils/creditWallet'
 import type { CreditTransaction } from '../../utils/creditWallet'
 import {
@@ -49,13 +50,72 @@ const DR7Club = () => {
     }
   }
 
+  const [subscribeError, setSubscribeError] = useState<string | null>(null)
+
   const handleSubscribe = async (plan: 'monthly' | 'annual') => {
+    if (!user?.id) return
     setSubscribing(true)
+    setSubscribeError(null)
     try {
       const planInfo = CLUB_PLANS[plan]
-      const msg = `Ciao! Vorrei iscrivermi al DR7 Club - Piano ${planInfo.label} (€${planInfo.price}${planInfo.period}).\n\nNome: ${user?.fullName || ''}\nEmail: ${user?.email || ''}`
-      window.open(`https://wa.me/393457905205?text=${encodeURIComponent(msg)}`, '_blank')
-    } finally {
+      const price = planInfo.price
+
+      // Calculate expiry
+      const expiresAt = new Date()
+      if (plan === 'monthly') {
+        expiresAt.setMonth(expiresAt.getMonth() + 1)
+      } else {
+        expiresAt.setFullYear(expiresAt.getFullYear() + 1)
+      }
+
+      // 1. Insert pending subscription
+      const { data: subData, error: dbError } = await supabase
+        .from('dr7_club_subscriptions')
+        .insert({
+          user_id: user.id,
+          plan,
+          status: 'active',
+          price,
+          expires_at: expiresAt.toISOString(),
+        })
+        .select()
+        .single()
+
+      if (dbError) throw new Error(dbError.message)
+
+      // 2. Generate Nexi order ID
+      const nexiOrderId = `DR7CLUB${Date.now()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+
+      // 3. Create Nexi payment
+      const nexiResponse = await fetch('/.netlify/functions/create-nexi-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: nexiOrderId,
+          amount: Math.round(price * 100),
+          currency: 'EUR',
+          description: `DR7 Club - Piano ${planInfo.label}`,
+          customerEmail: user.email,
+          customerName: user.fullName,
+        }),
+      })
+
+      const nexiData = await nexiResponse.json()
+      if (!nexiResponse.ok) throw new Error(nexiData.error || 'Errore creazione pagamento')
+
+      // 4. Save order reference
+      await supabase
+        .from('dr7_club_subscriptions')
+        .update({ payment_reference: nexiOrderId })
+        .eq('id', subData.id)
+
+      sessionStorage.setItem('dr7_pending_order', nexiOrderId)
+      sessionStorage.setItem('dr7_pending_type', 'dr7_club')
+
+      // 5. Redirect to Nexi payment page
+      window.location.href = nexiData.paymentUrl
+    } catch (err: any) {
+      setSubscribeError(err.message || 'Errore durante il pagamento')
       setSubscribing(false)
     }
   }
@@ -101,6 +161,11 @@ const DR7Club = () => {
             Scegli il tuo piano e inizia a guadagnare credito wallet su ogni prenotazione.
             Bonus di €{SIGNUP_BONUS} alla prima iscrizione!
           </p>
+          {subscribeError && (
+            <div className="mb-4 p-3 bg-red-900/30 border border-red-500/50 rounded-lg">
+              <p className="text-red-300 text-sm">{subscribeError}</p>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Monthly */}
             <div className="border border-gray-700 rounded-lg p-5 hover:border-white/30 transition-colors">
