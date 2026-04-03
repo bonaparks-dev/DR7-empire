@@ -80,19 +80,27 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
     window.open(whatsappUrl, '_blank');
   };
 
+  // In flotta mode (no price, no button), card is image-only with overlay name
+  const isFlottaMode = hidePrice && hideBookButton;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden group transition-all duration-300 hover:border-white/50 hover:shadow-2xl hover:shadow-white/10 flex flex-col"
+      className="bg-black border border-gray-800 rounded-lg overflow-hidden group transition-all duration-300 hover:border-white/50 hover:shadow-2xl hover:shadow-white/10 flex flex-col"
     >
       <div className="relative overflow-hidden">
-        <img src={item.image} alt={item.name} className={`w-full ${imageAspectRatio} object-cover transition-transform duration-500`} />
+        <img src={item.image} alt={item.name} className={`w-full ${isFlottaMode ? 'aspect-[3/4]' : imageAspectRatio} object-cover transition-transform duration-500 group-hover:scale-105`} />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+        {isFlottaMode && (
+          <div className="absolute bottom-0 left-0 right-0 p-5">
+            <h3 className="text-xl font-bold text-white tracking-wide">{item.name}</h3>
+          </div>
+        )}
       </div>
-      <div className="px-6 pt-6 pb-4 flex-grow flex flex-col">
+      {!isFlottaMode && <div className="px-6 pt-6 pb-4 flex-grow flex flex-col">
         <div className="mt-auto space-y-2">
           {!hidePrice && (
             <>
@@ -185,7 +193,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
             </button>
           )}
         </div>)}
-      </div>
+      </div>}
     </motion.div >
   );
 };

@@ -146,9 +146,6 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                   <NavLink to="/supercar-luxury" onClick={onClose} className={navLinkClasses}>
                     <span>Supercar & Luxury Division</span>
                   </NavLink>
-                  <NavLink to="/urban" onClick={onClose} className={navLinkClasses}>
-                    <span>Urban Mobility Division</span>
-                  </NavLink>
                   <NavLink to="/corporate-fleet" onClick={onClose} className={navLinkClasses}>
                     <span>Corporate & Utility Fleet</span>
                   </NavLink>

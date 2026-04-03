@@ -225,7 +225,7 @@ const AnimatedRoutes = () => {
         <Route path="/aviation-quote" element={<AviationQuoteRequestPage />} />
         {/* Canonical SEO-friendly routes */}
         <Route path="/supercar-luxury" element={<RentalPage categoryId="cars" />} />
-        <Route path="/urban" element={<RentalPage categoryId="urban-cars" />} />
+        <Route path="/urban" element={<Navigate to="/supercar-luxury" replace />} />
         <Route path="/prime-wash" element={<CarWashServicesPage />} />
         <Route path="/contact" element={<ContactPage />} />
 
