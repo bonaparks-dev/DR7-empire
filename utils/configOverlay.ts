@@ -120,18 +120,28 @@ export function buildWebsiteConfigOverlay(config: RentalConfig | null): WebsiteC
     }
   }
 
-  // Build km package prices from admin Revenue tab
+  // Build km package prices — reads from BOTH sources:
+  // 1. km_packages array (RevenuePricingTab) — flat list with ids
+  // 2. unlimited_km nested config (Centralina) — structured by category/tier
+  // Whichever source has a value wins; Centralina takes priority for unlimited km
   const kmPkgs = (config as Record<string, unknown>).km_packages as { id: string; price: number; is_active?: boolean }[] | undefined
   const findKmPrice = (id: string, fallback: number): number => {
     const item = kmPkgs?.find(p => p.id === id && p.is_active !== false)
     return item?.price ?? fallback
   }
+
+  // Centralina unlimited_km values (source of truth when present)
+  const centralinaT1 = config.unlimited_km?.exotic?.TIER_1?.per_day
+  const centralinaT2 = config.unlimited_km?.exotic?.TIER_2?.per_day
+  const centralinaFurgone = config.unlimited_km?.furgone?._all_tiers?.flat ?? config.unlimited_km?.furgone?._all_tiers?.per_day
+  const centralinaNcc = config.unlimited_km?.furgone?.TIER_2?.per_day ?? config.unlimited_km?.furgone?._all_tiers?.per_day
+
   const kmPackagePrices: KmPackagePrices = {
     supercar50kmPerDay: findKmPrice('supercar_50km', 199),
-    unlimitedSupercarT1PerDay: findKmPrice('unlimited_km_supercar_t1', 289),
-    unlimitedSupercarT2PerDay: findKmPrice('unlimited_km_supercar_t2', 189),
-    unlimitedFurgonePerDay: findKmPrice('unlimited_km_furgone', 94.50),
-    unlimitedNccPerDay: findKmPrice('unlimited_km_ncc', 189),
+    unlimitedSupercarT1PerDay: centralinaT1 ?? findKmPrice('unlimited_km_supercar_t1', 289),
+    unlimitedSupercarT2PerDay: centralinaT2 ?? findKmPrice('unlimited_km_supercar_t2', 189),
+    unlimitedFurgonePerDay: centralinaFurgone ?? findKmPrice('unlimited_km_furgone', 94.50),
+    unlimitedNccPerDay: centralinaNcc ?? findKmPrice('unlimited_km_ncc', 189),
   }
 
   return {

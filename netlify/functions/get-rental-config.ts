@@ -43,7 +43,7 @@ const handler: Handler = async (event) => {
       statusCode: 200,
       headers: {
         ...headers,
-        'Cache-Control': 'public, max-age=30, stale-while-revalidate=300',
+        'Cache-Control': 'public, max-age=10, stale-while-revalidate=30',
       },
       body: JSON.stringify({ config: data.config, updated_at: data.updated_at }),
     }
