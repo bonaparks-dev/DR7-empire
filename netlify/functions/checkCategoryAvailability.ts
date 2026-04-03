@@ -74,7 +74,7 @@ export const handler: Handler = async (event) => {
         const dropoff = new Date(dropoffDate);
 
         // 1. Fetch all non-retired vehicles in this category
-        const vehiclesUrl = `${SUPABASE_URL}/rest/v1/vehicles?select=id,display_name,plate,status,daily_rate,price_resident_daily,price_nonresident_daily,category,metadata&category=eq.${category}&status=neq.retired&order=display_name.asc`;
+        const vehiclesUrl = `${SUPABASE_URL}/rest/v1/vehicles?select=id,display_name,plate,status,daily_rate,category,metadata&category=eq.${category}&status=neq.retired&order=display_name.asc`;
         const vehiclesResponse = await fetch(vehiclesUrl, {
             headers: {
                 'apikey': SUPABASE_SERVICE_ROLE_KEY!,
@@ -232,8 +232,6 @@ export const handler: Handler = async (event) => {
                     displayName: representative.display_name,
                     displayGroup: groupKey,
                     dailyRate: representative.daily_rate,
-                    priceResidentDaily: representative.price_resident_daily,
-                    priceNonresidentDaily: representative.price_nonresident_daily,
                     category: representative.category,
                     metadata: representative.metadata,
                     availableCount: availableMembers.length,

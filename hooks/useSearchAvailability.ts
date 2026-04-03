@@ -56,8 +56,8 @@ export function useSearchAvailability(categoryContext?: string) {
     // Batch check availability for all vehicles in parallel
     const checks = vehicles.map(async (item) => {
       const vehicleType = classifyVehicle(item, categoryContext)
-      const dailyRate = item.pricePerDay?.eur || item.priceResidentDaily || 0
-      const totalPrice = calculateMultiDayPrice(vehicleType, days, dailyRate, false)
+      const dailyRate = item.pricePerDay?.eur || 0
+      const totalPrice = calculateMultiDayPrice(vehicleType, days, dailyRate)
 
       // Get vehicle IDs for availability check
       const vehicleIds = (item as any).vehicleIds || (item.id ? [item.id.replace('car-', '')] : [])

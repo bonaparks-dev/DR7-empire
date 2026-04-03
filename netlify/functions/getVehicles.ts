@@ -73,7 +73,7 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
         // Build optimized query with specific fields
         let query = supabase
             .from('vehicles')
-            .select('id, display_name, plate, status, daily_rate, price_resident_daily, price_nonresident_daily, category, metadata, created_at, updated_at')
+            .select('id, display_name, plate, status, daily_rate, category, metadata, created_at, updated_at')
             .neq('status', 'retired')
             .order('display_name', { ascending: true });
 

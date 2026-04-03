@@ -76,7 +76,6 @@ const SignUpPage: React.FC = () => {
     cittaResidenza: '',
     provinciaResidenza: '',
 
-    residencyZone: 'NON_RESIDENTE', // Required residency zone field
     // Pubblica Amministrazione fields
     codiceUnivoco: '',
     enteUfficio: '',
@@ -272,7 +271,6 @@ const SignUpPage: React.FC = () => {
         customerData.citta_residenza = formData.cittaResidenza;
         customerData.provincia_residenza = formData.provinciaResidenza;
 
-        customerData.residency_zone = formData.residencyZone || 'NON_RESIDENTE';
       } else if (tipoCliente === 'pubblica_amministrazione') {
         customerData.codice_univoco = formData.codiceUnivoco;
         customerData.ente_ufficio = formData.enteUfficio;
@@ -818,28 +816,6 @@ const SignUpPage: React.FC = () => {
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         Provincia
                       </label>
-                      {formData.nazione === 'Italia' && formData.residencyZone?.startsWith('RESIDENTE_') ? (
-                        <AppleStyleSelect
-                          label="Provincia"
-                          name="provinciaResidenza"
-                          value={
-                            formData.residencyZone === 'RESIDENTE_CA' ? 'CA' :
-                              formData.residencyZone === 'RESIDENTE_SU' ? 'SU' :
-                                formData.provinciaResidenza
-                          }
-                          onChange={(e) => {
-                            const province = e.target.value;
-                            // Update both provinciaResidenza and residencyZone
-                            setFormData(prev => ({
-                              ...prev,
-                              provinciaResidenza: province,
-                              residencyZone: province === 'CA' ? 'RESIDENTE_CA' : province === 'SU' ? 'RESIDENTE_SU' : prev.residencyZone
-                            }));
-                          }}
-                          options={['CA', 'SU']}
-                          required
-                        />
-                      ) : (
                         <input
                           type="text"
                           name="provinciaResidenza"
@@ -850,7 +826,6 @@ const SignUpPage: React.FC = () => {
                           className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
                           required
                         />
-                      )}
                       {errors.provinciaResidenza && <p className="text-xs text-red-400 mt-1">{errors.provinciaResidenza}</p>}
                     </div>
                   </div>
