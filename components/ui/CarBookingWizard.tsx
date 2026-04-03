@@ -1179,8 +1179,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // Get valid return times for the return date
       const validTimes = getValidReturnTimes(formData.returnDate);
       if (validTimes.length === 0) {
-        // No valid times — just set the ideal (will be validated later)
-        setFormData(prev => ({ ...prev, returnTime: idealReturn }));
+        // No valid times available — clear the return time
+        setFormData(prev => ({ ...prev, returnTime: '' }));
         return;
       }
 
@@ -3958,7 +3958,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   </div>
                   <div><label className="text-sm text-gray-400">Luogo di nascita</label><input type="text" name="luogoNascita" value={formData.luogoNascita} onChange={handleChange} placeholder="es. Cagliari" className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" /></div>
                   <div><label className="text-sm text-gray-400">Provincia di nascita</label><input type="text" name="provinciaNascita" value={formData.provinciaNascita} onChange={(e) => setFormData(p => ({ ...p, provinciaNascita: e.target.value.toUpperCase() }))} placeholder="es. CA" maxLength={2} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm uppercase" /></div>
-                  <div className="md:col-span-2"><label className="text-sm text-gray-400">Residenza (indirizzo completo) *</label><input type="text" name="residenza" value={formData.residenza} onChange={handleChange} placeholder="es. Via Roma 1, 09100 Cagliari (CA)" className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors.residenza && <p className="text-xs text-red-400 mt-1">{errors.residenza}</p>}</div>
                 </>
               )}
               <div><label className="text-sm text-gray-400">Data di nascita *</label><input type="date" name={`${prefix}birthDate`} value={(driverData as any).birthDate} onChange={handleChange} max={new Date().toISOString().split('T')[0]} className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm" />{errors[`${prefix}birthDate`] && <p className="text-xs text-red-400 mt-1">{errors[`${prefix}birthDate`]}</p>}</div>
@@ -4258,8 +4257,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         setFormData(prev => ({
                           ...prev,
                           insuranceOption: opt.id,
-                          // If selecting RCA and current deposit is no_deposit, reset deposit
-                          depositOption: opt.id === 'RCA' && prev.depositOption === 'no_deposit' ? '' : prev.depositOption,
+                          // If selecting RCA, force credit_card deposit (mandatory)
+                          depositOption: opt.id === 'RCA' ? 'credit_card' : (prev.depositOption === 'no_deposit' ? '' : prev.depositOption),
                         }));
                       }}
                     >
@@ -4463,7 +4462,23 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               <section className="border-t border-gray-700 pt-6">
                 <h3 className="text-lg font-bold text-white mb-2">D. CAUZIONE</h3>
                 <p className="text-sm text-gray-400 mb-4">Scegli come gestire la cauzione.</p>
-                <div className="space-y-3">
+                {(() => {
+                  const rcaOpt = insuranceOptions.find((o: any) => o.id === 'RCA');
+                  const mandatoryAmount = rcaOpt?.mandatoryDeposit || 0;
+                  if (selectedInsuranceIsRCA && mandatoryAmount > 0) {
+                    return (
+                      <div className="p-4 rounded-lg border-2 border-red-500/50 bg-red-500/10">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-white">Cauzione obbligatoria (solo RCA)</span>
+                          <span className="font-bold text-red-400">€{mandatoryAmount.toLocaleString()}</span>
+                        </div>
+                        <p className="text-sm text-gray-400 mt-1">Senza Kasko è richiesta una cauzione di €{mandatoryAmount.toLocaleString()} su carta di credito.</p>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+                {!selectedInsuranceIsRCA && <div className="space-y-3">
                   {depositOptions.map(opt => {
                     const isSelected = formData.depositOption === opt.id;
                     // Disable "no_deposit" if insurance is RCA (solo con acquisto Kasko)
@@ -4496,7 +4511,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       </div>
                     );
                   })}
-                </div>
+                </div>}
                 {errors.depositOption && <p className="text-xs text-red-400 mt-2">{errors.depositOption}</p>}
               </section>
             ) : null}
