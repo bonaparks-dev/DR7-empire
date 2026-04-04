@@ -253,7 +253,6 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
                   globalIdx === highlightedIndex ? 'bg-white/10 text-white' : 'text-gray-300 hover:bg-white/5'
                 }`}
               >
-                <span className="text-gray-500 text-xs w-5 text-center flex-shrink-0">{item.icon}</span>
                 <span className="flex-1 truncate">{item.label}</span>
                 <span className="text-gray-600 text-xs flex-shrink-0">{item.sublabel}</span>
               </button>
@@ -280,7 +279,6 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
                   globalIdx === highlightedIndex ? 'bg-white/10 text-white' : 'text-gray-300 hover:bg-white/5'
                 }`}
               >
-                <span className="text-gray-500 text-xs w-5 text-center flex-shrink-0">{item.icon}</span>
                 <span className="flex-1 truncate">{item.label}</span>
                 <span className="text-gray-600 text-xs flex-shrink-0">{item.sublabel}</span>
               </button>
