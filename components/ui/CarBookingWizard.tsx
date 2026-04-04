@@ -177,6 +177,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSavingPreventivo, setIsSavingPreventivo] = useState(false);
   const [preventivoSaved, setPreventivoSaved] = useState(false);
+
+  // Auto-detect Sardinian residency from address field
+  const SARDINIAN_INDICATORS = ['sardegna', 'cagliari', 'sassari', 'nuoro', 'oristano', 'olbia', 'carbonia', 'iglesias', 'tempio', 'lanusei', 'sanluri', 'villacidro', 'tortolì', 'quartu', '09', '08'];
+  const isSardinianResident = useMemo(() => {
+    const addr = (formData.address || '').toLowerCase();
+    if (!addr || addr.length < 4) return null; // unknown yet
+    return SARDINIAN_INDICATORS.some(ind => addr.includes(ind));
+  }, [formData.address]);
   const today = useMemo(() => {
     // Get today's date in Italy timezone (Europe/Rome)
     const italyDate = new Date().toLocaleString('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -313,6 +321,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   const ACTIVE_NO_DEPOSIT_SURCHARGE = configOverlay?.noDepositSurchargePerDay ?? NO_DEPOSIT_SURCHARGE_PER_DAY;
   const ACTIVE_DELIVERY_PRICE_PER_KM = configOverlay?.deliveryPricePerKm ?? DELIVERY_PRICE_PER_KM;
+
+  // Deposit options from Centralina based on tier + residency
+  const getActiveDepositOptions = useCallback((tier: string) => {
+    if (!configOverlay?.depositOptions) return TIER_DEPOSIT_OPTIONS[tier] || [];
+    const isResident = isSardinianResident !== false; // default to resident if unknown
+    const key = `${tier}_${isResident ? 'RESIDENT' : 'NON_RESIDENT'}` as keyof typeof configOverlay.depositOptions;
+    const opts = configOverlay.depositOptions[key];
+    return opts && opts.length > 0 ? opts : TIER_DEPOSIT_OPTIONS[tier] || [];
+  }, [configOverlay, isSardinianResident]);
   const ACTIVE_DR7_FLEX = configOverlay ? { dailyPrice: configOverlay.dr7Flex.dailyPrice, refundPercent: configOverlay.dr7Flex.refundPercent, description: DR7_FLEX.description } : DR7_FLEX;
   const ACTIVE_EXPERIENCE_SERVICES = configOverlay?.experienceServices?.length ? configOverlay.experienceServices : BOOKING_EXPERIENCE_SERVICES;
   const ACTIVE_RENTAL_DAY_RATES = configOverlay?.rentalDayRates ?? null;
@@ -1538,25 +1555,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       calculatedPickupFee + calculatedDropoffFee + calculatedDeliveryFee + carWashFee;
 
     // --- DEPOSIT SURCHARGES ---
-    const vTypeForDeposit = getVehicleType(item, categoryContext);
-    const isUrbanForDeposit = vTypeForDeposit === 'UTILITARIA' || vTypeForDeposit === 'FURGONE' || vTypeForDeposit === 'V_CLASS';
-
-    // Urban/corporate: +30% for micro_deposit
-    const urbanNoDepositSurcharge = (isUrbanForDeposit && formData.depositOption === 'micro_deposit')
-      ? roundToTwoDecimals(calculatedSubtotal * 0.30) : 0;
-
-    // Supercar: deposit option surcharges (no_deposit = €49/day, vehicle_deposit = €20/day)
     let supercarDepositSurcharge = 0;
-    if (!isUrbanForDeposit && formData.depositOption) {
-      const depositKey = `${activeTierForCalc}`;
-      const depOpts = TIER_DEPOSIT_OPTIONS[depositKey] || [];
+    if (formData.depositOption) {
+      const depOpts = getActiveDepositOptions(activeTierForCalc);
       const selectedDep = depOpts.find(d => d.id === formData.depositOption);
       if (selectedDep?.surchargePerDay) {
         supercarDepositSurcharge = roundToTwoDecimals(selectedDep.surchargePerDay * billingDaysCalc);
       }
     }
 
-    const calculatedNoDepositSurcharge = urbanNoDepositSurcharge + supercarDepositSurcharge;
+    const calculatedNoDepositSurcharge = supercarDepositSurcharge;
     calculatedSubtotal = calculatedSubtotal + calculatedNoDepositSurcharge;
 
     let specialDiscountAmount = 0;
@@ -1761,17 +1769,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (memberTier === 'gold' || memberTier === 'platinum') return 0;
     if (isLoyalCustomer) return 0;
 
-    // Supercars: use tier-based deposit options (always RESIDENT since distinction removed)
+    // Use Centralina-based deposit options (tier + residency)
     const activeTier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2';
-    const depositKey = `${activeTier}`;
-    const depOptions = TIER_DEPOSIT_OPTIONS[depositKey] || [];
+    const depOptions = getActiveDepositOptions(activeTier);
     const selectedDep = depOptions.find(d => d.id === formData.depositOption);
 
     if (selectedDep) {
-      return selectedDep.amount; // The fixed deposit amount (€0 for no_deposit/vehicle, €1000/€2000 for card, €4999 for cash)
+      return selectedDep.amount;
     }
 
-    // Fallback: if no deposit option selected yet, show default card amount
+    // Fallback: default card amount from hardcoded rules
     const isYoung = (driverAge >= 21 && driverAge <= 25) || (licenseYears >= 3 && licenseYears <= 4);
     return isYoung ? DEPOSIT_RULES.SUPERCAR.CARD_YOUNG : DEPOSIT_RULES.SUPERCAR.CARD_STANDARD;
   };
@@ -4303,7 +4310,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const activeTier = driverTier || 'TIER_2'; // fallback
         const tierPricing = getKmPricingForTier(activeTier);
         const insuranceOptions = getInsuranceForTier(activeTier);
-        const depositOptions = getDepositOptionsForTier(activeTier);
+        const depositOptions = getActiveDepositOptions(activeTier);
         const experienceServices = getExperienceServicesForTier(activeTier);
 
         // Check if "no deposit" requires Kasko (cannot select no_deposit with RCA only)
@@ -4488,9 +4495,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
             {/* === D. CAUZIONE === */}
             {!isMassimo && !isLoyalCustomer && getMembershipTierName(user) !== 'gold' && getMembershipTierName(user) !== 'platinum' ? (
-              /* Supercar: tier-based deposit options */
               <section className="border-t border-gray-700 pt-6">
-                <h3 className="text-lg font-bold text-white mb-2">D. CAUZIONE</h3>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-bold text-white">D. CAUZIONE</h3>
+                  {isSardinianResident !== null && (
+                    <span className={`text-xs font-semibold px-3 py-1 rounded-full ${isSardinianResident ? 'bg-green-500/15 text-green-400' : 'bg-amber-500/15 text-amber-400'}`}>
+                      {isSardinianResident ? 'Residente Sardegna' : 'Non Residente'}
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-gray-400 mb-4">Scegli come gestire la cauzione.</p>
                 {(() => {
                   const rcaOpt = insuranceOptions.find((o: any) => o.id === 'RCA');
@@ -4985,21 +4998,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       return (
                         <div className="mt-3 p-3 bg-gray-700/50 rounded-lg">
                           <p className="text-sm font-semibold text-white">CAUZIONE AL RITIRO</p>
-                          {isUrbanOrCorporate && formData.depositOption && (
-                            <p className="text-sm text-gray-300 mt-1">
-                              {formData.depositOption === 'with_deposit'
-                                ? `Cauzione: €${DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT}`
-                                : `Micro Cauzione: €${licenseYears >= 5 ? DEPOSIT_RULES.UTILITARIA.LICENSE_5_OR_MORE : DEPOSIT_RULES.UTILITARIA.LICENSE_UNDER_5}`}
-                            </p>
-                          )}
-                          {!isUrbanOrCorporate && depositAmt > 0 && (
+                          {depositAmt > 0 && (
                             <p className="text-sm text-gray-300 mt-1">Importo: €{depositAmt.toLocaleString()}</p>
                           )}
-                          {formData.depositOption && !isUrbanOrCorporate && (
+                          {formData.depositOption && (
                             <p className="text-sm text-gray-400 mt-1">
                               Tipo: {(() => {
-                                const depKey = `${(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'}_${'RESIDENT'}`;
-                                const opt = (TIER_DEPOSIT_OPTIONS[depKey] || []).find((d: any) => d.id === formData.depositOption);
+                                const activeTier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2';
+                                const opt = getActiveDepositOptions(activeTier).find((d: any) => d.id === formData.depositOption);
                                 return opt?.label || formData.depositOption;
                               })()}
                             </p>
