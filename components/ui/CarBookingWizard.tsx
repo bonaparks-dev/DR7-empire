@@ -3546,10 +3546,21 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               )}
             </div>
 
-            {/* Tariffa warning */}
-            <div className="p-3 bg-red-900/30 border border-red-500 rounded-lg">
-              <p className="text-red-300 font-semibold text-sm">La tariffa potrebbe variare.</p>
-            </div>
+            {/* Tariffa warning — show when return time is 30+ min after default (pickupTime - 1h30) */}
+            {(() => {
+              if (!formData.pickupTime || !formData.returnTime) return null;
+              const [pH, pM] = formData.pickupTime.split(':').map(Number);
+              const [rH, rM] = formData.returnTime.split(':').map(Number);
+              const defaultReturnMin = pH * 60 + pM - 90; // pickupTime - 1h30
+              const returnMin = rH * 60 + rM;
+              if (returnMin >= defaultReturnMin + 30) return (
+                <div className="p-3 bg-red-900/30 border border-red-500 rounded-lg">
+                  <p className="text-red-300 font-semibold text-sm">La tariffa può subire variazioni</p>
+                  <p className="text-red-300/80 text-xs mt-1">La restituzione del veicolo è prevista entro 1 ora e 30 minuti prima dell'orario di uscita, al fine di evitare eventuali variazioni.</p>
+                </div>
+              );
+              return null;
+            })()}
 
             {isFromSearch ? (
               /* Read-only summary when coming from Prenota Ora search */
@@ -3871,14 +3882,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         )}
                       </select>
                       <p className="text-xs text-gray-400 mt-1">Ritiro - 1h30 (auto), adattato alla disponibilità</p>
-                      {formData.returnTime !== '09:00' && (
-                        <p className="text-yellow-400 text-xs mt-2 flex items-center gap-1">
-                          <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                          </svg>
-                          La tariffa può subire variazioni in base all'orario selezionato
-                        </p>
-                      )}
                     </div>
                   </div>
                   {/* Vehicle Availability Check */}
