@@ -279,17 +279,23 @@ exports.handler = async (event) => {
         try {
             const custName = customerData?.nome
                 ? `${customerData.nome} ${customerData.cognome || ''}`.trim()
-                : 'Cliente';
+                : customerData?.rappresentante_nome
+                    ? `${customerData.rappresentante_nome} ${customerData.rappresentante_cognome || ''}`.trim()
+                    : customerData?.denominazione
+                        ? customerData.denominazione
+                        : customerData?.ente_ufficio
+                            ? customerData.ente_ufficio
+                            : 'Cliente';
 
             const welcomeMsg = `Gentile ${custName},\n\n`
-                + `La ringraziamo per essersi registrato sul nostro sito e per aver scelto di entrare nel mondo DR7.\n\n`
+                + `La ringraziamo per essersi registrato sul nostro sito e per aver scelto di entrare nel mondo *DR7*.\n\n`
                 + `Con la Sua registrazione, entra ufficialmente in un ecosistema esclusivo dedicato alla mobilità premium, ai servizi personalizzati e a un'esperienza superiore.\n\n`
-                + `Per darle il benvenuto, abbiamo appena accreditato *10€ di credito omaggio* sul Suo wallet DR7, già disponibili e utilizzabili per le Sue prossime prenotazioni.\n\n`
-                + `Inoltre, ogni acquisto Le permetterà di accumulare ulteriore credito: più utilizza i servizi DR7, più il Suo wallet crescerà nel tempo.\n\n`
-                + `La invitiamo ad approfittarne subito per prenotare il Suo servizio e vivere in prima persona lo standard DR7: rapido, elegante e senza compromessi.\n\n`
+                + `Per darle il benvenuto, abbiamo appena accreditato *10€ di credito omaggio* sul Suo wallet *DR7*, già disponibili e utilizzabili per le Sue prossime prenotazioni.\n\n`
+                + `Inoltre, ogni acquisto Le permetterà di accumulare ulteriore credito: più utilizza i servizi *DR7*, più il Suo wallet crescerà nel tempo.\n\n`
+                + `La invitiamo ad approfittarne subito per prenotare il Suo servizio e vivere in prima persona lo standard *DR7*: rapido, elegante e senza compromessi.\n\n`
                 + `Può procedere immediatamente da qui:\nhttps://dr7empire.com/\n\n`
                 + `Restiamo a Sua completa disposizione.\n\n`
-                + `Cordiali saluti,\nDR7`;
+                + `Cordiali saluti,\n*DR7*`;
 
             const custPhone = customerData?.telefono;
             const siteUrl = process.env.URL || 'https://dr7empire.com';
