@@ -323,13 +323,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const ACTIVE_DELIVERY_PRICE_PER_KM = configOverlay?.deliveryPricePerKm ?? DELIVERY_PRICE_PER_KM;
 
   // Deposit options from Centralina based on tier + residency
-  const getActiveDepositOptions = useCallback((tier: string) => {
-    if (!configOverlay?.depositOptions) return TIER_DEPOSIT_OPTIONS[tier] || [];
-    const isResident = isSardinianResident !== false; // default to resident if unknown
-    const key = `${tier}_${isResident ? 'RESIDENT' : 'NON_RESIDENT'}` as keyof typeof configOverlay.depositOptions;
-    const opts = configOverlay.depositOptions[key];
-    return opts && opts.length > 0 ? opts : TIER_DEPOSIT_OPTIONS[tier] || [];
-  }, [configOverlay, isSardinianResident]);
+  // Plain function (not hook) — safe to call anywhere
+  function getActiveDepositOptions(tier: string) {
+    try {
+      if (!configOverlay?.depositOptions) return TIER_DEPOSIT_OPTIONS[tier] || [];
+      const isResident = isSardinianResident !== false;
+      const key = `${tier}_${isResident ? 'RESIDENT' : 'NON_RESIDENT'}`;
+      const opts = (configOverlay.depositOptions as any)[key];
+      return opts && opts.length > 0 ? opts : TIER_DEPOSIT_OPTIONS[tier] || [];
+    } catch {
+      return TIER_DEPOSIT_OPTIONS[tier] || [];
+    }
+  }
   const ACTIVE_DR7_FLEX = configOverlay ? { dailyPrice: configOverlay.dr7Flex.dailyPrice, refundPercent: configOverlay.dr7Flex.refundPercent, description: DR7_FLEX.description } : DR7_FLEX;
   const ACTIVE_EXPERIENCE_SERVICES = configOverlay?.experienceServices?.length ? configOverlay.experienceServices : BOOKING_EXPERIENCE_SERVICES;
   const ACTIVE_RENTAL_DAY_RATES = configOverlay?.rentalDayRates ?? null;
