@@ -159,10 +159,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const vehicleType = useMemo(() => getVehicleType(item, categoryContext), [item, categoryContext]);
   const isUrbanOrCorporate = vehicleType === 'UTILITARIA' || vehicleType === 'FURGONE' || vehicleType === 'V_CLASS';
 
-  // Urban/Corporate fleet availability deadline - last checkout March 25th 2026
-  const UTILITARIE_MAX_DATE = '2026-03-25';
+  // Urban/Corporate fleet availability — no current deadline restriction
   const isUtilitaria = vehicleType === 'UTILITARIA';
-  const [showMaxDatePopup, setShowMaxDatePopup] = useState(false);
 
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -1717,16 +1715,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       if (!formData.returnDate || formData.returnDate.trim() === '') {
         newErrors.returnDate = "La data di riconsegna è obbligatoria.";
       }
-      // Block urban/corporate vehicles after March 25
-      if (isUtilitaria && formData.returnDate > UTILITARIE_MAX_DATE) {
-        setShowMaxDatePopup(true);
-        return false;
-      }
-      if (isUtilitaria && formData.pickupDate > UTILITARIE_MAX_DATE) {
-        setShowMaxDatePopup(true);
-        return false;
-      }
-
       if (formData.pickupDate && formData.returnDate) {
         const pickup = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
         const returnD = new Date(`${formData.returnDate}T${formData.returnTime}`);
@@ -3217,12 +3205,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           const value = e.target.value;
                           if (!value) return;
 
-                          // Block urban/corporate vehicles after March 25
-                          if (isUtilitaria && value > UTILITARIE_MAX_DATE) {
-                            setShowMaxDatePopup(true);
-                            return;
-                          }
-
                           // Auto-Clear Return Date if Pickup > Return or invalid
                           // IMPROVED: Reset return date cleanly to avoid "return date before pickup date" errors
                           const newPickup = value;
@@ -3243,7 +3225,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         min={earliestAvailability?.earliestAvailableDate && earliestAvailability.earliestAvailableDate > today
                           ? earliestAvailability.earliestAvailableDate
                           : today}
-                        max={isUtilitaria ? UTILITARIE_MAX_DATE : maxBookableDate}
+                        max={maxBookableDate}
                         required
                         className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors cursor-pointer ${errors.pickupDate || (formData.pickupDate && availabilityError)
                           ? 'border-red-500 focus:border-red-400'
@@ -3309,12 +3291,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           const value = e.target.value;
                           if (!value) return;
 
-                          // Block urban/corporate vehicles after March 25
-                          if (isUtilitaria && value > UTILITARIE_MAX_DATE) {
-                            setShowMaxDatePopup(true);
-                            return;
-                          }
-
                           // STRICT VALIDATION: Return Date must be at least the day after Pickup Date
                           if (formData.pickupDate && value <= formData.pickupDate) {
                             setErrors(prev => ({ ...prev, returnDate: 'Il noleggio minimo è di 1 giorno. Seleziona almeno il giorno successivo al ritiro.' }));
@@ -3345,7 +3321,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           handleChange(e);
                         }}
                         min={formData.pickupDate ? (() => { const d = new Date(formData.pickupDate); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })() : today}
-                        max={isUtilitaria ? UTILITARIE_MAX_DATE : maxReturnDate}
+                        max={maxReturnDate}
                         disabled={!formData.pickupDate || !formData.pickupTime}
                         required
                         className={`w-full bg-gray-800 rounded-md px-3 py-2 text-white text-sm border-2 transition-colors ${!formData.pickupDate || !formData.pickupTime
@@ -4857,7 +4833,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         type="button"
                         onClick={handleNext}
                         className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={(step === 1 && !!availabilityError) || (step === 1 && isCheckingAvailability) || (licenseYears < 2 && step === 2) || (step === 2 && !formData.confirmsInformation)}
+                        disabled={(step === 1 && !!availabilityError) || (step === 1 && isCheckingAvailability) || (step === 2 && formData.licenseIssueDate && licenseYears < 3) || (step === 2 && !formData.confirmsInformation)}
                       >
                         Continua
                       </button>
@@ -4879,47 +4855,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         </div>
       </div >
 
-      {/* Popup: Urban/Corporate vehicles blocked after March 25 — Apple style */}
-      {showMaxDatePopup && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
-          onClick={() => setShowMaxDatePopup(false)}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="bg-[#1c1c1e] border border-white/10 rounded-2xl max-w-sm w-full overflow-hidden shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="px-6 pt-8 pb-5 text-center">
-              <div className="w-12 h-12 bg-orange-500/15 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-[17px] font-semibold text-white mb-2">Veicolo non disponibile</h3>
-              <p className="text-[13px] text-gray-400 leading-relaxed">
-                I veicoli della categoria Urban & Utilitarie non sono disponibili oltre il <span className="text-white">25 marzo 2026</span>.
-              </p>
-              <p className="text-[13px] text-gray-400 leading-relaxed mt-2">
-                L'ultimo check-out disponibile è il <span className="text-white font-medium">25/03/2026</span>.
-              </p>
-            </div>
-            <div className="border-t border-white/10">
-              <button
-                onClick={() => setShowMaxDatePopup(false)}
-                className="w-full py-3.5 text-[17px] font-medium text-blue-400 hover:bg-white/5 transition-colors"
-              >
-                OK
-              </button>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
     </>
   );
 };
