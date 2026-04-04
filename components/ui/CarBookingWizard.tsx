@@ -472,10 +472,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   useEffect(() => {
     const vType = getVehicleType(item, categoryContext);
     if (vType === 'SUPERCAR') {
-      // Supercars default to 50km/day package (price from admin config)
+      // Supercars default to included KM (auto-calculated from days)
       setFormData(prev => ({
         ...prev,
-        kmPackageType: '50km'
+        kmPackageType: 'none'
       }));
     } else {
       // Urban vehicles get free unlimited km; others get standard calculated km
@@ -4384,28 +4384,27 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               )}
             </section>
 
-            {/* === B. CHILOMETRI (tier-conditional pricing) === */}
+            {/* === B. CHILOMETRI === */}
             <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-4">B. CHILOMETRI</h3>
               {displayVehicleType === 'SUPERCAR' && !isMassimo ? (
                 <div className="space-y-3">
+                  {/* KM inclusi (auto-calcolati da Centralina) */}
                   <div
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType === '50km'
-                      ? 'border-yellow-400 bg-yellow-400/10'
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType !== 'unlimited'
+                      ? 'border-green-500 bg-green-500/10'
                       : 'border-gray-600 hover:border-gray-500'}`}
-                    onClick={() => setFormData(prev => ({ ...prev, kmPackageType: '50km' as any }))}
+                    onClick={() => setFormData(prev => ({ ...prev, kmPackageType: 'none' as any }))}
                   >
                     <div className="flex justify-between items-center">
                       <div>
-                        <span className="font-bold text-white">50 km al giorno</span>
-                        <p className="text-sm text-gray-400">Ideale per uso cittadino</p>
-                        {formData.kmPackageType === '50km' && duration.days > 0 && (
-                          <p className="text-sm text-yellow-300 mt-1 font-semibold">Totale: {50 * Math.max(1, duration.days)} km per {Math.max(1, duration.days)} {Math.max(1, duration.days) === 1 ? 'giorno' : 'giorni'}</p>
-                        )}
+                        <span className="font-bold text-white">{includedKm > 0 ? `${includedKm} km inclusi` : 'KM inclusi nel noleggio'}</span>
+                        <p className="text-sm text-gray-400">Calcolati in base alla durata del noleggio</p>
                       </div>
-                      <span className="font-bold text-yellow-400">€{ACTIVE_SUPERCAR_50KM_RATE}/giorno</span>
+                      <span className="font-bold text-green-400">Inclusi</span>
                     </div>
                   </div>
+                  {/* KM illimitati (supplemento) */}
                   <div
                     className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType === 'unlimited'
                       ? 'border-yellow-400 bg-yellow-400/10'
@@ -4417,7 +4416,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         <span className="font-bold text-white">Km illimitati</span>
                         <p className="text-sm text-gray-400">Senza limiti di percorrenza</p>
                       </div>
-                      <span className="font-bold text-yellow-400">€{tierPricing.unlimitedKmPerDay}/giorno</span>
+                      <span className="font-bold text-yellow-400">+€{tierPricing.unlimitedKmPerDay}/giorno</span>
                     </div>
                   </div>
                 </div>
