@@ -175,6 +175,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSavingPreventivo, setIsSavingPreventivo] = useState(false);
+  const [preventivoSaved, setPreventivoSaved] = useState(false);
   const today = useMemo(() => {
     // Get today's date in Italy timezone (Europe/Rome)
     const italyDate = new Date().toLocaleString('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -2715,6 +2717,79 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       console.log('Discount code marked as used:', appliedDiscount.code);
     } catch (error) {
       console.error('Error marking discount code as used:', error);
+    }
+  };
+
+  // ── SAVE PREVENTIVO (quote) instead of booking ──
+  const handleSavePreventivo = async () => {
+    if (!user || !item || isSavingPreventivo) return;
+    setIsSavingPreventivo(true);
+    try {
+      const pickupISO = `${formData.pickupDate}T${formData.pickupTime || '10:30'}:00`;
+      const dropoffISO = `${formData.returnDate}T${formData.returnTime || '09:00'}:00`;
+
+      const payload = {
+        vehicle_id: item.vehicleIds?.[0] || item.id,
+        vehicle_name: item.name,
+        vehicle_plate: (item as any).plate || '',
+        vehicle_category: (item as any).category || 'exotic',
+        pickup_date: pickupISO,
+        dropoff_date: dropoffISO,
+        rental_days: duration.days,
+        pickup_location: formData.pickupLocation || 'dr7_office',
+        dropoff_location: formData.returnLocation || formData.pickupLocation || 'dr7_office',
+        base_daily_rate: effectivePricePerDay,
+        insurance_option: formData.insuranceOption,
+        insurance_daily_price: insuranceCost / Math.max(duration.days, 1),
+        insurance_total: insuranceCost,
+        km_limit: formData.kmLimit || includedKm || 0,
+        unlimited_km: formData.kmPackageType === 'unlimited',
+        km_overage_fee: 1.80,
+        unlimited_km_daily: formData.kmPackageType === 'unlimited' ? (kmPackageCost / Math.max(duration.days, 1)) : 0,
+        unlimited_km_total: formData.kmPackageType === 'unlimited' ? kmPackageCost : 0,
+        second_driver_daily: secondDriverFee / Math.max(duration.days, 1),
+        second_driver_total: secondDriverFee,
+        no_cauzione_daily: noDepositSurcharge,
+        no_cauzione_total: noDepositSurcharge * duration.days,
+        lavaggio_fee: lavaggioFee,
+        delivery_fee: deliveryFee,
+        pickup_fee: pickupFee,
+        subtotal: grandTotal,
+        sconto: specialDiscountAmount + membershipDiscount,
+        sconto_note: membershipTier ? `Sconto ${membershipTier}` : '',
+        total_final: grandTotal,
+        deposit_amount: getDeposit(),
+        driver_tier: driverTier || 'TIER_2',
+        customer_name: `${formData.firstName} ${formData.lastName}`.trim(),
+        customer_phone: formData.phone,
+        extras_detail: {
+          experience_services: formData.experienceServices,
+          flex: formData.dr7Flex,
+          wash_upsell: formData.washUpsellAccepted,
+        },
+        notes: '',
+      };
+
+      const res = await fetch('/.netlify/functions/create-website-preventivo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Errore salvataggio preventivo');
+      }
+
+      setPreventivoSaved(true);
+    } catch (err: any) {
+      console.error('Preventivo save error:', err);
+      alert('Errore: ' + (err.message || 'Riprova'));
+    } finally {
+      setIsSavingPreventivo(false);
     }
   };
 
@@ -5725,14 +5800,32 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             <p className="text-amber-300 text-sm font-semibold">Attenzione: l'orario di riconsegna selezionato supera il margine di 1h30 prima dell'orario di ritiro. Viene conteggiato 1 giorno aggiuntivo ({duration.days} giorni totali invece di {duration.days - 1}).</p>
                           </div>
                         )}
-                        <button
-                          type="submit"
-                          disabled={isProcessing || !formData.agreesToTerms || !formData.agreesToPrivacy || !formData.confirmsDocuments}
-                          className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed"
-                          style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
-                        >
-                          {isProcessing ? 'Elaborazione in corso...' : 'CONFERMA PRENOTAZIONE'}
-                        </button>
+                        {preventivoSaved ? (
+                          <div className="w-full text-center py-4 bg-green-500/10 border border-green-500/30 rounded-2xl">
+                            <p className="text-green-400 font-bold text-base">Preventivo salvato!</p>
+                            <p className="text-gray-400 text-sm mt-1">Puoi trovarlo nel tuo account in "I Miei Preventivi"</p>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col sm:flex-row gap-3 w-full">
+                            <button
+                              type="submit"
+                              disabled={isProcessing || !formData.agreesToTerms || !formData.agreesToPrivacy || !formData.confirmsDocuments}
+                              className="flex-1 px-6 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed"
+                              style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+                            >
+                              {isProcessing ? 'Elaborazione in corso...' : 'CONFERMA PRENOTAZIONE'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleSavePreventivo}
+                              disabled={isSavingPreventivo || !formData.agreesToTerms || !formData.agreesToPrivacy}
+                              className="flex-1 px-6 sm:px-8 py-3 border border-white text-white text-sm sm:text-base font-bold rounded-full hover:bg-white hover:text-black transition-colors flex items-center justify-center disabled:border-gray-600 disabled:text-gray-600 disabled:cursor-not-allowed"
+                              style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+                            >
+                              {isSavingPreventivo ? 'Salvataggio...' : 'RICHIEDI PREVENTIVO'}
+                            </button>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
