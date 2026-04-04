@@ -179,12 +179,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [preventivoSaved, setPreventivoSaved] = useState(false);
 
   // Auto-detect Sardinian residency from address field
-  const SARDINIAN_INDICATORS = ['sardegna', 'cagliari', 'sassari', 'nuoro', 'oristano', 'olbia', 'carbonia', 'iglesias', 'tempio', 'lanusei', 'sanluri', 'villacidro', 'tortolì', 'quartu', '09', '08'];
   const isSardinianResident = useMemo(() => {
-    const addr = (formData.address || '').toLowerCase();
-    if (!addr || addr.length < 4) return null; // unknown yet
-    return SARDINIAN_INDICATORS.some(ind => addr.includes(ind));
-  }, [formData.address]);
+    const addr = (formData?.address || '').toLowerCase();
+    if (!addr || addr.length < 4) return null;
+    const indicators = ['sardegna', 'cagliari', 'sassari', 'nuoro', 'oristano', 'olbia', 'carbonia', 'iglesias', 'tempio', 'lanusei', 'sanluri', 'villacidro', 'quartu', '09', '08'];
+    return indicators.some(ind => addr.includes(ind));
+  }, [formData?.address]);
   const today = useMemo(() => {
     // Get today's date in Italy timezone (Europe/Rome)
     const italyDate = new Date().toLocaleString('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -1556,13 +1556,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     // --- DEPOSIT SURCHARGES ---
     let supercarDepositSurcharge = 0;
-    if (formData.depositOption) {
-      const depOpts = getActiveDepositOptions(activeTierForCalc);
-      const selectedDep = depOpts.find(d => d.id === formData.depositOption);
-      if (selectedDep?.surchargePerDay) {
-        supercarDepositSurcharge = roundToTwoDecimals(selectedDep.surchargePerDay * billingDaysCalc);
+    try {
+      if (formData.depositOption) {
+        const depOpts = getActiveDepositOptions(activeTierForCalc);
+        const selectedDep = depOpts?.find(d => d.id === formData.depositOption);
+        if (selectedDep?.surchargePerDay) {
+          supercarDepositSurcharge = roundToTwoDecimals(selectedDep.surchargePerDay * billingDaysCalc);
+        }
       }
-    }
+    } catch { /* safe fallback */ }
 
     const calculatedNoDepositSurcharge = supercarDepositSurcharge;
     calculatedSubtotal = calculatedSubtotal + calculatedNoDepositSurcharge;
