@@ -33,7 +33,7 @@ const TYPE_ICONS: Record<string, string> = {
   city: '●',
   town: '○',
   resort: '◆',
-  address: '📍',
+  address: '○',
 };
 
 function formatNominatimAddress(result: NominatimResult): string {
@@ -146,7 +146,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
         nominatim: nom,
         label: formatted,
         sublabel: nom.address?.state || '',
-        icon: '📍',
+        icon: '○',
       });
     }
 
@@ -217,6 +217,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
         value={query}
         onChange={(e) => handleSearch(e.target.value)}
         onFocus={handleFocus}
+        onBlur={() => { setTimeout(() => setIsOpen(false), 200); }}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         className="w-full bg-[#2c2c2e] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-white/30 transition-colors text-sm"
@@ -228,7 +229,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       {isOpen && (displayItems.length > 0 || loading) && (
         <div
           ref={dropdownRef}
-          className="absolute top-full left-0 right-0 mt-1 bg-[#1c1c1e] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[999] max-h-64 overflow-y-auto"
+          className="absolute top-full left-0 right-0 mt-1 bg-[#1c1c1e] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-20 max-h-64 overflow-y-auto"
           role="listbox"
         >
           {/* Local results header */}
