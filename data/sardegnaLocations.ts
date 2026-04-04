@@ -8,6 +8,8 @@ export interface SardegnaLocation {
   province: string;
   label: string;
   aliases: string[];
+  lat?: number;
+  lon?: number;
 }
 
 // DR7 Office location

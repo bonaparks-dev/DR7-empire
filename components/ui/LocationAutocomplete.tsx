@@ -56,6 +56,8 @@ function nominatimToSardegnaLocation(result: NominatimResult): SardegnaLocation 
     province: result.address?.state || '',
     label: formatted,
     aliases: [],
+    lat: parseFloat(result.lat),
+    lon: parseFloat(result.lon),
   };
 }
 

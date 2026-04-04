@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LocationAutocomplete from './LocationAutocomplete';
 import { DR7_OFFICE_LOCATION, type SardegnaLocation } from '../../data/sardegnaLocations';
@@ -83,6 +83,77 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
   const [returnTime, setReturnTime] = useState('09:00');
   const [returnTimeManual, setReturnTimeManual] = useState(false);
   const [error, setError] = useState('');
+
+  // Delivery fee calculation
+  const [deliveryFee, setDeliveryFee] = useState<{ pickupFee: number; returnFee: number; pickupKm: number; returnKm: number } | null>(null);
+  const [isCalculatingDelivery, setIsCalculatingDelivery] = useState(false);
+  const deliveryDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const isOffice = (loc: SardegnaLocation) => loc.id === 'dr7_cagliari';
+
+  // Calculate delivery fee when location changes
+  useEffect(() => {
+    if (deliveryDebounceRef.current) clearTimeout(deliveryDebounceRef.current);
+
+    const pickupNeedsDelivery = !isOffice(pickupLocation);
+    const returnNeedsDelivery = !sameReturn && !isOffice(returnLocation);
+
+    if (!pickupNeedsDelivery && !returnNeedsDelivery) {
+      setDeliveryFee(null);
+      setIsCalculatingDelivery(false);
+      return;
+    }
+
+    setIsCalculatingDelivery(true);
+
+    deliveryDebounceRef.current = setTimeout(async () => {
+      try {
+        let pickupFee = 0, returnFee = 0, pickupKm = 0, returnKm = 0;
+
+        const calcDistance = async (loc: SardegnaLocation) => {
+          const body: any = {};
+          if (loc.lat && loc.lon) {
+            body.lat = loc.lat;
+            body.lon = loc.lon;
+          } else {
+            body.address = loc.label;
+          }
+          const res = await fetch('/.netlify/functions/calculate-delivery-distance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          });
+          if (!res.ok) return null;
+          return res.json();
+        };
+
+        if (pickupNeedsDelivery) {
+          const data = await calcDistance(pickupLocation);
+          if (data) { pickupFee = data.deliveryFee; pickupKm = data.distanceKm; }
+        }
+
+        if (returnNeedsDelivery) {
+          const data = await calcDistance(returnLocation);
+          if (data) { returnFee = data.deliveryFee; returnKm = data.distanceKm; }
+        }
+
+        // If same return, the driver does one round trip (not two)
+        if (sameReturn && pickupNeedsDelivery) {
+          setDeliveryFee({ pickupFee, returnFee: 0, pickupKm, returnKm: 0 });
+        } else {
+          setDeliveryFee({ pickupFee, returnFee, pickupKm, returnKm });
+        }
+      } catch {
+        setDeliveryFee(null);
+      } finally {
+        setIsCalculatingDelivery(false);
+      }
+    }, 800);
+
+    return () => { if (deliveryDebounceRef.current) clearTimeout(deliveryDebounceRef.current); };
+  }, [pickupLocation, returnLocation, sameReturn]);
+
+  const totalDeliveryFee = deliveryFee ? deliveryFee.pickupFee + deliveryFee.returnFee : 0;
 
   const setPickupTime = useCallback((time: string) => {
     setPickupTimeRaw(time);
@@ -255,6 +326,26 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
             </div>
           );
         })()}
+
+        {/* Delivery fee display */}
+        {isCalculatingDelivery && (
+          <p className="text-[12px] text-white/40 text-center">Calcolo costo consegna...</p>
+        )}
+        {!isCalculatingDelivery && totalDeliveryFee > 0 && (
+          <div className="p-3 bg-white/[0.04] border border-white/10 rounded-xl">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-white/60">Consegna a domicilio</span>
+              <span className="text-white font-semibold">+€{totalDeliveryFee.toFixed(0)}</span>
+            </div>
+            {deliveryFee && (
+              <p className="text-[11px] text-white/30 mt-1">
+                {deliveryFee.pickupKm > 0 && `${deliveryFee.pickupKm} km × €3/km × 2 (A/R)`}
+                {deliveryFee.returnKm > 0 && deliveryFee.pickupKm > 0 && ' + '}
+                {deliveryFee.returnKm > 0 && `Riconsegna: ${deliveryFee.returnKm} km × €3/km × 2`}
+              </p>
+            )}
+          </div>
+        )}
 
         <button
           onClick={handleSearch}
