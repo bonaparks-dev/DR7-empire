@@ -190,12 +190,11 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
             <select
               value={pickupTime}
               onChange={(e) => setPickupTime(e.target.value)}
-              style={{ colorScheme: 'dark' }}
-              className="bg-white/[0.06] text-white text-[15px] font-semibold rounded-xl px-3 py-3.5 min-h-[50px] border-0 outline-none appearance-none cursor-pointer w-[85px] text-center"
+              className="bg-[#2c2c2e] text-white text-[15px] font-semibold rounded-xl px-3 py-3.5 min-h-[50px] border border-white/10 outline-none cursor-pointer w-[85px] text-center"
             >
               {pickupTimes.length > 0
-                ? pickupTimes.map(t => <option key={t} value={t}>{t}</option>)
-                : <option value={pickupTime}>{pickupTime}</option>}
+                ? pickupTimes.map(t => <option key={t} value={t} className="bg-[#2c2c2e] text-white">{t}</option>)
+                : <option value={pickupTime} className="bg-[#2c2c2e] text-white">{pickupTime}</option>}
             </select>
           </div>
           {isSunday(pickupDate) && <p className="text-xs text-red-400 mt-1.5">Chiusi la domenica</p>}
@@ -230,12 +229,11 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
             <select
               value={returnTime}
               onChange={(e) => handleReturnTimeChange(e.target.value)}
-              style={{ colorScheme: 'dark' }}
-              className="bg-white/[0.06] text-white text-[15px] font-semibold rounded-xl px-3 py-3.5 min-h-[50px] border-0 outline-none appearance-none cursor-pointer w-[85px] text-center"
+              className="bg-[#2c2c2e] text-white text-[15px] font-semibold rounded-xl px-3 py-3.5 min-h-[50px] border border-white/10 outline-none cursor-pointer w-[85px] text-center"
             >
               {returnTimes.length > 0
-                ? returnTimes.map(t => <option key={t} value={t}>{t}</option>)
-                : <option value={returnTime}>{returnTime}</option>}
+                ? returnTimes.map(t => <option key={t} value={t} className="bg-[#2c2c2e] text-white">{t}</option>)
+                : <option value={returnTime} className="bg-[#2c2c2e] text-white">{returnTime}</option>}
             </select>
           </div>
           {isSunday(returnDate) && <p className="text-xs text-red-400 mt-1.5">Chiusi la domenica</p>}
