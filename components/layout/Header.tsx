@@ -444,7 +444,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-xl flex items-center justify-center p-4"
-                onClick={() => setShowBookingPopup(false)}
+                onMouseDown={(e) => { if (e.target === e.currentTarget) setShowBookingPopup(false); }}
               >
                 <motion.div
                   initial={{ scale: 0.96, opacity: 0, y: 10 }}
@@ -453,7 +453,6 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                   transition={{ type: 'spring', duration: 0.4, bounce: 0.15 }}
                   className="bg-[#1c1c1e]/95 backdrop-blur-3xl border border-white/[0.08] rounded-[24px] p-7 sm:p-8 max-w-[420px] w-full relative"
                   style={{ boxShadow: '0 0 0 0.5px rgba(255,255,255,0.06), 0 25px 60px -12px rgba(0,0,0,0.7)' }}
-                  onClick={(e) => e.stopPropagation()}
                 >
                   <button
                     onClick={() => setShowBookingPopup(false)}

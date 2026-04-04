@@ -168,36 +168,25 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
         <div>
           <p className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-2">Ritiro</p>
           <div className="flex gap-2">
-            <div className="flex-1 relative">
-              <input
-                type="date"
-                value={pickupDate}
-                min={today}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setPickupDate(val);
-                  // Auto-set default pickup time
-                  const times = getPickupTimes(val);
-                  if (times.length > 0 && !times.includes(pickupTime)) setPickupTimeRaw(times[0]);
-                  if (!returnDate || val >= returnDate) {
-                    const next = new Date(val); next.setDate(next.getDate() + 1);
-                    const nextStr = next.toISOString().split('T')[0];
-                    setReturnDate(nextStr);
-                    if (!returnTimeManual) setReturnTime(calcAutoReturnTime(pickupTime, nextStr));
-                  }
-                }}
-                style={{ colorScheme: 'dark' }}
-                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
-              />
-              <div className="flex items-center gap-2 bg-white/[0.06] rounded-xl px-4 py-3.5 min-h-[50px]">
-                <svg className="w-5 h-5 text-white/40 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                </svg>
-                <span className={`text-[15px] font-medium ${pickupDate ? 'text-white' : 'text-white/30'}`}>
-                  {pickupDate ? formatDateLabel(pickupDate) : 'Seleziona data'}
-                </span>
-              </div>
-            </div>
+            <input
+              type="date"
+              value={pickupDate}
+              min={today}
+              onChange={(e) => {
+                const val = e.target.value;
+                setPickupDate(val);
+                const times = getPickupTimes(val);
+                if (times.length > 0 && !times.includes(pickupTime)) setPickupTimeRaw(times[0]);
+                if (!returnDate || val >= returnDate) {
+                  const next = new Date(val); next.setDate(next.getDate() + 1);
+                  const nextStr = next.toISOString().split('T')[0];
+                  setReturnDate(nextStr);
+                  if (!returnTimeManual) setReturnTime(calcAutoReturnTime(pickupTime, nextStr));
+                }
+              }}
+              style={{ colorScheme: 'dark' }}
+              className="flex-1 bg-white/[0.06] text-white text-[15px] font-medium rounded-xl px-4 py-3.5 min-h-[50px] border-0 outline-none cursor-pointer"
+            />
             <select
               value={pickupTime}
               onChange={(e) => setPickupTime(e.target.value)}
@@ -223,31 +212,21 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
             )}
           </div>
           <div className="flex gap-2">
-            <div className="flex-1 relative">
-              <input
-                type="date"
-                value={returnDate}
-                min={pickupDate || today}
-                onChange={(e) => {
-                  setReturnDate(e.target.value);
-                  const times = getReturnTimes(e.target.value);
-                  if (times.length > 0 && !times.includes(returnTime)) {
-                    if (!returnTimeManual) setReturnTime(calcAutoReturnTime(pickupTime, e.target.value));
-                    else setReturnTime(times[0]);
-                  }
-                }}
-                style={{ colorScheme: 'dark' }}
-                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
-              />
-              <div className="flex items-center gap-2 bg-white/[0.06] rounded-xl px-4 py-3.5 min-h-[50px]">
-                <svg className="w-5 h-5 text-white/40 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                </svg>
-                <span className={`text-[15px] font-medium ${returnDate ? 'text-white' : 'text-white/30'}`}>
-                  {returnDate ? formatDateLabel(returnDate) : 'Seleziona data'}
-                </span>
-              </div>
-            </div>
+            <input
+              type="date"
+              value={returnDate}
+              min={pickupDate || today}
+              onChange={(e) => {
+                setReturnDate(e.target.value);
+                const times = getReturnTimes(e.target.value);
+                if (times.length > 0 && !times.includes(returnTime)) {
+                  if (!returnTimeManual) setReturnTime(calcAutoReturnTime(pickupTime, e.target.value));
+                  else setReturnTime(times[0]);
+                }
+              }}
+              style={{ colorScheme: 'dark' }}
+              className="flex-1 bg-white/[0.06] text-white text-[15px] font-medium rounded-xl px-4 py-3.5 min-h-[50px] border-0 outline-none cursor-pointer"
+            />
             <select
               value={returnTime}
               onChange={(e) => handleReturnTimeChange(e.target.value)}
