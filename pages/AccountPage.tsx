@@ -16,6 +16,7 @@ const AccountPage = () => {
         { path: '/account/club', label: 'DR7 Club' },
         { path: '/account/membership', label: t('My_Membership') },
         { path: '/account/bookings', label: t('My_Bookings') },
+        { path: '/account/preventivi', label: 'I Miei Preventivi' },
         { path: '/account/notifications', label: t('Notifications') },
     ];
 
