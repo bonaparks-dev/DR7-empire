@@ -263,7 +263,21 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
         </div>
 
         {error && <p className="text-xs text-red-400 text-center font-medium">{error}</p>}
-        <p className="text-[11px] text-red-400/60 text-center">La tariffa può subire variazioni</p>
+        {/* Show tariff warning only when return time is 30+ min after default (pickupTime - 1h30) */}
+        {(() => {
+          if (!pickupTime || !returnTime || !returnDate) return null;
+          const [pH, pM] = pickupTime.split(':').map(Number);
+          const [rH, rM] = returnTime.split(':').map(Number);
+          const defaultReturnMin = pH * 60 + pM - 90;
+          const returnMin = rH * 60 + rM;
+          if (returnMin < defaultReturnMin + 30) return null;
+          return (
+            <div className="text-center space-y-0.5">
+              <p className="text-[12px] text-red-400 font-semibold">La tariffa può subire variazioni</p>
+              <p className="text-[10px] text-red-400/60">La restituzione del veicolo è prevista entro 1 ora e 30 minuti prima dell'orario di uscita, al fine di evitare eventuali variazioni.</p>
+            </div>
+          );
+        })()}
 
         <button
           onClick={handleSearch}

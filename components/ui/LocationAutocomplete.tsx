@@ -84,6 +84,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isFocusedRef = useRef(false);
 
   useEffect(() => { setQuery(value); }, [value]);
 
@@ -98,8 +99,8 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       if (res.ok) {
         const data: NominatimResult[] = await res.json();
         setNominatimResults(data);
-        // Always re-open dropdown when results arrive
-        if (data.length > 0) {
+        // Only re-open dropdown if input is still focused
+        if (data.length > 0 && isFocusedRef.current) {
           setIsOpen(true);
         }
       }
@@ -216,8 +217,8 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
         type="text"
         value={query}
         onChange={(e) => handleSearch(e.target.value)}
-        onFocus={handleFocus}
-        onBlur={() => { setTimeout(() => setIsOpen(false), 200); }}
+        onFocus={() => { isFocusedRef.current = true; handleFocus(); }}
+        onBlur={() => { isFocusedRef.current = false; setTimeout(() => setIsOpen(false), 200); }}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         className="w-full bg-[#2c2c2e] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-white/30 transition-colors text-sm"
