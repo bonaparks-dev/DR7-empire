@@ -261,7 +261,8 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
             <select
               value={pickupTime}
               onChange={(e) => setPickupTime(e.target.value)}
-              className="bg-[#2c2c2e] text-white text-[15px] font-semibold rounded-xl px-3 py-3.5 min-h-[50px] border border-white/10 outline-none cursor-pointer w-[85px] text-center"
+              style={{ colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none' }}
+              className="bg-[#2c2c2e] text-white text-[15px] font-semibold rounded-xl px-3 py-3.5 min-h-[50px] border border-white/10 outline-none cursor-pointer w-[85px] text-center appearance-none"
             >
               {pickupTimes.length > 0
                 ? pickupTimes.map(t => <option key={t} value={t} className="bg-[#2c2c2e] text-white">{t}</option>)
@@ -300,7 +301,8 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
             <select
               value={returnTime}
               onChange={(e) => handleReturnTimeChange(e.target.value)}
-              className="bg-[#2c2c2e] text-white text-[15px] font-semibold rounded-xl px-3 py-3.5 min-h-[50px] border border-white/10 outline-none cursor-pointer w-[85px] text-center"
+              style={{ colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none' }}
+              className="bg-[#2c2c2e] text-white text-[15px] font-semibold rounded-xl px-3 py-3.5 min-h-[50px] border border-white/10 outline-none cursor-pointer w-[85px] text-center appearance-none"
             >
               {returnTimes.length > 0
                 ? returnTimes.map(t => <option key={t} value={t} className="bg-[#2c2c2e] text-white">{t}</option>)

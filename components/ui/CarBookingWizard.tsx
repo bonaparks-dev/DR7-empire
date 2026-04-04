@@ -2728,8 +2728,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       const pickupISO = `${formData.pickupDate}T${formData.pickupTime || '10:30'}:00`;
       const dropoffISO = `${formData.returnDate}T${formData.returnTime || '09:00'}:00`;
 
+      const resolvedVehicleId = formData.selectedVehicleId || item.vehicleIds?.[0] || item.id.replace('car-', '');
       const payload = {
-        vehicle_id: item.vehicleIds?.[0] || item.id,
+        vehicle_id: resolvedVehicleId,
         vehicle_name: item.name,
         vehicle_plate: (item as any).plate || '',
         vehicle_category: (item as any).category || 'exotic',
@@ -4486,60 +4487,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             </section>
 
             {/* === D. CAUZIONE === */}
-            {isUrbanOrCorporate ? (
-              /* Urban/Corporate: keep existing deposit logic */
-              <section className="border-t border-gray-700 pt-6">
-                <h3 className="text-lg font-bold text-white mb-2">D. CAUZIONE</h3>
-                <p className="text-sm text-gray-400 mb-4">Scegli il tipo di cauzione.</p>
-                {!formData.depositOption && (
-                  <div className="p-3 bg-amber-900/20 border border-amber-500/50 rounded-lg mb-3">
-                    <p className="text-amber-300 text-sm font-medium">Seleziona un'opzione per la cauzione per continuare</p>
-                  </div>
-                )}
-                <div className="space-y-3">
-                  <div
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.depositOption === 'with_deposit'
-                      ? 'border-green-500 bg-green-500/10' : 'border-gray-600 hover:border-gray-500'}`}
-                    onClick={() => setFormData(prev => ({ ...prev, depositOption: 'with_deposit' }))}
-                  >
-                    <div className="flex items-center">
-                      <input type="radio" name="depositOption" checked={formData.depositOption === 'with_deposit'} onChange={() => {}} className="w-4 h-4" />
-                      <div className="ml-3 flex-1">
-                        <div className="flex justify-between items-center">
-                          <span className="font-bold text-white">Cauzione</span>
-                          <span className="font-bold text-green-400">{formatDeposit(DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT)}</span>
-                        </div>
-                        <p className="text-sm text-gray-400 mt-1">Cauzione di €{DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT} — Tariffa base</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.depositOption === 'micro_deposit'
-                      ? 'border-yellow-400 bg-yellow-400/10' : 'border-gray-600 hover:border-gray-500'}`}
-                    onClick={() => setFormData(prev => ({ ...prev, depositOption: 'micro_deposit' }))}
-                  >
-                    <div className="flex items-center">
-                      <input type="radio" name="depositOption" checked={formData.depositOption === 'micro_deposit'} onChange={() => {}} className="w-4 h-4" />
-                      <div className="ml-3 flex-1">
-                        <div className="flex justify-between items-center">
-                          <span className="font-bold text-white">Micro Cauzione</span>
-                          <span className="font-bold text-yellow-400">
-                            {formatDeposit(licenseYears >= 5 ? DEPOSIT_RULES.UTILITARIA.LICENSE_5_OR_MORE : DEPOSIT_RULES.UTILITARIA.LICENSE_UNDER_5)} + 30%
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-400 mt-1">
-                          {licenseYears >= 5
-                            ? `Micro cauzione di €${DEPOSIT_RULES.UTILITARIA.LICENSE_5_OR_MORE} (patente ≥ 5 anni)`
-                            : `Micro cauzione di €${DEPOSIT_RULES.UTILITARIA.LICENSE_UNDER_5} (patente < 5 anni)`
-                          } — Supplemento del 30% sul totale
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {errors.depositOption && <p className="text-xs text-red-400 mt-2">{errors.depositOption}</p>}
-              </section>
-            ) : !isMassimo && !isLoyalCustomer && getMembershipTierName(user) !== 'gold' && getMembershipTierName(user) !== 'platinum' ? (
+            {!isMassimo && !isLoyalCustomer && getMembershipTierName(user) !== 'gold' && getMembershipTierName(user) !== 'platinum' ? (
               /* Supercar: tier-based deposit options */
               <section className="border-t border-gray-700 pt-6">
                 <h3 className="text-lg font-bold text-white mb-2">D. CAUZIONE</h3>
