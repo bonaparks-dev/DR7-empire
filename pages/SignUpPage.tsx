@@ -152,7 +152,6 @@ const SignUpPage: React.FC = () => {
         } else if (!validatePartitaIVA(formData.partitaIVA)) {
           newErrors.partitaIVA = 'Partita IVA non valida (11 cifre)';
         }
-        if (!formData.codiceFiscale) newErrors.codiceFiscale = 'Codice Fiscale è obbligatorio';
         if (!formData.indirizzo) newErrors.indirizzo = 'Indirizzo è obbligatorio';
         if (!formData.telefono) {
           newErrors.telefono = 'Telefono è obbligatorio';
@@ -182,12 +181,8 @@ const SignUpPage: React.FC = () => {
         } else if (!validatePhone(formData.telefono)) {
           newErrors.telefono = 'Formato telefono non valido';
         }
-        if (formData.nazione === 'Italia') {
-          if (!formData.codiceFiscale) {
-            newErrors.codiceFiscale = 'Codice Fiscale è obbligatorio';
-          } else if (!validateCodiceFiscale(formData.codiceFiscale)) {
-            newErrors.codiceFiscale = 'Codice Fiscale non valido (16 caratteri alfanumerici)';
-          }
+        if (formData.codiceFiscale && !validateCodiceFiscale(formData.codiceFiscale)) {
+          newErrors.codiceFiscale = 'Codice Fiscale non valido (16 caratteri alfanumerici)';
         }
         if (!formData.indirizzo) newErrors.indirizzo = 'Residenza è obbligatoria';
         // Email is already validated in common validations above
@@ -198,7 +193,6 @@ const SignUpPage: React.FC = () => {
         if (!formData.codiceUnivoco) newErrors.codiceUnivoco = 'Codice Univoco è obbligatorio';
         if (!formData.enteUfficio) newErrors.enteUfficio = 'Ente o Ufficio è obbligatorio';
         if (!formData.citta) newErrors.citta = 'Città è obbligatorio';
-        if (!formData.codiceFiscale) newErrors.codiceFiscale = 'Codice Fiscale è obbligatorio';
         if (!formData.indirizzo) newErrors.indirizzo = 'Indirizzo è obbligatorio';
       }
     }
