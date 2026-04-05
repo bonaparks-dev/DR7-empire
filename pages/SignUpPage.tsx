@@ -439,7 +439,7 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Codice Fiscale <span className="text-red-500">*</span>
+                      Codice Fiscale
                     </label>
                     <input
                       type="text"
@@ -544,7 +544,7 @@ const SignUpPage: React.FC = () => {
 
                     <div className="grid grid-cols-2 gap-4 mt-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Codice Fiscale <span className="text-red-500">*</span></label>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Codice Fiscale</label>
                         <input type="text" name="rappresentanteCF" value={formData.rappresentanteCF} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase" maxLength={16} required />
                         {errors.rappresentanteCF && <p className="text-xs text-red-400 mt-1">{errors.rappresentanteCF}</p>}
                       </div>
@@ -645,7 +645,7 @@ const SignUpPage: React.FC = () => {
                   {formData.nazione === 'Italia' && (
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Codice Fiscale <span className="text-red-500">*</span>
+                        Codice Fiscale
                       </label>
                       <div className="flex gap-2">
                         <input
@@ -893,7 +893,7 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Codice Fiscale <span className="text-red-500">*</span>
+                      Codice Fiscale
                     </label>
                     <input
                       type="text"
