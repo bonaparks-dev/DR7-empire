@@ -9,6 +9,7 @@ import MarketingConsentModal from '../components/ui/MarketingConsentModal';
 import { countries } from '../utils/countries';
 import { AppleStyleSelect } from '../components/ui/AppleStyleSelect';
 import CalcolaCFButton from '../components/ui/CalcolaCFButton';
+import PhoneInput from '../components/ui/PhoneInput';
 
 const PasswordStrengthMeter: React.FC<{ password?: string }> = ({ password = '' }) => {
   const { t } = useTranslation();
@@ -105,9 +106,10 @@ const SignUpPage: React.FC = () => {
     return cf.length === 16 && cfRegex.test(cf.toUpperCase());
   };
 
-  const validateItalianPhone = (phone: string): boolean => {
-    const phoneRegex = /^(\+39|0039)?[\s]?[0-9]{9,13}$/;
-    return phoneRegex.test(phone.replace(/\s/g, ''));
+  const validatePhone = (phone: string): boolean => {
+    const clean = phone.replace(/[\s\-\(\)]/g, '');
+    // Accept any international number: + followed by 6-15 digits
+    return /^\+?[0-9]{6,15}$/.test(clean);
   };
 
   const validatePartitaIVA = (piva: string): boolean => {
@@ -154,7 +156,7 @@ const SignUpPage: React.FC = () => {
         if (!formData.indirizzo) newErrors.indirizzo = 'Indirizzo è obbligatorio';
         if (!formData.telefono) {
           newErrors.telefono = 'Telefono è obbligatorio';
-        } else if (!validateItalianPhone(formData.telefono)) {
+        } else if (!validatePhone(formData.telefono)) {
           newErrors.telefono = 'Formato telefono non valido';
         }
 
@@ -177,7 +179,7 @@ const SignUpPage: React.FC = () => {
         if (!formData.cognome) newErrors.cognome = 'Cognome è obbligatorio';
         if (!formData.telefono) {
           newErrors.telefono = 'Telefono è obbligatorio';
-        } else if (!validateItalianPhone(formData.telefono)) {
+        } else if (!validatePhone(formData.telefono)) {
           newErrors.telefono = 'Formato telefono non valido';
         }
         if (formData.nazione === 'Italia') {
@@ -522,13 +524,9 @@ const SignUpPage: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-300 mb-2">
                       Telefono Aziendale <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="tel"
-                      name="telefono"
+                    <PhoneInput
                       value={formData.telefono}
-                      onChange={handleChange}
-                      placeholder="+39 123 456 7890"
-                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                      onChange={(val) => setFormData(prev => ({ ...prev, telefono: val }))}
                       required
                     />
                     {errors.telefono && <p className="text-xs text-red-400 mt-1">{errors.telefono}</p>}
@@ -853,13 +851,9 @@ const SignUpPage: React.FC = () => {
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         Telefono <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        type="tel"
-                        name="telefono"
+                      <PhoneInput
                         value={formData.telefono}
-                        onChange={handleChange}
-                        placeholder="+39 320 1234567"
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
+                        onChange={(val) => setFormData(prev => ({ ...prev, telefono: val }))}
                         required
                       />
                       {errors.telefono && <p className="text-xs text-red-400 mt-1">{errors.telefono}</p>}
