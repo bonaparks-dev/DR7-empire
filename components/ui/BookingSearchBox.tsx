@@ -85,7 +85,7 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
   const [error, setError] = useState('');
 
   // Delivery fee calculation
-  const [deliveryFee, setDeliveryFee] = useState<{ pickupFee: number; returnFee: number; pickupKm: number; returnKm: number } | null>(null);
+  const [deliveryFee, setDeliveryFee] = useState<{ pickupFee: number; returnFee: number; pickupKm: number; returnKm: number; pricePerKm: number } | null>(null);
   const [isCalculatingDelivery, setIsCalculatingDelivery] = useState(false);
   const deliveryDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -127,21 +127,23 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
           return res.json();
         };
 
+        let pricePerKm = 3;
+
         if (pickupNeedsDelivery) {
           const data = await calcDistance(pickupLocation);
-          if (data) { pickupFee = data.deliveryFee; pickupKm = data.distanceKm; }
+          if (data) { pickupFee = data.deliveryFee; pickupKm = data.distanceKm; pricePerKm = data.pricePerKm; }
         }
 
         if (returnNeedsDelivery) {
           const data = await calcDistance(returnLocation);
-          if (data) { returnFee = data.deliveryFee; returnKm = data.distanceKm; }
+          if (data) { returnFee = data.deliveryFee; returnKm = data.distanceKm; pricePerKm = data.pricePerKm; }
         }
 
         // If same return, the driver does one round trip (not two)
         if (sameReturn && pickupNeedsDelivery) {
-          setDeliveryFee({ pickupFee, returnFee: 0, pickupKm, returnKm: 0 });
+          setDeliveryFee({ pickupFee, returnFee: 0, pickupKm, returnKm: 0, pricePerKm });
         } else {
-          setDeliveryFee({ pickupFee, returnFee, pickupKm, returnKm });
+          setDeliveryFee({ pickupFee, returnFee, pickupKm, returnKm, pricePerKm });
         }
       } catch {
         setDeliveryFee(null);
@@ -228,7 +230,7 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
             {sameReturn && <svg className="w-3 h-3 text-black" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
           </div>
           <input type="checkbox" checked={sameReturn} onChange={(e) => { setSameReturn(e.target.checked); if (e.target.checked) setReturnLocation(pickupLocation); }} className="sr-only" />
-          <span className="text-[13px] text-white/50">Riconsegna nello stesso luogo</span>
+          <span className="text-[13px] text-white/50">Riconsegna nella sede principale Viale Marconi 229, Cagliari 09131</span>
         </label>
 
         {!sameReturn && (
@@ -341,9 +343,9 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
             </div>
             {deliveryFee && (
               <p className="text-[11px] text-white/30 mt-1">
-                {deliveryFee.pickupKm > 0 && `${deliveryFee.pickupKm} km × €3/km × 2 (A/R)`}
+                {deliveryFee.pickupKm > 0 && `${deliveryFee.pickupKm} km × €${deliveryFee.pricePerKm}/km × 2 (A/R)`}
                 {deliveryFee.returnKm > 0 && deliveryFee.pickupKm > 0 && ' + '}
-                {deliveryFee.returnKm > 0 && `Riconsegna: ${deliveryFee.returnKm} km × €3/km × 2`}
+                {deliveryFee.returnKm > 0 && `Riconsegna: ${deliveryFee.returnKm} km × €${deliveryFee.pricePerKm}/km × 2`}
               </p>
             )}
           </div>

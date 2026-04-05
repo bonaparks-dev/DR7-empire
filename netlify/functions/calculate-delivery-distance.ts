@@ -5,18 +5,19 @@
  * to customer delivery address using Nominatim (geocoding) + OSRM (routing).
  * Free, no API key required.
  *
- * Returns distance in km and delivery fee (€3/km × round-trip distance).
- * Round-trip = distance × 2 (delivery + return trip for the driver).
+ * Reads price_per_km from Centralina (rental_extras_config in Supabase).
+ * Fallback: €3/km if Centralina unavailable.
  *
  * Accepts either { address } (string) or { lat, lon } (coordinates).
  */
 
 import { Handler } from '@netlify/functions'
+import { createClient } from '@supabase/supabase-js'
 import { getCorsOrigin } from './utils/cors'
 
 const DR7_OFFICE_LAT = 39.2238
 const DR7_OFFICE_LON = 9.1217
-const DELIVERY_PRICE_PER_KM = 3 // €3/km — overridden by Centralina if available
+const DEFAULT_PRICE_PER_KM = 3
 
 export const handler: Handler = async (event) => {
   const headers = {
@@ -37,15 +38,33 @@ export const handler: Handler = async (event) => {
   try {
     const { address, lat, lon } = JSON.parse(event.body || '{}')
 
+    // Read price_per_km from Centralina
+    let pricePerKm = DEFAULT_PRICE_PER_KM
+    try {
+      const supabaseUrl = process.env.VITE_SUPABASE_URL || ''
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+      if (supabaseUrl && supabaseKey) {
+        const supabase = createClient(supabaseUrl, supabaseKey)
+        const { data } = await supabase
+          .from('rental_extras_config')
+          .select('config')
+          .limit(1)
+          .single()
+        if (data?.config?.delivery?.price_per_km != null) {
+          pricePerKm = data.config.delivery.price_per_km
+        }
+      }
+    } catch {
+      // Fallback to default
+    }
+
     let destLat: number
     let destLon: number
 
     if (typeof lat === 'number' && typeof lon === 'number') {
-      // Coordinates provided directly (from Nominatim results)
       destLat = lat
       destLon = lon
     } else if (address && typeof address === 'string' && address.trim().length >= 3) {
-      // Geocode address via Nominatim
       const geoRes = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address.trim())}&format=json&limit=1&countrycodes=it`,
         { headers: { 'User-Agent': 'DR7Empire/1.0', 'Accept-Language': 'it' } }
@@ -79,14 +98,13 @@ export const handler: Handler = async (event) => {
     }
 
     const route = routeData.routes[0]
-    const distanceMeters = route.distance // meters one-way
-    const durationSeconds = route.duration // seconds one-way
+    const distanceMeters = route.distance
+    const durationSeconds = route.duration
 
-    const distanceKm = Math.ceil(distanceMeters / 1000) // round up to nearest km
+    const distanceKm = Math.ceil(distanceMeters / 1000)
     const roundTripKm = distanceKm * 2
-    const deliveryFee = roundTripKm * DELIVERY_PRICE_PER_KM
+    const deliveryFee = roundTripKm * pricePerKm
 
-    // Format duration
     const hours = Math.floor(durationSeconds / 3600)
     const minutes = Math.round((durationSeconds % 3600) / 60)
     const durationText = hours > 0 ? `${hours} ora${hours > 1 ? 'e' : ''} ${minutes} min` : `${minutes} min`
@@ -98,7 +116,7 @@ export const handler: Handler = async (event) => {
         roundTripKm,
         deliveryFee,
         durationText,
-        pricePerKm: DELIVERY_PRICE_PER_KM,
+        pricePerKm,
       }),
     }
   } catch (error: unknown) {
