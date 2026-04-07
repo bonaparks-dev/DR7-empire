@@ -14,6 +14,8 @@ import SEOHead from '../components/seo/SEOHead';
 import RentalSearchBar, { type SearchParams } from '../components/ui/RentalSearchBar';
 import RentalFilters from '../components/ui/RentalFilters';
 import { useSearchAvailability } from '../hooks/useSearchAvailability';
+import { useAuth } from '../hooks/useAuth';
+import { isMassimoRunchina, getRunchinaPrice } from '../utils/clientPricingRules';
 
 interface RentalPageProps {
   categoryId: 'cars' | 'urban-cars' | 'corporate-fleet' | 'yachts' | 'villas' | 'jets' | 'helicopters';
@@ -311,8 +313,9 @@ const VehicleResults: React.FC<{
             const marketingTooltip = categoryId === 'urban-cars' ? 'Disponibile con formula long rent' : undefined;
             const isVip = user ? isMassimoRunchina(user) : false;
             const dailyRate = item.pricePerDay?.eur || 0;
-            const vipPrice = isVip && preDays > 0 ? getRunchinaPrice(item.name, preDays) : undefined;
-            const itemTotalPrice = vipPrice ?? (searchResult ? searchResult.totalPrice
+            const days = searchResult ? searchResult.days : (preDays || 1);
+            const vipTotal = isVip ? getRunchinaPrice(item.name, days) : undefined;
+            const itemTotalPrice = vipTotal ?? (searchResult ? searchResult.totalPrice
               : (preDays > 0 && dailyRate ? Math.round(dailyRate * preDays) : undefined));
             const itemDays = searchResult ? searchResult.days : (preDays || undefined);
 
@@ -321,13 +324,13 @@ const VehicleResults: React.FC<{
                 key={item.id}
                 item={item}
                 onBook={handleBook}
-                marketingPrice={itemTotalPrice ? undefined : marketingPrice}
-                marketingTooltip={marketingTooltip}
+                marketingPrice={isVip ? getRunchinaPrice(item.name, 1) : (itemTotalPrice ? undefined : marketingPrice)}
+                marketingTooltip={isVip ? 'Tariffa VIP' : marketingTooltip}
                 categoryId={categoryId}
                 totalPrice={itemTotalPrice}
                 totalDays={itemDays}
-                hidePrice={!hasSearched && (categoryId === 'cars' || categoryId === 'corporate-fleet')}
-                hideBookButton={!hasSearched && (categoryId === 'cars' || categoryId === 'corporate-fleet')}
+                hidePrice={isVip ? false : (!hasSearched && (categoryId === 'cars' || categoryId === 'corporate-fleet'))}
+                hideBookButton={isVip ? false : (!hasSearched && (categoryId === 'cars' || categoryId === 'corporate-fleet'))}
               />
             );
           })}
@@ -561,6 +564,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   const { openBooking, openCarWizard, setInitialSearchDates } = useBooking();
   const { checkVerificationAndProceed } = useVerification();
   const { user } = useAuth();
+  const isVip = isMassimoRunchina(user);
 
   // Search & filter state
   const [searchData, setSearchData] = useState<SearchParams | null>(null);

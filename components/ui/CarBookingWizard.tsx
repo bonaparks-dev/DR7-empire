@@ -4427,7 +4427,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             {/* === B. CHILOMETRI === */}
             <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-4">B. CHILOMETRI</h3>
-              {displayVehicleType === 'SUPERCAR' && !isMassimo ? (
+              {isMassimo ? (
+                <div className="p-4 rounded-lg border-2 border-green-500 bg-green-500/10">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="font-bold text-white">Km illimitati</span>
+                      <p className="text-sm text-gray-400">Senza limiti di percorrenza</p>
+                    </div>
+                    <span className="font-bold text-green-400">Incluso</span>
+                  </div>
+                </div>
+              ) : displayVehicleType === 'SUPERCAR' ? (
                 <div className="space-y-3">
                   {/* KM inclusi (auto-calcolati da Centralina) */}
                   <div
@@ -4504,13 +4514,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               <h3 className="text-lg font-bold text-white mb-4">C. SERVIZI AGGIUNTIVI</h3>
               <div className="space-y-3">
                 {/* Lavaggio finale */}
-                <div className="flex items-center p-3 bg-gray-800/50 rounded-md border border-gray-700">
+                <div className={`flex items-center p-3 rounded-md border ${isMassimo ? 'border-green-500 bg-green-500/10' : 'bg-gray-800/50 border-gray-700'}`}>
                   <input type="checkbox" checked disabled className="h-4 w-4" />
                   <span className="ml-3 text-white">Pulizia finale</span>
-                  <span className="ml-auto font-semibold text-yellow-400">€{tierPricing.lavaggio.toFixed(2)}</span>
+                  <span className={`ml-auto font-semibold ${isMassimo ? 'text-green-400' : 'text-yellow-400'}`}>
+                    {isMassimo ? 'Inclusa' : `€${tierPricing.lavaggio.toFixed(2)}`}
+                  </span>
                 </div>
 
-                {/* Second driver with tier price */}
+                {/* Second driver with tier price — hidden for VIP */}
+                {!isMassimo && (
                 <div
                   className={`p-3 rounded-md border cursor-pointer transition-all ${formData.addSecondDriver
                     ? 'border-white bg-white/5' : 'border-gray-700 hover:border-gray-500'}`}
@@ -4522,6 +4535,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     <span className="ml-auto font-semibold text-white">€{tierPricing.secondDriverPerDay}/giorno</span>
                   </div>
                 </div>
+                )}
               </div>
             </section>
 
@@ -4734,8 +4748,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             )}
 
 
-            {/* === F. SERVIZI EXPERIENCE === */}
-            <section className="border-t border-gray-700 pt-6">
+            {/* === F. SERVIZI EXPERIENCE (hidden for VIP) === */}
+            {!isMassimo && <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-2">F. SERVIZI EXPERIENCE</h3>
               <p className="text-sm text-gray-400 mb-4">Personalizza la tua esperienza con servizi esclusivi.</p>
               <div className="space-y-3">
@@ -4787,10 +4801,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   );
                 })}
               </div>
-            </section>
+            </section>}
 
             {/* === G. DR7 FLEX === (Only Fascia A / TIER_2) */}
-            {driverTier === 'TIER_2' && (
+            {driverTier === 'TIER_2' && !isMassimo && (
             <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-2">G. DR7 FLEX — Cancellazione Premium</h3>
               <div
