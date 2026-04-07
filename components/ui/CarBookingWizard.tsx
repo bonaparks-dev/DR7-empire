@@ -2085,10 +2085,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         newErrors.pickupDate = "Siamo chiusi la domenica. Seleziona un altro giorno per il ritiro.";
       }
 
-      // Check if there's an availability error (skip when coming from search — already validated)
-      if (availabilityError && !isFromSearch) {
-        newErrors.availability = availabilityError;
-      }
+      // Availability error is shown as a warning near date inputs (line ~3966).
+      // Do NOT hard-block here — the user can still see the warning and decide.
 
       // Delivery address validation
       if (formData.pickupLocation === 'home_delivery') {
