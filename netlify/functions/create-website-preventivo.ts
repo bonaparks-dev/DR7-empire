@@ -56,6 +56,8 @@ const handler: Handler = async (event) => {
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 7)
 
+    const isNoCauzione = !!body.no_cauzione_request
+
     const preventivo = {
       vehicle_id: body.vehicle_id,
       vehicle_name: body.vehicle_name || '',
@@ -95,7 +97,7 @@ const handler: Handler = async (event) => {
       pricing_trace: body.pricing_trace || null,
       notes: body.notes || '',
       status: 'bozza',
-      source: 'website',
+      source: isNoCauzione ? 'website_no_cauzione' : 'website',
       created_by: user.id,
       expires_at: expiresAt.toISOString(),
       created_at: new Date().toISOString(),
@@ -116,8 +118,14 @@ const handler: Handler = async (event) => {
     try {
       const pickupDate = new Date(body.pickup_date).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Rome' })
       const dropoffDate = new Date(body.dropoff_date).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Rome' })
+      const baseUrl = process.env.URL || 'https://dr7empire.com'
 
-      const msg = `*NUOVO PREVENTIVO DAL SITO*\n\n`
+      const title = isNoCauzione ? '*RICHIESTA NO CAUZIONE*' : '*NUOVO PREVENTIVO DAL SITO*'
+      const cauzioneLine = isNoCauzione
+        ? `*Cauzione:* Senza cauzione (+€${Number(preventivo.no_cauzione_daily).toFixed(2)}/gg = €${Number(preventivo.no_cauzione_total).toFixed(2)})`
+        : `*Cauzione:* €${Number(preventivo.deposit_amount).toFixed(2)}`
+
+      const msg = `${title}\n\n`
         + `*Cliente:* ${preventivo.customer_name}\n`
         + `*Tel:* ${preventivo.customer_phone || 'N/A'}\n`
         + `*Veicolo:* ${preventivo.vehicle_name}\n`
@@ -125,22 +133,31 @@ const handler: Handler = async (event) => {
         + `*Totale:* €${Number(preventivo.total_final).toFixed(2)}\n`
         + `*Assicurazione:* ${preventivo.insurance_option}\n`
         + `*KM:* ${preventivo.unlimited_km ? 'Illimitati' : (preventivo.km_limit + ' km')}\n`
-        + `*Cauzione:* €${Number(preventivo.deposit_amount).toFixed(2)}\n\n`
+        + `${cauzioneLine}\n\n`
         + `Gestisci dal pannello admin > Preventivi`
 
-      await fetch(`${SUPABASE_URL.replace('.supabase.co', '.functions.supabase.co')}/../../.netlify/functions/send-whatsapp-notification`, {
+      // Notify default admin
+      await fetch(`${baseUrl}/.netlify/functions/send-whatsapp-notification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ customMessage: msg }),
-      }).catch(() => {
-        // Try internal call
-        const baseUrl = process.env.URL || 'https://dr7empire.com'
-        return fetch(`${baseUrl}/.netlify/functions/send-whatsapp-notification`, {
+      }).catch(() => {})
+
+      // For no-cauzioni requests, also notify boss directly
+      if (isNoCauzione) {
+        const bossMsg = `${title}\n\n`
+          + `*Cliente:* ${preventivo.customer_name}\n`
+          + `*Telefono:* ${preventivo.customer_phone || 'N/A'}\n`
+          + `*Veicolo:* ${preventivo.vehicle_name}\n`
+          + `*Periodo:* ${pickupDate} → ${dropoffDate}\n`
+          + `*Totale:* €${Number(preventivo.total_final).toFixed(2)}\n\n`
+          + `Approvare o rifiutare dall'admin > Preventivi.`
+        await fetch(`${baseUrl}/.netlify/functions/send-whatsapp-notification`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ customMessage: msg }),
-        })
-      })
+          body: JSON.stringify({ customPhone: '393472817258', customMessage: bossMsg }),
+        }).catch(() => {})
+      }
     } catch (whatsappErr) {
       console.warn('[create-website-preventivo] WhatsApp notification failed:', whatsappErr)
     }
