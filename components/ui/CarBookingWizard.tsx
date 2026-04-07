@@ -4305,12 +4305,57 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const selectedInsuranceIsRCA = formData.insuranceOption === 'RCA';
         const noDepositRequiresKasko = formData.depositOption === 'no_deposit' && selectedInsuranceIsRCA;
 
+        // === VIP SIMPLIFIED VIEW (Massimo / Ophe) ===
+        if (isMassimo) {
+          return (
+            <div className="space-y-6">
+              <div className="text-center mb-2">
+                <span className="text-xs font-bold text-yellow-400 bg-yellow-400/10 px-4 py-1.5 rounded-full uppercase tracking-widest">Cliente VIP</span>
+              </div>
+
+              <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6 space-y-4">
+                <h3 className="text-lg font-bold text-white mb-4">Riepilogo Noleggio VIP</h3>
+
+                <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                  <span className="text-gray-400">Veicolo</span>
+                  <span className="text-white font-semibold">{item.name}</span>
+                </div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                  <span className="text-gray-400">Durata</span>
+                  <span className="text-white font-semibold">{Math.max(1, duration.days)} {Math.max(1, duration.days) === 1 ? 'giorno' : 'giorni'}</span>
+                </div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                  <span className="text-gray-400">Copertura assicurativa</span>
+                  <span className="text-green-400 font-semibold">Kasko Base — Inclusa</span>
+                </div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                  <span className="text-gray-400">Chilometri</span>
+                  <span className="text-green-400 font-semibold">Illimitati — Inclusi</span>
+                </div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                  <span className="text-gray-400">Lavaggio</span>
+                  <span className="text-green-400 font-semibold">Incluso</span>
+                </div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                  <span className="text-gray-400">Cauzione</span>
+                  <span className="text-green-400 font-semibold">Nessuna</span>
+                </div>
+
+                <div className="flex justify-between items-center pt-4">
+                  <span className="text-xl font-bold text-white">TOTALE</span>
+                  <span className="text-2xl font-bold text-white">€{rentalCost}</span>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
         return (
           <div className="space-y-8">
             {/* === A. ASSICURAZIONE (tier-conditional) === */}
             <section>
               <h3 className="text-lg font-bold text-white mb-4">A. COPERTURA ASSICURATIVA</h3>
-              {isMassimo ? (
+              {false ? (
                 <div className="p-4 rounded-lg border-2 border-green-500 bg-green-500/10">
                   <div className="flex items-center">
                     <span className="font-bold text-white">Kasko Base</span>
