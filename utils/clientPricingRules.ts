@@ -18,6 +18,11 @@ export const RUNCHINA_VEHICLE_PRICES: Record<string, { 1: number; 2: number; 3: 
     c63:       { 1: 339, 2: 649, 3: 929, perDay: 299 },
     // Porsche Turbo S
     'turbo s':  { 1: 649, 2: 1249, 3: 1799, perDay: 589 },
+    // Ducato & V-Class — flat €99/day, no multi-day discount
+    ducato:    { 1: 99, 2: 198, 3: 297, perDay: 99 },
+    'v class': { 1: 99, 2: 198, 3: 297, perDay: 99 },
+    'v-class': { 1: 99, 2: 198, 3: 297, perDay: 99 },
+    vito:      { 1: 99, 2: 198, 3: 297, perDay: 99 },
 };
 
 /** Look up Runchina fixed price for a vehicle by name */
