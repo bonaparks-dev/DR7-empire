@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Link } from 'react-router-dom';
 import { useCurrency } from '../../contexts/CurrencyContext';
-import { isMassimoRunchina, SPECIAL_CLIENTS } from '../../utils/clientPricingRules';
+import { isMassimoRunchina, getRunchinaPrice } from '../../utils/clientPricingRules';
 import { calculateMultiDayPrice, calculateIncludedKmFromConfig } from '../../utils/multiDayPricing';
 import { invalidateVehicleCache } from '../../hooks/useVehicles';
 import { useAuth } from '../../hooks/useAuth';
@@ -1432,9 +1432,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // 50km/day supercar package: price from admin config, no multi-day discounts
       calculatedRentalCost = billingDaysCalc * ACTIVE_SUPERCAR_50KM_RATE;
     } else if (isMassimo && getVehicleType(item, categoryContext) === 'SUPERCAR') {
-      // Massimo Runchina: flat €339/day for supercars, NO tiered discounts
-      // Additional discounts ONLY via codice sconto
-      calculatedRentalCost = billingDaysCalc * SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseRate;
+      // Massimo Runchina: per-vehicle fixed multi-day pricing
+      calculatedRentalCost = getRunchinaPrice(item.name, billingDaysCalc);
     } else if (dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.finalTotalEur) {
       // Admin-controlled dynamic pricing (revenue management auto_apply mode)
       calculatedRentalCost = dynamicPricing.finalTotalEur;
@@ -5784,6 +5783,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       >
                         Apri WhatsApp
                       </a>
+                    </div>
+                  )}
+
+                  {/* Show validation errors near the button so user always sees them */}
+                  {Object.keys(errors).length > 0 && (
+                    <div className="mt-4 p-3 bg-red-900/30 border border-red-500 rounded-lg">
+                      {Object.values(errors).map((err, i) => (
+                        <p key={i} className="text-red-300 text-sm font-medium">{err as string}</p>
+                      ))}
                     </div>
                   )}
 
