@@ -80,6 +80,7 @@ const handler: Handler = async (event) => {
       pricing_trace: body.pricing_trace || null,
       notes: body.notes || '',
       status: 'bozza',
+      source: 'website',
       created_by: user.id,
       expires_at: expiresAt.toISOString(),
       created_at: new Date().toISOString(),
