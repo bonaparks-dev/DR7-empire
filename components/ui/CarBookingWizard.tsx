@@ -4322,8 +4322,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   <span className="text-white font-semibold">{item.name}</span>
                 </div>
                 <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                  <span className="text-gray-400">Ritiro</span>
+                  <span className="text-white font-semibold">{formData.pickupDate} — {formData.pickupTime}</span>
+                </div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                  <span className="text-gray-400">Riconsegna</span>
+                  <span className="text-white font-semibold">{formData.returnDate} — {formData.returnTime}</span>
+                </div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-700">
                   <span className="text-gray-400">Durata</span>
-                  <span className="text-white font-semibold">{Math.max(1, duration.days)} {Math.max(1, duration.days) === 1 ? 'giorno' : 'giorni'}</span>
+                  <span className="text-white font-semibold">{Math.max(1, duration.days)} {Math.max(1, duration.days) === 1 ? 'giorno' : 'giorni'}{duration.hours > 0 ? ` ${duration.hours}h` : ''}</span>
                 </div>
                 <div className="flex justify-between items-center py-3 border-b border-gray-700">
                   <span className="text-gray-400">Copertura assicurativa</span>
@@ -4880,9 +4888,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     <h4 className="text-base font-semibold text-white mb-3">METODO DI PAGAMENTO</h4>
                     <div className="p-4 bg-gray-800 rounded-lg">
                       <div className="flex items-center justify-center gap-3 mb-3">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/1280px-Mastercard-logo.svg.png" alt="Mastercard" className="h-6 opacity-70" />
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png" alt="Visa" className="h-6 opacity-70" />
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/PayPal.svg/2560px-PayPal.svg.png" alt="PayPal" className="h-6 opacity-70" />
+                        <svg viewBox="0 0 131.39 86.9" className="h-6 opacity-70" aria-label="Mastercard"><rect width="131.39" height="86.9" rx="8" fill="#000"/><circle cx="48.37" cy="43.45" r="27.5" fill="#eb001b"/><circle cx="83.02" cy="43.45" r="27.5" fill="#f79e1b"/><path d="M65.7 20.8a27.4 27.4 0 0 0-10.2 21.4c0 8.6 3.9 16.3 10.2 21.4a27.4 27.4 0 0 0 10.2-21.4c0-8.6-3.9-16.3-10.2-21.4Z" fill="#ff5f00"/></svg>
+                        <svg viewBox="0 0 780 500" className="h-6 opacity-70" aria-label="Visa"><path d="M293.2 348.7l33.4-195.8h53.4l-33.4 195.8zM541.4 157.6a131.8 131.8 0 0 0-48.4-8.8c-53.2 0-90.7 27-91 65.7-.3 28.6 26.8 44.6 47.2 54.1 21 9.7 28 16 27.9 24.7-.1 13.3-16.7 19.4-32.2 19.4-21.5 0-32.9-3-50.6-10.4l-6.9-3.2-7.5 44.5c12.6 5.5 35.8 10.3 59.9 10.6 56.6 0 93.3-26.7 93.7-68 .2-22.7-14.2-40-45.3-54.2-18.9-9.2-30.4-15.4-30.3-24.7 0-8.3 9.8-17.2 30.9-17.2 17.6-.3 30.4 3.6 40.4 7.6l4.8 2.3 7.3-42.4z" fill="#1434cb"/><path d="M630.6 152.9h-41.6c-12.9 0-22.5 3.5-28.2 16.5l-79.9 182.3h56.5s9.2-24.5 11.3-29.9h69.1c1.6 7 6.5 29.9 6.5 29.9h50l-43.6-198.8zm-66.4 128.3c4.5-11.5 21.5-55.8 21.5-55.8-.3.5 4.4-11.5 7.1-19l3.6 17.2s10.3 47.6 12.5 57.6h-44.7zM232.8 152.9l-52.8 133.5-5.6-27.5c-9.8-31.5-40.2-65.7-74.3-82.8l48.2 172.4 57 0 84.7-195.8h-57.2z" fill="#1434cb"/><path d="M131.9 152.9H46.5l-.7 3.8c67.6 16.5 112.3 56.3 130.9 104.2l-18.9-91.6c-3.2-12.5-12.8-16-25.9-16.4z" fill="#f7a600"/></svg>
+                        <svg viewBox="0 0 780 500" className="h-6 opacity-70" aria-label="PayPal"><path d="M622.8 201.7c-8.5-9.6-23.7-13.7-43.3-13.7h-56.6c-4 0-7.4 2.9-8 6.8l-23.5 149.4c-.5 3 1.8 5.8 4.9 5.8h37.6l-2.6 16.7c-.4 2.7 1.6 5 4.3 5h30.1c3.5 0 6.5-2.5 7-6l.3-1.5 5.6-35.2.4-1.9c.5-3.4 3.5-6 7-6h4.4c28.5 0 50.8-11.6 57.3-45 2.7-14-1.3-25.6-9-33.4z" fill="#179bd7"/><path d="M622.8 201.7c-8.5-9.6-23.7-13.7-43.3-13.7h-56.6c-4 0-7.4 2.9-8 6.8l-23.5 149.4c-.5 3 1.8 5.8 4.9 5.8h37.6l9.4-59.8-.3 1.9c.6-3.9 4-6.8 8-6.8h16.6c32.6 0 58.2-13.3 65.6-51.6.2-1.1.4-2.2.5-3.3 2.2-14.2-.0-23.8-11-32.7z" fill="#253b80"/><path d="M342.3 201.7c-8.5-9.6-23.7-13.7-43.3-13.7h-56.6c-4 0-7.4 2.9-8 6.8L211 344.2c-.5 3 1.8 5.8 4.9 5.8h38.5l9.7-61.4-.3 1.9c.6-3.9 4-6.8 8-6.8h16.6c32.6 0 58.2-13.3 65.6-51.6.2-1.1.4-2.2.5-3.3-1-.5-1-.5 0 0 2.2-14.2-.0-23.8-12.2-27.1z" fill="#253b80"/><path d="M342.3 201.7c-8.5-9.6-23.7-13.7-43.3-13.7h-56.6c-4 0-7.4 2.9-8 6.8L211 344.2c-.5 3 1.8 5.8 4.9 5.8h38.5l9.7-61.4 9.4-59.8-.3 1.9c.6-3.9 4-6.8 8-6.8h16.6c32.6 0 58.2-13.3 65.6-51.6.2-1.1.4-2.2.5-3.3 2.2-14.2-.0-23.8-11-32.7-1-.5-1-.5-1.1-27.6z" fill="#179bd7"/></svg>
                       </div>
                       <p className="text-gray-400 text-sm text-center">
                         Sarai reindirizzato a una pagina di pagamento sicura per completare la transazione.

@@ -641,6 +641,19 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
     if (next.returnLoc) params.set('returnLoc', next.returnLoc);
     if (next.returnLocLabel) params.set('returnLocLabel', next.returnLocLabel);
     setSearchParams(params, { replace: true });
+
+    // Re-run availability search with updated dates
+    const searchPool = allVehicles.length > 0 ? allVehicles : (vehicleCategory ? fetchedVehicles : (category?.data || []));
+    if (searchPool.length > 0) {
+      runSearch(searchPool, {
+        pickupLocation: next.pickupLoc || 'dr7_office',
+        returnLocation: next.returnLoc || next.pickupLoc || 'dr7_office',
+        pickupDate: next.pickupDate,
+        pickupTime: next.pickupTime,
+        returnDate: next.returnDate,
+        returnTime: next.returnTime,
+      });
+    }
   };
 
   // Determine if this is a vehicle category and map to database category
