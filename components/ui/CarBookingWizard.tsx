@@ -4321,8 +4321,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   <span className="text-white font-semibold">{item.name}</span>
                 </div>
                 <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                  <span className="text-gray-400">Ritiro</span>
+                  <span className="text-white font-semibold">{formData.pickupDate} — {formData.pickupTime}</span>
+                </div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                  <span className="text-gray-400">Riconsegna</span>
+                  <span className="text-white font-semibold">{formData.returnDate} — {formData.returnTime}</span>
+                </div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-700">
                   <span className="text-gray-400">Durata</span>
-                  <span className="text-white font-semibold">{Math.max(1, duration.days)} {Math.max(1, duration.days) === 1 ? 'giorno' : 'giorni'}</span>
+                  <span className="text-white font-semibold">{Math.max(1, duration.days)} {Math.max(1, duration.days) === 1 ? 'giorno' : 'giorni'}{duration.hours > 0 ? ` ${duration.hours}h` : ''}</span>
                 </div>
                 <div className="flex justify-between items-center py-3 border-b border-gray-700">
                   <span className="text-gray-400">Copertura assicurativa</span>
