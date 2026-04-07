@@ -120,21 +120,39 @@ const PaymentSuccessPage: React.FC = () => {
                     if (booking.booking_details?.customer) {
                         const bId = booking.id.substring(0, 8).toUpperCase();
                         const customer = booking.booking_details.customer;
-                        const pDate = new Date(booking.pickup_date);
-                        const dDate = new Date(booking.dropoff_date);
                         const price = (booking.price_total / 100).toFixed(2);
-
-                        const msg = `Ciao! Ho appena completato il pagamento per la prenotazione.\n\n` +
-                            `*Dettagli Prenotazione*\n` +
-                            `*ID:* DR7-${bId}\n` +
-                            `*Nome:* ${customer.fullName}\n` +
-                            `*Veicolo:* ${booking.vehicle_name}\n` +
-                            `*Ritiro:* ${pDate.toLocaleDateString('it-IT')} ${pDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n` +
-                            `*Riconsegna:* ${dDate.toLocaleDateString('it-IT')} ${dDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n` +
-                            `*Totale:* €${price}\n\n` +
-                            `Grazie!`;
-
                         const officeNum = '393457905205';
+                        let msg: string;
+
+                        if (booking.service_type === 'car_wash' || booking.service_type === 'mechanical_service') {
+                            const apptDate = booking.appointment_date ? new Date(booking.appointment_date) : null;
+                            const formattedDate = apptDate
+                                ? apptDate.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Europe/Rome' })
+                                : 'N/A';
+                            const formattedTime = booking.appointment_time || (apptDate ? apptDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '');
+
+                            msg = `*ID:* DR7-${bId}\n` +
+                                `*Cliente:* ${customer.fullName}\n` +
+                                `*Email:* ${customer.email || ''}\n` +
+                                `*Telefono:* ${customer.phone || booking.customer_phone || ''}\n` +
+                                `*Servizio:* ${booking.service_name || booking.vehicle_name}\n` +
+                                `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n` +
+                                `*Totale:* €${price}\n` +
+                                `*Stato Pagamento:* ✅ Pagato`;
+                        } else {
+                            const pDate = new Date(booking.pickup_date);
+                            const dDate = new Date(booking.dropoff_date);
+                            msg = `Ciao! Ho appena completato il pagamento per la prenotazione.\n\n` +
+                                `*Dettagli Prenotazione*\n` +
+                                `*ID:* DR7-${bId}\n` +
+                                `*Nome:* ${customer.fullName}\n` +
+                                `*Veicolo:* ${booking.vehicle_name}\n` +
+                                `*Ritiro:* ${pDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })} ${pDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })}\n` +
+                                `*Riconsegna:* ${dDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })} ${dDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })}\n` +
+                                `*Totale:* €${price}\n\n` +
+                                `Grazie!`;
+                        }
+
                         setWhatsappUrl(`https://wa.me/${officeNum}?text=${encodeURIComponent(msg)}`);
                     }
                     setUpdating(false);
@@ -185,10 +203,29 @@ const PaymentSuccessPage: React.FC = () => {
                             if (b.booking_details?.customer) {
                                 const bId = b.id.substring(0, 8).toUpperCase();
                                 const customer = b.booking_details.customer;
-                                const pDate = new Date(b.pickup_date);
-                                const dDate = new Date(b.dropoff_date);
                                 const price = (b.price_total / 100).toFixed(2);
-                                const msg = `Ciao! Ho appena completato il pagamento per la prenotazione.\n\n*ID:* DR7-${bId}\n*Nome:* ${customer.fullName}\n*Veicolo:* ${b.vehicle_name}\n*Ritiro:* ${pDate.toLocaleDateString('it-IT')}\n*Riconsegna:* ${dDate.toLocaleDateString('it-IT')}\n*Totale:* €${price}\n\nGrazie!`;
+                                let msg: string;
+
+                                if (b.service_type === 'car_wash' || b.service_type === 'mechanical_service') {
+                                    const apptDate = b.appointment_date ? new Date(b.appointment_date) : null;
+                                    const formattedDate = apptDate
+                                        ? apptDate.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Europe/Rome' })
+                                        : 'N/A';
+                                    const formattedTime = b.appointment_time || (apptDate ? apptDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '');
+
+                                    msg = `*ID:* DR7-${bId}\n` +
+                                        `*Cliente:* ${customer.fullName}\n` +
+                                        `*Email:* ${customer.email || ''}\n` +
+                                        `*Telefono:* ${customer.phone || b.customer_phone || ''}\n` +
+                                        `*Servizio:* ${b.service_name || b.vehicle_name}\n` +
+                                        `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n` +
+                                        `*Totale:* €${price}\n` +
+                                        `*Stato Pagamento:* ✅ Pagato`;
+                                } else {
+                                    const pDate = new Date(b.pickup_date);
+                                    const dDate = new Date(b.dropoff_date);
+                                    msg = `Ciao! Ho appena completato il pagamento per la prenotazione.\n\n*ID:* DR7-${bId}\n*Nome:* ${customer.fullName}\n*Veicolo:* ${b.vehicle_name}\n*Ritiro:* ${pDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })}\n*Riconsegna:* ${dDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })}\n*Totale:* €${price}\n\nGrazie!`;
+                                }
                                 setWhatsappUrl(`https://wa.me/393457905205?text=${encodeURIComponent(msg)}`);
                             }
                             setUpdating(false);
@@ -224,21 +261,39 @@ const PaymentSuccessPage: React.FC = () => {
                     if (newBooking.booking_details?.customer) {
                         const bId = newBooking.id.substring(0, 8).toUpperCase();
                         const customer = newBooking.booking_details.customer;
-                        const pDate = new Date(newBooking.pickup_date);
-                        const dDate = new Date(newBooking.dropoff_date);
                         const price = (newBooking.price_total / 100).toFixed(2);
-
-                        const msg = `Ciao! Ho appena completato il pagamento per la prenotazione.\n\n` +
-                            `*Dettagli Prenotazione*\n` +
-                            `*ID:* DR7-${bId}\n` +
-                            `*Nome:* ${customer.fullName}\n` +
-                            `*Veicolo:* ${newBooking.vehicle_name}\n` +
-                            `*Ritiro:* ${pDate.toLocaleDateString('it-IT')} ${pDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n` +
-                            `*Riconsegna:* ${dDate.toLocaleDateString('it-IT')} ${dDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}\n` +
-                            `*Totale:* €${price}\n\n` +
-                            `Grazie!`;
-
                         const officeNum = '393457905205';
+                        let msg: string;
+
+                        if (newBooking.service_type === 'car_wash' || newBooking.service_type === 'mechanical_service') {
+                            const apptDate = newBooking.appointment_date ? new Date(newBooking.appointment_date) : null;
+                            const formattedDate = apptDate
+                                ? apptDate.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Europe/Rome' })
+                                : 'N/A';
+                            const formattedTime = newBooking.appointment_time || (apptDate ? apptDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '');
+
+                            msg = `*ID:* DR7-${bId}\n` +
+                                `*Cliente:* ${customer.fullName}\n` +
+                                `*Email:* ${customer.email || ''}\n` +
+                                `*Telefono:* ${customer.phone || newBooking.customer_phone || ''}\n` +
+                                `*Servizio:* ${newBooking.service_name || newBooking.vehicle_name}\n` +
+                                `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n` +
+                                `*Totale:* €${price}\n` +
+                                `*Stato Pagamento:* ✅ Pagato`;
+                        } else {
+                            const pDate = new Date(newBooking.pickup_date);
+                            const dDate = new Date(newBooking.dropoff_date);
+                            msg = `Ciao! Ho appena completato il pagamento per la prenotazione.\n\n` +
+                                `*Dettagli Prenotazione*\n` +
+                                `*ID:* DR7-${bId}\n` +
+                                `*Nome:* ${customer.fullName}\n` +
+                                `*Veicolo:* ${newBooking.vehicle_name}\n` +
+                                `*Ritiro:* ${pDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })} ${pDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })}\n` +
+                                `*Riconsegna:* ${dDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })} ${dDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })}\n` +
+                                `*Totale:* €${price}\n\n` +
+                                `Grazie!`;
+                        }
+
                         setWhatsappUrl(`https://wa.me/${officeNum}?text=${encodeURIComponent(msg)}`);
                     }
                     setUpdating(false);
