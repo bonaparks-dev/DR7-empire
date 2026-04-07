@@ -4509,8 +4509,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {depositOptions.map(opt => {
                     const isSelected = formData.depositOption === opt.id;
                     // Disable "no_deposit" if insurance is RCA (solo con acquisto Kasko)
-                    // no_deposit blocked for: Fascia B (TIER_1), RCA only, non-residents
-                    const isDisabled = opt.id === 'no_deposit' && (selectedInsuranceIsRCA || activeTier === 'TIER_1');
+                    // no_deposit: hide entirely for Fascia B, disable for RCA
+                    if (opt.id === 'no_deposit' && activeTier === 'TIER_1') return null;
+                    const isDisabled = opt.id === 'no_deposit' && selectedInsuranceIsRCA;
                     return (
                       <div
                         key={opt.id}
@@ -4538,10 +4539,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                               </span>
                             </div>
                             <p className="text-sm text-gray-400 mt-1">{opt.description}</p>
-                            {isDisabled && opt.id === 'no_deposit' && activeTier === 'TIER_1' && (
-                              <p className="text-xs text-red-400 mt-1">Non disponibile per Fascia B (età 21-25 o patente 3-4 anni)</p>
-                            )}
-                            {isDisabled && opt.id === 'no_deposit' && selectedInsuranceIsRCA && activeTier !== 'TIER_1' && (
+                            {isDisabled && (
                               <p className="text-xs text-red-400 mt-1">Disponibile solo con acquisto Kasko</p>
                             )}
                           </div>
