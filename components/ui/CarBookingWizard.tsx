@@ -2777,6 +2777,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   };
 
   // ── No Cauzione Request Flow ─────────────────────────────────────────
+  // Creates a preventivo (not a booking) so admin can review → Accetta → send pay-by-link
   const handleNoCauzioneConfirm = async () => {
     setShowNoCauzioneModal(false);
     if (!user || !item) return;
@@ -2785,78 +2786,78 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     setIsProcessing(true);
 
     try {
-      const pickupDateTime = createItalyDateTime(formData.pickupDate, formData.pickupTime);
-      const dropoffDateTime = createItalyDateTime(formData.returnDate, formData.returnTime);
+      const pickupISO = `${formData.pickupDate}T${formData.pickupTime || '10:30'}:00`;
+      const dropoffISO = `${formData.returnDate}T${formData.returnTime || '09:00'}:00`;
       const rFirstName = formData.firstName || (user.fullName?.split(' ')[0]) || '';
       const rLastName = formData.lastName || (user.fullName?.split(' ').slice(1).join(' ')) || '';
       const rFullName = `${rFirstName} ${rLastName}`.trim() || user.fullName || 'Cliente';
-      const rEmail = formData.email || user.email || '';
       const rPhone = formData.phone || (user as any).phone || '';
+      const resolvedVehicleId = formData.selectedVehicleId || item.vehicleIds?.[0] || item.id.replace('car-', '');
       const availableVehicleName = formData.selectedVehicleId
         ? (item.vehicleIds?.indexOf(formData.selectedVehicleId) >= 0
           ? ((item as any).displayNames?.[item.vehicleIds.indexOf(formData.selectedVehicleId)] || item.name)
           : item.name)
         : item.name;
 
-      const bookingData = {
-        user_id: user.id,
-        vehicle_type: item.type || 'car',
+      const payload = {
+        vehicle_id: resolvedVehicleId,
         vehicle_name: availableVehicleName || item.name,
-        vehicle_image_url: item.image,
-        pickup_date: pickupDateTime.toISOString(),
-        dropoff_date: dropoffDateTime.toISOString(),
-        pickup_location: formData.pickupLocation,
-        dropoff_location: formData.returnLocation,
-        price_total: eurosToCents(grandTotal),
-        currency: currency.toUpperCase(),
-        status: 'pending',
-        payment_status: 'pending',
-        payment_method: 'nexi',
-        deposit_amount: 0,
+        vehicle_plate: (item as any).plate || '',
+        vehicle_category: (item as any).category || 'exotic',
+        pickup_date: pickupISO,
+        dropoff_date: dropoffISO,
+        rental_days: duration.days,
+        pickup_location: formData.pickupLocation || 'dr7_office',
+        dropoff_location: formData.returnLocation || formData.pickupLocation || 'dr7_office',
+        base_daily_rate: effectivePricePerDay,
         insurance_option: formData.insuranceOption,
+        insurance_daily_price: insuranceCost / Math.max(duration.days, 1),
+        insurance_total: insuranceCost,
+        km_limit: formData.kmLimit || includedKm || 0,
+        unlimited_km: formData.kmPackageType === 'unlimited',
+        km_overage_fee: 1.80,
+        unlimited_km_daily: formData.kmPackageType === 'unlimited' ? (kmPackageCost / Math.max(duration.days, 1)) : 0,
+        unlimited_km_total: formData.kmPackageType === 'unlimited' ? kmPackageCost : 0,
+        second_driver_daily: secondDriverFee / Math.max(duration.days, 1),
+        second_driver_total: secondDriverFee,
+        no_cauzione_daily: noDepositSurcharge,
+        no_cauzione_total: noDepositSurcharge * duration.days,
+        lavaggio_fee: lavaggioFee,
+        delivery_fee: deliveryFee,
+        pickup_fee: pickupFee,
+        subtotal: grandTotal,
+        sconto: specialDiscountAmount + membershipDiscount,
+        sconto_note: membershipTier ? `Sconto ${membershipTier}` : '',
+        total_final: grandTotal,
+        deposit_amount: 0,
+        driver_tier: driverTier || 'TIER_2',
         customer_name: rFullName,
-        customer_email: rEmail,
         customer_phone: rPhone,
-        vehicle_id: formData.selectedVehicleId || null,
-        booked_at: new Date().toISOString(),
-        booking_details: {
-          customer: {
-            fullName: rFullName,
-            firstName: rFirstName,
-            lastName: rLastName,
-            email: rEmail,
-            phone: rPhone,
-            birthDate: formData.birthDate,
-            codiceFiscale: formData.codiceFiscale,
-            sesso: formData.sesso,
-            luogoNascita: formData.luogoNascita,
-            provinciaNascita: formData.provinciaNascita,
-            residenza: formData.residenza,
-            licenseNumber: formData.licenseNumber,
-            licenseIssueDate: formData.licenseIssueDate,
-            address: formData.address,
-          },
-          depositOption: 'no_deposit',
-          noDepositSurcharge: noDepositSurcharge,
-          deposit_surcharge: noDepositSurcharge,
-          no_cauzione_request: true,
-          no_cauzione_status: 'pending',
-          driver_tier: driverTier,
-          insuranceOption: formData.insuranceOption,
-          insurance_cost: insuranceCost,
-          duration: `${duration.days} days`,
-          kmPackage: {
-            type: formData.kmPackageType,
-            includedKm: includedKm,
-          },
+        no_cauzione_request: true,
+        extras_detail: {
+          experience_services: formData.experienceServices,
+          flex: formData.dr7Flex,
+          wash_upsell: formData.washUpsellAccepted,
         },
+        notes: 'Richiesta formula senza cauzione',
       };
 
-      const { data, error } = await supabase.from('bookings').insert(bookingData).select().single();
-      if (error) throw new Error(`Errore: ${error.message}`);
+      const res = await fetch(`${FUNCTIONS_BASE}/.netlify/functions/create-website-preventivo`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Errore salvataggio richiesta');
+      }
 
       // Send WhatsApp to customer
-      if (data && rPhone) {
+      if (rPhone) {
         const customerMsg = `Gentile ${rFirstName},\n\n`
           + `abbiamo ricevuto la sua richiesta per la formula senza cauzione relativa alla prenotazione appena effettuata.\n\n`
           + `Il nostro team sta effettuando una verifica rapida per confermarne l'idoneità.\n\n`
@@ -2869,27 +2870,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ customPhone: rPhone, customMessage: customerMsg }),
         }).catch(e => console.error('[noCauzione] WhatsApp customer error:', e));
-
-        // Notify admin (standard notification)
-        fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ booking: data }),
-        }).catch(e => console.error('[noCauzione] WhatsApp admin error:', e));
-
-        // Notify boss about no cauzione request
-        const bossMsg = `*RICHIESTA NO CAUZIONE*\n\n`
-          + `*Cliente:* ${rFullName}\n`
-          + `*Telefono:* ${rPhone}\n`
-          + `*Veicolo:* ${availableVehicleName}\n`
-          + `*Periodo:* ${formData.pickupDate} → ${formData.returnDate}\n`
-          + `*Totale:* €${grandTotal.toFixed(2)}\n\n`
-          + `Approvare o rifiutare dall'admin.`;
-        fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ customPhone: '393472817258', customMessage: bossMsg }),
-        }).catch(e => console.error('[noCauzione] WhatsApp boss error:', e));
       }
 
       // Upsert customer
@@ -2907,7 +2887,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           }).catch(() => {});
       }
 
-      if (data) onBookingComplete(data);
+      setPreventivoSaved(true);
     } catch (err: any) {
       setPaymentError(err.message || 'Errore durante la richiesta');
     } finally {
@@ -5920,7 +5900,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                               className="flex-1 px-6 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed"
                               style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                             >
-                              {isProcessing ? 'Elaborazione in corso...' : 'CONFERMA PRENOTAZIONE'}
+                              {isProcessing ? 'Elaborazione in corso...' : formData.depositOption === 'no_deposit' ? 'RICHIEDI APPROVAZIONE SENZA CAUZIONE' : 'CONFERMA PRENOTAZIONE'}
                             </button>
                             <button
                               type="button"
