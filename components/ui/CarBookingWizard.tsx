@@ -177,7 +177,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSavingPreventivo, setIsSavingPreventivo] = useState(false);
   const [preventivoSaved, setPreventivoSaved] = useState(false);
-  const [showNoCauzioneModal, setShowNoCauzioneModal] = useState(false);
+  const [showNoCauzionePopup, setShowNoCauzionePopup] = useState(false);
+  const [noCauzioneRequested, setNoCauzioneRequested] = useState(false);
+  const [noCauzioneSending, setNoCauzioneSending] = useState(false);
   const today = useMemo(() => {
     // Get today's date in Italy timezone (Europe/Rome)
     const italyDate = new Date().toLocaleString('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -1378,22 +1380,37 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (formData.pickupDate && formData.returnDate) {
       const pickup = safeDate(`${formData.pickupDate}T${formData.pickupTime}`);
       const ret = safeDate(`${formData.returnDate}T${formData.returnTime}`);
-      const diffMs = ret.getTime() - pickup.getTime();
+      if (pickup < ret) {
+        // Updated Logic: User requested "Dal 6 al 8 sono 2 giorni... even if it is 22:30"
+        // This implies strict calendar day difference: (Return Date - Pickup Date) in days.
+        // We calculate this by normalizing both to midnight or simply taking the difference in days.
 
-      if (diffMs > 0) {
-        // 1 day = up to 22h30 (1350 minutes) of rental
-        // After 22h30 → 2 days, after 45h → 3 days, etc.
-        const DAY_THRESHOLD_MS = 22.5 * 60 * 60 * 1000; // 22h30 in ms
-        billingDays = Math.max(1, Math.ceil(diffMs / DAY_THRESHOLD_MS));
+        const diffTime = Math.abs(ret.getTime() - pickup.getTime());
+        const standardHours = diffTime / (1000 * 60 * 60);
 
-        const standardHours = diffMs / (1000 * 60 * 60);
+        // Calendar Day Logic (Midnight to Midnight)
+        const pDate = new Date(pickup); pDate.setHours(0, 0, 0, 0);
+        const rDate = new Date(ret); rDate.setHours(0, 0, 0, 0);
+        const diffDaysCalendar = Math.round((rDate.getTime() - pDate.getTime()) / (1000 * 60 * 60 * 24));
+
+        // Unified Duration & Billing Logic
+        // Ensures that if price is for 4 days, display says "4 days"
+        billingDays = Math.max(1, diffDaysCalendar);
+
+        // Extra day rule: if return time exceeds pickup time minus 1h30 grace,
+        // add 1 billing day (client returned past the grace window)
+        const pickupMinutes = pickup.getHours() * 60 + pickup.getMinutes();
+        const returnMinutes = ret.getHours() * 60 + ret.getMinutes();
+        const graceThreshold = pickupMinutes - 90; // 1h30 before pickup time
+        if (diffDaysCalendar > 0 && returnMinutes > graceThreshold) {
+          billingDays += 1;
+          extraDay = true;
+        }
+
         days = billingDays;
         hours = Math.floor(standardHours % 24);
-      } else if (formData.pickupDate === formData.returnDate) {
-        // Same day = 1 day minimum
-        billingDays = 1;
-        days = 1;
-        hours = 0;
+
+        if (billingDays < 1) billingDays = 1;
       }
     }
 
@@ -1527,8 +1544,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const vTypeForDeposit = getVehicleType(item, categoryContext);
     const isUrbanForDeposit = vTypeForDeposit === 'UTILITARIA' || vTypeForDeposit === 'FURGONE' || vTypeForDeposit === 'V_CLASS';
 
-    // Urban/corporate: micro_deposit removed — no surcharge
-    const urbanNoDepositSurcharge = 0;
+    const urbanNoDepositSurcharge = 0; // Micro Cauzione removed
 
     // Supercar: deposit option surcharges (no_deposit = €49/day, vehicle_deposit = €20/day)
     let supercarDepositSurcharge = 0;
@@ -1735,8 +1751,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // Special client = always €0
     if (isMassimo) return 0;
 
-    // Urban/corporate vehicles: fixed cauzione €1000
-    if (isUtilitaria) return DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT;
+    // Utilitaria/Furgone: use same tier-based deposit as supercars
+    if (isUtilitaria && formData.depositOption === 'with_deposit') return DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT;
 
     // Gold/Platinum members OR 3+ rentals = NO deposit
     const memberTier = getMembershipTierName(user);
@@ -2776,157 +2792,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
   };
 
-  // ── No Cauzione Request Flow ─────────────────────────────────────────
-  const handleNoCauzioneConfirm = async () => {
-    setShowNoCauzioneModal(false);
-    if (!user || !item) return;
-    if (isSubmittingRef.current) return;
-    isSubmittingRef.current = true;
-    setIsProcessing(true);
-
-    try {
-      const pickupDateTime = createItalyDateTime(formData.pickupDate, formData.pickupTime);
-      const dropoffDateTime = createItalyDateTime(formData.returnDate, formData.returnTime);
-      const rFirstName = formData.firstName || (user.fullName?.split(' ')[0]) || '';
-      const rLastName = formData.lastName || (user.fullName?.split(' ').slice(1).join(' ')) || '';
-      const rFullName = `${rFirstName} ${rLastName}`.trim() || user.fullName || 'Cliente';
-      const rEmail = formData.email || user.email || '';
-      const rPhone = formData.phone || (user as any).phone || '';
-      const availableVehicleName = formData.selectedVehicleId
-        ? (item.vehicleIds?.indexOf(formData.selectedVehicleId) >= 0
-          ? ((item as any).displayNames?.[item.vehicleIds.indexOf(formData.selectedVehicleId)] || item.name)
-          : item.name)
-        : item.name;
-
-      const bookingData = {
-        user_id: user.id,
-        vehicle_type: item.type || 'car',
-        vehicle_name: availableVehicleName || item.name,
-        vehicle_image_url: item.image,
-        pickup_date: pickupDateTime.toISOString(),
-        dropoff_date: dropoffDateTime.toISOString(),
-        pickup_location: formData.pickupLocation,
-        dropoff_location: formData.returnLocation,
-        price_total: eurosToCents(grandTotal),
-        currency: currency.toUpperCase(),
-        status: 'pending',
-        payment_status: 'pending',
-        payment_method: 'nexi',
-        deposit_amount: 0,
-        insurance_option: formData.insuranceOption,
-        customer_name: rFullName,
-        customer_email: rEmail,
-        customer_phone: rPhone,
-        vehicle_id: formData.selectedVehicleId || null,
-        booked_at: new Date().toISOString(),
-        booking_details: {
-          customer: {
-            fullName: rFullName,
-            firstName: rFirstName,
-            lastName: rLastName,
-            email: rEmail,
-            phone: rPhone,
-            birthDate: formData.birthDate,
-            codiceFiscale: formData.codiceFiscale,
-            sesso: formData.sesso,
-            luogoNascita: formData.luogoNascita,
-            provinciaNascita: formData.provinciaNascita,
-            residenza: formData.residenza,
-            licenseNumber: formData.licenseNumber,
-            licenseIssueDate: formData.licenseIssueDate,
-            address: formData.address,
-          },
-          depositOption: 'no_deposit',
-          noDepositSurcharge: noDepositSurcharge,
-          deposit_surcharge: noDepositSurcharge,
-          no_cauzione_request: true,
-          no_cauzione_status: 'pending',
-          driver_tier: driverTier,
-          insuranceOption: formData.insuranceOption,
-          insurance_cost: insuranceCost,
-          duration: `${duration.days} days`,
-          kmPackage: {
-            type: formData.kmPackageType,
-            includedKm: includedKm,
-          },
-        },
-      };
-
-      const { data, error } = await supabase.from('bookings').insert(bookingData).select().single();
-      if (error) throw new Error(`Errore: ${error.message}`);
-
-      // Send WhatsApp to customer
-      if (data && rPhone) {
-        const customerMsg = `Gentile ${rFirstName},\n\n`
-          + `abbiamo ricevuto la sua richiesta per la formula senza cauzione relativa alla prenotazione appena effettuata.\n\n`
-          + `Il nostro team sta effettuando una verifica rapida per confermarne l'idoneità.\n\n`
-          + `Riceverà a breve un aggiornamento con l'esito e, in caso di approvazione, il link di pagamento per completare la prenotazione.\n\n`
-          + `Restiamo a disposizione.\n\n`
-          + `Cordiali Saluti,\nDR7`;
-
-        fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ customPhone: rPhone, customMessage: customerMsg }),
-        }).catch(e => console.error('[noCauzione] WhatsApp customer error:', e));
-
-        // Notify admin (standard notification)
-        fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ booking: data }),
-        }).catch(e => console.error('[noCauzione] WhatsApp admin error:', e));
-
-        // Notify boss about no cauzione request
-        const bossMsg = `*RICHIESTA NO CAUZIONE*\n\n`
-          + `*Cliente:* ${rFullName}\n`
-          + `*Telefono:* ${rPhone}\n`
-          + `*Veicolo:* ${availableVehicleName}\n`
-          + `*Periodo:* ${formData.pickupDate} → ${formData.returnDate}\n`
-          + `*Totale:* €${grandTotal.toFixed(2)}\n\n`
-          + `Approvare o rifiutare dall'admin.`;
-        fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ customPhone: '393472817258', customMessage: bossMsg }),
-        }).catch(e => console.error('[noCauzione] WhatsApp boss error:', e));
-      }
-
-      // Upsert customer
-      if (user?.id) {
-        supabase.from('customers_extended')
-          .select('id').eq('user_id', user.id).maybeSingle()
-          .then(({ data: existing }) => {
-            const rec: Record<string, any> = {
-              nome: formData.firstName, cognome: formData.lastName,
-              email: formData.email, telefono: formData.phone,
-              codice_fiscale: formData.codiceFiscale, tipo_cliente: 'persona_fisica', source: 'website_booking',
-            };
-            if (existing?.id) supabase.from('customers_extended').update(rec).eq('id', existing.id).then(() => {});
-            else supabase.from('customers_extended').insert({ ...rec, user_id: user.id }).then(() => {});
-          }).catch(() => {});
-      }
-
-      if (data) onBookingComplete(data);
-    } catch (err: any) {
-      setPaymentError(err.message || 'Errore durante la richiesta');
-    } finally {
-      isSubmittingRef.current = false;
-      setIsProcessing(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPaymentError(null);
     console.log("handleSubmit called", { paymentMethod: formData.paymentMethod, step, userId: user?.id });
     if (!validateStep() || !item) return;
-
-    // Intercept no_deposit: show info modal instead of proceeding to payment
-    if (formData.depositOption === 'no_deposit') {
-      setShowNoCauzioneModal(true);
-      return;
-    }
 
     // Ref-based guard: prevents double-tap/double-click even if state hasn't updated yet
     if (isSubmittingRef.current) return;
@@ -4648,7 +4518,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           : isSelected
                             ? 'border-green-500 bg-green-500/10 cursor-pointer'
                             : 'border-gray-600 hover:border-gray-500 cursor-pointer'}`}
-                        onClick={() => !isDisabled && setFormData(prev => ({ ...prev, depositOption: opt.id }))}
+                        onClick={() => {
+                          if (isDisabled) return;
+                          if (opt.id === 'no_deposit') {
+                            setShowNoCauzionePopup(true);
+                            return;
+                          }
+                          setFormData(prev => ({ ...prev, depositOption: opt.id }));
+                        }}
                       >
                         <div className="flex items-center">
                           <input type="radio" name="depositOption" checked={isSelected} disabled={isDisabled} onChange={() => {}} className="w-4 h-4" />
@@ -4669,9 +4546,67 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     );
                   })}
                 </div>}
+                {noCauzioneRequested && formData.depositOption === 'no_deposit' && (
+                  <div className="mt-3 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                    <p className="text-green-400 text-sm font-medium">Richiesta No Cauzione inviata! Sarai contattato per conferma.</p>
+                  </div>
+                )}
                 {errors.depositOption && <p className="text-xs text-red-400 mt-2">{errors.depositOption}</p>}
               </section>
             ) : null}
+
+            {/* No Cauzione Request Popup */}
+            {showNoCauzionePopup && (
+              <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowNoCauzionePopup(false)}>
+                <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
+                  <h3 className="text-lg font-bold text-white mb-3">Richiesta No Cauzione</h3>
+                  <p className="text-gray-400 text-sm mb-4">
+                    L'opzione "Nessuna Cauzione" richiede l'approvazione del team DR7.
+                    Invieremo la tua richiesta e sarai contattato per conferma.
+                  </p>
+                  <p className="text-white text-sm mb-1">Supplemento: <span className="font-bold text-yellow-400">€{ACTIVE_NO_DEPOSIT_SURCHARGE}/giorno</span></p>
+                  <p className="text-gray-500 text-xs mb-6">Disponibile solo con Kasko attiva (Fascia A, residente in Sardegna)</p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowNoCauzionePopup(false)}
+                      className="flex-1 py-3 border border-gray-600 text-white rounded-full font-semibold text-sm hover:bg-gray-800 transition-colors"
+                    >
+                      Annulla
+                    </button>
+                    <button
+                      disabled={noCauzioneSending}
+                      onClick={async () => {
+                        setNoCauzioneSending(true);
+                        try {
+                          const msg = `*RICHIESTA NO CAUZIONE DAL SITO*\n\n`
+                            + `*Cliente:* ${formData.firstName} ${formData.lastName}\n`
+                            + `*Email:* ${formData.email}\n`
+                            + `*Tel:* ${formData.phone}\n`
+                            + `*Veicolo:* ${item?.name || 'N/A'}\n`
+                            + `*Date:* ${formData.pickupDate} - ${formData.returnDate}\n`
+                            + `*Supplemento:* €${ACTIVE_NO_DEPOSIT_SURCHARGE}/giorno`;
+                          await fetch('/.netlify/functions/send-whatsapp-notification', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ customMessage: msg }),
+                          });
+                          setFormData(prev => ({ ...prev, depositOption: 'no_deposit' }));
+                          setNoCauzioneRequested(true);
+                          setShowNoCauzionePopup(false);
+                        } catch {
+                          alert('Errore invio richiesta. Riprova.');
+                        } finally {
+                          setNoCauzioneSending(false);
+                        }
+                      }}
+                      className="flex-1 py-3 bg-white text-black rounded-full font-bold text-sm hover:bg-gray-200 transition-colors disabled:opacity-50"
+                    >
+                      {noCauzioneSending ? 'Invio...' : 'Invia Richiesta'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* === USAGE ZONE SELECTOR (Supercar unlimited only) === */}
             {vehicleType === 'SUPERCAR' && !isMassimo && formData.kmPackageType === 'unlimited' && (
@@ -5055,7 +4990,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {/* Deposit surcharges */}
                   {noDepositSurcharge > 0 && (
                     <div className="flex justify-between text-yellow-400">
-                      <span>{`Supplemento cauzione (${formData.depositOption === 'no_deposit' ? `${duration.days} gg × €49` : formData.depositOption === 'vehicle_deposit' ? `${duration.days} gg × €20` : ''})`}</span>
+                      <span>{`Supplemento cauzione (${formData.depositOption === 'no_deposit' ? `${duration.days} gg × €${ACTIVE_NO_DEPOSIT_SURCHARGE}` : formData.depositOption === 'vehicle_deposit' ? `${duration.days} gg × €20` : ''})`}</span>
                       <span>{formatPrice(noDepositSurcharge)}</span>
                     </div>
                   )}
@@ -5112,12 +5047,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       return (
                         <div className="mt-3 p-3 bg-gray-700/50 rounded-lg">
                           <p className="text-sm font-semibold text-white">CAUZIONE AL RITIRO</p>
-                          {isUrbanOrCorporate && (
-                            <p className="text-sm text-gray-300 mt-1">
-                              Cauzione: €{DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT}
-                            </p>
-                          )}
-                          {!isUrbanOrCorporate && depositAmt > 0 && (
+                          {depositAmt > 0 && (
                             <p className="text-sm text-gray-300 mt-1">Importo: €{depositAmt.toLocaleString()}</p>
                           )}
                           {formData.depositOption && !isUrbanOrCorporate && (
@@ -5267,40 +5197,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 </motion.div>
               )}
             </AnimatePresence>
-
-            {/* No Cauzione Request Modal */}
-            {showNoCauzioneModal && (
-              <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-                <div className="bg-[#1a1a2e] rounded-2xl max-w-md w-full p-6 border border-yellow-500/30 shadow-2xl">
-                  <div className="text-center mb-4">
-                    <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                      <svg className="w-7 h-7 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-lg font-bold text-white">Formula Senza Cauzione</h3>
-                  </div>
-                  <p className="text-gray-300 text-sm leading-relaxed mb-6">
-                    L&apos;accesso alla formula senza cauzione è soggetto a valutazione e approvazione interna. In caso di esito positivo, riceverà un link di pagamento dedicato per completare la prenotazione.
-                  </p>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setShowNoCauzioneModal(false)}
-                      className="flex-1 py-3 px-4 rounded-xl border border-gray-600 text-gray-300 hover:bg-gray-800 transition-colors text-sm font-medium"
-                    >
-                      Annulla
-                    </button>
-                    <button
-                      onClick={handleNoCauzioneConfirm}
-                      disabled={isProcessing}
-                      className="flex-1 py-3 px-4 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-black font-bold transition-colors text-sm disabled:opacity-50"
-                    >
-                      {isProcessing ? 'Invio...' : 'Invia Richiesta'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
 
             <AnimatePresence>
               {/* Wash Upsell Modal */}
