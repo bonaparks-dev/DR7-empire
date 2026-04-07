@@ -2763,7 +2763,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           flex: formData.dr7Flex,
           wash_upsell: formData.washUpsellAccepted,
         },
-        notes: '',
+        notes: noCauzioneRequested ? 'Richiesta formula senza cauzione' : '',
+        no_cauzione_request: noCauzioneRequested && formData.depositOption === 'no_deposit',
       };
 
       const res = await fetch('/.netlify/functions/create-website-preventivo', {
