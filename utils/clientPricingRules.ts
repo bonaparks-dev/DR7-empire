@@ -22,20 +22,19 @@ export const RUNCHINA_VEHICLE_PRICES: Record<string, { 1: number; 2: number; 3: 
 
 /** Look up Runchina fixed price for a vehicle by name */
 export function getRunchinaPrice(vehicleName: string, days: number): number {
+    const safeDays = Math.max(1, days || 1);
     const name = vehicleName.toLowerCase();
-    // Try to match vehicle — check longest keys first to avoid false positives
     const sortedKeys = Object.keys(RUNCHINA_VEHICLE_PRICES).sort((a, b) => b.length - a.length);
     for (const key of sortedKeys) {
         if (name.includes(key)) {
             const prices = RUNCHINA_VEHICLE_PRICES[key];
-            if (days <= 3) return prices[days as 1 | 2 | 3];
-            return prices[3] + prices.perDay * (days - 3);
+            if (safeDays <= 3) return prices[safeDays as 1 | 2 | 3];
+            return prices[3] + prices.perDay * (safeDays - 3);
         }
     }
-    // Fallback: use M3/M4 tier pricing as default for unknown supercars
     const fallback = RUNCHINA_VEHICLE_PRICES.m3;
-    if (days <= 3) return fallback[days as 1 | 2 | 3];
-    return fallback[3] + fallback.perDay * (days - 3);
+    if (safeDays <= 3) return fallback[safeDays as 1 | 2 | 3];
+    return fallback[3] + fallback.perDay * (safeDays - 3);
 }
 
 export const SPECIAL_CLIENTS = {

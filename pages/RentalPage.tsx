@@ -8,6 +8,8 @@ import { useBooking } from '../hooks/useBooking';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVerification } from '../hooks/useVerification';
 import { useVehicles } from '../hooks/useVehicles';
+import { useAuth } from '../hooks/useAuth';
+import { isMassimoRunchina, getRunchinaPrice } from '../utils/clientPricingRules';
 import SEOHead from '../components/seo/SEOHead';
 import RentalSearchBar, { type SearchParams } from '../components/ui/RentalSearchBar';
 import RentalFilters from '../components/ui/RentalFilters';
@@ -306,9 +308,11 @@ const VehicleResults: React.FC<{
             const marketingPrice = (!hasSearched && (categoryId === 'cars' || categoryId === 'urban-cars' || categoryId === 'corporate-fleet'))
               ? item.pricePerDay?.eur : undefined;
             const marketingTooltip = categoryId === 'urban-cars' ? 'Disponibile con formula long rent' : undefined;
+            const isVip = user ? isMassimoRunchina(user) : false;
             const dailyRate = item.pricePerDay?.eur || 0;
-            const itemTotalPrice = searchResult ? searchResult.totalPrice
-              : (preDays > 0 && dailyRate ? Math.round(dailyRate * preDays) : undefined);
+            const vipPrice = isVip && preDays > 0 ? getRunchinaPrice(item.name, preDays) : undefined;
+            const itemTotalPrice = vipPrice ?? (searchResult ? searchResult.totalPrice
+              : (preDays > 0 && dailyRate ? Math.round(dailyRate * preDays) : undefined));
             const itemDays = searchResult ? searchResult.days : (preDays || undefined);
 
             return (

@@ -1431,8 +1431,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (isSupercar50km) {
       // 50km/day supercar package: price from admin config, no multi-day discounts
       calculatedRentalCost = billingDaysCalc * ACTIVE_SUPERCAR_50KM_RATE;
-    } else if (isMassimo && getVehicleType(item, categoryContext) === 'SUPERCAR') {
-      // Massimo Runchina / VIP: per-vehicle fixed multi-day pricing
+    } else if (isMassimo) {
+      // VIP: per-vehicle fixed multi-day pricing (all vehicles)
       calculatedRentalCost = getRunchinaPrice(item.name, billingDaysCalc);
     } else if (dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.finalTotalEur) {
       // Admin-controlled dynamic pricing (revenue management auto_apply mode)
@@ -1493,8 +1493,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // Already handled above
     } else if (formData.kmPackageType === 'unlimited') {
       calculatedIncludedKm = 9999;
-      // Urban vehicles get free unlimited, others pay
-      if (!isUrbanVehicle(item.name)) {
+      // Urban vehicles & VIP get free unlimited, others pay
+      if (!isUrbanVehicle(item.name) && !isMassimo) {
         calculatedKmPackageCost = calculateUnlimitedKmPrice(item.name, billingDaysCalc);
       }
     } else if (vType !== 'SUPERCAR') {
