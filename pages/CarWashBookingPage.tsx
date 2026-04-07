@@ -610,18 +610,17 @@ const CarWashBookingPage: React.FC = () => {
   const calculateTotal = () => {
     // Use cart total if we have cart items, otherwise use selected service price
     const basePrice = hasCartItems ? cartTotal : (selectedService?.price || 0);
-    const afterOnlineDiscount = basePrice * 0.95;
-    const discount = appliedDiscount?.type === 'car_wash' ? Math.min(appliedDiscount.amount, afterOnlineDiscount) : 0;
-    return Math.max(0, afterOnlineDiscount - discount);
+    const discount = appliedDiscount?.type === 'car_wash' ? Math.min(appliedDiscount.amount, basePrice) : 0;
+    return Math.max(0, basePrice - discount);
   };
 
   const getBasePrice = () => {
     return hasCartItems ? cartTotal : (selectedService?.price || 0);
   };
 
-  const onlineDiscountAmount = getBasePrice() * 0.05;
+  const onlineDiscountAmount = 0;
 
-  const birthdayDiscountAmount = appliedDiscount?.type === 'car_wash' ? Math.min(appliedDiscount.amount, getBasePrice() * 0.95) : 0;
+  const birthdayDiscountAmount = appliedDiscount?.type === 'car_wash' ? Math.min(appliedDiscount.amount, getBasePrice()) : 0;
 
   // Validate birthday discount code
   const validateDiscountCode = async () => {
@@ -1587,10 +1586,6 @@ const CarWashBookingPage: React.FC = () => {
               <div className="flex justify-between items-center mb-3 text-gray-400">
                 <span>Subtotale</span>
                 <span>€{getBasePrice().toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between items-center mb-3 text-green-400">
-                <span>Sconto Online -5%</span>
-                <span>-€{onlineDiscountAmount.toFixed(2)}</span>
               </div>
               {birthdayDiscountAmount > 0 && (
                 <div className="flex justify-between items-center mb-3 text-yellow-400">

@@ -64,9 +64,8 @@ const MechanicalBookingPage: React.FC = () => {
   const [creditBalance, setCreditBalance] = useState<number>(0);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
 
-  // Online booking discount (5%)
-  const discountedPrice = selectedService ? +(selectedService.price * 0.95).toFixed(2) : 0;
-  const onlineDiscountAmount = selectedService ? +(selectedService.price * 0.05).toFixed(2) : 0;
+  const discountedPrice = selectedService ? selectedService.price : 0;
+  const onlineDiscountAmount = 0;
 
   // Load existing bookings when date changes
   useEffect(() => {
@@ -952,10 +951,6 @@ const MechanicalBookingPage: React.FC = () => {
               <div className="flex justify-between items-center mb-3 text-gray-400">
                 <span>Subtotale</span>
                 <span>€{selectedService.price.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between items-center mb-3 text-green-400">
-                <span>Sconto Online -5%</span>
-                <span>-€{onlineDiscountAmount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center mb-6">
                 <span className="text-2xl font-bold text-white">
