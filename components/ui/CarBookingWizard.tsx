@@ -1378,37 +1378,22 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (formData.pickupDate && formData.returnDate) {
       const pickup = safeDate(`${formData.pickupDate}T${formData.pickupTime}`);
       const ret = safeDate(`${formData.returnDate}T${formData.returnTime}`);
-      if (pickup < ret) {
-        // Updated Logic: User requested "Dal 6 al 8 sono 2 giorni... even if it is 22:30"
-        // This implies strict calendar day difference: (Return Date - Pickup Date) in days.
-        // We calculate this by normalizing both to midnight or simply taking the difference in days.
+      const diffMs = ret.getTime() - pickup.getTime();
 
-        const diffTime = Math.abs(ret.getTime() - pickup.getTime());
-        const standardHours = diffTime / (1000 * 60 * 60);
+      if (diffMs > 0) {
+        // 1 day = up to 22h30 (1350 minutes) of rental
+        // After 22h30 → 2 days, after 45h → 3 days, etc.
+        const DAY_THRESHOLD_MS = 22.5 * 60 * 60 * 1000; // 22h30 in ms
+        billingDays = Math.max(1, Math.ceil(diffMs / DAY_THRESHOLD_MS));
 
-        // Calendar Day Logic (Midnight to Midnight)
-        const pDate = new Date(pickup); pDate.setHours(0, 0, 0, 0);
-        const rDate = new Date(ret); rDate.setHours(0, 0, 0, 0);
-        const diffDaysCalendar = Math.round((rDate.getTime() - pDate.getTime()) / (1000 * 60 * 60 * 24));
-
-        // Unified Duration & Billing Logic
-        // Ensures that if price is for 4 days, display says "4 days"
-        billingDays = Math.max(1, diffDaysCalendar);
-
-        // Extra day rule: if return time exceeds pickup time minus 1h30 grace,
-        // add 1 billing day (client returned past the grace window)
-        const pickupMinutes = pickup.getHours() * 60 + pickup.getMinutes();
-        const returnMinutes = ret.getHours() * 60 + ret.getMinutes();
-        const graceThreshold = pickupMinutes - 90; // 1h30 before pickup time
-        if (diffDaysCalendar > 0 && returnMinutes > graceThreshold) {
-          billingDays += 1;
-          extraDay = true;
-        }
-
+        const standardHours = diffMs / (1000 * 60 * 60);
         days = billingDays;
         hours = Math.floor(standardHours % 24);
-
-        if (billingDays < 1) billingDays = 1;
+      } else if (formData.pickupDate === formData.returnDate) {
+        // Same day = 1 day minimum
+        billingDays = 1;
+        days = 1;
+        hours = 0;
       }
     }
 
