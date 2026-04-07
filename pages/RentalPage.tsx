@@ -559,6 +559,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { openBooking, openCarWizard, setInitialSearchDates } = useBooking();
   const { checkVerificationAndProceed } = useVerification();
+  const { user } = useAuth();
 
   // Search & filter state
   const [searchData, setSearchData] = useState<SearchParams | null>(null);
