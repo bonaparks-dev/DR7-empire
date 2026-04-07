@@ -39,6 +39,20 @@ const handler: Handler = async (event) => {
   try {
     const body = JSON.parse(event.body || '{}')
 
+    // Look up customer in customers_extended by auth user_id
+    const { data: customer } = await supabase
+      .from('customers_extended')
+      .select('id, nome, cognome, email, telefono, tipo_cliente, denominazione')
+      .eq('user_id', user.id)
+      .limit(1)
+      .maybeSingle()
+
+    const customerName = customer
+      ? (customer.tipo_cliente === 'azienda' ? customer.denominazione : `${customer.nome || ''} ${customer.cognome || ''}`.trim())
+      : (body.customer_name || user.email || '')
+    const customerPhone = customer?.telefono || body.customer_phone || ''
+    const customerId = customer?.id || null
+
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 7)
 
@@ -74,8 +88,9 @@ const handler: Handler = async (event) => {
       total_final: body.total_final || 0,
       deposit_amount: body.deposit_amount || 0,
       driver_tier: body.driver_tier || 'TIER_2',
-      customer_name: body.customer_name || user.email || '',
-      customer_phone: body.customer_phone || '',
+      customer_name: customerName,
+      customer_phone: customerPhone,
+      customer_id: customerId,
       extras_detail: body.extras_detail || {},
       pricing_trace: body.pricing_trace || null,
       notes: body.notes || '',
