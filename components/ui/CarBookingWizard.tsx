@@ -177,6 +177,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSavingPreventivo, setIsSavingPreventivo] = useState(false);
   const [preventivoSaved, setPreventivoSaved] = useState(false);
+  const [showNoCauzioneModal, setShowNoCauzioneModal] = useState(false);
   const today = useMemo(() => {
     // Get today's date in Italy timezone (Europe/Rome)
     const italyDate = new Date().toLocaleString('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -2794,11 +2795,157 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
   };
 
+  // ── No Cauzione Request Flow ─────────────────────────────────────────
+  const handleNoCauzioneConfirm = async () => {
+    setShowNoCauzioneModal(false);
+    if (!user || !item) return;
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    setIsProcessing(true);
+
+    try {
+      const pickupDateTime = createItalyDateTime(formData.pickupDate, formData.pickupTime);
+      const dropoffDateTime = createItalyDateTime(formData.returnDate, formData.returnTime);
+      const rFirstName = formData.firstName || (user.fullName?.split(' ')[0]) || '';
+      const rLastName = formData.lastName || (user.fullName?.split(' ').slice(1).join(' ')) || '';
+      const rFullName = `${rFirstName} ${rLastName}`.trim() || user.fullName || 'Cliente';
+      const rEmail = formData.email || user.email || '';
+      const rPhone = formData.phone || (user as any).phone || '';
+      const availableVehicleName = formData.selectedVehicleId
+        ? (item.vehicleIds?.indexOf(formData.selectedVehicleId) >= 0
+          ? ((item as any).displayNames?.[item.vehicleIds.indexOf(formData.selectedVehicleId)] || item.name)
+          : item.name)
+        : item.name;
+
+      const bookingData = {
+        user_id: user.id,
+        vehicle_type: item.type || 'car',
+        vehicle_name: availableVehicleName || item.name,
+        vehicle_image_url: item.image,
+        pickup_date: pickupDateTime.toISOString(),
+        dropoff_date: dropoffDateTime.toISOString(),
+        pickup_location: formData.pickupLocation,
+        dropoff_location: formData.returnLocation,
+        price_total: eurosToCents(grandTotal),
+        currency: currency.toUpperCase(),
+        status: 'pending',
+        payment_status: 'pending',
+        payment_method: 'nexi',
+        deposit_amount: 0,
+        insurance_option: formData.insuranceOption,
+        customer_name: rFullName,
+        customer_email: rEmail,
+        customer_phone: rPhone,
+        vehicle_id: formData.selectedVehicleId || null,
+        booked_at: new Date().toISOString(),
+        booking_details: {
+          customer: {
+            fullName: rFullName,
+            firstName: rFirstName,
+            lastName: rLastName,
+            email: rEmail,
+            phone: rPhone,
+            birthDate: formData.birthDate,
+            codiceFiscale: formData.codiceFiscale,
+            sesso: formData.sesso,
+            luogoNascita: formData.luogoNascita,
+            provinciaNascita: formData.provinciaNascita,
+            residenza: formData.residenza,
+            licenseNumber: formData.licenseNumber,
+            licenseIssueDate: formData.licenseIssueDate,
+            address: formData.address,
+          },
+          depositOption: 'no_deposit',
+          noDepositSurcharge: noDepositSurcharge,
+          deposit_surcharge: noDepositSurcharge,
+          no_cauzione_request: true,
+          no_cauzione_status: 'pending',
+          driver_tier: driverTier,
+          insuranceOption: formData.insuranceOption,
+          insurance_cost: insuranceCost,
+          duration: `${duration.days} days`,
+          kmPackage: {
+            type: formData.kmPackageType,
+            includedKm: includedKm,
+          },
+        },
+      };
+
+      const { data, error } = await supabase.from('bookings').insert(bookingData).select().single();
+      if (error) throw new Error(`Errore: ${error.message}`);
+
+      // Send WhatsApp to customer
+      if (data && rPhone) {
+        const customerMsg = `Gentile ${rFirstName},\n\n`
+          + `abbiamo ricevuto la sua richiesta per la formula senza cauzione relativa alla prenotazione appena effettuata.\n\n`
+          + `Il nostro team sta effettuando una verifica rapida per confermarne l'idoneità.\n\n`
+          + `Riceverà a breve un aggiornamento con l'esito e, in caso di approvazione, il link di pagamento per completare la prenotazione.\n\n`
+          + `Restiamo a disposizione.\n\n`
+          + `Cordiali Saluti,\nDR7`;
+
+        fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ customPhone: rPhone, customMessage: customerMsg }),
+        }).catch(e => console.error('[noCauzione] WhatsApp customer error:', e));
+
+        // Notify admin (standard notification)
+        fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ booking: data }),
+        }).catch(e => console.error('[noCauzione] WhatsApp admin error:', e));
+
+        // Notify boss about no cauzione request
+        const bossMsg = `*RICHIESTA NO CAUZIONE*\n\n`
+          + `*Cliente:* ${rFullName}\n`
+          + `*Telefono:* ${rPhone}\n`
+          + `*Veicolo:* ${availableVehicleName}\n`
+          + `*Periodo:* ${formData.pickupDate} → ${formData.returnDate}\n`
+          + `*Totale:* €${grandTotal.toFixed(2)}\n\n`
+          + `Approvare o rifiutare dall'admin.`;
+        fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ customPhone: '393472817258', customMessage: bossMsg }),
+        }).catch(e => console.error('[noCauzione] WhatsApp boss error:', e));
+      }
+
+      // Upsert customer
+      if (user?.id) {
+        supabase.from('customers_extended')
+          .select('id').eq('user_id', user.id).maybeSingle()
+          .then(({ data: existing }) => {
+            const rec: Record<string, any> = {
+              nome: formData.firstName, cognome: formData.lastName,
+              email: formData.email, telefono: formData.phone,
+              codice_fiscale: formData.codiceFiscale, tipo_cliente: 'persona_fisica', source: 'website_booking',
+            };
+            if (existing?.id) supabase.from('customers_extended').update(rec).eq('id', existing.id).then(() => {});
+            else supabase.from('customers_extended').insert({ ...rec, user_id: user.id }).then(() => {});
+          }).catch(() => {});
+      }
+
+      if (data) onBookingComplete(data);
+    } catch (err: any) {
+      setPaymentError(err.message || 'Errore durante la richiesta');
+    } finally {
+      isSubmittingRef.current = false;
+      setIsProcessing(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPaymentError(null);
     console.log("handleSubmit called", { paymentMethod: formData.paymentMethod, step, userId: user?.id });
     if (!validateStep() || !item) return;
+
+    // Intercept no_deposit: show info modal instead of proceeding to payment
+    if (formData.depositOption === 'no_deposit') {
+      setShowNoCauzioneModal(true);
+      return;
+    }
 
     // Ref-based guard: prevents double-tap/double-click even if state hasn't updated yet
     if (isSubmittingRef.current) return;
@@ -5141,6 +5288,40 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* No Cauzione Request Modal */}
+            {showNoCauzioneModal && (
+              <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+                <div className="bg-[#1a1a2e] rounded-2xl max-w-md w-full p-6 border border-yellow-500/30 shadow-2xl">
+                  <div className="text-center mb-4">
+                    <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                      <svg className="w-7 h-7 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-bold text-white">Formula Senza Cauzione</h3>
+                  </div>
+                  <p className="text-gray-300 text-sm leading-relaxed mb-6">
+                    L&apos;accesso alla formula senza cauzione è soggetto a valutazione e approvazione interna. In caso di esito positivo, riceverà un link di pagamento dedicato per completare la prenotazione.
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowNoCauzioneModal(false)}
+                      className="flex-1 py-3 px-4 rounded-xl border border-gray-600 text-gray-300 hover:bg-gray-800 transition-colors text-sm font-medium"
+                    >
+                      Annulla
+                    </button>
+                    <button
+                      onClick={handleNoCauzioneConfirm}
+                      disabled={isProcessing}
+                      className="flex-1 py-3 px-4 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-black font-bold transition-colors text-sm disabled:opacity-50"
+                    >
+                      {isProcessing ? 'Invio...' : 'Invia Richiesta'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <AnimatePresence>
               {/* Wash Upsell Modal */}
