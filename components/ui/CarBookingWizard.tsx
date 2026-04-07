@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Link } from 'react-router-dom';
 import { useCurrency } from '../../contexts/CurrencyContext';
-import { isMassimoRunchina, SPECIAL_CLIENTS } from '../../utils/clientPricingRules';
+import { isMassimoRunchina, getRunchinaPrice, SPECIAL_CLIENTS } from '../../utils/clientPricingRules';
 import { calculateMultiDayPrice, calculateIncludedKmFromConfig } from '../../utils/multiDayPricing';
 import { invalidateVehicleCache } from '../../hooks/useVehicles';
 import { useAuth } from '../../hooks/useAuth';
@@ -1432,8 +1432,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // 50km/day supercar package: price from admin config, no multi-day discounts
       calculatedRentalCost = billingDaysCalc * ACTIVE_SUPERCAR_50KM_RATE;
     } else if (isMassimo && getVehicleType(item, categoryContext) === 'SUPERCAR') {
-      // Massimo Runchina: flat €339/day for supercars
-      calculatedRentalCost = billingDaysCalc * SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseRate;
+      // Massimo Runchina / VIP: per-vehicle fixed multi-day pricing
+      calculatedRentalCost = getRunchinaPrice(item.name, billingDaysCalc);
     } else if (dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.finalTotalEur) {
       // Admin-controlled dynamic pricing (revenue management auto_apply mode)
       calculatedRentalCost = dynamicPricing.finalTotalEur;
