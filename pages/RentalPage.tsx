@@ -234,6 +234,7 @@ const VehicleResults: React.FC<{
   setMaxBudget: (b: number | null) => void
   setSelectedCategories: (c: string[]) => void
 }> = ({ categoryData, categoryId, hasSearched, availabilityResults, selectedCategories, maxBudget, sortBy, preDays, handleBook, setSortBy, setMaxBudget, setSelectedCategories }) => {
+  const { user } = useAuth();
   const displayData = useMemo(() => {
     let data = [...categoryData];
 
