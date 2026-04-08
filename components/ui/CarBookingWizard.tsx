@@ -4724,11 +4724,27 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             + `*Veicolo:* ${item?.name || 'N/A'}\n`
                             + `*Date:* ${formData.pickupDate} - ${formData.returnDate}\n`
                             + `*Supplemento:* €${ACTIVE_NO_DEPOSIT_SURCHARGE}/giorno`;
+                          // Send notification to admin
                           await fetch('/.netlify/functions/send-whatsapp-notification', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ customMessage: msg }),
                           });
+                          // Send confirmation to customer via WhatsApp
+                          const customerPhone = formData.phone?.replace(/[\s\-\+()]/g, '') || '';
+                          if (customerPhone) {
+                            const customerMsg = `Gentile ${formData.firstName},\n\n`
+                              + `abbiamo ricevuto la sua richiesta per la formula senza cauzione relativa alla prenotazione appena effettuata.\n\n`
+                              + `Il nostro team sta effettuando una verifica rapida per confermarne l'idoneità.\n\n`
+                              + `Riceverà a breve un aggiornamento con l'esito e, in caso di approvazione, il link di pagamento per completare la prenotazione.\n\n`
+                              + `Restiamo a disposizione.\n\n`
+                              + `Cordiali saluti,\nDR7`;
+                            await fetch('/.netlify/functions/send-whatsapp-notification', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ customMessage: customerMsg, customPhone: customerPhone }),
+                            }).catch(() => {}); // Don't block if customer message fails
+                          }
                           setFormData(prev => ({ ...prev, depositOption: 'no_deposit' }));
                           setNoCauzioneRequested(true);
                           setShowNoCauzionePopup(false);

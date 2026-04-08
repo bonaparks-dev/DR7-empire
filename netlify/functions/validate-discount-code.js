@@ -99,10 +99,9 @@ exports.handler = async (event) => {
 
     // Check if expired by date (valid_until includes the entire day in Europe/Rome timezone)
     const now = new Date();
-    // Parse valid_until as end of day in Rome timezone (UTC+1 or UTC+2 DST)
-    // Adding 1 full day to the date ensures the code is valid for the entire expiry date
+    // valid_until includes the entire expiry day (add 24h so 2026-04-08 means "valid until end of April 8")
     const validUntilRaw = new Date(discountCode.valid_until);
-    const validUntil = new Date(validUntilRaw.getTime() + 24 * 60 * 60 * 1000); // include full expiry day
+    const validUntil = new Date(validUntilRaw.getTime() + 24 * 60 * 60 * 1000);
     const validFrom = new Date(discountCode.valid_from);
 
     if (validUntil < now) {
