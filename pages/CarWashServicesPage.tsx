@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { useNavigate } from 'react-router-dom';
@@ -570,6 +570,47 @@ const CarWashServicesPage: React.FC = () => {
   const [detectedCategory, setDetectedCategory] = useState<VehicleCategory | null>(null);
   const [detectedModel, setDetectedModel] = useState<string | null>(null);
 
+  // DB-sourced services: override hardcoded prices/features with live data
+  const [dbServices, setDbServices] = useState<WashService[]>([]);
+  const dbFetched = useRef(false);
+  useEffect(() => {
+    if (dbFetched.current) return;
+    dbFetched.current = true;
+    fetch('/.netlify/functions/get-car-wash-services')
+      .then(r => r.json())
+      .then(data => { if (data.services) setDbServices(data.services); })
+      .catch(() => {});
+  }, []);
+
+  // Merge: DB service overrides hardcoded by ID, keeping structure intact
+  const mergeService = useCallback((hardcoded: WashService): WashService => {
+    const db = dbServices.find(s => s.id === hardcoded.id);
+    if (!db) return hardcoded;
+    return { ...hardcoded, ...db, image: db.image || hardcoded.image };
+  }, [dbServices]);
+
+  // Extra DB-only services (added from admin, not in hardcoded arrays)
+  const extraDbUrban = dbServices.filter(s => (s as any).category === 'urban' && !URBAN_SERVICES.find(h => h.id === s.id));
+  const extraDbMaxi = dbServices.filter(s => (s as any).category === 'maxi' && !MAXI_SERVICES.find(h => h.id === s.id));
+  const extraDbExtra = dbServices.filter(s => (s as any).category === 'extra' && !EXTRA_CARE_SERVICES.find(h => h.id === s.id));
+  const extraDbMoto = dbServices.filter(s => (s as any).category === 'moto' && !MOTO_SERVICES.find(h => h.id === s.id));
+  const extraDbExperience = dbServices.filter(s => (s as any).category === 'experience' && !EXPERIENCE_SERVICES.find(h => h.id === s.id));
+  const extraDbTech = dbServices.filter(s => (s as any).category === 'tech' && !TECH_SERVICES.find(h => h.id === s.id));
+
+  const liveUrban = [...URBAN_SERVICES.map(mergeService), ...extraDbUrban];
+  const liveMaxi = [...MAXI_SERVICES.map(mergeService), ...extraDbMaxi];
+  const liveExtra = [...EXTRA_CARE_SERVICES.map(mergeService), ...extraDbExtra];
+  const liveMoto = [...MOTO_SERVICES.map(mergeService), ...extraDbMoto];
+  const liveExperience = [...EXPERIENCE_SERVICES.map(mergeService), ...extraDbExperience];
+  const liveTech = [...TECH_SERVICES.map(mergeService), ...extraDbTech];
+
+  // Live combined wash services (uses DB-overridden prices)
+  const liveCombined = COMBINED_WASH_SERVICES.map((combo, i) => ({
+    ...combo,
+    urban: liveUrban[i] || combo.urban,
+    maxi: liveMaxi[i] || combo.maxi,
+  }));
+
   // Targa lookup state
   const [targaInput, setTargaInput] = useState('');
   const [targaLoading, setTargaLoading] = useState(false);
@@ -619,16 +660,16 @@ const CarWashServicesPage: React.FC = () => {
 
   const getLavaggioServices = (category: LavaggioCategory): WashService[] => {
     switch (category) {
-      case 'moto': return MOTO_SERVICES;
-      case 'extra': return EXTRA_CARE_SERVICES;
-      case 'experience': return EXPERIENCE_SERVICES;
+      case 'moto': return liveMoto;
+      case 'extra': return liveExtra;
+      case 'experience': return liveExperience;
       default: return [];
     }
   };
 
   const getMeccanicaServices = (category: MeccanicaCategory): WashService[] => {
     switch (category) {
-      case 'tech': return TECH_SERVICES;
+      case 'tech': return liveTech;
       default: return [];
     }
   };
@@ -1020,7 +1061,7 @@ const CarWashServicesPage: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {COMBINED_WASH_SERVICES.map((combo) => {
+              {liveCombined.map((combo) => {
                 const autoService = detectedCategory === 'urban' ? combo.urban : detectedCategory === 'maxi' ? combo.maxi : null;
                 const lowestPrice = Math.min(combo.urban.price, combo.maxi.price);
                 const formatPrice = (p: number) => p % 1 === 0 ? `${p}` : p.toFixed(2);
@@ -1338,7 +1379,7 @@ const CarWashServicesPage: React.FC = () => {
             {upsellStep === 1 && (
               <div className="container mx-auto px-4 pb-8">
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {EXTRA_CARE_SERVICES.map((extra) => {
+                  {liveExtra.map((extra) => {
                     const isAdded = upsellAddedExtras.has(extra.id);
                     return (
                       <motion.div
@@ -1393,7 +1434,7 @@ const CarWashServicesPage: React.FC = () => {
             {upsellStep === 2 && (
               <div className="container mx-auto px-4 pb-8">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
-                  {EXPERIENCE_SERVICES.map((exp) => {
+                  {liveExperience.map((exp) => {
                     const addedOptionKey = Array.from(upsellAddedExtras).find(key => key.startsWith(exp.id + ':'));
                     const addedOptionLabel = addedOptionKey ? addedOptionKey.split(':')[1] : null;
                     return (
