@@ -578,7 +578,9 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   const preReturn = searchParams.get('return');
   const preDays = useMemo(() => {
     if (!prePickup || !preReturn) return 0;
-    return Math.max(1, Math.ceil((new Date(preReturn).getTime() - new Date(prePickup).getTime()) / (1000 * 60 * 60 * 24)));
+    const diff = new Date(preReturn).getTime() - new Date(prePickup).getTime();
+    if (isNaN(diff)) return 0;
+    return Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   }, [prePickup, preReturn]);
 
   // ── Read URL search params ──────────────────────────────────────────────
@@ -690,14 +692,16 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
 
   useEffect(() => {
     if (prePickup && preReturn && allVehicles.length > 0 && !hasSearched && !isSearching) {
-      runSearch(allVehicles, {
+      const autoSearchParams = {
         pickupLocation: prePickupLoc,
         returnLocation: preReturnLoc,
         pickupDate: prePickup,
         pickupTime: prePickupTime,
         returnDate: preReturn,
         returnTime: preReturnTime,
-      });
+      };
+      setSearchData(autoSearchParams);
+      runSearch(allVehicles, autoSearchParams);
     }
   }, [prePickup, preReturn, allVehicles.length, hasSearched, isSearching]);
 

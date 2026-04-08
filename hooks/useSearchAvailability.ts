@@ -49,7 +49,8 @@ export function useSearchAvailability(categoryContext?: string) {
     const pickupDate = new Date(pickupISO)
     const returnDate = new Date(returnISO)
     const diffMs = returnDate.getTime() - pickupDate.getTime()
-    const days = Math.max(1, Math.round((new Date(params.returnDate).getTime() - new Date(params.pickupDate).getTime()) / (1000 * 60 * 60 * 24)))
+    const daysDiff = (new Date(params.returnDate).getTime() - new Date(params.pickupDate).getTime()) / (1000 * 60 * 60 * 24)
+    const days = isNaN(daysDiff) ? 1 : Math.max(1, Math.round(daysDiff))
 
     const newResults = new Map<string, VehicleSearchResult>()
 
