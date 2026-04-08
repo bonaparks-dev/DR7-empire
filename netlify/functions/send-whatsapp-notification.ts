@@ -1,8 +1,11 @@
 import type { Handler } from "@netlify/functions";
+import { createClient } from '@supabase/supabase-js';
 
 const GREEN_API_INSTANCE_ID = process.env.GREEN_API_INSTANCE_ID;
 const GREEN_API_TOKEN = process.env.GREEN_API_TOKEN;
-const NOTIFICATION_PHONE = process.env.NOTIFICATION_PHONE || "393457905205"; // Your phone to receive notifications
+const NOTIFICATION_PHONE = process.env.NOTIFICATION_PHONE || "393457905205";
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 /**
  * Sends WhatsApp notification using Green API
@@ -38,6 +41,31 @@ const handler: Handler = async (event) => {
   if (!targetPhone.startsWith('39') && targetPhone.length === 10) {
     targetPhone = '39' + targetPhone;
   }
+
+  // Load templates from system_messages
+  let templateMap = new Map<string, string>();
+  if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+    try {
+      const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
+      const { data: tpls } = await sb
+        .from('system_messages')
+        .select('message_key, message_body, is_enabled')
+        .eq('is_enabled', true);
+      if (tpls) {
+        tpls.forEach((t: any) => templateMap.set(t.message_key, t.message_body));
+      }
+    } catch (e) {
+      console.warn('Failed to load system_messages templates:', e);
+    }
+  }
+
+  const applyVars = (tpl: string, vars: Record<string, string>) => {
+    let result = tpl;
+    for (const [key, val] of Object.entries(vars)) {
+      result = result.split(key).join(val);
+    }
+    return result;
+  };
 
   // Handle custom message (for birthdays, marketing, etc.)
   if (customMessage) {
@@ -110,6 +138,17 @@ const handler: Handler = async (event) => {
       }
       message += `*Totale:* €${totalPrice}\n`;
       message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa'}`;
+
+      // Override with DB template if available
+      const cwTpl = templateMap.get('carwash_new');
+      if (cwTpl) {
+        message = applyVars(cwTpl, {
+          '{booking_id}': `DR7-${bookingId}`, '{customer_name}': customerName, '{customer_email}': customerEmail || '',
+          '{customer_phone}': customerPhone || '', '{service_name}': serviceName || '', '{pickup_date}': formattedDate,
+          '{pickup_time}': formattedTime, '{total}': totalPrice, '{notes}': booking.booking_details?.notes || '',
+          '{payment_status}': (booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa',
+        });
+      }
     } else if (serviceType === 'mechanical') {
       // Mechanical Booking
       const appointmentDate = new Date(booking.appointment_date);
@@ -144,6 +183,17 @@ const handler: Handler = async (event) => {
         message += `*Note:* ${notes}\n`;
       }
       message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa'}`;
+
+      // Override with DB template if available
+      const mechTpl = templateMap.get('mechanical_new');
+      if (mechTpl) {
+        message = applyVars(mechTpl, {
+          '{booking_id}': `DR7-${bookingId}`, '{customer_name}': customerName, '{customer_email}': customerEmail || '',
+          '{customer_phone}': customerPhone || '', '{service_name}': serviceName || '', '{pickup_date}': formattedDate,
+          '{pickup_time}': formattedTime, '{total}': totalPrice, '{notes}': booking.booking_details?.notes || '',
+          '{payment_status}': (booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa',
+        });
+      }
     } else {
       // Car Rental Booking
       const vehicleName = booking.vehicle_name;
@@ -198,6 +248,28 @@ const handler: Handler = async (event) => {
       }
 
       message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa'}`;
+
+      // Override with DB template if available
+      const rentalTpl = templateMap.get('rental_new');
+      if (rentalTpl) {
+        const depositAmount = booking.deposit_amount || booking.booking_details?.deposit || 0;
+        const depositOption = booking.booking_details?.depositOption;
+        let depositStr = '';
+        if (depositOption === 'no_deposit') {
+          depositStr = `Senza cauzione (+30% = €${(booking.booking_details?.noDepositSurcharge || 0).toFixed(2)})`;
+        } else if (depositAmount > 0) {
+          depositStr = `€${depositAmount}`;
+        }
+        message = applyVars(rentalTpl, {
+          '{booking_id}': `DR7-${bookingId}`, '{customer_name}': customerName, '{customer_email}': customerEmail || '',
+          '{customer_phone}': customerPhone || '', '{vehicle_name}': vehicleName, '{plate}': booking.vehicle_plate || '',
+          '{pickup_date}': pickupDateFormatted, '{pickup_time}': pickupTimeFormatted,
+          '{dropoff_date}': dropoffDateFormatted, '{dropoff_time}': dropoffTimeFormatted,
+          '{pickup_location}': pickupLocation || '', '{insurance}': insuranceOption, '{deposit}': depositStr,
+          '{km_info}': booking.booking_details?.unlimited_km ? 'Illimitati' : `${booking.booking_details?.kmPackage?.includedKm || 'Standard'} km`,
+          '{total}': totalPrice, '{payment_status}': (booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa',
+        });
+      }
     }
   } else {
     return {
