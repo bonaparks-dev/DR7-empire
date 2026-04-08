@@ -24,6 +24,8 @@ interface Preventivo {
   expires_at: string;
   created_at: string;
   booking_id?: string;
+  source?: string;
+  events?: { event: string; ts: string; detail?: string }[];
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -153,10 +155,35 @@ const MyPreventivi: React.FC = () => {
                     </div>
                   )}
 
+                  {p.status === 'rifiutato' && (
+                    <div className="flex flex-col items-end gap-2">
+                      <a
+                        href={`/supercar-luxury?preventivo=${p.id}`}
+                        className="px-5 py-2.5 bg-white text-black text-sm font-bold rounded-full hover:bg-gray-200 transition-colors"
+                      >
+                        Prenota Ora con Cauzione
+                      </a>
+                    </div>
+                  )}
+
                   {p.status === 'accettato' && p.booking_id && (
                     <span className="text-green-400 text-sm font-medium">Prenotazione confermata</span>
                   )}
                 </div>
+
+                {/* Discount code for rejected no-cauzione */}
+                {p.status === 'rifiutato' && (() => {
+                  const rejectEvent = p.events?.find(e => e.event === 'no_cauzione_rifiutato');
+                  const code = rejectEvent?.detail?.replace('discount_code: ', '');
+                  if (!code) return null;
+                  return (
+                    <div className="mt-4 p-4 rounded-xl bg-green-500/10 border border-green-500/30">
+                      <p className="text-green-400 text-sm font-semibold mb-1">Sconto del 5% attivato per te!</p>
+                      <p className="text-white text-lg font-bold font-mono tracking-wider">{code}</p>
+                      <p className="text-gray-400 text-xs mt-1">Inserisci il codice al checkout per ottenere lo sconto.</p>
+                    </div>
+                  );
+                })()}
 
                 {/* Expiry info */}
                 {isActive && p.expires_at && !isExpired && (
