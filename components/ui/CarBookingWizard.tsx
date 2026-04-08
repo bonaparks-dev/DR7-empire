@@ -1383,9 +1383,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     let hours = 0;
     let extraDay = false;
     if (formData.pickupDate && formData.returnDate) {
-      const pickup = safeDate(`${formData.pickupDate}T${formData.pickupTime}`);
-      const ret = safeDate(`${formData.returnDate}T${formData.returnTime}`);
-      if (pickup < ret) {
+      const pickup = safeDate(`${formData.pickupDate}T${formData.pickupTime || '10:30'}`);
+      const ret = safeDate(`${formData.returnDate}T${formData.returnTime || '09:00'}`);
+      if (!isNaN(pickup.getTime()) && !isNaN(ret.getTime()) && pickup < ret) {
         // Updated Logic: User requested "Dal 6 al 8 sono 2 giorni... even if it is 22:30"
         // This implies strict calendar day difference: (Return Date - Pickup Date) in days.
         // We calculate this by normalizing both to midnight or simply taking the difference in days.
@@ -4957,10 +4957,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   setNoCauzioneSending(true);
                   try {
                     // Build booking data same as normal flow but with pending status
+                    const pDate = formData.pickupDate || new Date().toISOString().split('T')[0];
+                    const rDate = formData.returnDate || pDate;
                     const pTime = formData.pickupTime || '10:30';
                     const rTime = formData.returnTime || '09:00';
-                    const pickupDateTime = new Date(`${formData.pickupDate}T${pTime}:00`);
-                    const dropoffDateTime = new Date(`${formData.returnDate}T${rTime}:00`);
+                    const pickupDateTime = new Date(`${pDate}T${pTime}:00`);
+                    const dropoffDateTime = new Date(`${rDate}T${rTime}:00`);
+                    if (isNaN(pickupDateTime.getTime()) || isNaN(dropoffDateTime.getTime())) {
+                      throw new Error('Date o orari non validi. Torna allo step 1 e seleziona date e orari.');
+                    }
                     const bookingData = {
                       service_type: 'car_rental',
                       customer_name: `${formData.firstName} ${formData.lastName}`,
