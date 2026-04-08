@@ -57,8 +57,8 @@ export const DEFAULT_RENTAL_CONFIG: RentalConfig = {
     },
     furgone: {
       _all_tiers: [
+        { id: 'RCA', name: 'RCA Compresa (no Kasko)', daily_price: 0 },
         { id: 'KASKO_BASE', name: 'Kasko Base', daily_price: 45 },
-        { id: 'KASKO_DR7', name: 'Kasko DR7', daily_price: 90 },
       ],
     },
     eligibility: {
