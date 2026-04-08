@@ -158,6 +158,22 @@ const handler: Handler = async (event) => {
           body: JSON.stringify({ customPhone: '393472817258', customMessage: bossMsg }),
         }).catch(() => {})
       }
+
+      // Send confirmation WhatsApp to CUSTOMER for no-cauzione requests
+      if (isNoCauzione && preventivo.customer_phone) {
+        const firstName = (preventivo.customer_name || 'Cliente').split(' ')[0]
+        const customerConfirmMsg = `Gentile ${firstName},\n\n`
+          + `abbiamo ricevuto la sua richiesta per la formula senza cauzione relativa alla prenotazione appena effettuata.\n\n`
+          + `Il nostro team sta effettuando una verifica rapida per confermarne l'idoneità.\n\n`
+          + `Riceverà a breve un aggiornamento con l'esito e, in caso di approvazione, il link di pagamento per completare la prenotazione.\n\n`
+          + `Restiamo a disposizione.\n\n`
+          + `Cordiali Saluti,\nDR7 Empire`
+        await fetch(`${baseUrl}/.netlify/functions/send-whatsapp-notification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ customPhone: preventivo.customer_phone, customMessage: customerConfirmMsg }),
+        }).catch(() => {})
+      }
     } catch (whatsappErr) {
       console.warn('[create-website-preventivo] WhatsApp notification failed:', whatsappErr)
     }
