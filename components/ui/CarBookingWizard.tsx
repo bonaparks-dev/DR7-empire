@@ -4364,6 +4364,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   <span className="text-gray-400">Cauzione</span>
                   <span className="text-green-400 font-semibold">Nessuna</span>
                 </div>
+                {deliveryFee > 0 && (
+                  <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                    <span className="text-gray-400">Consegna/Ritiro a domicilio</span>
+                    <span className="text-white font-semibold">{formatPrice(deliveryFee)}</span>
+                  </div>
+                )}
 
                 {discountAmount > 0 && (
                   <div className="flex justify-between items-center py-3 border-b border-gray-700">
