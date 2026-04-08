@@ -5700,7 +5700,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             <p className="text-gray-400 text-xs mt-0.5">Paga 6 mesi, ricevi 12 — il piano migliore</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-white font-bold text-lg">€29<span className="text-gray-400 text-xs font-normal">/anno</span></p>
+                            <p className="text-white font-bold text-lg">€39<span className="text-gray-400 text-xs font-normal">/anno</span></p>
                             <p className="text-gray-500 line-through text-xs">€58,80/anno</p>
                           </div>
                         </div>
@@ -5731,7 +5731,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         }`}
                       >
                         {selectedSubscription
-                          ? `Attiva DR7 Club — €${selectedSubscription === 'monthly' ? '4,90/mese' : '29/anno'}`
+                          ? `Attiva DR7 Club — €${selectedSubscription === 'monthly' ? '4,90/mese' : '39/anno'}`
                           : 'Seleziona un piano'}
                       </button>
                       <button
@@ -5912,6 +5912,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             <span className="text-white font-medium">€{getDeposit()}</span>
                           </div>
                           <p className="text-xs text-gray-500 mt-1">Restituita dopo la riconsegna</p>
+                        </div>
+                      )}
+                      {/* DR7 Club subscription — separate, card-only */}
+                      {formData.extras.some(e => e.startsWith('subscription_')) && (
+                        <div className="mt-3 pt-3 border-t border-yellow-500/30 bg-yellow-500/5 rounded-lg p-3">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-yellow-400 font-semibold">DR7 Club</span>
+                            <span className="text-yellow-400 font-bold">
+                              {formData.extras.includes('subscription_annual') ? '€39/anno' : '€4,90/mese'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-yellow-400/70 mt-1">Pagamento separato con carta di credito</p>
                         </div>
                       )}
                     </div>
