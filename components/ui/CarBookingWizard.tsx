@@ -1637,11 +1637,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const onlineDiscountAmount = 0;
   const finalTotalWithOnlineDiscount = finalTotal;
 
-  // Calculate discount code amount — supercars excluded (except special clients with dedicated codes)
+  // Calculate discount code amount
   const discountAmount = useMemo(() => {
     if (!appliedDiscount) return 0;
-    // Safety: never apply discount codes to supercars (except special clients with dedicated codes)
-    if (vehicleType === 'SUPERCAR' && !isMassimo) return 0;
 
     if (appliedDiscount.type === 'percentage') {
       return Math.min(finalTotal * (appliedDiscount.amount / 100), finalTotal);
@@ -2586,12 +2584,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // Check if user is logged in
     if (!user) {
       setDiscountCodeError('Devi effettuare il login per utilizzare un codice sconto');
-      return;
-    }
-
-    // Block discount codes on supercar bookings (except for special clients who get codes made for them)
-    if (vehicleType === 'SUPERCAR' && !isMassimoRunchina(user)) {
-      setDiscountCodeError('I codici sconto non sono applicabili ai veicoli Supercar');
       return;
     }
 
@@ -5175,8 +5167,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   })()}
                 </div>
 
-                {/* Codice Sconto - Hidden for Supercars (except special clients who get dedicated codes) */}
-                {(vehicleType !== 'SUPERCAR' || isMassimo) && (
+                {/* Codice Sconto - Available for ALL customers */}
                 <div className="border-t border-gray-600 pt-4">
                   <p className="font-bold text-base text-white mb-3">CODICE SCONTO</p>
                   {appliedDiscount ? (
@@ -5220,7 +5211,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     <p className="text-red-400 text-sm mt-2">{discountCodeError}</p>
                   )}
                 </div>
-                )}
 
                 {/* Maggiori informazioni */}
                 <div className="border-t border-gray-600 pt-3">
