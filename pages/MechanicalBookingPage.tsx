@@ -64,8 +64,45 @@ const MechanicalBookingPage: React.FC = () => {
   const [creditBalance, setCreditBalance] = useState<number>(0);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
 
-  const discountedPrice = selectedService ? selectedService.price : 0;
+  const basePrice = selectedService ? selectedService.price : 0;
   const onlineDiscountAmount = 0;
+
+  // Discount code state
+  const [discountCode, setDiscountCode] = useState('');
+  const [discountCodeError, setDiscountCodeError] = useState<string | null>(null);
+  const [isValidatingCode, setIsValidatingCode] = useState(false);
+  const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; amount: number; type: 'percentage' | 'fixed' } | null>(null);
+
+  const discountAmount = appliedDiscount
+    ? appliedDiscount.type === 'percentage'
+      ? Math.min(basePrice * (appliedDiscount.amount / 100), basePrice)
+      : Math.min(appliedDiscount.amount, basePrice)
+    : 0;
+  const discountedPrice = Math.max(0, basePrice - discountAmount);
+
+  const validateDiscountCode = async () => {
+    if (!discountCode.trim()) { setDiscountCodeError('Inserisci un codice sconto'); return; }
+    if (!user) { setDiscountCodeError('Devi effettuare il login per utilizzare un codice sconto'); return; }
+    setIsValidatingCode(true);
+    setDiscountCodeError(null);
+    try {
+      const response = await fetch('/.netlify/functions/validate-discount-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: discountCode.trim().toUpperCase(), userId: user.id, serviceType: 'mechanical' }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.valid) { setDiscountCodeError(result.message || 'Codice non valido'); setIsValidatingCode(false); return; }
+      const data = { ...result, ...(result.discountCode || {}) };
+      const amt = data.discount_amount ?? data.amount ?? 0;
+      const type = (data.discount_type === 'percentage' || data.type === 'percentage') ? 'percentage' as const : 'fixed' as const;
+      setAppliedDiscount({ code: discountCode.trim().toUpperCase(), amount: amt, type });
+      setDiscountCodeError(null);
+    } catch { setDiscountCodeError('Errore nella verifica del codice'); }
+    setIsValidatingCode(false);
+  };
+
+  const removeDiscount = () => { setAppliedDiscount(null); setDiscountCode(''); setDiscountCodeError(null); };
 
   // Load existing bookings when date changes
   useEffect(() => {
@@ -946,12 +983,55 @@ const MechanicalBookingPage: React.FC = () => {
               />
             </div>
 
+            {/* Codice Sconto */}
+            <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 mb-4">
+              <p className="font-bold text-base text-white mb-3">CODICE SCONTO</p>
+              {appliedDiscount ? (
+                <div className="flex items-center justify-between p-3 bg-green-900/30 border border-green-500/50 rounded-lg">
+                  <div>
+                    <p className="text-green-400 font-bold">{appliedDiscount.code}</p>
+                    <p className="text-green-300 text-sm">
+                      {appliedDiscount.type === 'percentage'
+                        ? `Sconto del ${appliedDiscount.amount}% applicato (-€${discountAmount.toFixed(2)})`
+                        : `Sconto di €${appliedDiscount.amount} applicato`}
+                    </p>
+                  </div>
+                  <button type="button" onClick={removeDiscount} className="text-red-400 hover:text-red-300 text-sm underline">Rimuovi</button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={discountCode}
+                    onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                    placeholder="Inserisci codice sconto"
+                    className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 text-sm uppercase"
+                  />
+                  <button
+                    type="button"
+                    onClick={validateDiscountCode}
+                    disabled={isValidatingCode || !discountCode.trim()}
+                    className="px-4 py-2 bg-white text-black font-bold rounded-lg hover:bg-gray-200 disabled:opacity-50 text-sm"
+                  >
+                    {isValidatingCode ? '...' : 'Applica'}
+                  </button>
+                </div>
+              )}
+              {discountCodeError && <p className="text-red-400 text-sm mt-2">{discountCodeError}</p>}
+            </div>
+
             {/* Total & Submit */}
             <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
               <div className="flex justify-between items-center mb-3 text-gray-400">
                 <span>Subtotale</span>
                 <span>€{selectedService.price.toFixed(2)}</span>
               </div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between items-center mb-3 text-green-400">
+                  <span>Sconto ({appliedDiscount?.code})</span>
+                  <span>-€{discountAmount.toFixed(2)}</span>
+                </div>
+              )}
               <div className="flex justify-between items-center mb-6">
                 <span className="text-2xl font-bold text-white">
                   {lang === 'it' ? 'Totale' : 'Total'}
