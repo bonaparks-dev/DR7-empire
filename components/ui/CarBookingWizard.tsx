@@ -2861,17 +2861,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       return;
     }
 
-    // Block credit wallet if DR7 Club subscription is selected — subscription is card-only
-    const hasSubscription = formData.extras.some(e => e.startsWith('subscription_'));
-    if (normalizedPaymentMethod === 'credit' && hasSubscription) {
-      clearTimeout(safetyTimer);
-      setPaymentError('L\'abbonamento DR7 Club richiede il pagamento con carta. Rimuovi la sottoscrizione o scegli "Paga con Carta".');
-      isSubmittingRef.current = false;
-      setIsProcessing(false);
-      return;
-    }
-
     // Check sufficient balance only for credit wallet payments
+    // Note: DR7 Club subscription is NOT included in grandTotal — it's charged separately
     if (normalizedPaymentMethod === 'credit') {
       const hasBalance = await hasSufficientBalance(user.id, grandTotal);
       if (!hasBalance) {
@@ -3136,6 +3127,29 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             }
           } catch (cashbackErr) {
             console.error('[credit-booking] DR7 Club cashback error (non-blocking):', cashbackErr);
+          }
+
+          // DR7 Club subscription — send separate Nexi payment link when paid with wallet
+          const hasClubSub = formData.extras.some(e => e.startsWith('subscription_'));
+          if (hasClubSub && user?.email) {
+            const clubAmount = formData.extras.includes('subscription_annual') ? 3900 : 490;
+            const clubLabel = formData.extras.includes('subscription_annual') ? 'DR7 Club Annuale' : 'DR7 Club Mensile';
+            try {
+              await fetch('https://admin.dr7empire.com/.netlify/functions/nexi-pay-by-link', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  amount: clubAmount,
+                  description: `${clubLabel} — ${formData.firstName} ${formData.lastName}`,
+                  customerEmail: user.email,
+                  bookingId: data.booking_id,
+                  expirationHours: 48,
+                }),
+              });
+              console.log(`[credit-booking] DR7 Club Nexi link sent to ${user.email}`);
+            } catch (clubErr) {
+              console.error('[credit-booking] DR7 Club payment link error (non-blocking):', clubErr);
+            }
           }
 
           // Mark birthday discount code as used
@@ -5052,31 +5066,32 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             <section>
               <h3 className="text-lg font-bold text-white mb-4">METODO DI PAGAMENTO</h3>
               <div className="flex border-b border-gray-700 mb-6">
-                {(() => {
-                  const subActive = formData.extras.some(e => e.startsWith('subscription_'));
-                  return (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => !subActive && setFormData(prev => ({ ...prev, paymentMethod: 'credit' }))}
-                        disabled={subActive}
-                        className={`flex-1 py-2 text-sm font-semibold ${subActive ? 'text-gray-600 cursor-not-allowed' : formData.paymentMethod === 'credit' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}
-                        title={subActive ? 'DR7 Club richiede pagamento con carta' : ''}
-                      >
-                        Credit Wallet
-                        {subActive && <span className="block text-[10px] text-yellow-500/70">DR7 Club = solo carta</span>}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'nexi' }))}
-                        className={`flex-1 py-2 text-sm font-semibold ${formData.paymentMethod === 'nexi' || subActive ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}
-                      >
-                        Carta
-                      </button>
-                    </>
-                  );
-                })()}
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'credit' }))}
+                  className={`flex-1 py-2 text-sm font-semibold ${formData.paymentMethod === 'credit' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}
+                >
+                  Credit Wallet
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'nexi' }))}
+                  className={`flex-1 py-2 text-sm font-semibold ${formData.paymentMethod === 'nexi' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}
+                >
+                  Carta
+                </button>
               </div>
+              {/* DR7 Club separate payment notice */}
+              {formData.extras.some(e => e.startsWith('subscription_')) && (
+                <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm">
+                  <p className="text-yellow-400 font-semibold">DR7 Club — Pagamento separato</p>
+                  <p className="text-yellow-400/70 text-xs mt-1">
+                    {formData.paymentMethod === 'credit'
+                      ? 'Il noleggio sarà pagato con il wallet. Riceverai un link separato per il pagamento DR7 Club (€39/anno) con carta.'
+                      : 'Il noleggio e DR7 Club (€39/anno) saranno pagati insieme con carta.'}
+                  </p>
+                </div>
+              )}
 
               {
                 formData.paymentMethod === 'credit' ? (
@@ -6054,7 +6069,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                               {formData.extras.includes('subscription_annual') ? '€39/anno' : '€4,90/mese'}
                             </span>
                           </div>
-                          <p className="text-xs text-yellow-400/70 mt-1">Pagamento separato con carta di credito</p>
+                          <p className="text-xs text-yellow-400/70 mt-1">
+                            {formData.paymentMethod === 'credit'
+                              ? 'Riceverai un link di pagamento separato via email'
+                              : 'Incluso nel pagamento con carta'}
+                          </p>
                         </div>
                       )}
                     </div>
