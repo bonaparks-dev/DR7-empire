@@ -4298,7 +4298,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const displayVehicleType = getVehicleType(item);
         const activeTier = driverTier || 'TIER_2'; // fallback
         const tierPricing = getKmPricingForTier(activeTier);
-        const insuranceOptions = getInsuranceForTier(activeTier);
+        const allInsuranceOptions = getInsuranceForTier(activeTier);
+        // Furgone/V Class: only RCA and Kasko Base
+        const isFurgoneOrVClass = displayVehicleType === 'FURGONE' || displayVehicleType === 'V_CLASS';
+        const insuranceOptions = isFurgoneOrVClass
+          ? allInsuranceOptions.filter(opt => opt.id === 'RCA' || opt.id === 'KASKO_BASE' || opt.id === 'KASKO')
+          : allInsuranceOptions;
         const depositOptions = getDepositOptionsForTier(activeTier);
         const experienceServices = getExperienceServicesForTier(activeTier);
 
