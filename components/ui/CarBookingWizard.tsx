@@ -180,6 +180,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [showNoCauzionePopup, setShowNoCauzionePopup] = useState(false);
   const [noCauzioneRequested, setNoCauzioneRequested] = useState(false);
   const [noCauzioneSending, setNoCauzioneSending] = useState(false);
+  const [noCauzioneSaved, setNoCauzioneSaved] = useState(false);
   const today = useMemo(() => {
     // Get today's date in Italy timezone (Europe/Rome)
     const italyDate = new Date().toLocaleString('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -4713,46 +4714,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       Annulla
                     </button>
                     <button
-                      disabled={noCauzioneSending}
-                      onClick={async () => {
-                        setNoCauzioneSending(true);
-                        try {
-                          const msg = `*RICHIESTA NO CAUZIONE DAL SITO*\n\n`
-                            + `*Cliente:* ${formData.firstName} ${formData.lastName}\n`
-                            + `*Email:* ${formData.email}\n`
-                            + `*Tel:* ${formData.phone}\n`
-                            + `*Veicolo:* ${item?.name || 'N/A'}\n`
-                            + `*Date:* ${formData.pickupDate} - ${formData.returnDate}\n`
-                            + `*Supplemento:* €${ACTIVE_NO_DEPOSIT_SURCHARGE}/giorno`;
-                          // Send notification to admin
-                          await fetch('/.netlify/functions/send-whatsapp-notification', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ customMessage: msg }),
-                          });
-                          // Send confirmation to customer via WhatsApp
-                          const customerPhone = formData.phone?.replace(/[\s\-\+()]/g, '') || '';
-                          if (customerPhone) {
-                            const customerMsg = `Gentile ${formData.firstName},\n\n`
-                              + `abbiamo ricevuto la sua richiesta per la formula senza cauzione relativa alla prenotazione appena effettuata.\n\n`
-                              + `Il nostro team sta effettuando una verifica rapida per confermarne l'idoneità.\n\n`
-                              + `Riceverà a breve un aggiornamento con l'esito e, in caso di approvazione, il link di pagamento per completare la prenotazione.\n\n`
-                              + `Restiamo a disposizione.\n\n`
-                              + `Cordiali saluti,\nDR7`;
-                            await fetch('/.netlify/functions/send-whatsapp-notification', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ customMessage: customerMsg, customPhone: customerPhone }),
-                            }).catch(() => {}); // Don't block if customer message fails
-                          }
-                          setFormData(prev => ({ ...prev, depositOption: 'no_deposit' }));
-                          setNoCauzioneRequested(true);
-                          setShowNoCauzionePopup(false);
-                        } catch {
-                          alert('Errore invio richiesta. Riprova.');
-                        } finally {
-                          setNoCauzioneSending(false);
-                        }
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, depositOption: 'no_deposit' }));
+                        setNoCauzioneRequested(true);
+                        setShowNoCauzionePopup(false);
                       }}
                       className="flex-1 py-3 bg-white text-black rounded-full font-bold text-sm hover:bg-gray-200 transition-colors disabled:opacity-50"
                     >
@@ -4926,6 +4891,145 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         );
       }
       case 4:
+        // No Cauzione flow: save as preventivo, no payment
+        if (noCauzioneRequested && formData.depositOption === 'no_deposit') {
+          if (noCauzioneSaved) {
+            return (
+              <div className="space-y-6 text-center py-8">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-green-500/20 rounded-full mb-4">
+                  <svg className="w-10 h-10 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-white">Richiesta Inviata!</h2>
+                <p className="text-gray-400 max-w-md mx-auto">
+                  La tua richiesta per la formula senza cauzione è stata registrata. Il team DR7 la contatterà via WhatsApp con l'esito e, in caso di approvazione, il link di pagamento.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => window.location.href = '/'}
+                  className="mt-4 px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors"
+                >
+                  Torna alla Home
+                </button>
+              </div>
+            );
+          }
+          return (
+            <div className="space-y-6">
+              <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6 text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500/20 rounded-full mb-4">
+                  <svg className="w-8 h-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">Riepilogo Preventivo</h3>
+                <p className="text-gray-400 text-sm mb-6">
+                  Cliccando "Salva Preventivo" la tua richiesta verrà inviata al team DR7 per approvazione. Riceverai un messaggio WhatsApp con l'esito.
+                </p>
+              </div>
+
+              <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6 space-y-3 text-sm">
+                <div className="flex justify-between"><span className="text-gray-400">Veicolo</span><span className="text-white font-semibold">{item.name}</span></div>
+                <div className="flex justify-between"><span className="text-gray-400">Ritiro</span><span className="text-white">{formData.pickupDate} — {formData.pickupTime}</span></div>
+                <div className="flex justify-between"><span className="text-gray-400">Riconsegna</span><span className="text-white">{formData.returnDate} — {formData.returnTime}</span></div>
+                <div className="flex justify-between"><span className="text-gray-400">Durata</span><span className="text-white">{Math.max(1, duration.days)} {Math.max(1, duration.days) === 1 ? 'giorno' : 'giorni'}</span></div>
+                <div className="flex justify-between"><span className="text-gray-400">Assicurazione</span><span className="text-white">{formData.insuranceOption}</span></div>
+                <div className="flex justify-between"><span className="text-gray-400">Cauzione</span><span className="text-green-400 font-semibold">No Cauzione (€{ACTIVE_NO_DEPOSIT_SURCHARGE}/g)</span></div>
+                <hr className="border-gray-600" />
+                <div className="flex justify-between text-lg font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(grandTotal)}</span></div>
+              </div>
+
+              <button
+                type="button"
+                disabled={isSubmitting}
+                onClick={async () => {
+                  setIsSubmitting(true);
+                  try {
+                    // Build booking data same as normal flow but with pending status
+                    const pickupDateTime = new Date(`${formData.pickupDate}T${formData.pickupTime}:00`);
+                    const dropoffDateTime = new Date(`${formData.returnDate}T${formData.returnTime}:00`);
+                    const bookingData = {
+                      service_type: 'car_rental',
+                      customer_name: `${formData.firstName} ${formData.lastName}`,
+                      customer_email: formData.email,
+                      customer_phone: formData.phone,
+                      vehicle_name: item.name,
+                      vehicle_id: formData.selectedVehicleId || null,
+                      vehicle_plate: null,
+                      pickup_date: pickupDateTime.toISOString(),
+                      dropoff_date: dropoffDateTime.toISOString(),
+                      pickup_location: formData.pickupLocation,
+                      dropoff_location: formData.returnLocation,
+                      price_total: Math.round(grandTotal * 100),
+                      currency: 'EUR',
+                      status: 'pending',
+                      payment_status: 'pending',
+                      payment_method: 'Nexi Pay by Link',
+                      insurance_option: formData.insuranceOption,
+                      booked_at: new Date().toISOString(),
+                      user_id: user?.id || null,
+                      booking_details: {
+                        no_cauzione_request: true,
+                        depositOption: 'no_deposit',
+                        noDepositSurcharge: noDepositSurcharge,
+                        driver_tier: driverTier,
+                        insurance_cost: insuranceCost,
+                        km_cost: kmPackageCost,
+                        lavaggio_fee: lavaggioFee,
+                        rental_cost: rentalCost,
+                        customer: { firstName: formData.firstName, lastName: formData.lastName, email: formData.email, phone: formData.phone },
+                      },
+                    };
+                    const { error } = await supabase.from('bookings').insert(bookingData);
+                    if (error) throw error;
+
+                    // Send WhatsApp to admin
+                    const msg = `*RICHIESTA NO CAUZIONE DAL SITO*\n\n`
+                      + `*Cliente:* ${formData.firstName} ${formData.lastName}\n`
+                      + `*Email:* ${formData.email}\n`
+                      + `*Tel:* ${formData.phone}\n`
+                      + `*Veicolo:* ${item?.name || 'N/A'}\n`
+                      + `*Date:* ${formData.pickupDate} → ${formData.returnDate}\n`
+                      + `*Totale:* €${grandTotal.toFixed(2)}\n`
+                      + `*Supplemento No Cauzione:* €${ACTIVE_NO_DEPOSIT_SURCHARGE}/giorno`;
+                    await fetch('/.netlify/functions/send-whatsapp-notification', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ customMessage: msg }),
+                    });
+
+                    // Send confirmation to customer
+                    const customerPhone = formData.phone?.replace(/[\s\-\+()]/g, '') || '';
+                    if (customerPhone) {
+                      const customerMsg = `Gentile ${formData.firstName},\n\n`
+                        + `abbiamo ricevuto la sua richiesta per la formula senza cauzione relativa alla prenotazione appena effettuata.\n\n`
+                        + `Il nostro team sta effettuando una verifica rapida per confermarne l'idoneità.\n\n`
+                        + `Riceverà a breve un aggiornamento con l'esito e, in caso di approvazione, il link di pagamento per completare la prenotazione.\n\n`
+                        + `Restiamo a disposizione.\n\nCordiali saluti,\nDR7`;
+                      await fetch('/.netlify/functions/send-whatsapp-notification', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ customMessage: customerMsg, customPhone: customerPhone }),
+                      }).catch(() => {});
+                    }
+
+                    setNoCauzioneSaved(true);
+                  } catch (err: any) {
+                    setPaymentError(err.message || 'Errore salvataggio preventivo');
+                  } finally {
+                    setIsSubmitting(false);
+                  }
+                }}
+                className="w-full py-4 bg-white text-black font-bold text-lg rounded-full hover:bg-gray-200 transition-colors disabled:opacity-50"
+              >
+                {isSubmitting ? 'Salvataggio...' : 'SALVA PREVENTIVO'}
+              </button>
+              {paymentError && <p className="text-red-400 text-sm text-center">{paymentError}</p>}
+            </div>
+          );
+        }
+
         return (
           <div className="space-y-8">
             <section>
