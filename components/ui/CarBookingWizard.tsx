@@ -4370,6 +4370,45 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   <span className="text-2xl font-bold text-white">€{rentalCost}</span>
                 </div>
               </div>
+
+              {/* Codice Sconto — also available for VIP */}
+              <div className="border-t border-gray-600 pt-4">
+                <p className="font-bold text-base text-white mb-3">CODICE SCONTO</p>
+                {appliedDiscount ? (
+                  <div className="flex items-center justify-between p-3 bg-green-900/30 border border-green-500/50 rounded-lg">
+                    <div>
+                      <p className="text-green-400 font-bold">{appliedDiscount.code}</p>
+                      <p className="text-green-300 text-sm">
+                        {appliedDiscount.type === 'percentage'
+                          ? `Sconto del ${appliedDiscount.amount}% applicato (-€${discountAmount.toFixed(2)})`
+                          : `Sconto di €${appliedDiscount.amount} applicato`}
+                      </p>
+                    </div>
+                    <button type="button" onClick={removeDiscount} className="text-red-400 hover:text-red-300 text-sm underline">Rimuovi</button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={discountCode}
+                      onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                      placeholder="Inserisci codice (es. BDAY-XXXX-XXXX)"
+                      className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 text-sm uppercase"
+                    />
+                    <button
+                      type="button"
+                      onClick={validateDiscountCode}
+                      disabled={isValidatingCode || !discountCode.trim()}
+                      className="px-4 py-2 bg-white text-black font-bold rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    >
+                      {isValidatingCode ? 'Verifica...' : 'Applica'}
+                    </button>
+                  </div>
+                )}
+                {discountCodeError && (
+                  <p className="text-red-400 text-sm mt-2">{discountCodeError}</p>
+                )}
+              </div>
             </div>
           );
         }
