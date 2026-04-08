@@ -5731,13 +5731,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       {formData.pickupLocation === 'home_delivery' && formData.deliveryPickupKm > 0 && (
                         <div className="flex justify-between">
                           <span className="text-gray-400">Consegna a domicilio ({formData.deliveryPickupKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM})</span>
-                          <span className="text-white font-medium">{formatPrice(formData.deliveryPickupKm * ACTIVE_DELIVERY_PRICE_PER_KM * 2)}</span>
+                          <span className="text-white font-medium">{formatPrice(formData.deliveryPickupKm * ACTIVE_DELIVERY_PRICE_PER_KM)}</span>
                         </div>
                       )}
                       {formData.returnLocation === 'home_delivery' && formData.deliveryReturnKm > 0 && (
                         <div className="flex justify-between">
                           <span className="text-gray-400">Riconsegna a domicilio ({formData.deliveryReturnKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM})</span>
-                          <span className="text-white font-medium">{formatPrice(formData.deliveryReturnKm * ACTIVE_DELIVERY_PRICE_PER_KM * 2)}</span>
+                          <span className="text-white font-medium">{formatPrice(formData.deliveryReturnKm * ACTIVE_DELIVERY_PRICE_PER_KM)}</span>
                         </div>
                       )}
                       {secondDriverFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Secondo guidatore</span><span className="text-white font-medium">{formatPrice(secondDriverFee)}</span></div>}
