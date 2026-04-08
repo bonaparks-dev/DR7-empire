@@ -4942,9 +4942,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
               <button
                 type="button"
-                disabled={isSubmitting}
+                disabled={noCauzioneSending}
                 onClick={async () => {
-                  setIsSubmitting(true);
+                  setNoCauzioneSending(true);
                   try {
                     // Build booking data same as normal flow but with pending status
                     const pickupDateTime = new Date(`${formData.pickupDate}T${formData.pickupTime}:00`);
@@ -5018,12 +5018,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   } catch (err: any) {
                     setPaymentError(err.message || 'Errore salvataggio preventivo');
                   } finally {
-                    setIsSubmitting(false);
+                    setNoCauzioneSending(false);
                   }
                 }}
                 className="w-full py-4 bg-white text-black font-bold text-lg rounded-full hover:bg-gray-200 transition-colors disabled:opacity-50"
               >
-                {isSubmitting ? 'Salvataggio...' : 'SALVA PREVENTIVO'}
+                {noCauzioneSending ? 'Salvataggio...' : 'SALVA PREVENTIVO'}
               </button>
               {paymentError && <p className="text-red-400 text-sm text-center">{paymentError}</p>}
             </div>
