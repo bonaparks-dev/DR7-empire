@@ -4957,10 +4957,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   setNoCauzioneSending(true);
                   try {
                     // Build booking data same as normal flow but with pending status
+                    const pDate = formData.pickupDate || new Date().toISOString().split('T')[0];
+                    const rDate = formData.returnDate || pDate;
                     const pTime = formData.pickupTime || '10:30';
                     const rTime = formData.returnTime || '09:00';
-                    const pickupDateTime = new Date(`${formData.pickupDate}T${pTime}:00`);
-                    const dropoffDateTime = new Date(`${formData.returnDate}T${rTime}:00`);
+                    const pickupDateTime = new Date(`${pDate}T${pTime}:00`);
+                    const dropoffDateTime = new Date(`${rDate}T${rTime}:00`);
+                    if (isNaN(pickupDateTime.getTime()) || isNaN(dropoffDateTime.getTime())) {
+                      throw new Error('Date o orari non validi. Torna allo step 1 e seleziona date e orari.');
+                    }
                     const bookingData = {
                       service_type: 'car_rental',
                       customer_name: `${formData.firstName} ${formData.lastName}`,
