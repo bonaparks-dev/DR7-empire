@@ -1383,9 +1383,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     let hours = 0;
     let extraDay = false;
     if (formData.pickupDate && formData.returnDate) {
-      const pickup = safeDate(`${formData.pickupDate}T${formData.pickupTime}`);
-      const ret = safeDate(`${formData.returnDate}T${formData.returnTime}`);
-      if (pickup < ret) {
+      const pickup = safeDate(`${formData.pickupDate}T${formData.pickupTime || '10:30'}`);
+      const ret = safeDate(`${formData.returnDate}T${formData.returnTime || '09:00'}`);
+      if (!isNaN(pickup.getTime()) && !isNaN(ret.getTime()) && pickup < ret) {
         // Updated Logic: User requested "Dal 6 al 8 sono 2 giorni... even if it is 22:30"
         // This implies strict calendar day difference: (Return Date - Pickup Date) in days.
         // We calculate this by normalizing both to midnight or simply taking the difference in days.
