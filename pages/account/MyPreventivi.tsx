@@ -144,13 +144,13 @@ const MyPreventivi: React.FC = () => {
                     <p className="text-xl font-bold text-white">€{Number(p.total_final).toFixed(2)}</p>
                   </div>
 
-                  {isActive && !isExpired && (
+                  {(isActive || (p.status === 'accettato' && !p.booking_id)) && !isExpired && (
                     <div className="flex gap-2">
                       <a
                         href={`/supercar-luxury?preventivo=${p.id}`}
                         className="px-5 py-2.5 bg-white text-black text-sm font-bold rounded-full hover:bg-gray-200 transition-colors"
                       >
-                        Prenota Ora
+                        {p.status === 'accettato' ? 'Completa Prenotazione' : 'Prenota Ora'}
                       </a>
                     </div>
                   )}

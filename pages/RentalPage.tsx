@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
 import { RENTAL_CATEGORIES, AIRPORTS, PICKUP_LOCATIONS } from '../constants';
 import type { RentalItem } from '../types';
 import RentalCard from '../components/ui/RentalCard';
@@ -697,6 +698,66 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
       });
     }
   }, [prePickup, preReturn, allVehicles.length, hasSearched, isSearching]);
+
+  // ── Auto-open wizard from preventivo link ──────────────────────────────
+  const preventivoId = searchParams.get('preventivo');
+  const [preventivoHandled, setPreventivoHandled] = useState(false);
+
+  useEffect(() => {
+    if (!preventivoId || preventivoHandled || allVehicles.length === 0) return;
+    setPreventivoHandled(true);
+
+    (async () => {
+      try {
+        const session = await supabase.auth.getSession();
+        const token = session.data.session?.access_token;
+        if (!token) return;
+
+        const res = await fetch('/.netlify/functions/get-my-preventivi', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+
+        const data = await res.json();
+        const preventivo = (data.preventivi || []).find((p: any) => p.id === preventivoId);
+        if (!preventivo) return;
+
+        // Find matching vehicle
+        const matchedVehicle = allVehicles.find((v: RentalItem) => {
+          const vId = v.id.replace('car-', '');
+          return vId === preventivo.vehicle_id || v.vehicleIds?.includes(preventivo.vehicle_id);
+        });
+        if (!matchedVehicle) return;
+
+        // Set dates from preventivo
+        const pickup = new Date(preventivo.pickup_date);
+        const dropoff = new Date(preventivo.dropoff_date);
+        const pickupDate = pickup.toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' });
+        const pickupTime = pickup.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
+        const returnDate = dropoff.toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' });
+        const returnTime = dropoff.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
+
+        setInitialSearchDates({
+          pickupDate,
+          pickupTime,
+          returnDate,
+          returnTime,
+          pickupLocation: preventivo.pickup_location || 'dr7_office',
+          returnLocation: preventivo.dropoff_location || 'dr7_office',
+        });
+
+        // Open the wizard
+        openCarWizard(matchedVehicle, categoryId);
+
+        // Clean URL
+        const params = new URLSearchParams(searchParams);
+        params.delete('preventivo');
+        setSearchParams(params, { replace: true });
+      } catch (err) {
+        console.error('Error loading preventivo:', err);
+      }
+    })();
+  }, [preventivoId, allVehicles.length, preventivoHandled]);
 
   // Chrome-specific debug hint (dev-only)
   const [showChromeDebugHint, setShowChromeDebugHint] = useState(false);
