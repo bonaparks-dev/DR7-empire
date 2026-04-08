@@ -4365,9 +4365,21 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   <span className="text-green-400 font-semibold">Nessuna</span>
                 </div>
 
+                {discountAmount > 0 && (
+                  <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                    <span className="text-yellow-400">Codice Sconto</span>
+                    <span className="text-yellow-400 font-semibold">-{formatPrice(discountAmount)}</span>
+                  </div>
+                )}
+
                 <div className="flex justify-between items-center pt-4">
                   <span className="text-xl font-bold text-white">TOTALE</span>
-                  <span className="text-2xl font-bold text-white">€{rentalCost}</span>
+                  <div className="flex items-center gap-3">
+                    {discountAmount > 0 && (
+                      <span className="text-lg text-gray-500 line-through">€{rentalCost}</span>
+                    )}
+                    <span className="text-2xl font-bold text-white">{formatPrice(grandTotal)}</span>
+                  </div>
                 </div>
               </div>
 
@@ -5960,7 +5972,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         type="button"
                         onClick={handleNext}
                         className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={(step === 1 && !isFromSearch && isCheckingAvailability) || (licenseYears < 3 && step === 2) || (step === 2 && !formData.confirmsInformation) || (step === 3 && isUrbanOrCorporate && !formData.depositOption)}
+                        disabled={(step === 1 && !isFromSearch && isCheckingAvailability) || (licenseYears < 3 && step === 2) || (step === 2 && !formData.confirmsInformation) || (step === 3 && isUrbanOrCorporate && !formData.depositOption && !isMassimo)}
                       >
                         Continua
                       </button>
