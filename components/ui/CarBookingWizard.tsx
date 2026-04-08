@@ -1510,10 +1510,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // --- DELIVERY FEE (consegna a domicilio) — separate pickup + return ---
     const isDeliveryPickup = formData.pickupLocation === 'home_delivery';
     const isDeliveryReturn = formData.returnLocation === 'home_delivery';
+    // Each direction = one-way fee (km × €/km). No ×2 — DR7 already travels for the rental.
     const pickupDeliveryFee = isDeliveryPickup && formData.deliveryPickupKm > 0
-      ? roundToTwoDecimals(formData.deliveryPickupKm * ACTIVE_DELIVERY_PRICE_PER_KM * 2) : 0;
+      ? roundToTwoDecimals(formData.deliveryPickupKm * ACTIVE_DELIVERY_PRICE_PER_KM) : 0;
     const returnDeliveryFee = isDeliveryReturn && formData.deliveryReturnKm > 0
-      ? roundToTwoDecimals(formData.deliveryReturnKm * ACTIVE_DELIVERY_PRICE_PER_KM * 2) : 0;
+      ? roundToTwoDecimals(formData.deliveryReturnKm * ACTIVE_DELIVERY_PRICE_PER_KM) : 0;
     const calculatedDeliveryFee = pickupDeliveryFee + returnDeliveryFee;
 
     const calculatedPickupFee = 0;
@@ -3726,7 +3727,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   </div>
                   {formData.deliveryPickupKm > 0 && (
                     <p className="text-sm text-yellow-400 mt-3 font-semibold">
-                      Costo consegna: {formData.deliveryPickupKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM} × 2 (A/R) = €{(formData.deliveryPickupKm * ACTIVE_DELIVERY_PRICE_PER_KM * 2).toFixed(2)}
+                      Costo consegna: {formData.deliveryPickupKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM} = €{(formData.deliveryPickupKm * ACTIVE_DELIVERY_PRICE_PER_KM).toFixed(2)}
                     </p>
                   )}
                   <p className="text-xs text-gray-500 mt-2">La distanza sarà verificata da DR7. In caso di discrepanza, verrà applicata la distanza reale.</p>
@@ -3753,7 +3754,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   </div>
                   {formData.deliveryReturnKm > 0 && (
                     <p className="text-sm text-yellow-400 mt-3 font-semibold">
-                      Costo riconsegna: {formData.deliveryReturnKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM} × 2 (A/R) = €{(formData.deliveryReturnKm * ACTIVE_DELIVERY_PRICE_PER_KM * 2).toFixed(2)}
+                      Costo riconsegna: {formData.deliveryReturnKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM} = €{(formData.deliveryReturnKm * ACTIVE_DELIVERY_PRICE_PER_KM).toFixed(2)}
                     </p>
                   )}
                   <p className="text-xs text-gray-500 mt-2">La distanza sarà verificata da DR7. In caso di discrepanza, verrà applicata la distanza reale.</p>
@@ -4513,7 +4514,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   >
                     <div className="flex justify-between items-center">
                       <div>
-                        <span className="font-bold text-white">{calculateIncludedKm(duration.days || 1)} km inclusi</span>
+                        <span className="font-bold text-white">{calculateIncludedKm(duration.days || 1, ACTIVE_KM_INCLUDED) || 0} km inclusi</span>
                         <p className="text-sm text-gray-400">Calcolati sulla durata del noleggio ({duration.days || 1} {(duration.days || 1) === 1 ? 'giorno' : 'giorni'})</p>
                       </div>
                       <span className="font-bold text-green-400">Incluso</span>
@@ -5729,13 +5730,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       {dropoffFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Spese di riconsegna</span><span className="text-white font-medium">{formatPrice(dropoffFee)}</span></div>}
                       {formData.pickupLocation === 'home_delivery' && formData.deliveryPickupKm > 0 && (
                         <div className="flex justify-between">
-                          <span className="text-gray-400">Consegna a domicilio ({formData.deliveryPickupKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM} × 2 A/R)</span>
+                          <span className="text-gray-400">Consegna a domicilio ({formData.deliveryPickupKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM})</span>
                           <span className="text-white font-medium">{formatPrice(formData.deliveryPickupKm * ACTIVE_DELIVERY_PRICE_PER_KM * 2)}</span>
                         </div>
                       )}
                       {formData.returnLocation === 'home_delivery' && formData.deliveryReturnKm > 0 && (
                         <div className="flex justify-between">
-                          <span className="text-gray-400">Riconsegna a domicilio ({formData.deliveryReturnKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM} × 2 A/R)</span>
+                          <span className="text-gray-400">Riconsegna a domicilio ({formData.deliveryReturnKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM})</span>
                           <span className="text-white font-medium">{formatPrice(formData.deliveryReturnKm * ACTIVE_DELIVERY_PRICE_PER_KM * 2)}</span>
                         </div>
                       )}
