@@ -644,16 +644,18 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
     setSearchParams(params, { replace: true });
 
     // Re-run availability search with updated dates
+    const updatedSearch = {
+      pickupLocation: next.pickupLoc || 'dr7_office',
+      returnLocation: next.returnLoc || next.pickupLoc || 'dr7_office',
+      pickupDate: next.pickupDate,
+      pickupTime: next.pickupTime,
+      returnDate: next.returnDate,
+      returnTime: next.returnTime,
+    };
+    setSearchData(updatedSearch);
     const searchPool = allVehicles.length > 0 ? allVehicles : (vehicleCategory ? fetchedVehicles : (category?.data || []));
     if (searchPool.length > 0) {
-      runSearch(searchPool, {
-        pickupLocation: next.pickupLoc || 'dr7_office',
-        returnLocation: next.returnLoc || next.pickupLoc || 'dr7_office',
-        pickupDate: next.pickupDate,
-        pickupTime: next.pickupTime,
-        returnDate: next.returnDate,
-        returnTime: next.returnTime,
-      });
+      runSearch(searchPool, updatedSearch);
     }
   };
 
