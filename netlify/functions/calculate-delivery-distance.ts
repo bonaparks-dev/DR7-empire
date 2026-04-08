@@ -102,8 +102,8 @@ export const handler: Handler = async (event) => {
     const durationSeconds = route.duration
 
     const distanceKm = Math.ceil(distanceMeters / 1000)
-    const roundTripKm = distanceKm * 2
-    const deliveryFee = roundTripKm * pricePerKm
+    const roundTripKm = distanceKm // one-way per direction (no ×2)
+    const deliveryFee = distanceKm * pricePerKm
 
     const hours = Math.floor(durationSeconds / 3600)
     const minutes = Math.round((durationSeconds % 3600) / 60)

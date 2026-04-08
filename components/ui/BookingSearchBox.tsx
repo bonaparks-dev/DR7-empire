@@ -343,9 +343,9 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
             </div>
             {deliveryFee && (
               <p className="text-[11px] text-white/30 mt-1">
-                {deliveryFee.pickupKm > 0 && `${deliveryFee.pickupKm} km × €${deliveryFee.pricePerKm}/km × 2 (A/R)`}
+                {deliveryFee.pickupKm > 0 && `Consegna: ${deliveryFee.pickupKm} km × €${deliveryFee.pricePerKm}/km`}
                 {deliveryFee.returnKm > 0 && deliveryFee.pickupKm > 0 && ' + '}
-                {deliveryFee.returnKm > 0 && `Riconsegna: ${deliveryFee.returnKm} km × €${deliveryFee.pricePerKm}/km × 2`}
+                {deliveryFee.returnKm > 0 && `Riconsegna: ${deliveryFee.returnKm} km × €${deliveryFee.pricePerKm}/km`}
               </p>
             )}
           </div>
