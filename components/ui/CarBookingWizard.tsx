@@ -2563,6 +2563,28 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         await markDiscountCodeAsUsed(data.id);
       }
 
+      // DR7 Club subscription — activate after card payment (fee is included in total)
+      const hasClubSubNexi = formData.extras.some(e => e.startsWith('subscription_'));
+      if (hasClubSubNexi && user?.id) {
+        const isAnnual = formData.extras.includes('subscription_annual');
+        const clubPrice = isAnnual ? 39 : 4.90;
+        const expiresAt = new Date();
+        if (isAnnual) expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+        else expiresAt.setMonth(expiresAt.getMonth() + 1);
+        try {
+          await supabase.from('dr7_club_subscriptions').insert({
+            user_id: user.id, plan: isAnnual ? 'annual' : 'monthly',
+            status: 'active', price: clubPrice,
+            started_at: new Date().toISOString(), expires_at: expiresAt.toISOString(),
+          });
+          const { addCredits } = await import('../../utils/creditWallet');
+          await addCredits(user.id, 10, 'DR7 Club — Bonus iscrizione €10', data.id, 'club_signup_bonus');
+          console.log(`[DR7 Club] Activated after Nexi payment for ${user.email}`);
+        } catch (clubErr) {
+          console.error('[DR7 Club] Activation error (non-blocking):', clubErr);
+        }
+      }
+
       // FIX 2: Invalidate vehicle cache so availability is fresh after booking
       invalidateVehicleCache();
 
@@ -3129,26 +3151,39 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             console.error('[credit-booking] DR7 Club cashback error (non-blocking):', cashbackErr);
           }
 
-          // DR7 Club subscription — send separate Nexi payment link when paid with wallet
+          // DR7 Club subscription — activate + send payment link
           const hasClubSub = formData.extras.some(e => e.startsWith('subscription_'));
-          if (hasClubSub && user?.email) {
-            const clubAmount = formData.extras.includes('subscription_annual') ? 3900 : 490;
-            const clubLabel = formData.extras.includes('subscription_annual') ? 'DR7 Club Annuale' : 'DR7 Club Mensile';
+          if (hasClubSub && user?.id) {
+            const isAnnual = formData.extras.includes('subscription_annual');
+            const clubPrice = isAnnual ? 39 : 4.90;
+            const clubLabel = isAnnual ? 'DR7 Club Annuale' : 'DR7 Club Mensile';
+            const expiresAt = new Date();
+            if (isAnnual) expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+            else expiresAt.setMonth(expiresAt.getMonth() + 1);
             try {
+              // Activate subscription
+              await supabase.from('dr7_club_subscriptions').insert({
+                user_id: user.id, plan: isAnnual ? 'annual' : 'monthly',
+                status: 'active', price: clubPrice,
+                started_at: new Date().toISOString(), expires_at: expiresAt.toISOString(),
+              });
+              // Signup bonus €10
+              const { addCredits } = await import('../../utils/creditWallet');
+              await addCredits(user.id, 10, 'DR7 Club — Bonus iscrizione €10', data.booking_id, 'club_signup_bonus');
+              // Send Nexi payment link for the Club fee
               await fetch('https://admin.dr7empire.com/.netlify/functions/nexi-pay-by-link', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  amount: clubAmount,
+                  amount: Math.round(clubPrice * 100),
                   description: `${clubLabel} — ${formData.firstName} ${formData.lastName}`,
-                  customerEmail: user.email,
-                  bookingId: data.booking_id,
+                  customerEmail: user.email || formData.email,
                   expirationHours: 48,
                 }),
               });
-              console.log(`[credit-booking] DR7 Club Nexi link sent to ${user.email}`);
+              console.log(`[DR7 Club] Activated + Nexi link sent for ${user.email}`);
             } catch (clubErr) {
-              console.error('[credit-booking] DR7 Club payment link error (non-blocking):', clubErr);
+              console.error('[DR7 Club] Activation error (non-blocking):', clubErr);
             }
           }
 
@@ -3575,7 +3610,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   const handleSubscriptionAccept = () => {
     setShowSubscriptionUpsell(false);
-    // Store selected subscription in formData extras
     if (selectedSubscription) {
       const subExtra = selectedSubscription === 'monthly' ? 'subscription_monthly' : 'subscription_annual';
       setFormData(prev => ({
