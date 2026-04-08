@@ -57,10 +57,12 @@ const getVehicleImage = (name: string, metadata?: Record<string, any> | null): s
 
 const VehicleSearchResults: React.FC<VehicleSearchResultsProps> = ({ results, searchData, onBook, isUrban }) => {
     // Calculate number of rental days
-    const pickupDateTime = new Date(`${searchData.pickupDate}T${searchData.pickupTime}:00`);
-    const returnDateTime = new Date(`${searchData.returnDate}T${searchData.returnTime}:00`);
+    const pickupTime = searchData.pickupTime || '10:30';
+    const returnTime = searchData.returnTime || '09:00';
+    const pickupDateTime = new Date(`${searchData.pickupDate}T${pickupTime}:00`);
+    const returnDateTime = new Date(`${searchData.returnDate}T${returnTime}:00`);
     const diffMs = returnDateTime.getTime() - pickupDateTime.getTime();
-    const rentalDays = Math.max(1, Math.ceil(diffMs / (24 * 60 * 60 * 1000)));
+    const rentalDays = isNaN(diffMs) ? 1 : Math.max(1, Math.ceil(diffMs / (24 * 60 * 60 * 1000)));
 
     const formatPrice = (amount: number) => {
         return new Intl.NumberFormat('it-IT', {
