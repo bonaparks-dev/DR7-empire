@@ -2361,7 +2361,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           return idx >= 0 ? (item as any).plates[idx] || null : null;
         })(),
         deposit_amount: getDeposit(),
-        insurance_option: formData.insuranceOption,
+        // insurance_option stored in booking_details.insuranceOption (not a top-level column)
         customer_name: rFullName,
         customer_email: rEmail,
         customer_phone: rPhone,
@@ -2768,7 +2768,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         pickup_location: formData.pickupLocation || 'dr7_office',
         dropoff_location: formData.returnLocation || formData.pickupLocation || 'dr7_office',
         base_daily_rate: effectivePricePerDay,
-        insurance_option: formData.insuranceOption,
+        // insurance_option stored in booking_details.insuranceOption (not a top-level column)
         insurance_daily_price: insuranceCost / Math.max(duration.days, 1),
         insurance_total: insuranceCost,
         km_limit: formData.kmLimit || includedKm || 0,
@@ -2946,7 +2946,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           const idx = item.vehicleIds.indexOf(formData.selectedVehicleId);
           return idx >= 0 ? (item as any).plates[idx] || null : null;
         })(),
-          insurance_option: formData.insuranceOption,
+          // insurance_option stored in booking_details.insuranceOption (not a top-level column)
           booking_usage_zone: formData.usageZone || null,
           booking_details: {
             customer: {
@@ -3175,7 +3175,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  amount: Math.round(clubPrice * 100),
+                  amount: clubPrice,
                   description: `${clubLabel} — ${formData.firstName} ${formData.lastName}`,
                   customerEmail: user.email || formData.email,
                   expirationHours: 48,
@@ -3327,7 +3327,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           const idx = item.vehicleIds.indexOf(formData.selectedVehicleId);
           return idx >= 0 ? (item as any).plates[idx] || null : null;
         })(),
-            insurance_option: formData.insuranceOption,
+            // insurance_option stored in booking_details.insuranceOption (not a top-level column)
             deposit_amount: getDeposit(),
             booking_usage_zone: formData.usageZone || null,
             customer: {
@@ -5031,7 +5031,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       status: 'pending',
                       payment_status: 'pending',
                       payment_method: 'Nexi Pay by Link',
-                      insurance_option: formData.insuranceOption,
+                      // insurance_option stored in booking_details.insuranceOption (not a top-level column)
                       booked_at: new Date().toISOString(),
                       user_id: user?.id || null,
                       booking_details: {
