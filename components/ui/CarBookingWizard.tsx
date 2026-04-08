@@ -2208,7 +2208,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (step === 3) {
       const vType = getVehicleType(item, categoryContext);
 
-      if (isUrbanOrCorporate && !formData.depositOption) {
+      if (isUrbanOrCorporate && !formData.depositOption && !isMassimo) {
         newErrors.depositOption = "Devi selezionare un'opzione per la cauzione.";
       }
 
@@ -2856,6 +2856,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (normalizedPaymentMethod === 'credit' && !user?.id) {
       clearTimeout(safetyTimer);
       setPaymentError('Devi effettuare il login per procedere.');
+      isSubmittingRef.current = false;
+      setIsProcessing(false);
+      return;
+    }
+
+    // Block credit wallet if DR7 Club subscription is selected — subscription is card-only
+    const hasSubscription = formData.extras.some(e => e.startsWith('subscription_'));
+    if (normalizedPaymentMethod === 'credit' && hasSubscription) {
+      clearTimeout(safetyTimer);
+      setPaymentError('L\'abbonamento DR7 Club richiede il pagamento con carta. Rimuovi la sottoscrizione o scegli "Paga con Carta".');
       isSubmittingRef.current = false;
       setIsProcessing(false);
       return;
@@ -5035,20 +5045,30 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             <section>
               <h3 className="text-lg font-bold text-white mb-4">METODO DI PAGAMENTO</h3>
               <div className="flex border-b border-gray-700 mb-6">
-                <button
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'credit' }))}
-                  className={`flex-1 py-2 text-sm font-semibold ${formData.paymentMethod === 'credit' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}
-                >
-                  Credit Wallet
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'nexi' }))}
-                  className={`flex-1 py-2 text-sm font-semibold ${formData.paymentMethod === 'nexi' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}
-                >
-                  Carta
-                </button>
+                {(() => {
+                  const subActive = formData.extras.some(e => e.startsWith('subscription_'));
+                  return (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => !subActive && setFormData(prev => ({ ...prev, paymentMethod: 'credit' }))}
+                        disabled={subActive}
+                        className={`flex-1 py-2 text-sm font-semibold ${subActive ? 'text-gray-600 cursor-not-allowed' : formData.paymentMethod === 'credit' ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}
+                        title={subActive ? 'DR7 Club richiede pagamento con carta' : ''}
+                      >
+                        Credit Wallet
+                        {subActive && <span className="block text-[10px] text-yellow-500/70">DR7 Club = solo carta</span>}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'nexi' }))}
+                        className={`flex-1 py-2 text-sm font-semibold ${formData.paymentMethod === 'nexi' || subActive ? 'text-white border-b-2 border-white' : 'text-gray-400'}`}
+                      >
+                        Carta
+                      </button>
+                    </>
+                  );
+                })()}
               </div>
 
               {
