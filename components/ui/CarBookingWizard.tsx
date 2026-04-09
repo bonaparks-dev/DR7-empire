@@ -3157,7 +3157,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ booking: finalBookingData }),
-          }).catch(e => console.error('WhatsApp error', e));
+          }).catch(e => console.error('WhatsApp admin error', e));
+
+          // Send WhatsApp Customer confirmation
+          const custPhone = formData.phone?.replace(/[\s\-\+()]/g, '') || '';
+          if (custPhone) {
+            fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ booking: finalBookingData, customPhone: custPhone }),
+            }).catch(e => console.error('WhatsApp customer error', e));
+          }
 
           // Auto-generate contract + fattura on admin side (fire-and-forget)
           const ADMIN_BASE = 'https://admin.dr7empire.com';

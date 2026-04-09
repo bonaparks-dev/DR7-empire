@@ -277,6 +277,7 @@ exports.handler = async (event) => {
         } catch (e) {
           console.error('Email notification failed:', e);
         }
+        // Send WhatsApp to admin
         try {
           await fetch(`${siteUrl}/.netlify/functions/send-whatsapp-notification`, {
             method: 'POST',
@@ -284,7 +285,21 @@ exports.handler = async (event) => {
             body: JSON.stringify({ booking: { ...booking, ...updateData } }),
           });
         } catch (e) {
-          console.error('WhatsApp notification failed:', e);
+          console.error('WhatsApp admin notification failed:', e);
+        }
+
+        // Send WhatsApp confirmation to customer
+        const custPhone = booking.customer_phone || booking.booking_details?.customer?.phone;
+        if (custPhone) {
+          try {
+            await fetch(`${siteUrl}/.netlify/functions/send-whatsapp-notification`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ booking: { ...booking, ...updateData }, customPhone: custPhone }),
+            });
+          } catch (e) {
+            console.error('WhatsApp customer notification failed:', e);
+          }
         }
 
         // Generate contract + signing links + invoice (car rental only)
