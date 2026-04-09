@@ -73,6 +73,27 @@ const MyPreventivi: React.FC = () => {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm('Eliminare questo preventivo?')) return;
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) return;
+
+      // Use service-role via Netlify function proxy, or direct delete if RLS allows
+      const { error } = await supabase
+        .from('preventivi')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      setPreventivi(prev => prev.filter(p => p.id !== id));
+    } catch (err) {
+      console.error('Error deleting preventivo:', err);
+      alert('Errore eliminazione preventivo');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -168,6 +189,16 @@ const MyPreventivi: React.FC = () => {
 
                   {p.status === 'accettato' && p.booking_id && (
                     <span className="text-green-400 text-sm font-medium">Prenotazione confermata</span>
+                  )}
+
+                  {/* Delete button — not for converted bookings */}
+                  {!(p.status === 'accettato' && p.booking_id) && (
+                    <button
+                      onClick={() => handleDelete(p.id)}
+                      className="text-gray-500 hover:text-red-400 transition-colors text-xs underline"
+                    >
+                      Elimina
+                    </button>
                   )}
                 </div>
 
