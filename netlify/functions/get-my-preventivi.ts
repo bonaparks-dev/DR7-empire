@@ -32,21 +32,58 @@ const handler: Handler = async (event) => {
   }
 
   try {
-    const { data, error } = await supabase
-      .from('preventivi')
-      .select('*')
-      .eq('created_by', user.id)
-      .order('created_at', { ascending: false })
-      .limit(20)
+    // Match preventivi by customer phone (last 9 digits) — admin creates them, not the customer
+    const userPhone = user.phone?.replace(/[\s\-\+()]/g, '') || ''
+    const userEmail = user.email?.toLowerCase().trim() || ''
+    const phoneSuffix = userPhone.slice(-9)
 
-    if (error) {
-      return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) }
+    // Also get the customer's phone from customers_extended
+    let dbPhone = ''
+    if (user.id) {
+      const { data: custData } = await supabase
+        .from('customers_extended')
+        .select('telefono')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (custData?.telefono) {
+        dbPhone = custData.telefono.replace(/[\s\-\+()]/g, '')
+      }
+    }
+
+    const searchPhone = dbPhone || phoneSuffix
+
+    if (!searchPhone && !userEmail) {
+      return { statusCode: 200, headers, body: JSON.stringify({ preventivi: [] }) }
+    }
+
+    // Query: match by phone suffix (most reliable) or by customer_name containing email
+    let data: any[] = []
+    if (searchPhone) {
+      const { data: results, error } = await supabase
+        .from('preventivi')
+        .select('*')
+        .ilike('customer_phone', `%${searchPhone.slice(-9)}%`)
+        .order('created_at', { ascending: false })
+        .limit(20)
+      if (error) throw error
+      data = results || []
+    }
+
+    // Fallback: if no phone match, try email in customer_name (some preventivi store email there)
+    if (data.length === 0 && userEmail) {
+      const { data: results } = await supabase
+        .from('preventivi')
+        .select('*')
+        .ilike('customer_name', `%${userEmail}%`)
+        .order('created_at', { ascending: false })
+        .limit(20)
+      data = results || []
     }
 
     // Auto-expire old preventivi
     const now = new Date()
-    const updated = (data || []).map(p => {
-      if (p.status === 'bozza' && p.expires_at && new Date(p.expires_at) < now) {
+    const updated = data.map(p => {
+      if ((p.status === 'bozza' || p.status === 'inviato') && p.expires_at && new Date(p.expires_at) < now) {
         return { ...p, status: 'scaduto' }
       }
       return p
