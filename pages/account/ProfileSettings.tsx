@@ -37,6 +37,7 @@ interface CustomerExtended {
     rappresentante_ruolo?: string;
     sede_operativa?: string;
 
+    status_cliente?: 'standard' | 'member' | 'elite' | 'blacklist';
     metadata?: any;
 }
 
@@ -429,6 +430,19 @@ const ProfileSettings = () => {
                         <div className="text-center py-4 text-gray-400">Caricamento dati profilo...</div>
                     ) : extendedProfile ? (
                         <>
+                            {/* --- Status Badge (Member/Elite) --- */}
+                            {extendedProfile.status_cliente && extendedProfile.status_cliente !== 'standard' && extendedProfile.status_cliente !== 'blacklist' && (
+                                <div className="mb-4">
+                                    <span className={`inline-block px-3 py-1.5 rounded-full text-sm font-bold border ${
+                                        extendedProfile.status_cliente === 'elite'
+                                            ? 'bg-amber-500/20 text-amber-400 border-amber-500/50'
+                                            : 'bg-blue-500/20 text-blue-400 border-blue-500/50'
+                                    }`}>
+                                        {extendedProfile.status_cliente === 'elite' ? 'DR7 Elite' : 'DR7 Member'}
+                                    </span>
+                                </div>
+                            )}
+
                             {/* --- Basic Info Section --- */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
