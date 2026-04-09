@@ -26,6 +26,11 @@ export interface SearchDates {
   returnTime: string;       // HH:MM
   pickupLocation: string;   // location id
   returnLocation: string;   // location id
+  // Pre-filled from preventivo
+  insuranceOption?: string;
+  depositOption?: string;
+  unlimitedKm?: boolean;
+  preventivoId?: string;
 }
 
 interface BookingContextType {

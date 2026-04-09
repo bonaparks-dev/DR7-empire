@@ -276,7 +276,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     };
   });
 
-  // Apply URL-derived search dates on first mount (from the Modifica bar on RentalPage)
+  // Apply URL-derived search dates on first mount (from the Modifica bar on RentalPage or preventivo)
   useEffect(() => {
     if (!initialSearchDates) return;
     setFormData(prev => ({
@@ -287,6 +287,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       returnTime: initialSearchDates.returnTime,
       pickupLocation: initialSearchDates.pickupLocation,
       returnLocation: initialSearchDates.returnLocation,
+      // Pre-fill from preventivo
+      ...(initialSearchDates.insuranceOption ? { insuranceOption: initialSearchDates.insuranceOption } : {}),
+      ...(initialSearchDates.depositOption ? { depositOption: initialSearchDates.depositOption } : {}),
+      ...(initialSearchDates.unlimitedKm ? { kmPackageType: 'unlimited' as const } : {}),
     }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // intentionally runs once on mount only

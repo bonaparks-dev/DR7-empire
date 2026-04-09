@@ -743,6 +743,12 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
         const returnDate = dropoff.toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' });
         const returnTime = dropoff.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
 
+        // Determine deposit option from preventivo
+        let depositOpt: string | undefined;
+        if (preventivo.source === 'website_no_cauzione' || (preventivo.extras_detail?.include_no_cauzione)) {
+          depositOpt = 'no_deposit';
+        }
+
         setInitialSearchDates({
           pickupDate,
           pickupTime,
@@ -750,6 +756,10 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
           returnTime,
           pickupLocation: preventivo.pickup_location || 'dr7_office',
           returnLocation: preventivo.dropoff_location || 'dr7_office',
+          insuranceOption: preventivo.insurance_option || undefined,
+          depositOption: depositOpt,
+          unlimitedKm: preventivo.unlimited_km || preventivo.extras_detail?.include_unlimited_km || undefined,
+          preventivoId: preventivo.id,
         });
 
         // Open the wizard
