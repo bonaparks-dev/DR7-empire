@@ -88,6 +88,7 @@ const ProfileSettings = () => {
 
     type ClientStatus = 'Standard' | 'Fidelizzato' | 'Elite';
     const [clientStatus, setClientStatus] = useState<ClientStatus>('Standard');
+    const [clubPlan, setClubPlan] = useState<string | null>(null);
 
     useEffect(() => {
         if (user) {
@@ -183,6 +184,17 @@ const ProfileSettings = () => {
                     setClientStatus('Fidelizzato');
                 } else {
                     setClientStatus('Standard');
+                }
+
+                // 3. Check DR7 Club subscription
+                const { data: clubSub } = await supabase
+                    .from('dr7_club_subscriptions')
+                    .select('plan, status')
+                    .eq('user_id', user.id)
+                    .eq('status', 'active')
+                    .maybeSingle();
+                if (clubSub) {
+                    setClubPlan(clubSub.plan === 'annual' ? 'Annuale' : 'Mensile');
                 }
 
             } catch (error) {
@@ -344,6 +356,14 @@ const ProfileSettings = () => {
                                         )}
                                         {clientStatus}
                                     </div>
+                                    {clubPlan && (
+                                        <div className="px-4 py-3 rounded-full font-bold text-sm bg-gradient-to-r from-[#2d8a7e] to-[#247a6f] text-white flex items-center gap-2">
+                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                            </svg>
+                                            DR7 Club {clubPlan}
+                                        </div>
+                                    )}
                                     {/* Ricarica Button */}
                                     <button
                                         onClick={() => navigate('/credit-wallet')}
