@@ -30,7 +30,11 @@ export interface SearchDates {
   insuranceOption?: string;
   depositOption?: string;
   unlimitedKm?: boolean;
+  dr7Flex?: boolean;
+  secondDriver?: boolean;
+  experienceServices?: Record<string, number>;
   preventivoId?: string;
+  preventivoTotal?: number;
 }
 
 interface BookingContextType {

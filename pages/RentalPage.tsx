@@ -759,7 +759,11 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
           insuranceOption: preventivo.insurance_option || undefined,
           depositOption: depositOpt,
           unlimitedKm: preventivo.unlimited_km || preventivo.extras_detail?.include_unlimited_km || undefined,
+          dr7Flex: preventivo.extras_detail?.flex || preventivo.extras_detail?.include_dr7_flex || false,
+          secondDriver: preventivo.extras_detail?.include_second_driver || false,
+          experienceServices: preventivo.extras_detail?.experience_services || {},
           preventivoId: preventivo.id,
+          preventivoTotal: preventivo.total_final,
         });
 
         // Open the wizard

@@ -291,7 +291,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       ...(initialSearchDates.insuranceOption ? { insuranceOption: initialSearchDates.insuranceOption } : {}),
       ...(initialSearchDates.depositOption ? { depositOption: initialSearchDates.depositOption } : {}),
       ...(initialSearchDates.unlimitedKm ? { kmPackageType: 'unlimited' as const } : {}),
+      ...(initialSearchDates.dr7Flex ? { dr7Flex: true } : {}),
+      ...(initialSearchDates.secondDriver ? { addSecondDriver: true } : {}),
+      ...(initialSearchDates.experienceServices ? { selectedExperiences: initialSearchDates.experienceServices } : {}),
     }));
+    // Set noCauzioneRequested if preventivo was a no_deposit request
+    if (initialSearchDates.depositOption === 'no_deposit') {
+      setNoCauzioneRequested(true);
+    }
     // If coming from a preventivo, skip directly to checkout (Step 4)
     if (initialSearchDates.preventivoId) {
       setTimeout(() => setStep(4), 100);
