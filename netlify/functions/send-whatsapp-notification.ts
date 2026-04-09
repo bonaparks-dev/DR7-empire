@@ -142,10 +142,17 @@ const handler: Handler = async (event) => {
       // Override with DB template if available
       const cwTpl = templateMap.get('carwash_new');
       if (cwTpl) {
+        const plateValue = booking.vehicle_plate || booking.booking_details?.plate || booking.booking_details?.targa || '';
         message = applyVars(cwTpl, {
-          '{booking_id}': `DR7-${bookingId}`, '{customer_name}': customerName, '{customer_email}': customerEmail || '',
-          '{customer_phone}': customerPhone || '', '{service_name}': serviceName || '', '{pickup_date}': formattedDate,
-          '{pickup_time}': formattedTime, '{total}': totalPrice, '{notes}': booking.booking_details?.notes || '',
+          '{booking_id}': bookingId.substring(0, 8).toUpperCase(),
+          '{nome}': customerName.split(' ')[0] || customerName,
+          '{customer_name}': customerName, '{customer_email}': customerEmail || '',
+          '{customer_phone}': customerPhone || '', '{service_name}': serviceName || '',
+          '{plate}': plateValue, '{targa}': plateValue,
+          '{date}': formattedDate, '{time}': formattedTime,
+          '{pickup_date}': formattedDate, '{pickup_time}': formattedTime,
+          '{extras}': additionalService || 'Nessuno',
+          '{total}': totalPrice, '{notes}': booking.booking_details?.notes || '',
           '{payment_status}': (booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa',
         });
       }
@@ -261,7 +268,7 @@ const handler: Handler = async (event) => {
           depositStr = `€${depositAmount}`;
         }
         message = applyVars(rentalTpl, {
-          '{booking_id}': `DR7-${bookingId}`, '{customer_name}': customerName, '{customer_email}': customerEmail || '',
+          '{booking_id}': bookingId.substring(0, 8).toUpperCase(), '{customer_name}': customerName, '{customer_email}': customerEmail || '',
           '{customer_phone}': customerPhone || '', '{vehicle_name}': vehicleName, '{plate}': booking.vehicle_plate || '',
           '{pickup_date}': pickupDateFormatted, '{pickup_time}': pickupTimeFormatted,
           '{dropoff_date}': dropoffDateFormatted, '{dropoff_time}': dropoffTimeFormatted,
