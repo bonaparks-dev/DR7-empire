@@ -251,7 +251,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       insuranceOption: 'KASKO_BASE', // Default to Kasko Base
       depositOption: '' as string, // deposit option id from TIER_DEPOSIT_OPTIONS
       extras: [] as string[],
-      kmPackageType: 'unlimited' as 'none' | 'unlimited' | '50km',
+      kmPackageType: 'none' as 'none' | 'unlimited' | '50km',
       kmPackageDistance: 100,
       expectedKm: 0,
       usageZone: '' as 'CAGLIARI_SUD' | 'FUORI_ZONA' | '',
