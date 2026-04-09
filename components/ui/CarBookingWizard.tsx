@@ -299,6 +299,28 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (initialSearchDates.depositOption === 'no_deposit') {
       setNoCauzioneRequested(true);
     }
+    // Auto-fill discount code from preventivo link (e.g. refused No Cauzione with 5% code)
+    if (initialSearchDates.discountCode) {
+      setDiscountCode(initialSearchDates.discountCode);
+      // Auto-validate after a short delay to let form state settle
+      setTimeout(async () => {
+        try {
+          const response = await fetch('/.netlify/functions/validate-discount-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: initialSearchDates.discountCode, serviceType: 'noleggio' })
+          });
+          const result = await response.json();
+          if (response.ok && result.valid) {
+            const data = { ...result, ...(result.discountCode || {}) };
+            const amt = data.value_amount ?? data.discount_amount ?? data.rental_credit ?? 0;
+            const type = (data.value_type === 'percentage' || data.discount_type === 'percentage') ? 'percentage' as const : 'fixed' as const;
+            setAppliedDiscount({ code: initialSearchDates.discountCode!.toUpperCase(), amount: amt, type, code_type: data.code_type || 'marketing' });
+            setDiscountCodeValid(true);
+          }
+        } catch { /* validation will happen when user reaches step 4 */ }
+      }, 500);
+    }
     // If coming from a preventivo, skip directly to checkout (Step 4)
     if (initialSearchDates.preventivoId) {
       setTimeout(() => setStep(4), 100);

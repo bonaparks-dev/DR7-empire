@@ -707,6 +707,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
 
   // ── Auto-open wizard from preventivo link ──────────────────────────────
   const preventivoId = searchParams.get('preventivo');
+  const preventivoCodeParam = searchParams.get('codice') || '';
   const [preventivoHandled, setPreventivoHandled] = useState(false);
 
   useEffect(() => {
@@ -717,15 +718,43 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
       try {
         const session = await supabase.auth.getSession();
         const token = session.data.session?.access_token;
-        if (!token) return;
 
-        const res = await fetch('/.netlify/functions/get-my-preventivi', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) return;
+        // Try loading from preventivi table first
+        let preventivo: any = null;
+        if (token) {
+          const res = await fetch('/.netlify/functions/get-my-preventivi', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            preventivo = (data.preventivi || []).find((p: any) => p.id === preventivoId);
+          }
+        }
 
-        const data = await res.json();
-        const preventivo = (data.preventivi || []).find((p: any) => p.id === preventivoId);
+        // Fallback: try loading from bookings table (No Cauzione requests are stored there)
+        if (!preventivo) {
+          const { data: bookingData } = await supabase
+            .from('bookings')
+            .select('*')
+            .eq('id', preventivoId)
+            .maybeSingle();
+          if (bookingData) {
+            preventivo = {
+              vehicle_id: bookingData.vehicle_id,
+              vehicle_name: bookingData.vehicle_name,
+              pickup_date: bookingData.pickup_date,
+              dropoff_date: bookingData.dropoff_date,
+              pickup_location: bookingData.pickup_location,
+              dropoff_location: bookingData.dropoff_location,
+              insurance_option: bookingData.insurance_option || bookingData.booking_details?.insuranceOption,
+              total_final: bookingData.price_total / 100,
+              id: bookingData.id,
+              source: bookingData.booking_details?.no_cauzione_request ? 'website_no_cauzione' : 'booking',
+              extras_detail: bookingData.booking_details,
+            };
+          }
+        }
+
         if (!preventivo) return;
 
         // Find matching vehicle
@@ -743,9 +772,10 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
         const returnDate = dropoff.toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' });
         const returnTime = dropoff.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
 
-        // Determine deposit option from preventivo
+        // For refused No Cauzione: DON'T set no_deposit — customer books with normal cauzione
+        const isRefusedNoCauzione = preventivo.source === 'website_no_cauzione';
         let depositOpt: string | undefined;
-        if (preventivo.source === 'website_no_cauzione' || (preventivo.extras_detail?.include_no_cauzione)) {
+        if (!isRefusedNoCauzione && preventivo.extras_detail?.include_no_cauzione) {
           depositOpt = 'no_deposit';
         }
 
@@ -764,6 +794,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
           experienceServices: preventivo.extras_detail?.experience_services || {},
           preventivoId: preventivo.id,
           preventivoTotal: preventivo.total_final,
+          discountCode: preventivoCodeParam || undefined,
         });
 
         // Open the wizard
@@ -772,6 +803,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
         // Clean URL
         const params = new URLSearchParams(searchParams);
         params.delete('preventivo');
+        params.delete('codice');
         setSearchParams(params, { replace: true });
       } catch (err) {
         console.error('Error loading preventivo:', err);
