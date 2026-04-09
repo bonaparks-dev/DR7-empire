@@ -291,7 +291,7 @@ exports.handler = async (event) => {
         const serviceType = booking.service_type || booking.booking_details?.type || '';
         const isWashOrMech = serviceType === 'car_wash' || serviceType === 'mechanical_service' || serviceType === 'mechanical';
         if (!isWashOrMech) {
-          const adminUrl = process.env.ADMIN_URL || 'https://admindr7empire.netlify.app';
+          const adminUrl = process.env.ADMIN_URL || 'https://admin.dr7empire.com';
           try {
             const contractRes = await fetch(`${adminUrl}/.netlify/functions/generate-contract`, {
               method: 'POST',
@@ -462,7 +462,7 @@ exports.handler = async (event) => {
         const serviceType = newBooking.service_type || newBooking.booking_details?.type || '';
         const isWashOrMech = serviceType === 'car_wash' || serviceType === 'mechanical_service' || serviceType === 'mechanical';
         if (!isWashOrMech) {
-          const adminUrl = process.env.ADMIN_URL || 'https://admindr7empire.netlify.app';
+          const adminUrl = process.env.ADMIN_URL || 'https://admin.dr7empire.com';
           try {
             const contractRes = await fetch(`${adminUrl}/.netlify/functions/generate-contract`, {
               method: 'POST',
