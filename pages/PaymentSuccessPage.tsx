@@ -117,6 +117,28 @@ const PaymentSuccessPage: React.FC = () => {
                         body: JSON.stringify({ booking: { ...booking, payment_status: 'succeeded' } }),
                     }).catch(e => console.error('WhatsApp error', e));
 
+                    // Send customer confirmation WhatsApp (if callback hasn't already)
+                    if (!booking.booking_details?.nexi_paid_at) {
+                        const cPhone = booking.customer_phone || booking.booking_details?.customer?.phone;
+                        if (cPhone) {
+                            const cFirst = booking.booking_details?.customer?.firstName || booking.customer_name?.split(' ')[0] || 'Cliente';
+                            const bRef = booking.id.substring(0, 8).toUpperCase();
+                            const tEur = (booking.price_total / 100).toFixed(2);
+                            const fD = (d: string) => new Date(d).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Rome' });
+                            const fT = (d: string) => new Date(d).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Rome' });
+                            let cm = `Salve ${cFirst},\n\nConfermiamo la sua prenotazione.\n\n*CONFERMA PRENOTAZIONE*\n\n*ID:* DR7-${bRef}\n`;
+                            cm += `*Veicolo:* ${booking.vehicle_name || 'N/A'}\n`;
+                            cm += `*Ritiro:* ${fD(booking.pickup_date)} alle ${fT(booking.pickup_date)}\n`;
+                            cm += `*Riconsegna:* ${fD(booking.dropoff_date)} alle ${fT(booking.dropoff_date)}\n`;
+                            cm += `*Totale:* €${tEur}\n*Pagamento:* Pagato\n\nCordiali Saluti,\nDR7`;
+                            fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ customPhone: cPhone, customMessage: cm }),
+                            }).catch(e => console.error('Customer WhatsApp error', e));
+                        }
+                    }
+
                     if (booking.booking_details?.customer) {
                         const bId = booking.id.substring(0, 8).toUpperCase();
                         const customer = booking.booking_details.customer;
@@ -257,6 +279,28 @@ const PaymentSuccessPage: React.FC = () => {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ booking: newBooking }),
                     }).catch(e => console.error('WhatsApp error', e));
+
+                    // Send customer confirmation WhatsApp
+                    {
+                        const cPhone = newBooking.customer_phone || newBooking.booking_details?.customer?.phone;
+                        if (cPhone) {
+                            const cFirst = newBooking.booking_details?.customer?.firstName || newBooking.customer_name?.split(' ')[0] || 'Cliente';
+                            const bRef = newBooking.id.substring(0, 8).toUpperCase();
+                            const tEur = (newBooking.price_total / 100).toFixed(2);
+                            const fD = (d: string) => new Date(d).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Rome' });
+                            const fT = (d: string) => new Date(d).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Rome' });
+                            let cm = `Salve ${cFirst},\n\nConfermiamo la sua prenotazione.\n\n*CONFERMA PRENOTAZIONE*\n\n*ID:* DR7-${bRef}\n`;
+                            cm += `*Veicolo:* ${newBooking.vehicle_name || 'N/A'}\n`;
+                            if (newBooking.pickup_date) cm += `*Ritiro:* ${fD(newBooking.pickup_date)} alle ${fT(newBooking.pickup_date)}\n`;
+                            if (newBooking.dropoff_date) cm += `*Riconsegna:* ${fD(newBooking.dropoff_date)} alle ${fT(newBooking.dropoff_date)}\n`;
+                            cm += `*Totale:* €${tEur}\n*Pagamento:* Pagato\n\nCordiali Saluti,\nDR7`;
+                            fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ customPhone: cPhone, customMessage: cm }),
+                            }).catch(e => console.error('Customer WhatsApp error', e));
+                        }
+                    }
 
                     if (newBooking.booking_details?.customer) {
                         const bId = newBooking.id.substring(0, 8).toUpperCase();
