@@ -1451,7 +1451,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // VIP: per-vehicle fixed multi-day pricing (all vehicles)
       calculatedRentalCost = getRunchinaPrice(item.name, billingDaysCalc);
     } else if (dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.selectedBaseRateEur) {
-      // Dynamic pricing: use list base rate here, coefficient applied to FULL package later
+      // Dynamic pricing: use base rate here, coefficient applied to FULL TOTAL later
       calculatedRentalCost = dynamicPricing.selectedBaseRateEur * billingDaysCalc;
     } else {
       // Standard multi-day pricing (fallback when dynamic pricing is disabled or unavailable)
@@ -1576,8 +1576,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const calculatedNoDepositSurcharge = urbanNoDepositSurcharge + supercarDepositSurcharge;
     calculatedSubtotal = calculatedSubtotal + calculatedNoDepositSurcharge;
 
-    // --- DYNAMIC PRICING: apply combined coefficient to FULL PACKAGE ---
-    let listSubtotal = calculatedSubtotal; // price before coefficients
+    // --- DYNAMIC PRICING: apply combined coefficient to FULL TOTAL ---
+    let listSubtotal = calculatedSubtotal; // total before coefficients
     const hasDynamicCoeffs = dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.breakdown && dynamicPricing.breakdown.length > 0;
     const combinedCoeff = hasDynamicCoeffs
       ? (dynamicPricing!.breakdown!.reduce((acc, b) => acc * b.coeff, 1))
