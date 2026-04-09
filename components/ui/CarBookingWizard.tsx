@@ -482,23 +482,19 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     };
   }, [step, onClose]);
 
-  // Auto-set km package based on vehicle type
+  // Auto-set km package based on vehicle type — only if not pre-set from preventivo
   useEffect(() => {
-    const vType = getVehicleType(item, categoryContext);
-    if (vType === 'SUPERCAR') {
-      // Supercars default to included KM (auto-calculated from days)
-      setFormData(prev => ({
-        ...prev,
-        kmPackageType: 'none'
-      }));
-    } else {
-      // Urban vehicles get free unlimited km; others get standard calculated km
-      const isUrban = isUrbanVehicle(item.name);
-      setFormData(prev => ({
-        ...prev,
-        kmPackageType: isUrban ? 'unlimited' : 'none'
-      }));
-    }
+    setFormData(prev => {
+      // Don't override if already set from preventivo (e.g., 'unlimited' from saved quote)
+      if (prev.kmPackageType === 'unlimited' || prev.kmPackageType === '50km') return prev;
+      const vType = getVehicleType(item, categoryContext);
+      if (vType === 'SUPERCAR') {
+        return { ...prev, kmPackageType: 'none' };
+      } else {
+        const isUrban = isUrbanVehicle(item.name);
+        return { ...prev, kmPackageType: isUrban ? 'unlimited' : 'none' };
+      }
+    });
   }, [item.name, categoryContext]);
 
   // Health ping (helps detect wrong FUNCTIONS_BASE early)
