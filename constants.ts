@@ -455,7 +455,6 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
         '2% di cashback su servizi extra',
         '3% di cashback su servizi Prime Wash',
         'Accesso prioritario alle prenotazioni',
-        'Accesso al gruppo WhatsApp "DR7 Members" per offerte lampo',
         'Inviti a eventi esclusivi DR7 e serate partner',
       ],
     },
