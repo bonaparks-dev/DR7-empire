@@ -4989,8 +4989,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         );
       }
       case 4:
-        // No Cauzione flow: save as preventivo, no payment
-        if (noCauzioneRequested && formData.depositOption === 'no_deposit') {
+        // No Cauzione flow: save as preventivo only, no direct payment
+        if (formData.depositOption === 'no_deposit') {
           if (noCauzioneSaved) {
             return (
               <div className="space-y-6 text-center py-8">
