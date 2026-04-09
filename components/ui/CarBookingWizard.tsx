@@ -3453,7 +3453,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           bookingData.vehicle_image_url = item.image;
           bookingData.vehicle_id = formData.selectedVehicleId || null;
           bookingData.deposit_amount = getDeposit();
-          bookingData.insurance_option = formData.insuranceOption;
+          // insurance_option is in booking_details.insuranceOption, not a top-level column
           bookingData.booking_usage_zone = formData.usageZone || null;
 
           const { data: insertedBooking, error: insertError } = await supabase
@@ -3542,7 +3542,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         bookingData.vehicle_image_url = item.image;
         bookingData.vehicle_id = formData.selectedVehicleId || null;
         bookingData.deposit_amount = getDeposit();
-        bookingData.insurance_option = formData.insuranceOption;
+        // insurance_option is in booking_details.insuranceOption, not a top-level column
         bookingData.booking_usage_zone = formData.usageZone || null;
         bookingData.booking_details = {
           ...bookingData.booking_details,
