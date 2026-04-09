@@ -1679,12 +1679,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   // Calculate dynamic wallet credit for subscription upsell
   // Based on ~8-12% of booking total, rounded to look natural (not generic)
   const subscriptionWalletCredit = useMemo(() => {
-    const base = finalTotal || grandTotal || 100;
-    // Use a percentage that varies slightly based on the total to feel personalized
-    const pct = base > 500 ? 0.08 : base > 200 ? 0.10 : 0.12;
-    const raw = base * pct;
-    // Round to nearest whole euro, min €5, max €120
-    return Math.max(5, Math.min(120, Math.round(raw)));
+    const base = grandTotal || finalTotal || 0;
+    return Math.round(base * 0.04 * 100) / 100; // 4% of total
   }, [finalTotal, grandTotal]);
 
   // Forcer horaires valides et pas de dimanche
@@ -5832,11 +5828,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         transition={{ delay: 0.3 }}
                         className="text-xl sm:text-2xl font-bold text-white"
                       >
-                        Ricevi subito <span className="text-green-400">+€{subscriptionWalletCredit}</span> di credito wallet
+                        Ricevi fino a <span className="text-green-400">+€{subscriptionWalletCredit.toFixed(2)}</span> di credito wallet
                       </motion.h3>
                       <div className="w-12 h-0.5 bg-white/30 mx-auto my-3"></div>
                       <p className="text-gray-400 text-sm">
-                        Attiva DR7 Club e ricevi <strong className="text-white">€{subscriptionWalletCredit}</strong> di credito immediato sul tuo wallet, utilizzabile per il prossimo noleggio o servizio lavaggio.
+                        Attiva DR7 Club e ricevi fino a <strong className="text-white">€{subscriptionWalletCredit.toFixed(2)}</strong> di credito wallet (4% del totale), utilizzabile per il prossimo noleggio o servizio lavaggio.
                       </p>
                     </div>
 
@@ -5893,7 +5889,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     <div className="bg-gray-800/50 rounded-xl p-4 mb-5 text-sm">
                       <p className="text-white font-semibold mb-2">Con DR7 Club ottieni:</p>
                       <ul className="space-y-1.5 text-gray-300">
-                        <li className="flex items-start gap-2"><span className="text-green-400 mt-0.5">✓</span> €{subscriptionWalletCredit} di credito wallet immediato</li>
+                        <li className="flex items-start gap-2"><span className="text-green-400 mt-0.5">✓</span> Fino a €{subscriptionWalletCredit.toFixed(2)} di credito wallet (4% del totale)</li>
                         <li className="flex items-start gap-2"><span className="text-green-400 mt-0.5">✓</span> Sconti esclusivi su noleggi e lavaggi</li>
                         <li className="flex items-start gap-2"><span className="text-green-400 mt-0.5">✓</span> Accesso prioritario alle nuove supercar</li>
                         <li className="flex items-start gap-2"><span className="text-green-400 mt-0.5">✓</span> Promozioni riservate ai membri</li>
