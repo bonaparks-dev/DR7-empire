@@ -1769,6 +1769,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   // Calculate deposit based on customer loyalty, license years, age, residency, and vehicle type
   const getDeposit = () => {
+    // No deposit option = always €0
+    if (formData.depositOption === 'no_deposit') return 0;
+
     const vType = getVehicleType(item, categoryContext);
     const isUtilitaria = vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS';
 
@@ -5434,6 +5437,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {/* Cauzione info */}
                   {(() => {
                     const depositAmt = getDeposit();
+                    if (formData.depositOption === 'no_deposit') {
+                      return (
+                        <div className="mt-3 p-3 bg-green-900/30 border border-green-500/30 rounded-lg">
+                          <p className="text-sm font-semibold text-green-400">NESSUNA CAUZIONE</p>
+                          <p className="text-sm text-gray-400 mt-1">Formula senza cauzione approvata</p>
+                        </div>
+                      );
+                    }
                     if (depositAmt > 0 || formData.depositOption) {
                       return (
                         <div className="mt-3 p-3 bg-gray-700/50 rounded-lg">
