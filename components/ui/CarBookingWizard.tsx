@@ -1509,9 +1509,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // Already handled above
     } else if (formData.kmPackageType === 'unlimited') {
       calculatedIncludedKm = 9999;
-      // Urban vehicles & VIP get free unlimited, others pay
+      // Urban vehicles & VIP get free unlimited, others pay from Centralina
       if (!isUrbanVehicle(item.name) && !isMassimo) {
-        calculatedKmPackageCost = calculateUnlimitedKmPrice(item.name, billingDaysCalc);
+        // Use Centralina prices for all vehicle types
+        if (vType === 'FURGONE') {
+          calculatedKmPackageCost = roundToTwoDecimals((configOverlay?.kmPackagePrices?.unlimitedFurgonePerDay ?? 94.50) * billingDaysCalc);
+        } else if (vType === 'V_CLASS') {
+          calculatedKmPackageCost = roundToTwoDecimals((configOverlay?.kmPackagePrices?.unlimitedNccPerDay ?? 189) * billingDaysCalc);
+        } else {
+          calculatedKmPackageCost = roundToTwoDecimals((configOverlay?.kmPackagePrices?.unlimitedFurgonePerDay ?? 94.50) * billingDaysCalc);
+        }
       }
     } else if (vType !== 'SUPERCAR') {
       // Urban/Furgone/VClass: use dynamic km included table from admin config
