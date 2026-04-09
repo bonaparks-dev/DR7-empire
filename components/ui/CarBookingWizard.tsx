@@ -292,6 +292,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       ...(initialSearchDates.depositOption ? { depositOption: initialSearchDates.depositOption } : {}),
       ...(initialSearchDates.unlimitedKm ? { kmPackageType: 'unlimited' as const } : {}),
     }));
+    // If coming from a preventivo, skip directly to checkout (Step 4)
+    if (initialSearchDates.preventivoId) {
+      setTimeout(() => setStep(4), 100);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // intentionally runs once on mount only
 
