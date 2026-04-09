@@ -5441,7 +5441,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       return (
                         <div className="mt-3 p-3 bg-green-900/30 border border-green-500/30 rounded-lg">
                           <p className="text-sm font-semibold text-green-400">NESSUNA CAUZIONE</p>
-                          <p className="text-sm text-gray-400 mt-1">Formula senza cauzione approvata</p>
+                          <p className="text-sm text-yellow-400 mt-1">Supplemento: €{ACTIVE_NO_DEPOSIT_SURCHARGE}/giorno ({Math.max(1, duration.days)} gg = {formatPrice(noDepositSurcharge)})</p>
+                          <p className="text-xs text-gray-500 mt-1">Richiede approvazione DR7</p>
                         </div>
                       );
                     }
