@@ -199,7 +199,7 @@ exports.handler = async (event) => {
       return { statusCode: 500, body: 'Server configuration error' };
     }
     const supabase = createClient(
-      process.env.SUPABASE_URL,
+      process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
@@ -291,7 +291,7 @@ exports.handler = async (event) => {
         const serviceType = booking.service_type || booking.booking_details?.type || '';
         const isWashOrMech = serviceType === 'car_wash' || serviceType === 'mechanical_service' || serviceType === 'mechanical';
         if (!isWashOrMech) {
-          const adminUrl = 'https://admin.dr7empire.com';
+          const adminUrl = process.env.ADMIN_URL || 'https://admindr7empire.netlify.app';
           try {
             const contractRes = await fetch(`${adminUrl}/.netlify/functions/generate-contract`, {
               method: 'POST',
@@ -462,7 +462,7 @@ exports.handler = async (event) => {
         const serviceType = newBooking.service_type || newBooking.booking_details?.type || '';
         const isWashOrMech = serviceType === 'car_wash' || serviceType === 'mechanical_service' || serviceType === 'mechanical';
         if (!isWashOrMech) {
-          const adminUrl = 'https://admin.dr7empire.com';
+          const adminUrl = process.env.ADMIN_URL || 'https://admindr7empire.netlify.app';
           try {
             const contractRes = await fetch(`${adminUrl}/.netlify/functions/generate-contract`, {
               method: 'POST',
