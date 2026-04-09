@@ -5055,12 +5055,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
               <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6 space-y-3 text-sm">
                 <div className="flex justify-between"><span className="text-gray-400">Veicolo</span><span className="text-white font-semibold">{item.name}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Ritiro</span><span className="text-white">{formData.pickupDate} — {formData.pickupTime}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Riconsegna</span><span className="text-white">{formData.returnDate} — {formData.returnTime}</span></div>
+                <div className="flex justify-between"><span className="text-gray-400">Ritiro</span><span className="text-white">{formData.pickupDate} — {formData.pickupTime || '10:30'}</span></div>
+                <div className="flex justify-between"><span className="text-gray-400">Riconsegna</span><span className="text-white">{formData.returnDate} — {formData.returnTime || '09:00'}</span></div>
                 <div className="flex justify-between"><span className="text-gray-400">Durata</span><span className="text-white">{Math.max(1, duration.days)} {Math.max(1, duration.days) === 1 ? 'giorno' : 'giorni'}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Assicurazione</span><span className="text-white">{formData.insuranceOption}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Cauzione</span><span className="text-green-400 font-semibold">No Cauzione (€{ACTIVE_NO_DEPOSIT_SURCHARGE}/g)</span></div>
-                <hr className="border-gray-600" />
+                <hr className="border-gray-600 my-1" />
+                <div className="flex justify-between"><span className="text-gray-400">Noleggio {item.name}</span><span className="text-white">{formatPrice(rentalCost)}</span></div>
+                {insuranceCost > 0 && <div className="flex justify-between"><span className="text-gray-400">Assicurazione {formData.insuranceOption}</span><span className="text-white">{formatPrice(insuranceCost)}</span></div>}
+                {lavaggioFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Lavaggio</span><span className="text-white">{formatPrice(lavaggioFee)}</span></div>}
+                {kmPackageCost > 0 && <div className="flex justify-between"><span className="text-gray-400">Km illimitati</span><span className="text-white">{formatPrice(kmPackageCost)}</span></div>}
+                {kmPackageCost === 0 && <div className="flex justify-between"><span className="text-gray-400">Chilometri</span><span className="text-white">{includedKm >= 9999 ? 'Illimitati inclusi' : `${includedKm || 100} km inclusi`}</span></div>}
+                <div className="flex justify-between"><span className="text-green-400">Supplemento No Cauzione</span><span className="text-green-400">{formatPrice(noDepositSurcharge)}</span></div>
+                {hasDynamicDiscount && <div className="flex justify-between text-blue-400"><span>Sconto Revenue ({dynamicDiscountPct}%)</span><span>-{formatPrice(listSubtotal - subtotal)}</span></div>}
+                <hr className="border-gray-600 my-1" />
                 <div className="flex justify-between text-lg font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(grandTotal)}</span></div>
               </div>
 
@@ -6276,7 +6282,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             <p className="text-amber-300 text-sm font-semibold">Attenzione: l'orario di riconsegna selezionato supera il margine di 1h30 prima dell'orario di ritiro. Viene conteggiato 1 giorno aggiuntivo ({duration.days} giorni totali invece di {duration.days - 1}).</p>
                           </div>
                         )}
-                        {preventivoSaved ? (
+                        {/* Hide CONFERMA/RICHIEDI when No Cauzione flow (SALVA PREVENTIVO is in step 4 content) */}
+                        {noCauzioneRequested && formData.depositOption === 'no_deposit' ? null : preventivoSaved ? (
                           <div className="w-full text-center py-4 bg-green-500/10 border border-green-500/30 rounded-2xl">
                             <p className="text-green-400 font-bold text-base">Preventivo salvato!</p>
                             <p className="text-gray-400 text-sm mt-1">Puoi trovarlo nel tuo account in "I Miei Preventivi"</p>

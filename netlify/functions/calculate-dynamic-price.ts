@@ -335,6 +335,13 @@ export const handler: Handler = async (event) => {
     finalDailyRate = Math.round(finalDailyRate * 100) / 100
     const finalTotalEur = Math.round(finalDailyRate * rentalDays * 100) / 100
 
+    // Build breakdown array for frontend coefficient display
+    const breakdown: { label: string; coeff: number; description: string }[] = []
+    if (occBracket) breakdown.push({ label: occBracket.label, coeff: occCoeff, description: `Occupazione ${occupancyPct}%` })
+    if (advBracket) breakdown.push({ label: advBracket.label, coeff: advCoeff, description: `${daysAhead} giorni di anticipo` })
+    if (durBracket) breakdown.push({ label: durBracket.label, coeff: durCoeff, description: `${rentalDays} giorni di noleggio` })
+    if (seasonMatch) breakdown.push({ label: seasonMatch.name, coeff: seasonCoeff, description: `Stagione: ${seasonMatch.name}` })
+
     return {
       statusCode: 200, headers,
       body: JSON.stringify({
@@ -346,6 +353,7 @@ export const handler: Handler = async (event) => {
         selectedBaseRateEur,
         selectedBaseRateSource,
         occupancyPct,
+        breakdown,
         coefficients: {
           occupancy: occCoeff,
           advance: advCoeff,
