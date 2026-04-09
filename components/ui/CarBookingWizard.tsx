@@ -1385,7 +1385,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       extraDayApplied: false,
       listSubtotal: 0, hasDynamicDiscount: false, dynamicDiscountPct: 0
     };
-    if (!item || !item.pricePerDay) return zero;
+    if (!item) return zero;
 
     const pricePerDay = item.pricePerDay?.[currency] || 0;
 
@@ -5948,7 +5948,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     <h2 className="text-2xl font-bold text-white mb-4">RIEPILOGO COSTI</h2>
                     <img src={item.image} alt={item.name} className="w-full h-40 object-contain rounded-md mb-4 bg-gray-800/30" />
                     <div className="space-y-2 text-sm">
-                      <div className="flex justify-between"><span className="text-gray-400">Durata noleggio:</span><span className="text-white font-medium">{duration.days} giorni</span></div>
+                      <div className="flex justify-between"><span className="text-gray-400">Durata noleggio:</span><span className="text-white font-medium">{Math.max(1, duration.days)} {Math.max(1, duration.days) === 1 ? 'giorno' : 'giorni'}</span></div>
                       {extraDayApplied && (
                         <div className="p-2 bg-amber-900/30 border border-amber-500/50 rounded">
                           <p className="text-amber-300 text-xs font-semibold">+1 giorno: l'orario di riconsegna supera il margine di 1h30 prima dell'orario di ritiro.</p>
@@ -5957,7 +5957,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <div className="flex justify-between">
                         <span className="text-gray-400">Km pacchetto:</span>
                         <span className="text-white font-medium">
-                          {formData.kmPackageType === '50km' ? `50 km/giorno` : (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}
+                          {formData.kmPackageType === '50km' ? `50 km/giorno` : (formData.kmPackageType === 'unlimited' || (includedKm && includedKm >= 9999)) ? 'ILLIMITATI' : `${includedKm || 100} km`}
                         </span>
                       </div>
 
