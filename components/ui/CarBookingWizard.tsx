@@ -3538,19 +3538,42 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         }
 
         // Normal Nexi flow: amount > 0
-        // 3. Store booking data in pending_nexi_bookings (NOT in bookings table)
-        // The real booking will only be created AFTER payment succeeds via nexi-callback
-        const { error: pendingError } = await supabase
+        // 3. Insert booking immediately into bookings table as pending/unpaid
+        //    This blocks the calendar slot so no one else can book the same car
+        bookingData.status = 'pending';
+        bookingData.payment_status = 'unpaid';
+        bookingData.vehicle_image_url = item.image;
+        bookingData.vehicle_id = formData.selectedVehicleId || null;
+        bookingData.deposit_amount = getDeposit();
+        bookingData.insurance_option = formData.insuranceOption;
+        bookingData.booking_usage_zone = formData.usageZone || null;
+        bookingData.booking_details = {
+          ...bookingData.booking_details,
+          nexi_order_id: nexiOrderId,
+          payment_link_created_at: new Date().toISOString(),
+          payment_link_expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        };
+
+        const { data: insertedPendingBooking, error: bookingInsertError } = await supabase
+          .from('bookings')
+          .insert(bookingData)
+          .select()
+          .single();
+
+        if (bookingInsertError) {
+          console.error("Booking INSERT failed:", bookingInsertError);
+          throw new Error(`Errore salvataggio prenotazione: ${bookingInsertError.message}`);
+        }
+
+        console.log("Pending booking created in bookings table:", insertedPendingBooking.id);
+
+        // Also store in pending_nexi_bookings as backup for PaymentSuccessPage fallback
+        await supabase
           .from('pending_nexi_bookings')
           .insert({
             nexi_order_id: nexiOrderId,
-            booking_data: bookingData
-          });
-
-        if (pendingError) {
-          console.error("Pending booking INSERT failed:", { message: pendingError.message, code: pendingError.code, details: pendingError.details, hint: pendingError.hint });
-          throw new Error(`Errore salvataggio prenotazione: ${pendingError.message}`);
-        }
+            booking_data: { ...bookingData, booking_id: insertedPendingBooking.id }
+          }).catch(e => console.warn("pending_nexi_bookings backup insert failed:", e));
 
         // 4. Validate amount before calling Nexi
         const amountCents = eurosToCents(grandTotal);

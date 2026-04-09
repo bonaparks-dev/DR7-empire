@@ -190,10 +190,92 @@ const PaymentSuccessPage: React.FC = () => {
 
                 if (pendingRows && pendingRows.length > 0) {
                     const pending = pendingRows[0];
-                    console.log('Found pending booking, creating real booking after payment success');
+                    const existingBookingId = pending.booking_data?.booking_id;
+                    console.log('Found pending booking, updating existing booking after payment success', { existingBookingId });
                     setPurchaseType('booking');
 
-                    // Create the REAL booking now that payment succeeded
+                    if (existingBookingId) {
+                        // UPDATE the existing pending booking (created at checkout time)
+                        const { error: updateErr } = await supabase
+                            .from('bookings')
+                            .update({
+                                status: 'confirmed',
+                                payment_status: 'succeeded',
+                                nexi_order_id: orderId,
+                                nexi_payment_id: orderId,
+                                nexi_authorization_code: authCode || null,
+                                payment_completed_at: new Date().toISOString()
+                            })
+                            .eq('id', existingBookingId)
+                            .in('payment_status', ['unpaid', 'pending']);
+
+                        if (updateErr) {
+                            console.warn('Update failed (callback may have been faster):', updateErr.message);
+                        }
+
+                        // Fetch the updated booking
+                        const { data: updatedBookings } = await supabase
+                            .from('bookings')
+                            .select('*')
+                            .eq('id', existingBookingId)
+                            .limit(1);
+
+                        if (updatedBookings && updatedBookings.length > 0) {
+                            const newBooking = updatedBookings[0];
+                            console.log('Booking confirmed:', newBooking.id);
+
+                            // Clean up pending record
+                            await supabase.from('pending_nexi_bookings').delete().eq('id', pending.id);
+
+                            // Send notifications
+                            fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ booking: newBooking }),
+                            }).catch(e => console.error('Email error', e));
+
+                            fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ booking: newBooking }),
+                            }).catch(e => console.error('WhatsApp error', e));
+
+                            // Customer WhatsApp
+                            const cPhone = newBooking.customer_phone || newBooking.booking_details?.customer?.phone;
+                            if (cPhone) {
+                                const cFirst = newBooking.booking_details?.customer?.firstName || newBooking.customer_name?.split(' ')[0] || 'Cliente';
+                                const bRef = newBooking.id.substring(0, 8).toUpperCase();
+                                const tEur = (newBooking.price_total / 100).toFixed(2);
+                                const fD = (d: string) => new Date(d).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Rome' });
+                                const fT = (d: string) => new Date(d).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Rome' });
+                                let cm = `Salve ${cFirst},\n\nConfermiamo la sua prenotazione.\n\n*CONFERMA PRENOTAZIONE*\n\n*ID:* DR7-${bRef}\n`;
+                                cm += `*Veicolo:* ${newBooking.vehicle_name || 'N/A'}\n`;
+                                if (newBooking.pickup_date) cm += `*Ritiro:* ${fD(newBooking.pickup_date)} alle ${fT(newBooking.pickup_date)}\n`;
+                                if (newBooking.dropoff_date) cm += `*Riconsegna:* ${fD(newBooking.dropoff_date)} alle ${fT(newBooking.dropoff_date)}\n`;
+                                cm += `*Totale:* €${tEur}\n*Pagamento:* Pagato\n\nCordiali Saluti,\nDR7`;
+                                fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ customPhone: cPhone, customMessage: cm }),
+                                }).catch(e => console.error('Customer WhatsApp error', e));
+                            }
+
+                            if (newBooking.booking_details?.customer) {
+                                const bId = newBooking.id.substring(0, 8).toUpperCase();
+                                const customer = newBooking.booking_details.customer;
+                                const price = (newBooking.price_total / 100).toFixed(2);
+                                const pDate = new Date(newBooking.pickup_date);
+                                const dDate = new Date(newBooking.dropoff_date);
+                                const msg = `Ciao! Ho appena completato il pagamento per la prenotazione.\n\n*ID:* DR7-${bId}\n*Nome:* ${customer.fullName}\n*Veicolo:* ${newBooking.vehicle_name}\n*Ritiro:* ${pDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })}\n*Riconsegna:* ${dDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })}\n*Totale:* €${price}\n\nGrazie!`;
+                                setWhatsappUrl(`https://wa.me/393457905205?text=${encodeURIComponent(msg)}`);
+                            }
+
+                            setUpdating(false);
+                            return;
+                        }
+                    }
+
+                    // Fallback: old flow — create new booking (for legacy pending records without booking_id)
                     const bookingPayload = {
                         ...pending.booking_data,
                         status: 'confirmed',
@@ -211,7 +293,6 @@ const PaymentSuccessPage: React.FC = () => {
                         .single();
 
                     if (insertErr) {
-                        // If insert fails with unique constraint, callback already created it — re-fetch
                         console.warn('Insert failed (callback may have been faster):', insertErr.message);
                         const { data: existingBookings } = await supabase
                             .from('bookings')
