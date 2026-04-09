@@ -2233,12 +2233,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         newErrors.depositOption = "Devi selezionare un'opzione per la cauzione.";
       }
 
-      // Validate usage zone — skip for Massimo (auto-set to FUORI_ZONA)
-      if (vType === 'SUPERCAR' && !isMassimo && formData.kmPackageType === 'unlimited') {
-        if (!formData.usageZone) {
-          newErrors.usageZone = "Devi selezionare una zona di utilizzo.";
-        }
-      }
     }
     if (step === 4) {
       if (!formData.confirmsDocuments) {
@@ -2823,7 +2817,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         insurance_total: insuranceCost,
         km_limit: formData.kmLimit || includedKm || 0,
         unlimited_km: formData.kmPackageType === 'unlimited',
-        km_overage_fee: 1.80,
+        km_overage_fee: rentalConfig?.sforo_km?._global ?? 1.80,
         unlimited_km_daily: formData.kmPackageType === 'unlimited' ? (kmPackageCost / Math.max(duration.days, 1)) : 0,
         unlimited_km_total: formData.kmPackageType === 'unlimited' ? kmPackageCost : 0,
         second_driver_daily: secondDriverFee / Math.max(duration.days, 1),
@@ -4859,86 +4853,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               </div>
             )}
 
-            {/* === USAGE ZONE SELECTOR (Supercar unlimited only) === */}
-            {vehicleType === 'SUPERCAR' && !isMassimo && formData.kmPackageType === 'unlimited' && (
-              <section className="border-t border-gray-700 pt-6">
-                <h3 className="text-lg font-bold text-white mb-2">E. ZONA DI UTILIZZO *</h3>
-                <p className="text-sm text-gray-400 mb-4">Seleziona dove utilizzerai il veicolo durante il noleggio.</p>
-                <div className="space-y-3">
-                  {/* Option 1: Cagliari e Sud Sardegna */}
-                  <div
-                    className={`p-4 rounded-md border cursor-pointer transition-all ${formData.usageZone === 'CAGLIARI_SUD'
-                      ? 'border-yellow-400 bg-yellow-400/10'
-                      : 'border-gray-700 hover:border-gray-500'
-                      }`}
-                    onClick={() => setFormData(p => ({ ...p, usageZone: 'CAGLIARI_SUD' }))}
-                  >
-                    <div className="flex items-center">
-                      <input
-                        type="radio"
-                        name="usageZone"
-                        value="CAGLIARI_SUD"
-                        checked={formData.usageZone === 'CAGLIARI_SUD'}
-                        onChange={() => setFormData(p => ({ ...p, usageZone: 'CAGLIARI_SUD' }))}
-                        className="w-4 h-4 text-yellow-400"
-                      />
-                      <label className="ml-3 text-white font-semibold">
-                        Cagliari e Sud Sardegna
-                      </label>
-                    </div>
-                    <p className="ml-7 text-xs text-gray-400 mt-1">
-                      Utilizzo limitato all'area di Cagliari e provincia del Sud Sardegna
-                    </p>
-                  </div>
-
-                  {/* Option 2: Fuori zona */}
-                  <div
-                    className={`p-4 rounded-md border transition-all ${formData.usageZone === 'FUORI_ZONA'
-                      ? 'border-yellow-400 bg-yellow-400/10'
-                      : 'border-gray-700 hover:border-gray-500'
-                      } cursor-pointer`}
-                    onClick={() => {
-                      setFormData(p => ({ ...p, usageZone: 'FUORI_ZONA' }));
-                    }}
-                  >
-                    <div className="flex items-center">
-                      <input
-                        type="radio"
-                        name="usageZone"
-                        value="FUORI_ZONA"
-                        checked={formData.usageZone === 'FUORI_ZONA'}
-                        onChange={() => {
-                          setFormData(p => ({ ...p, usageZone: 'FUORI_ZONA' }));
-                        }}
-                        className="w-4 h-4 text-yellow-400"
-                      />
-                      <label className="ml-3 text-white font-semibold">
-                        Fuori zona (resto della Sardegna)
-                      </label>
-                    </div>
-                    <p className="ml-7 text-xs text-gray-400 mt-1">
-                      Utilizzo al di fuori dell'area di Cagliari e Sud Sardegna (solo Sardegna, non Italia continentale)
-                    </p>
-                  </div>
-
-                  {/* Error message for residents trying to select Fuori zona */}
-                  {usageZoneError && (
-                    <div className="mt-3 p-4 bg-red-900/30 border-2 border-red-500 rounded-lg">
-                      <p className="text-red-300 font-semibold text-sm">
-                        {usageZoneError}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Validation error if no zone selected */}
-                  {errors.usageZone && (
-                    <p className="text-xs text-red-400 mt-2 flex items-center">
-                      {errors.usageZone}
-                    </p>
-                  )}
-                </div>
-              </section>
-            )}
 
 
             {/* === F. SERVIZI EXPERIENCE (hidden for VIP) === */}
@@ -5355,7 +5269,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {/* KM package */}
                   {kmPackageCost > 0 && (
                     <div className="flex justify-between">
-                      <span>Km illimitati ({Math.max(1, duration.days)} gg × €{(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? ACTIVE_TIER_PRICING[driverTier].unlimitedKmPerDay : 189})</span>
+                      <span>Km illimitati ({Math.max(1, duration.days)} gg × €{(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? ACTIVE_TIER_PRICING[driverTier].unlimitedKmPerDay : ACTIVE_TIER_PRICING.TIER_2.unlimitedKmPerDay})</span>
                       <span>{formatPrice(kmPackageCost)}</span>
                     </div>
                   )}
@@ -5366,7 +5280,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {/* Secondo guidatore */}
                   {secondDriverFee > 0 && (
                     <div className="flex justify-between">
-                      <span>Secondo guidatore ({Math.max(1, duration.days)} gg × €{(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? ACTIVE_TIER_PRICING[driverTier].secondDriverPerDay : 10})</span>
+                      <span>Secondo guidatore ({Math.max(1, duration.days)} gg × €{(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? ACTIVE_TIER_PRICING[driverTier].secondDriverPerDay : ACTIVE_TIER_PRICING.TIER_2.secondDriverPerDay})</span>
                       <span>{formatPrice(secondDriverFee)}</span>
                     </div>
                   )}
