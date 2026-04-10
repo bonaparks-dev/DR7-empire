@@ -1448,7 +1448,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           const daysDiff = (mustReturnBy.getTime() - new Date(dropoffDateTime).getTime()) / (1000 * 60 * 60 * 24);
           if (daysDiff < 3) {
             setPartialUnavailabilityWarning(
-              `Questo veicolo ha una prenotazione successiva. Riconsegna entro il ${mustReturnDate} alle ${mustReturnTime}.`
+              `Questo veicolo ha una prenotazione successiva. Riconsegna entro il ${mustReturnDate} alle ${mustReturnTime} o prima.`
             );
           }
         }
