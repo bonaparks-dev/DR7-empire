@@ -137,10 +137,10 @@ const handler: Handler = async (event) => {
       message += `*Totale:* €${totalPrice}\n`;
       message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa'}`;
 
-      // Use different template for admin vs customer from Messaggi di Sistema
+      // Use template from Messaggi di Sistema: separate templates for admin vs customer
       const cwTpl = isCustomerMessage
-        ? templateMap.get('carwash_new')        // Customer confirmation
-        : templateMap.get('carwash_new_admin') || templateMap.get('carwash_new'); // Admin notification
+        ? templateMap.get('carwash_new')         // Customer confirmation
+        : templateMap.get('carwash_new_admin');   // Admin notification
       if (cwTpl) {
         const plateValue = booking.vehicle_plate || booking.booking_details?.plate || booking.booking_details?.targa || '';
         message = applyVars(cwTpl, {
@@ -192,7 +192,9 @@ const handler: Handler = async (event) => {
       message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa'}`;
 
       // Override with DB template if available
-      const mechTpl = templateMap.get('mechanical_new');
+      const mechTpl = isCustomerMessage
+        ? templateMap.get('mechanical_new')
+        : templateMap.get('mechanical_new_admin');
       if (mechTpl) {
         message = applyVars(mechTpl, {
           '{booking_id}': `DR7-${bookingId}`, '{customer_name}': customerName, '{customer_email}': customerEmail || '',
@@ -256,10 +258,10 @@ const handler: Handler = async (event) => {
 
       message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa'}`;
 
-      // Override with DB template if available
+      // Use template from Messaggi di Sistema: separate templates for admin vs customer
       const rentalTpl = isCustomerMessage
         ? templateMap.get('rental_new_customer') || templateMap.get('rental_new')
-        : templateMap.get('rental_new');
+        : templateMap.get('rental_new_admin') || templateMap.get('rental_new');
       if (rentalTpl) {
         const depositAmount = booking.deposit_amount || booking.booking_details?.deposit || 0;
         const depositOption = booking.booking_details?.depositOption;
