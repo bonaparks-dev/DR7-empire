@@ -280,19 +280,22 @@ export const handler: Handler = async (event) => {
         }
 
         // Check if any conflict ends same day as requested pickup → availableFrom
+        // Use Rome timezone for date comparison (Italy = UTC+1 or UTC+2)
         let availableFrom: string | null = null;
         if (conflicts.length > 0) {
-            const pickupDateStr = requestedPickup.toISOString().split('T')[0];
+            const toRomeDate = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' });
+            const pickupRomeDate = toRomeDate(requestedPickup);
             for (const c of conflicts) {
                 const busyEnd = new Date(c.dropoff_date);
-                const busyEndDateStr = busyEnd.toISOString().split('T')[0];
-                if (busyEndDateStr === pickupDateStr && busyEnd < requestedDropoff) {
-                    // Vehicle returns same day — available after this time
+                const busyEndRomeDate = toRomeDate(busyEnd);
+                console.log(`[availableFrom] pickup=${pickupRomeDate}, busyEnd=${busyEndRomeDate} (${c.dropoff_date}), requestedDropoff=${requestedDropoff.toISOString()}`);
+                if (busyEndRomeDate === pickupRomeDate && busyEnd < requestedDropoff) {
                     if (!availableFrom || c.dropoff_date < availableFrom) {
                         availableFrom = c.dropoff_date;
                     }
                 }
             }
+            console.log(`[availableFrom] result: ${availableFrom}`);
         }
 
         return {
