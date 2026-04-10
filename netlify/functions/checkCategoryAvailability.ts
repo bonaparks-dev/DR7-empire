@@ -201,29 +201,51 @@ export const handler: Handler = async (event) => {
         // 6. For each group, check if at least one vehicle is available
         const requestedInterval: Interval = { start: pickup, end: dropoff };
 
-        const isVehicleBusy = (vehicleId: string): boolean => {
+        // Returns: false if available, or the earliest time it becomes available (ISO string) if busy same-day
+        const getVehicleBusyInfo = (vehicleId: string): { busy: boolean; availableFrom?: string } => {
             const intervals = mergeIntervals(busyByVehicle.get(vehicleId) || []);
             for (const busy of intervals) {
-                // Overlap: busy.start < dropoff AND busy.end > pickup
                 if (busy.start < requestedInterval.end && busy.end > requestedInterval.start) {
-                    return true;
+                    // Vehicle is busy — but check if it becomes available same day as pickup
+                    const busyEndDate = busy.end.toISOString().split('T')[0];
+                    const pickupDateStr = pickup.toISOString().split('T')[0];
+                    if (busyEndDate === pickupDateStr && busy.end < requestedInterval.end) {
+                        // Returns same day — vehicle available after busy.end
+                        return { busy: true, availableFrom: busy.end.toISOString() };
+                    }
+                    return { busy: true };
                 }
             }
-            return false;
+            return { busy: false };
         };
 
         const availableVehicles: any[] = [];
 
         for (const [groupKey, members] of groups.entries()) {
-            // Find available members
+            // Find fully available members
             const availableMembers = members.filter(m => {
                 if (m.status !== 'available') return false;
                 if (m.metadata?.booking_disabled) return false;
-                return !isVehicleBusy(m.id);
+                return !getVehicleBusyInfo(m.id).busy;
             });
 
-            if (availableMembers.length > 0) {
-                const representative = availableMembers[0];
+            // Find same-day available members (returning today)
+            let availableFrom: string | null = null;
+            if (availableMembers.length === 0) {
+                for (const m of members) {
+                    if (m.status !== 'available' || m.metadata?.booking_disabled) continue;
+                    const info = getVehicleBusyInfo(m.id);
+                    if (info.availableFrom) {
+                        // Pick the earliest availableFrom across all vehicles in group
+                        if (!availableFrom || info.availableFrom < availableFrom) {
+                            availableFrom = info.availableFrom;
+                        }
+                    }
+                }
+            }
+
+            if (availableMembers.length > 0 || availableFrom) {
+                const representative = availableMembers[0] || members[0];
                 availableVehicles.push({
                     vehicleId: representative.id,
                     vehicleIds: members.map((m: any) => m.id),
@@ -236,6 +258,7 @@ export const handler: Handler = async (event) => {
                     metadata: representative.metadata,
                     availableCount: availableMembers.length,
                     totalCount: members.length,
+                    ...(availableFrom && { availableFrom }),
                 });
             }
         }

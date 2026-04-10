@@ -332,6 +332,7 @@ const VehicleResults: React.FC<{
                 totalDays={itemDays}
                 hidePrice={isVip ? false : (!hasSearched && (categoryId === 'cars' || categoryId === 'corporate-fleet'))}
                 hideBookButton={isVip ? false : (!hasSearched && (categoryId === 'cars' || categoryId === 'corporate-fleet'))}
+                availableFrom={searchResult?.availableFrom || null}
               />
             );
           })}

@@ -279,15 +279,34 @@ export const handler: Handler = async (event) => {
             }
         }
 
+        // Check if any conflict ends same day as requested pickup → availableFrom
+        let availableFrom: string | null = null;
+        if (conflicts.length > 0) {
+            const pickupDateStr = requestedPickup.toISOString().split('T')[0];
+            for (const c of conflicts) {
+                const busyEnd = new Date(c.dropoff_date);
+                const busyEndDateStr = busyEnd.toISOString().split('T')[0];
+                if (busyEndDateStr === pickupDateStr && busyEnd < requestedDropoff) {
+                    // Vehicle returns same day — available after this time
+                    if (!availableFrom || c.dropoff_date < availableFrom) {
+                        availableFrom = c.dropoff_date;
+                    }
+                }
+            }
+        }
+
         return {
             statusCode: 200,
             headers,
             body: JSON.stringify({
                 conflicts,
                 totalVehicles: vehicleIds.length,
+                ...(availableFrom && { availableFrom }),
                 message: conflicts.length === 0
                     ? `At least 1 of ${vehicleIds.length} ${vehicleName} is available`
-                    : `All ${vehicleIds.length} ${vehicleName} are busy during requested period`
+                    : availableFrom
+                        ? `${vehicleName} available from ${availableFrom}`
+                        : `All ${vehicleIds.length} ${vehicleName} are busy during requested period`
             }),
         };
 

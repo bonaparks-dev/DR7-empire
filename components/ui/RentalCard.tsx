@@ -15,6 +15,7 @@ interface RentalCardProps {
   totalDays?: number;
   hidePrice?: boolean;
   hideBookButton?: boolean;
+  availableFrom?: string | null;
   jetSearchData?: {
     departure?: string;
     arrival?: string;
@@ -25,7 +26,7 @@ interface RentalCardProps {
   };
 }
 
-const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, marketingTooltip, categoryId, totalPrice, totalDays, hidePrice, hideBookButton, jetSearchData }) => {
+const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, marketingTooltip, categoryId, totalPrice, totalDays, hidePrice, hideBookButton, jetSearchData, availableFrom }) => {
   const { t, getTranslated } = useTranslation();
   const { currency } = useCurrency();
 
@@ -144,19 +145,26 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
               {t('Discover_More')}
             </Link>
           ) : isBlockedCar ? null : (
-            <button
-              onClick={() => {
-                console.log('RentalCard button clicked for:', item.name, 'ID:', item.id, 'isJet:', isJet);
-                if (isJet) handleJetQuote();
-                else {
-                  console.log('Calling onBook with item:', item);
-                  onBook(item);
-                }
-              }}
-              className="bg-transparent border-2 border-white text-white px-6 py-2 rounded-full font-semibold text-sm transform transition-all duration-300 group-hover:bg-white group-hover:text-black group-hover:scale-105 whitespace-nowrap"
-            >
-              {t('Book_Now')}
-            </button>
+            <div className="flex flex-col items-end gap-1">
+              {availableFrom && (
+                <span className="text-xs text-amber-400 font-medium">
+                  Disponibile dalle {new Date(availableFrom).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })}
+                </span>
+              )}
+              <button
+                onClick={() => {
+                  console.log('RentalCard button clicked for:', item.name, 'ID:', item.id, 'isJet:', isJet);
+                  if (isJet) handleJetQuote();
+                  else {
+                    console.log('Calling onBook with item:', item);
+                    onBook(item);
+                  }
+                }}
+                className="bg-transparent border-2 border-white text-white px-6 py-2 rounded-full font-semibold text-sm transform transition-all duration-300 group-hover:bg-white group-hover:text-black group-hover:scale-105 whitespace-nowrap"
+              >
+                {t('Book_Now')}
+              </button>
+            </div>
           )}
         </div>)}
       </div>}

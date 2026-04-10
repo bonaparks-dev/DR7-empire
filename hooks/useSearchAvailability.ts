@@ -83,6 +83,10 @@ export function useSearchAvailability(categoryContext?: string) {
           const data = await res.json()
           // If conflicts array is non-empty, vehicle is NOT available
           available = !data.conflicts || data.conflicts.length === 0
+          // But if availableFrom exists, vehicle returns same day — show it
+          if (!available && data.availableFrom) {
+            ;(item as any)._availableFrom = data.availableFrom
+          }
         }
       } catch {
         // If availability check fails, assume available (don't block)
@@ -114,9 +118,11 @@ export function useSearchAvailability(categoryContext?: string) {
         }
       }
 
+      const availableFrom = (item as any)._availableFrom || null
       newResults.set(item.id, {
         vehicleId: item.id,
-        available,
+        available: available || !!availableFrom,
+        availableFrom,
         totalPrice: Math.round(dynamicTotal),
         dailyRate: Math.round(dynamicTotal / days),
         days,
