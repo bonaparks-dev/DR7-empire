@@ -45,20 +45,27 @@ const handler: Handler = async (event) => {
 
   // Load templates from system_messages
   let templateMap = new Map<string, string>();
+  let headerMap = new Map<string, boolean>();
   if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
     try {
       const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
       const { data: tpls } = await sb
         .from('system_messages')
-        .select('message_key, message_body, is_enabled')
+        .select('message_key, message_body, is_enabled, include_header')
         .eq('is_enabled', true);
       if (tpls) {
-        tpls.forEach((t: any) => templateMap.set(t.message_key, t.message_body));
+        tpls.forEach((t: any) => {
+          templateMap.set(t.message_key, t.message_body);
+          headerMap.set(t.message_key, t.include_header === true);
+        });
       }
     } catch (e) {
       console.warn('Failed to load system_messages templates:', e);
     }
   }
+
+  const RENTORA_HEADER = `*MESSAGGIO AUTOMATICO GENERATO DA RENTORA*\n_Questo messaggio è stato inviato tramite il sistema automatizzato sviluppato da Rentora, Tecnologia Proprietaria DR7_\n\n`;
+  const RENTORA_FOOTER = `\n\n_Se questo messaggio non era destinato a lei, oppure lo ha già ricevuto in precedenza, può semplicemente ignorarlo._`;
 
   const applyVars = (tpl: string, vars: Record<string, string>) => {
     let result = tpl;
@@ -288,6 +295,24 @@ const handler: Handler = async (event) => {
       statusCode: 400,
       body: JSON.stringify({ message: 'No booking, ticket, or custom message provided' }),
     };
+  }
+
+  // Apply RENTORA header/footer wrapper if template has include_header enabled
+  // Check all possible template keys that could have been used
+  const skipHeader = (event.body && JSON.parse(event.body).skipHeader === true);
+  if (!skipHeader && !customMessage) {
+    // Find which template was used and check include_header
+    const possibleKeys = booking ? (
+      booking.service_type === 'car_wash'
+        ? (isCustomerMessage ? ['carwash_new'] : ['carwash_new_admin'])
+        : booking.service_type === 'mechanical' || booking.service_type === 'mechanical_service'
+        ? (isCustomerMessage ? ['mechanical_new'] : ['mechanical_new_admin'])
+        : (isCustomerMessage ? ['rental_new_customer', 'rental_new'] : ['rental_new_admin', 'rental_new'])
+    ) : [];
+    const shouldWrap = possibleKeys.some(k => headerMap.get(k) === true);
+    if (shouldWrap) {
+      message = RENTORA_HEADER + message + RENTORA_FOOTER;
+    }
   }
 
   try {
