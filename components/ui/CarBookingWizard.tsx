@@ -3888,7 +3888,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               {/* Delivery address — PICKUP domicilio */}
               {formData.pickupLocation === 'home_delivery' && (
                 <div className="mt-4 p-4 rounded-lg border border-gray-700 bg-gray-800/40">
-                  <label className="text-sm text-yellow-400 font-semibold mb-3 block">Indirizzo consegna veicolo *</label>
+                  <label className="text-sm text-white font-semibold mb-3 block">Indirizzo consegna veicolo *</label>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="col-span-2 sm:col-span-1">
                       <input type="text" placeholder="Via *" value={formData.deliveryPickupVia || ''} onChange={(e) => setFormData(prev => ({ ...prev, deliveryPickupVia: e.target.value }))} className="w-full px-3 py-2 rounded bg-gray-900 border border-gray-600 text-white text-sm placeholder-gray-500 focus:border-white focus:outline-none" />
@@ -3904,7 +3904,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     </div>
                   </div>
                   {formData.deliveryPickupKm > 0 && (
-                    <p className="text-sm text-yellow-400 mt-3 font-semibold">
+                    <p className="text-sm text-white mt-3 font-semibold">
                       Costo consegna: {formData.deliveryPickupKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM} = €{(formData.deliveryPickupKm * ACTIVE_DELIVERY_PRICE_PER_KM).toFixed(2)}
                     </p>
                   )}
@@ -3915,7 +3915,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               {/* Delivery address — RETURN domicilio */}
               {formData.returnLocation === 'home_delivery' && (
                 <div className="mt-4 p-4 rounded-lg border border-gray-700 bg-gray-800/40">
-                  <label className="text-sm text-yellow-400 font-semibold mb-3 block">Indirizzo ritiro/riconsegna veicolo *</label>
+                  <label className="text-sm text-white font-semibold mb-3 block">Indirizzo ritiro/riconsegna veicolo *</label>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="col-span-2 sm:col-span-1">
                       <input type="text" placeholder="Via *" value={formData.deliveryReturnVia || ''} onChange={(e) => setFormData(prev => ({ ...prev, deliveryReturnVia: e.target.value }))} className="w-full px-3 py-2 rounded bg-gray-900 border border-gray-600 text-white text-sm placeholder-gray-500 focus:border-white focus:outline-none" />
@@ -3931,7 +3931,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     </div>
                   </div>
                   {formData.deliveryReturnKm > 0 && (
-                    <p className="text-sm text-yellow-400 mt-3 font-semibold">
+                    <p className="text-sm text-white mt-3 font-semibold">
                       Costo riconsegna: {formData.deliveryReturnKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM} = €{(formData.deliveryReturnKm * ACTIVE_DELIVERY_PRICE_PER_KM).toFixed(2)}
                     </p>
                   )}
@@ -4164,8 +4164,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     </div>
                   )}
                   {partialUnavailabilityWarning && !availabilityError && (
-                    <div className="mt-4 p-4 bg-yellow-900/30 border-2 border-yellow-500 rounded-lg">
-                      <p className="text-yellow-200 font-semibold">{partialUnavailabilityWarning}</p>
+                    <div className="mt-4 p-4 bg-gray-800/50 border-2 border-white/40 rounded-lg">
+                      <p className="text-white font-semibold">{partialUnavailabilityWarning}</p>
                     </div>
                   )}
                   {shortSlotWarning && !availabilityError && (
@@ -4370,13 +4370,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 {driverTierInfo && (
                   <div className={`mt-3 p-3 rounded-lg border ${
                     driverTierInfo.tier === 'TIER_2' ? 'bg-green-900/20 border-green-600' :
-                    driverTierInfo.tier === 'TIER_1' ? 'bg-yellow-900/20 border-yellow-600' :
+                    driverTierInfo.tier === 'TIER_1' ? 'bg-gray-800/40 border-white/30' :
                     'bg-red-900/20 border-red-600'
                   }`}>
                     <div className="flex items-center gap-2">
                       <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${
                         driverTierInfo.tier === 'TIER_2' ? 'bg-green-600 text-white' :
-                        driverTierInfo.tier === 'TIER_1' ? 'bg-yellow-500 text-black' :
+                        driverTierInfo.tier === 'TIER_1' ? 'bg-white text-black' :
                         'bg-red-600 text-white'
                       }`}>
                         {driverTierInfo.tier === 'TIER_2' ? 'TIER 2' : driverTierInfo.tier === 'TIER_1' ? 'TIER 1' : 'NON IDONEO'}
@@ -4512,7 +4512,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           return (
             <div className="space-y-6">
               <div className="text-center mb-2">
-                <span className="text-xs font-bold text-yellow-400 bg-yellow-400/10 px-4 py-1.5 rounded-full uppercase tracking-widest">Cliente VIP</span>
+                <span className="text-xs font-bold text-white bg-white/10 px-4 py-1.5 rounded-full uppercase tracking-widest">Cliente VIP</span>
               </div>
 
               <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6 space-y-4">
@@ -4559,8 +4559,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
                 {discountAmount > 0 && (
                   <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                    <span className="text-yellow-400">Codice Sconto</span>
-                    <span className="text-yellow-400 font-semibold">-{formatPrice(discountAmount)}</span>
+                    <span className="text-white">Codice Sconto</span>
+                    <span className="text-white font-semibold">-{formatPrice(discountAmount)}</span>
                   </div>
                 )}
 
@@ -4664,7 +4664,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         <div className="ml-3 flex-1">
                           <div className="flex justify-between items-center">
                             <span className="font-bold text-white">{opt.name}</span>
-                            <span className={`font-bold ${isRCA ? 'text-gray-400' : opt.id === 'KASKO_DR7' ? 'text-green-400' : 'text-yellow-400'}`}>
+                            <span className={`font-bold ${isRCA ? 'text-gray-400' : opt.id === 'KASKO_DR7' ? 'text-green-400' : 'text-white'}`}>
                               {opt.dailyPrice > 0 ? `€${opt.dailyPrice}/giorno` : 'Inclusa'}
                             </span>
                           </div>
@@ -4724,7 +4724,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {/* KM illimitati (supplemento) */}
                   <div
                     className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType === 'unlimited'
-                      ? 'border-yellow-400 bg-yellow-400/10'
+                      ? 'border-white/40 bg-white/10'
                       : 'border-gray-600 hover:border-gray-500'}`}
                     onClick={() => setFormData(prev => ({ ...prev, kmPackageType: 'unlimited' as any }))}
                   >
@@ -4733,7 +4733,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         <span className="font-bold text-white">Km illimitati</span>
                         <p className="text-sm text-gray-400">Senza limiti di percorrenza</p>
                       </div>
-                      <span className="font-bold text-yellow-400">+€{tierPricing.unlimitedKmPerDay}/giorno</span>
+                      <span className="font-bold text-white">+€{tierPricing.unlimitedKmPerDay}/giorno</span>
                     </div>
                   </div>
                 </div>
@@ -4784,7 +4784,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 <div className={`flex items-center p-3 rounded-md border ${isMassimo ? 'border-green-500 bg-green-500/10' : 'bg-gray-800/50 border-gray-700'}`}>
                   <input type="checkbox" checked disabled className="h-4 w-4" />
                   <span className="ml-3 text-white">Pulizia finale</span>
-                  <span className={`ml-auto font-semibold ${isMassimo ? 'text-green-400' : 'text-yellow-400'}`}>
+                  <span className={`ml-auto font-semibold ${isMassimo ? 'text-green-400' : 'text-white'}`}>
                     {isMassimo ? 'Inclusa' : `€${tierPricing.lavaggio.toFixed(2)}`}
                   </span>
                 </div>
@@ -4860,7 +4860,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           <div className="ml-3 flex-1">
                             <div className="flex justify-between items-center">
                               <span className="font-bold text-white">{opt.label}</span>
-                              <span className="font-bold text-yellow-400">
+                              <span className="font-bold text-white">
                                 {opt.surchargePerDay ? `€${opt.surchargePerDay}/giorno` : opt.amount > 0 ? `€${opt.amount.toLocaleString()}` : ''}
                               </span>
                             </div>
@@ -4892,7 +4892,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     L'opzione "Nessuna Cauzione" richiede l'approvazione del team DR7.
                     Invieremo la tua richiesta e sarai contattato per conferma.
                   </p>
-                  <p className="text-white text-sm mb-1">Supplemento: <span className="font-bold text-yellow-400">€{ACTIVE_NO_DEPOSIT_SURCHARGE}/giorno</span></p>
+                  <p className="text-white text-sm mb-1">Supplemento: <span className="font-bold text-white">€{ACTIVE_NO_DEPOSIT_SURCHARGE}/giorno</span></p>
                   <p className="text-gray-500 text-xs mb-6">Disponibile solo con Kasko attiva (Fascia A, residente in Sardegna)</p>
                   <div className="flex gap-3">
                     <button
@@ -4922,7 +4922,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
                   <h3 className="text-lg font-bold text-white mb-3">Cauzione con Veicolo</h3>
                   <p className="text-gray-400 text-sm mb-4">
-                    Il veicolo deve essere di proprietà e immatricolato dal <strong className="text-white">2020 in poi</strong>. Supplemento: <span className="font-bold text-yellow-400">€20/giorno</span>.
+                    Il veicolo deve essere di proprietà e immatricolato dal <strong className="text-white">2020 in poi</strong>. Supplemento: <span className="font-bold text-white">€20/giorno</span>.
                   </p>
 
                   {/* Step 1: Enter targa */}
@@ -5091,9 +5091,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       </div>
 
                       {/* Reminder */}
-                      <div className="p-3 bg-yellow-900/20 border border-yellow-600/50 rounded-lg mb-6">
-                        <p className="text-yellow-300 text-sm font-semibold">Ricordati di portare al ritiro:</p>
-                        <ul className="mt-2 space-y-1 text-yellow-100 text-sm">
+                      <div className="p-3 bg-gray-800/40 border border-white/30 rounded-lg mb-6">
+                        <p className="text-white text-sm font-semibold">Ricordati di portare al ritiro:</p>
+                        <ul className="mt-2 space-y-1 text-white text-sm">
                           <li>• Libretto di Circolazione originale</li>
                           <li>• Chiave del veicolo</li>
                         </ul>
@@ -5168,7 +5168,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           <p className="text-xs text-gray-400 mt-0.5">{svc.description}</p>
                         </div>
                         <div className="flex items-center gap-2 ml-4">
-                          <span className="font-semibold text-yellow-400 text-sm whitespace-nowrap">€{svc.price.toFixed(2)}{unitLabel}</span>
+                          <span className="font-semibold text-white text-sm whitespace-nowrap">€{svc.price.toFixed(2)}{unitLabel}</span>
                           {(svc.unit === 'per_item' || svc.unit === 'per_hour') ? (
                             <div className="flex items-center gap-1">
                               <button type="button" className="w-7 h-7 rounded bg-gray-700 text-white font-bold hover:bg-gray-600"
@@ -5219,7 +5219,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <p className="text-sm text-gray-400 mt-1">{ACTIVE_DR7_FLEX.description}</p>
                     </div>
                   </div>
-                  <span className="font-bold text-yellow-400 whitespace-nowrap ml-4">€{ACTIVE_DR7_FLEX.dailyPrice.toFixed(2)}/giorno</span>
+                  <span className="font-bold text-white whitespace-nowrap ml-4">€{ACTIVE_DR7_FLEX.dailyPrice.toFixed(2)}/giorno</span>
                 </div>
               </div>
             </section>
@@ -5402,9 +5402,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               </div>
               {/* DR7 Club separate payment notice */}
               {formData.extras.some(e => e.startsWith('subscription_')) && (
-                <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm">
-                  <p className="text-yellow-400 font-semibold">DR7 Club — Pagamento separato</p>
-                  <p className="text-yellow-400/70 text-xs mt-1">
+                <div className="mb-4 p-3 bg-white/10 border border-white/20 rounded-lg text-sm">
+                  <p className="text-white font-semibold">DR7 Club — Pagamento separato</p>
+                  <p className="text-white/70 text-xs mt-1">
                     {formData.paymentMethod === 'credit'
                       ? 'Il noleggio sarà pagato con il wallet. Riceverai un link separato per il pagamento DR7 Club (€39/anno) con carta.'
                       : 'Il noleggio e DR7 Club (€39/anno) saranno pagati insieme con carta.'}
@@ -5609,7 +5609,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
                   {/* Deposit surcharges */}
                   {noDepositSurcharge > 0 && (
-                    <div className="flex justify-between text-yellow-400">
+                    <div className="flex justify-between text-white">
                       <span>{`Supplemento cauzione (${formData.depositOption === 'no_deposit' ? `${Math.max(1, duration.days)} gg × €${ACTIVE_NO_DEPOSIT_SURCHARGE}` : formData.depositOption === 'vehicle_deposit' ? `${Math.max(1, duration.days)} gg × €20` : ''})`}</span>
                       <span>{formatPrice(noDepositSurcharge)}</span>
                     </div>
@@ -5656,7 +5656,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     </div>
                   )}
                   {discountAmount > 0 && (
-                    <div className="flex justify-between text-yellow-400 text-sm">
+                    <div className="flex justify-between text-white text-sm">
                       <span>Codice Sconto ({appliedDiscount?.code})</span>
                       <span>-{formatPrice(discountAmount)}</span>
                     </div>
@@ -5686,7 +5686,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       return (
                         <div className="mt-3 p-3 bg-green-900/30 border border-green-500/30 rounded-lg">
                           <p className="text-sm font-semibold text-green-400">NESSUNA CAUZIONE</p>
-                          <p className="text-sm text-yellow-400 mt-1">Supplemento: €{ACTIVE_NO_DEPOSIT_SURCHARGE}/giorno ({Math.max(1, duration.days)} gg = {formatPrice(noDepositSurcharge)})</p>
+                          <p className="text-sm text-white mt-1">Supplemento: €{ACTIVE_NO_DEPOSIT_SURCHARGE}/giorno ({Math.max(1, duration.days)} gg = {formatPrice(noDepositSurcharge)})</p>
                           <p className="text-xs text-gray-500 mt-1">Richiede approvazione DR7</p>
                         </div>
                       );
@@ -6114,7 +6114,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
-                        className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400/20 to-yellow-600/20 border border-yellow-500/30 mb-3"
+                        className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-white/10 to-white/20 border border-white/20 mb-3"
                       >
                         <span className="text-3xl">🎁</span>
                       </motion.div>
@@ -6282,8 +6282,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       {recentLicenseFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Supplemento patente recente</span><span className="text-white font-medium">{formatPrice(recentLicenseFee)}</span></div>}
                       {noDepositSurcharge > 0 && (
                         <div className="flex justify-between">
-                          <span className="text-yellow-400">Supplemento cauzione</span>
-                          <span className="text-yellow-400 font-medium">{formatPrice(noDepositSurcharge)}</span>
+                          <span className="text-white">Supplemento cauzione</span>
+                          <span className="text-white font-medium">{formatPrice(noDepositSurcharge)}</span>
                         </div>
                       )}
                       {selectedUpsellWash && (
@@ -6334,7 +6334,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             </div>
                           )}
                           {discountAmount > 0 && (
-                            <div className="flex justify-between text-yellow-400 text-sm">
+                            <div className="flex justify-between text-white text-sm">
                               <span>Codice Sconto</span>
                               <span>-{formatPrice(discountAmount)}</span>
                             </div>
@@ -6362,7 +6362,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             </div>
                           )}
                           {discountAmount > 0 && (
-                            <div className="flex justify-between text-yellow-400 text-sm">
+                            <div className="flex justify-between text-white text-sm">
                               <span>Codice Sconto</span>
                               <span>-{formatPrice(discountAmount)}</span>
                             </div>
@@ -6390,14 +6390,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       )}
                       {/* DR7 Club subscription — separate, card-only */}
                       {formData.extras.some(e => e.startsWith('subscription_')) && (
-                        <div className="mt-3 pt-3 border-t border-yellow-500/30 bg-yellow-500/5 rounded-lg p-3">
+                        <div className="mt-3 pt-3 border-t border-white/20 bg-white/5 rounded-lg p-3">
                           <div className="flex justify-between text-sm">
-                            <span className="text-yellow-400 font-semibold">DR7 Club</span>
-                            <span className="text-yellow-400 font-bold">
+                            <span className="text-white font-semibold">DR7 Club</span>
+                            <span className="text-white font-bold">
                               {formData.extras.includes('subscription_annual') ? '€39/anno' : '€4,90/mese'}
                             </span>
                           </div>
-                          <p className="text-xs text-yellow-400/70 mt-1">
+                          <p className="text-xs text-white/70 mt-1">
                             {formData.paymentMethod === 'credit'
                               ? 'Riceverai un link di pagamento separato via email'
                               : 'Incluso nel pagamento con carta'}
