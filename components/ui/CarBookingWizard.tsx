@@ -1372,17 +1372,31 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
         if (conflicts.length > 0) {
           const conflictEnd = new Date(conflicts[0].dropoff_date);
-          const conflictEndFormatted = conflictEnd.toLocaleDateString('it-IT', {
-            day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Rome'
-          });
-          const conflictTimeFormatted = conflictEnd.toLocaleTimeString('it-IT', {
-            hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome'
-          });
-          setAvailabilityError(
-            `Veicolo non disponibile per le date selezionate. Già prenotato fino al ${conflictEndFormatted} alle ${conflictTimeFormatted}.`
-          );
-          setIsCheckingAvailability(false);
-          return;
+          const availableFromStr = conflicts[0]._availableFrom;
+
+          if (availableFromStr) {
+            // Same-day return — show when it'll be available, don't block
+            const availFrom = new Date(availableFromStr);
+            const availTimeFormatted = availFrom.toLocaleTimeString('it-IT', {
+              hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome'
+            });
+            setAvailabilityError(null);
+            setPartialUnavailabilityWarning(
+              `Questo veicolo sarà disponibile dalle ${availTimeFormatted}. Seleziona un orario di ritiro successivo.`
+            );
+          } else {
+            const conflictEndFormatted = conflictEnd.toLocaleDateString('it-IT', {
+              day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Rome'
+            });
+            const conflictTimeFormatted = conflictEnd.toLocaleTimeString('it-IT', {
+              hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome'
+            });
+            setAvailabilityError(
+              `Veicolo non disponibile per le date selezionate. Già prenotato fino al ${conflictEndFormatted} alle ${conflictTimeFormatted}.`
+            );
+            setIsCheckingAvailability(false);
+            return;
+          }
         }
 
         // Check for partial-day unavailability (e.g., at mechanic)

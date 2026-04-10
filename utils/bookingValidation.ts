@@ -245,7 +245,12 @@ export async function checkVehicleAvailability(
     }
 
     const data = await response.json();
-    return data.conflicts || [];
+    const conflicts = data.conflicts || [];
+    // Attach availableFrom to the first conflict if present
+    if (conflicts.length > 0 && data.availableFrom) {
+      conflicts[0]._availableFrom = data.availableFrom;
+    }
+    return conflicts;
   } catch (error) {
     console.error('Error in checkVehicleAvailability:', error);
     // Return empty conflicts on error to not block user
