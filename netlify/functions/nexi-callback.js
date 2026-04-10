@@ -199,7 +199,7 @@ exports.handler = async (event) => {
       return { statusCode: 500, body: 'Server configuration error' };
     }
     const supabase = createClient(
-      process.env.SUPABASE_URL,
+      process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
@@ -277,6 +277,7 @@ exports.handler = async (event) => {
         } catch (e) {
           console.error('Email notification failed:', e);
         }
+        // Send WhatsApp to admin
         try {
           await fetch(`${siteUrl}/.netlify/functions/send-whatsapp-notification`, {
             method: 'POST',
@@ -284,14 +285,28 @@ exports.handler = async (event) => {
             body: JSON.stringify({ booking: { ...booking, ...updateData } }),
           });
         } catch (e) {
-          console.error('WhatsApp notification failed:', e);
+          console.error('WhatsApp admin notification failed:', e);
+        }
+
+        // Send WhatsApp confirmation to customer
+        const custPhone = booking.customer_phone || booking.booking_details?.customer?.phone;
+        if (custPhone) {
+          try {
+            await fetch(`${siteUrl}/.netlify/functions/send-whatsapp-notification`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ booking: { ...booking, ...updateData }, customPhone: custPhone }),
+            });
+          } catch (e) {
+            console.error('WhatsApp customer notification failed:', e);
+          }
         }
 
         // Generate contract + signing links + invoice (car rental only)
         const serviceType = booking.service_type || booking.booking_details?.type || '';
         const isWashOrMech = serviceType === 'car_wash' || serviceType === 'mechanical_service' || serviceType === 'mechanical';
         if (!isWashOrMech) {
-          const adminUrl = 'https://admin.dr7empire.com';
+          const adminUrl = process.env.ADMIN_URL || 'https://admin.dr7empire.com';
           try {
             const contractRes = await fetch(`${adminUrl}/.netlify/functions/generate-contract`, {
               method: 'POST',
@@ -462,7 +477,7 @@ exports.handler = async (event) => {
         const serviceType = newBooking.service_type || newBooking.booking_details?.type || '';
         const isWashOrMech = serviceType === 'car_wash' || serviceType === 'mechanical_service' || serviceType === 'mechanical';
         if (!isWashOrMech) {
-          const adminUrl = 'https://admin.dr7empire.com';
+          const adminUrl = process.env.ADMIN_URL || 'https://admin.dr7empire.com';
           try {
             const contractRes = await fetch(`${adminUrl}/.netlify/functions/generate-contract`, {
               method: 'POST',

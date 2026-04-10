@@ -181,6 +181,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [noCauzioneRequested, setNoCauzioneRequested] = useState(false);
   const [noCauzioneSending, setNoCauzioneSending] = useState(false);
   const [noCauzioneSaved, setNoCauzioneSaved] = useState(false);
+  const [showVehicleDepositPopup, setShowVehicleDepositPopup] = useState(false);
+  const [vehicleDepositLibretto, setVehicleDepositLibretto] = useState<File | null>(null);
   const today = useMemo(() => {
     // Get today's date in Italy timezone (Europe/Rome)
     const italyDate = new Date().toLocaleString('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -298,6 +300,28 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // Set noCauzioneRequested if preventivo was a no_deposit request
     if (initialSearchDates.depositOption === 'no_deposit') {
       setNoCauzioneRequested(true);
+    }
+    // Auto-fill discount code from preventivo link (e.g. refused No Cauzione with 5% code)
+    if (initialSearchDates.discountCode) {
+      setDiscountCode(initialSearchDates.discountCode);
+      // Auto-validate after a short delay to let form state settle
+      setTimeout(async () => {
+        try {
+          const response = await fetch('/.netlify/functions/validate-discount-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: initialSearchDates.discountCode, serviceType: 'noleggio' })
+          });
+          const result = await response.json();
+          if (response.ok && result.valid) {
+            const data = { ...result, ...(result.discountCode || {}) };
+            const amt = data.value_amount ?? data.discount_amount ?? data.rental_credit ?? 0;
+            const type = (data.value_type === 'percentage' || data.discount_type === 'percentage') ? 'percentage' as const : 'fixed' as const;
+            setAppliedDiscount({ code: initialSearchDates.discountCode!.toUpperCase(), amount: amt, type, code_type: data.code_type || 'marketing' });
+            setDiscountCodeValid(true);
+          }
+        } catch { /* validation will happen when user reaches step 4 */ }
+      }, 500);
     }
     // If coming from a preventivo, skip directly to checkout (Step 4)
     if (initialSearchDates.preventivoId) {
@@ -3157,7 +3181,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ booking: finalBookingData }),
-          }).catch(e => console.error('WhatsApp error', e));
+          }).catch(e => console.error('WhatsApp admin error', e));
+
+          // Send WhatsApp Customer confirmation
+          const custPhone = formData.phone?.replace(/[\s\-\+()]/g, '') || '';
+          if (custPhone) {
+            fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ booking: finalBookingData, customPhone: custPhone }),
+            }).catch(e => console.error('WhatsApp customer error', e));
+          }
 
           // Auto-generate contract + fattura on admin side (fire-and-forget)
           const ADMIN_BASE = 'https://admin.dr7empire.com';
@@ -4786,6 +4820,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             return;
                           }
                           setFormData(prev => ({ ...prev, depositOption: opt.id }));
+                          if (opt.id === 'vehicle_deposit') {
+                            setShowVehicleDepositPopup(true);
+                          }
                         }}
                       >
                         <div className="flex items-center">
@@ -4849,6 +4886,70 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               </div>
             )}
 
+            {/* Vehicle Deposit Popup — Upload libretto + reminder */}
+            {showVehicleDepositPopup && (
+              <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowVehicleDepositPopup(false)}>
+                <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
+                  <h3 className="text-lg font-bold text-white mb-3">Cauzione con Veicolo</h3>
+                  <p className="text-gray-400 text-sm mb-4">
+                    Il veicolo deve essere di proprietà e immatricolato dal 2020 in poi. Il supplemento è di <span className="font-bold text-yellow-400">€20/giorno</span>.
+                  </p>
+
+                  {/* Upload libretto */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-semibold text-white mb-2">Carica il Libretto di Circolazione</label>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) => setVehicleDepositLibretto(e.target.files?.[0] || null)}
+                      className="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
+                    />
+                    {vehicleDepositLibretto && (
+                      <p className="text-green-400 text-xs mt-1">✓ {vehicleDepositLibretto.name}</p>
+                    )}
+                  </div>
+
+                  {/* Reminder */}
+                  <div className="p-3 bg-yellow-900/20 border border-yellow-600/50 rounded-lg mb-6">
+                    <p className="text-yellow-300 text-sm font-semibold">Ricordati di portare al ritiro:</p>
+                    <ul className="mt-2 space-y-1 text-yellow-100 text-sm">
+                      <li>• Libretto di Circolazione originale</li>
+                      <li>• Chiave del veicolo</li>
+                    </ul>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, depositOption: '' }));
+                        setShowVehicleDepositPopup(false);
+                      }}
+                      className="flex-1 py-3 border border-gray-600 text-white rounded-full font-semibold text-sm hover:bg-gray-800 transition-colors"
+                    >
+                      Annulla
+                    </button>
+                    <button
+                      onClick={async () => {
+                        // Upload libretto if provided
+                        if (vehicleDepositLibretto && user?.id) {
+                          try {
+                            const ext = vehicleDepositLibretto.name.split('.').pop();
+                            const path = `${user.id}/libretto_${Date.now()}.${ext}`;
+                            await supabase.storage.from('driver-licenses').upload(path, vehicleDepositLibretto);
+                          } catch (e) {
+                            console.error('Libretto upload error:', e);
+                          }
+                        }
+                        setShowVehicleDepositPopup(false);
+                      }}
+                      className="flex-1 py-3 bg-white text-black rounded-full font-bold text-sm hover:bg-gray-200 transition-colors"
+                    >
+                      Conferma
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
 
             {/* === F. SERVIZI EXPERIENCE (hidden for VIP) === */}

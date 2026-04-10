@@ -32,6 +32,7 @@ const handler: Handler = async (event) => {
 
   let message = '';
   let targetPhone = customPhone || NOTIFICATION_PHONE;
+  const isCustomerMessage = !!customPhone; // true = sending to customer, false = sending to admin
 
   // Clean phone number - Green API format: 393457905205 (no + or spaces)
   targetPhone = targetPhone.replace(/[\s\-\+]/g, '');
@@ -123,6 +124,7 @@ const handler: Handler = async (event) => {
         timeZone: 'Europe/Rome'
       });
 
+      // Default hardcoded message (admin-style, used as fallback)
       message = `🚗 *NUOVA PRENOTAZIONE AUTOLAVAGGIO*\n\n`;
       message += `*ID:* DR7-${bookingId}\n`;
       message += `*Cliente:* ${customerName}\n`;
@@ -130,22 +132,27 @@ const handler: Handler = async (event) => {
       message += `*Telefono:* ${customerPhone}\n`;
       message += `*Servizio:* ${serviceName}\n`;
       message += `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n`;
-      if (additionalService) {
-        message += `*Servizio Aggiuntivo:* ${additionalService}\n`;
-      }
-      if (notes) {
-        message += `*Note:* ${notes}\n`;
-      }
+      if (additionalService) message += `*Servizio Aggiuntivo:* ${additionalService}\n`;
+      if (notes) message += `*Note:* ${notes}\n`;
       message += `*Totale:* €${totalPrice}\n`;
       message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa'}`;
 
-      // Override with DB template if available
-      const cwTpl = templateMap.get('carwash_new');
+      // Use different template for admin vs customer from Messaggi di Sistema
+      const cwTpl = isCustomerMessage
+        ? templateMap.get('carwash_new')        // Customer confirmation
+        : templateMap.get('carwash_new_admin') || templateMap.get('carwash_new'); // Admin notification
       if (cwTpl) {
+        const plateValue = booking.vehicle_plate || booking.booking_details?.plate || booking.booking_details?.targa || '';
         message = applyVars(cwTpl, {
-          '{booking_id}': `DR7-${bookingId}`, '{customer_name}': customerName, '{customer_email}': customerEmail || '',
-          '{customer_phone}': customerPhone || '', '{service_name}': serviceName || '', '{pickup_date}': formattedDate,
-          '{pickup_time}': formattedTime, '{total}': totalPrice, '{notes}': booking.booking_details?.notes || '',
+          '{booking_id}': bookingId.substring(0, 8).toUpperCase(),
+          '{nome}': customerName.split(' ')[0] || customerName,
+          '{customer_name}': customerName, '{customer_email}': customerEmail || '',
+          '{customer_phone}': customerPhone || '', '{service_name}': serviceName || '',
+          '{plate}': plateValue, '{targa}': plateValue,
+          '{date}': formattedDate, '{time}': formattedTime,
+          '{pickup_date}': formattedDate, '{pickup_time}': formattedTime,
+          '{extras}': additionalService || 'Nessuno',
+          '{total}': totalPrice, '{notes}': booking.booking_details?.notes || '',
           '{payment_status}': (booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa',
         });
       }
@@ -250,7 +257,9 @@ const handler: Handler = async (event) => {
       message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa'}`;
 
       // Override with DB template if available
-      const rentalTpl = templateMap.get('rental_new');
+      const rentalTpl = isCustomerMessage
+        ? templateMap.get('rental_new_customer') || templateMap.get('rental_new')
+        : templateMap.get('rental_new');
       if (rentalTpl) {
         const depositAmount = booking.deposit_amount || booking.booking_details?.deposit || 0;
         const depositOption = booking.booking_details?.depositOption;
@@ -261,7 +270,7 @@ const handler: Handler = async (event) => {
           depositStr = `€${depositAmount}`;
         }
         message = applyVars(rentalTpl, {
-          '{booking_id}': `DR7-${bookingId}`, '{customer_name}': customerName, '{customer_email}': customerEmail || '',
+          '{booking_id}': bookingId.substring(0, 8).toUpperCase(), '{customer_name}': customerName, '{customer_email}': customerEmail || '',
           '{customer_phone}': customerPhone || '', '{vehicle_name}': vehicleName, '{plate}': booking.vehicle_plate || '',
           '{pickup_date}': pickupDateFormatted, '{pickup_time}': pickupTimeFormatted,
           '{dropoff_date}': dropoffDateFormatted, '{dropoff_time}': dropoffTimeFormatted,

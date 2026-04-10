@@ -823,17 +823,6 @@ const CarWashBookingPage: React.FC = () => {
       customer_name: formData.fullName,
       customer_email: formData.email,
       customer_phone: formData.phone,
-      customer: {
-        fullName: formData.fullName,
-        email: formData.email,
-        phone: formData.phone,
-        codiceFiscale: formData.codiceFiscale,
-        indirizzo: formData.indirizzo,
-        numeroCivico: formData.numeroCivico,
-        cittaResidenza: formData.cittaResidenza,
-        codicePostale: formData.codicePostale,
-        provinciaResidenza: formData.provinciaResidenza
-      },
       appointment_date: adjustedDateTime.toISOString(),
       appointment_time: formData.appointmentTime,
       booking_details: {
@@ -842,6 +831,11 @@ const CarWashBookingPage: React.FC = () => {
           email: formData.email,
           phone: formData.phone,
           codiceFiscale: formData.codiceFiscale,
+          indirizzo: formData.indirizzo,
+          numeroCivico: formData.numeroCivico,
+          cittaResidenza: formData.cittaResidenza,
+          codicePostale: formData.codicePostale,
+          provinciaResidenza: formData.provinciaResidenza,
         },
         notes: formData.notes,
         ...(hasCartItems ? { cart_items: cartItems } : {}),
@@ -991,7 +985,7 @@ const CarWashBookingPage: React.FC = () => {
         }
 
         try {
-          console.log('Sending WhatsApp notification...');
+          console.log('Sending WhatsApp notification to admin...');
           const whatsappResponse = await fetch('/.netlify/functions/send-whatsapp-notification', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1002,7 +996,17 @@ const CarWashBookingPage: React.FC = () => {
             console.error('WhatsApp API returned error:', whatsappResponse.status);
           } else {
             whatsappSent = true;
-            console.log('WhatsApp notification sent successfully');
+            console.log('WhatsApp notification sent to admin');
+          }
+
+          // Also send confirmation to customer
+          const custPhone = data.customer_phone || formData.phone;
+          if (custPhone) {
+            await fetch('/.netlify/functions/send-whatsapp-notification', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ booking: data, customPhone: custPhone })
+            }).catch(e => console.error('Customer WhatsApp error:', e));
           }
         } catch (whatsappError) {
           console.error('WhatsApp error (non-blocking):', whatsappError);
@@ -1079,13 +1083,7 @@ const CarWashBookingPage: React.FC = () => {
         whatsappMessage += `*Totale:* €${totalPrice}\n\n` +
           `Grazie!`;
 
-        const officeWhatsAppNumber = '393457905205';
-        const whatsappUrl = `https://wa.me/${officeWhatsAppNumber}?text=${encodeURIComponent(whatsappMessage)}`;
-
-        // Open WhatsApp in a new tab after a short delay
-        setTimeout(() => {
-          window.open(whatsappUrl, '_blank');
-        }, 1000);
+        // WhatsApp is sent server-side via send-whatsapp-notification, no browser tab needed
 
         // Mark birthday discount code as used
         if (appliedDiscount && data.id) {
@@ -1676,10 +1674,6 @@ const CarWashBookingPage: React.FC = () => {
                 <div className="flex justify-between text-sm text-gray-300 mb-1">
                   <span>Subtotale:</span>
                   <span>€{getBasePrice().toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm text-green-400 mb-1">
-                  <span>Sconto Online -5%:</span>
-                  <span>-€{onlineDiscountAmount.toFixed(2)}</span>
                 </div>
                 {birthdayDiscountAmount > 0 && (
                   <div className="flex justify-between text-sm text-yellow-400 mb-1">
