@@ -2629,28 +2629,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         openWhatsApp(whatsappUrl);
       }
 
-      // Auto-generate contract + fattura on admin side (fire-and-forget)
-      const ADMIN_BASE = 'https://admin.dr7empire.com';
-      fetchWithTimeout(`${ADMIN_BASE}/.netlify/functions/generate-contract`, {
+      // Auto-generate contract + fattura via admin webhook (bypasses auth)
+      fetchWithTimeout('https://admin.dr7empire.com/.netlify/functions/post-booking-webhook', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bookingId: data.id }),
-      }).then(async (res) => {
-        if (res.ok) {
-          console.log('[booking] Contract generated, sending signing link...');
-          fetchWithTimeout(`${ADMIN_BASE}/.netlify/functions/signature-init`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bookingId: data.id }),
-          }).catch(e => console.error('[booking] Signature init error:', e));
-        }
-      }).catch(e => console.error('[booking] Contract error:', e));
-
-      fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/generate-fattura`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bookingId: data.id, includeIVA: true }),
-      }).catch(e => console.error('[booking] Fattura error:', e));
+      }).then(res => res.ok ? console.log('[booking] Contract + fattura webhook OK') : console.error('[booking] Webhook failed:', res.status))
+        .catch(e => console.error('[booking] Webhook error:', e));
 
       // Mark birthday discount code as used
       if (appliedDiscount && data.id) {
@@ -3224,25 +3209,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             }).catch(e => console.error('WhatsApp customer error', e));
           }
 
-          // Auto-generate contract + fattura on admin side (fire-and-forget)
-          const ADMIN_BASE = 'https://admin.dr7empire.com';
-          fetchWithTimeout(`${ADMIN_BASE}/.netlify/functions/generate-contract`, {
+          // Auto-generate contract + fattura via admin webhook
+          fetchWithTimeout('https://admin.dr7empire.com/.netlify/functions/post-booking-webhook', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ bookingId: data.booking_id }),
-          }).then(async (res) => {
-            if (res.ok) {
-              console.log('[credit-booking] Contract generated, sending signing link...');
-              // signature-init accepts bookingId to find the contract
-              fetchWithTimeout(`${ADMIN_BASE}/.netlify/functions/signature-init`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ bookingId: data.booking_id }),
-              }).catch(e => console.error('[credit-booking] Signature init error:', e));
-            }
-          }).catch(e => console.error('[credit-booking] Contract error:', e));
-
-          // No fattura for credit wallet bookings — fattura was already generated when credits were purchased
+          }).then(res => res.ok ? console.log('[credit-booking] Webhook OK') : console.error('[credit-booking] Webhook failed:', res.status))
+            .catch(e => console.error('[credit-booking] Webhook error:', e));
 
           // DR7 Club 3% cashback — grant wallet credit on payment
           try {
