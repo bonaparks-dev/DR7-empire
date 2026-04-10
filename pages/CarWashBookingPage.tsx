@@ -408,6 +408,19 @@ const CarWashBookingPage: React.FC = () => {
         setFormData(prev => ({ ...prev, appointmentDate: '' }));
         return;
       }
+
+      // Block Sundays
+      const [y, m, d] = value.split('-').map(Number);
+      if (new Date(y, m - 1, d).getDay() === 0) {
+        setErrors(prev => ({
+          ...prev,
+          appointmentDate: lang === 'it'
+            ? 'Siamo chiusi la domenica. Seleziona un altro giorno.'
+            : 'We are closed on Sundays. Please select another day.'
+        }));
+        setFormData(prev => ({ ...prev, appointmentDate: '' }));
+        return;
+      }
     }
 
     setFormData(prev => ({ ...prev, [name]: newValue }));
