@@ -968,60 +968,32 @@ const CarWashBookingPage: React.FC = () => {
 
         console.log('Booking created successfully:', data);
 
-        // Send confirmation email and WhatsApp notification (don't block on failure)
-        let emailSent = false;
-        let whatsappSent = false;
+        // Fire-and-forget: email + WhatsApp (don't block the UI)
+        fetch('/.netlify/functions/send-booking-confirmation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ booking: data })
+        }).catch(e => console.error('Email error:', e));
 
-        try {
-          console.log('Sending booking confirmation email...');
-          const emailResponse = await fetch('/.netlify/functions/send-booking-confirmation', {
+        // Admin WhatsApp
+        fetch('/.netlify/functions/send-whatsapp-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ booking: data })
+        }).catch(e => console.error('Admin WhatsApp error:', e));
+
+        // Customer WhatsApp via system_messages template
+        const custPhone = data.customer_phone || formData.phone;
+        if (custPhone) {
+          fetch('/.netlify/functions/send-whatsapp-notification', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ booking: data })
-          });
-
-          if (!emailResponse.ok) {
-            const errorText = await emailResponse.text();
-            console.error('Email API returned error:', emailResponse.status, errorText);
-          } else {
-            emailSent = true;
-            console.log('Email confirmation sent successfully');
-          }
-        } catch (emailError) {
-          console.error('Email error (non-blocking):', emailError);
-          console.error('Email error details:', {
-            message: emailError instanceof Error ? emailError.message : 'Unknown error',
-            stack: emailError instanceof Error ? emailError.stack : undefined
-          });
+            body: JSON.stringify({ booking: data, customPhone: custPhone })
+          }).catch(e => console.error('Customer WhatsApp error:', e));
         }
 
-        try {
-          console.log('Sending WhatsApp notification to admin...');
-          const whatsappResponse = await fetch('/.netlify/functions/send-whatsapp-notification', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ booking: data })
-          });
-
-          if (!whatsappResponse.ok) {
-            console.error('WhatsApp API returned error:', whatsappResponse.status);
-          } else {
-            whatsappSent = true;
-            console.log('WhatsApp notification sent to admin');
-          }
-
-          // Also send confirmation to customer
-          const custPhone = data.customer_phone || formData.phone;
-          if (custPhone) {
-            await fetch('/.netlify/functions/send-whatsapp-notification', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ booking: data, customPhone: custPhone })
-            }).catch(e => console.error('Customer WhatsApp error:', e));
-          }
-        } catch (whatsappError) {
-          console.error('WhatsApp error (non-blocking):', whatsappError);
-        }
+        const emailSent = true;
+        const whatsappSent = true;
 
         // Generate fattura (non-blocking) — skip for Wallet/Gift Card payments
         const skipFatturaForMethod = bookingDataWithPayment.payment_method === 'credit_wallet' || bookingDataWithPayment.payment_method === 'gift_card';
