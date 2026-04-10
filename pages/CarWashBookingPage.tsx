@@ -52,11 +52,18 @@ const CarWashBookingPage: React.FC = () => {
 
   // Get today's date in YYYY-MM-DD format - always get fresh current date
   const getTodayDate = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    // Always use Europe/Rome timezone
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' });
+  };
+
+  const getNowRomeMinutes = () => {
+    const romeTime = new Date().toLocaleTimeString('en-GB', { timeZone: 'Europe/Rome', hour12: false, hour: '2-digit', minute: '2-digit' });
+    const [h, m] = romeTime.split(':').map(Number);
+    return h * 60 + m;
+  };
+
+  const isTodayRome = (dateStr: string) => {
+    return dateStr === getTodayDate();
   };
 
   const minDate = getTodayDate();
@@ -471,11 +478,8 @@ const CarWashBookingPage: React.FC = () => {
           '17:00', '17:15', '17:30', '17:45', '18:00', '18:15', '18:30', '18:45'
         ];
 
-    // Parse selected date as local date to avoid timezone issues
-    const selectedDate = new Date(year, month - 1, day);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const isToday = selectedDate.toDateString() === today.toDateString();
+    // Check if selected date is today in Rome timezone
+    const isToday = isTodayRome(formData.appointmentDate);
 
     // Helper to convert time string to minutes
     const timeToMinutes = (time: string) => {

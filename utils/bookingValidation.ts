@@ -245,11 +245,13 @@ export async function checkVehicleAvailability(
     }
 
     const data = await response.json();
-    const conflicts = data.conflicts || [];
-    // Attach availableFrom to the first conflict if present
-    if (conflicts.length > 0 && data.availableFrom) {
+    const conflicts: any[] = data.conflicts || [];
+    // Attach metadata to the array for the wizard to read
+    if (data.availableFrom && conflicts.length > 0) {
       conflicts[0]._availableFrom = data.availableFrom;
     }
+    // nextBookingStart = when the car must be returned (next booking - buffer)
+    (conflicts as any)._nextBookingStart = data.nextBookingStart || null;
     return conflicts;
   } catch (error) {
     console.error('Error in checkVehicleAvailability:', error);

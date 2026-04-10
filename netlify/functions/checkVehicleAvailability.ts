@@ -298,6 +298,21 @@ export const handler: Handler = async (event) => {
             console.log(`[availableFrom] result: ${availableFrom}`);
         }
 
+        // Find next booking AFTER the requested period (for "must return by" message)
+        let nextBookingStart: string | null = null;
+        if (Array.isArray(bookings)) {
+            for (const b of bookings) {
+                const bStart = new Date(b.pickup_date);
+                if (bStart > requestedPickup) {
+                    // Subtract buffer so customer must return BEFORE the buffer window
+                    const mustReturnBy = new Date(bStart.getTime() - BUFFER_TIME_MS);
+                    if (!nextBookingStart || mustReturnBy.toISOString() < nextBookingStart) {
+                        nextBookingStart = mustReturnBy.toISOString();
+                    }
+                }
+            }
+        }
+
         return {
             statusCode: 200,
             headers,
@@ -305,6 +320,7 @@ export const handler: Handler = async (event) => {
                 conflicts,
                 totalVehicles: vehicleIds.length,
                 ...(availableFrom && { availableFrom }),
+                ...(nextBookingStart && { nextBookingStart }),
                 message: conflicts.length === 0
                     ? `At least 1 of ${vehicleIds.length} ${vehicleName} is available`
                     : availableFrom

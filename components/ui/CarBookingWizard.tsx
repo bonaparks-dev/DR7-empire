@@ -1438,6 +1438,21 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           );
         }
 
+        // Check for next booking — "must return by" message
+        const nextStart = (conflicts as any)?._nextBookingStart;
+        if (nextStart && !partialUnavailabilityWarning) {
+          const mustReturnBy = new Date(nextStart);
+          const mustReturnDate = mustReturnBy.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Rome' });
+          const mustReturnTime = mustReturnBy.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
+          // Only show if the next booking is within 3 days of requested return
+          const daysDiff = (mustReturnBy.getTime() - new Date(dropoffDateTime).getTime()) / (1000 * 60 * 60 * 24);
+          if (daysDiff < 3) {
+            setPartialUnavailabilityWarning(
+              `Questo veicolo ha una prenotazione successiva. Riconsegna entro il ${mustReturnDate} alle ${mustReturnTime}.`
+            );
+          }
+        }
+
       } catch (error) {
         console.error('Error checking availability:', error);
         // Don't block the user if there's an error checking availability
