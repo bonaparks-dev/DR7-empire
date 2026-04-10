@@ -161,36 +161,15 @@ const ProfileSettings = () => {
                     setExtendedProfile(null);
                 }
 
-                // --- Client Status Calculation ---
-                // Primary: use admin-set status from customers_extended
-                const adminStatus = data?.status_cliente || data?.status;
+                // --- Client Status — only from admin-set status in customers_extended ---
+                const adminStatus = data?.status || null;
                 if (adminStatus === 'elite') {
                     setClientStatus('Elite');
                 } else if (adminStatus === 'member') {
                     setClientStatus('Member');
                 } else {
-                    // Fallback: check memberships + bookings
-                    const { data: memberships } = await supabase
-                        .from('membership_purchases')
-                        .select('id')
-                        .eq('user_id', user.id)
-                        .gt('renewal_date', new Date().toISOString())
-                        .limit(1);
-
-                    if (memberships && memberships.length > 0) {
-                        setClientStatus('Elite');
-                    } else {
-                        const { count: bookingsCount } = await supabase
-                            .from('bookings')
-                            .select('*', { count: 'exact', head: true })
-                            .eq('userId', user.id);
-
-                        if ((bookingsCount || 0) > 3) {
-                            setClientStatus('Fidelizzato');
-                        } else {
-                            setClientStatus('Standard');
-                        }
-                    }
+                    // No status or blacklist → New Entry
+                    setClientStatus('Standard');
                 }
 
                 // 3. Check DR7 Club subscription
