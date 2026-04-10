@@ -41,6 +41,16 @@ const CancellationPolicyPage = () => {
           it: 'In caso di mancata presentazione del Cliente nel giorno e all\'orario previsti per il ritiro del veicolo, senza preventiva comunicazione scritta entro i termini indicati, l\'intero importo versato sarà trattenuto a titolo di penale per mancata fruizione del servizio, ai sensi dell\'art. 1382 c.c. La mancata presentazione include anche ritardi significativi tali da compromettere l\'erogazione del servizio. In tali casi non è previsto alcun rimborso né emissione di voucher.',
           en: 'In the event of the Customer\'s failure to appear on the day and time scheduled for vehicle pickup, without prior written notice within the specified deadlines, the entire amount paid will be retained as a penalty for non-use of the service, pursuant to Article 1382 of the Italian Civil Code. No-show also includes significant delays that compromise service delivery. In such cases, no refund or voucher will be issued.'
         }
+      },
+      {
+        title: {
+          it: '4. Applicabilità a tutti i servizi',
+          en: '4. Applicability to all services'
+        },
+        content: {
+          it: 'Le presenti condizioni di cancellazione e rimborso si applicano a tutti i servizi offerti da Dubai Rent 7.0 S.p.A., inclusi ma non limitati a: noleggio veicoli, servizi di lavaggio (Prime Wash), servizi meccanici, noleggio furgoni, noleggio con conducente (NCC), servizi experience e qualsiasi altro servizio prenotabile tramite la piattaforma DR7. I termini, le modalità e le percentuali di trattenuta sono identici a quelli previsti per il servizio di noleggio veicoli, come specificato ai punti 1, 2 e 3 del presente documento.',
+          en: 'These cancellation and refund conditions apply to all services offered by Dubai Rent 7.0 S.p.A., including but not limited to: vehicle rental, car wash services (Prime Wash), mechanical services, van rental, chauffeur services (NCC), experience services, and any other service bookable through the DR7 platform. The terms, procedures, and retention percentages are identical to those set out for the vehicle rental service, as specified in points 1, 2, and 3 of this document.'
+        }
       }
     ]
   };
