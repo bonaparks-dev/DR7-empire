@@ -538,8 +538,7 @@ const CarWashBookingPage: React.FC = () => {
         reason = 'Service too long';
         available = false;
       } else if (isToday) {
-        const now = new Date();
-        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const currentMinutes = getNowRomeMinutes();
         const slotMinutes = timeToMinutes(slot);
         if (slotMinutes < currentMinutes + 120) {
           reason = 'Too soon';
