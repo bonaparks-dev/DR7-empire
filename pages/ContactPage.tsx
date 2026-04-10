@@ -132,8 +132,8 @@ const ContactPage: React.FC = () => {
               </svg>
             </div>
             <h2 className="text-xl font-bold text-white mb-2">Orari</h2>
-            <p className="text-gray-400 text-sm mt-2">Lun–Ven: 9:00–13:00 / 16:00–19:00</p>
-            <p className="text-gray-400 text-sm">Sabato: 9:00–14:00</p>
+            <p className="text-gray-400 text-sm mt-2">Lun–Ven: 9:00–13:00 / 15:00–19:00</p>
+            <p className="text-gray-400 text-sm">Sabato: 9:00–17:00</p>
             <p className="text-gray-500 text-sm mt-2">Domenica: Chiuso</p>
           </div>
         </div>
