@@ -183,6 +183,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [noCauzioneSaved, setNoCauzioneSaved] = useState(false);
   const [showVehicleDepositPopup, setShowVehicleDepositPopup] = useState(false);
   const [vehicleDepositLibretto, setVehicleDepositLibretto] = useState<File | null>(null);
+  const [vehicleDepositLibrettoVerso, setVehicleDepositLibrettoVerso] = useState<File | null>(null);
   const [vehicleDepositTarga, setVehicleDepositTarga] = useState('');
   const [vehicleDepositLoading, setVehicleDepositLoading] = useState(false);
   const [vehicleDepositError, setVehicleDepositError] = useState<string | null>(null);
@@ -5085,9 +5086,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         </div>
                       )}
 
-                      {/* Upload libretto */}
-                      <div className="mb-4">
-                        <label className="block text-sm font-semibold text-white mb-2">Carica il Libretto di Circolazione</label>
+                      {/* Upload libretto fronte */}
+                      <div className="mb-3">
+                        <label className="block text-sm font-semibold text-white mb-2">Libretto di Circolazione — Fronte *</label>
                         <input
                           type="file"
                           accept="image/*,.pdf"
@@ -5096,6 +5097,20 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         />
                         {vehicleDepositLibretto && (
                           <p className="text-green-400 text-xs mt-1">✓ {vehicleDepositLibretto.name}</p>
+                        )}
+                      </div>
+
+                      {/* Upload libretto verso */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-semibold text-white mb-2">Libretto di Circolazione — Verso *</label>
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={(e) => setVehicleDepositLibrettoVerso(e.target.files?.[0] || null)}
+                          className="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
+                        />
+                        {vehicleDepositLibrettoVerso && (
+                          <p className="text-green-400 text-xs mt-1">✓ {vehicleDepositLibrettoVerso.name}</p>
                         )}
                       </div>
 
@@ -5123,16 +5138,29 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           Annulla
                         </button>
                         <button
-                          disabled={!vehicleDepositIsOwner && (!vehicleDepositOwner.nome || !vehicleDepositOwner.cognome || !vehicleDepositOwner.codiceFiscale || !vehicleDepositOwner.telefono)}
+                          disabled={
+                            !vehicleDepositLibretto || !vehicleDepositLibrettoVerso || !vehicleDepositVerified ||
+                            (!vehicleDepositIsOwner && (!vehicleDepositOwner.nome || !vehicleDepositOwner.cognome || !vehicleDepositOwner.codiceFiscale || !vehicleDepositOwner.telefono))
+                          }
                           onClick={async () => {
-                            // Upload libretto
+                            // Upload libretto fronte
                             if (vehicleDepositLibretto && user?.id) {
                               try {
                                 const ext = vehicleDepositLibretto.name.split('.').pop();
-                                const path = `${user.id}/libretto_${Date.now()}.${ext}`;
+                                const path = `${user.id}/libretto_fronte_${Date.now()}.${ext}`;
                                 await supabase.storage.from('driver-licenses').upload(path, vehicleDepositLibretto);
                               } catch (e) {
-                                console.error('Libretto upload error:', e);
+                                console.error('Libretto fronte upload error:', e);
+                              }
+                            }
+                            // Upload libretto verso
+                            if (vehicleDepositLibrettoVerso && user?.id) {
+                              try {
+                                const ext = vehicleDepositLibrettoVerso.name.split('.').pop();
+                                const path = `${user.id}/libretto_verso_${Date.now()}.${ext}`;
+                                await supabase.storage.from('driver-licenses').upload(path, vehicleDepositLibrettoVerso);
+                              } catch (e) {
+                                console.error('Libretto verso upload error:', e);
                               }
                             }
                             // Save owner data in booking_details for admin
