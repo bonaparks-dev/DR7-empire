@@ -98,6 +98,7 @@ const handler: Handler = async (event) => {
   // Handle booking notifications
   else if (booking) {
     const serviceType = booking.service_type;
+    console.log('[send-whatsapp] DEBUG:', { serviceType, isCustomerMessage, customPhone: !!customPhone, targetPhone, templateKeys: Array.from(templateMap.keys()), hasCarwashNew: templateMap.has('carwash_new'), hasCarwashAdmin: templateMap.has('carwash_new_admin') });
     const customerName = booking.customer_name || booking.booking_details?.customer?.fullName || 'Cliente';
     const customerEmail = booking.customer_email || booking.booking_details?.customer?.email;
     const customerPhone = booking.customer_phone || booking.booking_details?.customer?.phone;
