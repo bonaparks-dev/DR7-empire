@@ -3041,6 +3041,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           return idx >= 0 ? (item as any).plates[idx] || null : null;
         })(),
           // insurance_option stored in booking_details.insuranceOption (not a top-level column)
+          service_type: 'car_rental',
           booking_usage_zone: formData.usageZone || null,
           booking_details: {
             customer: {
