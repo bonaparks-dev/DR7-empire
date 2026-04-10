@@ -18,22 +18,22 @@ const CancellationPolicyPage = () => {
     sections: [
       {
         title: {
-          it: '1. Cancellazione entro 5 giorni prima della data di ritiro',
-          en: '1. Cancellation up to 5 days before pickup date'
+          it: '1. Cancellazione entro 5 giorni prima della data del servizio',
+          en: '1. Cancellation up to 5 days before service date'
         },
         content: {
-          it: 'Il Cliente ha facoltà di cancellare la propria prenotazione fino a 5 (cinque) giorni prima della data e ora previste per il ritiro del veicolo. In tal caso, Dubai Rent 7.0 S.p.A. tratterrà una quota pari al 10% (dieci per cento) dell\'importo complessivamente versato, a titolo di copertura dei costi organizzativi e di gestione della prenotazione. Il restante 90% (novanta per cento) dell\'importo versato sarà riconosciuto esclusivamente mediante credit wallet, indipendentemente dal metodo di pagamento originariamente utilizzato (carta di credito o credit wallet). Il credito è utilizzabile per futuri noleggi o servizi DR7 entro 12 (dodici) mesi dalla data di emissione. Il credit wallet non è cedibile a terzi né convertibile in denaro contante.',
-          en: 'The Customer has the right to cancel their booking up to 5 (five) days before the scheduled vehicle pickup date and time. In such cases, Dubai Rent 7.0 S.p.A. will retain 10% (ten percent) of the total amount paid to cover organizational and booking management costs. The remaining 90% (ninety percent) of the amount paid will be credited exclusively as credit wallet, regardless of the original payment method used (credit card or credit wallet). The credit is usable for future rentals or DR7 services within 12 (twelve) months from the date of issue. The credit wallet is not transferable to third parties nor convertible into cash.'
+          it: 'Il Cliente ha facoltà di cancellare la propria prenotazione fino a 5 (cinque) giorni prima della data e ora previste per il servizio. In tal caso, Dubai Rent 7.0 S.p.A. tratterrà una quota pari al 10% (dieci per cento) dell\'importo complessivamente versato, a titolo di copertura dei costi organizzativi e di gestione della prenotazione. Il restante 90% (novanta per cento) dell\'importo versato sarà riconosciuto esclusivamente mediante credit wallet, indipendentemente dal metodo di pagamento originariamente utilizzato (carta di credito o credit wallet). Il credito è utilizzabile per futuri noleggi o servizi DR7 entro 12 (dodici) mesi dalla data di emissione. Il credit wallet non è cedibile a terzi né convertibile in denaro contante.',
+          en: 'The Customer has the right to cancel their booking up to 5 (five) days before the scheduled service date and time. In such cases, Dubai Rent 7.0 S.p.A. will retain 10% (ten percent) of the total amount paid to cover organizational and booking management costs. The remaining 90% (ninety percent) of the amount paid will be credited exclusively as credit wallet, regardless of the original payment method used (credit card or credit wallet). The credit is usable for future rentals or DR7 services within 12 (twelve) months from the date of issue. The credit wallet is not transferable to third parties nor convertible into cash.'
         }
       },
       {
         title: {
-          it: '2. Cancellazione oltre i 5 giorni dalla data di ritiro',
-          en: '2. Cancellation within 5 days of pickup date'
+          it: '2. Cancellazione oltre i 5 giorni dalla data del servizio',
+          en: '2. Cancellation within 5 days of service date'
         },
         content: {
-          it: 'In caso di cancellazione comunicata oltre il termine di 5 (cinque) giorni dalla data prevista per il ritiro del veicolo, nessun rimborso né credit wallet potrà essere riconosciuto, qualunque sia la motivazione della cancellazione. La prenotazione sarà considerata definitivamente confermata e non rimborsabile, ai sensi e per gli effetti degli artt. 1453 e seguenti del Codice Civile, in considerazione dell\'impossibilità di riallocare il veicolo e il servizio prenotato.',
-          en: 'In case of cancellation communicated within 5 (five) days of the scheduled vehicle pickup date, no refund or credit wallet will be granted, regardless of the reason for cancellation. The booking will be considered definitively confirmed and non-refundable, pursuant to Articles 1453 et seq. of the Italian Civil Code, due to the impossibility of reallocating the vehicle and booked service.'
+          it: 'In caso di cancellazione comunicata oltre il termine di 5 (cinque) giorni dalla data prevista per il servizio, nessun rimborso né credit wallet potrà essere riconosciuto, qualunque sia la motivazione della cancellazione. La prenotazione sarà considerata definitivamente confermata e non rimborsabile, ai sensi e per gli effetti degli artt. 1453 e seguenti del Codice Civile, in considerazione dell\'impossibilità di riallocare il servizio prenotato.',
+          en: 'In case of cancellation communicated within 5 (five) days of the scheduled service date, no refund or credit wallet will be granted, regardless of the reason for cancellation. The booking will be considered definitively confirmed and non-refundable, pursuant to Articles 1453 et seq. of the Italian Civil Code, due to the impossibility of reallocating the booked service.'
         }
       },
       {
@@ -42,8 +42,8 @@ const CancellationPolicyPage = () => {
           en: '3. No Show'
         },
         content: {
-          it: 'In caso di mancata presentazione del Cliente nel giorno e all\'orario previsti per il ritiro del veicolo, senza preventiva comunicazione scritta entro i termini indicati, l\'intero importo versato sarà trattenuto a titolo di penale per mancata fruizione del servizio, ai sensi dell\'art. 1382 c.c. La mancata presentazione include anche ritardi significativi tali da compromettere l\'erogazione del servizio. In tali casi non è previsto alcun rimborso né emissione di voucher.',
-          en: 'In the event of the Customer\'s failure to appear on the day and time scheduled for vehicle pickup, without prior written notice within the specified deadlines, the entire amount paid will be retained as a penalty for non-use of the service, pursuant to Article 1382 of the Italian Civil Code. No-show also includes significant delays that compromise service delivery. In such cases, no refund or voucher will be issued.'
+          it: 'In caso di mancata presentazione del Cliente nel giorno e all\'orario previsti per il servizio, senza preventiva comunicazione scritta entro i termini indicati, l\'intero importo versato sarà trattenuto a titolo di penale per mancata fruizione del servizio, ai sensi dell\'art. 1382 c.c. La mancata presentazione include anche ritardi significativi tali da compromettere l\'erogazione del servizio. In tali casi non è previsto alcun rimborso né emissione di voucher.',
+          en: 'In the event of the Customer\'s failure to appear on the day and time scheduled for the service, without prior written notice within the specified deadlines, the entire amount paid will be retained as a penalty for non-use of the service, pursuant to Article 1382 of the Italian Civil Code. No-show also includes significant delays that compromise service delivery. In such cases, no refund or voucher will be issued.'
         }
       },
       {
@@ -129,8 +129,8 @@ const CancellationPolicyPage = () => {
               </li>
               <li>
                 • {lang === 'it'
-                  ? 'I termini di cancellazione sono calcolati con riferimento alla data e ora del ritiro del veicolo'
-                  : 'Cancellation deadlines are calculated with reference to the vehicle pickup date and time'}
+                  ? 'I termini di cancellazione sono calcolati con riferimento alla data e ora del servizio prenotato'
+                  : 'Cancellation deadlines are calculated with reference to the booked service date and time'}
               </li>
               <li>
                 • {lang === 'it'
@@ -152,6 +152,9 @@ const CancellationPolicyPage = () => {
             </a>
             <p className="text-gray-500 text-sm mt-6">
               Dubai Rent 7.0 S.p.A. - Viale Marconi, 229, 09131 Cagliari CA
+            </p>
+            <p className="text-gray-600 text-xs mt-4">
+              {lang === 'it' ? 'Ultimo aggiornamento: 10 aprile 2026' : 'Last updated: April 10, 2026'}
             </p>
           </div>
         </div>
