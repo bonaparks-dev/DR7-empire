@@ -783,6 +783,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           setCustomerRentalCount(count);
           setIsLoyalCustomer(count >= DEPOSIT_RULES.LOYAL_CUSTOMER_THRESHOLD);
         }
+
+        // Also check admin-set status from customers_extended
+        if (user?.id) {
+          const { data: custExt } = await supabase
+            .from('customers_extended')
+            .select('status')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          if (custExt?.status === 'elite' || custExt?.status === 'member') {
+            setIsLoyalCustomer(true);
+          }
+        }
       } catch (error) {
         console.error('Error fetching rental count:', error);
         setCustomerRentalCount(0);

@@ -162,29 +162,35 @@ const ProfileSettings = () => {
                 }
 
                 // --- Client Status Calculation ---
-                // 1. Check Memberships for "Elite"
-                const { data: memberships, error: membershipError } = await supabase
-                    .from('membership_purchases')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .gt('renewal_date', new Date().toISOString());
-
-                const isElite = memberships && memberships.length > 0;
-
-                // 2. Check Bookings for "Fidelizzato"
-                const { count: bookingsCount, error: bookingsError } = await supabase
-                    .from('bookings')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('userId', user.id);
-
-                const isFidelizzato = (bookingsCount || 0) > 3;
-
-                if (isElite) {
+                // Primary: use admin-set status from customers_extended
+                const adminStatus = data?.status_cliente || data?.status;
+                if (adminStatus === 'elite') {
                     setClientStatus('Elite');
-                } else if (isFidelizzato) {
+                } else if (adminStatus === 'member') {
                     setClientStatus('Fidelizzato');
                 } else {
-                    setClientStatus('Standard');
+                    // Fallback: check memberships + bookings
+                    const { data: memberships } = await supabase
+                        .from('membership_purchases')
+                        .select('id')
+                        .eq('user_id', user.id)
+                        .gt('renewal_date', new Date().toISOString())
+                        .limit(1);
+
+                    if (memberships && memberships.length > 0) {
+                        setClientStatus('Elite');
+                    } else {
+                        const { count: bookingsCount } = await supabase
+                            .from('bookings')
+                            .select('*', { count: 'exact', head: true })
+                            .eq('userId', user.id);
+
+                        if ((bookingsCount || 0) > 3) {
+                            setClientStatus('Fidelizzato');
+                        } else {
+                            setClientStatus('Standard');
+                        }
+                    }
                 }
 
                 // 3. Check DR7 Club subscription
