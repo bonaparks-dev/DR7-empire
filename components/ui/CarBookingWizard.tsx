@@ -2566,32 +2566,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           body: JSON.stringify({ booking: data }),
         }).catch(whatsappError => console.error('Failed to send WhatsApp notification:', whatsappError));
 
-        // Send WhatsApp confirmation to CUSTOMER
+        // Send WhatsApp confirmation to CUSTOMER (uses system_messages template)
         const custPhone = formData.phone || data.customer_phone;
         if (custPhone) {
-          const custFirstName = formData.firstName || 'Cliente';
-          const bRef = data.id.substring(0, 8).toUpperCase();
-          const fmtD = (d: string) => new Date(d).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Rome' });
-          const fmtT = (d: string) => new Date(d).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Rome' });
-          const tEur = (data.price_total / 100).toFixed(2);
-          const insMap: Record<string, string> = { 'KASKO_BASE': 'Kasko Base', 'KASKO_BLACK': 'Kasko Black', 'KASKO_SIGNATURE': 'Kasko Signature', 'DR7': 'Kasko DR7', 'RCA': 'RCA Compresa' };
-          const insLabel = insMap[data.insurance_option || ''] || data.insurance_option || 'Kasko Base';
-
-          let custMsg = `Salve ${custFirstName},\n\nConfermiamo la sua prenotazione.\n\n`;
-          custMsg += `*CONFERMA PRENOTAZIONE NOLEGGIO*\n\n`;
-          custMsg += `*ID:* DR7-${bRef}\n`;
-          custMsg += `*Veicolo:* ${data.vehicle_name || 'N/A'}\n`;
-          custMsg += `*Ritiro:* ${fmtD(data.pickup_date)} alle ${fmtT(data.pickup_date)}\n`;
-          custMsg += `*Riconsegna:* ${fmtD(data.dropoff_date)} alle ${fmtT(data.dropoff_date)}\n`;
-          custMsg += `*Assicurazione:* ${insLabel}\n`;
-          custMsg += `*Totale:* €${tEur}\n`;
-          custMsg += `*Pagamento:* ${data.payment_status === 'succeeded' || data.payment_status === 'paid' ? 'Pagato' : 'In attesa'}\n`;
-          custMsg += `\nCordiali Saluti,\nDR7`;
-
           fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ customPhone: custPhone, customMessage: custMsg }),
+            body: JSON.stringify({ booking: { ...data, payment_status: data.payment_status || 'succeeded' }, customPhone: custPhone }),
           }).catch(e => console.error('Failed to send customer WhatsApp:', e));
         }
 
