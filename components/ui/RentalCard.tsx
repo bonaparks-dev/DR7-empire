@@ -156,7 +156,10 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
                   console.log('RentalCard button clicked for:', item.name, 'ID:', item.id, 'isJet:', isJet);
                   if (isJet) handleJetQuote();
                   else {
-                    console.log('Calling onBook with item:', item);
+                    // Attach availableFrom to item so wizard can auto-adjust pickup time
+                    if (availableFrom) {
+                      (item as any)._availableFrom = availableFrom;
+                    }
                     onBook(item);
                   }
                 }}

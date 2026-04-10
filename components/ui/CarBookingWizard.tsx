@@ -291,10 +291,27 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   // Apply URL-derived search dates on first mount (from the Modifica bar on RentalPage or preventivo)
   useEffect(() => {
     if (!initialSearchDates) return;
+
+    // Auto-adjust pickup time if vehicle has availableFrom (returning same day)
+    let adjustedPickupTime = initialSearchDates.pickupTime;
+    const availFrom = (item as any)?._availableFrom;
+    if (availFrom) {
+      const availDate = new Date(availFrom);
+      const availTime = availDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Rome' });
+      // Round up to next 30-min slot
+      const [h, m] = availTime.split(':').map(Number);
+      const roundedMin = m <= 0 ? '00' : m <= 30 ? '30' : '00';
+      const roundedHour = m > 30 ? h + 1 : h;
+      const roundedTime = `${String(roundedHour).padStart(2, '0')}:${roundedMin}`;
+      if (roundedTime > adjustedPickupTime) {
+        adjustedPickupTime = roundedTime;
+      }
+    }
+
     setFormData(prev => ({
       ...prev,
       pickupDate: initialSearchDates.pickupDate,
-      pickupTime: initialSearchDates.pickupTime,
+      pickupTime: adjustedPickupTime,
       returnDate: initialSearchDates.returnDate,
       returnTime: initialSearchDates.returnTime,
       pickupLocation: initialSearchDates.pickupLocation,
@@ -1375,14 +1392,22 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           const availableFromStr = conflicts[0]._availableFrom;
 
           if (availableFromStr) {
-            // Same-day return — show when it'll be available, don't block
+            // Same-day return — auto-adjust pickup time and show info
             const availFrom = new Date(availableFromStr);
             const availTimeFormatted = availFrom.toLocaleTimeString('it-IT', {
-              hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome'
+              hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Rome'
             });
+            // Round up to next 30-min slot
+            const [ah, am] = availTimeFormatted.split(':').map(Number);
+            const rMin = am <= 0 ? '00' : am <= 30 ? '30' : '00';
+            const rHour = am > 30 ? ah + 1 : ah;
+            const adjustedTime = `${String(rHour).padStart(2, '0')}:${rMin}`;
+
+            // Auto-set pickup time
+            setFormData(prev => ({ ...prev, pickupTime: adjustedTime }));
             setAvailabilityError(null);
             setPartialUnavailabilityWarning(
-              `Questo veicolo sarà disponibile dalle ${availTimeFormatted}. Seleziona un orario di ritiro successivo.`
+              `Questo veicolo sarà disponibile dalle ${adjustedTime}. L'orario di ritiro è stato aggiornato automaticamente.`
             );
           } else {
             const conflictEndFormatted = conflictEnd.toLocaleDateString('it-IT', {
