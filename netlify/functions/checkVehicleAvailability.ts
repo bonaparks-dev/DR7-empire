@@ -95,7 +95,7 @@ export const handler: Handler = async (event) => {
 
         // Get ALL vehicles with this name (not just the first one!)
         const vehiclesResponse = await fetch(
-            `${SUPABASE_URL}/rest/v1/vehicles?select=id,plate,metadata&display_name=eq.${encodeURIComponent(vehicleName)}`,
+            `${SUPABASE_URL}/rest/v1/vehicles?select=id,plate,metadata&display_name=ilike.${encodeURIComponent(vehicleName.trim())}*`,
             {
                 headers: {
                     'apikey': SUPABASE_SERVICE_ROLE_KEY!,

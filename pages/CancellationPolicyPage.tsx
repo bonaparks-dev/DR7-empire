@@ -8,8 +8,12 @@ const CancellationPolicyPage = () => {
 
   const policy = {
     title: {
-      it: 'Cancellazione della Prenotazione e Rimborsi',
-      en: 'Booking Cancellation and Refunds'
+      it: 'Politica di Cancellazione e Rimborsi — Tutti i Servizi',
+      en: 'Cancellation and Refund Policy — All Services'
+    },
+    intro: {
+      it: 'Le seguenti condizioni di cancellazione si applicano a tutti i servizi offerti da DR7: noleggio veicoli, Prime Wash (lavaggio auto), servizi meccanici, noleggio furgoni, NCC, servizi experience e qualsiasi altro servizio prenotabile sulla piattaforma.',
+      en: 'The following cancellation conditions apply to all services offered by DR7: vehicle rental, Prime Wash (car wash), mechanical services, van rental, chauffeur services (NCC), experience services, and any other service bookable on the platform.'
     },
     sections: [
       {
@@ -83,9 +87,13 @@ const CancellationPolicyPage = () => {
             <BackButton to="/" />
           </div>
 
-          <h1 className="text-5xl md:text-6xl font-bold text-white text-center mb-12">
+          <h1 className="text-5xl md:text-6xl font-bold text-white text-center mb-6">
             {lang === 'it' ? policy.title.it : policy.title.en}
           </h1>
+
+          <p className="text-lg text-gray-300 text-center mb-12 max-w-3xl mx-auto">
+            {lang === 'it' ? policy.intro.it : policy.intro.en}
+          </p>
 
           <motion.div
             className="space-y-8"
