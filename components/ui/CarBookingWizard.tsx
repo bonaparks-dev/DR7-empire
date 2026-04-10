@@ -188,6 +188,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [vehicleDepositError, setVehicleDepositError] = useState<string | null>(null);
   const [vehicleDepositVerified, setVehicleDepositVerified] = useState(false);
   const [vehicleDepositInfo, setVehicleDepositInfo] = useState<string | null>(null);
+  const [vehicleDepositIsOwner, setVehicleDepositIsOwner] = useState(true);
+  const [vehicleDepositOwner, setVehicleDepositOwner] = useState({
+    nome: '', cognome: '', codiceFiscale: '', dataNascita: '', luogoNascita: '',
+    indirizzo: '', citta: '', cap: '', provincia: '', telefono: '', email: '',
+  });
   const today = useMemo(() => {
     // Get today's date in Italy timezone (Europe/Rome)
     const italyDate = new Date().toLocaleString('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -2461,6 +2466,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           },
           depositOption: formData.depositOption,
           noDepositSurcharge: noDepositSurcharge,
+          ...(formData.depositOption === 'vehicle_deposit' ? {
+            vehicleDeposit: {
+              targa: vehicleDepositTarga,
+              vehicleInfo: vehicleDepositInfo,
+              isOwner: vehicleDepositIsOwner,
+              ...(!vehicleDepositIsOwner ? { owner: vehicleDepositOwner } : {}),
+            }
+          } : {}),
           // Tier-based booking fields
           driver_tier: driverTier,
           insurance_cost: insuranceCost,
@@ -4983,13 +4996,85 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     </>
                   )}
 
-                  {/* Step 2: Verified — upload libretto + reminder */}
+                  {/* Step 2: Verified — owner check + upload libretto + reminder */}
                   {vehicleDepositVerified && (
                     <>
                       <div className="p-3 bg-green-900/20 border border-green-500/50 rounded-lg mb-4">
                         <p className="text-green-400 text-sm font-semibold">✓ Veicolo verificato: {vehicleDepositInfo}</p>
                         <p className="text-green-300 text-xs mt-1">Targa: {vehicleDepositTarga}</p>
                       </div>
+
+                      {/* Owner check */}
+                      <div className="mb-4">
+                        <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-600 hover:border-gray-500 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={vehicleDepositIsOwner}
+                            onChange={e => setVehicleDepositIsOwner(e.target.checked)}
+                            className="w-5 h-5 rounded"
+                          />
+                          <span className="text-white font-semibold text-sm">Sono il proprietario del veicolo</span>
+                        </label>
+                      </div>
+
+                      {/* Different owner form */}
+                      {!vehicleDepositIsOwner && (
+                        <div className="mb-4 p-4 bg-gray-800/50 border border-gray-600 rounded-lg space-y-3">
+                          <p className="text-white font-semibold text-sm mb-2">Dati del Proprietario del Veicolo</p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="text-xs text-gray-400 mb-1 block">Nome *</label>
+                              <input type="text" value={vehicleDepositOwner.nome} onChange={e => setVehicleDepositOwner(p => ({ ...p, nome: e.target.value }))} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm" placeholder="Nome" />
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-400 mb-1 block">Cognome *</label>
+                              <input type="text" value={vehicleDepositOwner.cognome} onChange={e => setVehicleDepositOwner(p => ({ ...p, cognome: e.target.value }))} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm" placeholder="Cognome" />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-400 mb-1 block">Codice Fiscale *</label>
+                            <input type="text" value={vehicleDepositOwner.codiceFiscale} onChange={e => setVehicleDepositOwner(p => ({ ...p, codiceFiscale: e.target.value.toUpperCase() }))} maxLength={16} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm uppercase" placeholder="RSSMRA85M01H501Z" />
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="text-xs text-gray-400 mb-1 block">Data di Nascita *</label>
+                              <input type="date" value={vehicleDepositOwner.dataNascita} onChange={e => setVehicleDepositOwner(p => ({ ...p, dataNascita: e.target.value }))} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm" />
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-400 mb-1 block">Luogo di Nascita *</label>
+                              <input type="text" value={vehicleDepositOwner.luogoNascita} onChange={e => setVehicleDepositOwner(p => ({ ...p, luogoNascita: e.target.value }))} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm" placeholder="Cagliari" />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-400 mb-1 block">Indirizzo *</label>
+                            <input type="text" value={vehicleDepositOwner.indirizzo} onChange={e => setVehicleDepositOwner(p => ({ ...p, indirizzo: e.target.value }))} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm" placeholder="Via Roma 1" />
+                          </div>
+                          <div className="grid grid-cols-3 gap-3">
+                            <div>
+                              <label className="text-xs text-gray-400 mb-1 block">Città *</label>
+                              <input type="text" value={vehicleDepositOwner.citta} onChange={e => setVehicleDepositOwner(p => ({ ...p, citta: e.target.value }))} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm" placeholder="Cagliari" />
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-400 mb-1 block">CAP *</label>
+                              <input type="text" value={vehicleDepositOwner.cap} onChange={e => setVehicleDepositOwner(p => ({ ...p, cap: e.target.value }))} maxLength={5} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm" placeholder="09100" />
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-400 mb-1 block">Provincia</label>
+                              <input type="text" value={vehicleDepositOwner.provincia} onChange={e => setVehicleDepositOwner(p => ({ ...p, provincia: e.target.value.toUpperCase() }))} maxLength={2} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm uppercase" placeholder="CA" />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="text-xs text-gray-400 mb-1 block">Telefono *</label>
+                              <input type="tel" value={vehicleDepositOwner.telefono} onChange={e => setVehicleDepositOwner(p => ({ ...p, telefono: e.target.value }))} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm" placeholder="+39 333 1234567" />
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-400 mb-1 block">Email</label>
+                              <input type="email" value={vehicleDepositOwner.email} onChange={e => setVehicleDepositOwner(p => ({ ...p, email: e.target.value }))} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm" placeholder="email@esempio.it" />
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Upload libretto */}
                       <div className="mb-4">
@@ -5022,13 +5107,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             setVehicleDepositVerified(false);
                             setVehicleDepositTarga('');
                             setVehicleDepositInfo(null);
+                            setVehicleDepositIsOwner(true);
                           }}
                           className="flex-1 py-3 border border-gray-600 text-white rounded-full font-semibold text-sm hover:bg-gray-800 transition-colors"
                         >
                           Annulla
                         </button>
                         <button
+                          disabled={!vehicleDepositIsOwner && (!vehicleDepositOwner.nome || !vehicleDepositOwner.cognome || !vehicleDepositOwner.codiceFiscale || !vehicleDepositOwner.telefono)}
                           onClick={async () => {
+                            // Upload libretto
                             if (vehicleDepositLibretto && user?.id) {
                               try {
                                 const ext = vehicleDepositLibretto.name.split('.').pop();
@@ -5038,9 +5126,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                                 console.error('Libretto upload error:', e);
                               }
                             }
+                            // Save owner data in booking_details for admin
+                            if (!vehicleDepositIsOwner) {
+                              setFormData(prev => ({
+                                ...prev,
+                                // Store vehicle deposit owner info for the booking
+                              }));
+                            }
                             setShowVehicleDepositPopup(false);
                           }}
-                          className="flex-1 py-3 bg-white text-black rounded-full font-bold text-sm hover:bg-gray-200 transition-colors"
+                          className="flex-1 py-3 bg-white text-black rounded-full font-bold text-sm hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Conferma
                         </button>
