@@ -51,8 +51,8 @@ const CREDIT_PACKAGES: CreditPackage[] = [
     series: 'BOOSTER SERIES',
     name: 'Booster 300',
     rechargeAmount: 300,
-    receivedAmount: 370,
-    bonus: 70,
+    receivedAmount: 369,
+    bonus: 69,
     bonusPercentage: 23,
     popular: true
   },
@@ -62,18 +62,18 @@ const CREDIT_PACKAGES: CreditPackage[] = [
     series: 'POWER SERIES',
     name: 'Power 500',
     rechargeAmount: 500,
-    receivedAmount: 650,
-    bonus: 150,
-    bonusPercentage: 30
+    receivedAmount: 625,
+    bonus: 125,
+    bonusPercentage: 25
   },
   {
     id: 'power-750',
     series: 'POWER SERIES',
     name: 'Power 750',
     rechargeAmount: 750,
-    receivedAmount: 1000,
-    bonus: 250,
-    bonusPercentage: 33
+    receivedAmount: 952.50,
+    bonus: 202.50,
+    bonusPercentage: 27
   },
   // PREMIUM SERIES
   {
@@ -81,18 +81,18 @@ const CREDIT_PACKAGES: CreditPackage[] = [
     series: 'PREMIUM SERIES',
     name: 'Premium 1.000',
     rechargeAmount: 1000,
-    receivedAmount: 1500,
-    bonus: 500,
-    bonusPercentage: 50
+    receivedAmount: 1290,
+    bonus: 290,
+    bonusPercentage: 29
   },
   {
     id: 'premium-2000',
     series: 'PREMIUM SERIES',
     name: 'Premium 2.000',
     rechargeAmount: 2000,
-    receivedAmount: 3200,
-    bonus: 1200,
-    bonusPercentage: 60
+    receivedAmount: 2620,
+    bonus: 620,
+    bonusPercentage: 31
   },
   // ELITE SERIES
   {
@@ -100,9 +100,9 @@ const CREDIT_PACKAGES: CreditPackage[] = [
     series: 'ELITE SERIES',
     name: 'Elite 5.000',
     rechargeAmount: 5000,
-    receivedAmount: 9000,
-    bonus: 4000,
-    bonusPercentage: 80
+    receivedAmount: 6650,
+    bonus: 1650,
+    bonusPercentage: 33
   }
 ];
 
