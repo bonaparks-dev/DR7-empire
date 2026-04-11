@@ -7,13 +7,14 @@ const sections = [
   { id: 'intermediario', num: '2', title: 'Il Nostro Ruolo di Intermediario' },
   { id: 'account', num: '3', title: 'Account Utente e Verifica' },
   { id: 'pagamenti', num: '4', title: 'Prenotazioni e Pagamenti' },
-  { id: 'proprietari', num: '5', title: 'Ruolo dei Proprietari Terzi' },
-  { id: 'responsabilita', num: '6', title: 'Limitazione di Responsabilità' },
-  { id: 'assistente-ai', num: '7', title: 'Assistente Virtuale (AI)' },
-  { id: 'legge', num: '8', title: 'Legge Applicabile' },
-  { id: 'modifiche', num: '9', title: 'Modifiche ai Termini' },
-  { id: 'policy-operativa', num: '10', title: 'Policy Operativa' },
-  { id: 'contatto', num: '11', title: 'Informazioni di Contatto' },
+  { id: 'assegnazione-veicolo', num: '5', title: 'Assegnazione e Sostituzione Veicolo' },
+  { id: 'proprietari', num: '6', title: 'Ruolo dei Proprietari Terzi' },
+  { id: 'responsabilita', num: '7', title: 'Limitazione di Responsabilità' },
+  { id: 'assistente-ai', num: '8', title: 'Assistente Virtuale (AI)' },
+  { id: 'legge', num: '9', title: 'Legge Applicabile' },
+  { id: 'modifiche', num: '10', title: 'Modifiche ai Termini' },
+  { id: 'policy-operativa', num: '11', title: 'Policy Operativa' },
+  { id: 'contatto', num: '12', title: 'Informazioni di Contatto' },
 ];
 
 const TermsOfServicePage: React.FC = () => {
@@ -192,14 +193,32 @@ const TermsOfServicePage: React.FC = () => {
 
           <div className="border-t border-gray-800/60 mb-16" />
 
-          {/* Section 5 */}
+          {/* Section 5 — Assegnazione e Sostituzione Veicolo */}
+          <section
+            id="assegnazione-veicolo"
+            ref={el => { sectionRefs.current['assegnazione-veicolo'] = el; }}
+            className="scroll-mt-28 mb-16"
+          >
+            <div className="flex items-baseline gap-4 mb-6">
+              <span className="text-5xl font-bold text-white/10">05</span>
+              <h2 className="text-2xl font-semibold text-white">Assegnazione e Sostituzione Veicolo</h2>
+            </div>
+            <div className="space-y-4 text-gray-400 leading-relaxed">
+              <p>Il veicolo prenotato dal Cliente corrisponde al modello selezionato in fase di prenotazione. Tuttavia, per cause operative non imputabili a DR7 (quali, a titolo esemplificativo, sinistri, guasti, ritardi nella riconsegna o esigenze tecniche), il veicolo potrebbe non essere disponibile al momento del ritiro. In tali circostanze, DR7 si riserva il diritto di fornire un veicolo sostitutivo appartenente alla stessa categoria o a categoria superiore.</p>
+              <p>Il Cliente accetta che tale sostituzione costituisce regolare esecuzione del contratto, senza diritto a rimborso o riduzione del corrispettivo.</p>
+            </div>
+          </section>
+
+          <div className="border-t border-gray-800/60 mb-16" />
+
+          {/* Section 6 */}
           <section
             id="proprietari"
             ref={el => { sectionRefs.current['proprietari'] = el; }}
             className="scroll-mt-28 mb-16"
           >
             <div className="flex items-baseline gap-4 mb-6">
-              <span className="text-5xl font-bold text-white/10">05</span>
+              <span className="text-5xl font-bold text-white/10">06</span>
               <h2 className="text-2xl font-semibold text-white">Ruolo dei Proprietari Terzi</h2>
             </div>
             <div className="space-y-4 text-gray-400 leading-relaxed">
@@ -235,7 +254,7 @@ const TermsOfServicePage: React.FC = () => {
             className="scroll-mt-28 mb-16"
           >
             <div className="flex items-baseline gap-4 mb-6">
-              <span className="text-5xl font-bold text-white/10">06</span>
+              <span className="text-5xl font-bold text-white/10">07</span>
               <h2 className="text-2xl font-semibold text-white">Limitazione di Responsabilità</h2>
             </div>
             <div className="space-y-4 text-gray-400 leading-relaxed">
@@ -271,7 +290,7 @@ const TermsOfServicePage: React.FC = () => {
             className="scroll-mt-32 mb-16"
           >
             <div className="flex items-baseline gap-4 mb-6">
-              <span className="text-5xl font-bold text-white/10">07</span>
+              <span className="text-5xl font-bold text-white/10">08</span>
               <h2 className="text-2xl font-semibold text-white">Assistente Virtuale (AI)</h2>
             </div>
             <div className="space-y-4 text-gray-400 leading-relaxed">
@@ -311,7 +330,7 @@ const TermsOfServicePage: React.FC = () => {
             className="scroll-mt-28 mb-16"
           >
             <div className="flex items-baseline gap-4 mb-6">
-              <span className="text-5xl font-bold text-white/10">08</span>
+              <span className="text-5xl font-bold text-white/10">09</span>
               <h2 className="text-2xl font-semibold text-white">Legge Applicabile e Foro Competente</h2>
             </div>
             <div className="space-y-4 text-gray-400 leading-relaxed">
@@ -328,7 +347,7 @@ const TermsOfServicePage: React.FC = () => {
             className="scroll-mt-28 mb-16"
           >
             <div className="flex items-baseline gap-4 mb-6">
-              <span className="text-5xl font-bold text-white/10">09</span>
+              <span className="text-5xl font-bold text-white/10">10</span>
               <h2 className="text-2xl font-semibold text-white">Modifiche ai Termini e ai Servizi</h2>
             </div>
             <div className="space-y-4 text-gray-400 leading-relaxed">
@@ -345,7 +364,7 @@ const TermsOfServicePage: React.FC = () => {
             className="scroll-mt-28 mb-16"
           >
             <div className="flex items-baseline gap-4 mb-6">
-              <span className="text-5xl font-bold text-white/10">10</span>
+              <span className="text-5xl font-bold text-white/10">11</span>
               <h2 className="text-2xl font-semibold text-white">Policy Operativa – Tempi di Servizio e Consegna</h2>
             </div>
             <div className="space-y-4 text-gray-400 leading-relaxed">
@@ -389,7 +408,7 @@ const TermsOfServicePage: React.FC = () => {
             className="scroll-mt-28 mb-16"
           >
             <div className="flex items-baseline gap-4 mb-6">
-              <span className="text-5xl font-bold text-white/10">11</span>
+              <span className="text-5xl font-bold text-white/10">12</span>
               <h2 className="text-2xl font-semibold text-white">Informazioni di Contatto</h2>
             </div>
             <div className="space-y-4 text-gray-400 leading-relaxed">
