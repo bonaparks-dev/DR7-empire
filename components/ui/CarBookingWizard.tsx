@@ -6238,6 +6238,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         <li className="flex items-start gap-2"><span className="text-green-400 mt-0.5">✓</span> Sconti esclusivi su noleggi e lavaggi</li>
                         <li className="flex items-start gap-2"><span className="text-green-400 mt-0.5">✓</span> Accesso prioritario alle nuove supercar</li>
                         <li className="flex items-start gap-2"><span className="text-green-400 mt-0.5">✓</span> Promozioni riservate ai membri</li>
+                        <li className="flex items-start gap-2"><span className="text-green-400 mt-0.5">✓</span> DR7 Wallet Bonus fino al 33%</li>
+                        <li className="flex items-start gap-2"><span className="text-green-400 mt-0.5">✓</span> DR7 Wallet Privilege fino al 36%</li>
                       </ul>
                     </div>
 
