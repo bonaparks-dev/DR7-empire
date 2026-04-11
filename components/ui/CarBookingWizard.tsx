@@ -2372,7 +2372,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       const specificId = formData.selectedVehicleId || item.id.replace('car-', '');
       const preInsertConflicts = await checkVehicleAvailability(item.name, pickupDT, dropoffDT, specificId);
       if (preInsertConflicts.length > 0) {
-        setErrors(prev => ({ ...prev, form: 'Il veicolo è stato appena prenotato da un altro utente. Seleziona date diverse.' }));
+        // Check if there's an availableFrom time we can suggest
+        const availFrom = preInsertConflicts[0]?.availableFrom || preInsertConflicts[0]?._availableFrom;
+        if (availFrom) {
+          const availTime = new Date(availFrom).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Rome' });
+          setErrors(prev => ({ ...prev, form: `Il veicolo non è disponibile a quest\'orario. Disponibile dalle ${availTime}.` }));
+        } else {
+          setErrors(prev => ({ ...prev, form: 'Il veicolo è stato appena prenotato da un altro utente. Seleziona date diverse.' }));
+        }
         setIsProcessing(false);
         return;
       }
