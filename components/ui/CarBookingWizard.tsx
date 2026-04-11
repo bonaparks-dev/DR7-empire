@@ -3073,13 +3073,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           customer_email: formData.email,
           customer_phone: formData.phone,
           deposit_amount: getDeposit(),
-          vehicle_id: formData.selectedVehicleId || null,
+          vehicle_id: formData.selectedVehicleId || item.vehicleIds?.[0] || item.id?.replace('car-', '') || null,
           vehicle_plate: (() => {
-          if (!formData.selectedVehicleId || !item.vehicleIds || !Array.isArray((item as any).plates)) return null;
-          const idx = item.vehicleIds.indexOf(formData.selectedVehicleId);
-          return idx >= 0 ? (item as any).plates[idx] || null : null;
+          const vid = formData.selectedVehicleId || item.vehicleIds?.[0] || '';
+          if (!vid || !item.vehicleIds || !Array.isArray((item as any).plates)) return (item as any).plates?.[0] || null;
+          const idx = item.vehicleIds.indexOf(vid);
+          return idx >= 0 ? (item as any).plates[idx] || null : (item as any).plates?.[0] || null;
         })(),
-          // insurance_option stored in booking_details.insuranceOption (not a top-level column)
           service_type: 'car_rental',
           booking_usage_zone: formData.usageZone || null,
           booking_details: {
