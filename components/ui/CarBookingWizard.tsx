@@ -3840,9 +3840,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 className="w-full h-48 object-contain rounded-lg border border-gray-700 bg-gray-800/30"
               />
               <h2 className="text-2xl font-bold text-white mt-3">{item.name}</h2>
-              {effectivePricePerDay && (
-                {/* Prezzo base nascosto */}
-              )}
+              {/* Prezzo base nascosto */}
             </div>
 
             {/* Tariffa warning — show when return time is 30+ min after default (pickupTime - 1h30) */}
