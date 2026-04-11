@@ -6292,6 +6292,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               {step === 4 && (
                 <aside className="lg:col-span-1 lg:sticky lg:top-32 self-start mb-8 lg:mb-0">
                   <div className="bg-gray-900/50 p-6 rounded-lg border border-gray-800">
+                    <p className="text-xs text-amber-400 font-medium mb-2">Prezzo dinamico attivo, blocca ORA, potrebbe aumentare</p>
                     <h2 className="text-2xl font-bold text-white mb-4">RIEPILOGO COSTI</h2>
                     <img src={item.image} alt={item.name} className="w-full h-40 object-contain rounded-md mb-4 bg-gray-800/30" />
                     <div className="space-y-2 text-sm">
