@@ -2472,12 +2472,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         stripe_payment_intent_id: paymentIntentId || null,
         booked_at: new Date().toISOString(),
         booking_usage_zone: formData.usageZone || null,
-        vehicle_id: formData.selectedVehicleId || null,
-        // FIX: Persist vehicle_plate so availability check backend can match by targa
+        vehicle_id: formData.selectedVehicleId || item.vehicleIds?.[0] || item.id?.replace('car-', '') || null,
         vehicle_plate: (() => {
-          if (!formData.selectedVehicleId || !item.vehicleIds || !Array.isArray((item as any).plates)) return null;
-          const idx = item.vehicleIds.indexOf(formData.selectedVehicleId);
-          return idx >= 0 ? (item as any).plates[idx] || null : null;
+          // Try selected vehicle first
+          if (formData.selectedVehicleId && item.vehicleIds && Array.isArray((item as any).plates)) {
+            const idx = item.vehicleIds.indexOf(formData.selectedVehicleId);
+            if (idx >= 0 && (item as any).plates[idx]) return (item as any).plates[idx];
+          }
+          // Fallback: first plate or item-level plate
+          if ((item as any).plates?.[0]) return (item as any).plates[0];
+          if ((item as any).plate) return (item as any).plate;
+          return null;
         })(),
         deposit_amount: getDeposit(),
         // insurance_option stored in booking_details.insuranceOption (not a top-level column)
