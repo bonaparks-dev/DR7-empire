@@ -5114,12 +5114,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         )}
                       </div>
 
+                      {!vehicleDepositLibretto && (
+                        <p className="text-red-400 text-xs mb-3">* Il caricamento del Libretto di Circolazione (fronte) è obbligatorio per procedere</p>
+                      )}
+
                       {/* Reminder */}
                       <div className="p-3 bg-gray-800/40 border border-white/30 rounded-lg mb-6">
                         <p className="text-white text-sm font-semibold">Ricordati di portare al ritiro:</p>
                         <ul className="mt-2 space-y-1 text-white text-sm">
                           <li>• Libretto di Circolazione originale</li>
                           <li>• Chiave del veicolo</li>
+                          <li>• Veicolo (la macchina deve essere presente al ritiro)</li>
                         </ul>
                       </div>
 
