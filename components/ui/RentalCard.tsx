@@ -158,7 +158,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
                   if (isJet) handleJetQuote();
                   else {
                     // Attach availableFrom to item so wizard can auto-adjust pickup time
-                    if (availableFrom) {
+                    if (availableFrom && typeof availableFrom === 'string') {
                       (item as any)._availableFrom = availableFrom;
                     }
                     onBook(item);

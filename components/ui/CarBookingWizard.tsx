@@ -302,7 +302,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // Auto-adjust pickup time if vehicle has availableFrom (returning same day)
     let adjustedPickupTime = initialSearchDates.pickupTime;
     const availFrom = (item as any)?._availableFrom;
-    if (availFrom) {
+    if (availFrom && typeof availFrom === 'string') {
       const availDate = new Date(availFrom);
       const availTime = availDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Rome' });
       // Round up to next 30-min slot
