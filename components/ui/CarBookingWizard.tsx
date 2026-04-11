@@ -3011,7 +3011,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
     }
 
-    if (normalizedPaymentMethod === 'credit' && step === 4) {
+    if (normalizedPaymentMethod === 'credit') {
       try {
         // 1. Prepare Documents (Upload if needed — non-blocking fallback)
         let licenseImageUrl = null;
@@ -3352,7 +3352,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         setPaymentError(err.message || "Errore sconosciuto durante la prenotazione.");
         setIsProcessing(false);
       }
-    } else if (normalizedPaymentMethod === 'nexi' && step === 4) {
+    } else if (normalizedPaymentMethod === 'nexi') {
       setPaymentError(null);
       setIsProcessing(true);
 
