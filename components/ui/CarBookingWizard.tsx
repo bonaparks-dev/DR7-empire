@@ -5102,7 +5102,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
                       {/* Upload libretto verso */}
                       <div className="mb-4">
-                        <label className="block text-sm font-semibold text-white mb-2">Libretto di Circolazione — Verso *</label>
+                        <label className="block text-sm font-semibold text-white mb-2">Libretto di Circolazione — Verso <span className="text-gray-400 font-normal">(opzionale)</span></label>
                         <input
                           type="file"
                           accept="image/*,.pdf"
@@ -5139,7 +5139,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         </button>
                         <button
                           disabled={
-                            !vehicleDepositLibretto || !vehicleDepositLibrettoVerso || !vehicleDepositVerified ||
+                            !vehicleDepositLibretto || !vehicleDepositVerified ||
                             (!vehicleDepositIsOwner && (!vehicleDepositOwner.nome || !vehicleDepositOwner.cognome || !vehicleDepositOwner.codiceFiscale || !vehicleDepositOwner.telefono))
                           }
                           onClick={async () => {
