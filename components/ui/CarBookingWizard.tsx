@@ -3031,6 +3031,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     if (normalizedPaymentMethod === 'credit') {
       try {
+        // 0. Ensure vehicle ID and plate are resolved
+        if (!formData.selectedVehicleId && item.vehicleIds?.length) {
+          setFormData(prev => ({ ...prev, selectedVehicleId: item.vehicleIds![0] }));
+          formData.selectedVehicleId = item.vehicleIds[0];
+        }
+
         // 1. Prepare Documents (Upload if needed — non-blocking fallback)
         let licenseImageUrl = null;
         let idImageUrl = null;
