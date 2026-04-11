@@ -4859,10 +4859,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             setShowNoCauzionePopup(true);
                             return;
                           }
-                          setFormData(prev => ({ ...prev, depositOption: opt.id }));
                           if (opt.id === 'vehicle_deposit') {
+                            // Don't set depositOption yet — wait for popup confirmation
                             setShowVehicleDepositPopup(true);
+                            return;
                           }
+                          setFormData(prev => ({ ...prev, depositOption: opt.id }));
                         }}
                       >
                         <div className="flex items-center">
@@ -5168,13 +5170,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                                 console.error('Libretto verso upload error:', e);
                               }
                             }
-                            // Save owner data in booking_details for admin
-                            if (!vehicleDepositIsOwner) {
-                              setFormData(prev => ({
-                                ...prev,
-                                // Store vehicle deposit owner info for the booking
-                              }));
-                            }
+                            // Set depositOption NOW that all data is confirmed
+                            setFormData(prev => ({ ...prev, depositOption: 'vehicle_deposit' }));
                             setShowVehicleDepositPopup(false);
                           }}
                           className="flex-1 py-3 bg-white text-black rounded-full font-bold text-sm hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
