@@ -3841,7 +3841,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               />
               <h2 className="text-2xl font-bold text-white mt-3">{item.name}</h2>
               {effectivePricePerDay && (
-                <p className="text-gray-400 text-sm">Prezzo base: {formatPrice(effectivePricePerDay)}/giorno</p>
+                {/* Prezzo base nascosto */}
               )}
             </div>
 
