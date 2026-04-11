@@ -86,6 +86,10 @@ export function useSearchAvailability(categoryContext?: string) {
           // But if availableFrom exists, vehicle returns same day — show it
           if (!available && data.availableFrom) {
             ;(item as any)._availableFrom = data.availableFrom
+            console.log(`[availability] ${vehicleName}: conflict but availableFrom=${data.availableFrom}`)
+          }
+          if (data.availableFrom) {
+            console.log(`[availability] ${vehicleName}: available=${available}, availableFrom=${data.availableFrom}, conflicts=${data.conflicts?.length}`)
           }
         }
       } catch {
