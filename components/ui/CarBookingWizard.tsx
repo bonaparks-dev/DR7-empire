@@ -125,8 +125,10 @@ const calculateYearsSince = (dateString: string): number => {
 };
 
 const createItalyDateTime = (dateStr: string, timeStr: string) => {
+  if (!dateStr || !timeStr) return new Date();
   const [year, month, day] = dateStr.split('-').map(Number);
-  const [hours, minutes] = timeStr.split(':').map(Number);
+  const [hours, minutes] = (timeStr || '10:30').split(':').map(Number);
+  if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hours) || isNaN(minutes)) return new Date();
   const checkDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
   const italyFormatter = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Europe/Rome',
@@ -209,7 +211,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const prefillReturn = urlParams.get('return') || (() => {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
-      return tomorrow.toLocaleString('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).split(',')[0];
+      const y = parseInt(tomorrow.toLocaleString('en-GB', { timeZone: 'Europe/Rome', year: 'numeric' }));
+      const m = parseInt(tomorrow.toLocaleString('en-GB', { timeZone: 'Europe/Rome', month: '2-digit' }));
+      const d = parseInt(tomorrow.toLocaleString('en-GB', { timeZone: 'Europe/Rome', day: '2-digit' }));
+      return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     })();
     const prefillPickupTime = urlParams.get('pickupTime') || '10:30';
     const prefillReturnTime = urlParams.get('returnTime') || '09:00';
