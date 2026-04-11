@@ -73,7 +73,7 @@ export async function checkGroupedVehicleAvailability(
       .from('bookings')
       .select('pickup_date, dropoff_date, vehicle_id, vehicle_plate, vehicle_name, booking_details')
       .in('vehicle_id', ids)
-      .not('status', 'in', '(cancelled,annullata,completed,completata)');
+      .not('status', 'in', '(cancelled,annullata,completed,completata,expired)');
 
     // Also fetch bookings by plate (targa) to catch bookings where vehicle_id might be wrong/missing
     let bookingsByPlate: any[] = [];
@@ -82,7 +82,7 @@ export async function checkGroupedVehicleAvailability(
         .from('bookings')
         .select('pickup_date, dropoff_date, vehicle_id, vehicle_plate, vehicle_name, booking_details')
         .in('vehicle_plate', plates)
-        .not('status', 'in', '(cancelled,annullata,completed,completata)');
+        .not('status', 'in', '(cancelled,annullata,completed,completata,expired)');
       bookingsByPlate = plateBookings || [];
     }
 
@@ -102,7 +102,7 @@ export async function checkGroupedVehicleAvailability(
       .from('reservations')
       .select('start_at, end_at, vehicle_id, vehicle_name')
       .in('vehicle_id', ids)
-      .not('status', 'in', '(cancelled,annullata,completed,completata)');
+      .not('status', 'in', '(cancelled,annullata,completed,completata,expired)');
 
     // 2. Identify Unavailable Vehicles (Specific ID conflicts)
     const blockedVehicleIds = new Set<string>();
@@ -273,7 +273,7 @@ export async function getUnavailableDateRanges(vehicleName: string): Promise<Arr
       .from('bookings')
       .select('pickup_date, dropoff_date')
       .eq('vehicle_name', vehicleName)
-      .not('status', 'in', '(cancelled,annullata,completed,completata)')
+      .not('status', 'in', '(cancelled,annullata,completed,completata,expired)')
       .order('pickup_date', { ascending: true });
 
     if (error) {

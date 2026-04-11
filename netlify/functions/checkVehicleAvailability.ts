@@ -79,7 +79,13 @@ export const handler: Handler = async (event) => {
     }
 
     try {
-        const { vehicleName, pickupDate, dropoffDate, targetVehicleId } = JSON.parse(event.body || '{}');
+        const body = JSON.parse(event.body || '{}');
+        const vehicleName = body.vehicleName;
+        const pickupDate = body.pickupDate;
+        const dropoffDate = body.dropoffDate;
+        // Support both targetVehicleId (single) and vehicleIds (array)
+        const targetVehicleId = body.targetVehicleId;
+        const vehicleIdsFromBody: string[] | undefined = body.vehicleIds;
 
         if (!vehicleName || !pickupDate || !dropoffDate) {
             return {
@@ -116,18 +122,21 @@ export const handler: Handler = async (event) => {
             };
         }
 
-        // If targetVehicleId specified, only check that one vehicle
-        const vehicleIds = targetVehicleId
-            ? [targetVehicleId]
-            : vehicles.map((v: any) => v.id);
+        // Determine which vehicle IDs to check: explicit list > targetVehicleId > all by name
+        const vehicleIds = vehicleIdsFromBody && vehicleIdsFromBody.length > 0
+            ? vehicleIdsFromBody
+            : targetVehicleId
+                ? [targetVehicleId]
+                : vehicles.map((v: any) => v.id);
 
         // Get plates for the target vehicles (for plate-based matching)
-        const targetPlates = targetVehicleId
-            ? vehicles.filter((v: any) => v.id === targetVehicleId).map((v: any) => v.plate).filter(Boolean)
-            : vehicles.map((v: any) => v.plate).filter(Boolean);
+        const targetPlates = vehicles
+            .filter((v: any) => vehicleIds.includes(v.id))
+            .map((v: any) => v.plate)
+            .filter(Boolean);
 
         // Fetch bookings by vehicle_id
-        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name&status=not.in.(cancelled,annullata,completed,completata)&vehicle_id=in.(${vehicleIds.join(',')})&order=pickup_date.asc`;
+        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name&status=not.in.(cancelled,annullata,completed,completata,expired)&vehicle_id=in.(${vehicleIds.join(',')})&order=pickup_date.asc`;
 
         const bookingsResponse = await fetch(bookingsUrl, {
             headers: {
@@ -141,7 +150,7 @@ export const handler: Handler = async (event) => {
 
         // Also fetch bookings by plate (targa) to catch mismatched vehicle_id
         if (targetPlates.length > 0) {
-            const plateBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name&status=not.in.(cancelled,annullata,completed,completata)&vehicle_plate=in.(${targetPlates.join(',')})&order=pickup_date.asc`;
+            const plateBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name&status=not.in.(cancelled,annullata,completed,completata,expired)&vehicle_plate=in.(${targetPlates.join(',')})&order=pickup_date.asc`;
             const plateResponse = await fetch(plateBookingsUrl, {
                 headers: {
                     'apikey': SUPABASE_SERVICE_ROLE_KEY!,
@@ -170,7 +179,7 @@ export const handler: Handler = async (event) => {
         }
 
         // Fetch reservations for ALL these vehicles
-        const reservationsUrl = `${SUPABASE_URL}/rest/v1/reservations?select=start_at,end_at,vehicle_id&vehicle_id=in.(${vehicleIds.join(',')})&status=not.in.(cancelled,annullata,completed,completata)&order=start_at.asc`;
+        const reservationsUrl = `${SUPABASE_URL}/rest/v1/reservations?select=start_at,end_at,vehicle_id&vehicle_id=in.(${vehicleIds.join(',')})&status=not.in.(cancelled,annullata,completed,completata,expired)&order=start_at.asc`;
 
         const reservationsResponse = await fetch(reservationsUrl, {
             headers: {
