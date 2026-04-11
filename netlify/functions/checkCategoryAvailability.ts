@@ -96,7 +96,7 @@ export const handler: Handler = async (event) => {
         const allPlates = vehicles.map((v: any) => v.plate).filter(Boolean);
 
         // 2. Fetch bookings overlapping the requested period
-        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,service_type&vehicle_id=in.(${allVehicleIds.join(',')})&status=not.in.(cancelled,annullata,completed,completata)&dropoff_date=gte.${pickup.toISOString()}&pickup_date=lte.${dropoff.toISOString()}`;
+        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,service_type&vehicle_id=in.(${allVehicleIds.join(',')})&status=not.in.(cancelled,annullata,completed,completata,expired)&dropoff_date=gte.${pickup.toISOString()}&pickup_date=lte.${dropoff.toISOString()}`;
         const bookingsResponse = await fetch(bookingsUrl, {
             headers: {
                 'apikey': SUPABASE_SERVICE_ROLE_KEY!,
@@ -108,7 +108,7 @@ export const handler: Handler = async (event) => {
 
         // Also fetch by plate
         if (allPlates.length > 0) {
-            const plateBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,service_type&vehicle_plate=in.(${allPlates.join(',')})&status=not.in.(cancelled,annullata,completed,completata)&dropoff_date=gte.${pickup.toISOString()}&pickup_date=lte.${dropoff.toISOString()}`;
+            const plateBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,service_type&vehicle_plate=in.(${allPlates.join(',')})&status=not.in.(cancelled,annullata,completed,completata,expired)&dropoff_date=gte.${pickup.toISOString()}&pickup_date=lte.${dropoff.toISOString()}`;
             const plateResponse = await fetch(plateBookingsUrl, {
                 headers: {
                     'apikey': SUPABASE_SERVICE_ROLE_KEY!,
@@ -130,7 +130,7 @@ export const handler: Handler = async (event) => {
         }
 
         // 3. Fetch reservations overlapping the requested period
-        const reservationsUrl = `${SUPABASE_URL}/rest/v1/reservations?select=start_at,end_at,vehicle_id,status&vehicle_id=in.(${allVehicleIds.join(',')})&status=not.in.(cancelled,annullata,completed,completata)&end_at=gte.${pickup.toISOString()}&start_at=lte.${dropoff.toISOString()}`;
+        const reservationsUrl = `${SUPABASE_URL}/rest/v1/reservations?select=start_at,end_at,vehicle_id,status&vehicle_id=in.(${allVehicleIds.join(',')})&status=not.in.(cancelled,annullata,completed,completata,expired)&end_at=gte.${pickup.toISOString()}&start_at=lte.${dropoff.toISOString()}`;
         const reservationsResponse = await fetch(reservationsUrl, {
             headers: {
                 'apikey': SUPABASE_SERVICE_ROLE_KEY!,
