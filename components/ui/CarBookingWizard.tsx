@@ -2530,12 +2530,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           insuranceOption: formData.insuranceOption,
           extras: formData.extras,
           kmPackage: {
-            type: formData.kmPackageType === '50km' ? '50km' : (includedKm >= 9999 ? 'unlimited' : formData.kmPackageType),
-            distance: formData.kmPackageType === '50km' ? `50km/day (${includedKm} total)` : (includedKm >= 9999 ? 'unlimited' : (formData.kmPackageType === 'unlimited' ? 'unlimited' : formData.kmPackageDistance)),
+            type: includedKm >= 9999 ? 'unlimited' : (formData.kmPackageType === 'unlimited' ? 'unlimited' : 'included'),
+            distance: (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'unlimited' : `${includedKm || 100} km`,
             cost: kmPackageCost,
-            includedKm: includedKm,
-            isPremium: isPremiumVehicle(item.name),
-            dailyRate: formData.kmPackageType === '50km' ? ACTIVE_SUPERCAR_50KM_RATE : undefined
+            includedKm: includedKm || 100,
+            isPremium: isPremiumVehicle(item.name)
           },
           depositOption: formData.depositOption,
           noDepositSurcharge: noDepositSurcharge,
@@ -3120,12 +3119,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             insuranceOption: formData.insuranceOption,
             extras: formData.extras,
             kmPackage: {
-              type: formData.kmPackageType === '50km' ? '50km' : (includedKm >= 9999 ? 'unlimited' : formData.kmPackageType),
-              distance: formData.kmPackageType === '50km' ? `50km/day (${includedKm} total)` : (includedKm >= 9999 ? 'unlimited' : (formData.kmPackageType === 'unlimited' ? 'unlimited' : formData.kmPackageDistance)),
+              type: (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'unlimited' : 'included',
+              distance: (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'unlimited' : `${includedKm || 100} km`,
               cost: kmPackageCost,
-              includedKm: includedKm,
-              isPremium: isPremiumVehicle(item.name),
-              dailyRate: formData.kmPackageType === '50km' ? ACTIVE_SUPERCAR_50KM_RATE : undefined
+              includedKm: includedKm || 100,
+              isPremium: isPremiumVehicle(item.name)
             },
             depositOption: formData.depositOption,
             noDepositSurcharge: noDepositSurcharge,
@@ -3496,12 +3494,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             insuranceOption: formData.insuranceOption,
             extras: formData.extras,
             kmPackage: {
-              type: formData.kmPackageType === '50km' ? '50km' : recommendedKm.type,
-              distance: formData.kmPackageType === '50km' ? `50km/day (${includedKm} total)` : recommendedKm.value,
+              type: (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'unlimited' : recommendedKm.type,
+              distance: (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'unlimited' : recommendedKm.value || `${includedKm || 100} km`,
               cost: kmPackageCost,
-              includedKm: includedKm,
-              isPremium: isPremiumVehicle(item.name),
-              dailyRate: formData.kmPackageType === '50km' ? ACTIVE_SUPERCAR_50KM_RATE : undefined
+              includedKm: includedKm || 100,
+              isPremium: isPremiumVehicle(item.name)
             },
             depositOption: formData.depositOption,
             noDepositSurcharge: noDepositSurcharge,
@@ -5567,7 +5564,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <p className="text-amber-300 text-xs font-semibold">L'orario di riconsegna supera il margine di 1h30 prima del ritiro: viene conteggiato 1 giorno aggiuntivo.</p>
                     </div>
                   )}
-                  <p>Pacchetto km: {formData.kmPackageType === '50km' ? `50 km/giorno (${includedKm} km totali)` : isUrbanOrCorporate ? 'Inclusi' : (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}</p>
+                  <p>Pacchetto km: {(formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm || 100} km`}</p>
                 </div>
 
                 <div>
@@ -6316,7 +6313,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <div className="flex justify-between">
                         <span className="text-gray-400">Km pacchetto:</span>
                         <span className="text-white font-medium">
-                          {formData.kmPackageType === '50km' ? `50 km/giorno` : (formData.kmPackageType === 'unlimited' || (includedKm && includedKm >= 9999)) ? 'ILLIMITATI' : `${includedKm || 100} km`}
+                          {(formData.kmPackageType === 'unlimited' || (includedKm && includedKm >= 9999)) ? 'ILLIMITATI' : `${includedKm || 100} km`}
                         </span>
                       </div>
 
