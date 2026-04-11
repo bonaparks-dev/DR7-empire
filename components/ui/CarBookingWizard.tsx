@@ -1335,8 +1335,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       setShortSlotWarning(null);
 
       try {
-        const pickupDateTime = `${formData.pickupDate}T${formData.pickupTime}:00`;
-        const dropoffDateTime = `${formData.returnDate}T${formData.returnTime}:00`;
+        const pickupDateTime = createItalyDateTime(formData.pickupDate, formData.pickupTime).toISOString();
+        const dropoffDateTime = createItalyDateTime(formData.returnDate, formData.returnTime).toISOString();
 
         // Check if this is a grouped vehicle (multiple vehicles displayed as one)
         const isGroupedVehicle = item.displayNames && item.displayNames.length > 1;
@@ -2367,8 +2367,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     // FIX 4: Re-check availability immediately before insert to close the race window
     try {
-      const pickupDT = `${formData.pickupDate}T${formData.pickupTime}:00`;
-      const dropoffDT = `${formData.returnDate}T${formData.returnTime}:00`;
+      const pickupDT = createItalyDateTime(formData.pickupDate, formData.pickupTime).toISOString();
+      const dropoffDT = createItalyDateTime(formData.returnDate, formData.returnTime).toISOString();
       const specificId = formData.selectedVehicleId || item.id.replace('car-', '');
       const preInsertConflicts = await checkVehicleAvailability(item.name, pickupDT, dropoffDT, specificId);
       if (preInsertConflicts.length > 0) {
