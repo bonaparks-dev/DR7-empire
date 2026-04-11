@@ -96,7 +96,7 @@ export const handler: Handler = async (event) => {
         const allPlates = vehicles.map((v: any) => v.plate).filter(Boolean);
 
         // 2. Fetch bookings overlapping the requested period
-        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,service_type&vehicle_id=in.(${allVehicleIds.join(',')})&status=not.in.(cancelled,annullata,completed,completata,expired)&dropoff_date=gte.${pickup.toISOString()}&pickup_date=lte.${dropoff.toISOString()}`;
+        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,service_type,customer_name&vehicle_id=in.(${allVehicleIds.join(',')})&status=not.in.(cancelled,annullata,completed,completata,expired)&dropoff_date=gte.${pickup.toISOString()}&pickup_date=lte.${dropoff.toISOString()}`;
         const bookingsResponse = await fetch(bookingsUrl, {
             headers: {
                 'apikey': SUPABASE_SERVICE_ROLE_KEY!,
@@ -163,7 +163,7 @@ export const handler: Handler = async (event) => {
         // Add bookings (buffer ONLY after, not before)
         if (Array.isArray(bookings)) {
             for (const b of bookings) {
-                if (b.service_type === 'car_wash' || !b.vehicle_id) continue;
+                if (b.service_type === 'car_wash' || !b.vehicle_id || b.customer_name === 'Lavaggio Rientro') continue;
                 const vehicleBusy = busyByVehicle.get(b.vehicle_id);
                 if (vehicleBusy) {
                     vehicleBusy.push({

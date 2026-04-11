@@ -101,7 +101,7 @@ export const handler: Handler = async (event) => {
 
         // Get ALL vehicles with this name (not just the first one!)
         const vehiclesResponse = await fetch(
-            `${SUPABASE_URL}/rest/v1/vehicles?select=id,plate,metadata&display_name=ilike.${encodeURIComponent(vehicleName.trim())}*`,
+            `${SUPABASE_URL}/rest/v1/vehicles?select=id,plate,metadata,status&display_name=ilike.${encodeURIComponent(vehicleName.trim())}*&status=neq.retired`,
             {
                 headers: {
                     'apikey': SUPABASE_SERVICE_ROLE_KEY!,
@@ -135,8 +135,8 @@ export const handler: Handler = async (event) => {
             .map((v: any) => v.plate)
             .filter(Boolean);
 
-        // Fetch bookings by vehicle_id
-        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name&status=not.in.(cancelled,annullata,completed,completata,expired)&vehicle_id=in.(${vehicleIds.join(',')})&order=pickup_date.asc`;
+        // Fetch bookings by vehicle_id (exclude Lavaggio Rientro — covered by buffer)
+        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name&status=not.in.(cancelled,annullata,completed,completata,expired)&customer_name=neq.Lavaggio Rientro&vehicle_id=in.(${vehicleIds.join(',')})&order=pickup_date.asc`;
 
         const bookingsResponse = await fetch(bookingsUrl, {
             headers: {
@@ -150,7 +150,7 @@ export const handler: Handler = async (event) => {
 
         // Also fetch bookings by plate (targa) to catch mismatched vehicle_id
         if (targetPlates.length > 0) {
-            const plateBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name&status=not.in.(cancelled,annullata,completed,completata,expired)&vehicle_plate=in.(${targetPlates.join(',')})&order=pickup_date.asc`;
+            const plateBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name&status=not.in.(cancelled,annullata,completed,completata,expired)&customer_name=neq.Lavaggio Rientro&vehicle_plate=in.(${targetPlates.join(',')})&order=pickup_date.asc`;
             const plateResponse = await fetch(plateBookingsUrl, {
                 headers: {
                     'apikey': SUPABASE_SERVICE_ROLE_KEY!,

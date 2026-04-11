@@ -94,7 +94,7 @@ export const handler: Handler = async (event) => {
         let resolvedIds: string[] = vehicleIds || [];
 
         if (resolvedIds.length === 0 && vehicleName) {
-            const vehiclesResponse = await fetch(`${SUPABASE_URL}/rest/v1/vehicles?select=id,metadata&display_name=ilike.${encodeURIComponent(vehicleName.trim())}*`, {
+            const vehiclesResponse = await fetch(`${SUPABASE_URL}/rest/v1/vehicles?select=id,metadata,status&display_name=ilike.${encodeURIComponent(vehicleName.trim())}*&status=neq.retired`, {
                 headers: {
                     'apikey': SUPABASE_SERVICE_ROLE_KEY!,
                     'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
