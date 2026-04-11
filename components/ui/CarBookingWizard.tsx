@@ -6,6 +6,7 @@ import { useCurrency } from '../../contexts/CurrencyContext';
 import { isMassimoRunchina, getRunchinaPrice, SPECIAL_CLIENTS } from '../../utils/clientPricingRules';
 import { calculateMultiDayPrice, calculateIncludedKmFromConfig } from '../../utils/multiDayPricing';
 import { invalidateVehicleCache } from '../../hooks/useVehicles';
+import { addCredits } from '../../utils/creditWallet';
 import { useAuth } from '../../hooks/useAuth';
 import { useBooking } from '../../hooks/useBooking';
 import { supabase } from '../../supabaseClient';
@@ -3233,32 +3234,29 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               }).catch(e => console.error('[credit-booking] customers_extended lookup error:', e));
           }
 
-          // Send Email Confirmation
-          fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
+          // Fire-and-forget notifications (no abort signal — page may navigate away)
+          fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ booking: finalBookingData }),
           }).catch(e => console.error('Email error', e));
 
-          // Send WhatsApp Admin
-          fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+          fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ booking: finalBookingData }),
           }).catch(e => console.error('WhatsApp admin error', e));
 
-          // Send WhatsApp Customer confirmation
           const custPhone = formData.phone?.replace(/[\s\-\+()]/g, '') || '';
           if (custPhone) {
-            fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+            fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ booking: finalBookingData, customPhone: custPhone }),
             }).catch(e => console.error('WhatsApp customer error', e));
           }
 
-          // Auto-generate contract + fattura via admin webhook
-          fetchWithTimeout('https://admin.dr7empire.com/.netlify/functions/post-booking-webhook', {
+          fetch('https://admin.dr7empire.com/.netlify/functions/post-booking-webhook', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ bookingId: data.booking_id }),
