@@ -85,7 +85,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
     >
       <div className="relative overflow-hidden">
         <img src={item.image} alt={item.name} className={`w-full ${isFlottaMode ? '' : imageAspectRatio + ' object-cover'} transition-transform duration-500 group-hover:scale-105`} />
-        {!isFlottaMode && <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>}
+        {/* No overlay — show true car colors */}
       </div>
       {!isFlottaMode && <div className="px-6 pt-6 pb-4 flex-grow flex flex-col">
         <div className="mt-auto space-y-2">
@@ -94,6 +94,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
               <div>
                 {totalPrice && totalDays ? (
                   <div>
+                    <p className="text-[11px] text-gray-500 italic mb-0.5">o similare</p>
                     <div className="flex items-baseline gap-1">
                       <span className="text-2xl font-bold text-white">{formatPrice(totalPrice)}</span>
                       <span className="text-sm text-gray-400">totale</span>
