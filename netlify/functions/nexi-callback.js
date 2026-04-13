@@ -239,8 +239,51 @@ exports.handler = async (event) => {
         return { statusCode: 200, body: 'OK' };
       }
 
-      // Prepaid cards are blocked at payment creation level (captureType: EXPLICIT)
-      // Nexi rejects prepaid cards that can't support pre-authorization holds
+      // ── PREPAID CARD GUARD ──────────────────────────────────
+      let prepaidBlocked = false;
+      if (isSuccess) {
+        try {
+          const NEXI_API_KEY = process.env.NEXI_API_KEY;
+          if (orderId && NEXI_API_KEY) {
+            const opRes = await fetch(`https://xpay.nexigroup.com/api/phoenix-0.0/psp/api/v1/operations/${orderId}`, {
+              headers: { 'X-Api-Key': NEXI_API_KEY, 'Correlation-Id': `${Date.now()}` },
+              signal: AbortSignal.timeout(3000)
+            });
+            if (opRes.ok) {
+              const opData = await opRes.json();
+              const op = opData.operation || opData;
+              const ad = op.additionalData || {};
+              const prepFlag = ad.prepagata || ad.prepaid || op.prepagata;
+              if (prepFlag === 'S' || prepFlag === true || prepFlag === 'true' || prepFlag === 'Y') prepaidBlocked = true;
+              const tipo = (ad.tipoProdotto || ad.productType || '').toLowerCase();
+              if (tipo.includes('prepag') || tipo.includes('prepaid') || tipo.includes('ricaricabil')) prepaidBlocked = true;
+            }
+          }
+        } catch (e) { console.warn('[prepaid-guard] Error:', e.message); }
+
+        if (prepaidBlocked) {
+          console.log(`[prepaid-guard] PREPAID — payment refused for booking ${booking.id}`);
+          // Void the payment immediately
+          try {
+            const NEXI_API_KEY = process.env.NEXI_API_KEY;
+            if (NEXI_API_KEY) {
+              await fetch(`https://xpay.nexigroup.com/api/phoenix-0.0/psp/api/v1/operations/${orderId}/cancels`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Api-Key': NEXI_API_KEY, 'Correlation-Id': `void-${Date.now()}` },
+                body: JSON.stringify({ description: 'Carta prepagata non accettata' })
+              });
+            }
+          } catch (e) { console.error('[prepaid-guard] Void error:', e); }
+
+          await supabase.from('bookings').update({
+            payment_status: 'failed',
+            booking_details: { ...(booking.booking_details || {}), prepaid_card_rejected: true }
+          }).eq('id', booking.id);
+
+          return { statusCode: 200, body: 'PREPAID_REFUSED' };
+        }
+      }
+      // ── END PREPAID CARD GUARD ──────────────────────────────
 
       const updateData = {
         payment_status: isSuccess ? 'succeeded' : 'failed',
@@ -267,30 +310,6 @@ exports.handler = async (event) => {
       }
 
       console.log(`Booking ${booking.id} updated: payment_status=${updateData.payment_status}`);
-
-      // Auto-capture: EXPLICIT mode requires manual capture after authorization
-      if (isSuccess && orderId) {
-        try {
-          const NEXI_API_KEY = process.env.NEXI_API_KEY;
-          if (NEXI_API_KEY) {
-            const captureRes = await fetch(`https://xpay.nexigroup.com/api/phoenix-0.0/psp/api/v1/operations/${orderId}/captures`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-Api-Key': NEXI_API_KEY,
-                'Correlation-Id': `capture-${Date.now()}`
-              },
-              body: JSON.stringify({
-                amount: updateData.payment_completed_at ? undefined : undefined,
-                description: `Capture booking ${booking.id.substring(0, 8)}`
-              })
-            });
-            console.log(`[nexi-callback] Auto-capture result: ${captureRes.status}`);
-          }
-        } catch (captureErr) {
-          console.error('[nexi-callback] Auto-capture error (non-blocking):', captureErr);
-        }
-      }
 
       // Send notifications if payment succeeded
       if (isSuccess) {

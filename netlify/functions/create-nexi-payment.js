@@ -186,7 +186,7 @@ exports.handler = async (event) => {
       },
       paymentSession: {
         actionType: 'PAY',
-        captureType: 'EXPLICIT',  // Pre-authorization: blocks prepaid cards (can't hold funds)
+        captureType: 'IMPLICIT',  // Immediate capture
         amount: amount.toString(),
         language: 'ITA',
         expirationDate: expirationDate,
