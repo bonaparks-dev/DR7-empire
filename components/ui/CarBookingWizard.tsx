@@ -3,10 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Link } from 'react-router-dom';
 import { useCurrency } from '../../contexts/CurrencyContext';
-import { isMassimoRunchina, getRunchinaPrice, SPECIAL_CLIENTS } from '../../utils/clientPricingRules';
+import { isMassimoRunchina, SPECIAL_CLIENTS } from '../../utils/clientPricingRules';
 import { calculateMultiDayPrice, calculateIncludedKmFromConfig } from '../../utils/multiDayPricing';
 import { invalidateVehicleCache } from '../../hooks/useVehicles';
-import { addCredits } from '../../utils/creditWallet';
 import { useAuth } from '../../hooks/useAuth';
 import { useBooking } from '../../hooks/useBooking';
 import { supabase } from '../../supabaseClient';
@@ -125,10 +124,8 @@ const calculateYearsSince = (dateString: string): number => {
 };
 
 const createItalyDateTime = (dateStr: string, timeStr: string) => {
-  if (!dateStr || !timeStr) return new Date();
   const [year, month, day] = dateStr.split('-').map(Number);
-  const [hours, minutes] = (timeStr || '10:30').split(':').map(Number);
-  if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hours) || isNaN(minutes)) return new Date();
+  const [hours, minutes] = timeStr.split(':').map(Number);
   const checkDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
   const italyFormatter = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Europe/Rome',
@@ -178,25 +175,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isSavingPreventivo, setIsSavingPreventivo] = useState(false);
-  const [preventivoSaved, setPreventivoSaved] = useState(false);
-  const [showNoCauzionePopup, setShowNoCauzionePopup] = useState(false);
-  const [noCauzioneRequested, setNoCauzioneRequested] = useState(false);
-  const [noCauzioneSending, setNoCauzioneSending] = useState(false);
-  const [noCauzioneSaved, setNoCauzioneSaved] = useState(false);
-  const [showVehicleDepositPopup, setShowVehicleDepositPopup] = useState(false);
-  const [vehicleDepositLibretto, setVehicleDepositLibretto] = useState<File | null>(null);
-  const [vehicleDepositLibrettoVerso, setVehicleDepositLibrettoVerso] = useState<File | null>(null);
-  const [vehicleDepositTarga, setVehicleDepositTarga] = useState('');
-  const [vehicleDepositLoading, setVehicleDepositLoading] = useState(false);
-  const [vehicleDepositError, setVehicleDepositError] = useState<string | null>(null);
-  const [vehicleDepositVerified, setVehicleDepositVerified] = useState(false);
-  const [vehicleDepositInfo, setVehicleDepositInfo] = useState<string | null>(null);
-  const [vehicleDepositIsOwner, setVehicleDepositIsOwner] = useState(true);
-  const [vehicleDepositOwner, setVehicleDepositOwner] = useState({
-    nome: '', cognome: '', codiceFiscale: '', dataNascita: '', luogoNascita: '',
-    indirizzo: '', citta: '', cap: '', provincia: '', telefono: '', email: '',
-  });
+  const [showNoCauzioneModal, setShowNoCauzioneModal] = useState(false);
   const today = useMemo(() => {
     // Get today's date in Italy timezone (Europe/Rome)
     const italyDate = new Date().toLocaleString('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -211,10 +190,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const prefillReturn = urlParams.get('return') || (() => {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
-      const y = parseInt(tomorrow.toLocaleString('en-GB', { timeZone: 'Europe/Rome', year: 'numeric' }));
-      const m = parseInt(tomorrow.toLocaleString('en-GB', { timeZone: 'Europe/Rome', month: '2-digit' }));
-      const d = parseInt(tomorrow.toLocaleString('en-GB', { timeZone: 'Europe/Rome', day: '2-digit' }));
-      return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      return tomorrow.toLocaleString('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).split(',')[0];
     })();
     const prefillPickupTime = urlParams.get('pickupTime') || '10:30';
     const prefillReturnTime = urlParams.get('returnTime') || '09:00';
@@ -270,7 +246,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       insuranceOption: 'KASKO_BASE', // Default to Kasko Base
       depositOption: '' as string, // deposit option id from TIER_DEPOSIT_OPTIONS
       extras: [] as string[],
-      kmPackageType: 'none' as 'none' | 'unlimited' | '50km',
+      kmPackageType: 'unlimited' as 'none' | 'unlimited' | '50km',
       kmPackageDistance: 100,
       expectedKm: 0,
       usageZone: '' as 'CAGLIARI_SUD' | 'FUORI_ZONA' | '',
@@ -295,101 +271,21 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     };
   });
 
-  // Apply URL-derived search dates on first mount + auto-adjust for availableFrom
+  // Apply URL-derived search dates on first mount (from the Modifica bar on RentalPage)
   useEffect(() => {
     if (!initialSearchDates) return;
-
-    // Calculate adjusted pickup time from availableFrom
-    let adjustedPickupTime = initialSearchDates.pickupTime;
-    const availFrom = (item as any)?._availableFrom;
-    if (availFrom && typeof availFrom === 'string') {
-      try {
-        const availDate = new Date(availFrom);
-        const availTime = availDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Rome' });
-        const [h, m] = availTime.split(':').map(Number);
-        const roundedMin = m <= 0 ? '00' : m <= 30 ? '30' : '00';
-        const roundedHour = m > 30 ? h + 1 : h;
-        const roundedTime = `${String(roundedHour).padStart(2, '0')}:${roundedMin}`;
-        if (roundedTime > adjustedPickupTime) {
-          adjustedPickupTime = roundedTime;
-          console.log(`[availableFrom] Auto-adjusted pickup time: ${initialSearchDates.pickupTime} → ${roundedTime}`);
-        }
-      } catch { /* ignore parse errors */ }
-    }
-
     setFormData(prev => ({
       ...prev,
       pickupDate: initialSearchDates.pickupDate,
-      pickupTime: adjustedPickupTime,
+      pickupTime: initialSearchDates.pickupTime,
       returnDate: initialSearchDates.returnDate,
       returnTime: initialSearchDates.returnTime,
       pickupLocation: initialSearchDates.pickupLocation,
       returnLocation: initialSearchDates.returnLocation,
-      // Pre-fill from preventivo
-      ...(initialSearchDates.insuranceOption ? { insuranceOption: initialSearchDates.insuranceOption } : {}),
-      ...(initialSearchDates.depositOption ? { depositOption: initialSearchDates.depositOption } : {}),
-      ...(initialSearchDates.unlimitedKm ? { kmPackageType: 'unlimited' as const } : {}),
-      ...(initialSearchDates.dr7Flex ? { dr7Flex: true } : {}),
-      ...(initialSearchDates.secondDriver ? { addSecondDriver: true } : {}),
-      ...(initialSearchDates.experienceServices ? { selectedExperiences: initialSearchDates.experienceServices } : {}),
     }));
-    // Set noCauzioneRequested if preventivo was a no_deposit request
-    if (initialSearchDates.depositOption === 'no_deposit') {
-      setNoCauzioneRequested(true);
-    }
-    // Auto-fill discount code from preventivo link (e.g. refused No Cauzione with 5% code)
-    if (initialSearchDates.discountCode) {
-      setDiscountCode(initialSearchDates.discountCode);
-      // Auto-validate after a short delay to let form state settle
-      setTimeout(async () => {
-        try {
-          const response = await fetch('/.netlify/functions/validate-discount-code', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code: initialSearchDates.discountCode, serviceType: 'noleggio' })
-          });
-          const result = await response.json();
-          if (response.ok && result.valid) {
-            const data = { ...result, ...(result.discountCode || {}) };
-            const amt = data.value_amount ?? data.discount_amount ?? data.rental_credit ?? 0;
-            const type = (data.value_type === 'percentage' || data.discount_type === 'percentage') ? 'percentage' as const : 'fixed' as const;
-            setAppliedDiscount({ code: initialSearchDates.discountCode!.toUpperCase(), amount: amt, type, code_type: data.code_type || 'marketing' });
-            setDiscountCodeValid(true);
-          }
-        } catch { /* validation will happen when user reaches step 4 */ }
-      }, 500);
-    }
-    // If coming from a preventivo, skip directly to checkout (Step 4)
-    if (initialSearchDates.preventivoId) {
-      setTimeout(() => setStep(4), 100);
-    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // intentionally runs once on mount only
 
-  // Auto-adjust pickup time from availableFrom (works even without initialSearchDates)
-  useEffect(() => {
-    const availFrom = (item as any)?._availableFrom;
-    if (!availFrom || typeof availFrom !== 'string') return;
-    try {
-      const availDate = new Date(availFrom);
-      const availTime = availDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Rome' });
-      const [h, m] = availTime.split(':').map(Number);
-      const rMin = m <= 0 ? '00' : m <= 30 ? '30' : '00';
-      const rHour = m > 30 ? h + 1 : h;
-      const adjusted = `${String(rHour).padStart(2, '0')}:${rMin}`;
-      // Use setTimeout to run after initialSearchDates useEffect
-      setTimeout(() => {
-        setFormData(prev => {
-          if (adjusted > prev.pickupTime) {
-            console.log(`[availableFrom] Adjusted pickup: ${prev.pickupTime} → ${adjusted}`);
-            return { ...prev, pickupTime: adjusted };
-          }
-          return prev;
-        });
-      }, 200);
-    } catch { /* ignore */ }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Tier classification state
   const [driverTierInfo, setDriverTierInfo] = useState<TierClassification | null>(null);
@@ -488,8 +384,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     finalDailyRateEur?: number
     finalTotalEur?: number
     rentalDays?: number
-    selectedBaseRateEur?: number
-    breakdown?: { label: string; coeff: number; description: string }[]
   } | null>(null)
 
   // Compute max bookable pickup date from availability windows
@@ -573,19 +467,23 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     };
   }, [step, onClose]);
 
-  // Auto-set km package based on vehicle type — only if not pre-set from preventivo
+  // Auto-set km package based on vehicle type
   useEffect(() => {
-    setFormData(prev => {
-      // Don't override if already set from preventivo (e.g., 'unlimited' from saved quote)
-      if (prev.kmPackageType === 'unlimited' || prev.kmPackageType === '50km') return prev;
-      const vType = getVehicleType(item, categoryContext);
-      if (vType === 'SUPERCAR') {
-        return { ...prev, kmPackageType: 'none' };
-      } else {
-        const isUrban = isUrbanVehicle(item.name);
-        return { ...prev, kmPackageType: isUrban ? 'unlimited' : 'none' };
-      }
-    });
+    const vType = getVehicleType(item, categoryContext);
+    if (vType === 'SUPERCAR') {
+      // Supercars default to 50km/day package (price from admin config)
+      setFormData(prev => ({
+        ...prev,
+        kmPackageType: '50km'
+      }));
+    } else {
+      // Urban vehicles get free unlimited km; others get standard calculated km
+      const isUrban = isUrbanVehicle(item.name);
+      setFormData(prev => ({
+        ...prev,
+        kmPackageType: isUrban ? 'unlimited' : 'none'
+      }));
+    }
   }, [item.name, categoryContext]);
 
   // Health ping (helps detect wrong FUNCTIONS_BASE early)
@@ -842,18 +740,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         if (!error && count !== null) {
           setCustomerRentalCount(count);
           setIsLoyalCustomer(count >= DEPOSIT_RULES.LOYAL_CUSTOMER_THRESHOLD);
-        }
-
-        // Also check admin-set status from customers_extended
-        if (user?.id) {
-          const { data: custExt } = await supabase
-            .from('customers_extended')
-            .select('status')
-            .eq('user_id', user.id)
-            .maybeSingle();
-          if (custExt?.status === 'elite' || custExt?.status === 'member') {
-            setIsLoyalCustomer(true);
-          }
         }
       } catch (error) {
         console.error('Error fetching rental count:', error);
@@ -1367,8 +1253,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       setShortSlotWarning(null);
 
       try {
-        const pickupDateTime = createItalyDateTime(formData.pickupDate, formData.pickupTime).toISOString();
-        const dropoffDateTime = createItalyDateTime(formData.returnDate, formData.returnTime).toISOString();
+        const pickupDateTime = `${formData.pickupDate}T${formData.pickupTime}:00`;
+        const dropoffDateTime = `${formData.returnDate}T${formData.returnTime}:00`;
 
         // Check if this is a grouped vehicle (multiple vehicles displayed as one)
         const isGroupedVehicle = item.displayNames && item.displayNames.length > 1;
@@ -1422,39 +1308,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
         if (conflicts.length > 0) {
           const conflictEnd = new Date(conflicts[0].dropoff_date);
-          const availableFromStr = conflicts[0]._availableFrom;
-
-          if (availableFromStr) {
-            // Same-day return — auto-adjust pickup time and show info
-            const availFrom = new Date(availableFromStr);
-            const availTimeFormatted = availFrom.toLocaleTimeString('it-IT', {
-              hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Rome'
-            });
-            // Round up to next 30-min slot
-            const [ah, am] = availTimeFormatted.split(':').map(Number);
-            const rMin = am <= 0 ? '00' : am <= 30 ? '30' : '00';
-            const rHour = am > 30 ? ah + 1 : ah;
-            const adjustedTime = `${String(rHour).padStart(2, '0')}:${rMin}`;
-
-            // Auto-set pickup time
-            setFormData(prev => ({ ...prev, pickupTime: adjustedTime }));
-            setAvailabilityError(null);
-            setPartialUnavailabilityWarning(
-              `Questo veicolo sarà disponibile dalle ${adjustedTime}. L'orario di ritiro è stato aggiornato automaticamente.`
-            );
-          } else {
-            const conflictEndFormatted = conflictEnd.toLocaleDateString('it-IT', {
-              day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Rome'
-            });
-            const conflictTimeFormatted = conflictEnd.toLocaleTimeString('it-IT', {
-              hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome'
-            });
-            setAvailabilityError(
-              `Veicolo non disponibile per le date selezionate. Già prenotato fino al ${conflictEndFormatted} alle ${conflictTimeFormatted}.`
-            );
-            setIsCheckingAvailability(false);
-            return;
-          }
+          const conflictEndFormatted = conflictEnd.toLocaleDateString('it-IT', {
+            day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Rome'
+          });
+          const conflictTimeFormatted = conflictEnd.toLocaleTimeString('it-IT', {
+            hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome'
+          });
+          setAvailabilityError(
+            `Veicolo non disponibile per le date selezionate. Già prenotato fino al ${conflictEndFormatted} alle ${conflictTimeFormatted}.`
+          );
+          setIsCheckingAvailability(false);
+          return;
         }
 
         // Check for partial-day unavailability (e.g., at mechanic)
@@ -1469,21 +1333,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           setPartialUnavailabilityWarning(
             `Attenzione: questo veicolo sara disponibile dopo le ${partialInfo.availableAfter}.`
           );
-        }
-
-        // Check for next booking — "must return by" message
-        const nextStart = (conflicts as any)?._nextBookingStart;
-        if (nextStart && !partialUnavailabilityWarning) {
-          const mustReturnBy = new Date(nextStart);
-          const mustReturnDate = mustReturnBy.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Rome' });
-          const mustReturnTime = mustReturnBy.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
-          // Only show if the next booking is within 3 days of requested return
-          const daysDiff = (mustReturnBy.getTime() - new Date(dropoffDateTime).getTime()) / (1000 * 60 * 60 * 24);
-          if (daysDiff < 3) {
-            setPartialUnavailabilityWarning(
-              `Questo veicolo ha una prenotazione successiva. Riconsegna entro il ${mustReturnDate} alle ${mustReturnTime} o prima.`
-            );
-          }
         }
 
       } catch (error) {
@@ -1507,18 +1356,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     isMassimo, specialDiscountAmount, carWashFee, noDepositSurcharge,
     effectivePricePerDay,
     lavaggioFee, experienceCost, flexCost, supercarDepositSurcharge, deliveryFee,
-    extraDayApplied,
-    listSubtotal, hasDynamicDiscount, dynamicDiscountPct
+    extraDayApplied
   } = useMemo(() => {
     const zero = {
       duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, kmPackageCost: 0, pickupFee: 0, dropoffFee: 0, subtotal: 0, taxes: 0, total: 0, includedKm: 0, driverAge: 0, licenseYears: 0, youngDriverFee: 0, recentLicenseFee: 0, secondDriverFee: 0, recommendedKm: null, membershipDiscount: 0, membershipTier: null, originalTotal: 0, finalTotal: 0,
       isMassimo: false, specialDiscountAmount: 0, carWashFee: 0, noDepositSurcharge: 0,
       effectivePricePerDay: 0,
       lavaggioFee: 0, experienceCost: 0, flexCost: 0, supercarDepositSurcharge: 0, deliveryFee: 0,
-      extraDayApplied: false,
-      listSubtotal: 0, hasDynamicDiscount: false, dynamicDiscountPct: 0
+      extraDayApplied: false
     };
-    if (!item) return zero;
+    if (!item || !item.pricePerDay) return zero;
 
     const pricePerDay = item.pricePerDay?.[currency] || 0;
 
@@ -1527,9 +1374,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     let hours = 0;
     let extraDay = false;
     if (formData.pickupDate && formData.returnDate) {
-      const pickup = safeDate(`${formData.pickupDate}T${formData.pickupTime || '10:30'}`);
-      const ret = safeDate(`${formData.returnDate}T${formData.returnTime || '09:00'}`);
-      if (!isNaN(pickup.getTime()) && !isNaN(ret.getTime()) && pickup < ret) {
+      const pickup = safeDate(`${formData.pickupDate}T${formData.pickupTime}`);
+      const ret = safeDate(`${formData.returnDate}T${formData.returnTime}`);
+      if (pickup < ret) {
         // Updated Logic: User requested "Dal 6 al 8 sono 2 giorni... even if it is 22:30"
         // This implies strict calendar day difference: (Return Date - Pickup Date) in days.
         // We calculate this by normalizing both to midnight or simply taking the difference in days.
@@ -1580,12 +1427,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (isSupercar50km) {
       // 50km/day supercar package: price from admin config, no multi-day discounts
       calculatedRentalCost = billingDaysCalc * ACTIVE_SUPERCAR_50KM_RATE;
-    } else if (isMassimo) {
-      // VIP: per-vehicle fixed multi-day pricing (all vehicles)
-      calculatedRentalCost = getRunchinaPrice(item.name, billingDaysCalc);
-    } else if (dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.selectedBaseRateEur) {
-      // Dynamic pricing: use base rate here, coefficient applied to FULL TOTAL later
-      calculatedRentalCost = dynamicPricing.selectedBaseRateEur * billingDaysCalc;
+    } else if (isMassimo && getVehicleType(item, categoryContext) === 'SUPERCAR') {
+      // Massimo Runchina: flat €339/day for supercars, NO tiered discounts
+      // Additional discounts ONLY via codice sconto
+      calculatedRentalCost = billingDaysCalc * SPECIAL_CLIENTS.MASSIMO_RUNCHINA.config.baseRate;
+    } else if (dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.finalTotalEur) {
+      // Admin-controlled dynamic pricing (revenue management auto_apply mode)
+      calculatedRentalCost = dynamicPricing.finalTotalEur;
     } else {
       // Standard multi-day pricing (fallback when dynamic pricing is disabled or unavailable)
       const vType = getVehicleType(item, categoryContext);
@@ -1642,16 +1490,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // Already handled above
     } else if (formData.kmPackageType === 'unlimited') {
       calculatedIncludedKm = 9999;
-      // Urban vehicles & VIP get free unlimited, others pay from Centralina
-      if (!isUrbanVehicle(item.name) && !isMassimo) {
-        // Use Centralina prices for all vehicle types
-        if (vType === 'FURGONE') {
-          calculatedKmPackageCost = roundToTwoDecimals((configOverlay?.kmPackagePrices?.unlimitedFurgonePerDay ?? 94.50) * billingDaysCalc);
-        } else if (vType === 'V_CLASS') {
-          calculatedKmPackageCost = roundToTwoDecimals((configOverlay?.kmPackagePrices?.unlimitedNccPerDay ?? 189) * billingDaysCalc);
-        } else {
-          calculatedKmPackageCost = roundToTwoDecimals((configOverlay?.kmPackagePrices?.unlimitedFurgonePerDay ?? 94.50) * billingDaysCalc);
-        }
+      // Urban vehicles get free unlimited, others pay
+      if (!isUrbanVehicle(item.name)) {
+        calculatedKmPackageCost = calculateUnlimitedKmPrice(item.name, billingDaysCalc);
       }
     } else if (vType !== 'SUPERCAR') {
       // Urban/Furgone/VClass: use dynamic km included table from admin config
@@ -1662,11 +1503,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // --- DELIVERY FEE (consegna a domicilio) — separate pickup + return ---
     const isDeliveryPickup = formData.pickupLocation === 'home_delivery';
     const isDeliveryReturn = formData.returnLocation === 'home_delivery';
-    // Each direction = one-way fee (km × €/km). No ×2 — DR7 already travels for the rental.
     const pickupDeliveryFee = isDeliveryPickup && formData.deliveryPickupKm > 0
-      ? roundToTwoDecimals(formData.deliveryPickupKm * ACTIVE_DELIVERY_PRICE_PER_KM) : 0;
+      ? roundToTwoDecimals(formData.deliveryPickupKm * ACTIVE_DELIVERY_PRICE_PER_KM * 2) : 0;
     const returnDeliveryFee = isDeliveryReturn && formData.deliveryReturnKm > 0
-      ? roundToTwoDecimals(formData.deliveryReturnKm * ACTIVE_DELIVERY_PRICE_PER_KM) : 0;
+      ? roundToTwoDecimals(formData.deliveryReturnKm * ACTIVE_DELIVERY_PRICE_PER_KM * 2) : 0;
     const calculatedDeliveryFee = pickupDeliveryFee + returnDeliveryFee;
 
     const calculatedPickupFee = 0;
@@ -1700,7 +1540,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const vTypeForDeposit = getVehicleType(item, categoryContext);
     const isUrbanForDeposit = vTypeForDeposit === 'UTILITARIA' || vTypeForDeposit === 'FURGONE' || vTypeForDeposit === 'V_CLASS';
 
-    const urbanNoDepositSurcharge = 0; // Micro Cauzione removed
+    // Urban/corporate: +30% for micro_deposit
+    const urbanNoDepositSurcharge = (isUrbanForDeposit && formData.depositOption === 'micro_deposit')
+      ? roundToTwoDecimals(calculatedSubtotal * 0.30) : 0;
 
     // Supercar: deposit option surcharges (no_deposit = €49/day, vehicle_deposit = €20/day)
     let supercarDepositSurcharge = 0;
@@ -1715,17 +1557,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     const calculatedNoDepositSurcharge = urbanNoDepositSurcharge + supercarDepositSurcharge;
     calculatedSubtotal = calculatedSubtotal + calculatedNoDepositSurcharge;
-
-    // --- DYNAMIC PRICING: apply combined coefficient to FULL TOTAL ---
-    let listSubtotal = calculatedSubtotal; // total before coefficients
-    const hasDynamicCoeffs = dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.breakdown && dynamicPricing.breakdown.length > 0;
-    const combinedCoeff = hasDynamicCoeffs
-      ? (dynamicPricing!.breakdown!.reduce((acc, b) => acc * b.coeff, 1))
-      : 1;
-    const hasDynamicDiscount = hasDynamicCoeffs && Math.abs(combinedCoeff - 1) > 0.001;
-    if (hasDynamicCoeffs) {
-      calculatedSubtotal = roundToTwoDecimals(calculatedSubtotal * combinedCoeff);
-    }
 
     let specialDiscountAmount = 0;
     const calculatedTaxes = 0;
@@ -1760,7 +1591,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       specialDiscountAmount,
       carWashFee,
       noDepositSurcharge: calculatedNoDepositSurcharge,
-      effectivePricePerDay: isSupercar50km ? ACTIVE_SUPERCAR_50KM_RATE : pricePerDay,
+      effectivePricePerDay: isSupercar50km ? ACTIVE_SUPERCAR_50KM_RATE
+        : (dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.finalDailyRateEur)
+          ? dynamicPricing.finalDailyRateEur
+          : pricePerDay,
       // New fields
       lavaggioFee: calculatedLavaggioFee,
       experienceCost: calculatedExperienceCost,
@@ -1768,11 +1602,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       supercarDepositSurcharge,
       deliveryFee: calculatedDeliveryFee,
       extraDayApplied: extraDay,
-      // Prezzo barrato (DoYouItaly style)
-      listSubtotal,
-      combinedCoeff,
-      hasDynamicDiscount,
-      dynamicDiscountPct: hasDynamicDiscount ? Math.round((1 - combinedCoeff) * 100) : 0,
     };
   }, [
     formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime,
@@ -1789,9 +1618,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const onlineDiscountAmount = 0;
   const finalTotalWithOnlineDiscount = finalTotal;
 
-  // Calculate discount code amount
+  // Calculate discount code amount — supercars excluded (except special clients with dedicated codes)
   const discountAmount = useMemo(() => {
     if (!appliedDiscount) return 0;
+    // Safety: never apply discount codes to supercars (except special clients with dedicated codes)
+    if (vehicleType === 'SUPERCAR' && !isMassimo) return 0;
 
     if (appliedDiscount.type === 'percentage') {
       return Math.min(finalTotal * (appliedDiscount.amount / 100), finalTotal);
@@ -1812,8 +1643,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   // Calculate dynamic wallet credit for subscription upsell
   // Based on ~8-12% of booking total, rounded to look natural (not generic)
   const subscriptionWalletCredit = useMemo(() => {
-    const base = grandTotal || finalTotal || 0;
-    return Math.round(base * 0.04 * 100) / 100; // 4% of total
+    const base = finalTotal || grandTotal || 100;
+    // Use a percentage that varies slightly based on the total to feel personalized
+    const pct = base > 500 ? 0.08 : base > 200 ? 0.10 : 0.12;
+    const raw = base * pct;
+    // Round to nearest whole euro, min €5, max €120
+    return Math.max(5, Math.min(120, Math.round(raw)));
   }, [finalTotal, grandTotal]);
 
   // Forcer horaires valides et pas de dimanche
@@ -1908,17 +1743,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   // Calculate deposit based on customer loyalty, license years, age, residency, and vehicle type
   const getDeposit = () => {
-    // No deposit option = always €0
-    if (formData.depositOption === 'no_deposit') return 0;
-
     const vType = getVehicleType(item, categoryContext);
     const isUtilitaria = vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS';
 
     // Special client = always €0
     if (isMassimo) return 0;
 
-    // Utilitaria/Furgone: use same tier-based deposit as supercars
+    // Urban/corporate vehicles: full cauzione = €1000, micro cauzione = €250/€500
     if (isUtilitaria && formData.depositOption === 'with_deposit') return DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT;
+    if (isUtilitaria && formData.depositOption === 'micro_deposit') {
+      return licenseYears >= 5 ? DEPOSIT_RULES.UTILITARIA.LICENSE_5_OR_MORE : DEPOSIT_RULES.UTILITARIA.LICENSE_UNDER_5;
+    }
 
     // Gold/Platinum members OR 3+ rentals = NO deposit
     const memberTier = getMembershipTierName(user);
@@ -2252,8 +2087,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         newErrors.pickupDate = "Siamo chiusi la domenica. Seleziona un altro giorno per il ritiro.";
       }
 
-      // Availability error is shown as a warning near date inputs (line ~3966).
-      // Do NOT hard-block here — the user can still see the warning and decide.
+      // Check if there's an availability error (skip when coming from search — already validated)
+      if (availabilityError && !isFromSearch) {
+        newErrors.availability = availabilityError;
+      }
 
       // Delivery address validation
       if (formData.pickupLocation === 'home_delivery') {
@@ -2358,10 +2195,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (step === 3) {
       const vType = getVehicleType(item, categoryContext);
 
-      if (isUrbanOrCorporate && !formData.depositOption && !isMassimo) {
+      if (isUrbanOrCorporate && !formData.depositOption) {
         newErrors.depositOption = "Devi selezionare un'opzione per la cauzione.";
       }
 
+      // Validate usage zone — skip for Massimo (auto-set to FUORI_ZONA)
+      if (vType === 'SUPERCAR' && !isMassimo && formData.kmPackageType === 'unlimited') {
+        if (!formData.usageZone) {
+          newErrors.usageZone = "Devi selezionare una zona di utilizzo.";
+        }
+      }
     }
     if (step === 4) {
       if (!formData.confirmsDocuments) {
@@ -2399,19 +2242,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     // FIX 4: Re-check availability immediately before insert to close the race window
     try {
-      const pickupDT = createItalyDateTime(formData.pickupDate, formData.pickupTime).toISOString();
-      const dropoffDT = createItalyDateTime(formData.returnDate, formData.returnTime).toISOString();
+      const pickupDT = `${formData.pickupDate}T${formData.pickupTime}:00`;
+      const dropoffDT = `${formData.returnDate}T${formData.returnTime}:00`;
       const specificId = formData.selectedVehicleId || item.id.replace('car-', '');
       const preInsertConflicts = await checkVehicleAvailability(item.name, pickupDT, dropoffDT, specificId);
       if (preInsertConflicts.length > 0) {
-        // Check if there's an availableFrom time we can suggest
-        const availFrom = preInsertConflicts[0]?.availableFrom || preInsertConflicts[0]?._availableFrom;
-        if (availFrom) {
-          const availTime = new Date(availFrom).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Rome' });
-          setErrors(prev => ({ ...prev, form: `Il veicolo non è disponibile a quest\'orario. Disponibile dalle ${availTime}.` }));
-        } else {
-          setErrors(prev => ({ ...prev, form: 'Il veicolo è stato appena prenotato da un altro utente. Seleziona date diverse.' }));
-        }
+        setErrors(prev => ({ ...prev, form: 'Il veicolo è stato appena prenotato da un altro utente. Seleziona date diverse.' }));
         setIsProcessing(false);
         return;
       }
@@ -2504,20 +2340,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         stripe_payment_intent_id: paymentIntentId || null,
         booked_at: new Date().toISOString(),
         booking_usage_zone: formData.usageZone || null,
-        vehicle_id: formData.selectedVehicleId || item.vehicleIds?.[0] || item.id?.replace('car-', '') || null,
+        vehicle_id: formData.selectedVehicleId || null,
+        // FIX: Persist vehicle_plate so availability check backend can match by targa
         vehicle_plate: (() => {
-          // Try selected vehicle first
-          if (formData.selectedVehicleId && item.vehicleIds && Array.isArray((item as any).plates)) {
-            const idx = item.vehicleIds.indexOf(formData.selectedVehicleId);
-            if (idx >= 0 && (item as any).plates[idx]) return (item as any).plates[idx];
-          }
-          // Fallback: first plate or item-level plate
-          if ((item as any).plates?.[0]) return (item as any).plates[0];
-          if ((item as any).plate) return (item as any).plate;
-          return null;
+          if (!formData.selectedVehicleId || !item.vehicleIds || !Array.isArray((item as any).plates)) return null;
+          const idx = item.vehicleIds.indexOf(formData.selectedVehicleId);
+          return idx >= 0 ? (item as any).plates[idx] || null : null;
         })(),
         deposit_amount: getDeposit(),
-        // insurance_option stored in booking_details.insuranceOption (not a top-level column)
+        insurance_option: formData.insuranceOption,
         customer_name: rFullName,
         customer_email: rEmail,
         customer_phone: rPhone,
@@ -2556,22 +2387,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           insuranceOption: formData.insuranceOption,
           extras: formData.extras,
           kmPackage: {
-            type: includedKm >= 9999 ? 'unlimited' : (formData.kmPackageType === 'unlimited' ? 'unlimited' : 'included'),
-            distance: (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'unlimited' : `${includedKm || 100} km`,
+            type: formData.kmPackageType === '50km' ? '50km' : (includedKm >= 9999 ? 'unlimited' : formData.kmPackageType),
+            distance: formData.kmPackageType === '50km' ? `50km/day (${includedKm} total)` : (includedKm >= 9999 ? 'unlimited' : (formData.kmPackageType === 'unlimited' ? 'unlimited' : formData.kmPackageDistance)),
             cost: kmPackageCost,
-            includedKm: includedKm || 100,
-            isPremium: isPremiumVehicle(item.name)
+            includedKm: includedKm,
+            isPremium: isPremiumVehicle(item.name),
+            dailyRate: formData.kmPackageType === '50km' ? ACTIVE_SUPERCAR_50KM_RATE : undefined
           },
           depositOption: formData.depositOption,
           noDepositSurcharge: noDepositSurcharge,
-          ...(formData.depositOption === 'vehicle_deposit' ? {
-            vehicleDeposit: {
-              targa: vehicleDepositTarga,
-              vehicleInfo: vehicleDepositInfo,
-              isOwner: vehicleDepositIsOwner,
-              ...(!vehicleDepositIsOwner ? { owner: vehicleDepositOwner } : {}),
-            }
-          } : {}),
           // Tier-based booking fields
           driver_tier: driverTier,
           insurance_cost: insuranceCost,
@@ -2664,16 +2488,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           body: JSON.stringify({ booking: data }),
         }).catch(whatsappError => console.error('Failed to send WhatsApp notification:', whatsappError));
 
-        // Send WhatsApp confirmation to CUSTOMER (uses system_messages template)
-        const custPhone = formData.phone || data.customer_phone;
-        if (custPhone) {
-          fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ booking: { ...data, payment_status: data.payment_status || 'succeeded' }, customPhone: custPhone }),
-          }).catch(e => console.error('Failed to send customer WhatsApp:', e));
-        }
-
         // Note: Google Calendar event is created automatically by send-booking-confirmation function
 
         // Generate WhatsApp prefilled message for customer
@@ -2708,39 +2522,32 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         openWhatsApp(whatsappUrl);
       }
 
-      // Auto-generate contract + fattura via admin webhook (bypasses auth)
-      fetchWithTimeout('https://admin.dr7empire.com/.netlify/functions/post-booking-webhook', {
+      // Auto-generate contract + fattura on admin side (fire-and-forget)
+      const ADMIN_BASE = 'https://admin.dr7empire.com';
+      fetchWithTimeout(`${ADMIN_BASE}/.netlify/functions/generate-contract`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bookingId: data.id }),
-      }).then(res => res.ok ? console.log('[booking] Contract + fattura webhook OK') : console.error('[booking] Webhook failed:', res.status))
-        .catch(e => console.error('[booking] Webhook error:', e));
+      }).then(async (res) => {
+        if (res.ok) {
+          console.log('[booking] Contract generated, sending signing link...');
+          fetchWithTimeout(`${ADMIN_BASE}/.netlify/functions/signature-init`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bookingId: data.id }),
+          }).catch(e => console.error('[booking] Signature init error:', e));
+        }
+      }).catch(e => console.error('[booking] Contract error:', e));
+
+      fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/generate-fattura`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId: data.id, includeIVA: true }),
+      }).catch(e => console.error('[booking] Fattura error:', e));
 
       // Mark birthday discount code as used
       if (appliedDiscount && data.id) {
         await markDiscountCodeAsUsed(data.id);
-      }
-
-      // DR7 Club subscription — activate after card payment (fee is included in total)
-      const hasClubSubNexi = formData.extras.some(e => e.startsWith('subscription_'));
-      if (hasClubSubNexi && user?.id) {
-        const isAnnual = formData.extras.includes('subscription_annual');
-        const clubPrice = isAnnual ? 39 : 4.90;
-        const expiresAt = new Date();
-        if (isAnnual) expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-        else expiresAt.setMonth(expiresAt.getMonth() + 1);
-        try {
-          await supabase.from('dr7_club_subscriptions').insert({
-            user_id: user.id, plan: isAnnual ? 'annual' : 'monthly',
-            status: 'active', price: clubPrice,
-            started_at: new Date().toISOString(), expires_at: expiresAt.toISOString(),
-          });
-          const { addCredits } = await import('../../utils/creditWallet');
-          await addCredits(user.id, 10, 'DR7 Club — Bonus iscrizione €10', data.id, 'club_signup_bonus');
-          console.log(`[DR7 Club] Activated after Nexi payment for ${user.email}`);
-        } catch (clubErr) {
-          console.error('[DR7 Club] Activation error (non-blocking):', clubErr);
-        }
       }
 
       // FIX 2: Invalidate vehicle cache so availability is fresh after booking
@@ -2765,6 +2572,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // Check if user is logged in
     if (!user) {
       setDiscountCodeError('Devi effettuare il login per utilizzare un codice sconto');
+      return;
+    }
+
+    // Block discount codes on supercar bookings (except for special clients who get codes made for them)
+    if (vehicleType === 'SUPERCAR' && !isMassimoRunchina(user)) {
+      setDiscountCodeError('I codici sconto non sono applicabili ai veicoli Supercar');
       return;
     }
 
@@ -2906,78 +2719,143 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
   };
 
-  // ── SAVE PREVENTIVO (quote) instead of booking ──
-  const handleSavePreventivo = async () => {
-    if (!user || !item || isSavingPreventivo) return;
-    setIsSavingPreventivo(true);
-    try {
-      const pickupISO = `${formData.pickupDate}T${formData.pickupTime || '10:30'}:00`;
-      const dropoffISO = `${formData.returnDate}T${formData.returnTime || '09:00'}:00`;
+  // ── No Cauzione Request Flow ─────────────────────────────────────────
+  const handleNoCauzioneConfirm = async () => {
+    setShowNoCauzioneModal(false);
+    if (!user || !item) return;
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    setIsProcessing(true);
 
-      const resolvedVehicleId = formData.selectedVehicleId || item.vehicleIds?.[0] || item.id.replace('car-', '');
-      const payload = {
-        vehicle_id: resolvedVehicleId,
-        vehicle_name: item.name,
-        vehicle_plate: (item as any).plate || '',
-        vehicle_category: (item as any).category || 'exotic',
-        pickup_date: pickupISO,
-        dropoff_date: dropoffISO,
-        rental_days: duration.days,
-        pickup_location: formData.pickupLocation || 'dr7_office',
-        dropoff_location: formData.returnLocation || formData.pickupLocation || 'dr7_office',
-        base_daily_rate: effectivePricePerDay,
-        // insurance_option stored in booking_details.insuranceOption (not a top-level column)
-        insurance_daily_price: insuranceCost / Math.max(duration.days, 1),
-        insurance_total: insuranceCost,
-        km_limit: formData.kmLimit || includedKm || 0,
-        unlimited_km: formData.kmPackageType === 'unlimited',
-        km_overage_fee: rentalConfig?.sforo_km?._global ?? 1.80,
-        unlimited_km_daily: formData.kmPackageType === 'unlimited' ? (kmPackageCost / Math.max(duration.days, 1)) : 0,
-        unlimited_km_total: formData.kmPackageType === 'unlimited' ? kmPackageCost : 0,
-        second_driver_daily: secondDriverFee / Math.max(duration.days, 1),
-        second_driver_total: secondDriverFee,
-        no_cauzione_daily: noDepositSurcharge,
-        no_cauzione_total: noDepositSurcharge * duration.days,
-        lavaggio_fee: lavaggioFee,
-        delivery_fee: deliveryFee,
-        pickup_fee: pickupFee,
-        subtotal: grandTotal,
-        sconto: specialDiscountAmount + membershipDiscount,
-        sconto_note: membershipTier ? `Sconto ${membershipTier}` : '',
-        total_final: grandTotal,
-        deposit_amount: getDeposit(),
-        driver_tier: driverTier || 'TIER_2',
-        customer_name: `${formData.firstName} ${formData.lastName}`.trim(),
-        customer_phone: formData.phone,
-        extras_detail: {
-          experience_services: formData.experienceServices,
-          flex: formData.dr7Flex,
-          wash_upsell: formData.washUpsellAccepted,
+    try {
+      const pickupDateTime = createItalyDateTime(formData.pickupDate, formData.pickupTime);
+      const dropoffDateTime = createItalyDateTime(formData.returnDate, formData.returnTime);
+      const rFirstName = formData.firstName || (user.fullName?.split(' ')[0]) || '';
+      const rLastName = formData.lastName || (user.fullName?.split(' ').slice(1).join(' ')) || '';
+      const rFullName = `${rFirstName} ${rLastName}`.trim() || user.fullName || 'Cliente';
+      const rEmail = formData.email || user.email || '';
+      const rPhone = formData.phone || (user as any).phone || '';
+      const availableVehicleName = formData.selectedVehicleId
+        ? (item.vehicleIds?.indexOf(formData.selectedVehicleId) >= 0
+          ? ((item as any).displayNames?.[item.vehicleIds.indexOf(formData.selectedVehicleId)] || item.name)
+          : item.name)
+        : item.name;
+
+      const bookingData = {
+        user_id: user.id,
+        vehicle_type: item.type || 'car',
+        vehicle_name: availableVehicleName || item.name,
+        vehicle_image_url: item.image,
+        pickup_date: pickupDateTime.toISOString(),
+        dropoff_date: dropoffDateTime.toISOString(),
+        pickup_location: formData.pickupLocation,
+        dropoff_location: formData.returnLocation,
+        price_total: eurosToCents(grandTotal),
+        currency: currency.toUpperCase(),
+        status: 'pending',
+        payment_status: 'pending',
+        payment_method: 'nexi',
+        deposit_amount: 0,
+        insurance_option: formData.insuranceOption,
+        customer_name: rFullName,
+        customer_email: rEmail,
+        customer_phone: rPhone,
+        vehicle_id: formData.selectedVehicleId || null,
+        booked_at: new Date().toISOString(),
+        booking_details: {
+          customer: {
+            fullName: rFullName,
+            firstName: rFirstName,
+            lastName: rLastName,
+            email: rEmail,
+            phone: rPhone,
+            birthDate: formData.birthDate,
+            codiceFiscale: formData.codiceFiscale,
+            sesso: formData.sesso,
+            luogoNascita: formData.luogoNascita,
+            provinciaNascita: formData.provinciaNascita,
+            residenza: formData.residenza,
+            licenseNumber: formData.licenseNumber,
+            licenseIssueDate: formData.licenseIssueDate,
+            address: formData.address,
+          },
+          depositOption: 'no_deposit',
+          noDepositSurcharge: noDepositSurcharge,
+          deposit_surcharge: noDepositSurcharge,
+          no_cauzione_request: true,
+          no_cauzione_status: 'pending',
+          driver_tier: driverTier,
+          insuranceOption: formData.insuranceOption,
+          insurance_cost: insuranceCost,
+          duration: `${duration.days} days`,
+          kmPackage: {
+            type: formData.kmPackageType,
+            includedKm: includedKm,
+          },
         },
-        notes: noCauzioneRequested ? 'Richiesta formula senza cauzione' : '',
-        no_cauzione_request: noCauzioneRequested && formData.depositOption === 'no_deposit',
       };
 
-      const res = await fetch('/.netlify/functions/create-website-preventivo', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      const { data, error } = await supabase.from('bookings').insert(bookingData).select().single();
+      if (error) throw new Error(`Errore: ${error.message}`);
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Errore salvataggio preventivo');
+      // Send WhatsApp to customer
+      if (data && rPhone) {
+        const customerMsg = `Gentile ${rFirstName},\n\n`
+          + `abbiamo ricevuto la sua richiesta per la formula senza cauzione relativa alla prenotazione appena effettuata.\n\n`
+          + `Il nostro team sta effettuando una verifica rapida per confermarne l'idoneità.\n\n`
+          + `Riceverà a breve un aggiornamento con l'esito e, in caso di approvazione, il link di pagamento per completare la prenotazione.\n\n`
+          + `Restiamo a disposizione.\n\n`
+          + `Cordiali Saluti,\nDR7`;
+
+        fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ customPhone: rPhone, customMessage: customerMsg }),
+        }).catch(e => console.error('[noCauzione] WhatsApp customer error:', e));
+
+        // Notify admin (standard notification)
+        fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ booking: data }),
+        }).catch(e => console.error('[noCauzione] WhatsApp admin error:', e));
+
+        // Notify boss about no cauzione request
+        const bossMsg = `*RICHIESTA NO CAUZIONE*\n\n`
+          + `*Cliente:* ${rFullName}\n`
+          + `*Telefono:* ${rPhone}\n`
+          + `*Veicolo:* ${availableVehicleName}\n`
+          + `*Periodo:* ${formData.pickupDate} → ${formData.returnDate}\n`
+          + `*Totale:* €${grandTotal.toFixed(2)}\n\n`
+          + `Approvare o rifiutare dall'admin.`;
+        fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ customPhone: '393472817258', customMessage: bossMsg }),
+        }).catch(e => console.error('[noCauzione] WhatsApp boss error:', e));
       }
 
-      setPreventivoSaved(true);
+      // Upsert customer
+      if (user?.id) {
+        supabase.from('customers_extended')
+          .select('id').eq('user_id', user.id).maybeSingle()
+          .then(({ data: existing }) => {
+            const rec: Record<string, any> = {
+              nome: formData.firstName, cognome: formData.lastName,
+              email: formData.email, telefono: formData.phone,
+              codice_fiscale: formData.codiceFiscale, tipo_cliente: 'persona_fisica', source: 'website_booking',
+            };
+            if (existing?.id) supabase.from('customers_extended').update(rec).eq('id', existing.id).then(() => {});
+            else supabase.from('customers_extended').insert({ ...rec, user_id: user.id }).then(() => {});
+          }).catch(() => {});
+      }
+
+      if (data) onBookingComplete(data);
     } catch (err: any) {
-      console.error('Preventivo save error:', err);
-      alert('Errore: ' + (err.message || 'Riprova'));
+      setPaymentError(err.message || 'Errore durante la richiesta');
     } finally {
-      setIsSavingPreventivo(false);
+      isSubmittingRef.current = false;
+      setIsProcessing(false);
     }
   };
 
@@ -2986,6 +2864,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     setPaymentError(null);
     console.log("handleSubmit called", { paymentMethod: formData.paymentMethod, step, userId: user?.id });
     if (!validateStep() || !item) return;
+
+    // Intercept no_deposit: show info modal instead of proceeding to payment
+    if (formData.depositOption === 'no_deposit') {
+      setShowNoCauzioneModal(true);
+      return;
+    }
 
     // Ref-based guard: prevents double-tap/double-click even if state hasn't updated yet
     if (isSubmittingRef.current) return;
@@ -3042,7 +2926,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
 
     // Check sufficient balance only for credit wallet payments
-    // Note: DR7 Club subscription is NOT included in grandTotal — it's charged separately
     if (normalizedPaymentMethod === 'credit') {
       const hasBalance = await hasSufficientBalance(user.id, grandTotal);
       if (!hasBalance) {
@@ -3054,14 +2937,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
     }
 
-    if (normalizedPaymentMethod === 'credit') {
+    if (normalizedPaymentMethod === 'credit' && step === 4) {
       try {
-        // 0. Ensure vehicle ID and plate are resolved
-        if (!formData.selectedVehicleId && item.vehicleIds?.length) {
-          setFormData(prev => ({ ...prev, selectedVehicleId: item.vehicleIds![0] }));
-          formData.selectedVehicleId = item.vehicleIds[0];
-        }
-
         // 1. Prepare Documents (Upload if needed — non-blocking fallback)
         let licenseImageUrl = null;
         let idImageUrl = null;
@@ -3104,14 +2981,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           customer_email: formData.email,
           customer_phone: formData.phone,
           deposit_amount: getDeposit(),
-          vehicle_id: formData.selectedVehicleId || item.vehicleIds?.[0] || item.id?.replace('car-', '') || null,
+          vehicle_id: formData.selectedVehicleId || null,
           vehicle_plate: (() => {
-          const vid = formData.selectedVehicleId || item.vehicleIds?.[0] || '';
-          if (!vid || !item.vehicleIds || !Array.isArray((item as any).plates)) return (item as any).plates?.[0] || null;
-          const idx = item.vehicleIds.indexOf(vid);
-          return idx >= 0 ? (item as any).plates[idx] || null : (item as any).plates?.[0] || null;
+          if (!formData.selectedVehicleId || !item.vehicleIds || !Array.isArray((item as any).plates)) return null;
+          const idx = item.vehicleIds.indexOf(formData.selectedVehicleId);
+          return idx >= 0 ? (item as any).plates[idx] || null : null;
         })(),
-          service_type: 'car_rental',
+          insurance_option: formData.insuranceOption,
           booking_usage_zone: formData.usageZone || null,
           booking_details: {
             customer: {
@@ -3145,11 +3021,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             insuranceOption: formData.insuranceOption,
             extras: formData.extras,
             kmPackage: {
-              type: (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'unlimited' : 'included',
-              distance: (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'unlimited' : `${includedKm || 100} km`,
+              type: formData.kmPackageType === '50km' ? '50km' : (includedKm >= 9999 ? 'unlimited' : formData.kmPackageType),
+              distance: formData.kmPackageType === '50km' ? `50km/day (${includedKm} total)` : (includedKm >= 9999 ? 'unlimited' : (formData.kmPackageType === 'unlimited' ? 'unlimited' : formData.kmPackageDistance)),
               cost: kmPackageCost,
-              includedKm: includedKm || 100,
-              isPremium: isPremiumVehicle(item.name)
+              includedKm: includedKm,
+              isPremium: isPremiumVehicle(item.name),
+              dailyRate: formData.kmPackageType === '50km' ? ACTIVE_SUPERCAR_50KM_RATE : undefined
             },
             depositOption: formData.depositOption,
             noDepositSurcharge: noDepositSurcharge,
@@ -3269,34 +3146,39 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               }).catch(e => console.error('[credit-booking] customers_extended lookup error:', e));
           }
 
-          // Fire-and-forget notifications (no abort signal — page may navigate away)
-          fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
+          // Send Email Confirmation
+          fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ booking: finalBookingData }),
           }).catch(e => console.error('Email error', e));
 
-          fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
+          // Send WhatsApp Admin
+          fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ booking: finalBookingData }),
-          }).catch(e => console.error('WhatsApp admin error', e));
+          }).catch(e => console.error('WhatsApp error', e));
 
-          const custPhone = formData.phone?.replace(/[\s\-\+()]/g, '') || '';
-          if (custPhone) {
-            fetch(`${FUNCTIONS_BASE}/.netlify/functions/send-whatsapp-notification`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ booking: finalBookingData, customPhone: custPhone }),
-            }).catch(e => console.error('WhatsApp customer error', e));
-          }
-
-          fetch('https://admin.dr7empire.com/.netlify/functions/post-booking-webhook', {
+          // Auto-generate contract + fattura on admin side (fire-and-forget)
+          const ADMIN_BASE = 'https://admin.dr7empire.com';
+          fetchWithTimeout(`${ADMIN_BASE}/.netlify/functions/generate-contract`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ bookingId: data.booking_id }),
-          }).then(res => res.ok ? console.log('[credit-booking] Webhook OK') : console.error('[credit-booking] Webhook failed:', res.status))
-            .catch(e => console.error('[credit-booking] Webhook error:', e));
+          }).then(async (res) => {
+            if (res.ok) {
+              console.log('[credit-booking] Contract generated, sending signing link...');
+              // signature-init accepts bookingId to find the contract
+              fetchWithTimeout(`${ADMIN_BASE}/.netlify/functions/signature-init`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bookingId: data.booking_id }),
+              }).catch(e => console.error('[credit-booking] Signature init error:', e));
+            }
+          }).catch(e => console.error('[credit-booking] Contract error:', e));
+
+          // No fattura for credit wallet bookings — fattura was already generated when credits were purchased
 
           // DR7 Club 3% cashback — grant wallet credit on payment
           try {
@@ -3308,42 +3190,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             }
           } catch (cashbackErr) {
             console.error('[credit-booking] DR7 Club cashback error (non-blocking):', cashbackErr);
-          }
-
-          // DR7 Club subscription — activate + send payment link
-          const hasClubSub = formData.extras.some(e => e.startsWith('subscription_'));
-          if (hasClubSub && user?.id) {
-            const isAnnual = formData.extras.includes('subscription_annual');
-            const clubPrice = isAnnual ? 39 : 4.90;
-            const clubLabel = isAnnual ? 'DR7 Club Annuale' : 'DR7 Club Mensile';
-            const expiresAt = new Date();
-            if (isAnnual) expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-            else expiresAt.setMonth(expiresAt.getMonth() + 1);
-            try {
-              // Activate subscription
-              await supabase.from('dr7_club_subscriptions').insert({
-                user_id: user.id, plan: isAnnual ? 'annual' : 'monthly',
-                status: 'active', price: clubPrice,
-                started_at: new Date().toISOString(), expires_at: expiresAt.toISOString(),
-              });
-              // Signup bonus €10
-              const { addCredits } = await import('../../utils/creditWallet');
-              await addCredits(user.id, 10, 'DR7 Club — Bonus iscrizione €10', data.booking_id, 'club_signup_bonus');
-              // Send Nexi payment link for the Club fee
-              await fetch('https://admin.dr7empire.com/.netlify/functions/nexi-pay-by-link', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  amount: clubPrice,
-                  description: `${clubLabel} — ${formData.firstName} ${formData.lastName}`,
-                  customerEmail: user.email || formData.email,
-                  expirationHours: 48,
-                }),
-              });
-              console.log(`[DR7 Club] Activated + Nexi link sent for ${user.email}`);
-            } catch (clubErr) {
-              console.error('[DR7 Club] Activation error (non-blocking):', clubErr);
-            }
           }
 
           // Mark birthday discount code as used
@@ -3397,7 +3243,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         setPaymentError(err.message || "Errore sconosciuto durante la prenotazione.");
         setIsProcessing(false);
       }
-    } else if (normalizedPaymentMethod === 'nexi') {
+    } else if (normalizedPaymentMethod === 'nexi' && step === 4) {
       setPaymentError(null);
       setIsProcessing(true);
 
@@ -3486,7 +3332,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           const idx = item.vehicleIds.indexOf(formData.selectedVehicleId);
           return idx >= 0 ? (item as any).plates[idx] || null : null;
         })(),
-            // insurance_option stored in booking_details.insuranceOption (not a top-level column)
+            insurance_option: formData.insuranceOption,
             deposit_amount: getDeposit(),
             booking_usage_zone: formData.usageZone || null,
             customer: {
@@ -3520,11 +3366,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             insuranceOption: formData.insuranceOption,
             extras: formData.extras,
             kmPackage: {
-              type: (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'unlimited' : recommendedKm.type,
-              distance: (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'unlimited' : recommendedKm.value || `${includedKm || 100} km`,
+              type: formData.kmPackageType === '50km' ? '50km' : recommendedKm.type,
+              distance: formData.kmPackageType === '50km' ? `50km/day (${includedKm} total)` : recommendedKm.value,
               cost: kmPackageCost,
-              includedKm: includedKm || 100,
-              isPremium: isPremiumVehicle(item.name)
+              includedKm: includedKm,
+              isPremium: isPremiumVehicle(item.name),
+              dailyRate: formData.kmPackageType === '50km' ? ACTIVE_SUPERCAR_50KM_RATE : undefined
             },
             depositOption: formData.depositOption,
             noDepositSurcharge: noDepositSurcharge,
@@ -3571,7 +3418,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           bookingData.vehicle_image_url = item.image;
           bookingData.vehicle_id = formData.selectedVehicleId || null;
           bookingData.deposit_amount = getDeposit();
-          // insurance_option is in booking_details.insuranceOption, not a top-level column
+          bookingData.insurance_option = formData.insuranceOption;
           bookingData.booking_usage_zone = formData.usageZone || null;
 
           const { data: insertedBooking, error: insertError } = await supabase
@@ -3653,42 +3500,19 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         }
 
         // Normal Nexi flow: amount > 0
-        // 3. Insert booking immediately into bookings table as pending/unpaid
-        //    This blocks the calendar slot so no one else can book the same car
-        bookingData.status = 'pending';
-        bookingData.payment_status = 'unpaid';
-        bookingData.vehicle_image_url = item.image;
-        bookingData.vehicle_id = formData.selectedVehicleId || null;
-        bookingData.deposit_amount = getDeposit();
-        // insurance_option is in booking_details.insuranceOption, not a top-level column
-        bookingData.booking_usage_zone = formData.usageZone || null;
-        bookingData.booking_details = {
-          ...bookingData.booking_details,
-          nexi_order_id: nexiOrderId,
-          payment_link_created_at: new Date().toISOString(),
-          payment_link_expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-        };
-
-        const { data: insertedPendingBooking, error: bookingInsertError } = await supabase
-          .from('bookings')
-          .insert(bookingData)
-          .select()
-          .single();
-
-        if (bookingInsertError) {
-          console.error("Booking INSERT failed:", bookingInsertError);
-          throw new Error(`Errore salvataggio prenotazione: ${bookingInsertError.message}`);
-        }
-
-        console.log("Pending booking created in bookings table:", insertedPendingBooking.id);
-
-        // Also store in pending_nexi_bookings as backup for PaymentSuccessPage fallback
-        await supabase
+        // 3. Store booking data in pending_nexi_bookings (NOT in bookings table)
+        // The real booking will only be created AFTER payment succeeds via nexi-callback
+        const { error: pendingError } = await supabase
           .from('pending_nexi_bookings')
           .insert({
             nexi_order_id: nexiOrderId,
-            booking_data: { ...bookingData, booking_id: insertedPendingBooking.id }
-          }).catch(e => console.warn("pending_nexi_bookings backup insert failed:", e));
+            booking_data: bookingData
+          });
+
+        if (pendingError) {
+          console.error("Pending booking INSERT failed:", { message: pendingError.message, code: pendingError.code, details: pendingError.details, hint: pendingError.hint });
+          throw new Error(`Errore salvataggio prenotazione: ${pendingError.message}`);
+        }
 
         // 4. Validate amount before calling Nexi
         const amountCents = eurosToCents(grandTotal);
@@ -3791,6 +3615,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   const handleSubscriptionAccept = () => {
     setShowSubscriptionUpsell(false);
+    // Store selected subscription in formData extras
     if (selectedSubscription) {
       const subExtra = selectedSubscription === 'monthly' ? 'subscription_monthly' : 'subscription_annual';
       setFormData(prev => ({
@@ -3863,7 +3688,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 className="w-full h-48 object-contain rounded-lg border border-gray-700 bg-gray-800/30"
               />
               <h2 className="text-2xl font-bold text-white mt-3">{item.name}</h2>
-              {/* Prezzo base nascosto */}
+              {effectivePricePerDay && (
+                <p className="text-gray-400 text-sm">Prezzo base: {formatPrice(effectivePricePerDay)}/giorno</p>
+              )}
             </div>
 
             {/* Tariffa warning — show when return time is 30+ min after default (pickupTime - 1h30) */}
@@ -3940,7 +3767,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               {/* Delivery address — PICKUP domicilio */}
               {formData.pickupLocation === 'home_delivery' && (
                 <div className="mt-4 p-4 rounded-lg border border-gray-700 bg-gray-800/40">
-                  <label className="text-sm text-white font-semibold mb-3 block">Indirizzo consegna veicolo *</label>
+                  <label className="text-sm text-yellow-400 font-semibold mb-3 block">Indirizzo consegna veicolo *</label>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="col-span-2 sm:col-span-1">
                       <input type="text" placeholder="Via *" value={formData.deliveryPickupVia || ''} onChange={(e) => setFormData(prev => ({ ...prev, deliveryPickupVia: e.target.value }))} className="w-full px-3 py-2 rounded bg-gray-900 border border-gray-600 text-white text-sm placeholder-gray-500 focus:border-white focus:outline-none" />
@@ -3956,8 +3783,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     </div>
                   </div>
                   {formData.deliveryPickupKm > 0 && (
-                    <p className="text-sm text-white mt-3 font-semibold">
-                      Costo consegna: {formData.deliveryPickupKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM} = €{(formData.deliveryPickupKm * ACTIVE_DELIVERY_PRICE_PER_KM).toFixed(2)}
+                    <p className="text-sm text-yellow-400 mt-3 font-semibold">
+                      Costo consegna: {formData.deliveryPickupKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM} × 2 (A/R) = €{(formData.deliveryPickupKm * ACTIVE_DELIVERY_PRICE_PER_KM * 2).toFixed(2)}
                     </p>
                   )}
                   <p className="text-xs text-gray-500 mt-2">La distanza sarà verificata da DR7. In caso di discrepanza, verrà applicata la distanza reale.</p>
@@ -3967,7 +3794,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               {/* Delivery address — RETURN domicilio */}
               {formData.returnLocation === 'home_delivery' && (
                 <div className="mt-4 p-4 rounded-lg border border-gray-700 bg-gray-800/40">
-                  <label className="text-sm text-white font-semibold mb-3 block">Indirizzo ritiro/riconsegna veicolo *</label>
+                  <label className="text-sm text-yellow-400 font-semibold mb-3 block">Indirizzo ritiro/riconsegna veicolo *</label>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="col-span-2 sm:col-span-1">
                       <input type="text" placeholder="Via *" value={formData.deliveryReturnVia || ''} onChange={(e) => setFormData(prev => ({ ...prev, deliveryReturnVia: e.target.value }))} className="w-full px-3 py-2 rounded bg-gray-900 border border-gray-600 text-white text-sm placeholder-gray-500 focus:border-white focus:outline-none" />
@@ -3983,8 +3810,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     </div>
                   </div>
                   {formData.deliveryReturnKm > 0 && (
-                    <p className="text-sm text-white mt-3 font-semibold">
-                      Costo riconsegna: {formData.deliveryReturnKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM} = €{(formData.deliveryReturnKm * ACTIVE_DELIVERY_PRICE_PER_KM).toFixed(2)}
+                    <p className="text-sm text-yellow-400 mt-3 font-semibold">
+                      Costo riconsegna: {formData.deliveryReturnKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM} × 2 (A/R) = €{(formData.deliveryReturnKm * ACTIVE_DELIVERY_PRICE_PER_KM * 2).toFixed(2)}
                     </p>
                   )}
                   <p className="text-xs text-gray-500 mt-2">La distanza sarà verificata da DR7. In caso di discrepanza, verrà applicata la distanza reale.</p>
@@ -4216,8 +4043,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     </div>
                   )}
                   {partialUnavailabilityWarning && !availabilityError && (
-                    <div className="mt-4 p-4 bg-gray-800/50 border-2 border-white/40 rounded-lg">
-                      <p className="text-white font-semibold">{partialUnavailabilityWarning}</p>
+                    <div className="mt-4 p-4 bg-yellow-900/30 border-2 border-yellow-500 rounded-lg">
+                      <p className="text-yellow-200 font-semibold">{partialUnavailabilityWarning}</p>
                     </div>
                   )}
                   {shortSlotWarning && !availabilityError && (
@@ -4422,13 +4249,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 {driverTierInfo && (
                   <div className={`mt-3 p-3 rounded-lg border ${
                     driverTierInfo.tier === 'TIER_2' ? 'bg-green-900/20 border-green-600' :
-                    driverTierInfo.tier === 'TIER_1' ? 'bg-gray-800/40 border-white/30' :
+                    driverTierInfo.tier === 'TIER_1' ? 'bg-yellow-900/20 border-yellow-600' :
                     'bg-red-900/20 border-red-600'
                   }`}>
                     <div className="flex items-center gap-2">
                       <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${
                         driverTierInfo.tier === 'TIER_2' ? 'bg-green-600 text-white' :
-                        driverTierInfo.tier === 'TIER_1' ? 'bg-white text-black' :
+                        driverTierInfo.tier === 'TIER_1' ? 'bg-yellow-500 text-black' :
                         'bg-red-600 text-white'
                       }`}>
                         {driverTierInfo.tier === 'TIER_2' ? 'TIER 2' : driverTierInfo.tier === 'TIER_1' ? 'TIER 1' : 'NON IDONEO'}
@@ -4546,12 +4373,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const displayVehicleType = getVehicleType(item);
         const activeTier = driverTier || 'TIER_2'; // fallback
         const tierPricing = getKmPricingForTier(activeTier);
-        const allInsuranceOptions = getInsuranceForTier(activeTier);
-        // Furgone/V Class: only RCA and Kasko Base
-        const isFurgoneOrVClass = displayVehicleType === 'FURGONE' || displayVehicleType === 'V_CLASS';
-        const insuranceOptions = isFurgoneOrVClass
-          ? allInsuranceOptions.filter(opt => opt.id === 'RCA' || opt.id === 'KASKO_BASE' || opt.id === 'KASKO')
-          : allInsuranceOptions;
+        const insuranceOptions = getInsuranceForTier(activeTier);
         const depositOptions = getDepositOptionsForTier(activeTier);
         const experienceServices = getExperienceServicesForTier(activeTier);
 
@@ -4559,122 +4381,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const selectedInsuranceIsRCA = formData.insuranceOption === 'RCA';
         const noDepositRequiresKasko = formData.depositOption === 'no_deposit' && selectedInsuranceIsRCA;
 
-        // === VIP SIMPLIFIED VIEW (Massimo / Ophe) ===
-        if (isMassimo) {
-          return (
-            <div className="space-y-6">
-              <div className="text-center mb-2">
-                <span className="text-xs font-bold text-white bg-white/10 px-4 py-1.5 rounded-full uppercase tracking-widest">Cliente VIP</span>
-              </div>
-
-              <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6 space-y-4">
-                <h3 className="text-lg font-bold text-white mb-4">Riepilogo Noleggio VIP</h3>
-
-                <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                  <span className="text-gray-400">Veicolo</span>
-                  <span className="text-white font-semibold">{item.name}</span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                  <span className="text-gray-400">Ritiro</span>
-                  <span className="text-white font-semibold">{formData.pickupDate} — {formData.pickupTime}</span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                  <span className="text-gray-400">Riconsegna</span>
-                  <span className="text-white font-semibold">{formData.returnDate} — {formData.returnTime}</span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                  <span className="text-gray-400">Durata</span>
-                  <span className="text-white font-semibold">{Math.max(1, duration.days)} {Math.max(1, duration.days) === 1 ? 'giorno' : 'giorni'}{duration.hours > 0 ? ` ${duration.hours}h` : ''}</span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                  <span className="text-gray-400">Copertura assicurativa</span>
-                  <span className="text-green-400 font-semibold">Kasko Base — Inclusa</span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                  <span className="text-gray-400">Chilometri</span>
-                  <span className="text-green-400 font-semibold">Illimitati — Inclusi</span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                  <span className="text-gray-400">Lavaggio</span>
-                  <span className="text-green-400 font-semibold">Incluso</span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                  <span className="text-gray-400">Cauzione</span>
-                  <span className="text-green-400 font-semibold">Nessuna</span>
-                </div>
-                {deliveryFee > 0 && (
-                  <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                    <span className="text-gray-400">Consegna/Ritiro a domicilio</span>
-                    <span className="text-white font-semibold">{formatPrice(deliveryFee)}</span>
-                  </div>
-                )}
-
-                {discountAmount > 0 && (
-                  <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                    <span className="text-white">Codice Sconto</span>
-                    <span className="text-white font-semibold">-{formatPrice(discountAmount)}</span>
-                  </div>
-                )}
-
-                <div className="flex justify-between items-center pt-4">
-                  <span className="text-xl font-bold text-white">TOTALE</span>
-                  <div className="flex items-center gap-3">
-                    {discountAmount > 0 && (
-                      <span className="text-lg text-gray-500 line-through">€{rentalCost}</span>
-                    )}
-                    <span className="text-2xl font-bold text-white">{formatPrice(grandTotal)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Codice Sconto — also available for VIP */}
-              <div className="border-t border-gray-600 pt-4">
-                <p className="font-bold text-base text-white mb-3">CODICE SCONTO</p>
-                {appliedDiscount ? (
-                  <div className="flex items-center justify-between p-3 bg-green-900/30 border border-green-500/50 rounded-lg">
-                    <div>
-                      <p className="text-green-400 font-bold">{appliedDiscount.code}</p>
-                      <p className="text-green-300 text-sm">
-                        {appliedDiscount.type === 'percentage'
-                          ? `Sconto del ${appliedDiscount.amount}% applicato (-€${discountAmount.toFixed(2)})`
-                          : `Sconto di €${appliedDiscount.amount} applicato`}
-                      </p>
-                    </div>
-                    <button type="button" onClick={removeDiscount} className="text-red-400 hover:text-red-300 text-sm underline">Rimuovi</button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={discountCode}
-                      onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
-                      placeholder="Inserisci codice (es. BDAY-XXXX-XXXX)"
-                      className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 text-sm uppercase"
-                    />
-                    <button
-                      type="button"
-                      onClick={validateDiscountCode}
-                      disabled={isValidatingCode || !discountCode.trim()}
-                      className="px-4 py-2 bg-white text-black font-bold rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                    >
-                      {isValidatingCode ? 'Verifica...' : 'Applica'}
-                    </button>
-                  </div>
-                )}
-                {discountCodeError && (
-                  <p className="text-red-400 text-sm mt-2">{discountCodeError}</p>
-                )}
-              </div>
-            </div>
-          );
-        }
-
         return (
           <div className="space-y-8">
             {/* === A. ASSICURAZIONE (tier-conditional) === */}
             <section>
               <h3 className="text-lg font-bold text-white mb-4">A. COPERTURA ASSICURATIVA</h3>
-              {false ? (
+              {isMassimo ? (
                 <div className="p-4 rounded-lg border-2 border-green-500 bg-green-500/10">
                   <div className="flex items-center">
                     <span className="font-bold text-white">Kasko Base</span>
@@ -4716,7 +4428,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         <div className="ml-3 flex-1">
                           <div className="flex justify-between items-center">
                             <span className="font-bold text-white">{opt.name}</span>
-                            <span className={`font-bold ${isRCA ? 'text-gray-400' : opt.id === 'KASKO_DR7' ? 'text-green-400' : 'text-white'}`}>
+                            <span className={`font-bold ${isRCA ? 'text-gray-400' : opt.id === 'KASKO_DR7' ? 'text-green-400' : 'text-yellow-400'}`}>
                               {opt.dailyPrice > 0 ? `€${opt.dailyPrice}/giorno` : 'Inclusa'}
                             </span>
                           </div>
@@ -4743,40 +4455,31 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               )}
             </section>
 
-            {/* === B. CHILOMETRI === */}
+            {/* === B. CHILOMETRI (tier-conditional pricing) === */}
             <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-4">B. CHILOMETRI</h3>
-              {isMassimo ? (
-                <div className="p-4 rounded-lg border-2 border-green-500 bg-green-500/10">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className="font-bold text-white">Km illimitati</span>
-                      <p className="text-sm text-gray-400">Senza limiti di percorrenza</p>
-                    </div>
-                    <span className="font-bold text-green-400">Incluso</span>
-                  </div>
-                </div>
-              ) : displayVehicleType === 'SUPERCAR' ? (
+              {displayVehicleType === 'SUPERCAR' && !isMassimo ? (
                 <div className="space-y-3">
-                  {/* KM inclusi (auto-calcolati da Centralina) */}
                   <div
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType !== 'unlimited'
-                      ? 'border-green-500 bg-green-500/10'
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType === '50km'
+                      ? 'border-yellow-400 bg-yellow-400/10'
                       : 'border-gray-600 hover:border-gray-500'}`}
-                    onClick={() => setFormData(prev => ({ ...prev, kmPackageType: 'none' as any }))}
+                    onClick={() => setFormData(prev => ({ ...prev, kmPackageType: '50km' as any }))}
                   >
                     <div className="flex justify-between items-center">
                       <div>
-                        <span className="font-bold text-white">{includedKm > 0 ? `${includedKm} km inclusi` : 'KM inclusi nel noleggio'}</span>
-                        <p className="text-sm text-gray-400">Calcolati in base alla durata del noleggio</p>
+                        <span className="font-bold text-white">50 km al giorno</span>
+                        <p className="text-sm text-gray-400">Ideale per uso cittadino</p>
+                        {formData.kmPackageType === '50km' && duration.days > 0 && (
+                          <p className="text-sm text-yellow-300 mt-1 font-semibold">Totale: {50 * Math.max(1, duration.days)} km per {Math.max(1, duration.days)} {Math.max(1, duration.days) === 1 ? 'giorno' : 'giorni'}</p>
+                        )}
                       </div>
-                      <span className="font-bold text-green-400">Inclusi</span>
+                      <span className="font-bold text-yellow-400">€{ACTIVE_SUPERCAR_50KM_RATE}/giorno</span>
                     </div>
                   </div>
-                  {/* KM illimitati (supplemento) */}
                   <div
                     className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType === 'unlimited'
-                      ? 'border-white/40 bg-white/10'
+                      ? 'border-yellow-400 bg-yellow-400/10'
                       : 'border-gray-600 hover:border-gray-500'}`}
                     onClick={() => setFormData(prev => ({ ...prev, kmPackageType: 'unlimited' as any }))}
                   >
@@ -4785,7 +4488,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         <span className="font-bold text-white">Km illimitati</span>
                         <p className="text-sm text-gray-400">Senza limiti di percorrenza</p>
                       </div>
-                      <span className="font-bold text-white">+€{tierPricing.unlimitedKmPerDay}/giorno</span>
+                      <span className="font-bold text-yellow-400">€{tierPricing.unlimitedKmPerDay}/giorno</span>
                     </div>
                   </div>
                 </div>
@@ -4801,7 +4504,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   >
                     <div className="flex justify-between items-center">
                       <div>
-                        <span className="font-bold text-white">{calculateIncludedKm(duration.days || 1, ACTIVE_KM_INCLUDED) || 0} km inclusi</span>
+                        <span className="font-bold text-white">{calculateIncludedKm(duration.days || 1)} km inclusi</span>
                         <p className="text-sm text-gray-400">Calcolati sulla durata del noleggio ({duration.days || 1} {(duration.days || 1) === 1 ? 'giorno' : 'giorni'})</p>
                       </div>
                       <span className="font-bold text-green-400">Incluso</span>
@@ -4833,16 +4536,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               <h3 className="text-lg font-bold text-white mb-4">C. SERVIZI AGGIUNTIVI</h3>
               <div className="space-y-3">
                 {/* Lavaggio finale */}
-                <div className={`flex items-center p-3 rounded-md border ${isMassimo ? 'border-green-500 bg-green-500/10' : 'bg-gray-800/50 border-gray-700'}`}>
+                <div className="flex items-center p-3 bg-gray-800/50 rounded-md border border-gray-700">
                   <input type="checkbox" checked disabled className="h-4 w-4" />
                   <span className="ml-3 text-white">Pulizia finale</span>
-                  <span className={`ml-auto font-semibold ${isMassimo ? 'text-green-400' : 'text-white'}`}>
-                    {isMassimo ? 'Inclusa' : `€${tierPricing.lavaggio.toFixed(2)}`}
-                  </span>
+                  <span className="ml-auto font-semibold text-yellow-400">€{tierPricing.lavaggio.toFixed(2)}</span>
                 </div>
 
-                {/* Second driver with tier price — hidden for VIP */}
-                {!isMassimo && (
+                {/* Second driver with tier price */}
                 <div
                   className={`p-3 rounded-md border cursor-pointer transition-all ${formData.addSecondDriver
                     ? 'border-white bg-white/5' : 'border-gray-700 hover:border-gray-500'}`}
@@ -4854,12 +4554,64 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     <span className="ml-auto font-semibold text-white">€{tierPricing.secondDriverPerDay}/giorno</span>
                   </div>
                 </div>
-                )}
               </div>
             </section>
 
             {/* === D. CAUZIONE === */}
-            {!isMassimo && !isLoyalCustomer && getMembershipTierName(user) !== 'gold' && getMembershipTierName(user) !== 'platinum' ? (
+            {isUrbanOrCorporate ? (
+              /* Urban/Corporate: keep existing deposit logic */
+              <section className="border-t border-gray-700 pt-6">
+                <h3 className="text-lg font-bold text-white mb-2">D. CAUZIONE</h3>
+                <p className="text-sm text-gray-400 mb-4">Scegli il tipo di cauzione.</p>
+                {!formData.depositOption && (
+                  <div className="p-3 bg-amber-900/20 border border-amber-500/50 rounded-lg mb-3">
+                    <p className="text-amber-300 text-sm font-medium">Seleziona un'opzione per la cauzione per continuare</p>
+                  </div>
+                )}
+                <div className="space-y-3">
+                  <div
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.depositOption === 'with_deposit'
+                      ? 'border-green-500 bg-green-500/10' : 'border-gray-600 hover:border-gray-500'}`}
+                    onClick={() => setFormData(prev => ({ ...prev, depositOption: 'with_deposit' }))}
+                  >
+                    <div className="flex items-center">
+                      <input type="radio" name="depositOption" checked={formData.depositOption === 'with_deposit'} onChange={() => {}} className="w-4 h-4" />
+                      <div className="ml-3 flex-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-white">Cauzione</span>
+                          <span className="font-bold text-green-400">{formatDeposit(DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT)}</span>
+                        </div>
+                        <p className="text-sm text-gray-400 mt-1">Cauzione di €{DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT} — Tariffa base</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.depositOption === 'micro_deposit'
+                      ? 'border-yellow-400 bg-yellow-400/10' : 'border-gray-600 hover:border-gray-500'}`}
+                    onClick={() => setFormData(prev => ({ ...prev, depositOption: 'micro_deposit' }))}
+                  >
+                    <div className="flex items-center">
+                      <input type="radio" name="depositOption" checked={formData.depositOption === 'micro_deposit'} onChange={() => {}} className="w-4 h-4" />
+                      <div className="ml-3 flex-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-white">Micro Cauzione</span>
+                          <span className="font-bold text-yellow-400">
+                            {formatDeposit(licenseYears >= 5 ? DEPOSIT_RULES.UTILITARIA.LICENSE_5_OR_MORE : DEPOSIT_RULES.UTILITARIA.LICENSE_UNDER_5)} + 30%
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-400 mt-1">
+                          {licenseYears >= 5
+                            ? `Micro cauzione di €${DEPOSIT_RULES.UTILITARIA.LICENSE_5_OR_MORE} (patente ≥ 5 anni)`
+                            : `Micro cauzione di €${DEPOSIT_RULES.UTILITARIA.LICENSE_UNDER_5} (patente < 5 anni)`
+                          } — Supplemento del 30% sul totale
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {errors.depositOption && <p className="text-xs text-red-400 mt-2">{errors.depositOption}</p>}
+              </section>
+            ) : !isMassimo && !isLoyalCustomer && getMembershipTierName(user) !== 'gold' && getMembershipTierName(user) !== 'platinum' ? (
               /* Supercar: tier-based deposit options */
               <section className="border-t border-gray-700 pt-6">
                 <h3 className="text-lg font-bold text-white mb-2">D. CAUZIONE</h3>
@@ -4884,8 +4636,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {depositOptions.map(opt => {
                     const isSelected = formData.depositOption === opt.id;
                     // Disable "no_deposit" if insurance is RCA (solo con acquisto Kasko)
-                    // no_deposit: hide entirely for Fascia B, disable for RCA
-                    if (opt.id === 'no_deposit' && activeTier === 'TIER_1') return null;
                     const isDisabled = opt.id === 'no_deposit' && selectedInsuranceIsRCA;
                     return (
                       <div
@@ -4895,26 +4645,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           : isSelected
                             ? 'border-green-500 bg-green-500/10 cursor-pointer'
                             : 'border-gray-600 hover:border-gray-500 cursor-pointer'}`}
-                        onClick={() => {
-                          if (isDisabled) return;
-                          if (opt.id === 'no_deposit') {
-                            setShowNoCauzionePopup(true);
-                            return;
-                          }
-                          if (opt.id === 'vehicle_deposit') {
-                            // Don't set depositOption yet — wait for popup confirmation
-                            setShowVehicleDepositPopup(true);
-                            return;
-                          }
-                          setFormData(prev => ({ ...prev, depositOption: opt.id }));
-                        }}
+                        onClick={() => !isDisabled && setFormData(prev => ({ ...prev, depositOption: opt.id }))}
                       >
                         <div className="flex items-center">
                           <input type="radio" name="depositOption" checked={isSelected} disabled={isDisabled} onChange={() => {}} className="w-4 h-4" />
                           <div className="ml-3 flex-1">
                             <div className="flex justify-between items-center">
                               <span className="font-bold text-white">{opt.label}</span>
-                              <span className="font-bold text-white">
+                              <span className="font-bold text-yellow-400">
                                 {opt.surchargePerDay ? `€${opt.surchargePerDay}/giorno` : opt.amount > 0 ? `€${opt.amount.toLocaleString()}` : ''}
                               </span>
                             </div>
@@ -4928,308 +4666,94 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     );
                   })}
                 </div>}
-                {noCauzioneRequested && formData.depositOption === 'no_deposit' && (
-                  <div className="mt-3 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
-                    <p className="text-green-400 text-sm font-medium">Richiesta No Cauzione inviata! Sarai contattato per conferma.</p>
-                  </div>
-                )}
                 {errors.depositOption && <p className="text-xs text-red-400 mt-2">{errors.depositOption}</p>}
               </section>
             ) : null}
 
-            {/* No Cauzione Request Popup */}
-            {showNoCauzionePopup && (
-              <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowNoCauzionePopup(false)}>
-                <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
-                  <h3 className="text-lg font-bold text-white mb-3">Richiesta No Cauzione</h3>
-                  <p className="text-gray-400 text-sm mb-4">
-                    L'opzione "Nessuna Cauzione" richiede l'approvazione del team DR7.
-                    Invieremo la tua richiesta e sarai contattato per conferma.
-                  </p>
-                  <p className="text-white text-sm mb-1">Supplemento: <span className="font-bold text-white">€{ACTIVE_NO_DEPOSIT_SURCHARGE}/giorno</span></p>
-                  <p className="text-gray-500 text-xs mb-6">Disponibile solo con Kasko attiva (Fascia A, residente in Sardegna)</p>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setShowNoCauzionePopup(false)}
-                      className="flex-1 py-3 border border-gray-600 text-white rounded-full font-semibold text-sm hover:bg-gray-800 transition-colors"
-                    >
-                      Annulla
-                    </button>
-                    <button
-                      onClick={() => {
-                        setFormData(prev => ({ ...prev, depositOption: 'no_deposit' }));
-                        setNoCauzioneRequested(true);
-                        setShowNoCauzionePopup(false);
-                      }}
-                      className="flex-1 py-3 bg-white text-black rounded-full font-bold text-sm hover:bg-gray-200 transition-colors disabled:opacity-50"
-                    >
-                      {noCauzioneSending ? 'Invio...' : 'Invia Richiesta'}
-                    </button>
+            {/* === USAGE ZONE SELECTOR (Supercar unlimited only) === */}
+            {vehicleType === 'SUPERCAR' && !isMassimo && formData.kmPackageType === 'unlimited' && (
+              <section className="border-t border-gray-700 pt-6">
+                <h3 className="text-lg font-bold text-white mb-2">E. ZONA DI UTILIZZO *</h3>
+                <p className="text-sm text-gray-400 mb-4">Seleziona dove utilizzerai il veicolo durante il noleggio.</p>
+                <div className="space-y-3">
+                  {/* Option 1: Cagliari e Sud Sardegna */}
+                  <div
+                    className={`p-4 rounded-md border cursor-pointer transition-all ${formData.usageZone === 'CAGLIARI_SUD'
+                      ? 'border-yellow-400 bg-yellow-400/10'
+                      : 'border-gray-700 hover:border-gray-500'
+                      }`}
+                    onClick={() => setFormData(p => ({ ...p, usageZone: 'CAGLIARI_SUD' }))}
+                  >
+                    <div className="flex items-center">
+                      <input
+                        type="radio"
+                        name="usageZone"
+                        value="CAGLIARI_SUD"
+                        checked={formData.usageZone === 'CAGLIARI_SUD'}
+                        onChange={() => setFormData(p => ({ ...p, usageZone: 'CAGLIARI_SUD' }))}
+                        className="w-4 h-4 text-yellow-400"
+                      />
+                      <label className="ml-3 text-white font-semibold">
+                        Cagliari e Sud Sardegna
+                      </label>
+                    </div>
+                    <p className="ml-7 text-xs text-gray-400 mt-1">
+                      Utilizzo limitato all'area di Cagliari e provincia del Sud Sardegna
+                    </p>
                   </div>
-                </div>
-              </div>
-            )}
 
-            {/* Vehicle Deposit Popup — Targa check + Upload libretto + reminder */}
-            {showVehicleDepositPopup && (
-              <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => { setShowVehicleDepositPopup(false); if (!vehicleDepositVerified) setFormData(prev => ({ ...prev, depositOption: '' })); }}>
-                <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
-                  <h3 className="text-lg font-bold text-white mb-3">Cauzione con Veicolo</h3>
-                  <p className="text-gray-400 text-sm mb-4">
-                    Il veicolo deve essere di proprietà e immatricolato dal <strong className="text-white">2020 in poi</strong>. Supplemento: <span className="font-bold text-white">€20/giorno</span>.
-                  </p>
+                  {/* Option 2: Fuori zona */}
+                  <div
+                    className={`p-4 rounded-md border transition-all ${formData.usageZone === 'FUORI_ZONA'
+                      ? 'border-yellow-400 bg-yellow-400/10'
+                      : 'border-gray-700 hover:border-gray-500'
+                      } cursor-pointer`}
+                    onClick={() => {
+                      setFormData(p => ({ ...p, usageZone: 'FUORI_ZONA' }));
+                    }}
+                  >
+                    <div className="flex items-center">
+                      <input
+                        type="radio"
+                        name="usageZone"
+                        value="FUORI_ZONA"
+                        checked={formData.usageZone === 'FUORI_ZONA'}
+                        onChange={() => {
+                          setFormData(p => ({ ...p, usageZone: 'FUORI_ZONA' }));
+                        }}
+                        className="w-4 h-4 text-yellow-400"
+                      />
+                      <label className="ml-3 text-white font-semibold">
+                        Fuori zona (resto della Sardegna)
+                      </label>
+                    </div>
+                    <p className="ml-7 text-xs text-gray-400 mt-1">
+                      Utilizzo al di fuori dell'area di Cagliari e Sud Sardegna (solo Sardegna, non Italia continentale)
+                    </p>
+                  </div>
 
-                  {/* Step 1: Enter targa */}
-                  {!vehicleDepositVerified && (
-                    <>
-                      <div className="mb-4">
-                        <label className="block text-sm font-semibold text-white mb-2">Inserisci la Targa del tuo veicolo</label>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={vehicleDepositTarga}
-                            onChange={e => { setVehicleDepositTarga(e.target.value.toUpperCase()); setVehicleDepositError(null); }}
-                            placeholder="es. AB123CD"
-                            maxLength={8}
-                            className="flex-1 px-3 py-2.5 bg-gray-800 border border-gray-600 rounded-lg text-white uppercase text-center font-bold text-lg tracking-widest"
-                          />
-                          <button
-                            onClick={async () => {
-                              if (!vehicleDepositTarga || vehicleDepositTarga.length < 5) {
-                                setVehicleDepositError('Inserisci una targa valida');
-                                return;
-                              }
-                              setVehicleDepositLoading(true);
-                              setVehicleDepositError(null);
-                              try {
-                                const res = await fetch(`/.netlify/functions/lookupTarga?plate=${encodeURIComponent(vehicleDepositTarga)}`);
-                                const data = await res.json();
-                                if (!res.ok) throw new Error(data.error || 'Targa non trovata');
-                                const year = parseInt(data.registrationYear);
-                                if (isNaN(year) || year < 2020) {
-                                  setVehicleDepositError(`Veicolo immatricolato nel ${data.registrationYear || '?'} — deve essere dal 2020 in poi. Scegli un\'altra opzione di cauzione.`);
-                                  setVehicleDepositInfo(`${data.carMake} ${data.carModel} (${data.registrationYear})`);
-                                } else {
-                                  setVehicleDepositVerified(true);
-                                  setVehicleDepositInfo(`${data.carMake} ${data.carModel} (${data.registrationYear})`);
-                                  setVehicleDepositError(null);
-                                }
-                              } catch (err: any) {
-                                setVehicleDepositError(err.message || 'Errore verifica targa');
-                              } finally {
-                                setVehicleDepositLoading(false);
-                              }
-                            }}
-                            disabled={vehicleDepositLoading || vehicleDepositTarga.length < 5}
-                            className="px-4 py-2.5 bg-white text-black font-bold rounded-lg hover:bg-gray-200 disabled:opacity-50 text-sm"
-                          >
-                            {vehicleDepositLoading ? '...' : 'Verifica'}
-                          </button>
-                        </div>
-                        {vehicleDepositInfo && !vehicleDepositVerified && (
-                          <p className="text-gray-400 text-xs mt-1">{vehicleDepositInfo}</p>
-                        )}
-                        {vehicleDepositError && (
-                          <p className="text-red-400 text-sm mt-2">{vehicleDepositError}</p>
-                        )}
-                      </div>
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => {
-                            setFormData(prev => ({ ...prev, depositOption: '' }));
-                            setShowVehicleDepositPopup(false);
-                            setVehicleDepositTarga('');
-                            setVehicleDepositError(null);
-                            setVehicleDepositInfo(null);
-                          }}
-                          className="flex-1 py-3 border border-gray-600 text-white rounded-full font-semibold text-sm hover:bg-gray-800 transition-colors"
-                        >
-                          Annulla
-                        </button>
-                      </div>
-                    </>
+                  {/* Error message for residents trying to select Fuori zona */}
+                  {usageZoneError && (
+                    <div className="mt-3 p-4 bg-red-900/30 border-2 border-red-500 rounded-lg">
+                      <p className="text-red-300 font-semibold text-sm">
+                        {usageZoneError}
+                      </p>
+                    </div>
                   )}
 
-                  {/* Step 2: Verified — owner check + upload libretto + reminder */}
-                  {vehicleDepositVerified && (
-                    <>
-                      <div className="p-3 bg-green-900/20 border border-green-500/50 rounded-lg mb-4">
-                        <p className="text-green-400 text-sm font-semibold">✓ Veicolo verificato: {vehicleDepositInfo}</p>
-                        <p className="text-green-300 text-xs mt-1">Targa: {vehicleDepositTarga}</p>
-                      </div>
-
-                      {/* Owner check */}
-                      <div className="mb-4">
-                        <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-600 hover:border-gray-500 transition-colors">
-                          <input
-                            type="checkbox"
-                            checked={vehicleDepositIsOwner}
-                            onChange={e => setVehicleDepositIsOwner(e.target.checked)}
-                            className="w-5 h-5 rounded"
-                          />
-                          <span className="text-white font-semibold text-sm">Sono il proprietario del veicolo</span>
-                        </label>
-                      </div>
-
-                      {/* Different owner form */}
-                      {!vehicleDepositIsOwner && (
-                        <div className="mb-4 p-4 bg-gray-800/50 border border-gray-600 rounded-lg space-y-3">
-                          <p className="text-white font-semibold text-sm mb-2">Dati del Proprietario del Veicolo</p>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="text-xs text-gray-400 mb-1 block">Nome *</label>
-                              <input type="text" value={vehicleDepositOwner.nome} onChange={e => setVehicleDepositOwner(p => ({ ...p, nome: e.target.value }))} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm" placeholder="Nome" />
-                            </div>
-                            <div>
-                              <label className="text-xs text-gray-400 mb-1 block">Cognome *</label>
-                              <input type="text" value={vehicleDepositOwner.cognome} onChange={e => setVehicleDepositOwner(p => ({ ...p, cognome: e.target.value }))} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm" placeholder="Cognome" />
-                            </div>
-                          </div>
-                          <div>
-                            <label className="text-xs text-gray-400 mb-1 block">Codice Fiscale *</label>
-                            <input type="text" value={vehicleDepositOwner.codiceFiscale} onChange={e => setVehicleDepositOwner(p => ({ ...p, codiceFiscale: e.target.value.toUpperCase() }))} maxLength={16} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm uppercase" placeholder="RSSMRA85M01H501Z" />
-                          </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="text-xs text-gray-400 mb-1 block">Data di Nascita *</label>
-                              <input type="date" value={vehicleDepositOwner.dataNascita} onChange={e => setVehicleDepositOwner(p => ({ ...p, dataNascita: e.target.value }))} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm" />
-                            </div>
-                            <div>
-                              <label className="text-xs text-gray-400 mb-1 block">Luogo di Nascita *</label>
-                              <input type="text" value={vehicleDepositOwner.luogoNascita} onChange={e => setVehicleDepositOwner(p => ({ ...p, luogoNascita: e.target.value }))} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm" placeholder="Cagliari" />
-                            </div>
-                          </div>
-                          <div>
-                            <label className="text-xs text-gray-400 mb-1 block">Indirizzo *</label>
-                            <input type="text" value={vehicleDepositOwner.indirizzo} onChange={e => setVehicleDepositOwner(p => ({ ...p, indirizzo: e.target.value }))} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm" placeholder="Via Roma 1" />
-                          </div>
-                          <div className="grid grid-cols-3 gap-3">
-                            <div>
-                              <label className="text-xs text-gray-400 mb-1 block">Città *</label>
-                              <input type="text" value={vehicleDepositOwner.citta} onChange={e => setVehicleDepositOwner(p => ({ ...p, citta: e.target.value }))} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm" placeholder="Cagliari" />
-                            </div>
-                            <div>
-                              <label className="text-xs text-gray-400 mb-1 block">CAP *</label>
-                              <input type="text" value={vehicleDepositOwner.cap} onChange={e => setVehicleDepositOwner(p => ({ ...p, cap: e.target.value }))} maxLength={5} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm" placeholder="09100" />
-                            </div>
-                            <div>
-                              <label className="text-xs text-gray-400 mb-1 block">Provincia</label>
-                              <input type="text" value={vehicleDepositOwner.provincia} onChange={e => setVehicleDepositOwner(p => ({ ...p, provincia: e.target.value.toUpperCase() }))} maxLength={2} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm uppercase" placeholder="CA" />
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="text-xs text-gray-400 mb-1 block">Telefono *</label>
-                              <input type="tel" value={vehicleDepositOwner.telefono} onChange={e => setVehicleDepositOwner(p => ({ ...p, telefono: e.target.value }))} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm" placeholder="+39 333 1234567" />
-                            </div>
-                            <div>
-                              <label className="text-xs text-gray-400 mb-1 block">Email</label>
-                              <input type="email" value={vehicleDepositOwner.email} onChange={e => setVehicleDepositOwner(p => ({ ...p, email: e.target.value }))} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm" placeholder="email@esempio.it" />
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Upload libretto fronte */}
-                      <div className="mb-3">
-                        <label className="block text-sm font-semibold text-white mb-2">Libretto di Circolazione — Fronte *</label>
-                        <input
-                          type="file"
-                          accept="image/*,.pdf"
-                          onChange={(e) => setVehicleDepositLibretto(e.target.files?.[0] || null)}
-                          className="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
-                        />
-                        {vehicleDepositLibretto && (
-                          <p className="text-green-400 text-xs mt-1">✓ {vehicleDepositLibretto.name}</p>
-                        )}
-                      </div>
-
-                      {/* Upload libretto verso */}
-                      <div className="mb-4">
-                        <label className="block text-sm font-semibold text-white mb-2">Libretto di Circolazione — Verso <span className="text-gray-400 font-normal">(opzionale)</span></label>
-                        <input
-                          type="file"
-                          accept="image/*,.pdf"
-                          onChange={(e) => setVehicleDepositLibrettoVerso(e.target.files?.[0] || null)}
-                          className="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200"
-                        />
-                        {vehicleDepositLibrettoVerso && (
-                          <p className="text-green-400 text-xs mt-1">✓ {vehicleDepositLibrettoVerso.name}</p>
-                        )}
-                      </div>
-
-                      {!vehicleDepositLibretto && (
-                        <p className="text-red-400 text-xs mb-3">* Il caricamento del Libretto di Circolazione (fronte) è obbligatorio per procedere</p>
-                      )}
-
-                      {/* Reminder */}
-                      <div className="p-3 bg-gray-800/40 border border-white/30 rounded-lg mb-6">
-                        <p className="text-white text-sm font-semibold">Ricordati di portare al ritiro:</p>
-                        <ul className="mt-2 space-y-1 text-white text-sm">
-                          <li>• Libretto di Circolazione originale</li>
-                          <li>• Chiave del veicolo</li>
-                          <li>• Veicolo (la macchina deve essere presente al ritiro)</li>
-                        </ul>
-                      </div>
-
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => {
-                            setFormData(prev => ({ ...prev, depositOption: '' }));
-                            setShowVehicleDepositPopup(false);
-                            setVehicleDepositVerified(false);
-                            setVehicleDepositTarga('');
-                            setVehicleDepositInfo(null);
-                            setVehicleDepositIsOwner(true);
-                          }}
-                          className="flex-1 py-3 border border-gray-600 text-white rounded-full font-semibold text-sm hover:bg-gray-800 transition-colors"
-                        >
-                          Annulla
-                        </button>
-                        <button
-                          disabled={
-                            !vehicleDepositLibretto || !vehicleDepositVerified ||
-                            (!vehicleDepositIsOwner && (!vehicleDepositOwner.nome || !vehicleDepositOwner.cognome || !vehicleDepositOwner.codiceFiscale || !vehicleDepositOwner.telefono))
-                          }
-                          onClick={async () => {
-                            // Upload libretto fronte
-                            if (vehicleDepositLibretto && user?.id) {
-                              try {
-                                const ext = vehicleDepositLibretto.name.split('.').pop();
-                                const path = `${user.id}/libretto_fronte_${Date.now()}.${ext}`;
-                                await supabase.storage.from('driver-licenses').upload(path, vehicleDepositLibretto);
-                              } catch (e) {
-                                console.error('Libretto fronte upload error:', e);
-                              }
-                            }
-                            // Upload libretto verso
-                            if (vehicleDepositLibrettoVerso && user?.id) {
-                              try {
-                                const ext = vehicleDepositLibrettoVerso.name.split('.').pop();
-                                const path = `${user.id}/libretto_verso_${Date.now()}.${ext}`;
-                                await supabase.storage.from('driver-licenses').upload(path, vehicleDepositLibrettoVerso);
-                              } catch (e) {
-                                console.error('Libretto verso upload error:', e);
-                              }
-                            }
-                            // Set depositOption NOW that all data is confirmed
-                            setFormData(prev => ({ ...prev, depositOption: 'vehicle_deposit' }));
-                            setShowVehicleDepositPopup(false);
-                          }}
-                          className="flex-1 py-3 bg-white text-black rounded-full font-bold text-sm hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Conferma
-                        </button>
-                      </div>
-                    </>
+                  {/* Validation error if no zone selected */}
+                  {errors.usageZone && (
+                    <p className="text-xs text-red-400 mt-2 flex items-center">
+                      {errors.usageZone}
+                    </p>
                   )}
                 </div>
-              </div>
+              </section>
             )}
 
 
-            {/* === F. SERVIZI EXPERIENCE (hidden for VIP) === */}
-            {!isMassimo && <section className="border-t border-gray-700 pt-6">
+            {/* === F. SERVIZI EXPERIENCE === */}
+            <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-2">F. SERVIZI EXPERIENCE</h3>
               <p className="text-sm text-gray-400 mb-4">Personalizza la tua esperienza con servizi esclusivi.</p>
               <div className="space-y-3">
@@ -5249,7 +4773,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           <p className="text-xs text-gray-400 mt-0.5">{svc.description}</p>
                         </div>
                         <div className="flex items-center gap-2 ml-4">
-                          <span className="font-semibold text-white text-sm whitespace-nowrap">€{svc.price.toFixed(2)}{unitLabel}</span>
+                          <span className="font-semibold text-yellow-400 text-sm whitespace-nowrap">€{svc.price.toFixed(2)}{unitLabel}</span>
                           {(svc.unit === 'per_item' || svc.unit === 'per_hour') ? (
                             <div className="flex items-center gap-1">
                               <button type="button" className="w-7 h-7 rounded bg-gray-700 text-white font-bold hover:bg-gray-600"
@@ -5281,10 +4805,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   );
                 })}
               </div>
-            </section>}
+            </section>
 
             {/* === G. DR7 FLEX === (Only Fascia A / TIER_2) */}
-            {driverTier === 'TIER_2' && !isMassimo && (
+            {driverTier === 'TIER_2' && (
             <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-2">G. DR7 FLEX — Cancellazione Premium</h3>
               <div
@@ -5300,7 +4824,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <p className="text-sm text-gray-400 mt-1">{ACTIVE_DR7_FLEX.description}</p>
                     </div>
                   </div>
-                  <span className="font-bold text-white whitespace-nowrap ml-4">€{ACTIVE_DR7_FLEX.dailyPrice.toFixed(2)}/giorno</span>
+                  <span className="font-bold text-yellow-400 whitespace-nowrap ml-4">€{ACTIVE_DR7_FLEX.dailyPrice.toFixed(2)}/giorno</span>
                 </div>
               </div>
             </section>
@@ -5309,158 +4833,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         );
       }
       case 4:
-        // No Cauzione flow: save as preventivo only, no direct payment
-        if (formData.depositOption === 'no_deposit') {
-          if (noCauzioneSaved) {
-            return (
-              <div className="space-y-6 text-center py-8">
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-green-500/20 rounded-full mb-4">
-                  <svg className="w-10 h-10 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <h2 className="text-2xl font-bold text-white">Richiesta Inviata!</h2>
-                <p className="text-gray-400 max-w-md mx-auto">
-                  La tua richiesta per la formula senza cauzione è stata registrata. Il team DR7 la contatterà via WhatsApp con l'esito e, in caso di approvazione, il link di pagamento.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => window.location.href = '/'}
-                  className="mt-4 px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors"
-                >
-                  Torna alla Home
-                </button>
-              </div>
-            );
-          }
-          return (
-            <div className="space-y-6">
-              <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6 text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500/20 rounded-full mb-4">
-                  <svg className="w-8 h-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-white mb-2">Riepilogo Preventivo</h3>
-                <p className="text-gray-400 text-sm mb-6">
-                  Cliccando "Salva Preventivo" la tua richiesta verrà inviata al team DR7 per approvazione. Riceverai un messaggio WhatsApp con l'esito.
-                </p>
-              </div>
-
-              <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6 space-y-3 text-sm">
-                <div className="flex justify-between"><span className="text-gray-400">Veicolo</span><span className="text-white font-semibold">{item.name}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Ritiro</span><span className="text-white">{formData.pickupDate} — {formData.pickupTime || '10:30'}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Riconsegna</span><span className="text-white">{formData.returnDate} — {formData.returnTime || '09:00'}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Durata</span><span className="text-white">{Math.max(1, duration.days)} {Math.max(1, duration.days) === 1 ? 'giorno' : 'giorni'}</span></div>
-                <hr className="border-gray-600 my-1" />
-                <div className="flex justify-between"><span className="text-gray-400">Noleggio {item.name}</span><span className="text-white">{formatPrice(rentalCost)}</span></div>
-                {insuranceCost > 0 && <div className="flex justify-between"><span className="text-gray-400">Assicurazione {formData.insuranceOption}</span><span className="text-white">{formatPrice(insuranceCost)}</span></div>}
-                {lavaggioFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Lavaggio</span><span className="text-white">{formatPrice(lavaggioFee)}</span></div>}
-                {kmPackageCost > 0 && <div className="flex justify-between"><span className="text-gray-400">Km illimitati</span><span className="text-white">{formatPrice(kmPackageCost)}</span></div>}
-                {kmPackageCost === 0 && <div className="flex justify-between"><span className="text-gray-400">Chilometri</span><span className="text-white">{includedKm >= 9999 ? 'Illimitati inclusi' : `${includedKm || 100} km inclusi`}</span></div>}
-                <div className="flex justify-between"><span className="text-green-400">Supplemento No Cauzione</span><span className="text-green-400">{formatPrice(noDepositSurcharge)}</span></div>
-                {hasDynamicDiscount && <div className="flex justify-between text-blue-400"><span>Sconto Revenue ({dynamicDiscountPct}%)</span><span>-{formatPrice(listSubtotal - subtotal)}</span></div>}
-                <hr className="border-gray-600 my-1" />
-                <div className="flex justify-between text-lg font-bold"><span className="text-white">TOTALE</span><span className="text-white">{formatPrice(grandTotal)}</span></div>
-              </div>
-
-              <button
-                type="button"
-                disabled={noCauzioneSending}
-                onClick={async () => {
-                  setNoCauzioneSending(true);
-                  try {
-                    // Build booking data same as normal flow but with pending status
-                    const pDate = formData.pickupDate || new Date().toISOString().split('T')[0];
-                    const rDate = formData.returnDate || pDate;
-                    const pTime = formData.pickupTime || '10:30';
-                    const rTime = formData.returnTime || '09:00';
-                    const pickupDateTime = new Date(`${pDate}T${pTime}:00`);
-                    const dropoffDateTime = new Date(`${rDate}T${rTime}:00`);
-                    if (isNaN(pickupDateTime.getTime()) || isNaN(dropoffDateTime.getTime())) {
-                      throw new Error('Date o orari non validi. Torna allo step 1 e seleziona date e orari.');
-                    }
-                    const bookingData = {
-                      service_type: 'car_rental',
-                      customer_name: `${formData.firstName} ${formData.lastName}`,
-                      customer_email: formData.email,
-                      customer_phone: formData.phone,
-                      vehicle_name: item.name,
-                      vehicle_id: formData.selectedVehicleId || null,
-                      vehicle_plate: null,
-                      pickup_date: pickupDateTime.toISOString(),
-                      dropoff_date: dropoffDateTime.toISOString(),
-                      pickup_location: formData.pickupLocation,
-                      dropoff_location: formData.returnLocation,
-                      price_total: Math.round(grandTotal * 100),
-                      currency: 'EUR',
-                      status: 'pending',
-                      payment_status: 'pending',
-                      payment_method: 'Nexi Pay by Link',
-                      // insurance_option stored in booking_details.insuranceOption (not a top-level column)
-                      booked_at: new Date().toISOString(),
-                      user_id: user?.id || null,
-                      booking_details: {
-                        no_cauzione_request: true,
-                        depositOption: 'no_deposit',
-                        noDepositSurcharge: noDepositSurcharge,
-                        driver_tier: driverTier,
-                        insurance_cost: insuranceCost,
-                        km_cost: kmPackageCost,
-                        lavaggio_fee: lavaggioFee,
-                        rental_cost: rentalCost,
-                        customer: { firstName: formData.firstName, lastName: formData.lastName, email: formData.email, phone: formData.phone },
-                      },
-                    };
-                    const { error } = await supabase.from('bookings').insert(bookingData);
-                    if (error) throw error;
-
-                    // Send WhatsApp to admin
-                    const msg = `*RICHIESTA NO CAUZIONE DAL SITO*\n\n`
-                      + `*Cliente:* ${formData.firstName} ${formData.lastName}\n`
-                      + `*Email:* ${formData.email}\n`
-                      + `*Tel:* ${formData.phone}\n`
-                      + `*Veicolo:* ${item?.name || 'N/A'}\n`
-                      + `*Date:* ${formData.pickupDate} → ${formData.returnDate}\n`
-                      + `*Totale:* €${grandTotal.toFixed(2)}\n`
-                      + `*Supplemento No Cauzione:* €${ACTIVE_NO_DEPOSIT_SURCHARGE}/giorno`;
-                    await fetch('/.netlify/functions/send-whatsapp-notification', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ customMessage: msg }),
-                    });
-
-                    // Send confirmation to customer
-                    const customerPhone = formData.phone?.replace(/[\s\-\+()]/g, '') || '';
-                    if (customerPhone) {
-                      const customerMsg = `Gentile ${formData.firstName},\n\n`
-                        + `abbiamo ricevuto la sua richiesta per la formula senza cauzione relativa alla prenotazione appena effettuata.\n\n`
-                        + `Il nostro team sta effettuando una verifica rapida per confermarne l'idoneità.\n\n`
-                        + `Riceverà a breve un aggiornamento con l'esito e, in caso di approvazione, il link di pagamento per completare la prenotazione.\n\n`
-                        + `Restiamo a disposizione.\n\nCordiali saluti,\nDR7`;
-                      await fetch('/.netlify/functions/send-whatsapp-notification', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ customMessage: customerMsg, customPhone: customerPhone }),
-                      }).catch(() => {});
-                    }
-
-                    setNoCauzioneSaved(true);
-                  } catch (err: any) {
-                    setPaymentError(err.message || 'Errore salvataggio preventivo');
-                  } finally {
-                    setNoCauzioneSending(false);
-                  }
-                }}
-                className="w-full py-4 bg-white text-black font-bold text-lg rounded-full hover:bg-gray-200 transition-colors disabled:opacity-50"
-              >
-                {noCauzioneSending ? 'Salvataggio...' : 'SALVA PREVENTIVO'}
-              </button>
-              {paymentError && <p className="text-red-400 text-sm text-center">{paymentError}</p>}
-            </div>
-          );
-        }
-
         return (
           <div className="space-y-8">
             <section>
@@ -5481,17 +4853,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   Carta
                 </button>
               </div>
-              {/* DR7 Club separate payment notice */}
-              {formData.extras.some(e => e.startsWith('subscription_')) && (
-                <div className="mb-4 p-3 bg-white/10 border border-white/20 rounded-lg text-sm">
-                  <p className="text-white font-semibold">DR7 Club — Pagamento separato</p>
-                  <p className="text-white/70 text-xs mt-1">
-                    {formData.paymentMethod === 'credit'
-                      ? 'Il noleggio sarà pagato con il wallet. Riceverai un link separato per il pagamento DR7 Club (€39/anno) con carta.'
-                      : 'Il noleggio e DR7 Club (€39/anno) saranno pagati insieme con carta.'}
-                  </p>
-                </div>
-              )}
 
               {
                 formData.paymentMethod === 'credit' ? (
@@ -5522,9 +4883,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     <h4 className="text-base font-semibold text-white mb-3">METODO DI PAGAMENTO</h4>
                     <div className="p-4 bg-gray-800 rounded-lg">
                       <div className="flex items-center justify-center gap-3 mb-3">
-                        <svg viewBox="0 0 131.39 86.9" className="h-6 opacity-70" aria-label="Mastercard"><rect width="131.39" height="86.9" rx="8" fill="#000"/><circle cx="48.37" cy="43.45" r="27.5" fill="#eb001b"/><circle cx="83.02" cy="43.45" r="27.5" fill="#f79e1b"/><path d="M65.7 20.8a27.4 27.4 0 0 0-10.2 21.4c0 8.6 3.9 16.3 10.2 21.4a27.4 27.4 0 0 0 10.2-21.4c0-8.6-3.9-16.3-10.2-21.4Z" fill="#ff5f00"/></svg>
-                        <svg viewBox="0 0 780 500" className="h-6 opacity-70" aria-label="Visa"><path d="M293.2 348.7l33.4-195.8h53.4l-33.4 195.8zM541.4 157.6a131.8 131.8 0 0 0-48.4-8.8c-53.2 0-90.7 27-91 65.7-.3 28.6 26.8 44.6 47.2 54.1 21 9.7 28 16 27.9 24.7-.1 13.3-16.7 19.4-32.2 19.4-21.5 0-32.9-3-50.6-10.4l-6.9-3.2-7.5 44.5c12.6 5.5 35.8 10.3 59.9 10.6 56.6 0 93.3-26.7 93.7-68 .2-22.7-14.2-40-45.3-54.2-18.9-9.2-30.4-15.4-30.3-24.7 0-8.3 9.8-17.2 30.9-17.2 17.6-.3 30.4 3.6 40.4 7.6l4.8 2.3 7.3-42.4z" fill="#1434cb"/><path d="M630.6 152.9h-41.6c-12.9 0-22.5 3.5-28.2 16.5l-79.9 182.3h56.5s9.2-24.5 11.3-29.9h69.1c1.6 7 6.5 29.9 6.5 29.9h50l-43.6-198.8zm-66.4 128.3c4.5-11.5 21.5-55.8 21.5-55.8-.3.5 4.4-11.5 7.1-19l3.6 17.2s10.3 47.6 12.5 57.6h-44.7zM232.8 152.9l-52.8 133.5-5.6-27.5c-9.8-31.5-40.2-65.7-74.3-82.8l48.2 172.4 57 0 84.7-195.8h-57.2z" fill="#1434cb"/><path d="M131.9 152.9H46.5l-.7 3.8c67.6 16.5 112.3 56.3 130.9 104.2l-18.9-91.6c-3.2-12.5-12.8-16-25.9-16.4z" fill="#f7a600"/></svg>
-                        <svg viewBox="0 0 780 500" className="h-6 opacity-70" aria-label="PayPal"><path d="M622.8 201.7c-8.5-9.6-23.7-13.7-43.3-13.7h-56.6c-4 0-7.4 2.9-8 6.8l-23.5 149.4c-.5 3 1.8 5.8 4.9 5.8h37.6l-2.6 16.7c-.4 2.7 1.6 5 4.3 5h30.1c3.5 0 6.5-2.5 7-6l.3-1.5 5.6-35.2.4-1.9c.5-3.4 3.5-6 7-6h4.4c28.5 0 50.8-11.6 57.3-45 2.7-14-1.3-25.6-9-33.4z" fill="#179bd7"/><path d="M622.8 201.7c-8.5-9.6-23.7-13.7-43.3-13.7h-56.6c-4 0-7.4 2.9-8 6.8l-23.5 149.4c-.5 3 1.8 5.8 4.9 5.8h37.6l9.4-59.8-.3 1.9c.6-3.9 4-6.8 8-6.8h16.6c32.6 0 58.2-13.3 65.6-51.6.2-1.1.4-2.2.5-3.3 2.2-14.2-.0-23.8-11-32.7z" fill="#253b80"/><path d="M342.3 201.7c-8.5-9.6-23.7-13.7-43.3-13.7h-56.6c-4 0-7.4 2.9-8 6.8L211 344.2c-.5 3 1.8 5.8 4.9 5.8h38.5l9.7-61.4-.3 1.9c.6-3.9 4-6.8 8-6.8h16.6c32.6 0 58.2-13.3 65.6-51.6.2-1.1.4-2.2.5-3.3-1-.5-1-.5 0 0 2.2-14.2-.0-23.8-12.2-27.1z" fill="#253b80"/><path d="M342.3 201.7c-8.5-9.6-23.7-13.7-43.3-13.7h-56.6c-4 0-7.4 2.9-8 6.8L211 344.2c-.5 3 1.8 5.8 4.9 5.8h38.5l9.7-61.4 9.4-59.8-.3 1.9c.6-3.9 4-6.8 8-6.8h16.6c32.6 0 58.2-13.3 65.6-51.6.2-1.1.4-2.2.5-3.3 2.2-14.2-.0-23.8-11-32.7-1-.5-1-.5-1.1-27.6z" fill="#179bd7"/></svg>
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/1280px-Mastercard-logo.svg.png" alt="Mastercard" className="h-6 opacity-70" />
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png" alt="Visa" className="h-6 opacity-70" />
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/PayPal.svg/2560px-PayPal.svg.png" alt="PayPal" className="h-6 opacity-70" />
                       </div>
                       <p className="text-gray-400 text-sm text-center">
                         Sarai reindirizzato a una pagina di pagamento sicura per completare la transazione.
@@ -5582,13 +4943,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   <hr className="border-gray-600 mb-2" />
                   <p>Ritiro: {formData.pickupDate} alle {formData.pickupTime} - {PICKUP_LOCATIONS.find(l => l.id === formData.pickupLocation)?.label?.it || formData.pickupLocation}</p>
                   <p>Riconsegna: {formData.returnDate} alle {formData.returnTime} - {RETURN_LOCATIONS.find(l => l.id === formData.returnLocation)?.label?.it || formData.returnLocation}</p>
-                  <p>Durata: {Math.max(1, duration.days)} {Math.max(1, duration.days) === 1 ? 'giorno' : 'giorni'}</p>
+                  <p>Durata: {duration.days} giorni</p>
                   {extraDayApplied && (
                     <div className="mt-1 p-2 bg-amber-900/30 border border-amber-500/50 rounded">
                       <p className="text-amber-300 text-xs font-semibold">L'orario di riconsegna supera il margine di 1h30 prima del ritiro: viene conteggiato 1 giorno aggiuntivo.</p>
                     </div>
                   )}
-                  <p>Pacchetto km: {(formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm || 100} km`}</p>
+                  <p>Pacchetto km: {formData.kmPackageType === '50km' ? `50 km/giorno (${includedKm} km totali)` : isUrbanOrCorporate ? 'Inclusi' : (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}</p>
                 </div>
 
                 <div>
@@ -5615,7 +4976,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
                   {/* Noleggio base */}
                   <div className="flex justify-between">
-                    <span>Noleggio ({Math.max(1, duration.days)} gg × {effectivePricePerDay ? formatPrice(effectivePricePerDay) : '€0'})</span>
+                    <span>Noleggio ({duration.days} gg × {effectivePricePerDay ? formatPrice(effectivePricePerDay) : '€0'})</span>
                     <span>{formatPrice(rentalCost)}</span>
                   </div>
 
@@ -5625,7 +4986,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <span>Assicurazione {(() => {
                         const opt = (ACTIVE_INSURANCE_BY_TIER[(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'] || []).find(o => o.id === formData.insuranceOption);
                         return opt?.name || formData.insuranceOption?.replace(/_/g, ' ');
-                      })()} ({Math.max(1, duration.days)} gg × €{(() => {
+                      })()} ({duration.days} gg × €{(() => {
                         const opt = (ACTIVE_INSURANCE_BY_TIER[(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'] || []).find(o => o.id === formData.insuranceOption);
                         return opt?.dailyPrice || 0;
                       })()})</span>
@@ -5642,7 +5003,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {/* KM package */}
                   {kmPackageCost > 0 && (
                     <div className="flex justify-between">
-                      <span>Km illimitati ({Math.max(1, duration.days)} gg × €{(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? ACTIVE_TIER_PRICING[driverTier].unlimitedKmPerDay : ACTIVE_TIER_PRICING.TIER_2.unlimitedKmPerDay})</span>
+                      <span>Km illimitati ({duration.days} gg × €{(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? ACTIVE_TIER_PRICING[driverTier].unlimitedKmPerDay : 189})</span>
                       <span>{formatPrice(kmPackageCost)}</span>
                     </div>
                   )}
@@ -5653,7 +5014,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {/* Secondo guidatore */}
                   {secondDriverFee > 0 && (
                     <div className="flex justify-between">
-                      <span>Secondo guidatore ({Math.max(1, duration.days)} gg × €{(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? ACTIVE_TIER_PRICING[driverTier].secondDriverPerDay : ACTIVE_TIER_PRICING.TIER_2.secondDriverPerDay})</span>
+                      <span>Secondo guidatore ({duration.days} gg × €{(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? ACTIVE_TIER_PRICING[driverTier].secondDriverPerDay : 10})</span>
                       <span>{formatPrice(secondDriverFee)}</span>
                     </div>
                   )}
@@ -5670,7 +5031,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {experienceCost > 0 && Object.entries(formData.selectedExperiences).filter(([_, qty]) => qty > 0).map(([svcId, qty]) => {
                     const svc = ACTIVE_EXPERIENCE_SERVICES.find(s => s.id === svcId);
                     if (!svc) return null;
-                    const unitLabel = svc.unit === 'per_day' ? `${Math.max(1, duration.days)} gg` : `${qty}x`;
+                    const unitLabel = svc.unit === 'per_day' ? `${duration.days} gg` : `${qty}x`;
                     const lineCost = svc.unit === 'per_day' ? svc.price * duration.days * qty : svc.price * qty;
                     return (
                       <div key={svcId} className="flex justify-between">
@@ -5683,46 +5044,27 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {/* DR7 Flex */}
                   {flexCost > 0 && (
                     <div className="flex justify-between">
-                      <span>DR7 Flex ({Math.max(1, duration.days)} gg × €{ACTIVE_DR7_FLEX.dailyPrice.toFixed(2)})</span>
+                      <span>DR7 Flex ({duration.days} gg × €{ACTIVE_DR7_FLEX.dailyPrice.toFixed(2)})</span>
                       <span>{formatPrice(flexCost)}</span>
                     </div>
                   )}
 
                   {/* Deposit surcharges */}
                   {noDepositSurcharge > 0 && (
-                    <div className="flex justify-between text-white">
-                      <span>{`Supplemento cauzione (${formData.depositOption === 'no_deposit' ? `${Math.max(1, duration.days)} gg × €${ACTIVE_NO_DEPOSIT_SURCHARGE}` : formData.depositOption === 'vehicle_deposit' ? `${Math.max(1, duration.days)} gg × €20` : ''})`}</span>
+                    <div className="flex justify-between text-yellow-400">
+                      <span>{isUrbanOrCorporate ? 'Supplemento Micro Cauzione (+30%)' : `Supplemento cauzione (${formData.depositOption === 'no_deposit' ? `${duration.days} gg × €49` : formData.depositOption === 'vehicle_deposit' ? `${duration.days} gg × €20` : ''})`}</span>
                       <span>{formatPrice(noDepositSurcharge)}</span>
                     </div>
                   )}
 
                   {/* Additional surcharges from ours */}
-                  {youngDriverFee > 0 && <div className="flex justify-between"><span>Supplemento under 25 ({Math.max(1, duration.days)} gg × €10)</span> <span>{formatPrice(youngDriverFee)}</span></div>}
-                  {recentLicenseFee > 0 && <div className="flex justify-between"><span>Supplemento patente recente ({Math.max(1, duration.days)} gg × €20)</span> <span>{formatPrice(recentLicenseFee)}</span></div>}
+                  {youngDriverFee > 0 && <div className="flex justify-between"><span>Supplemento under 25 ({duration.days} gg × €10)</span> <span>{formatPrice(youngDriverFee)}</span></div>}
+                  {recentLicenseFee > 0 && <div className="flex justify-between"><span>Supplemento patente recente ({duration.days} gg × €20)</span> <span>{formatPrice(recentLicenseFee)}</span></div>}
 
                   <hr className="border-gray-500 my-2" />
 
                   {/* Subtotal, discounts, total */}
-                  {hasDynamicDiscount && (
-                    <>
-                      <div className="flex justify-between text-gray-500 text-sm">
-                        <span>Prezzo listino</span>
-                        <span className="line-through">{formatPrice(listSubtotal)}</span>
-                      </div>
-                      <div className="flex justify-between text-green-400 text-sm">
-                        <span className="flex items-center gap-1">
-                          Prezzo dinamico
-                          <span className={`text-xs px-1 py-0.5 rounded-full font-semibold ${dynamicDiscountPct > 0 ? 'bg-green-500/20' : 'bg-red-500/20 text-red-400'}`}>
-                            {dynamicDiscountPct > 0 ? `-${dynamicDiscountPct}%` : `+${Math.abs(dynamicDiscountPct)}%`}
-                          </span>
-                        </span>
-                        <span className="font-semibold">{formatPrice(subtotal)}</span>
-                      </div>
-                    </>
-                  )}
-                  {!hasDynamicDiscount && (
-                    <div className="flex justify-between text-gray-400"><span>Subtotale</span> <span>{formatPrice(finalTotal)}</span></div>
-                  )}
+                  <div className="flex justify-between text-gray-400"><span>Subtotale</span> <span>{formatPrice(finalTotal)}</span></div>
 
                   {membershipDiscount > 0 && (
                     <div className="flex justify-between text-green-400 text-sm">
@@ -5737,7 +5079,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     </div>
                   )}
                   {discountAmount > 0 && (
-                    <div className="flex justify-between text-white text-sm">
+                    <div className="flex justify-between text-yellow-400 text-sm">
                       <span>Codice Sconto ({appliedDiscount?.code})</span>
                       <span>-{formatPrice(discountAmount)}</span>
                     </div>
@@ -5763,20 +5105,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {/* Cauzione info */}
                   {(() => {
                     const depositAmt = getDeposit();
-                    if (formData.depositOption === 'no_deposit') {
-                      return (
-                        <div className="mt-3 p-3 bg-green-900/30 border border-green-500/30 rounded-lg">
-                          <p className="text-sm font-semibold text-green-400">NESSUNA CAUZIONE</p>
-                          <p className="text-sm text-white mt-1">Supplemento: €{ACTIVE_NO_DEPOSIT_SURCHARGE}/giorno ({Math.max(1, duration.days)} gg = {formatPrice(noDepositSurcharge)})</p>
-                          <p className="text-xs text-gray-500 mt-1">Richiede approvazione DR7</p>
-                        </div>
-                      );
-                    }
                     if (depositAmt > 0 || formData.depositOption) {
                       return (
                         <div className="mt-3 p-3 bg-gray-700/50 rounded-lg">
                           <p className="text-sm font-semibold text-white">CAUZIONE AL RITIRO</p>
-                          {depositAmt > 0 && (
+                          {isUrbanOrCorporate && formData.depositOption && (
+                            <p className="text-sm text-gray-300 mt-1">
+                              {formData.depositOption === 'with_deposit'
+                                ? `Cauzione: €${DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT}`
+                                : `Micro Cauzione: €${licenseYears >= 5 ? DEPOSIT_RULES.UTILITARIA.LICENSE_5_OR_MORE : DEPOSIT_RULES.UTILITARIA.LICENSE_UNDER_5}`}
+                            </p>
+                          )}
+                          {!isUrbanOrCorporate && depositAmt > 0 && (
                             <p className="text-sm text-gray-300 mt-1">Importo: €{depositAmt.toLocaleString()}</p>
                           )}
                           {formData.depositOption && !isUrbanOrCorporate && (
@@ -5795,7 +5135,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   })()}
                 </div>
 
-                {/* Codice Sconto - Available for ALL customers */}
+                {/* Codice Sconto - Hidden for Supercars (except special clients who get dedicated codes) */}
+                {(vehicleType !== 'SUPERCAR' || isMassimo) && (
                 <div className="border-t border-gray-600 pt-4">
                   <p className="font-bold text-base text-white mb-3">CODICE SCONTO</p>
                   {appliedDiscount ? (
@@ -5839,6 +5180,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     <p className="text-red-400 text-sm mt-2">{discountCodeError}</p>
                   )}
                 </div>
+                )}
 
                 {/* Maggiori informazioni */}
                 <div className="border-t border-gray-600 pt-3">
@@ -5924,6 +5266,40 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* No Cauzione Request Modal */}
+            {showNoCauzioneModal && (
+              <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+                <div className="bg-[#1a1a2e] rounded-2xl max-w-md w-full p-6 border border-yellow-500/30 shadow-2xl">
+                  <div className="text-center mb-4">
+                    <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                      <svg className="w-7 h-7 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-bold text-white">Formula Senza Cauzione</h3>
+                  </div>
+                  <p className="text-gray-300 text-sm leading-relaxed mb-6">
+                    L&apos;accesso alla formula senza cauzione è soggetto a valutazione e approvazione interna. In caso di esito positivo, riceverà un link di pagamento dedicato per completare la prenotazione.
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowNoCauzioneModal(false)}
+                      className="flex-1 py-3 px-4 rounded-xl border border-gray-600 text-gray-300 hover:bg-gray-800 transition-colors text-sm font-medium"
+                    >
+                      Annulla
+                    </button>
+                    <button
+                      onClick={handleNoCauzioneConfirm}
+                      disabled={isProcessing}
+                      className="flex-1 py-3 px-4 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-black font-bold transition-colors text-sm disabled:opacity-50"
+                    >
+                      {isProcessing ? 'Invio...' : 'Invia Richiesta'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <AnimatePresence>
               {/* Wash Upsell Modal */}
@@ -6195,7 +5571,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
-                        className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-white/10 to-white/20 border border-white/20 mb-3"
+                        className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400/20 to-yellow-600/20 border border-yellow-500/30 mb-3"
                       >
                         <span className="text-3xl">🎁</span>
                       </motion.div>
@@ -6205,11 +5581,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         transition={{ delay: 0.3 }}
                         className="text-xl sm:text-2xl font-bold text-white"
                       >
-                        Ricevi fino a <span className="text-green-400">+€{subscriptionWalletCredit.toFixed(2)}</span> di credito wallet
+                        Ricevi subito <span className="text-green-400">+€{subscriptionWalletCredit}</span> di credito wallet
                       </motion.h3>
                       <div className="w-12 h-0.5 bg-white/30 mx-auto my-3"></div>
                       <p className="text-gray-400 text-sm">
-                        Attiva DR7 Club e ricevi fino a <strong className="text-white">€{subscriptionWalletCredit.toFixed(2)}</strong> di credito wallet (4% del totale), utilizzabile per il prossimo noleggio o servizio lavaggio.
+                        Attiva DR7 Club e ricevi <strong className="text-white">€{subscriptionWalletCredit}</strong> di credito immediato sul tuo wallet, utilizzabile per il prossimo noleggio o servizio lavaggio.
                       </p>
                     </div>
 
@@ -6255,7 +5631,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             <p className="text-gray-400 text-xs mt-0.5">Paga 6 mesi, ricevi 12 — il piano migliore</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-white font-bold text-lg">€39<span className="text-gray-400 text-xs font-normal">/anno</span></p>
+                            <p className="text-white font-bold text-lg">€29<span className="text-gray-400 text-xs font-normal">/anno</span></p>
                             <p className="text-gray-500 line-through text-xs">€58,80/anno</p>
                           </div>
                         </div>
@@ -6266,12 +5642,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     <div className="bg-gray-800/50 rounded-xl p-4 mb-5 text-sm">
                       <p className="text-white font-semibold mb-2">Con DR7 Club ottieni:</p>
                       <ul className="space-y-1.5 text-gray-300">
-                        <li className="flex items-start gap-2"><span className="text-green-400 mt-0.5">✓</span> Fino a €{subscriptionWalletCredit.toFixed(2)} di credito wallet (4% del totale)</li>
+                        <li className="flex items-start gap-2"><span className="text-green-400 mt-0.5">✓</span> €{subscriptionWalletCredit} di credito wallet immediato</li>
                         <li className="flex items-start gap-2"><span className="text-green-400 mt-0.5">✓</span> Sconti esclusivi su noleggi e lavaggi</li>
                         <li className="flex items-start gap-2"><span className="text-green-400 mt-0.5">✓</span> Accesso prioritario alle nuove supercar</li>
                         <li className="flex items-start gap-2"><span className="text-green-400 mt-0.5">✓</span> Promozioni riservate ai membri</li>
-                        <li className="flex items-start gap-2"><span className="text-green-400 mt-0.5">✓</span> DR7 Wallet Bonus fino al 33%</li>
-                        <li className="flex items-start gap-2"><span className="text-green-400 mt-0.5">✓</span> DR7 Wallet Privilege fino al 36%</li>
                       </ul>
                     </div>
 
@@ -6288,7 +5662,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         }`}
                       >
                         {selectedSubscription
-                          ? `Attiva DR7 Club — €${selectedSubscription === 'monthly' ? '4,90/mese' : '39/anno'}`
+                          ? `Attiva DR7 Club — €${selectedSubscription === 'monthly' ? '4,90/mese' : '29/anno'}`
                           : 'Seleziona un piano'}
                       </button>
                       <button
@@ -6324,11 +5698,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               {step === 4 && (
                 <aside className="lg:col-span-1 lg:sticky lg:top-32 self-start mb-8 lg:mb-0">
                   <div className="bg-gray-900/50 p-6 rounded-lg border border-gray-800">
-                    <p className="text-xs text-green-400 font-medium mb-2">Prezzo dinamico attivo, blocca ORA, potrebbe aumentare</p>
                     <h2 className="text-2xl font-bold text-white mb-4">RIEPILOGO COSTI</h2>
                     <img src={item.image} alt={item.name} className="w-full h-40 object-contain rounded-md mb-4 bg-gray-800/30" />
                     <div className="space-y-2 text-sm">
-                      <div className="flex justify-between"><span className="text-gray-400">Durata noleggio:</span><span className="text-white font-medium">{Math.max(1, duration.days)} {Math.max(1, duration.days) === 1 ? 'giorno' : 'giorni'}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-400">Durata noleggio:</span><span className="text-white font-medium">{duration.days} giorni</span></div>
                       {extraDayApplied && (
                         <div className="p-2 bg-amber-900/30 border border-amber-500/50 rounded">
                           <p className="text-amber-300 text-xs font-semibold">+1 giorno: l'orario di riconsegna supera il margine di 1h30 prima dell'orario di ritiro.</p>
@@ -6337,7 +5710,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <div className="flex justify-between">
                         <span className="text-gray-400">Km pacchetto:</span>
                         <span className="text-white font-medium">
-                          {(formData.kmPackageType === 'unlimited' || (includedKm && includedKm >= 9999)) ? 'ILLIMITATI' : `${includedKm || 100} km`}
+                          {formData.kmPackageType === '50km' ? `50 km/giorno` : (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}
                         </span>
                       </div>
 
@@ -6351,14 +5724,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       {dropoffFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Spese di riconsegna</span><span className="text-white font-medium">{formatPrice(dropoffFee)}</span></div>}
                       {formData.pickupLocation === 'home_delivery' && formData.deliveryPickupKm > 0 && (
                         <div className="flex justify-between">
-                          <span className="text-gray-400">Consegna a domicilio ({formData.deliveryPickupKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM})</span>
-                          <span className="text-white font-medium">{formatPrice(formData.deliveryPickupKm * ACTIVE_DELIVERY_PRICE_PER_KM)}</span>
+                          <span className="text-gray-400">Consegna a domicilio ({formData.deliveryPickupKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM} × 2 A/R)</span>
+                          <span className="text-white font-medium">{formatPrice(formData.deliveryPickupKm * ACTIVE_DELIVERY_PRICE_PER_KM * 2)}</span>
                         </div>
                       )}
                       {formData.returnLocation === 'home_delivery' && formData.deliveryReturnKm > 0 && (
                         <div className="flex justify-between">
-                          <span className="text-gray-400">Riconsegna a domicilio ({formData.deliveryReturnKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM})</span>
-                          <span className="text-white font-medium">{formatPrice(formData.deliveryReturnKm * ACTIVE_DELIVERY_PRICE_PER_KM)}</span>
+                          <span className="text-gray-400">Riconsegna a domicilio ({formData.deliveryReturnKm} km × €{ACTIVE_DELIVERY_PRICE_PER_KM} × 2 A/R)</span>
+                          <span className="text-white font-medium">{formatPrice(formData.deliveryReturnKm * ACTIVE_DELIVERY_PRICE_PER_KM * 2)}</span>
                         </div>
                       )}
                       {secondDriverFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Secondo guidatore</span><span className="text-white font-medium">{formatPrice(secondDriverFee)}</span></div>}
@@ -6366,8 +5739,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       {recentLicenseFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Supplemento patente recente</span><span className="text-white font-medium">{formatPrice(recentLicenseFee)}</span></div>}
                       {noDepositSurcharge > 0 && (
                         <div className="flex justify-between">
-                          <span className="text-white">Supplemento cauzione</span>
-                          <span className="text-white font-medium">{formatPrice(noDepositSurcharge)}</span>
+                          <span className="text-yellow-400">Supplemento Micro Cauzione (+30%)</span>
+                          <span className="text-yellow-400 font-medium">{formatPrice(noDepositSurcharge)}</span>
                         </div>
                       )}
                       {selectedUpsellWash && (
@@ -6385,25 +5758,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
                       <div className="border-t border-white/20 my-2"></div>
 
-                      {/* Dynamic pricing: prezzo barrato */}
-                      {hasDynamicDiscount && (
-                        <div className="flex justify-between items-center text-sm mb-1">
-                          <span className="text-gray-500">Prezzo listino</span>
-                          <span className="text-gray-500 line-through">{formatPrice(listSubtotal)}</span>
-                        </div>
-                      )}
-                      {hasDynamicDiscount && (
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="flex items-center gap-2 text-green-400">
-                            Prezzo dinamico
-                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${dynamicDiscountPct > 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                              {dynamicDiscountPct > 0 ? `-${dynamicDiscountPct}%` : `+${Math.abs(dynamicDiscountPct)}%`}
-                            </span>
-                          </span>
-                          <span className="text-green-400 font-semibold">{formatPrice(subtotal)}</span>
-                        </div>
-                      )}
-
                       {membershipDiscount > 0 ? (
                         <>
                           <div className="flex justify-between text-gray-400 line-through text-sm"><span>Totale</span><span>{formatPrice(originalTotal)}</span></div>
@@ -6418,7 +5772,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             </div>
                           )}
                           {discountAmount > 0 && (
-                            <div className="flex justify-between text-white text-sm">
+                            <div className="flex justify-between text-yellow-400 text-sm">
                               <span>Codice Sconto</span>
                               <span>-{formatPrice(discountAmount)}</span>
                             </div>
@@ -6436,9 +5790,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         </>
                       ) : (
                         <>
-                          {!hasDynamicDiscount && (
-                            <div className="flex justify-between text-gray-400 text-sm"><span>Subtotale</span><span>{formatPrice(finalTotal)}</span></div>
-                          )}
+                          <div className="flex justify-between text-gray-400 text-sm"><span>Subtotale</span><span>{formatPrice(finalTotal)}</span></div>
                           {onlineDiscountAmount > 0 && (
                             <div className="flex justify-between text-green-400 text-sm">
                               <span>Sconto Online -5%</span>
@@ -6446,7 +5798,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             </div>
                           )}
                           {discountAmount > 0 && (
-                            <div className="flex justify-between text-white text-sm">
+                            <div className="flex justify-between text-yellow-400 text-sm">
                               <span>Codice Sconto</span>
                               <span>-{formatPrice(discountAmount)}</span>
                             </div>
@@ -6470,22 +5822,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             <span className="text-white font-medium">€{getDeposit()}</span>
                           </div>
                           <p className="text-xs text-gray-500 mt-1">Restituita dopo la riconsegna</p>
-                        </div>
-                      )}
-                      {/* DR7 Club subscription — separate, card-only */}
-                      {formData.extras.some(e => e.startsWith('subscription_')) && (
-                        <div className="mt-3 pt-3 border-t border-white/20 bg-white/5 rounded-lg p-3">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-white font-semibold">DR7 Club</span>
-                            <span className="text-white font-bold">
-                              {formData.extras.includes('subscription_annual') ? '€39/anno' : '€4,90/mese'}
-                            </span>
-                          </div>
-                          <p className="text-xs text-white/70 mt-1">
-                            {formData.paymentMethod === 'credit'
-                              ? 'Riceverai un link di pagamento separato via email'
-                              : 'Incluso nel pagamento con carta'}
-                          </p>
                         </div>
                       )}
                     </div>
@@ -6552,15 +5888,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     </div>
                   )}
 
-                  {/* Show validation errors near the button so user always sees them */}
-                  {Object.keys(errors).length > 0 && (
-                    <div className="mt-4 p-3 bg-red-900/30 border border-red-500 rounded-lg">
-                      {Object.values(errors).map((err, i) => (
-                        <p key={i} className="text-red-300 text-sm font-medium">{err as string}</p>
-                      ))}
-                    </div>
-                  )}
-
                   <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-4 mt-6 sm:mt-8">
                     <button type="button" onClick={handleBack} disabled={step === 1} className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-gray-700 text-white text-sm sm:text-base font-bold rounded-full hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('Back')}</button>
                     {step < steps.length ? (
@@ -6568,7 +5895,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         type="button"
                         onClick={handleNext}
                         className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={(step === 1 && !isFromSearch && isCheckingAvailability) || (licenseYears < 3 && step === 2) || (step === 2 && !formData.confirmsInformation) || (step === 3 && isUrbanOrCorporate && !formData.depositOption && !isMassimo)}
+                        disabled={(step === 1 && !isFromSearch && isCheckingAvailability) || (licenseYears < 3 && step === 2) || (step === 2 && !formData.confirmsInformation) || (step === 3 && isUrbanOrCorporate && !formData.depositOption)}
                       >
                         Continua
                       </button>
@@ -6579,33 +5906,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             <p className="text-amber-300 text-sm font-semibold">Attenzione: l'orario di riconsegna selezionato supera il margine di 1h30 prima dell'orario di ritiro. Viene conteggiato 1 giorno aggiuntivo ({duration.days} giorni totali invece di {duration.days - 1}).</p>
                           </div>
                         )}
-                        {/* Hide CONFERMA/RICHIEDI when No Cauzione flow (SALVA PREVENTIVO is in step 4 content) */}
-                        {noCauzioneRequested && formData.depositOption === 'no_deposit' ? null : preventivoSaved ? (
-                          <div className="w-full text-center py-4 bg-green-500/10 border border-green-500/30 rounded-2xl">
-                            <p className="text-green-400 font-bold text-base">Preventivo salvato!</p>
-                            <p className="text-gray-400 text-sm mt-1">Puoi trovarlo nel tuo account in "I Miei Preventivi"</p>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col sm:flex-row gap-3 w-full">
-                            <button
-                              type="submit"
-                              disabled={isProcessing || !formData.agreesToTerms || !formData.agreesToPrivacy || !formData.confirmsDocuments}
-                              className="flex-1 px-6 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed"
-                              style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
-                            >
-                              {isProcessing ? 'Elaborazione in corso...' : 'CONFERMA PRENOTAZIONE'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={handleSavePreventivo}
-                              disabled={isSavingPreventivo || !formData.agreesToTerms || !formData.agreesToPrivacy}
-                              className="flex-1 px-6 sm:px-8 py-3 border border-white text-white text-sm sm:text-base font-bold rounded-full hover:bg-white hover:text-black transition-colors flex items-center justify-center disabled:border-gray-600 disabled:text-gray-600 disabled:cursor-not-allowed"
-                              style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
-                            >
-                              {isSavingPreventivo ? 'Salvataggio...' : 'RICHIEDI PREVENTIVO'}
-                            </button>
-                          </div>
-                        )}
+                        <button
+                          type="submit"
+                          disabled={isProcessing || !formData.agreesToTerms || !formData.agreesToPrivacy || !formData.confirmsDocuments}
+                          className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed"
+                          style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+                        >
+                          {isProcessing ? 'Elaborazione in corso...' : 'CONFERMA PRENOTAZIONE'}
+                        </button>
                       </>
                     )}
                   </div>

@@ -240,7 +240,8 @@ exports.handler = async (event) => {
       }
 
       // ── PREPAID CARD GUARD ──────────────────────────────────
-      // Block prepaid cards: detect via Nexi API + BIN lookup, then void + cancel
+      // Detect prepaid cards. If prepaid: don't confirm, keep booking pending.
+      // No cancel, no void — just don't accept the payment.
       if (isSuccess) {
         try {
           const NEXI_API_KEY = process.env.NEXI_API_KEY;
@@ -297,51 +298,25 @@ exports.handler = async (event) => {
             nexi_order_id: orderId,
           }).then(() => {}).catch(e => console.error('[prepaid-guard] Log error:', e));
 
-          // 4. BLOCK if prepaid
+          // 4. If prepaid: don't confirm payment, keep booking as pending
           if (isPrepaid) {
-            console.log(`[prepaid-guard] PREPAID BLOCKED — booking ${booking.id}`);
+            console.log(`[prepaid-guard] PREPAID DETECTED — not confirming booking ${booking.id}`);
 
-            // Cancel booking
+            // Mark as prepaid rejected but keep booking alive
             await supabase.from('bookings').update({
-              status: 'cancelled',
-              payment_status: 'unpaid',
+              payment_status: 'failed',
               booking_details: {
                 ...(booking.booking_details || {}),
-                cancelled_reason: 'Carta prepagata non accettata',
-                cancelled_at: new Date().toISOString()
+                prepaid_card_rejected: true,
+                prepaid_rejected_at: new Date().toISOString()
               }
             }).eq('id', booking.id);
 
-            // Void/refund via Nexi
-            if (NEXI_API_KEY && orderId) {
-              try {
-                await fetch(`${NEXI_BASE}/operations/${orderId}/cancels`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', 'X-Api-Key': NEXI_API_KEY, 'Correlation-Id': `${Date.now()}` },
-                  body: JSON.stringify({ description: 'Carta prepagata non accettata' })
-                });
-              } catch (e) { console.error('[prepaid-guard] Void error:', e); }
-            }
-
-            // Notify customer
-            const custPhone = booking.customer_phone || booking.booking_details?.customer?.phone;
-            if (custPhone) {
-              const siteUrl = process.env.URL || 'https://dr7empire.com';
-              await fetch(`${siteUrl}/.netlify/functions/send-whatsapp-notification`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  customPhone: custPhone,
-                  customMessage: `⚠️ *Pagamento rifiutato*\n\nGentile ${(booking.customer_name || 'Cliente').split(' ')[0]},\n\nNon accettiamo carte prepagate. Utilizzare una carta di credito o debito.\n\nLa prenotazione è stata annullata e il pagamento verrà rimborsato.\n\nPer assistenza contattaci.\n\n*DR7*`
-                })
-              }).catch(() => {});
-            }
-
-            return { statusCode: 200, body: 'PREPAID_BLOCKED' };
+            // Don't continue — payment not accepted
+            return { statusCode: 200, body: 'PREPAID_NOT_ACCEPTED' };
           }
         } catch (guardErr) {
           console.error('[prepaid-guard] Guard error (non-blocking):', guardErr);
-          // Don't block the payment flow if guard fails
         }
       }
       // ── END PREPAID CARD GUARD ──────────────────────────────
