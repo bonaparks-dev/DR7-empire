@@ -2358,9 +2358,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (step === 3) {
       const vType = getVehicleType(item, categoryContext);
 
-      if (isUrbanOrCorporate && !formData.depositOption && !isMassimo) {
-        newErrors.depositOption = "Devi selezionare un'opzione per la cauzione.";
-      }
+      // Urban/Furgone: fixed deposit, no selection needed
+      // Only validate deposit for supercars
 
     }
     if (step === 4) {
@@ -4859,7 +4858,19 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             </section>
 
             {/* === D. CAUZIONE === */}
-            {!isMassimo && !isLoyalCustomer && getMembershipTierName(user) !== 'gold' && getMembershipTierName(user) !== 'platinum' ? (
+            {!isMassimo && !isLoyalCustomer && getMembershipTierName(user) !== 'gold' && getMembershipTierName(user) !== 'platinum' && isUrbanOrCorporate ? (
+              /* Urban/Furgone/V-Class: fixed deposit, no options */
+              <section className="border-t border-gray-700 pt-6">
+                <h3 className="text-lg font-bold text-white mb-2">D. CAUZIONE</h3>
+                <div className="p-4 rounded-lg border-2 border-gray-600 bg-gray-800/50">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-white">Cauzione al ritiro</span>
+                    <span className="font-bold text-yellow-400">€{DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT.toLocaleString()}</span>
+                  </div>
+                  <p className="text-sm text-gray-400 mt-1">Cauzione fissa su carta di credito o debito.</p>
+                </div>
+              </section>
+            ) : !isMassimo && !isLoyalCustomer && getMembershipTierName(user) !== 'gold' && getMembershipTierName(user) !== 'platinum' ? (
               /* Supercar: tier-based deposit options */
               <section className="border-t border-gray-700 pt-6">
                 <h3 className="text-lg font-bold text-white mb-2">D. CAUZIONE</h3>
@@ -6463,11 +6474,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     </div>
                         </>
                       )}
-                      {isUrbanOrCorporate && formData.depositOption === 'with_deposit' && getDeposit() > 0 && (
+                      {isUrbanOrCorporate && (
                         <div className="mt-2 pt-2 border-t border-gray-700">
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-400">Cauzione al ritiro</span>
-                            <span className="text-white font-medium">€{getDeposit()}</span>
+                            <span className="text-white font-medium">€{DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT.toLocaleString()}</span>
                           </div>
                           <p className="text-xs text-gray-500 mt-1">Restituita dopo la riconsegna</p>
                         </div>
@@ -6568,7 +6579,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         type="button"
                         onClick={handleNext}
                         className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={(step === 1 && !isFromSearch && isCheckingAvailability) || (licenseYears < 3 && step === 2) || (step === 2 && !formData.confirmsInformation) || (step === 3 && isUrbanOrCorporate && !formData.depositOption && !isMassimo)}
+                        disabled={(step === 1 && !isFromSearch && isCheckingAvailability) || (licenseYears < 3 && step === 2) || (step === 2 && !formData.confirmsInformation)}
                       >
                         Continua
                       </button>
