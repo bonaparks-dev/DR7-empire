@@ -330,8 +330,8 @@ const VehicleResults: React.FC<{
                 categoryId={categoryId}
                 totalPrice={itemTotalPrice}
                 totalDays={itemDays}
-                hidePrice={isVip ? false : (!hasSearched && (categoryId === 'cars' || categoryId === 'corporate-fleet'))}
-                hideBookButton={isVip ? false : (!hasSearched && (categoryId === 'cars' || categoryId === 'corporate-fleet'))}
+                hidePrice={isVip ? false : (!user || (!hasSearched && (categoryId === 'cars' || categoryId === 'corporate-fleet')))}
+                hideBookButton={isVip ? false : (!user || (!hasSearched && (categoryId === 'cars' || categoryId === 'corporate-fleet')))}
                 availableFrom={searchResult?.availableFrom || null}
               />
             );
