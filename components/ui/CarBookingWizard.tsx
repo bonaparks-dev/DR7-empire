@@ -4958,7 +4958,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     Invieremo la tua richiesta e sarai contattato per conferma.
                   </p>
                   <p className="text-white text-sm mb-1">Supplemento: <span className="font-bold text-white">€{ACTIVE_NO_DEPOSIT_SURCHARGE}/giorno</span></p>
-                  <p className="text-gray-500 text-xs mb-6">Disponibile solo con Kasko attiva (Fascia A, residente in Sardegna)</p>
+                  <p className="text-gray-500 text-xs mb-4">Disponibile solo con Kasko attiva (Fascia A, residente in Sardegna)</p>
+                  <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg mb-4">
+                    <p className="text-red-400 text-xs font-bold mb-1">ATTENZIONE</p>
+                    <p className="text-gray-300 text-xs leading-relaxed">
+                      Il pagamento con carta prepagata comporta l'obbligo di cauzione secondo modalità standard.
+                      Senza cauzione, il veicolo non verrà consegnato.
+                      Procedendo, il cliente accetta integralmente tale condizione.
+                    </p>
+                  </div>
                   <div className="flex gap-3">
                     <button
                       onClick={() => setShowNoCauzionePopup(false)}
