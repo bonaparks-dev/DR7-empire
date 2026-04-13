@@ -239,152 +239,38 @@ exports.handler = async (event) => {
         return { statusCode: 200, body: 'OK' };
       }
 
-      // ── PREPAID CARD GUARD ──────────────────────────────────
-      let prepaidBlocked = false;
-      let nexiOperationId = null;
-      let maskedPan = '';
+      // ── PREPAID CARD CHECK (from callback data + BIN lookup) ──
+      let isPrepaidCard = false;
+      let prepaidSurchargeCents = 0;
+      const guardPan = (rawParams.paymentInstrumentInfo || '').toString();
 
-      if (isSuccess) {
-        const NEXI_API_KEY = process.env.NEXI_API_KEY;
-        const NEXI_BASE = 'https://xpay.nexigroup.com/api/phoenix-0.0/psp/api/v1';
-
-        // 1. Get order details from Nexi (orderId = merchant order, need to find operations)
-        if (orderId && NEXI_API_KEY) {
-          try {
-            // Try /orders/{orderId} to get operations list
-            const orderRes = await fetch(`${NEXI_BASE}/orders/${orderId}`, {
-              headers: { 'X-Api-Key': NEXI_API_KEY, 'Correlation-Id': `guard-${Date.now()}` },
-              signal: AbortSignal.timeout(4000)
-            });
-            if (orderRes.ok) {
-              const orderData = await orderRes.json();
-              console.log('[prepaid-guard] Nexi order data keys:', Object.keys(orderData));
-
-              // Check all operations for card type info
-              const operations = orderData.operations || [];
-              const orderDetails = orderData.orderStatus || orderData;
-              const allData = JSON.stringify(orderData).toLowerCase();
-
-              // Check in raw response for prepaid keywords
-              if (allData.includes('prepagat') || allData.includes('prepaid') || allData.includes('ricaricabil')) {
-                prepaidBlocked = true;
-                console.log('[prepaid-guard] DETECTED via keyword in order response');
-              }
-
-              // Check each operation's additionalData
-              for (const op of operations) {
-                nexiOperationId = nexiOperationId || op.operationId;
-                const ad = op.additionalData || {};
-                maskedPan = maskedPan || op.paymentInstrumentInfo || ad.maskedPan || '';
-                const prepFlag = ad.prepagata || ad.prepaid;
-                if (prepFlag === 'S' || prepFlag === true || prepFlag === 'true' || prepFlag === 'Y') {
-                  prepaidBlocked = true;
-                  console.log('[prepaid-guard] DETECTED via additionalData.prepagata');
-                }
-                const tipo = (ad.tipoProdotto || ad.productType || '').toLowerCase();
-                if (tipo.includes('prepag') || tipo.includes('prepaid') || tipo.includes('ricaricabil')) {
-                  prepaidBlocked = true;
-                  console.log('[prepaid-guard] DETECTED via tipoProdotto:', tipo);
-                }
-              }
-
-              // Also check top-level paymentInstrumentInfo
-              maskedPan = maskedPan || orderDetails.paymentInstrumentInfo || '';
-            }
-          } catch (e) { console.warn('[prepaid-guard] Nexi order fetch error:', e.message); }
-
-          // 2. Try /operations/{orderId} as fallback (some Nexi setups use orderId as operationId)
-          if (!prepaidBlocked && !maskedPan) {
-            try {
-              const opRes = await fetch(`${NEXI_BASE}/operations/${orderId}`, {
-                headers: { 'X-Api-Key': NEXI_API_KEY, 'Correlation-Id': `guard2-${Date.now()}` },
-                signal: AbortSignal.timeout(3000)
-              });
-              if (opRes.ok) {
-                const opData = await opRes.json();
-                const op = opData.operation || opData;
-                const ad = op.additionalData || {};
-                maskedPan = maskedPan || op.paymentInstrumentInfo || ad.maskedPan || '';
-                nexiOperationId = nexiOperationId || op.operationId || orderId;
-                const prepFlag = ad.prepagata || ad.prepaid || op.prepagata;
-                if (prepFlag === 'S' || prepFlag === true || prepFlag === 'true' || prepFlag === 'Y') prepaidBlocked = true;
-                const tipo = (ad.tipoProdotto || ad.productType || '').toLowerCase();
-                if (tipo.includes('prepag') || tipo.includes('prepaid') || tipo.includes('ricaricabil')) prepaidBlocked = true;
-              }
-            } catch (e) { /* silent */ }
-          }
-        }
-
-        // 3. BIN lookup fallback — most reliable for prepaid detection
-        if (!prepaidBlocked && maskedPan) {
-          const binMatch = maskedPan.match(/^(\d{6,8})/);
+      if (isSuccess && guardPan) {
+        try {
+          const binMatch = guardPan.match(/^(\d{6,8})/);
           if (binMatch) {
-            try {
-              const binRes = await fetch(`https://lookup.binlist.net/${binMatch[1]}`, {
-                headers: { 'Accept-Version': '3' },
-                signal: AbortSignal.timeout(2000)
-              });
-              if (binRes.ok) {
-                const binData = await binRes.json();
-                console.log('[prepaid-guard] BIN lookup result:', binData.type, binData.scheme);
-                if ((binData.type || '').toLowerCase() === 'prepaid') {
-                  prepaidBlocked = true;
-                  console.log('[prepaid-guard] DETECTED via BIN lookup');
-                }
-              }
-            } catch (e) { console.warn('[prepaid-guard] BIN lookup error:', e.message); }
+            const binRes = await fetch(`https://lookup.binlist.net/${binMatch[1]}`, {
+              headers: { 'Accept-Version': '3' },
+              signal: AbortSignal.timeout(2000)
+            });
+            if (binRes.ok) {
+              const binData = await binRes.json();
+              console.log('[prepaid-guard] BIN:', binData.type, binData.prepaid);
+              if (binData.type === 'prepaid' || binData.prepaid === true) isPrepaidCard = true;
+            }
           }
-        }
+        } catch (e) { console.warn('[prepaid-guard] BIN error:', e.message); }
 
-        // 4. Also check callback raw data for prepaid keywords
-        if (!prepaidBlocked && rawParams) {
+        if (!isPrepaidCard) {
           const raw = JSON.stringify(rawParams).toLowerCase();
-          if (raw.includes('prepagat') || raw.includes('prepaid') || raw.includes('ricaricabil')) {
-            prepaidBlocked = true;
-            console.log('[prepaid-guard] DETECTED via callback rawParams keyword');
-          }
+          if (raw.includes('prepagat') || raw.includes('"prepaid":true')) isPrepaidCard = true;
         }
 
-        console.log(`[prepaid-guard] Result: prepaid=${prepaidBlocked}, maskedPan=${maskedPan}, operationId=${nexiOperationId}`);
-
-        // 5. Log attempt
-        await supabase.from('blocked_card_attempts').insert({
-          booking_id: booking.id,
-          customer_name: booking.customer_name || booking.booking_details?.customer?.fullName,
-          masked_pan: maskedPan,
-          operation_type: 'website_booking',
-          result: prepaidBlocked ? 'BLOCKED' : 'ALLOWED',
-          nexi_order_id: orderId,
-          nexi_operation_id: nexiOperationId,
-        }).then(() => {}).catch(e => console.error('[prepaid-guard] Log error:', e));
-
-        // 6. BLOCK: void payment + refuse booking
-        if (prepaidBlocked) {
-          console.log(`[prepaid-guard] BLOCKING — voiding payment for booking ${booking.id}`);
-
-          // Void via Nexi
-          const NEXI_API_KEY = process.env.NEXI_API_KEY;
-          const voidOpId = nexiOperationId || orderId;
-          if (NEXI_API_KEY && voidOpId) {
-            try {
-              await fetch(`${NEXI_BASE}/operations/${voidOpId}/cancels`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Api-Key': NEXI_API_KEY, 'Correlation-Id': `void-${Date.now()}` },
-                body: JSON.stringify({ description: 'Carta prepagata non accettata' })
-              });
-              console.log('[prepaid-guard] Void sent successfully');
-            } catch (e) { console.error('[prepaid-guard] Void error:', e); }
-          }
-
-          await supabase.from('bookings').update({
-            payment_status: 'failed',
-            booking_details: { ...(booking.booking_details || {}), prepaid_card_rejected: true, prepaid_rejected_at: new Date().toISOString() }
-          }).eq('id', booking.id);
-
-          return { statusCode: 200, body: 'PREPAID_REFUSED' };
+        if (isPrepaidCard) {
+          prepaidSurchargeCents = Math.round((booking.price_total || 0) * 0.20);
+          console.log(`[prepaid-guard] PREPAID +20%: surcharge €${(prepaidSurchargeCents / 100).toFixed(2)}`);
         }
       }
-      // ── END PREPAID CARD GUARD ──────────────────────────────
+      // ── END PREPAID CHECK ──────────────────────────────────
 
       const updateData = {
         payment_status: isSuccess ? 'succeeded' : 'failed',
@@ -395,6 +281,18 @@ exports.handler = async (event) => {
 
       if (isSuccess) {
         updateData.status = 'confirmed';
+        // Add 20% surcharge if prepaid card
+        if (isPrepaidCard && prepaidSurchargeCents > 0) {
+          updateData.price_total = (booking.price_total || 0) + prepaidSurchargeCents;
+          updateData.booking_details = {
+            ...(booking.booking_details || {}),
+            prepaid_card_detected: true,
+            prepaid_surcharge_cents: prepaidSurchargeCents,
+            prepaid_surcharge_pct: 20,
+            prepaid_original_total_cents: booking.price_total || 0,
+            prepaid_masked_pan: guardPan,
+          };
+        }
       } else {
         updateData.nexi_error_message = errorMessage || 'Payment failed';
         updateData.status = 'cancelled';
