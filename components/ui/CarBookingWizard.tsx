@@ -295,24 +295,26 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     };
   });
 
-  // Apply URL-derived search dates on first mount (from the Modifica bar on RentalPage or preventivo)
+  // Apply URL-derived search dates on first mount + auto-adjust for availableFrom
   useEffect(() => {
     if (!initialSearchDates) return;
 
-    // Auto-adjust pickup time if vehicle has availableFrom (returning same day)
+    // Calculate adjusted pickup time from availableFrom
     let adjustedPickupTime = initialSearchDates.pickupTime;
     const availFrom = (item as any)?._availableFrom;
     if (availFrom && typeof availFrom === 'string') {
-      const availDate = new Date(availFrom);
-      const availTime = availDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Rome' });
-      // Round up to next 30-min slot
-      const [h, m] = availTime.split(':').map(Number);
-      const roundedMin = m <= 0 ? '00' : m <= 30 ? '30' : '00';
-      const roundedHour = m > 30 ? h + 1 : h;
-      const roundedTime = `${String(roundedHour).padStart(2, '0')}:${roundedMin}`;
-      if (roundedTime > adjustedPickupTime) {
-        adjustedPickupTime = roundedTime;
-      }
+      try {
+        const availDate = new Date(availFrom);
+        const availTime = availDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Rome' });
+        const [h, m] = availTime.split(':').map(Number);
+        const roundedMin = m <= 0 ? '00' : m <= 30 ? '30' : '00';
+        const roundedHour = m > 30 ? h + 1 : h;
+        const roundedTime = `${String(roundedHour).padStart(2, '0')}:${roundedMin}`;
+        if (roundedTime > adjustedPickupTime) {
+          adjustedPickupTime = roundedTime;
+          console.log(`[availableFrom] Auto-adjusted pickup time: ${initialSearchDates.pickupTime} → ${roundedTime}`);
+        }
+      } catch { /* ignore parse errors */ }
     }
 
     setFormData(prev => ({
@@ -364,6 +366,30 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // intentionally runs once on mount only
 
+  // Auto-adjust pickup time from availableFrom (works even without initialSearchDates)
+  useEffect(() => {
+    const availFrom = (item as any)?._availableFrom;
+    if (!availFrom || typeof availFrom !== 'string') return;
+    try {
+      const availDate = new Date(availFrom);
+      const availTime = availDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Rome' });
+      const [h, m] = availTime.split(':').map(Number);
+      const rMin = m <= 0 ? '00' : m <= 30 ? '30' : '00';
+      const rHour = m > 30 ? h + 1 : h;
+      const adjusted = `${String(rHour).padStart(2, '0')}:${rMin}`;
+      // Use setTimeout to run after initialSearchDates useEffect
+      setTimeout(() => {
+        setFormData(prev => {
+          if (adjusted > prev.pickupTime) {
+            console.log(`[availableFrom] Adjusted pickup: ${prev.pickupTime} → ${adjusted}`);
+            return { ...prev, pickupTime: adjusted };
+          }
+          return prev;
+        });
+      }, 200);
+    } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Tier classification state
   const [driverTierInfo, setDriverTierInfo] = useState<TierClassification | null>(null);
