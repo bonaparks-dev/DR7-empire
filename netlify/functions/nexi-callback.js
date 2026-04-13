@@ -239,39 +239,6 @@ exports.handler = async (event) => {
         return { statusCode: 200, body: 'OK' };
       }
 
-      // ── PREPAID CARD CHECK (from callback data + BIN lookup) ──
-      let isPrepaidCard = false;
-      let prepaidSurchargeCents = 0;
-      const guardPan = (rawParams.paymentInstrumentInfo || '').toString();
-
-      if (isSuccess && guardPan) {
-        try {
-          const binMatch = guardPan.match(/^(\d{6,8})/);
-          if (binMatch) {
-            const binRes = await fetch(`https://lookup.binlist.net/${binMatch[1]}`, {
-              headers: { 'Accept-Version': '3' },
-              signal: AbortSignal.timeout(2000)
-            });
-            if (binRes.ok) {
-              const binData = await binRes.json();
-              console.log('[prepaid-guard] BIN:', binData.type, binData.prepaid);
-              if (binData.type === 'prepaid' || binData.prepaid === true) isPrepaidCard = true;
-            }
-          }
-        } catch (e) { console.warn('[prepaid-guard] BIN error:', e.message); }
-
-        if (!isPrepaidCard) {
-          const raw = JSON.stringify(rawParams).toLowerCase();
-          if (raw.includes('prepagat') || raw.includes('"prepaid":true')) isPrepaidCard = true;
-        }
-
-        if (isPrepaidCard) {
-          prepaidSurchargeCents = Math.round((booking.price_total || 0) * 0.20);
-          console.log(`[prepaid-guard] PREPAID +20%: surcharge €${(prepaidSurchargeCents / 100).toFixed(2)}`);
-        }
-      }
-      // ── END PREPAID CHECK ──────────────────────────────────
-
       const updateData = {
         payment_status: isSuccess ? 'succeeded' : 'failed',
         nexi_payment_id: orderId,
@@ -281,18 +248,6 @@ exports.handler = async (event) => {
 
       if (isSuccess) {
         updateData.status = 'confirmed';
-        // Add 20% surcharge if prepaid card
-        if (isPrepaidCard && prepaidSurchargeCents > 0) {
-          updateData.price_total = (booking.price_total || 0) + prepaidSurchargeCents;
-          updateData.booking_details = {
-            ...(booking.booking_details || {}),
-            prepaid_card_detected: true,
-            prepaid_surcharge_cents: prepaidSurchargeCents,
-            prepaid_surcharge_pct: 20,
-            prepaid_original_total_cents: booking.price_total || 0,
-            prepaid_masked_pan: guardPan,
-          };
-        }
       } else {
         updateData.nexi_error_message = errorMessage || 'Payment failed';
         updateData.status = 'cancelled';

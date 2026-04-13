@@ -176,6 +176,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showNoCauzioneModal, setShowNoCauzioneModal] = useState(false);
+  const [showPrepaidWarning, setShowPrepaidWarning] = useState(false);
+  const prepaidWarningAccepted = useRef(false);
   const today = useMemo(() => {
     // Get today's date in Italy timezone (Europe/Rome)
     const italyDate = new Date().toLocaleString('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -2871,6 +2873,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       return;
     }
 
+    // Show prepaid card warning before payment (step 4, first time only)
+    if (step === steps.length && !prepaidWarningAccepted.current) {
+      setShowPrepaidWarning(true);
+      return;
+    }
+
     // Ref-based guard: prevents double-tap/double-click even if state hasn't updated yet
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
@@ -5295,6 +5303,42 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       className="flex-1 py-3 px-4 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-black font-bold transition-colors text-sm disabled:opacity-50"
                     >
                       {isProcessing ? 'Invio...' : 'Invia Richiesta'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Prepaid Card Warning Popup */}
+            {showPrepaidWarning && (
+              <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+                <div className="bg-[#1a1a2e] rounded-2xl max-w-md w-full p-6 border border-red-500/30 shadow-2xl">
+                  <div className="text-center mb-4">
+                    <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-red-500/20 flex items-center justify-center">
+                      <svg className="w-7 h-7 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-bold text-red-400">ATTENZIONE</h3>
+                  </div>
+                  <div className="text-gray-300 text-sm leading-relaxed mb-6 space-y-3">
+                    <p>Il pagamento con carta prepagata comporta l'obbligo di cauzione secondo modalit&agrave; standard.</p>
+                    <p className="font-semibold text-white">Senza cauzione, il veicolo non verr&agrave; consegnato.</p>
+                    <p>Procedendo, il cliente accetta integralmente tale condizione.</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowPrepaidWarning(false)}
+                      className="flex-1 py-3 px-4 rounded-xl border border-gray-600 text-gray-300 hover:bg-gray-800 transition-colors text-sm font-medium"
+                    >
+                      Annulla
+                    </button>
+                    <button
+                      onClick={(e) => { prepaidWarningAccepted.current = true; setShowPrepaidWarning(false); handleSubmit(e as any); }}
+                      disabled={isProcessing}
+                      className="flex-1 py-3 px-4 rounded-xl bg-white hover:bg-gray-200 text-black font-bold transition-colors text-sm disabled:opacity-50"
+                    >
+                      {isProcessing ? 'Elaborazione...' : 'Accetto e Procedo'}
                     </button>
                   </div>
                 </div>
