@@ -186,7 +186,7 @@ exports.handler = async (event) => {
       },
       paymentSession: {
         actionType: 'PAY',
-        captureType: 'IMPLICIT',
+        captureType: 'IMPLICIT',  // Immediate capture
         amount: amount.toString(),
         language: 'ITA',
         expirationDate: expirationDate,
