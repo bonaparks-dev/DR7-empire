@@ -1491,8 +1491,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // Already handled above
     } else if (formData.kmPackageType === 'unlimited') {
       calculatedIncludedKm = 9999;
-      // Urban vehicles get free unlimited, others pay
-      if (!isUrbanVehicle(item.name)) {
+      // Urban vehicles & VIP get free unlimited, others pay
+      if (!isUrbanVehicle(item.name) && !isMassimo) {
         calculatedKmPackageCost = calculateUnlimitedKmPrice(item.name, billingDaysCalc);
       }
     } else if (vType !== 'SUPERCAR') {
