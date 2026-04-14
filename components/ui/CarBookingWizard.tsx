@@ -2350,7 +2350,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           return idx >= 0 ? (item as any).plates[idx] || null : null;
         })(),
         deposit_amount: getDeposit(),
-        insurance_option: formData.insuranceOption,
+        // insurance_option is in booking_details.insuranceOption, not a top-level column
         customer_name: rFullName,
         customer_email: rEmail,
         customer_phone: rPhone,
@@ -2392,10 +2392,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             type: formData.kmPackageType === '50km' ? '50km' : (includedKm >= 9999 ? 'unlimited' : formData.kmPackageType),
             distance: formData.kmPackageType === '50km' ? `50km/day (${includedKm} total)` : (includedKm >= 9999 ? 'unlimited' : (formData.kmPackageType === 'unlimited' ? 'unlimited' : formData.kmPackageDistance)),
             cost: kmPackageCost,
-            includedKm: includedKm,
+            includedKm: includedKm >= 9999 ? 'Illimitati' : includedKm,
             isPremium: isPremiumVehicle(item.name),
             dailyRate: formData.kmPackageType === '50km' ? ACTIVE_SUPERCAR_50KM_RATE : undefined
           },
+          km_limit: (isMassimo || formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'Illimitati' : String(includedKm || 100),
+          unlimited_km: isMassimo || formData.kmPackageType === 'unlimited' || includedKm >= 9999,
           depositOption: formData.depositOption,
           noDepositSurcharge: noDepositSurcharge,
           // Tier-based booking fields
@@ -2758,7 +2760,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         payment_status: 'pending',
         payment_method: 'nexi',
         deposit_amount: 0,
-        insurance_option: formData.insuranceOption,
+        // insurance_option is in booking_details.insuranceOption, not a top-level column
         customer_name: rFullName,
         customer_email: rEmail,
         customer_phone: rPhone,
@@ -2792,7 +2794,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           duration: `${duration.days} days`,
           kmPackage: {
             type: formData.kmPackageType,
-            includedKm: includedKm,
+            includedKm: includedKm >= 9999 ? 'Illimitati' : includedKm,
           },
         },
       };
@@ -2990,7 +2992,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           const idx = item.vehicleIds.indexOf(formData.selectedVehicleId);
           return idx >= 0 ? (item as any).plates[idx] || null : null;
         })(),
-          insurance_option: formData.insuranceOption,
+          // insurance_option is in booking_details.insuranceOption, not a top-level column
           booking_usage_zone: formData.usageZone || null,
           booking_details: {
             customer: {
@@ -3027,7 +3029,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               type: formData.kmPackageType === '50km' ? '50km' : (includedKm >= 9999 ? 'unlimited' : formData.kmPackageType),
               distance: formData.kmPackageType === '50km' ? `50km/day (${includedKm} total)` : (includedKm >= 9999 ? 'unlimited' : (formData.kmPackageType === 'unlimited' ? 'unlimited' : formData.kmPackageDistance)),
               cost: kmPackageCost,
-              includedKm: includedKm,
+              includedKm: includedKm >= 9999 ? 'Illimitati' : includedKm,
               isPremium: isPremiumVehicle(item.name),
               dailyRate: formData.kmPackageType === '50km' ? ACTIVE_SUPERCAR_50KM_RATE : undefined
             },
@@ -3325,7 +3327,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           const idx = item.vehicleIds.indexOf(formData.selectedVehicleId);
           return idx >= 0 ? (item as any).plates[idx] || null : null;
         })(),
-            insurance_option: formData.insuranceOption,
+            // insurance_option is in booking_details.insuranceOption, not a top-level column
             deposit_amount: getDeposit(),
             booking_usage_zone: formData.usageZone || null,
             customer: {
@@ -3362,7 +3364,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               type: formData.kmPackageType === '50km' ? '50km' : recommendedKm.type,
               distance: formData.kmPackageType === '50km' ? `50km/day (${includedKm} total)` : recommendedKm.value,
               cost: kmPackageCost,
-              includedKm: includedKm,
+              includedKm: includedKm >= 9999 ? 'Illimitati' : includedKm,
               isPremium: isPremiumVehicle(item.name),
               dailyRate: formData.kmPackageType === '50km' ? ACTIVE_SUPERCAR_50KM_RATE : undefined
             },
