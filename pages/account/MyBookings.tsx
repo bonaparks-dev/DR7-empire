@@ -123,10 +123,14 @@ const MyBookings = () => {
   };
 
   const getCancelPolicy = (booking: Booking): { canCancel: boolean; hasFlex: boolean; refundPercent: number; penaltyPercent: number; message: string } => {
-    const hasDr7Flex = booking.booking_details?.dr7Flex === true || booking.booking_details?.extras?.dr7_flex === true || booking.booking_details?.dr7_flex === true;
+    const bd = booking.booking_details || {};
+    const hasDr7Flex = bd.dr7Flex === true || bd.dr7Flex === 'true' || bd.dr7_flex === true || bd.dr7_flex === 'true' || bd.extras?.dr7_flex === true || bd.extras?.dr7_flex === 'true';
     const hasPrimeFlex = booking.booking_details?.prime_flex === true || booking.booking_details?.prime_flex === 'true';
     const hasFlex = hasDr7Flex || hasPrimeFlex;
-    const pickup = new Date(booking.pickup_date || booking.appointment_date || '');
+    const dateStr = booking.service_type === 'car_wash'
+      ? (booking.appointment_date || booking.pickup_date || '')
+      : (booking.pickup_date || booking.appointment_date || '');
+    const pickup = new Date(dateStr);
     const now = new Date();
     const daysUntilPickup = (pickup.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
 
