@@ -117,14 +117,16 @@ const MyBookings = () => {
   };
 
   const getCancelPolicy = (booking: Booking): { canCancel: boolean; hasFlex: boolean; refundPercent: number; penaltyPercent: number; message: string } => {
-    const hasFlex = booking.booking_details?.dr7Flex === true || booking.booking_details?.extras?.dr7_flex === true;
-    const pickup = new Date(booking.pickup_date || '');
+    const hasDr7Flex = booking.booking_details?.dr7Flex === true || booking.booking_details?.extras?.dr7_flex === true || booking.booking_details?.dr7_flex === true;
+    const hasPrimeFlex = booking.booking_details?.prime_flex === true;
+    const hasFlex = hasDr7Flex || hasPrimeFlex;
+    const pickup = new Date(booking.pickup_date || booking.appointment_date || '');
     const now = new Date();
     const daysUntilPickup = (pickup.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
 
     if (hasFlex) {
-      // DR7 Flex: 100% refund as DR7 Wallet credit, anytime before pickup
-      return { canCancel: true, hasFlex: true, refundPercent: 100, penaltyPercent: 0, message: 'Con DR7 Flex: rimborso del 100% come credito DR7 Wallet.' };
+      // DR7 Flex / Prime Flex: 90% refund as DR7 Wallet credit, anytime before pickup/appointment
+      return { canCancel: true, hasFlex: true, refundPercent: 90, penaltyPercent: 10, message: hasPrimeFlex ? 'Con Prime Flex: rimborso del 90% come credito DR7 Wallet.' : 'Con DR7 Flex: rimborso del 90% come credito DR7 Wallet.' };
     }
     if (daysUntilPickup >= 5) {
       // More than 5 days before pickup: cancellable with 5% penalty
