@@ -3183,7 +3183,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
           // No fattura for credit wallet bookings — fattura was already generated when credits were purchased
 
-          // NOTE: NO cashback for credit wallet — cashback only on card payments (Nexi callback)
+
 
           // Mark birthday discount code as used
           if (appliedDiscount) {
