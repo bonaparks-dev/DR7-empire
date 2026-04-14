@@ -4897,6 +4897,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         onClick={() => {
                           if (isDisabled) return;
                           if (opt.id === 'no_deposit') {
+                            // Elite/Member: no approval needed, select directly
+                            if (isLoyalCustomer) {
+                              setFormData(prev => ({ ...prev, depositOption: 'no_deposit' }));
+                              return;
+                            }
                             setShowNoCauzionePopup(true);
                             return;
                           }
@@ -5316,8 +5321,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         );
       }
       case 4:
-        // No Cauzione flow: save as preventivo only, no direct payment
-        if (formData.depositOption === 'no_deposit') {
+        // No Cauzione flow: save as preventivo (except Elite/Member who pay directly)
+        if (formData.depositOption === 'no_deposit' && !isLoyalCustomer) {
           if (noCauzioneSaved) {
             return (
               <div className="space-y-6 text-center py-8">
