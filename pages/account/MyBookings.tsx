@@ -34,6 +34,12 @@ const MyBookings = () => {
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [cancelSuccess, setCancelSuccess] = useState<string | null>(null);
+  // Modify state (car wash with Prime Flex)
+  const [modifyingBooking, setModifyingBooking] = useState<Booking | null>(null);
+  const [modifyDate, setModifyDate] = useState('');
+  const [modifyTime, setModifyTime] = useState('');
+  const [modifySaving, setModifySaving] = useState(false);
+  const [modifyError, setModifyError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -117,10 +123,14 @@ const MyBookings = () => {
   };
 
   const getCancelPolicy = (booking: Booking): { canCancel: boolean; hasFlex: boolean; refundPercent: number; penaltyPercent: number; message: string } => {
-    const hasDr7Flex = booking.booking_details?.dr7Flex === true || booking.booking_details?.extras?.dr7_flex === true || booking.booking_details?.dr7_flex === true;
-    const hasPrimeFlex = booking.booking_details?.prime_flex === true;
+    const bd = booking.booking_details || {};
+    const hasDr7Flex = bd.dr7Flex === true || bd.dr7Flex === 'true' || bd.dr7_flex === true || bd.dr7_flex === 'true' || bd.extras?.dr7_flex === true || bd.extras?.dr7_flex === 'true';
+    const hasPrimeFlex = booking.booking_details?.prime_flex === true || booking.booking_details?.prime_flex === 'true';
     const hasFlex = hasDr7Flex || hasPrimeFlex;
-    const pickup = new Date(booking.pickup_date || booking.appointment_date || '');
+    const dateStr = booking.service_type === 'car_wash'
+      ? (booking.appointment_date || booking.pickup_date || '')
+      : (booking.pickup_date || booking.appointment_date || '');
+    const pickup = new Date(dateStr);
     const now = new Date();
     const daysUntilPickup = (pickup.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
 
@@ -137,6 +147,55 @@ const MyBookings = () => {
       return { canCancel: false, hasFlex: false, refundPercent: 0, penaltyPercent: 0, message: 'Meno di 5 giorni dal servizio: cancellazione non disponibile. Nessun rimborso previsto.' };
     }
     return { canCancel: false, hasFlex: false, refundPercent: 0, penaltyPercent: 0, message: 'Non è più possibile cancellare questa prenotazione.' };
+  };
+
+  const canModify = (booking: Booking): boolean => {
+    // Car wash with Prime Flex can be modified anytime before appointment
+    if (booking.service_type !== 'car_wash') return false;
+    if (booking.booking_details?.prime_flex !== true && booking.booking_details?.prime_flex !== 'true') return false;
+    const appointmentDate = new Date(booking.appointment_date || '');
+    return appointmentDate > new Date() && booking.status !== 'cancelled';
+  };
+
+  const handleModify = async () => {
+    if (!modifyingBooking || !modifyDate || !modifyTime) return;
+    setModifySaving(true);
+    setModifyError(null);
+    try {
+      // Build new appointment datetime with Rome timezone
+      const timeZoneName = new Intl.DateTimeFormat('it-IT', { timeZoneName: 'short', timeZone: 'Europe/Rome' }).formatToParts(new Date()).find(p => p.type === 'timeZoneName')?.value || '';
+      const isDST = timeZoneName.includes('CEST') || timeZoneName.includes('+2');
+      const offset = isDST ? '+02:00' : '+01:00';
+      const newAppointment = new Date(`${modifyDate}T${modifyTime}:00${offset}`);
+
+      const { error } = await supabase
+        .from('bookings')
+        .update({
+          appointment_date: newAppointment.toISOString(),
+          appointment_time: modifyTime,
+          booking_details: {
+            ...modifyingBooking.booking_details,
+            modified_at: new Date().toISOString(),
+            original_appointment: modifyingBooking.appointment_date,
+          }
+        })
+        .eq('id', modifyingBooking.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setBookings(prev => prev.map(b =>
+        b.id === modifyingBooking.id
+          ? { ...b, appointment_date: newAppointment.toISOString(), appointment_time: modifyTime }
+          : b
+      ));
+      setModifyingBooking(null);
+      setCancelSuccess('Appuntamento modificato con successo!');
+    } catch (err: any) {
+      setModifyError(err.message || 'Errore durante la modifica');
+    } finally {
+      setModifySaving(false);
+    }
   };
 
   const handleCancel = async (booking: Booking) => {
@@ -333,6 +392,24 @@ const MyBookings = () => {
                       </div>
                     </div>
 
+                    {/* Modify button (car wash with Prime Flex) */}
+                    {canModify(booking) && (
+                      <div className="mt-4 pt-4 border-t border-gray-700">
+                        <button
+                          onClick={() => {
+                            setModifyingBooking(booking);
+                            const appt = new Date(booking.appointment_date || '');
+                            setModifyDate(appt.toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' }));
+                            setModifyTime(booking.appointment_time || appt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }));
+                            setModifyError(null);
+                          }}
+                          className="px-4 py-2 bg-transparent border border-blue-500/50 text-blue-400 hover:bg-blue-500/10 text-sm font-medium rounded-lg transition-colors"
+                        >
+                          Modifica appuntamento
+                        </button>
+                      </div>
+                    )}
+
                     {/* Cancel button */}
                     {canCancel(booking) && (
                       <div className="mt-4 pt-4 border-t border-gray-700">
@@ -415,6 +492,64 @@ const MyBookings = () => {
               >
                 {lang === 'it' ? 'Autolavaggio' : 'Car Wash'}
               </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Modify appointment modal */}
+        {modifyingBooking && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setModifyingBooking(null)}>
+            <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
+              <h3 className="text-lg font-bold text-white mb-2">Modifica Appuntamento</h3>
+              <p className="text-gray-400 text-sm mb-4">
+                {modifyingBooking.service_name} — Prime Flex attivo
+              </p>
+
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="text-sm text-gray-400 mb-1 block">Nuova data</label>
+                  <input
+                    type="date"
+                    value={modifyDate}
+                    min={new Date().toISOString().split('T')[0]}
+                    onChange={e => setModifyDate(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-gray-800 border border-gray-600 rounded-lg text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-gray-400 mb-1 block">Nuovo orario</label>
+                  <select
+                    value={modifyTime}
+                    onChange={e => setModifyTime(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-gray-800 border border-gray-600 rounded-lg text-white"
+                  >
+                    {Array.from({ length: 20 }, (_, i) => {
+                      const h = Math.floor(i / 2) + 9;
+                      const m = i % 2 === 0 ? '00' : '30';
+                      const t = `${String(h).padStart(2, '0')}:${m}`;
+                      return <option key={t} value={t}>{t}</option>;
+                    })}
+                  </select>
+                </div>
+              </div>
+
+              {modifyError && <p className="text-red-400 text-sm mb-4">{modifyError}</p>}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setModifyingBooking(null)}
+                  className="flex-1 py-3 border border-gray-600 text-white rounded-full font-semibold text-sm hover:bg-gray-800 transition-colors"
+                >
+                  Annulla
+                </button>
+                <button
+                  onClick={handleModify}
+                  disabled={modifySaving || !modifyDate || !modifyTime}
+                  className="flex-1 py-3 bg-white text-black rounded-full font-bold text-sm hover:bg-gray-200 transition-colors disabled:opacity-50"
+                >
+                  {modifySaving ? 'Salvataggio...' : 'Conferma modifica'}
+                </button>
+              </div>
             </div>
           </div>
         )}
