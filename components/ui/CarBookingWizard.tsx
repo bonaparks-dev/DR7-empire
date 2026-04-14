@@ -1542,9 +1542,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const vTypeForDeposit = getVehicleType(item, categoryContext);
     const isUrbanForDeposit = vTypeForDeposit === 'UTILITARIA' || vTypeForDeposit === 'FURGONE' || vTypeForDeposit === 'V_CLASS';
 
-    // Urban/corporate: +30% for micro_deposit
-    const urbanNoDepositSurcharge = (isUrbanForDeposit && formData.depositOption === 'micro_deposit')
-      ? roundToTwoDecimals(calculatedSubtotal * 0.30) : 0;
+    const urbanNoDepositSurcharge = 0;
 
     // Supercar: deposit option surcharges (no_deposit = €49/day, vehicle_deposit = €20/day)
     let supercarDepositSurcharge = 0;
@@ -1752,9 +1750,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (isMassimo) return 0;
 
     // All vehicles use tier-based deposit from Centralina
-    if (isUtilitaria && formData.depositOption === 'micro_deposit') {
-      return licenseYears >= 5 ? DEPOSIT_RULES.UTILITARIA.LICENSE_5_OR_MORE : DEPOSIT_RULES.UTILITARIA.LICENSE_UNDER_5;
-    }
 
     // Gold/Platinum members OR 3+ rentals = NO deposit
     const memberTier = getMembershipTierName(user);
@@ -4552,60 +4547,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             </section>
 
             {/* === D. CAUZIONE === */}
-            {isUrbanOrCorporate ? (
-              /* Urban/Corporate: keep existing deposit logic */
-              <section className="border-t border-gray-700 pt-6">
-                <h3 className="text-lg font-bold text-white mb-2">D. CAUZIONE</h3>
-                <p className="text-sm text-gray-400 mb-4">Scegli il tipo di cauzione.</p>
-                {!formData.depositOption && (
-                  <div className="p-3 bg-amber-900/20 border border-amber-500/50 rounded-lg mb-3">
-                    <p className="text-amber-300 text-sm font-medium">Seleziona un'opzione per la cauzione per continuare</p>
-                  </div>
-                )}
-                <div className="space-y-3">
-                  <div
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.depositOption === 'with_deposit'
-                      ? 'border-green-500 bg-green-500/10' : 'border-gray-600 hover:border-gray-500'}`}
-                    onClick={() => setFormData(prev => ({ ...prev, depositOption: 'with_deposit' }))}
-                  >
-                    <div className="flex items-center">
-                      <input type="radio" name="depositOption" checked={formData.depositOption === 'with_deposit'} onChange={() => {}} className="w-4 h-4" />
-                      <div className="ml-3 flex-1">
-                        <div className="flex justify-between items-center">
-                          <span className="font-bold text-white">Cauzione</span>
-                          <span className="font-bold text-green-400">{formatDeposit(DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT)}</span>
-                        </div>
-                        <p className="text-sm text-gray-400 mt-1">Cauzione di €{DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT} — Tariffa base</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.depositOption === 'micro_deposit'
-                      ? 'border-yellow-400 bg-yellow-400/10' : 'border-gray-600 hover:border-gray-500'}`}
-                    onClick={() => setFormData(prev => ({ ...prev, depositOption: 'micro_deposit' }))}
-                  >
-                    <div className="flex items-center">
-                      <input type="radio" name="depositOption" checked={formData.depositOption === 'micro_deposit'} onChange={() => {}} className="w-4 h-4" />
-                      <div className="ml-3 flex-1">
-                        <div className="flex justify-between items-center">
-                          <span className="font-bold text-white">Micro Cauzione</span>
-                          <span className="font-bold text-yellow-400">
-                            {formatDeposit(licenseYears >= 5 ? DEPOSIT_RULES.UTILITARIA.LICENSE_5_OR_MORE : DEPOSIT_RULES.UTILITARIA.LICENSE_UNDER_5)} + 30%
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-400 mt-1">
-                          {licenseYears >= 5
-                            ? `Micro cauzione di €${DEPOSIT_RULES.UTILITARIA.LICENSE_5_OR_MORE} (patente ≥ 5 anni)`
-                            : `Micro cauzione di €${DEPOSIT_RULES.UTILITARIA.LICENSE_UNDER_5} (patente < 5 anni)`
-                          } — Supplemento del 30% sul totale
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {errors.depositOption && <p className="text-xs text-red-400 mt-2">{errors.depositOption}</p>}
-              </section>
-            ) : !isMassimo && !isLoyalCustomer && getMembershipTierName(user) !== 'gold' && getMembershipTierName(user) !== 'platinum' ? (
+            {!isMassimo && !isLoyalCustomer && getMembershipTierName(user) !== 'gold' && getMembershipTierName(user) !== 'platinum' ? (
               /* Supercar: tier-based deposit options */
               <section className="border-t border-gray-700 pt-6">
                 <h3 className="text-lg font-bold text-white mb-2">D. CAUZIONE</h3>
@@ -5052,7 +4994,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {/* Deposit surcharges */}
                   {noDepositSurcharge > 0 && (
                     <div className="flex justify-between text-yellow-400">
-                      <span>{isUrbanOrCorporate ? 'Supplemento Micro Cauzione (+30%)' : `Supplemento cauzione (${formData.depositOption === 'no_deposit' ? `${duration.days} gg × €49` : formData.depositOption === 'vehicle_deposit' ? `${duration.days} gg × €20` : ''})`}</span>
+                      <span>{`Supplemento cauzione (${formData.depositOption === 'no_deposit' ? `${Math.max(1, duration.days)} gg × €${ACTIVE_NO_DEPOSIT_SURCHARGE}` : formData.depositOption === 'vehicle_deposit' ? `${Math.max(1, duration.days)} gg × €20` : ''})`}</span>
                       <span>{formatPrice(noDepositSurcharge)}</span>
                     </div>
                   )}
@@ -5109,14 +5051,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       return (
                         <div className="mt-3 p-3 bg-gray-700/50 rounded-lg">
                           <p className="text-sm font-semibold text-white">CAUZIONE AL RITIRO</p>
-                          {isUrbanOrCorporate && formData.depositOption && (
-                            <p className="text-sm text-gray-300 mt-1">
-                              {formData.depositOption === 'with_deposit'
-                                ? `Cauzione: €${DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT}`
-                                : `Micro Cauzione: €${licenseYears >= 5 ? DEPOSIT_RULES.UTILITARIA.LICENSE_5_OR_MORE : DEPOSIT_RULES.UTILITARIA.LICENSE_UNDER_5}`}
-                            </p>
-                          )}
-                          {!isUrbanOrCorporate && depositAmt > 0 && (
+                          {depositAmt > 0 && (
                             <p className="text-sm text-gray-300 mt-1">Importo: €{depositAmt.toLocaleString()}</p>
                           )}
                           {formData.depositOption && !isUrbanOrCorporate && (
@@ -5774,7 +5709,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       {recentLicenseFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Supplemento patente recente</span><span className="text-white font-medium">{formatPrice(recentLicenseFee)}</span></div>}
                       {noDepositSurcharge > 0 && (
                         <div className="flex justify-between">
-                          <span className="text-yellow-400">Supplemento Micro Cauzione (+30%)</span>
+                          <span className="text-yellow-400">Supplemento cauzione</span>
                           <span className="text-yellow-400 font-medium">{formatPrice(noDepositSurcharge)}</span>
                         </div>
                       )}
