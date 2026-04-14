@@ -4375,6 +4375,56 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const selectedInsuranceIsRCA = formData.insuranceOption === 'RCA';
         const noDepositRequiresKasko = formData.depositOption === 'no_deposit' && selectedInsuranceIsRCA;
 
+        // === VIP SIMPLIFIED VIEW (Massimo Runchina) — fixed price, tutto incluso ===
+        if (isMassimo) {
+          return (
+            <div className="space-y-6">
+              <div className="text-center mb-2">
+                <span className="text-xs font-bold text-yellow-400 bg-yellow-400/10 px-4 py-1.5 rounded-full uppercase tracking-widest">Cliente VIP</span>
+              </div>
+              <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6 space-y-4">
+                <h3 className="text-lg font-bold text-white mb-4">Riepilogo Noleggio VIP</h3>
+                <div className="flex justify-between items-center py-3 border-b border-gray-700"><span className="text-gray-400">Veicolo</span><span className="text-white font-semibold">{item.name}</span></div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-700"><span className="text-gray-400">Ritiro</span><span className="text-white font-semibold">{formData.pickupDate} — {formData.pickupTime}</span></div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-700"><span className="text-gray-400">Riconsegna</span><span className="text-white font-semibold">{formData.returnDate} — {formData.returnTime}</span></div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-700"><span className="text-gray-400">Durata</span><span className="text-white font-semibold">{Math.max(1, duration.days)} {Math.max(1, duration.days) === 1 ? 'giorno' : 'giorni'}{duration.hours > 0 ? ` ${duration.hours}h` : ''}</span></div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-700"><span className="text-gray-400">Copertura assicurativa</span><span className="text-green-400 font-semibold">Kasko Base — Inclusa</span></div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-700"><span className="text-gray-400">Chilometri</span><span className="text-green-400 font-semibold">Illimitati — Inclusi</span></div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-700"><span className="text-gray-400">Lavaggio</span><span className="text-green-400 font-semibold">Incluso</span></div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-700"><span className="text-gray-400">Cauzione</span><span className="text-green-400 font-semibold">Nessuna</span></div>
+                {deliveryFee > 0 && (<div className="flex justify-between items-center py-3 border-b border-gray-700"><span className="text-gray-400">Consegna/Ritiro a domicilio</span><span className="text-white font-semibold">{formatPrice(deliveryFee)}</span></div>)}
+                {discountAmount > 0 && (<div className="flex justify-between items-center py-3 border-b border-gray-700"><span className="text-yellow-400">Codice Sconto</span><span className="text-yellow-400 font-semibold">-{formatPrice(discountAmount)}</span></div>)}
+                <div className="flex justify-between items-center pt-4">
+                  <span className="text-xl font-bold text-white">TOTALE</span>
+                  <div className="flex items-center gap-3">
+                    {discountAmount > 0 && <span className="text-lg text-gray-500 line-through">{formatPrice(rentalCost)}</span>}
+                    <span className="text-2xl font-bold text-white">{formatPrice(grandTotal)}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="border-t border-gray-600 pt-4">
+                <p className="font-bold text-base text-white mb-3">CODICE SCONTO</p>
+                {appliedDiscount ? (
+                  <div className="flex items-center justify-between p-3 bg-green-900/30 border border-green-500/50 rounded-lg">
+                    <div>
+                      <p className="text-green-400 font-bold">{appliedDiscount.code}</p>
+                      <p className="text-green-300 text-sm">{appliedDiscount.type === 'percentage' ? `Sconto del ${appliedDiscount.amount}% applicato (-€${discountAmount.toFixed(2)})` : `Sconto di €${appliedDiscount.amount} applicato`}</p>
+                    </div>
+                    <button type="button" onClick={removeDiscount} className="text-red-400 hover:text-red-300 text-sm underline">Rimuovi</button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input type="text" value={discountCode} onChange={(e) => setDiscountCode(e.target.value.toUpperCase())} placeholder="Inserisci codice (es. BDAY-XXXX-XXXX)" className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 text-sm uppercase" />
+                    <button type="button" onClick={validateDiscountCode} disabled={isValidatingCode || !discountCode.trim()} className="px-4 py-2 bg-white text-black font-bold rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm">{isValidatingCode ? 'Verifica...' : 'Applica'}</button>
+                  </div>
+                )}
+                {discountCodeError && <p className="text-red-400 text-sm mt-2">{discountCodeError}</p>}
+              </div>
+            </div>
+          );
+        }
+
+
         return (
           <div className="space-y-8">
             {/* === A. ASSICURAZIONE (tier-conditional) === */}
