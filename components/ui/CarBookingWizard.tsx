@@ -3183,17 +3183,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
           // No fattura for credit wallet bookings — fattura was already generated when credits were purchased
 
-          // DR7 Club 3% cashback — grant wallet credit on payment
-          try {
-            const paidEur = grandTotal;
-            const cashbackAmount = Math.floor(paidEur * 3) / 100; // 3%, round down to cents
-            if (cashbackAmount >= 0.01 && user?.id) {
-              await addCredits(user.id, cashbackAmount, `DR7 Club 3% — Prenotazione ${data.booking_id?.substring(0, 8) || ''}`, data.booking_id, 'cashback_3_percent');
-              console.log(`[credit-booking] DR7 Club 3% cashback: €${cashbackAmount.toFixed(2)} → wallet`);
-            }
-          } catch (cashbackErr) {
-            console.error('[credit-booking] DR7 Club cashback error (non-blocking):', cashbackErr);
-          }
+          // NOTE: NO cashback for credit wallet — cashback only on card payments (Nexi callback)
 
           // Mark birthday discount code as used
           if (appliedDiscount) {
