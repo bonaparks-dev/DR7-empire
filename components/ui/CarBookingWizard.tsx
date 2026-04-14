@@ -1751,8 +1751,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // Special client = always €0
     if (isMassimo) return 0;
 
-    // Urban/corporate vehicles: full cauzione = €1000, micro cauzione = €250/€500
-    if (isUtilitaria && formData.depositOption === 'with_deposit') return DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT;
+    // All vehicles use tier-based deposit from Centralina
     if (isUtilitaria && formData.depositOption === 'micro_deposit') {
       return licenseYears >= 5 ? DEPOSIT_RULES.UTILITARIA.LICENSE_5_OR_MORE : DEPOSIT_RULES.UTILITARIA.LICENSE_UNDER_5;
     }
