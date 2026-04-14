@@ -1493,9 +1493,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // Already handled above
     } else if (formData.kmPackageType === 'unlimited') {
       calculatedIncludedKm = 9999;
-      // Urban vehicles & VIP get free unlimited, others pay
+      // Urban vehicles & VIP get free unlimited, others pay from Centralina
       if (!isUrbanVehicle(item.name) && !isMassimo) {
-        calculatedKmPackageCost = calculateUnlimitedKmPrice(item.name, billingDaysCalc);
+        calculatedKmPackageCost = roundToTwoDecimals(tierPricingForCalc.unlimitedKmPerDay * billingDaysCalc);
       }
     } else if (vType !== 'SUPERCAR') {
       // Urban/Furgone/VClass: use dynamic km included table from admin config
@@ -4535,7 +4535,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         <p className="text-sm text-gray-400">Senza limiti di percorrenza</p>
                       </div>
                       <span className="font-bold text-white">
-                        {isUrbanVehicle(item.name) ? 'Gratis' : formatPrice(calculateUnlimitedKmPrice(item.name, duration.days || 1))}
+                        {isUrbanVehicle(item.name) ? 'Gratis' : `${formatPrice(tierPricing.unlimitedKmPerDay)}/giorno`}
                       </span>
                     </div>
                   </div>
@@ -4967,7 +4967,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {/* KM package */}
                   {kmPackageCost > 0 && (
                     <div className="flex justify-between">
-                      <span>Km illimitati ({duration.days} gg × €{(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? ACTIVE_TIER_PRICING[driverTier].unlimitedKmPerDay : 189})</span>
+                      <span>Km illimitati ({duration.days} gg × €{(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? ACTIVE_TIER_PRICING[driverTier].unlimitedKmPerDay : ACTIVE_TIER_PRICING['TIER_2'].unlimitedKmPerDay})</span>
                       <span>{formatPrice(kmPackageCost)}</span>
                     </div>
                   )}
