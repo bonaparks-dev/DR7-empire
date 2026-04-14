@@ -448,7 +448,7 @@ exports.handler = async (event) => {
             const insuranceMap = { 'RCA': 'Kasko', 'KASKO': 'Kasko', 'KASKO_BASE': 'Kasko', 'KASKO_BLACK': 'Kasko Black', 'KASKO_SIGNATURE': 'Kasko Signature', 'DR7': 'Kasko DR7' };
             const insurance = insuranceMap[newBooking.insurance_option || details.insurance?.type] || 'Kasko';
 
-            let custMsg = `*MESSAGGIO AUTOMATICO GENERATO DA RENTORA*\n_Questo messaggio è stato inviato tramite il sistema automatizzato sviluppato da Rentora._\n\n`;
+            let custMsg = '';
             custMsg += `Gentile ${custFirstName},\n\nLa sua prenotazione è stata *confermata* con successo!\n\n`;
             custMsg += `*Rif:* ${bookingRef}\n`;
             custMsg += `*Veicolo:* ${vehicleName}\n`;

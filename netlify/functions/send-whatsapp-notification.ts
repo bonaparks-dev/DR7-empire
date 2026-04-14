@@ -64,8 +64,8 @@ const handler: Handler = async (event) => {
     }
   }
 
-  const RENTORA_HEADER = `*MESSAGGIO AUTOMATICO GENERATO DA RENTORA*\n_Questo messaggio è stato inviato tramite il sistema automatizzato sviluppato da Rentora, Tecnologia Proprietaria DR7_\n\n`;
-  const RENTORA_FOOTER = `\n\n_Se questo messaggio non era destinato a lei, oppure lo ha già ricevuto in precedenza, può semplicemente ignorarlo._`;
+  const RENTORA_HEADER = '';
+  const RENTORA_FOOTER = '';
 
   const applyVars = (tpl: string, vars: Record<string, string>) => {
     let result = tpl;
