@@ -150,18 +150,26 @@ const handler: Handler = async (event) => {
         ? templateMap.get('carwash_new')         // Customer confirmation
         : templateMap.get('carwash_new_admin');   // Admin notification
       if (cwTpl) {
-        const plateValue = booking.vehicle_plate || booking.booking_details?.plate || booking.booking_details?.targa || '';
+        const plateValue = booking.vehicle_plate || booking.booking_details?.customerVehicle?.plate || booking.booking_details?.plate || booking.booking_details?.targa || '';
+        const paymentLabel = booking.payment_method === 'credit_wallet' ? 'Credit Wallet'
+          : booking.payment_method === 'nexi' || booking.payment_method === 'Nexi Pay by Link' ? 'Carta'
+          : (booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa';
+        const flexInfo = booking.booking_details?.prime_flex ? 'Prime Flex' : booking.booking_details?.dr7_flex ? 'DR7 Flex' : '';
+        const serviceWithFlex = flexInfo ? `${serviceName} + ${flexInfo}` : serviceName;
         message = applyVars(cwTpl, {
           '{booking_id}': bookingId.substring(0, 8).toUpperCase(),
           '{nome}': customerName.split(' ')[0] || customerName,
           '{customer_name}': customerName, '{customer_email}': customerEmail || '',
-          '{customer_phone}': customerPhone || '', '{service_name}': serviceName || '',
+          '{customer_phone}': customerPhone || '', '{service_name}': serviceWithFlex || '',
           '{plate}': plateValue, '{targa}': plateValue,
           '{date}': formattedDate, '{time}': formattedTime,
           '{pickup_date}': formattedDate, '{pickup_time}': formattedTime,
           '{extras}': additionalService || 'Nessuno',
           '{total}': totalPrice, '{notes}': booking.booking_details?.notes || '',
-          '{payment_status}': (booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa',
+          '{payment_status}': paymentLabel,
+          '{payment_info}': paymentLabel,
+          '{payment_method}': booking.payment_method || '',
+          '{flex}': flexInfo,
         });
       }
     } else if (serviceType === 'mechanical') {
@@ -279,14 +287,23 @@ const handler: Handler = async (event) => {
         } else if (depositAmount > 0) {
           depositStr = `€${depositAmount}`;
         }
+        const rentalPaymentLabel = booking.payment_method === 'credit_wallet' || booking.payment_method === 'credit' ? 'Credit Wallet'
+          : booking.payment_method === 'nexi' || booking.payment_method === 'Nexi Pay by Link' ? 'Carta'
+          : (booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa';
+        const rentalFlex = booking.booking_details?.dr7_flex || booking.booking_details?.dr7Flex ? 'DR7 Flex' : '';
         message = applyVars(rentalTpl, {
           '{booking_id}': bookingId.substring(0, 8).toUpperCase(), '{customer_name}': customerName, '{customer_email}': customerEmail || '',
           '{customer_phone}': customerPhone || '', '{vehicle_name}': vehicleName, '{plate}': booking.vehicle_plate || '',
+          '{nome}': customerName.split(' ')[0] || customerName,
           '{pickup_date}': pickupDateFormatted, '{pickup_time}': pickupTimeFormatted,
           '{dropoff_date}': dropoffDateFormatted, '{dropoff_time}': dropoffTimeFormatted,
           '{pickup_location}': pickupLocation || '', '{insurance}': insuranceOption, '{deposit}': depositStr,
           '{km_info}': booking.booking_details?.unlimited_km ? 'Illimitati' : `${booking.booking_details?.kmPackage?.includedKm || 'Standard'} km`,
-          '{total}': totalPrice, '{payment_status}': (booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa',
+          '{total}': totalPrice,
+          '{payment_status}': rentalPaymentLabel,
+          '{payment_info}': rentalPaymentLabel,
+          '{payment_method}': booking.payment_method || '',
+          '{flex}': rentalFlex,
         });
       }
     }
