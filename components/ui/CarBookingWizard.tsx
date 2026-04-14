@@ -2929,7 +2929,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         // insurance_option stored in booking_details.insuranceOption (not a top-level column)
         insurance_daily_price: insuranceCost / Math.max(duration.days, 1),
         insurance_total: insuranceCost,
-        km_limit: formData.kmLimit || includedKm || 0,
+        km_limit: (isMassimo || formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'Illimitati' : (formData.kmLimit || includedKm || 0),
         unlimited_km: formData.kmPackageType === 'unlimited',
         km_overage_fee: rentalConfig?.sforo_km?._global ?? 1.80,
         unlimited_km_daily: formData.kmPackageType === 'unlimited' ? (kmPackageCost / Math.max(duration.days, 1)) : 0,
@@ -3298,17 +3298,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           }).then(res => res.ok ? console.log('[credit-booking] Webhook OK') : console.error('[credit-booking] Webhook failed:', res.status))
             .catch(e => console.error('[credit-booking] Webhook error:', e));
 
-          // DR7 Club 3% cashback — grant wallet credit on payment
-          try {
-            const paidEur = grandTotal;
-            const cashbackAmount = Math.floor(paidEur * 3) / 100; // 3%, round down to cents
-            if (cashbackAmount >= 0.01 && user?.id) {
-              await addCredits(user.id, cashbackAmount, `DR7 Club 3% — Prenotazione ${data.booking_id?.substring(0, 8) || ''}`, data.booking_id, 'cashback_3_percent');
-              console.log(`[credit-booking] DR7 Club 3% cashback: €${cashbackAmount.toFixed(2)} → wallet`);
-            }
-          } catch (cashbackErr) {
-            console.error('[credit-booking] DR7 Club cashback error (non-blocking):', cashbackErr);
-          }
+          // NOTE: NO cashback for credit wallet payments — cashback only on card payments (Nexi callback)
 
           // DR7 Club subscription — activate + send payment link
           const hasClubSub = formData.extras.some(e => e.startsWith('subscription_'));
