@@ -476,7 +476,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // Supercars default to 50km/day package (price from admin config)
       setFormData(prev => ({
         ...prev,
-        kmPackageType: '50km'
+        kmPackageType: 'none'
       }));
     } else {
       // Urban vehicles get free unlimited km; others get standard calculated km
@@ -1422,7 +1422,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     // --- RENTAL COST ---
     // Check if supercar with 50km/day package (price from admin Revenue management)
-    const isSupercar50km = formData.kmPackageType === '50km' && getVehicleType(item, categoryContext) === 'SUPERCAR';
+    const isSupercar50km = false; // 50km package removed
 
     let calculatedRentalCost = billingDays * pricePerDay;
 
@@ -3401,7 +3401,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           bookingData.vehicle_image_url = item.image;
           bookingData.vehicle_id = formData.selectedVehicleId || null;
           bookingData.deposit_amount = getDeposit();
-          bookingData.insurance_option = formData.insuranceOption;
+          // insurance_option is in booking_details.insuranceOption, not a top-level column
           bookingData.booking_usage_zone = formData.usageZone || null;
 
           const { data: insertedBooking, error: insertError } = await supabase
@@ -5001,7 +5001,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {/* Deposit surcharges */}
                   {noDepositSurcharge > 0 && (
                     <div className="flex justify-between text-yellow-400">
-                      <span>{isUrbanOrCorporate ? 'Supplemento Micro Cauzione (+30%)' : `Supplemento cauzione (${formData.depositOption === 'no_deposit' ? `${duration.days} gg × €49` : formData.depositOption === 'vehicle_deposit' ? `${duration.days} gg × €20` : ''})`}</span>
+                      <span>{isUrbanOrCorporate ? 'Supplemento cauzione' : `Supplemento cauzione (${formData.depositOption === 'no_deposit' ? `${duration.days} gg × €49` : formData.depositOption === 'vehicle_deposit' ? `${duration.days} gg × €20` : ''})`}</span>
                       <span>{formatPrice(noDepositSurcharge)}</span>
                     </div>
                   )}
@@ -5058,11 +5058,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       return (
                         <div className="mt-3 p-3 bg-gray-700/50 rounded-lg">
                           <p className="text-sm font-semibold text-white">CAUZIONE AL RITIRO</p>
-                          {isUrbanOrCorporate && formData.depositOption && (
+                          {formData.depositOption && (
                             <p className="text-sm text-gray-300 mt-1">
-                              {formData.depositOption === 'with_deposit'
-                                ? `Cauzione: €${DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT}`
-                                : `Micro Cauzione: €${licenseYears >= 5 ? DEPOSIT_RULES.UTILITARIA.LICENSE_5_OR_MORE : DEPOSIT_RULES.UTILITARIA.LICENSE_UNDER_5}`}
+                              {'Cauzione standard'}
                             </p>
                           )}
                           {!isUrbanOrCorporate && depositAmt > 0 && (
@@ -5723,7 +5721,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       {recentLicenseFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Supplemento patente recente</span><span className="text-white font-medium">{formatPrice(recentLicenseFee)}</span></div>}
                       {noDepositSurcharge > 0 && (
                         <div className="flex justify-between">
-                          <span className="text-yellow-400">Supplemento Micro Cauzione (+30%)</span>
+                          <span className="text-yellow-400">Supplemento cauzione</span>
                           <span className="text-yellow-400 font-medium">{formatPrice(noDepositSurcharge)}</span>
                         </div>
                       )}
@@ -5799,7 +5797,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     </div>
                         </>
                       )}
-                      {isUrbanOrCorporate && formData.depositOption === 'with_deposit' && getDeposit() > 0 && (
+                      {formData.depositOption && getDeposit() > 0 && (
                         <div className="mt-2 pt-2 border-t border-gray-700">
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-400">Cauzione al ritiro</span>
