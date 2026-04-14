@@ -248,7 +248,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       insuranceOption: 'KASKO_BASE', // Default to Kasko Base
       depositOption: '' as string, // deposit option id from TIER_DEPOSIT_OPTIONS
       extras: [] as string[],
-      kmPackageType: 'unlimited' as 'none' | 'unlimited' | '50km',
+      kmPackageType: 'unlimited' as 'none' | 'unlimited',
       kmPackageDistance: 100,
       expectedKm: 0,
       usageZone: '' as 'CAGLIARI_SUD' | 'FUORI_ZONA' | '',
@@ -318,7 +318,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const ACTIVE_EXPERIENCE_SERVICES = configOverlay?.experienceServices?.length ? configOverlay.experienceServices : BOOKING_EXPERIENCE_SERVICES;
   const ACTIVE_RENTAL_DAY_RATES = configOverlay?.rentalDayRates ?? null;
   const ACTIVE_KM_INCLUDED = configOverlay?.kmIncluded ?? null;
-  const ACTIVE_SUPERCAR_50KM_RATE = configOverlay?.kmPackagePrices?.supercar50kmPerDay ?? 199;
+  
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedInsurance, setExpandedInsurance] = useState<string | null>(null);
@@ -386,6 +386,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     finalDailyRateEur?: number
     finalTotalEur?: number
     rentalDays?: number
+    breakdown?: { coeff: number; label?: string }[]
   } | null>(null)
 
   // Compute max bookable pickup date from availability windows
@@ -473,7 +474,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   useEffect(() => {
     const vType = getVehicleType(item, categoryContext);
     if (vType === 'SUPERCAR') {
-      // Supercars default to 50km/day package (price from admin config)
+      // Supercars default to standard pricing from Centralina
       setFormData(prev => ({
         ...prev,
         kmPackageType: 'none'
@@ -1358,7 +1359,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     isMassimo, specialDiscountAmount, carWashFee, noDepositSurcharge,
     effectivePricePerDay,
     lavaggioFee, experienceCost, flexCost, supercarDepositSurcharge, deliveryFee,
-    extraDayApplied
+    extraDayApplied,
+    listSubtotal, hasDynamicDiscount, dynamicDiscountPct, combinedCoeff
   } = useMemo(() => {
     const zero = {
       duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, kmPackageCost: 0, pickupFee: 0, dropoffFee: 0, subtotal: 0, taxes: 0, total: 0, includedKm: 0, driverAge: 0, licenseYears: 0, youngDriverFee: 0, recentLicenseFee: 0, secondDriverFee: 0, recommendedKm: null, membershipDiscount: 0, membershipTier: null, originalTotal: 0, finalTotal: 0,
@@ -1421,13 +1423,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const billingDaysCalc = billingDays < 1 ? 1 : billingDays;
 
     // --- RENTAL COST ---
-    // Check if supercar with 50km/day package (price from admin Revenue management)
-    const isSupercar50km = false; // 50km package removed
+    
+    
 
     let calculatedRentalCost = billingDays * pricePerDay;
 
-    if (isSupercar50km) {
-      // 50km/day supercar package: price from admin config, no multi-day discounts
+    if (false) {
+      
       calculatedRentalCost = billingDaysCalc * ACTIVE_SUPERCAR_50KM_RATE;
     } else if (isMassimo) {
       // Massimo Runchina: fixed per-vehicle pricing, NO coefficients, NO dynamic pricing
@@ -1481,13 +1483,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // --- KM PACKAGE ---
     let calculatedKmPackageCost = 0;
     let calculatedIncludedKm: number;
-    if (isSupercar50km) {
+    if (false) {
       calculatedIncludedKm = 50 * billingDaysCalc;
-      calculatedKmPackageCost = 0; // baked into 50km/day rental rate
+      calculatedKmPackageCost = 0;
     } else if (vType === 'SUPERCAR' && formData.kmPackageType === 'unlimited' && !isMassimo) {
       // Unlimited km for supercars — tier-conditional price
       calculatedKmPackageCost = roundToTwoDecimals(tierPricingForCalc.unlimitedKmPerDay * billingDaysCalc);
-    } else if (vType === 'SUPERCAR' && formData.kmPackageType === '50km') {
+    } else if (vType === 'SUPERCAR' && false) {
       // Already handled above
     } else if (formData.kmPackageType === 'unlimited') {
       calculatedIncludedKm = 9999;
@@ -1557,6 +1559,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const calculatedNoDepositSurcharge = urbanNoDepositSurcharge + supercarDepositSurcharge;
     calculatedSubtotal = calculatedSubtotal + calculatedNoDepositSurcharge;
 
+    // --- DYNAMIC PRICING: apply combined coefficient to FULL PACKAGE ---
+    let listSubtotal = calculatedSubtotal; // price before coefficients
+    const hasDynamicCoeffs = !isMassimo && dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.breakdown && dynamicPricing.breakdown.length > 0;
+    const combinedCoeff = hasDynamicCoeffs
+      ? (dynamicPricing!.breakdown!.reduce((acc: number, b: { coeff: number }) => acc * b.coeff, 1))
+      : 1;
+    const hasDynamicDiscount = hasDynamicCoeffs && Math.abs(combinedCoeff - 1) > 0.001;
+    const dynamicDiscountPct = hasDynamicDiscount ? Math.round((1 - combinedCoeff) * 100) : 0;
+    if (hasDynamicCoeffs) {
+      calculatedSubtotal = roundToTwoDecimals(calculatedSubtotal * combinedCoeff);
+    }
+
     let specialDiscountAmount = 0;
     const calculatedTaxes = 0;
     const calculatedTotal = calculatedSubtotal;
@@ -1590,10 +1604,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       specialDiscountAmount,
       carWashFee,
       noDepositSurcharge: calculatedNoDepositSurcharge,
-      effectivePricePerDay: isSupercar50km ? ACTIVE_SUPERCAR_50KM_RATE
-        : (dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.finalDailyRateEur)
-          ? dynamicPricing.finalDailyRateEur
-          : pricePerDay,
+      effectivePricePerDay: pricePerDay,
       // New fields
       lavaggioFee: calculatedLavaggioFee,
       experienceCost: calculatedExperienceCost,
@@ -1601,6 +1612,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       supercarDepositSurcharge,
       deliveryFee: calculatedDeliveryFee,
       extraDayApplied: extraDay,
+      listSubtotal,
+      hasDynamicDiscount,
+      dynamicDiscountPct,
+      combinedCoeff,
     };
   }, [
     formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime,
@@ -1664,7 +1679,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   // Auto-set usage zone based on vehicle type
   useEffect(() => {
     const vType = getVehicleType(item, categoryContext);
-    if (vType !== 'SUPERCAR' || formData.kmPackageType === '50km') {
+    if (vType !== 'SUPERCAR' || false) {
       if (formData.usageZone !== 'FUORI_ZONA') {
         setFormData(prev => ({ ...prev, usageZone: 'FUORI_ZONA' }));
       }
@@ -4898,7 +4913,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <p className="text-amber-300 text-xs font-semibold">L'orario di riconsegna supera il margine di 1h30 prima del ritiro: viene conteggiato 1 giorno aggiuntivo.</p>
                     </div>
                   )}
-                  <p>Pacchetto km: {formData.kmPackageType === '50km' ? `50 km/giorno (${includedKm} km totali)` : isUrbanOrCorporate ? 'Inclusi' : (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}</p>
+                  <p>Pacchetto km: {isUrbanOrCorporate ? 'Inclusi' : (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}</p>
                 </div>
 
                 <div>
@@ -4956,10 +4971,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <span>{formatPrice(kmPackageCost)}</span>
                     </div>
                   )}
-                  {formData.kmPackageType === '50km' && (
-                    <div className="flex justify-between text-gray-400"><span>Pacchetto km (50 km/giorno)</span> <span>Incluso nel noleggio</span></div>
-                  )}
-
                   {/* Secondo guidatore */}
                   {secondDriverFee > 0 && (
                     <div className="flex justify-between">
@@ -5011,6 +5022,25 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {recentLicenseFee > 0 && <div className="flex justify-between"><span>Supplemento patente recente ({duration.days} gg × €20)</span> <span>{formatPrice(recentLicenseFee)}</span></div>}
 
                   <hr className="border-gray-500 my-2" />
+
+                  {/* Dynamic pricing: prezzo barrato */}
+                  {hasDynamicDiscount && (
+                    <div className="flex justify-between items-center text-sm mb-1">
+                      <span className="text-gray-500">Prezzo listino</span>
+                      <span className="text-gray-500 line-through">{formatPrice(listSubtotal)}</span>
+                    </div>
+                  )}
+                  {hasDynamicDiscount && (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="flex items-center gap-2 text-green-400">
+                        Prezzo dinamico
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${dynamicDiscountPct > 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                          {dynamicDiscountPct > 0 ? `-${dynamicDiscountPct}%` : `+${Math.abs(dynamicDiscountPct)}%`}
+                        </span>
+                      </span>
+                      <span className="text-green-400 font-semibold">{formatPrice(subtotal)}</span>
+                    </div>
+                  )}
 
                   {/* Subtotal, discounts, total */}
                   <div className="flex justify-between text-gray-400"><span>Subtotale</span> <span>{formatPrice(finalTotal)}</span></div>
@@ -5692,14 +5722,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <div className="flex justify-between">
                         <span className="text-gray-400">Km pacchetto:</span>
                         <span className="text-white font-medium">
-                          {formData.kmPackageType === '50km' ? `50 km/giorno` : (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}
+                          {(formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}
                         </span>
                       </div>
 
                       <div className="border-t border-gray-700 my-2"></div>
 
                       <div className="flex justify-between"><span className="text-gray-400">Noleggio {item.name}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-400">Pacchetto chilometrici</span><span className="text-white font-medium">{formData.kmPackageType === '50km' || kmPackageCost === 0 ? 'Incluso' : formatPrice(kmPackageCost)}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-400">Pacchetto chilometrici</span><span className="text-white font-medium">{kmPackageCost === 0 ? 'Incluso' : formatPrice(kmPackageCost)}</span></div>
                       <div className="flex justify-between"><span className="text-gray-400 notranslate">Assicurazione {formData.insuranceOption?.replace(/_/g, ' ') || 'KASKO'}</span><span className="text-white font-medium">{formatPrice(insuranceCost)}</span></div>
                       {/* Lavaggio is now included in the price - no additional fee */}
                       {pickupFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Spese di ritiro</span><span className="text-white font-medium">{formatPrice(pickupFee)}</span></div>}
@@ -5739,6 +5769,25 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       ))}
 
                       <div className="border-t border-white/20 my-2"></div>
+
+                      {/* Dynamic pricing: prezzo barrato */}
+                      {hasDynamicDiscount && (
+                        <div className="flex justify-between items-center text-sm mb-1">
+                          <span className="text-gray-500">Prezzo listino</span>
+                          <span className="text-gray-500 line-through">{formatPrice(listSubtotal)}</span>
+                        </div>
+                      )}
+                      {hasDynamicDiscount && (
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="flex items-center gap-2 text-green-400">
+                            Prezzo dinamico
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${dynamicDiscountPct > 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                              {dynamicDiscountPct > 0 ? `-${dynamicDiscountPct}%` : `+${Math.abs(dynamicDiscountPct)}%`}
+                            </span>
+                          </span>
+                          <span className="text-green-400 font-semibold">{formatPrice(subtotal)}</span>
+                        </div>
+                      )}
 
                       {membershipDiscount > 0 ? (
                         <>
