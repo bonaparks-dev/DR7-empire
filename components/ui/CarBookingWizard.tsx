@@ -1718,7 +1718,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     // --- DYNAMIC PRICING: apply combined coefficient to FULL TOTAL ---
     let listSubtotal = calculatedSubtotal; // total before coefficients
-    const hasDynamicCoeffs = dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.breakdown && dynamicPricing.breakdown.length > 0;
+    // NEVER apply dynamic coefficients to Massimo Runchina — fixed price always
+    const hasDynamicCoeffs = !isMassimo && dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.breakdown && dynamicPricing.breakdown.length > 0;
     const combinedCoeff = hasDynamicCoeffs
       ? (dynamicPricing!.breakdown!.reduce((acc, b) => acc * b.coeff, 1))
       : 1;
