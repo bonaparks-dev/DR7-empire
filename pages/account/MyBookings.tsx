@@ -124,7 +124,7 @@ const MyBookings = () => {
 
   const getCancelPolicy = (booking: Booking): { canCancel: boolean; hasFlex: boolean; refundPercent: number; penaltyPercent: number; message: string } => {
     const hasDr7Flex = booking.booking_details?.dr7Flex === true || booking.booking_details?.extras?.dr7_flex === true || booking.booking_details?.dr7_flex === true;
-    const hasPrimeFlex = booking.booking_details?.prime_flex === true;
+    const hasPrimeFlex = booking.booking_details?.prime_flex === true || booking.booking_details?.prime_flex === 'true';
     const hasFlex = hasDr7Flex || hasPrimeFlex;
     const pickup = new Date(booking.pickup_date || booking.appointment_date || '');
     const now = new Date();
@@ -148,7 +148,7 @@ const MyBookings = () => {
   const canModify = (booking: Booking): boolean => {
     // Car wash with Prime Flex can be modified anytime before appointment
     if (booking.service_type !== 'car_wash') return false;
-    if (!booking.booking_details?.prime_flex) return false;
+    if (booking.booking_details?.prime_flex !== true && booking.booking_details?.prime_flex !== 'true') return false;
     const appointmentDate = new Date(booking.appointment_date || '');
     return appointmentDate > new Date() && booking.status !== 'cancelled';
   };
