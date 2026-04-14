@@ -129,12 +129,12 @@ const MyBookings = () => {
       return { canCancel: true, hasFlex: true, refundPercent: 90, penaltyPercent: 10, message: hasPrimeFlex ? 'Con Prime Flex: rimborso del 90% come credito DR7 Wallet.' : 'Con DR7 Flex: rimborso del 90% come credito DR7 Wallet.' };
     }
     if (daysUntilPickup >= 5) {
-      // More than 5 days before pickup: cancellable with 5% penalty
-      return { canCancel: true, hasFlex: false, refundPercent: 95, penaltyPercent: 5, message: 'Cancellazione con penale del 5% sul totale pagato (più di 5 giorni dal ritiro).' };
+      // More than 5 days before service: 90% wallet credit, 10% penalty (as per policy section 2)
+      return { canCancel: true, hasFlex: false, refundPercent: 90, penaltyPercent: 10, message: 'Cancellazione con penale del 10% — rimborso del 90% come credito DR7 Wallet.' };
     }
     if (daysUntilPickup > 0) {
-      // Less than 5 days: no cancellation without Flex
-      return { canCancel: false, hasFlex: false, refundPercent: 0, penaltyPercent: 0, message: 'Meno di 5 giorni dal ritiro: cancellazione non disponibile senza DR7 Flex.' };
+      // Less than 5 days: no refund, no credit (as per policy section 3)
+      return { canCancel: false, hasFlex: false, refundPercent: 0, penaltyPercent: 0, message: 'Meno di 5 giorni dal servizio: cancellazione non disponibile. Nessun rimborso previsto.' };
     }
     return { canCancel: false, hasFlex: false, refundPercent: 0, penaltyPercent: 0, message: 'Non è più possibile cancellare questa prenotazione.' };
   };
