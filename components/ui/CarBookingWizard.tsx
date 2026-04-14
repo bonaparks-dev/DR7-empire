@@ -1698,11 +1698,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     const urbanNoDepositSurcharge = 0; // Micro Cauzione removed
 
-    // Supercar: deposit option surcharges (no_deposit = €49/day, vehicle_deposit = €20/day)
+    // Deposit surcharges from Centralina (no_deposit = €49/day, vehicle_deposit = €20/day, etc.)
     let supercarDepositSurcharge = 0;
-    if (!isUrbanForDeposit && formData.depositOption) {
-      const depositKey = `${activeTierForCalc}`;
-      const depOpts = TIER_DEPOSIT_OPTIONS[depositKey] || [];
+    if (formData.depositOption) {
+      const depositCfgKey = `${activeTierForCalc}_RESIDENT` as keyof typeof configOverlay.depositOptions;
+      const depOpts = configOverlay?.depositOptions?.[depositCfgKey] || TIER_DEPOSIT_OPTIONS[activeTierForCalc] || [];
       const selectedDep = depOpts.find(d => d.id === formData.depositOption);
       if (selectedDep?.surchargePerDay) {
         supercarDepositSurcharge = roundToTwoDecimals(selectedDep.surchargePerDay * billingDaysCalc);
@@ -1914,7 +1914,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (isMassimo) return 0;
 
     // Utilitaria/Furgone: use same tier-based deposit as supercars
-    if (isUtilitaria && formData.depositOption === 'with_deposit') return DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT;
+    // All deposit options from Centralina now (no more hardcoded with_deposit)
 
     // Gold/Platinum members OR 3+ rentals = NO deposit
     const memberTier = getMembershipTierName(user);
@@ -4547,7 +4547,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const insuranceOptions = isFurgoneOrVClass
           ? allInsuranceOptions.filter(opt => opt.id === 'RCA' || opt.id === 'KASKO_BASE' || opt.id === 'KASKO')
           : allInsuranceOptions;
-        const depositOptions = getDepositOptionsForTier(activeTier);
+        // Deposit options from Centralina (RESIDENT by default)
+        const depositKey = `${activeTier}_RESIDENT` as keyof typeof configOverlay.depositOptions;
+        const depositOptions = configOverlay?.depositOptions?.[depositKey]?.length > 0
+          ? configOverlay.depositOptions[depositKey]
+          : getDepositOptionsForTier(activeTier); // fallback to constants
         const experienceServices = getExperienceServicesForTier(activeTier);
 
         // Check if "no deposit" requires Kasko (cannot select no_deposit with RCA only)
@@ -4853,20 +4857,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               </div>
             </section>
 
-            {/* === D. CAUZIONE === */}
-            {!isMassimo && !isLoyalCustomer && getMembershipTierName(user) !== 'gold' && getMembershipTierName(user) !== 'platinum' && isUrbanOrCorporate ? (
-              /* Urban/Furgone/V-Class: fixed deposit, no options */
-              <section className="border-t border-gray-700 pt-6">
-                <h3 className="text-lg font-bold text-white mb-2">D. CAUZIONE</h3>
-                <div className="p-4 rounded-lg border-2 border-gray-600 bg-gray-800/50">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-white">Cauzione al ritiro</span>
-                    <span className="font-bold text-yellow-400">€{DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT.toLocaleString()}</span>
-                  </div>
-                  <p className="text-sm text-gray-400 mt-1">Cauzione fissa su carta di credito o debito.</p>
-                </div>
-              </section>
-            ) : !isMassimo && !isLoyalCustomer && getMembershipTierName(user) !== 'gold' && getMembershipTierName(user) !== 'platinum' ? (
+            {/* === D. CAUZIONE — from Centralina for ALL vehicles === */}
+            {!isMassimo && !isLoyalCustomer && getMembershipTierName(user) !== 'gold' && getMembershipTierName(user) !== 'platinum' ? (
               /* Supercar: tier-based deposit options */
               <section className="border-t border-gray-700 pt-6">
                 <h3 className="text-lg font-bold text-white mb-2">D. CAUZIONE</h3>
