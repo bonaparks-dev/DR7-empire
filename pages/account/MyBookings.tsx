@@ -118,7 +118,7 @@ const MyBookings = () => {
 
   const canCancel = (booking: Booking): boolean => {
     if (booking.status === 'cancelled' || booking.status === 'annullata' || booking.status === 'completed' || booking.status === 'completata') return false;
-    if (!booking.pickup_date) return false;
+    if (!booking.pickup_date && !booking.appointment_date) return false;
     return getCancelPolicy(booking).canCancel;
   };
 
