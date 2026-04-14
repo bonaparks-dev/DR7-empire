@@ -110,9 +110,9 @@ const CarWashBookingPage: React.FC = () => {
   const isSubmittingRef = useRef(false);
   const [pendingBookingData, setPendingBookingData] = useState<any>(null);
 
-  // DR7 Flex state (cancellation protection for car wash — flat €4.90)
-  const [dr7FlexSelected, setDr7FlexSelected] = useState(false);
-  const DR7_FLEX_WASH_PRICE = 4.90;
+  // Prime Flex state (cancellation protection for car wash — flat €4.90)
+  const [primeFlexSelected, setPrimeFlexSelected] = useState(false);
+  const PRIME_FLEX_PRICE = 4.90;
 
   // Credit wallet state
   const [paymentMethod, setPaymentMethod] = useState<'nexi' | 'credit'>('nexi');
@@ -629,7 +629,7 @@ const CarWashBookingPage: React.FC = () => {
     // Use cart total if we have cart items, otherwise use selected service price
     const basePrice = hasCartItems ? cartTotal : (selectedService?.price || 0);
     const discount = appliedDiscount?.type === 'car_wash' ? Math.min(appliedDiscount.amount, basePrice) : 0;
-    const flexFee = dr7FlexSelected ? DR7_FLEX_WASH_PRICE : 0;
+    const flexFee = primeFlexSelected ? PRIME_FLEX_PRICE : 0;
     return Math.max(0, basePrice - discount + flexFee);
   };
 
@@ -859,7 +859,7 @@ const CarWashBookingPage: React.FC = () => {
         notes: formData.notes,
         ...(hasCartItems ? { cart_items: cartItems } : {}),
         ...(customerVehicle ? { customerVehicle } : {}),
-        ...(dr7FlexSelected ? { dr7_flex: true, dr7_flex_price: DR7_FLEX_WASH_PRICE } : {}),
+        ...(primeFlexSelected ? { prime_flex: true, prime_flex_price: PRIME_FLEX_PRICE } : {}),
       },
       status: 'confirmed',
       payment_status: 'pending',
@@ -1526,22 +1526,22 @@ const CarWashBookingPage: React.FC = () => {
               />
             </div>
 
-            {/* DR7 Flex — Cancellation protection */}
+            {/* Prime Flex — Cancellation protection */}
             <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
               <div
-                className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${dr7FlexSelected
+                className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${primeFlexSelected
                   ? 'border-green-500 bg-green-500/10' : 'border-gray-600 hover:border-gray-500'}`}
-                onClick={() => setDr7FlexSelected(!dr7FlexSelected)}
+                onClick={() => setPrimeFlexSelected(!primeFlexSelected)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <input type="checkbox" checked={dr7FlexSelected} onChange={() => {}} className="h-5 w-5" />
+                    <input type="checkbox" checked={primeFlexSelected} onChange={() => {}} className="h-5 w-5" />
                     <div>
-                      <span className="font-bold text-white">DR7 FLEX</span>
+                      <span className="font-bold text-white">PRIME FLEX</span>
                       <p className="text-sm text-gray-400 mt-1">Cancella fino al giorno dell'appuntamento — rimborso del 90% come credito DR7 Wallet</p>
                     </div>
                   </div>
-                  <span className="font-bold text-yellow-400 whitespace-nowrap ml-4">€{DR7_FLEX_WASH_PRICE.toFixed(2)}</span>
+                  <span className="font-bold text-yellow-400 whitespace-nowrap ml-4">€{PRIME_FLEX_PRICE.toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -1597,10 +1597,10 @@ const CarWashBookingPage: React.FC = () => {
                 <span>Subtotale</span>
                 <span>€{getBasePrice().toFixed(2)}</span>
               </div>
-              {dr7FlexSelected && (
+              {primeFlexSelected && (
                 <div className="flex justify-between items-center mb-3 text-green-400">
-                  <span>DR7 Flex</span>
-                  <span>+€{DR7_FLEX_WASH_PRICE.toFixed(2)}</span>
+                  <span>Prime Flex</span>
+                  <span>+€{PRIME_FLEX_PRICE.toFixed(2)}</span>
                 </div>
               )}
               {birthdayDiscountAmount > 0 && (
@@ -1693,10 +1693,10 @@ const CarWashBookingPage: React.FC = () => {
                   <span>Subtotale:</span>
                   <span>€{getBasePrice().toFixed(2)}</span>
                 </div>
-                {dr7FlexSelected && (
+                {primeFlexSelected && (
                   <div className="flex justify-between text-sm text-green-400 mb-1">
-                    <span>DR7 Flex:</span>
-                    <span>+€{DR7_FLEX_WASH_PRICE.toFixed(2)}</span>
+                    <span>Prime Flex:</span>
+                    <span>+€{PRIME_FLEX_PRICE.toFixed(2)}</span>
                   </div>
                 )}
                 {birthdayDiscountAmount > 0 && (
