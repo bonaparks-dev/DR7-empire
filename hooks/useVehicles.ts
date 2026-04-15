@@ -347,7 +347,7 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
           let query = supabase
             .from('vehicles')
             .select('*')
-            .neq('status', 'retired')
+            .eq('status', 'available')
             .order('display_name', { ascending: true });
 
           // Filter by category if specified

@@ -101,7 +101,7 @@ export const handler: Handler = async (event) => {
 
         // Get ALL vehicles with this name (not just the first one!)
         const vehiclesResponse = await fetch(
-            `${SUPABASE_URL}/rest/v1/vehicles?select=id,plate,metadata,status&display_name=ilike.${encodeURIComponent(vehicleName.trim())}*&status=neq.retired`,
+            `${SUPABASE_URL}/rest/v1/vehicles?select=id,plate,metadata,status&display_name=ilike.${encodeURIComponent(vehicleName.trim())}*&status=eq.available`,
             {
                 headers: {
                     'apikey': SUPABASE_SERVICE_ROLE_KEY!,
@@ -136,7 +136,8 @@ export const handler: Handler = async (event) => {
             .filter(Boolean);
 
         // Fetch bookings by vehicle_id (exclude Lavaggio Rientro — covered by buffer)
-        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name&status=not.in.(cancelled,annullata,completed,completata,expired)&customer_name=neq.Lavaggio Rientro&vehicle_id=in.(${vehicleIds.join(',')})&order=pickup_date.asc`;
+        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name&status=not.in.(cancelled,annullata,completed,completata,expired)&customer_name=neq.${encodeURIComponent('Lavaggio Rientro')}&vehicle_id=in.(${vehicleIds.join(',')})&order=pickup_date.asc`;
+        console.log('[checkVehicleAvailability] bookingsUrl:', bookingsUrl);
 
         const bookingsResponse = await fetch(bookingsUrl, {
             headers: {
@@ -150,7 +151,7 @@ export const handler: Handler = async (event) => {
 
         // Also fetch bookings by plate (targa) to catch mismatched vehicle_id
         if (targetPlates.length > 0) {
-            const plateBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name&status=not.in.(cancelled,annullata,completed,completata,expired)&customer_name=neq.Lavaggio Rientro&vehicle_plate=in.(${targetPlates.join(',')})&order=pickup_date.asc`;
+            const plateBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name&status=not.in.(cancelled,annullata,completed,completata,expired)&customer_name=neq.${encodeURIComponent('Lavaggio Rientro')}&vehicle_plate=in.(${targetPlates.join(',')})&order=pickup_date.asc`;
             const plateResponse = await fetch(plateBookingsUrl, {
                 headers: {
                     'apikey': SUPABASE_SERVICE_ROLE_KEY!,
@@ -268,6 +269,12 @@ export const handler: Handler = async (event) => {
                 allBusyIntervals = intersectIntervalLists(allBusyIntervals, vehicleIntervalsList[i]);
             }
         }
+
+        console.log('[checkVehicleAvailability] vehicleIds:', vehicleIds);
+        console.log('[checkVehicleAvailability] bookings found:', Array.isArray(bookings) ? bookings.length : 'not array', bookings);
+        console.log('[checkVehicleAvailability] busyByVehicle entries:', busyByVehicle.size);
+        console.log('[checkVehicleAvailability] allBusyIntervals:', allBusyIntervals.map(i => ({ start: i.start.toISOString(), end: i.end.toISOString() })));
+        console.log('[checkVehicleAvailability] requested:', requestedPickup.toISOString(), '→', requestedDropoff.toISOString());
 
         // Check if requested period overlaps with any all-busy period
         const conflicts: any[] = [];
