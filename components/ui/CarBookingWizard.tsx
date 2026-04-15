@@ -410,14 +410,22 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   }, [configOverlay]);
 
   // Category-specific insurance from Centralina
+  const URBAN_INSURANCE_FALLBACK: typeof INSURANCE_OPTIONS_BY_TIER.TIER_2 = [
+    { id: 'KASKO_BASE', name: 'Kasko Base', dailyPrice: 15, deductible: '€2.000 + 30% del danno' },
+    { id: 'KASKO_DR7', name: 'Kasko DR7', dailyPrice: 45, deductible: '€0' },
+  ];
+  const FURGONE_INSURANCE_FALLBACK: typeof INSURANCE_OPTIONS_BY_TIER.TIER_2 = [
+    { id: 'RCA', name: 'RCA Compresa (no Kasko)', dailyPrice: 0, deductible: 'Nessuna copertura aggiuntiva' },
+    { id: 'KASKO_BASE', name: 'Kasko Base', dailyPrice: 45, deductible: '€5.000 + 30% del danno' },
+  ];
   const getInsuranceForVehicle = useMemo(() => {
-    return (vType: string, tier: string) => {
-      if (!configOverlay) return ACTIVE_INSURANCE_BY_TIER[tier as 'TIER_1' | 'TIER_2'] || [];
-      if (vType === 'UTILITARIA' && configOverlay.urbanInsurance.length > 0) return configOverlay.urbanInsurance;
-      if (vType === 'FURGONE' && configOverlay.furgoneInsurance.length > 0) return configOverlay.furgoneInsurance;
-      if (vType === 'V_CLASS' && configOverlay.furgoneInsurance.length > 0) return configOverlay.furgoneInsurance;
-      // Supercar: tier-based
-      return ACTIVE_INSURANCE_BY_TIER[tier as 'TIER_1' | 'TIER_2'] || [];
+    return (vType: string, _tier: string) => {
+      const urbanOpts = configOverlay?.urbanInsurance?.length ? configOverlay.urbanInsurance : URBAN_INSURANCE_FALLBACK;
+      const furgoneOpts = configOverlay?.furgoneInsurance?.length ? configOverlay.furgoneInsurance : FURGONE_INSURANCE_FALLBACK;
+      if (vType === 'UTILITARIA') return urbanOpts;
+      if (vType === 'FURGONE' || vType === 'V_CLASS') return furgoneOpts;
+      // Supercar: tier-based from Centralina
+      return ACTIVE_INSURANCE_BY_TIER[_tier as 'TIER_1' | 'TIER_2'] || [];
     };
   }, [configOverlay, ACTIVE_INSURANCE_BY_TIER]);
 
