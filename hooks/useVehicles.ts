@@ -461,6 +461,7 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
         if (!isMounted) return;
 
         // Transform vehicles to expected format
+        console.log(`[useVehicles] Raw DB returned ${(data || []).length} vehicles for category: ${category || 'all'}`, (data || []).map((v: any) => `${v.display_name} (${v.status})`));
         const transformedVehicles = (data || []).map(transformVehicle);
 
         // Group vehicles by display_group if they have one, or display_name otherwise
