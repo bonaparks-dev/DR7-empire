@@ -1657,16 +1657,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // Already handled above
     } else if (formData.kmPackageType === 'unlimited') {
       calculatedIncludedKm = 9999;
-      // Urban vehicles & VIP get free unlimited, others pay from Centralina
-      if (!isUrbanVehicle(item.name)) {
-        // Use Centralina prices for all vehicle types
-        if (vType === 'FURGONE') {
-          calculatedKmPackageCost = roundToTwoDecimals((configOverlay?.kmPackagePrices?.unlimitedFurgonePerDay ?? 94.50) * billingDaysCalc);
-        } else if (vType === 'V_CLASS') {
-          calculatedKmPackageCost = roundToTwoDecimals((configOverlay?.kmPackagePrices?.unlimitedNccPerDay ?? 189) * billingDaysCalc);
-        } else {
-          calculatedKmPackageCost = roundToTwoDecimals((configOverlay?.kmPackagePrices?.unlimitedFurgonePerDay ?? 94.50) * billingDaysCalc);
+      // Use Centralina prices for all vehicle types (including urban)
+      if (isUrbanVehicle(item.name)) {
+        const urbanPrice = configOverlay?.kmPackagePrices?.unlimitedUrbanPerDay ?? 0;
+        if (urbanPrice > 0) {
+          calculatedKmPackageCost = roundToTwoDecimals(urbanPrice * billingDaysCalc);
         }
+      } else if (vType === 'FURGONE') {
+        calculatedKmPackageCost = roundToTwoDecimals((configOverlay?.kmPackagePrices?.unlimitedFurgonePerDay ?? 94.50) * billingDaysCalc);
+      } else if (vType === 'V_CLASS') {
+        calculatedKmPackageCost = roundToTwoDecimals((configOverlay?.kmPackagePrices?.unlimitedNccPerDay ?? 189) * billingDaysCalc);
+      } else {
+        calculatedKmPackageCost = roundToTwoDecimals((configOverlay?.kmPackagePrices?.unlimitedFurgonePerDay ?? 94.50) * billingDaysCalc);
       }
     } else if (vType !== 'SUPERCAR') {
       // Urban/Furgone/VClass: use dynamic km included table from admin config
@@ -4798,7 +4800,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         <p className="text-sm text-gray-400">Senza limiti di percorrenza</p>
                       </div>
                       <span className="font-bold text-white">
-                        {isUrbanVehicle(item.name) ? 'Gratis' : formatPrice(calculateUnlimitedKmPrice(item.name, duration.days || 1))}
+                        {isUrbanVehicle(item.name) && (configOverlay?.kmPackagePrices?.unlimitedUrbanPerDay ?? 0) === 0
+                          ? 'Gratis'
+                          : isUrbanVehicle(item.name)
+                          ? formatPrice((configOverlay?.kmPackagePrices?.unlimitedUrbanPerDay ?? 0) * (duration.days || 1))
+                          : formatPrice(calculateUnlimitedKmPrice(item.name, duration.days || 1))}
                       </span>
                     </div>
                   </div>

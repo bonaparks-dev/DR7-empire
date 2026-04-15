@@ -27,6 +27,7 @@ export interface KmPackagePrices {
   unlimitedSupercarT2PerDay: number
   unlimitedFurgonePerDay: number
   unlimitedNccPerDay: number
+  unlimitedUrbanPerDay: number
 }
 
 export interface WebsiteConfigOverlay {
@@ -149,6 +150,7 @@ export function buildWebsiteConfigOverlay(config: RentalConfig | null): WebsiteC
     unlimitedSupercarT2PerDay: centralinaT2 ?? findKmPrice('unlimited_km_supercar_t2', 189),
     unlimitedFurgonePerDay: centralinaFurgone ?? findKmPrice('unlimited_km_furgone', 94.50),
     unlimitedNccPerDay: centralinaNcc ?? findKmPrice('unlimited_km_ncc', 189),
+    unlimitedUrbanPerDay: config.unlimited_km?.urban?._all_tiers?.per_day ?? findKmPrice('unlimited_km_urban', 0),
   }
 
   return {
