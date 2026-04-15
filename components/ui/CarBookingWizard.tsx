@@ -1869,33 +1869,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       updates.email = user.email || '';
     }
 
-    // 2. Special Rules for Massimo Runchina & VIPs — fast track booking flow
-    const emailToCheck = formData.email || user?.email || '';
-    if (isMassimoRunchina(emailToCheck)) {
-      // Auto-set options so Massimo skips selection steps
-      if (formData.insuranceOption !== 'KASKO_BASE') updates.insuranceOption = 'KASKO_BASE';
-      if (formData.kmPackageType !== 'unlimited') updates.kmPackageType = 'unlimited';
-      if (formData.usageZone !== 'FUORI_ZONA') updates.usageZone = 'FUORI_ZONA';
-
-      // Determine which VIP it is for name defaults
-      const isJeanne = emailToCheck.toLowerCase().trim() === 'jeannegiraud92@gmail.com';
-      const defaultFirst = isJeanne ? 'Jeanne' : 'Massimo';
-      const defaultLast = isJeanne ? 'Giraud' : 'Runchina';
-
-      // Ensure name is correct if empty
-      if (!formData.firstName && !updates.firstName) updates.firstName = defaultFirst;
-      if (!formData.lastName && !updates.lastName) updates.lastName = defaultLast;
-      if (!formData.phone && !updates.phone) updates.phone = '+39 347 000 0000'; // Placeholder
-
-      // Fast Track Defaults for Massimo
-      if (!formData.birthDate && !updates.birthDate) updates.birthDate = '1969-01-01';
-      if (!formData.licenseNumber && !updates.licenseNumber) updates.licenseNumber = 'VIP-AUTOFILLED';
-      if (!formData.licenseDate && !updates.licenseDate) updates.licenseDate = '2000-01-01';
-      if (!formData.birthPlace && !updates.birthPlace) updates.birthPlace = 'Cagliari';
-      if (!formData.address && !updates.address) updates.address = 'VIP Fast Track';
-      if (!formData.city && !updates.city) updates.city = 'Cagliari';
-      if (!formData.zipCode && !updates.zipCode) updates.zipCode = '09100';
-    }
+    // VIP auto-fill removed — all customers use standard flow
 
     // Apply updates if any
     if (Object.keys(updates).length > 0) {
