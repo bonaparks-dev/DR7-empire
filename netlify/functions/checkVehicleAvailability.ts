@@ -270,6 +270,12 @@ export const handler: Handler = async (event) => {
             }
         }
 
+        console.log('[checkVehicleAvailability] vehicleIds:', vehicleIds);
+        console.log('[checkVehicleAvailability] bookings found:', Array.isArray(bookings) ? bookings.length : 'not array', bookings);
+        console.log('[checkVehicleAvailability] busyByVehicle entries:', busyByVehicle.size);
+        console.log('[checkVehicleAvailability] allBusyIntervals:', allBusyIntervals.map(i => ({ start: i.start.toISOString(), end: i.end.toISOString() })));
+        console.log('[checkVehicleAvailability] requested:', requestedPickup.toISOString(), '→', requestedDropoff.toISOString());
+
         // Check if requested period overlaps with any all-busy period
         const conflicts: any[] = [];
 
