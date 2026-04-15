@@ -136,7 +136,8 @@ export const handler: Handler = async (event) => {
             .filter(Boolean);
 
         // Fetch bookings by vehicle_id (exclude Lavaggio Rientro — covered by buffer)
-        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name&status=not.in.(cancelled,annullata,completed,completata,expired)&customer_name=neq.Lavaggio Rientro&vehicle_id=in.(${vehicleIds.join(',')})&order=pickup_date.asc`;
+        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name&status=not.in.(cancelled,annullata,completed,completata,expired)&customer_name=neq.${encodeURIComponent('Lavaggio Rientro')}&vehicle_id=in.(${vehicleIds.join(',')})&order=pickup_date.asc`;
+        console.log('[checkVehicleAvailability] bookingsUrl:', bookingsUrl);
 
         const bookingsResponse = await fetch(bookingsUrl, {
             headers: {
@@ -150,7 +151,7 @@ export const handler: Handler = async (event) => {
 
         // Also fetch bookings by plate (targa) to catch mismatched vehicle_id
         if (targetPlates.length > 0) {
-            const plateBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name&status=not.in.(cancelled,annullata,completed,completata,expired)&customer_name=neq.Lavaggio Rientro&vehicle_plate=in.(${targetPlates.join(',')})&order=pickup_date.asc`;
+            const plateBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name&status=not.in.(cancelled,annullata,completed,completata,expired)&customer_name=neq.${encodeURIComponent('Lavaggio Rientro')}&vehicle_plate=in.(${targetPlates.join(',')})&order=pickup_date.asc`;
             const plateResponse = await fetch(plateBookingsUrl, {
                 headers: {
                     'apikey': SUPABASE_SERVICE_ROLE_KEY!,
