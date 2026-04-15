@@ -409,6 +409,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     };
   }, [configOverlay]);
 
+  // Category-specific insurance from Centralina
+  const getInsuranceForVehicle = useMemo(() => {
+    return (vType: string, tier: string) => {
+      if (!configOverlay) return ACTIVE_INSURANCE_BY_TIER[tier as 'TIER_1' | 'TIER_2'] || [];
+      if (vType === 'UTILITARIA' && configOverlay.urbanInsurance.length > 0) return configOverlay.urbanInsurance;
+      if (vType === 'FURGONE' && configOverlay.furgoneInsurance.length > 0) return configOverlay.furgoneInsurance;
+      if (vType === 'V_CLASS' && configOverlay.furgoneInsurance.length > 0) return configOverlay.furgoneInsurance;
+      // Supercar: tier-based
+      return ACTIVE_INSURANCE_BY_TIER[tier as 'TIER_1' | 'TIER_2'] || [];
+    };
+  }, [configOverlay, ACTIVE_INSURANCE_BY_TIER]);
+
   const ACTIVE_TIER_PRICING = useMemo(() => {
     if (!configOverlay) return TIER_PRICING;
     return configOverlay.tierPricing;
@@ -1594,9 +1606,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const activeTierForCalc: 'TIER_1' | 'TIER_2' = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2';
     const tierPricingForCalc = ACTIVE_TIER_PRICING[activeTierForCalc];
 
-    // Find selected insurance option and its daily price
-    // Massimo Runchina: insurance is INCLUDED (€0)
-    const allInsuranceOpts = ACTIVE_INSURANCE_BY_TIER[activeTierForCalc] || [];
+    // Find selected insurance option from Centralina (category-specific)
+    const allInsuranceOpts = getInsuranceForVehicle(vType, activeTierForCalc);
     const selectedInsOpt = allInsuranceOpts.find(o => o.id === formData.insuranceOption);
     const insuranceDailyPrice = selectedInsOpt?.dailyPrice || 0;
     let calculatedInsuranceCost = roundToTwoDecimals(insuranceDailyPrice * billingDaysCalc);
@@ -1623,7 +1634,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     // --- LAVAGGIO (pulizia finale) ---
     // Massimo Runchina: excludeCarWash = true → no lavaggio fee
-    const calculatedLavaggioFee = isMassimo ? 0 : tierPricingForCalc.lavaggio; // flat €9.90
+    const calculatedLavaggioFee = tierPricingForCalc.lavaggio; // flat €9.90
 
     // --- KM PACKAGE ---
     let calculatedKmPackageCost = 0;
@@ -1631,7 +1642,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (isSupercar50km) {
       calculatedIncludedKm = 50 * billingDaysCalc;
       calculatedKmPackageCost = 0; // baked into 50km/day rental rate
-    } else if (vType === 'SUPERCAR' && formData.kmPackageType === 'unlimited' && !isMassimo) {
+    } else if (vType === 'SUPERCAR' && formData.kmPackageType === 'unlimited') {
       // Unlimited km for supercars — tier-conditional price
       calculatedKmPackageCost = roundToTwoDecimals(tierPricingForCalc.unlimitedKmPerDay * billingDaysCalc);
     } else if (vType === 'SUPERCAR' && formData.kmPackageType === '50km') {
@@ -1639,7 +1650,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     } else if (formData.kmPackageType === 'unlimited') {
       calculatedIncludedKm = 9999;
       // Urban vehicles & VIP get free unlimited, others pay from Centralina
-      if (!isUrbanVehicle(item.name) && !isMassimo) {
+      if (!isUrbanVehicle(item.name)) {
         // Use Centralina prices for all vehicle types
         if (vType === 'FURGONE') {
           calculatedKmPackageCost = roundToTwoDecimals((configOverlay?.kmPackagePrices?.unlimitedFurgonePerDay ?? 94.50) * billingDaysCalc);
@@ -1911,7 +1922,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const isUtilitaria = vType === 'UTILITARIA' || vType === 'FURGONE' || vType === 'V_CLASS';
 
     // Special client = always €0
-    if (isMassimo) return 0;
+    
 
     // Utilitaria/Furgone: use same tier-based deposit as supercars
     // All deposit options from Centralina now (no more hardcoded with_deposit)
@@ -4541,12 +4552,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const displayVehicleType = getVehicleType(item);
         const activeTier = driverTier || 'TIER_2'; // fallback
         const tierPricing = getKmPricingForTier(activeTier);
-        const allInsuranceOptions = getInsuranceForTier(activeTier);
-        // Furgone/V Class: only RCA and Kasko Base
-        const isFurgoneOrVClass = displayVehicleType === 'FURGONE' || displayVehicleType === 'V_CLASS';
-        const insuranceOptions = isFurgoneOrVClass
-          ? allInsuranceOptions.filter(opt => opt.id === 'RCA' || opt.id === 'KASKO_BASE' || opt.id === 'KASKO')
-          : allInsuranceOptions;
+        // Insurance options from Centralina per vehicle category
+        const insuranceOptions = getInsuranceForVehicle(displayVehicleType, activeTier);
         // Deposit options from Centralina (RESIDENT by default)
         const depositKey = `${activeTier}_RESIDENT` as keyof typeof configOverlay.depositOptions;
         const depositOptions = configOverlay?.depositOptions?.[depositKey]?.length > 0
@@ -4558,8 +4565,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const selectedInsuranceIsRCA = formData.insuranceOption === 'RCA';
         const noDepositRequiresKasko = formData.depositOption === 'no_deposit' && selectedInsuranceIsRCA;
 
-        // === VIP SIMPLIFIED VIEW (Massimo / Ophe) ===
-        if (isMassimo) {
+        // VIP view removed — all customers use standard flow
+        if (false) {
           return (
             <div className="space-y-6">
               <div className="text-center mb-2">
@@ -4745,17 +4752,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             {/* === B. CHILOMETRI === */}
             <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-4">B. CHILOMETRI</h3>
-              {isMassimo ? (
-                <div className="p-4 rounded-lg border-2 border-green-500 bg-green-500/10">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className="font-bold text-white">Km illimitati</span>
-                      <p className="text-sm text-gray-400">Senza limiti di percorrenza</p>
-                    </div>
-                    <span className="font-bold text-green-400">Incluso</span>
-                  </div>
-                </div>
-              ) : displayVehicleType === 'SUPERCAR' ? (
+              {displayVehicleType === 'SUPERCAR' ? (
                 <div className="space-y-3">
                   {/* KM inclusi (auto-calcolati da Centralina) */}
                   <div
@@ -4832,16 +4829,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               <h3 className="text-lg font-bold text-white mb-4">C. SERVIZI AGGIUNTIVI</h3>
               <div className="space-y-3">
                 {/* Lavaggio finale */}
-                <div className={`flex items-center p-3 rounded-md border ${isMassimo ? 'border-green-500 bg-green-500/10' : 'bg-gray-800/50 border-gray-700'}`}>
+                <div className={`flex items-center p-3 rounded-md border ${'bg-gray-800/50 border-gray-700'}`}>
                   <input type="checkbox" checked disabled className="h-4 w-4" />
                   <span className="ml-3 text-white">Pulizia finale</span>
-                  <span className={`ml-auto font-semibold ${isMassimo ? 'text-green-400' : 'text-white'}`}>
-                    {isMassimo ? 'Inclusa' : `€${tierPricing.lavaggio.toFixed(2)}`}
+                  <span className={`ml-auto font-semibold ${'text-white'}`}>
+                    {`€${tierPricing.lavaggio.toFixed(2)}`}
                   </span>
                 </div>
 
                 {/* Second driver with tier price — hidden for VIP */}
-                {!isMassimo && (
+                {(
                 <div
                   className={`p-3 rounded-md border cursor-pointer transition-all ${formData.addSecondDriver
                     ? 'border-white bg-white/5' : 'border-gray-700 hover:border-gray-500'}`}
@@ -4858,7 +4855,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             </section>
 
             {/* === D. CAUZIONE — from Centralina for ALL vehicles === */}
-            {!isMassimo && getMembershipTierName(user) !== 'gold' && getMembershipTierName(user) !== 'platinum' ? (
+            {getMembershipTierName(user) !== 'gold' && getMembershipTierName(user) !== 'platinum' ? (
               /* Supercar: tier-based deposit options */
               <section className="border-t border-gray-700 pt-6">
                 <h3 className="text-lg font-bold text-white mb-2">D. CAUZIONE</h3>
@@ -5241,7 +5238,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
 
             {/* === F. SERVIZI EXPERIENCE (hidden for VIP) === */}
-            {!isMassimo && <section className="border-t border-gray-700 pt-6">
+            <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-2">F. SERVIZI EXPERIENCE</h3>
               <p className="text-sm text-gray-400 mb-4">Personalizza la tua esperienza con servizi esclusivi.</p>
               <div className="space-y-3">
@@ -5293,10 +5290,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   );
                 })}
               </div>
-            </section>}
+            </section>
 
             {/* === G. DR7 FLEX === (Only Fascia A / TIER_2) */}
-            {driverTier === 'TIER_2' && !isMassimo && (
+            {driverTier === 'TIER_2' && (
             <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-2">G. DR7 FLEX — Cancellazione Premium</h3>
               <div

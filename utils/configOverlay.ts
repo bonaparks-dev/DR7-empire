@@ -32,6 +32,9 @@ export interface KmPackagePrices {
 export interface WebsiteConfigOverlay {
   insuranceTier1: InsuranceTierOption[]
   insuranceTier2: InsuranceTierOption[]
+  urbanInsurance: InsuranceTierOption[]
+  utilitaireInsurance: InsuranceTierOption[]
+  furgoneInsurance: InsuranceTierOption[]
   tierPricing: {
     TIER_1: { unlimitedKmPerDay: number; secondDriverPerDay: number; lavaggio: number }
     TIER_2: { unlimitedKmPerDay: number; secondDriverPerDay: number; lavaggio: number }
@@ -58,8 +61,12 @@ export interface WebsiteConfigOverlay {
 export function buildWebsiteConfigOverlay(config: RentalConfig | null): WebsiteConfigOverlay | null {
   if (!config || !config.insurance) return null
 
-  const exoticT1 = (config.insurance?.exotic as Record<string, { id: string; name: string; daily_price: number; deductible?: string; mandatory_deposit?: number; coverage?: string }[]>)?.TIER_1
-  const exoticT2 = (config.insurance?.exotic as Record<string, { id: string; name: string; daily_price: number; deductible?: string; mandatory_deposit?: number; coverage?: string }[]>)?.TIER_2
+  type InsRaw = { id: string; name: string; daily_price: number; deductible?: string; mandatory_deposit?: number; coverage?: string }
+  const exoticT1 = (config.insurance?.exotic as Record<string, InsRaw[]>)?.TIER_1
+  const exoticT2 = (config.insurance?.exotic as Record<string, InsRaw[]>)?.TIER_2
+  const urbanIns = (config.insurance?.urban as Record<string, InsRaw[]>)?._all_tiers
+  const utilitaireIns = (config.insurance?.utilitaire as Record<string, InsRaw[]>)?._all_tiers
+  const furgoneIns = (config.insurance?.furgone as Record<string, InsRaw[]>)?._all_tiers
 
   const COVERAGE = 'RCA - Furto (solo in caso di restituzione chiave, altrimenti 100% del valore del veicolo) - Atti vandalici - Agenti atmosferici - Incendio - Danni & distruzione totale'
 
@@ -147,6 +154,9 @@ export function buildWebsiteConfigOverlay(config: RentalConfig | null): WebsiteC
   return {
     insuranceTier1: toInsOpts(exoticT1) || [],
     insuranceTier2: toInsOpts(exoticT2) || [],
+    urbanInsurance: toInsOpts(urbanIns) || [],
+    utilitaireInsurance: toInsOpts(utilitaireIns) || [],
+    furgoneInsurance: toInsOpts(furgoneIns) || [],
     tierPricing: {
       TIER_1: {
         unlimitedKmPerDay: kmPackagePrices.unlimitedSupercarT1PerDay,
