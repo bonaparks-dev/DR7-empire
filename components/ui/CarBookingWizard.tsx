@@ -4843,8 +4843,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             </section>
 
             {/* === D. CAUZIONE — from Centralina for ALL vehicles === */}
-            {getMembershipTierName(user) !== 'gold' && getMembershipTierName(user) !== 'platinum' ? (
-              /* Supercar: tier-based deposit options */
+            {(
               <section className="border-t border-gray-700 pt-6">
                 <h3 className="text-lg font-bold text-white mb-2">D. CAUZIONE</h3>
                 <p className="text-sm text-gray-400 mb-4">Scegli come gestire la cauzione.</p>
@@ -4924,7 +4923,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 )}
                 {errors.depositOption && <p className="text-xs text-red-400 mt-2">{errors.depositOption}</p>}
               </section>
-            ) : null}
+            )}
 
             {/* No Cauzione Request Popup */}
             {showNoCauzionePopup && (
