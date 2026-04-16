@@ -15,8 +15,6 @@ import SEOHead from '../components/seo/SEOHead';
 import RentalSearchBar, { type SearchParams } from '../components/ui/RentalSearchBar';
 import RentalFilters from '../components/ui/RentalFilters';
 import { useSearchAvailability } from '../hooks/useSearchAvailability';
-import { useAuth } from '../hooks/useAuth';
-import { isMassimoRunchina, getRunchinaPrice } from '../utils/clientPricingRules';
 
 interface RentalPageProps {
   categoryId: 'cars' | 'urban-cars' | 'corporate-fleet' | 'yachts' | 'villas' | 'jets' | 'helicopters';
