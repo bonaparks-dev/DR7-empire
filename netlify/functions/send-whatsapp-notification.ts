@@ -17,7 +17,6 @@ const NOTIFICATION_PHONE = process.env.NOTIFICATION_PHONE || "393457905205";
  * Accepted payload shapes:
  *   { booking: {...}, customPhone?: string, skipHeader?: boolean }
  *   { customMessage: string, customPhone: string }
- *   { ticket: {...}, type?: 'ticket' }   // no Pro slot yet → skips
  */
 const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -28,7 +27,7 @@ const handler: Handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ message: 'Green API not configured' }) };
   }
 
-  const { booking, ticket, type, customMessage, customPhone, skipHeader } = JSON.parse(event.body || '{}');
+  const { booking, customMessage, customPhone, skipHeader } = JSON.parse(event.body || '{}');
 
   // ── Target phone ──
   let targetPhone: string = String(customPhone || NOTIFICATION_PHONE).replace(/[\s\-+]/g, '');
@@ -134,14 +133,8 @@ const handler: Handler = async (event) => {
     }
 
     message = await renderTemplate(resolvedKey, vars, undefined, { vehiclePlate: booking.vehicle_plate });
-  } else if (ticket || type === 'ticket') {
-    // No Pro slot for lottery ticket sales yet. Skip rather than hardcode.
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ success: true, skipped: true, reason: 'no_pro_template_for_ticket' }),
-    };
   } else {
-    return { statusCode: 400, body: JSON.stringify({ message: 'No booking, ticket, or custom message provided' }) };
+    return { statusCode: 400, body: JSON.stringify({ message: 'No booking or custom message provided' }) };
   }
 
   if (!message || !message.trim()) {
