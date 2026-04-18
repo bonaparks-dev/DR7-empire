@@ -311,13 +311,17 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
   const kmUrban = snapshot.km?.find(k => k.id === 'urban' || k.id === 'utilitaria')
   const kmFurgone = snapshot.km?.find(k => k.id === 'furgone' || k.id === 'aziendali')
 
-  const unlimitedSupercar = num(kmSupercars?.unlimitedPerDay, 189)
-  const unlimitedFurgone = num(kmFurgone?.unlimitedPerDay, 94.5)
+  // No hardcoded fallbacks — if Pro has nothing, price is 0 and the gap is visible.
+  // Aziendali category drives BOTH Furgone (Ducato) and NCC (V_CLASS) unlimited prices.
+  const unlimitedSupercar = num(kmSupercars?.unlimitedPerDay, 0)
+  const unlimitedAziendali = num(kmFurgone?.unlimitedPerDay, 0)
   const unlimitedUrban = num(kmUrban?.unlimitedPerDay, 0)
+  const sforoSupercar = num(kmSupercars?.sforo, 0)
 
-  const secondDriverFasciaA = num(snapshot.servizi?.second_driver?.[FASCIA_A_ID], 20)
-  const secondDriverFasciaB = num(snapshot.servizi?.second_driver?.[FASCIA_B_ID], 10)
-  const lavaggioFee = num(snapshot.servizi?.lavaggio?.fee, 9.9)
+  // No hardcoded fallbacks
+  const secondDriverFasciaA = num(snapshot.servizi?.second_driver?.[FASCIA_A_ID], 0)
+  const secondDriverFasciaB = num(snapshot.servizi?.second_driver?.[FASCIA_B_ID], 0)
+  const lavaggioFee = num(snapshot.servizi?.lavaggio?.fee, 0)
 
   // Deposits by fascia → TIER label
   const depFasciaA = snapshot.deposits?.[FASCIA_A_ID] ?? {}
@@ -355,12 +359,13 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
       }
     : null
 
+  // NCC (V_CLASS) reads from the Aziendali category, same as Furgone (Ducato).
   const kmPackagePrices: KmPackagePrices = {
-    supercar50kmPerDay: 199, // TODO: surface as Pro field when admin adds it
+    supercar50kmPerDay: 0, // Not yet in Pro — keep at 0 until admin adds a field
     unlimitedSupercarT1PerDay: unlimitedSupercar,
     unlimitedSupercarT2PerDay: unlimitedSupercar,
-    unlimitedFurgonePerDay: unlimitedFurgone,
-    unlimitedNccPerDay: unlimitedFurgone,
+    unlimitedFurgonePerDay: unlimitedAziendali,
+    unlimitedNccPerDay: unlimitedAziendali,
     unlimitedUrbanPerDay: unlimitedUrban,
   }
 
@@ -382,12 +387,12 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
         lavaggio: lavaggioFee,
       },
     },
-    noDepositSurchargePerDay: 49, // Pro stores surcharge per deposit option, not a global — keep default
-    deliveryPricePerKm: num(snapshot.servizi?.delivery?.price_per_km, 3),
+    noDepositSurchargePerDay: 0, // Pro stores surcharge per deposit option, not a global
+    deliveryPricePerKm: num(snapshot.servizi?.delivery?.price_per_km, 0),
     experienceServices,
     dr7Flex: {
-      dailyPrice: num(snapshot.servizi?.dr7_flex?.daily_price, 19.9),
-      refundPercent: num(snapshot.servizi?.dr7_flex?.refund_percent, 90),
+      dailyPrice: num(snapshot.servizi?.dr7_flex?.daily_price, 0),
+      refundPercent: num(snapshot.servizi?.dr7_flex?.refund_percent, 0),
       tierRestriction: snapshot.servizi?.dr7_flex?.tier_restriction === FASCIA_A_ID
         ? 'TIER_2'
         : snapshot.servizi?.dr7_flex?.tier_restriction === FASCIA_B_ID
@@ -403,6 +408,7 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
     rentalDayRates,
     kmIncluded,
     kmPackagePrices,
+    sforoPerKm: sforoSupercar,
   }
 }
 

@@ -56,6 +56,8 @@ export interface WebsiteConfigOverlay {
   kmIncluded: KmIncludedConfig | null
   // KM package prices from admin Revenue management
   kmPackagePrices: KmPackagePrices
+  // Sforo (overage) per km — from Centralina Pro km[supercars].sforo
+  sforoPerKm: number
 }
 
 /** Build overlay from Centralina config. Returns null if config is not loaded yet. */
@@ -197,5 +199,6 @@ export function buildWebsiteConfigOverlay(config: RentalConfig | null): WebsiteC
     rentalDayRates,
     kmIncluded,
     kmPackagePrices,
+    sforoPerKm: 0,
   }
 }

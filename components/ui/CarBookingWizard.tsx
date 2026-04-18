@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Link } from 'react-router-dom';
 import { useCurrency } from '../../contexts/CurrencyContext';
-import { isMassimoRunchina, getRunchinaPrice, SPECIAL_CLIENTS } from '../../utils/clientPricingRules';
 import { calculateMultiDayPrice, calculateIncludedKmFromConfig } from '../../utils/multiDayPricing';
 import { invalidateVehicleCache } from '../../hooks/useVehicles';
 import { addCredits } from '../../utils/creditWallet';
@@ -398,47 +397,47 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   // No legacy fallback: every price comes from the admin Centralina Pro tab.
   const { overlay: configOverlay } = useCentralinaProOverlay();
 
-  // Override constants with config values when available
+  // ──────────────────────────────────────────────────────────────────
+  // Every pricing value below comes STRICTLY from Centralina Pro.
+  // No hardcoded fallback: if a field is empty in Pro, the wizard
+  // shows 0 / empty list so the gap is visible and the admin can fix it.
+  // Aziendali category in Pro drives both Furgone (Ducato) and NCC (V_CLASS).
+  // ──────────────────────────────────────────────────────────────────
   const ACTIVE_INSURANCE_BY_TIER = useMemo(() => {
-    if (!configOverlay) return INSURANCE_OPTIONS_BY_TIER;
     return {
-      TIER_1: configOverlay.insuranceTier1.length > 0 ? configOverlay.insuranceTier1 : INSURANCE_OPTIONS_BY_TIER.TIER_1,
-      TIER_2: configOverlay.insuranceTier2.length > 0 ? configOverlay.insuranceTier2 : INSURANCE_OPTIONS_BY_TIER.TIER_2,
+      TIER_1: configOverlay?.insuranceTier1 ?? [],
+      TIER_2: configOverlay?.insuranceTier2 ?? [],
     };
   }, [configOverlay]);
 
-  // Category-specific insurance from Centralina
-  const URBAN_INSURANCE_FALLBACK: typeof INSURANCE_OPTIONS_BY_TIER.TIER_2 = [
-    { id: 'KASKO_BASE', name: 'Kasko Base', dailyPrice: 15, deductible: '€2.000 + 30% del danno' },
-    { id: 'KASKO_DR7', name: 'Kasko DR7', dailyPrice: 45, deductible: '€0' },
-  ];
-  const FURGONE_INSURANCE_FALLBACK: typeof INSURANCE_OPTIONS_BY_TIER.TIER_2 = [
-    { id: 'RCA', name: 'RCA Compresa (no Kasko)', dailyPrice: 0, deductible: 'Nessuna copertura aggiuntiva' },
-    { id: 'KASKO_BASE', name: 'Kasko Base', dailyPrice: 45, deductible: '€5.000 + 30% del danno' },
-  ];
   const getInsuranceForVehicle = useMemo(() => {
     return (vType: string, _tier: string) => {
-      const urbanOpts = configOverlay?.urbanInsurance?.length ? configOverlay.urbanInsurance : URBAN_INSURANCE_FALLBACK;
-      const furgoneOpts = configOverlay?.furgoneInsurance?.length ? configOverlay.furgoneInsurance : FURGONE_INSURANCE_FALLBACK;
+      const urbanOpts = configOverlay?.urbanInsurance ?? [];
+      const furgoneOpts = configOverlay?.furgoneInsurance ?? [];
       if (vType === 'UTILITARIA') return urbanOpts;
       if (vType === 'FURGONE' || vType === 'V_CLASS') return furgoneOpts;
-      // Supercar: tier-based from Centralina
       return ACTIVE_INSURANCE_BY_TIER[_tier as 'TIER_1' | 'TIER_2'] || [];
     };
   }, [configOverlay, ACTIVE_INSURANCE_BY_TIER]);
 
   const ACTIVE_TIER_PRICING = useMemo(() => {
-    if (!configOverlay) return TIER_PRICING;
-    return configOverlay.tierPricing;
+    return configOverlay?.tierPricing ?? {
+      TIER_1: { unlimitedKmPerDay: 0, secondDriverPerDay: 0, lavaggio: 0 },
+      TIER_2: { unlimitedKmPerDay: 0, secondDriverPerDay: 0, lavaggio: 0 },
+    };
   }, [configOverlay]);
 
-  const ACTIVE_NO_DEPOSIT_SURCHARGE = configOverlay?.noDepositSurchargePerDay ?? NO_DEPOSIT_SURCHARGE_PER_DAY;
-  const ACTIVE_DELIVERY_PRICE_PER_KM = configOverlay?.deliveryPricePerKm ?? DELIVERY_PRICE_PER_KM;
-  const ACTIVE_DR7_FLEX = configOverlay ? { dailyPrice: configOverlay.dr7Flex.dailyPrice, refundPercent: configOverlay.dr7Flex.refundPercent, description: DR7_FLEX.description } : DR7_FLEX;
-  const ACTIVE_EXPERIENCE_SERVICES = configOverlay?.experienceServices?.length ? configOverlay.experienceServices : BOOKING_EXPERIENCE_SERVICES;
+  const ACTIVE_NO_DEPOSIT_SURCHARGE = configOverlay?.noDepositSurchargePerDay ?? 0;
+  const ACTIVE_DELIVERY_PRICE_PER_KM = configOverlay?.deliveryPricePerKm ?? 0;
+  const ACTIVE_DR7_FLEX = {
+    dailyPrice: configOverlay?.dr7Flex.dailyPrice ?? 0,
+    refundPercent: configOverlay?.dr7Flex.refundPercent ?? 0,
+    description: '',
+  };
+  const ACTIVE_EXPERIENCE_SERVICES = configOverlay?.experienceServices ?? [];
   const ACTIVE_RENTAL_DAY_RATES = configOverlay?.rentalDayRates ?? null;
   const ACTIVE_KM_INCLUDED = configOverlay?.kmIncluded ?? null;
-  const ACTIVE_SUPERCAR_50KM_RATE = configOverlay?.kmPackagePrices?.supercar50kmPerDay ?? 199;
+  const ACTIVE_SFORO_PER_KM = configOverlay?.sforoPerKm ?? 0;
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedInsurance, setExpandedInsurance] = useState<string | null>(null);
@@ -1522,7 +1521,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     duration, rentalCost, insuranceCost, extrasCost, kmPackageCost, pickupFee, dropoffFee, subtotal, taxes, total, includedKm,
     driverAge, licenseYears, youngDriverFee, recentLicenseFee, secondDriverFee, recommendedKm,
     membershipDiscount, membershipTier, originalTotal, finalTotal,
-    isMassimo, specialDiscountAmount, carWashFee, noDepositSurcharge,
+    carWashFee, noDepositSurcharge,
     effectivePricePerDay,
     lavaggioFee, experienceCost, flexCost, supercarDepositSurcharge, deliveryFee,
     extraDayApplied,
@@ -1530,7 +1529,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   } = useMemo(() => {
     const zero = {
       duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, kmPackageCost: 0, pickupFee: 0, dropoffFee: 0, subtotal: 0, taxes: 0, total: 0, includedKm: 0, driverAge: 0, licenseYears: 0, youngDriverFee: 0, recentLicenseFee: 0, secondDriverFee: 0, recommendedKm: null, membershipDiscount: 0, membershipTier: null, originalTotal: 0, finalTotal: 0,
-      isMassimo: false, specialDiscountAmount: 0, carWashFee: 0, noDepositSurcharge: 0,
+      carWashFee: 0, noDepositSurcharge: 0,
       effectivePricePerDay: 0,
       lavaggioFee: 0, experienceCost: 0, flexCost: 0, supercarDepositSurcharge: 0, deliveryFee: 0,
       extraDayApplied: false,
@@ -1582,22 +1581,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
 
 
-    const isMassimo = false; // VIP pricing removed — all customers use standard flow
     const billingDaysCalc = billingDays < 1 ? 1 : billingDays;
 
     // --- RENTAL COST ---
-    // Check if supercar with 50km/day package (price from admin Revenue management)
-    const isSupercar50km = false; // 50km package removed
-
     let calculatedRentalCost = billingDays * pricePerDay;
 
-    if (isSupercar50km) {
-      // 50km/day supercar package: price from admin config, no multi-day discounts
-      calculatedRentalCost = billingDaysCalc * ACTIVE_SUPERCAR_50KM_RATE;
-    } else if (isMassimo) {
-      // VIP: per-vehicle fixed multi-day pricing (all vehicles)
-      calculatedRentalCost = getRunchinaPrice(item.name, billingDaysCalc);
-    } else if (dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.selectedBaseRateEur) {
+    if (dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.selectedBaseRateEur) {
       // Dynamic pricing: use base rate here, coefficient applied to FULL TOTAL later
       calculatedRentalCost = dynamicPricing.selectedBaseRateEur * billingDaysCalc;
     } else {
@@ -1638,21 +1627,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const calculatedYoungDriverFee = 0;
     const calculatedRecentLicenseFee = 0;
 
-    // --- LAVAGGIO (pulizia finale) ---
-    // Massimo Runchina: excludeCarWash = true → no lavaggio fee
-    const calculatedLavaggioFee = tierPricingForCalc.lavaggio; // flat €9.90
+    // --- LAVAGGIO (pulizia finale) — price from Centralina Pro (servizi.lavaggio.fee)
+    const calculatedLavaggioFee = tierPricingForCalc.lavaggio;
 
     // --- KM PACKAGE ---
     let calculatedKmPackageCost = 0;
     let calculatedIncludedKm: number;
-    if (isSupercar50km) {
-      calculatedIncludedKm = 50 * billingDaysCalc;
-      calculatedKmPackageCost = 0; // baked into 50km/day rental rate
-    } else if (vType === 'SUPERCAR' && formData.kmPackageType === 'unlimited') {
+    if (vType === 'SUPERCAR' && formData.kmPackageType === 'unlimited') {
       // Unlimited km for supercars — tier-conditional price
       calculatedKmPackageCost = roundToTwoDecimals(tierPricingForCalc.unlimitedKmPerDay * billingDaysCalc);
-    } else if (vType === 'SUPERCAR' && formData.kmPackageType === '50km') {
-      // Already handled above
     } else if (formData.kmPackageType === 'unlimited') {
       calculatedIncludedKm = 9999;
       // Use Centralina prices for all vehicle types (including urban)
@@ -1661,12 +1644,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         if (urbanPrice > 0) {
           calculatedKmPackageCost = roundToTwoDecimals(urbanPrice * billingDaysCalc);
         }
-      } else if (vType === 'FURGONE') {
-        calculatedKmPackageCost = roundToTwoDecimals((configOverlay?.kmPackagePrices?.unlimitedFurgonePerDay ?? 94.50) * billingDaysCalc);
-      } else if (vType === 'V_CLASS') {
-        calculatedKmPackageCost = roundToTwoDecimals((configOverlay?.kmPackagePrices?.unlimitedNccPerDay ?? 189) * billingDaysCalc);
+      } else if (vType === 'FURGONE' || vType === 'V_CLASS') {
+        // Both Furgone (Ducato) and NCC (V_CLASS) read from Aziendali category.
+        // No hardcoded fallback — if Pro has 0, cost is 0.
+        const aziendaliPrice = configOverlay?.kmPackagePrices?.unlimitedFurgonePerDay ?? 0;
+        calculatedKmPackageCost = roundToTwoDecimals(aziendaliPrice * billingDaysCalc);
       } else {
-        calculatedKmPackageCost = roundToTwoDecimals((configOverlay?.kmPackagePrices?.unlimitedFurgonePerDay ?? 94.50) * billingDaysCalc);
+        const aziendaliPrice = configOverlay?.kmPackagePrices?.unlimitedFurgonePerDay ?? 0;
+        calculatedKmPackageCost = roundToTwoDecimals(aziendaliPrice * billingDaysCalc);
       }
     } else if (vType !== 'SUPERCAR') {
       // Urban/Furgone/VClass: use dynamic km included table from admin config
@@ -1742,7 +1727,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       calculatedSubtotal = roundToTwoDecimals(calculatedSubtotal * combinedCoeff);
     }
 
-    let specialDiscountAmount = 0;
     const calculatedTaxes = 0;
     const calculatedTotal = calculatedSubtotal;
 
@@ -1771,11 +1755,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       membershipTier: membershipTierName,
       originalTotal: discountInfo.originalPrice,
       finalTotal: discountInfo.finalPrice,
-      isMassimo,
-      specialDiscountAmount,
       carWashFee,
       noDepositSurcharge: calculatedNoDepositSurcharge,
-      effectivePricePerDay: isSupercar50km ? ACTIVE_SUPERCAR_50KM_RATE : pricePerDay,
+      effectivePricePerDay: pricePerDay,
       // New fields
       lavaggioFee: calculatedLavaggioFee,
       experienceCost: calculatedExperienceCost,
@@ -1797,7 +1779,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     formData.selectedExperiences, formData.dr7Flex, formData.pickupLocation, formData.returnLocation,
     formData.deliveryPickupKm, formData.deliveryReturnKm,
     item, currency, user, isUrbanOrCorporate, categoryContext, driverTier, dynamicPricing,
-    ACTIVE_RENTAL_DAY_RATES, ACTIVE_KM_INCLUDED, ACTIVE_SUPERCAR_50KM_RATE
+    ACTIVE_RENTAL_DAY_RATES, ACTIVE_KM_INCLUDED
   ]);
 
   // Online booking discount REMOVED — no automatic discount
@@ -1852,7 +1834,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
   }, [formData.usageZone, formData.kmPackageType, item, categoryContext]);
 
-  // Force Massimo Runchina settings & Pre-fill Personal Data
+  // Pre-fill Personal Data for logged-in users
   useEffect(() => {
     let updates: any = {};
 
@@ -1867,34 +1849,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       updates.lastName = last;
       updates.phone = user.phone || '';
       updates.email = user.email || '';
-    }
-
-    // 2. Special Rules for Massimo Runchina & VIPs — fast track booking flow
-    const emailToCheck = formData.email || user?.email || '';
-    if (isMassimoRunchina(emailToCheck)) {
-      // Auto-set options so Massimo skips selection steps
-      if (formData.insuranceOption !== 'KASKO_BASE') updates.insuranceOption = 'KASKO_BASE';
-      if (formData.kmPackageType !== 'unlimited') updates.kmPackageType = 'unlimited';
-      if (formData.usageZone !== 'FUORI_ZONA') updates.usageZone = 'FUORI_ZONA';
-
-      // Determine which VIP it is for name defaults
-      const isJeanne = emailToCheck.toLowerCase().trim() === 'jeannegiraud92@gmail.com';
-      const defaultFirst = isJeanne ? 'Jeanne' : 'Massimo';
-      const defaultLast = isJeanne ? 'Giraud' : 'Runchina';
-
-      // Ensure name is correct if empty
-      if (!formData.firstName && !updates.firstName) updates.firstName = defaultFirst;
-      if (!formData.lastName && !updates.lastName) updates.lastName = defaultLast;
-      if (!formData.phone && !updates.phone) updates.phone = '+39 347 000 0000'; // Placeholder
-
-      // Fast Track Defaults for Massimo
-      if (!formData.birthDate && !updates.birthDate) updates.birthDate = '1969-01-01';
-      if (!formData.licenseNumber && !updates.licenseNumber) updates.licenseNumber = 'VIP-AUTOFILLED';
-      if (!formData.licenseDate && !updates.licenseDate) updates.licenseDate = '2000-01-01';
-      if (!formData.birthPlace && !updates.birthPlace) updates.birthPlace = 'Cagliari';
-      if (!formData.address && !updates.address) updates.address = 'VIP Fast Track';
-      if (!formData.city && !updates.city) updates.city = 'Cagliari';
-      if (!formData.zipCode && !updates.zipCode) updates.zipCode = '09100';
     }
 
     // Apply updates if any
@@ -2945,7 +2899,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         insurance_total: insuranceCost,
         km_limit: formData.kmLimit || includedKm || 0,
         unlimited_km: formData.kmPackageType === 'unlimited',
-        km_overage_fee: rentalConfig?.sforo_km?._global ?? 1.80,
+        km_overage_fee: ACTIVE_SFORO_PER_KM,
         unlimited_km_daily: formData.kmPackageType === 'unlimited' ? (kmPackageCost / Math.max(duration.days, 1)) : 0,
         unlimited_km_total: formData.kmPackageType === 'unlimited' ? kmPackageCost : 0,
         second_driver_daily: secondDriverFee / Math.max(duration.days, 1),
@@ -2956,7 +2910,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         delivery_fee: deliveryFee,
         pickup_fee: pickupFee,
         subtotal: grandTotal,
-        sconto: specialDiscountAmount + membershipDiscount,
+        sconto: membershipDiscount,
         sconto_note: membershipTier ? `Sconto ${membershipTier}` : '',
         total_final: grandTotal,
         deposit_amount: getDeposit(),

@@ -258,7 +258,7 @@ const handler: Handler = async (event) => {
       const depositOption = booking.booking_details?.depositOption;
       if (depositOption === 'no_deposit') {
         const surcharge = booking.booking_details?.noDepositSurcharge || 0;
-        message += `*Cauzione:* Senza cauzione (+30% = €${surcharge.toFixed(2)})\n`;
+        message += `*Cauzione:* Senza cauzione (+€${surcharge.toFixed(2)})\n`;
       } else if (depositAmount > 0) {
         message += `*Cauzione:* €${depositAmount}\n`;
       }
@@ -283,7 +283,7 @@ const handler: Handler = async (event) => {
         const depositOption = booking.booking_details?.depositOption;
         let depositStr = '';
         if (depositOption === 'no_deposit') {
-          depositStr = `Senza cauzione (+30% = €${(booking.booking_details?.noDepositSurcharge || 0).toFixed(2)})`;
+          depositStr = `Senza cauzione (+€${(booking.booking_details?.noDepositSurcharge || 0).toFixed(2)})`;
         } else if (depositAmount > 0) {
           depositStr = `€${depositAmount}`;
         }
