@@ -255,12 +255,14 @@ const transformVehicle = (vehicle: Vehicle, proConfig?: any): TransformedVehicle
     image: vehicleImage,
     available: isAvailable,
     pricePerDay: (() => {
-      // Priority: per-vehicle Pro base_price > category Pro tariffe > vehicle.daily_rate
-      const proVehiclePrice = proConfig?.prezzoDinamico?.dynamic?.base_prices?.[vehicle.id]
+      // Priority: per-vehicle Pro base_price > category Pro tariffe (NO vehicle.daily_rate)
+      const rawProVehiclePrice = proConfig?.prezzoDinamico?.dynamic?.base_prices?.[vehicle.id]
+      const proVehiclePrice = typeof rawProVehiclePrice === 'number' ? rawProVehiclePrice
+        : typeof rawProVehiclePrice === 'string' ? parseFloat(rawProVehiclePrice) : NaN
       const proCategoryPrice = getProDayPrice(proConfig, vehicle.category)
-      const price = (typeof proVehiclePrice === 'number' && proVehiclePrice > 0)
+      const price = (!isNaN(proVehiclePrice) && proVehiclePrice > 0)
         ? proVehiclePrice
-        : (proCategoryPrice || vehicle.daily_rate || 0)
+        : (proCategoryPrice || 0)
       return price > 0 ? { usd: Math.round(price * EUR_TO_USD_RATE), eur: price, crypto: 0 } : undefined
     })(),
     specs: specsArray,
