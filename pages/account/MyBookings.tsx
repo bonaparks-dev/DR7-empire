@@ -130,7 +130,10 @@ const MyBookings = () => {
     const bd = booking.booking_details || {};
     const hasDr7Flex = bd.dr7Flex === true || bd.dr7Flex === 'true' || bd.dr7_flex === true || bd.dr7_flex === 'true' || bd.extras?.dr7_flex === true || bd.extras?.dr7_flex === 'true';
     const hasPrimeFlex = booking.booking_details?.prime_flex === true || booking.booking_details?.prime_flex === 'true';
-    const hasFlex = hasDr7Flex || hasPrimeFlex;
+    const isElite = !!getMembershipTierName(user);
+    // Elite members get the same cancellation rights as DR7 Flex — same condition
+    // applied to both modify and cancel flows.
+    const hasFlex = hasDr7Flex || hasPrimeFlex || isElite;
     const dateStr = booking.service_type === 'car_wash'
       ? (booking.appointment_date || booking.pickup_date || '')
       : (booking.pickup_date || booking.appointment_date || '');
@@ -143,17 +146,20 @@ const MyBookings = () => {
     const flexRefundPercent = proOverlay?.dr7Flex?.refundPercent ?? 90;
 
     if (hasFlex) {
-      // DR7 Flex / Prime Flex: refund as DR7 Wallet credit, ANY time before pickup/appointment
+      // DR7 Flex / Prime Flex / Elite: refund as DR7 Wallet credit, ANY time before pickup/appointment
       // (waives the 5-day cutoff that applies to regular bookings).
       const penalty = Math.max(0, 100 - flexRefundPercent);
+      const label = hasPrimeFlex
+        ? 'Prime Flex'
+        : hasDr7Flex
+          ? 'DR7 Flex'
+          : 'DR7 Club';
       return {
         canCancel: true,
         hasFlex: true,
         refundPercent: flexRefundPercent,
         penaltyPercent: penalty,
-        message: hasPrimeFlex
-          ? `Con Prime Flex: rimborso del ${flexRefundPercent}% come credito DR7 Wallet.`
-          : `Con DR7 Flex: rimborso del ${flexRefundPercent}% come credito DR7 Wallet.`,
+        message: `Con ${label}: rimborso del ${flexRefundPercent}% come credito DR7 Wallet.`,
       };
     }
     if (daysUntilPickup >= 5) {
