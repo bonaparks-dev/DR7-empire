@@ -13,8 +13,59 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import type { DynamicRentalDayRates } from '../utils/multiDayPricing'
-import type { WebsiteConfigOverlay, RentalDayRates, KmIncludedConfig, KmPackagePrices } from '../utils/configOverlay'
 import type { InsuranceTierOption, DepositOption, ExperienceService } from '../types'
+
+// ── Types inlined here so the website no longer depends on utils/configOverlay.ts
+// (which can be safely deleted along with hooks/useRentalConfig.ts once
+// rental_config is removed from Supabase).
+export interface RentalDayRates {
+  exotic: {
+    resident: Record<string, number>
+    non_resident?: Record<string, number>
+  }
+  urban: { flat: Record<string, number>; extrapolation: string }
+  furgone: { flat: Record<string, number> }
+}
+
+export interface KmIncludedConfig {
+  table: Record<string, number>
+  extra_per_day: number
+}
+
+export interface KmPackagePrices {
+  supercar50kmPerDay: number
+  unlimitedSupercarT1PerDay: number
+  unlimitedSupercarT2PerDay: number
+  unlimitedFurgonePerDay: number
+  unlimitedNccPerDay: number
+  unlimitedUrbanPerDay: number
+}
+
+export interface WebsiteConfigOverlay {
+  insuranceTier1: InsuranceTierOption[]
+  insuranceTier2: InsuranceTierOption[]
+  urbanInsurance: InsuranceTierOption[]
+  utilitaireInsurance: InsuranceTierOption[]
+  furgoneInsurance: InsuranceTierOption[]
+  tierPricing: {
+    TIER_1: { unlimitedKmPerDay: number; secondDriverPerDay: number; lavaggio: number }
+    TIER_2: { unlimitedKmPerDay: number; secondDriverPerDay: number; lavaggio: number }
+  }
+  noDepositSurchargePerDay: number
+  deliveryPricePerKm: number
+  experienceServices: ExperienceService[]
+  dr7Flex: { dailyPrice: number; refundPercent: number; tierRestriction: string }
+  depositOptions: {
+    TIER_1_RESIDENT: DepositOption[]
+    TIER_2_RESIDENT: DepositOption[]
+    TIER_1_NON_RESIDENT: DepositOption[]
+    TIER_2_NON_RESIDENT: DepositOption[]
+  }
+  rentalDayRates: RentalDayRates | null
+  kmIncluded: KmIncludedConfig | null
+  kmPackagePrices: KmPackagePrices
+  sforoPerKm: number
+}
 
 // ── Pro snapshot types (match CentralinaProTab PersistedSnapshot) ──
 

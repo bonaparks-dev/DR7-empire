@@ -3,6 +3,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../hooks/useTranslation';
 import { supabase } from '../../supabaseClient';
 import { Link } from 'react-router-dom';
+import { getMembershipTierName } from '../../utils/membershipDiscounts';
 
 interface Booking {
   id: string;
@@ -150,11 +151,24 @@ const MyBookings = () => {
   };
 
   const canModify = (booking: Booking): boolean => {
-    // Car wash with Prime Flex can be modified anytime before appointment
-    if (booking.service_type !== 'car_wash') return false;
-    if (booking.booking_details?.prime_flex !== true && booking.booking_details?.prime_flex !== 'true') return false;
-    const appointmentDate = new Date(booking.appointment_date || '');
-    return appointmentDate > new Date() && booking.status !== 'cancelled';
+    if (booking.status === 'cancelled' || booking.status === 'annullata' || booking.status === 'completed' || booking.status === 'completata') return false;
+
+    // Customer is eligible to modify if any of:
+    //   - booking has Prime Flex (car wash)
+    //   - booking has DR7 Flex (any service)
+    //   - customer has an active DR7 Club membership (Argento/Oro/Platino/DR7 Club — treated as "Elite" here)
+    const bd = booking.booking_details || {};
+    const hasPrimeFlex = bd.prime_flex === true || bd.prime_flex === 'true';
+    const hasDr7Flex = bd.dr7Flex === true || bd.dr7Flex === 'true' || bd.dr7_flex === true || bd.dr7_flex === 'true' || bd.extras?.dr7_flex === true || bd.extras?.dr7_flex === 'true';
+    const isElite = !!getMembershipTierName(user);
+    if (!hasPrimeFlex && !hasDr7Flex && !isElite) return false;
+
+    // Must still be in the future
+    const dateStr = booking.service_type === 'car_wash'
+      ? (booking.appointment_date || booking.pickup_date || '')
+      : (booking.pickup_date || booking.appointment_date || '');
+    const when = new Date(dateStr);
+    return !isNaN(when.getTime()) && when > new Date();
   };
 
   const handleModify = async () => {
@@ -182,6 +196,28 @@ const MyBookings = () => {
         .eq('id', modifyingBooking.id);
 
       if (error) throw error;
+
+      // Send the "modifica" WhatsApp from Messaggi di Sistema Pro.
+      // rental_modified → pro_promemoria_appuntamento
+      // carwash_modified → pro_promemoria_pagamento
+      try {
+        const updatedBooking = {
+          ...modifyingBooking,
+          appointment_date: newAppointment.toISOString(),
+          appointment_time: modifyTime,
+          isEdit: true,
+        };
+        await fetch('/.netlify/functions/send-whatsapp-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            booking: updatedBooking,
+            customPhone: modifyingBooking.customer_phone,
+          }),
+        });
+      } catch (waErr) {
+        console.warn('[MyBookings] modify WhatsApp send failed:', waErr);
+      }
 
       // Update local state
       setBookings(prev => prev.map(b =>
@@ -224,6 +260,29 @@ const MyBookings = () => {
             : `Rimborso cancellazione — ${booking.service_name}`,
           reference_id: booking.id,
         });
+      }
+
+      // Send "Prenotazione Annullata da sito" from Messaggi di Sistema Pro.
+      // Legacy key `website_booking_cancelled_customer` maps to the pro_custom_* slot.
+      try {
+        const templateVars: Record<string, string> = {
+          '{custName}': booking.customer_name || user?.fullName || 'Cliente',
+          '{customer_name}': booking.customer_name || user?.fullName || 'Cliente',
+          '{nome}': (booking.customer_name || user?.fullName || 'Cliente').split(' ')[0],
+          '{bookingRef}': booking.id.substring(0, 8).toUpperCase(),
+          '{booking_id}': booking.id.substring(0, 8).toUpperCase(),
+        };
+        await fetch('/.netlify/functions/send-whatsapp-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            templateKey: 'website_booking_cancelled_customer',
+            templateVars,
+            customPhone: booking.customer_phone,
+          }),
+        });
+      } catch (waErr) {
+        console.warn('[MyBookings] cancel WhatsApp send failed:', waErr);
       }
 
       // Update local state

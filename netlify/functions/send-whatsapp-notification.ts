@@ -17,6 +17,7 @@ const NOTIFICATION_PHONE = process.env.NOTIFICATION_PHONE || "393457905205";
  * Accepted payload shapes:
  *   { booking: {...}, customPhone?: string, skipHeader?: boolean }
  *   { customMessage: string, customPhone: string }
+ *   { templateKey: string, templateVars?: Record<string,string>, customPhone: string }
  */
 const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -27,7 +28,7 @@ const handler: Handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ message: 'Green API not configured' }) };
   }
 
-  const { booking, customMessage, customPhone, skipHeader } = JSON.parse(event.body || '{}');
+  const { booking, customMessage, customPhone, skipHeader, templateKey, templateVars } = JSON.parse(event.body || '{}');
 
   // ── Target phone ──
   let targetPhone: string = String(customPhone || NOTIFICATION_PHONE).replace(/[\s\-+]/g, '');
@@ -42,6 +43,25 @@ const handler: Handler = async (event) => {
   if (customMessage) {
     // Admin-authored free text — already composed upstream.
     message = customMessage;
+  } else if (templateKey) {
+    // Explicit legacy key → resolved to Pro → rendered with templateVars.
+    // Caller passes keys like '{nome}' (with braces) OR bare 'nome'.
+    const resolvedKey = await resolveKeyForContext(String(templateKey));
+    if (resolvedKey === null) {
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ success: true, skipped: true, reason: 'pro_template_unavailable', key: templateKey }),
+      };
+    }
+    // Normalize var keys: renderTemplate uses {var} syntax; strip braces if the caller sent them.
+    const vars: Record<string, string> = {};
+    if (templateVars && typeof templateVars === 'object') {
+      for (const [k, v] of Object.entries(templateVars as Record<string, unknown>)) {
+        const cleanKey = k.replace(/^\{|\}$/g, '');
+        vars[cleanKey] = v == null ? '' : String(v);
+      }
+    }
+    message = await renderTemplate(resolvedKey, vars);
   } else if (booking) {
     const serviceType = booking.service_type as string | undefined;
     const legacyKey =
