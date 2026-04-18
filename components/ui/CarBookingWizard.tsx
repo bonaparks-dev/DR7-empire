@@ -9,9 +9,9 @@ import { addCredits } from '../../utils/creditWallet';
 import { useAuth } from '../../hooks/useAuth';
 import { useBooking } from '../../hooks/useBooking';
 import { supabase } from '../../supabaseClient';
-import { PICKUP_LOCATIONS, RETURN_LOCATIONS, AUTO_INSURANCE, INSURANCE_DEDUCTIBLES, RENTAL_EXTRAS, DEPOSIT_RULES, INSURANCE_OPTIONS_BY_TIER, INSURANCE_COVERAGE_TEXT, TIER_PRICING, TIER_DEPOSIT_OPTIONS, NO_DEPOSIT_SURCHARGE_PER_DAY, EXPERIENCE_SERVICES as BOOKING_EXPERIENCE_SERVICES, DR7_FLEX, PAYMENT_MODES, DELIVERY_PRICE_PER_KM } from '../../constants';
+import { PICKUP_LOCATIONS, RETURN_LOCATIONS, AUTO_INSURANCE, INSURANCE_DEDUCTIBLES, RENTAL_EXTRAS, DEPOSIT_RULES, INSURANCE_COVERAGE_TEXT, EXPERIENCE_SERVICES as BOOKING_EXPERIENCE_SERVICES, DR7_FLEX, PAYMENT_MODES, DELIVERY_PRICE_PER_KM } from '../../constants';
 import type { Booking, RentalItem, DriverTier, TierClassification, PaymentMode } from '../../types';
-import { classifyDriverTier, getInsuranceForTier, getDepositOptionsForTier, getKmPricingForTier, getExperienceServicesForTier } from '../../utils/tierClassification';
+import { classifyDriverTier } from '../../utils/tierClassification';
 import DocumentUploader from './DocumentUploader';
 import CompilaButton from './CompilaButton';
 import AddressAutocomplete from './AddressAutocomplete';
@@ -1706,7 +1706,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     let supercarDepositSurcharge = 0;
     if (formData.depositOption) {
       const depositCfgKey = `${activeTierForCalc}_RESIDENT` as keyof typeof configOverlay.depositOptions;
-      const depOpts = configOverlay?.depositOptions?.[depositCfgKey] || TIER_DEPOSIT_OPTIONS[activeTierForCalc] || [];
+      const depOpts = configOverlay?.depositOptions?.[depositCfgKey] || [];
       const selectedDep = depOpts.find(d => d.id === formData.depositOption);
       if (selectedDep?.surchargePerDay) {
         supercarDepositSurcharge = roundToTwoDecimals(selectedDep.surchargePerDay * billingDaysCalc);
@@ -1897,7 +1897,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // Supercars: use tier-based deposit options (always RESIDENT since distinction removed)
     const activeTier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2';
     const depositKey = `${activeTier}`;
-    const depOptions = TIER_DEPOSIT_OPTIONS[depositKey] || [];
+    const depOptions = configOverlay?.depositOptions?.[depositKey] || [];
     const selectedDep = depOptions.find(d => d.id === formData.depositOption);
 
     if (selectedDep) {
@@ -4513,15 +4513,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const isPremium = isPremiumVehicle(item.name);
         const displayVehicleType = getVehicleType(item);
         const activeTier = driverTier || 'TIER_2'; // fallback
-        const tierPricing = getKmPricingForTier(activeTier);
+        const tierPricing = ACTIVE_TIER_PRICING[activeTier] || ACTIVE_TIER_PRICING.TIER_2;
         // Insurance options from Centralina per vehicle category
         const insuranceOptions = getInsuranceForVehicle(displayVehicleType, activeTier);
-        // Deposit options from Centralina (RESIDENT by default)
+        // Deposit options from Centralina Pro (RESIDENT by default)
         const depositKey = `${activeTier}_RESIDENT` as keyof typeof configOverlay.depositOptions;
-        const depositOptions = configOverlay?.depositOptions?.[depositKey]?.length > 0
-          ? configOverlay.depositOptions[depositKey]
-          : getDepositOptionsForTier(activeTier); // fallback to constants
-        const experienceServices = getExperienceServicesForTier(activeTier);
+        const depositOptions = configOverlay?.depositOptions?.[depositKey] || [];
+        const experienceServices = ACTIVE_EXPERIENCE_SERVICES.filter(s => !s.tierOnly || s.tierOnly === activeTier);
 
         // Check if "no deposit" requires Kasko (cannot select no_deposit with RCA only)
         const selectedInsuranceIsRCA = formData.insuranceOption === 'RCA';
@@ -5758,7 +5756,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             <p className="text-sm text-gray-400 mt-1">
                               Tipo: {(() => {
                                 const depKey = `${(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'}_${'RESIDENT'}`;
-                                const opt = (TIER_DEPOSIT_OPTIONS[depKey] || []).find((d: any) => d.id === formData.depositOption);
+                                const opt = (configOverlay?.depositOptions?.[depKey] || []).find((d: any) => d.id === formData.depositOption);
                                 return opt?.label || formData.depositOption;
                               })()}
                             </p>
