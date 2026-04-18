@@ -1,375 +1,180 @@
 import type { Handler } from "@netlify/functions";
-import { createClient } from '@supabase/supabase-js';
+import { renderTemplate, resolveKeyForContext } from './utils/messageTemplates';
 
 const GREEN_API_INSTANCE_ID = process.env.GREEN_API_INSTANCE_ID;
 const GREEN_API_TOKEN = process.env.GREEN_API_TOKEN;
 const NOTIFICATION_PHONE = process.env.NOTIFICATION_PHONE || "393457905205";
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 /**
- * Sends WhatsApp notification using Green API
- * More reliable than CallMeBot
+ * Sends a WhatsApp notification via Green API.
+ *
+ * ZERO HARDCODED MESSAGE BODIES.
+ * Every body comes from Messaggi di Sistema Pro (table `system_messages`,
+ * keys prefixed `pro_*`). Legacy keys (rental_new_customer, carwash_new, …)
+ * are resolved to their Pro equivalent by `resolveKeyForContext`. If no Pro
+ * template is mapped OR the template is disabled/empty, we skip the send.
+ *
+ * Accepted payload shapes:
+ *   { booking: {...}, customPhone?: string, skipHeader?: boolean }
+ *   { customMessage: string, customPhone: string }
+ *   { ticket: {...}, type?: 'ticket' }   // no Pro slot yet → skips
  */
 const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ message: 'Method Not Allowed' }),
-    };
+    return { statusCode: 405, body: JSON.stringify({ message: 'Method Not Allowed' }) };
   }
-
-  const { booking, ticket, type, customMessage, customPhone } = JSON.parse(event.body || '{}');
-
-  // Check if Green API is configured
   if (!GREEN_API_INSTANCE_ID || !GREEN_API_TOKEN) {
-    console.error('Green API not configured. Set GREEN_API_INSTANCE_ID and GREEN_API_TOKEN in environment variables.');
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: 'Green API not configured' }),
-    };
+    console.error('Green API not configured.');
+    return { statusCode: 500, body: JSON.stringify({ message: 'Green API not configured' }) };
   }
 
-  let message = '';
-  let targetPhone = customPhone || NOTIFICATION_PHONE;
-  const isCustomerMessage = !!customPhone; // true = sending to customer, false = sending to admin
+  const { booking, ticket, type, customMessage, customPhone, skipHeader } = JSON.parse(event.body || '{}');
 
-  // Clean phone number - Green API format: 393457905205 (no + or spaces)
-  targetPhone = targetPhone.replace(/[\s\-\+]/g, '');
-  if (targetPhone.startsWith('0')) {
-    targetPhone = '39' + targetPhone.substring(1);
-  }
-  if (!targetPhone.startsWith('39') && targetPhone.length === 10) {
-    targetPhone = '39' + targetPhone;
-  }
+  // ── Target phone ──
+  let targetPhone: string = String(customPhone || NOTIFICATION_PHONE).replace(/[\s\-+]/g, '');
+  if (targetPhone.startsWith('0')) targetPhone = '39' + targetPhone.substring(1);
+  if (!targetPhone.startsWith('39') && targetPhone.length === 10) targetPhone = '39' + targetPhone;
 
-  // Load templates from system_messages
-  let templateMap = new Map<string, string>();
-  let headerMap = new Map<string, boolean>();
-  if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
-    try {
-      const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
-      const { data: tpls } = await sb
-        .from('system_messages')
-        .select('message_key, message_body, is_enabled, include_header')
-        .eq('is_enabled', true);
-      if (tpls) {
-        tpls.forEach((t: any) => {
-          templateMap.set(t.message_key, t.message_body);
-          headerMap.set(t.message_key, t.include_header === true);
-        });
-      }
-    } catch (e) {
-      console.warn('Failed to load system_messages templates:', e);
-    }
-  }
+  const isCustomerMessage = !!customPhone;
 
-  const RENTORA_HEADER = '';
-  const RENTORA_FOOTER = '';
+  // ── Build the message ──
+  let message: string | null = null;
 
-  const applyVars = (tpl: string, vars: Record<string, string>) => {
-    let result = tpl;
-    for (const [key, val] of Object.entries(vars)) {
-      result = result.split(key).join(val);
-    }
-    return result;
-  };
-
-  // Handle custom message (for birthdays, marketing, etc.)
   if (customMessage) {
+    // Admin-authored free text — already composed upstream.
     message = customMessage;
-  }
-  // Handle ticket purchase notifications
-  else if (ticket || type === 'ticket') {
-    const ticketData = ticket || {};
-    const customerName = ticketData.customer_name || ticketData.name || 'Cliente';
-    const customerEmail = ticketData.customer_email || ticketData.email;
-    const customerPhone = ticketData.customer_phone || ticketData.phone;
-    const ticketQuantity = ticketData.quantity || 1;
-    const totalPrice = ticketData.total_price ? (ticketData.total_price / 100).toFixed(2) : 'N/A';
-    const ticketNumbers = ticketData.ticket_numbers || [];
+  } else if (booking) {
+    const serviceType = booking.service_type as string | undefined;
+    const legacyKey =
+      serviceType === 'car_wash' ? (isCustomerMessage ? 'carwash_new_customer' : 'carwash_new_admin') :
+      serviceType === 'mechanical' || serviceType === 'mechanical_service' ? (isCustomerMessage ? 'mechanical_new_customer' : 'mechanical_new_admin') :
+      (isCustomerMessage ? 'rental_new_customer' : 'rental_new_admin');
 
-    message = `🎟️ *NUOVA VENDITA BIGLIETTI*\n\n`;
-    message += `*Cliente:* ${customerName}\n`;
-    message += `*Email:* ${customerEmail}\n`;
-    if (customerPhone) {
-      message += `*Telefono:* ${customerPhone}\n`;
+    const resolvedKey = await resolveKeyForContext(legacyKey);
+    if (resolvedKey === null) {
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ success: true, skipped: true, reason: 'pro_template_unavailable', key: legacyKey }),
+      };
     }
-    message += `*Quantità:* ${ticketQuantity} bigliett${ticketQuantity > 1 ? 'i' : 'o'}\n`;
-    message += `*Totale:* €${totalPrice}\n`;
-    if (ticketNumbers.length > 0) {
-      message += `*Numeri:* ${ticketNumbers.join(', ')}\n`;
-    }
-    message += `*Data:* ${new Date().toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })} alle ${new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })}`;
-  }
-  // Handle booking notifications
-  else if (booking) {
-    const serviceType = booking.service_type;
-    console.log('[send-whatsapp] DEBUG:', { serviceType, isCustomerMessage, customPhone: !!customPhone, targetPhone, templateKeys: Array.from(templateMap.keys()), hasCarwashNew: templateMap.has('carwash_new'), hasCarwashAdmin: templateMap.has('carwash_new_admin') });
-    const customerName = booking.customer_name || booking.booking_details?.customer?.fullName || 'Cliente';
-    const customerEmail = booking.customer_email || booking.booking_details?.customer?.email;
-    const customerPhone = booking.customer_phone || booking.booking_details?.customer?.phone;
-    const bookingId = booking.id.substring(0, 8).toUpperCase();
-    const totalPrice = (booking.price_total / 100).toFixed(2);
+
+    // Build template variables from the booking
+    const customerName: string = booking.customer_name || booking.booking_details?.customer?.fullName || 'Cliente';
+    const customerEmail: string = booking.customer_email || booking.booking_details?.customer?.email || '';
+    const customerPhone: string = booking.customer_phone || booking.booking_details?.customer?.phone || '';
+    const bookingId: string = (booking.id || '').substring(0, 8).toUpperCase();
+    const totalPrice: string = booking.price_total != null ? (Number(booking.price_total) / 100).toFixed(2) : '';
+    const notes: string = booking.booking_details?.notes || '';
+    const paymentLabel: string =
+      booking.payment_method === 'credit_wallet' || booking.payment_method === 'credit' ? 'Credit Wallet' :
+      booking.payment_method === 'nexi' || booking.payment_method === 'Nexi Pay by Link' ? 'Carta' :
+      (booking.payment_status === 'paid' || booking.payment_status === 'succeeded' || booking.payment_status === 'completed') ? 'Pagato' : 'Da saldare';
+
+    const vars: Record<string, string> = {
+      nome: customerName.split(' ')[0] || customerName,
+      customer_name: customerName,
+      customer_email: customerEmail,
+      customer_phone: customerPhone,
+      booking_id: bookingId,
+      total: totalPrice,
+      notes,
+      payment_status: paymentLabel,
+      payment_method: booking.payment_method || '',
+    };
 
     if (serviceType === 'car_wash') {
-      // Car Wash Booking
-      const appointmentDate = new Date(booking.appointment_date);
-      const serviceName = booking.service_name;
-      const additionalService = booking.booking_details?.additionalService;
-      const notes = booking.booking_details?.notes;
-
-      const formattedDate = appointmentDate.toLocaleDateString('it-IT', {
-        weekday: 'long',
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric',
-        timeZone: 'Europe/Rome'
+      const appt = booking.appointment_date ? new Date(booking.appointment_date) : null;
+      const plateValue: string = booking.vehicle_plate || booking.booking_details?.customerVehicle?.plate || booking.booking_details?.plate || booking.booking_details?.targa || '';
+      const flexInfo: string = booking.booking_details?.prime_flex ? 'Prime Flex' : booking.booking_details?.dr7_flex ? 'DR7 Flex' : '';
+      const baseService: string = booking.service_name || '';
+      Object.assign(vars, {
+        service_name: flexInfo ? `${baseService} + ${flexInfo}` : baseService,
+        plate: plateValue,
+        targa: plateValue,
+        date: appt ? appt.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Europe/Rome' }) : '',
+        time: appt ? appt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '',
+        pickup_date: appt ? appt.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Rome' }) : '',
+        pickup_time: appt ? appt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '',
+        extras: booking.booking_details?.additionalService || '',
+        flex: flexInfo,
       });
-      const formattedTime = appointmentDate.toLocaleTimeString('it-IT', {
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'Europe/Rome'
+    } else if (serviceType === 'mechanical' || serviceType === 'mechanical_service') {
+      const appt = booking.appointment_date ? new Date(booking.appointment_date) : null;
+      Object.assign(vars, {
+        service_name: booking.service_name || '',
+        pickup_date: appt ? appt.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Rome' }) : '',
+        pickup_time: appt ? appt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '',
       });
-
-      // Default hardcoded message (admin-style, used as fallback)
-      message = `🚗 *NUOVA PRENOTAZIONE AUTOLAVAGGIO*\n\n`;
-      message += `*ID:* DR7-${bookingId}\n`;
-      message += `*Cliente:* ${customerName}\n`;
-      message += `*Email:* ${customerEmail}\n`;
-      message += `*Telefono:* ${customerPhone}\n`;
-      message += `*Servizio:* ${serviceName}\n`;
-      message += `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n`;
-      if (additionalService) message += `*Servizio Aggiuntivo:* ${additionalService}\n`;
-      if (notes) message += `*Note:* ${notes}\n`;
-      message += `*Totale:* €${totalPrice}\n`;
-      message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa'}`;
-
-      // Use template from Messaggi di Sistema: separate templates for admin vs customer
-      const cwTpl = isCustomerMessage
-        ? templateMap.get('carwash_new')         // Customer confirmation
-        : templateMap.get('carwash_new_admin');   // Admin notification
-      if (cwTpl) {
-        const plateValue = booking.vehicle_plate || booking.booking_details?.customerVehicle?.plate || booking.booking_details?.plate || booking.booking_details?.targa || '';
-        const paymentLabel = booking.payment_method === 'credit_wallet' ? 'Credit Wallet'
-          : booking.payment_method === 'nexi' || booking.payment_method === 'Nexi Pay by Link' ? 'Carta'
-          : (booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa';
-        const flexInfo = booking.booking_details?.prime_flex ? 'Prime Flex' : booking.booking_details?.dr7_flex ? 'DR7 Flex' : '';
-        const serviceWithFlex = flexInfo ? `${serviceName} + ${flexInfo}` : serviceName;
-        message = applyVars(cwTpl, {
-          '{booking_id}': bookingId.substring(0, 8).toUpperCase(),
-          '{nome}': customerName.split(' ')[0] || customerName,
-          '{customer_name}': customerName, '{customer_email}': customerEmail || '',
-          '{customer_phone}': customerPhone || '', '{service_name}': serviceWithFlex || '',
-          '{plate}': plateValue, '{targa}': plateValue,
-          '{date}': formattedDate, '{time}': formattedTime,
-          '{pickup_date}': formattedDate, '{pickup_time}': formattedTime,
-          '{extras}': additionalService || 'Nessuno',
-          '{total}': totalPrice, '{notes}': booking.booking_details?.notes || '',
-          '{payment_status}': paymentLabel,
-          '{payment_info}': paymentLabel,
-          '{payment_method}': booking.payment_method || '',
-          '{flex}': flexInfo,
-        });
-      }
-    } else if (serviceType === 'mechanical') {
-      // Mechanical Booking
-      const appointmentDate = new Date(booking.appointment_date);
-      const serviceName = booking.service_name || 'Servizio Meccanica';
-      const vehicleInfo = booking.booking_details?.vehicle || {};
-      const notes = booking.booking_details?.notes;
-
-      const formattedDate = appointmentDate.toLocaleDateString('it-IT', {
-        weekday: 'long',
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric',
-        timeZone: 'Europe/Rome'
-      });
-      const formattedTime = appointmentDate.toLocaleTimeString('it-IT', {
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'Europe/Rome'
-      });
-
-      message = `🔧 *NUOVA PRENOTAZIONE MECCANICA*\n\n`;
-      message += `*ID:* DR7-${bookingId}\n`;
-      message += `*Cliente:* ${customerName}\n`;
-      message += `*Email:* ${customerEmail}\n`;
-      message += `*Telefono:* ${customerPhone}\n`;
-      message += `*Servizio:* ${serviceName}\n`;
-      if (vehicleInfo.brand || vehicleInfo.model) {
-        message += `*Veicolo:* ${vehicleInfo.brand || ''} ${vehicleInfo.model || ''}\n`;
-      }
-      message += `*Data e Ora:* ${formattedDate} alle ${formattedTime}\n`;
-      if (notes) {
-        message += `*Note:* ${notes}\n`;
-      }
-      message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa'}`;
-
-      // Override with DB template if available
-      const mechTpl = isCustomerMessage
-        ? templateMap.get('mechanical_new')
-        : templateMap.get('mechanical_new_admin');
-      if (mechTpl) {
-        message = applyVars(mechTpl, {
-          '{booking_id}': `DR7-${bookingId}`, '{customer_name}': customerName, '{customer_email}': customerEmail || '',
-          '{customer_phone}': customerPhone || '', '{service_name}': serviceName || '', '{pickup_date}': formattedDate,
-          '{pickup_time}': formattedTime, '{total}': totalPrice, '{notes}': booking.booking_details?.notes || '',
-          '{payment_status}': (booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa',
-        });
-      }
     } else {
-      // Car Rental Booking
-      const vehicleName = booking.vehicle_name;
-      const pickupDate = new Date(booking.pickup_date);
-      const dropoffDate = new Date(booking.dropoff_date);
-      const pickupLocation = booking.pickup_location;
-      const insuranceRaw = booking.insurance_option || booking.booking_details?.insuranceOption || 'KASKO';
-      const insuranceMap: Record<string, string> = {
-        'RCA': 'Kasko',
-        'KASKO_BASE': 'Kasko',
-        'KASKO': 'Kasko',
-        'KASKO_BLACK': 'Kasko Black',
-        'KASKO_SIGNATURE': 'Kasko Signature',
-        'DR7': 'Kasko DR7'
-      };
-      const insuranceOption = insuranceMap[insuranceRaw] || 'Kasko';
-
-      const pickupDateFormatted = pickupDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' });
-      const pickupTimeFormatted = pickupDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
-      const dropoffDateFormatted = dropoffDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' });
-      const dropoffTimeFormatted = dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
-
-      message = `🚘 *NUOVA PRENOTAZIONE NOLEGGIO*\n\n`;
-      message += `*ID:* DR7-${bookingId}\n`;
-      message += `*Cliente:* ${customerName}\n`;
-      message += `*Email:* ${customerEmail}\n`;
-      message += `*Telefono:* ${customerPhone}\n`;
-      message += `*Veicolo:* ${vehicleName}\n`;
-      message += `*Ritiro:* ${pickupDateFormatted} alle ${pickupTimeFormatted}\n`;
-      message += `*Riconsegna:* ${dropoffDateFormatted} alle ${dropoffTimeFormatted}\n`;
-      message += `*Luogo Ritiro:* ${pickupLocation}\n`;
-      message += `*Assicurazione:* ${insuranceOption}\n`;
-      message += `*Totale:* €${totalPrice}\n`;
-
-      // Cauzione (deposit) info
-      const depositAmount = booking.deposit_amount || booking.booking_details?.deposit || 0;
+      // Rental
+      const pickup = booking.pickup_date ? new Date(booking.pickup_date) : null;
+      const dropoff = booking.dropoff_date ? new Date(booking.dropoff_date) : null;
+      const depositAmount = Number(booking.deposit_amount || booking.booking_details?.deposit || 0);
       const depositOption = booking.booking_details?.depositOption;
+      let depositStr = '';
       if (depositOption === 'no_deposit') {
-        const surcharge = booking.booking_details?.noDepositSurcharge || 0;
-        message += `*Cauzione:* Senza cauzione (+€${surcharge.toFixed(2)})\n`;
+        const sur = Number(booking.booking_details?.noDepositSurcharge || 0);
+        depositStr = `Senza cauzione (+€${sur.toFixed(2)})`;
       } else if (depositAmount > 0) {
-        message += `*Cauzione:* €${depositAmount}\n`;
+        depositStr = `€${depositAmount}`;
       }
-
-      // Second driver info
-      const secondDriver = booking.booking_details?.secondDriver;
-      if (secondDriver) {
-        message += `\n👤 *SECONDO CONDUCENTE:*\n`;
-        message += `*Nome:* ${secondDriver.fullName || `${secondDriver.firstName} ${secondDriver.lastName}`}\n`;
-        if (secondDriver.phone) message += `*Telefono:* ${secondDriver.phone}\n`;
-        if (secondDriver.licenseNumber) message += `*Patente:* ${secondDriver.licenseNumber}\n`;
-      }
-
-      message += `*Stato Pagamento:* ${(booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa'}`;
-
-      // Use template from Messaggi di Sistema: separate templates for admin vs customer
-      const rentalTpl = isCustomerMessage
-        ? templateMap.get('rental_new_customer') || templateMap.get('rental_new')
-        : templateMap.get('rental_new_admin') || templateMap.get('rental_new');
-      if (rentalTpl) {
-        const depositAmount = booking.deposit_amount || booking.booking_details?.deposit || 0;
-        const depositOption = booking.booking_details?.depositOption;
-        let depositStr = '';
-        if (depositOption === 'no_deposit') {
-          depositStr = `Senza cauzione (+€${(booking.booking_details?.noDepositSurcharge || 0).toFixed(2)})`;
-        } else if (depositAmount > 0) {
-          depositStr = `€${depositAmount}`;
-        }
-        const rentalPaymentLabel = booking.payment_method === 'credit_wallet' || booking.payment_method === 'credit' ? 'Credit Wallet'
-          : booking.payment_method === 'nexi' || booking.payment_method === 'Nexi Pay by Link' ? 'Carta'
-          : (booking.payment_status === 'paid' || booking.payment_status === 'succeeded') ? '✅ Pagato' : '⏳ In attesa';
-        const rentalFlex = booking.booking_details?.dr7_flex || booking.booking_details?.dr7Flex ? 'DR7 Flex' : '';
-        message = applyVars(rentalTpl, {
-          '{booking_id}': bookingId.substring(0, 8).toUpperCase(), '{customer_name}': customerName, '{customer_email}': customerEmail || '',
-          '{customer_phone}': customerPhone || '', '{vehicle_name}': vehicleName, '{plate}': booking.vehicle_plate || '',
-          '{nome}': customerName.split(' ')[0] || customerName,
-          '{pickup_date}': pickupDateFormatted, '{pickup_time}': pickupTimeFormatted,
-          '{dropoff_date}': dropoffDateFormatted, '{dropoff_time}': dropoffTimeFormatted,
-          '{pickup_location}': pickupLocation || '', '{insurance}': insuranceOption, '{deposit}': depositStr,
-          '{km_info}': booking.booking_details?.unlimited_km ? 'Illimitati' : `${booking.booking_details?.kmPackage?.includedKm || 'Standard'} km`,
-          '{total}': totalPrice,
-          '{payment_status}': rentalPaymentLabel,
-          '{payment_info}': rentalPaymentLabel,
-          '{payment_method}': booking.payment_method || '',
-          '{flex}': rentalFlex,
-        });
-      }
+      Object.assign(vars, {
+        vehicle_name: booking.vehicle_name || '',
+        plate: booking.vehicle_plate || '',
+        pickup_date: pickup ? pickup.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' }) : '',
+        pickup_time: pickup ? pickup.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '',
+        dropoff_date: dropoff ? dropoff.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' }) : '',
+        dropoff_time: dropoff ? dropoff.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '',
+        pickup_location: booking.pickup_location || '',
+        insurance: booking.insurance_option || booking.booking_details?.insuranceOption || '',
+        deposit: depositStr,
+        km_info: booking.booking_details?.unlimited_km ? 'Illimitati' : String(booking.booking_details?.kmPackage?.includedKm || ''),
+        flex: booking.booking_details?.dr7_flex || booking.booking_details?.dr7Flex ? 'DR7 Flex' : '',
+      });
     }
-  } else {
+
+    message = await renderTemplate(resolvedKey, vars, undefined, { vehiclePlate: booking.vehicle_plate });
+  } else if (ticket || type === 'ticket') {
+    // No Pro slot for lottery ticket sales yet. Skip rather than hardcode.
     return {
-      statusCode: 400,
-      body: JSON.stringify({ message: 'No booking, ticket, or custom message provided' }),
+      statusCode: 200,
+      body: JSON.stringify({ success: true, skipped: true, reason: 'no_pro_template_for_ticket' }),
+    };
+  } else {
+    return { statusCode: 400, body: JSON.stringify({ message: 'No booking, ticket, or custom message provided' }) };
+  }
+
+  if (!message || !message.trim()) {
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ success: true, skipped: true, reason: 'empty_body_no_template' }),
     };
   }
 
-  // Apply RENTORA header/footer wrapper if template has include_header enabled
-  // Check all possible template keys that could have been used
-  const skipHeader = (event.body && JSON.parse(event.body).skipHeader === true);
-  if (!skipHeader && !customMessage) {
-    // Find which template was used and check include_header
-    const possibleKeys = booking ? (
-      booking.service_type === 'car_wash'
-        ? (isCustomerMessage ? ['carwash_new'] : ['carwash_new_admin'])
-        : booking.service_type === 'mechanical' || booking.service_type === 'mechanical_service'
-        ? (isCustomerMessage ? ['mechanical_new'] : ['mechanical_new_admin'])
-        : (isCustomerMessage ? ['rental_new_customer', 'rental_new'] : ['rental_new_admin', 'rental_new'])
-    ) : [];
-    const shouldWrap = possibleKeys.some(k => headerMap.get(k) === true);
-    if (shouldWrap) {
-      message = RENTORA_HEADER + message + RENTORA_FOOTER;
-    }
-  }
+  // skipHeader is handled by the Pro wrapper logic inside messageTemplates
+  // (the template's own `include_header` flag decides). Retained as a no-op
+  // hint in the payload for legacy callers.
+  void skipHeader;
 
   try {
-    // Send via Green API
     const greenApiUrl = `https://api.green-api.com/waInstance${GREEN_API_INSTANCE_ID}/sendMessage/${GREEN_API_TOKEN}`;
-
     const response = await fetch(greenApiUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        chatId: `${targetPhone}@c.us`,
-        message: message,
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chatId: `${targetPhone}@c.us`, message }),
     });
-
     const result = await response.json();
-
     if (!response.ok || result.error) {
       console.error('Green API error:', result);
       throw new Error(result.error || 'Green API error');
     }
-
-    console.log('✅ WhatsApp notification sent via Green API:', result.idMessage);
-
     return {
       statusCode: 200,
-      body: JSON.stringify({
-        message: 'WhatsApp notification sent via Green API',
-        success: true,
-        messageId: result.idMessage
-      }),
+      body: JSON.stringify({ message: 'WhatsApp notification sent via Green API', success: true, messageId: result.idMessage }),
     };
   } catch (error: any) {
     console.error('Error sending WhatsApp notification:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: 'Error sending WhatsApp notification', error: error.message }),
-    };
+    return { statusCode: 500, body: JSON.stringify({ message: 'Error sending WhatsApp notification', error: error.message }) };
   }
 };
 
