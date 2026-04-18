@@ -216,17 +216,57 @@ export const handler: Handler = async (event) => {
       }
     }
 
-    // 1. Fetch revenue config
-    const { data: configRow, error: configError } = await supabase
-      .from('revenue_config')
-      .select('*')
-      .limit(1)
-      .single()
+    // 1. Fetch revenue config from Centralina Pro
+    let config = getDefaultConfig()
+    const { data: proRow } = await supabase
+      .from('centralina_pro_config')
+      .select('config')
+      .eq('id', 'main')
+      .maybeSingle()
 
-    // Default: enabled + auto_apply with default coefficients when no config row exists
-    const config = (configError || !configRow)
-      ? getDefaultConfig()
-      : parseConfigFromDB(configRow)
+    const proDynamic = proRow?.config?.prezzoDinamico?.dynamic
+    if (proDynamic && typeof proDynamic === 'object') {
+      const PRO_TO_DB: Record<string, string> = { supercars: 'exotic', urban: 'urban', aziendali: 'aziendali' }
+      const remapPrices = (prices: Record<string, any>): Record<string, number> => {
+        const out: Record<string, number> = {}
+        for (const [k, v] of Object.entries(prices || {})) {
+          if (typeof v !== 'number' || v === 0) continue
+          out[PRO_TO_DB[k] ? `category:${PRO_TO_DB[k]}` : k] = v
+        }
+        return out
+      }
+      const mapCoeffs = (rows: any[], keyMin: string, keyMax: string) => rows.map((r: any) => ({
+        [keyMin]: r.min ?? r[keyMin] ?? 0,
+        [keyMax]: r.max ?? r[keyMax] ?? 100,
+        coeff: typeof r.coeff === 'number' ? r.coeff : 1,
+        label: r.label || '',
+      }))
+
+      config = {
+        enabled: proDynamic.enabled ?? true,
+        mode: proDynamic.mode || 'suggestion',
+        base_prices: remapPrices(proDynamic.base_prices),
+        min_prices: remapPrices(proDynamic.min_prices),
+        max_prices: remapPrices(proDynamic.max_prices),
+        occupation_coefficients: proDynamic.occupation_coefficients?.length
+          ? mapCoeffs(proDynamic.occupation_coefficients, 'min_pct', 'max_pct') : config.occupation_coefficients,
+        advance_coefficients: proDynamic.advance_coefficients?.length
+          ? mapCoeffs(proDynamic.advance_coefficients, 'min_days', 'max_days') : config.advance_coefficients,
+        duration_coefficients: proDynamic.duration_coefficients?.length
+          ? mapCoeffs(proDynamic.duration_coefficients, 'min_days', 'max_days') : config.duration_coefficients,
+        season_rules: proDynamic.season_rules || [],
+      }
+    } else {
+      // Fallback: try old revenue_config table
+      const { data: configRow, error: configError } = await supabase
+        .from('revenue_config')
+        .select('*')
+        .limit(1)
+        .single()
+      if (!configError && configRow) {
+        config = parseConfigFromDB(configRow)
+      }
+    }
 
     // Only skip if admin explicitly disabled it
     if (config.mode === 'disabled') {
