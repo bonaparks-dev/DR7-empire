@@ -4,6 +4,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { supabase } from '../../supabaseClient';
 import { Link } from 'react-router-dom';
 import { getMembershipTierName } from '../../utils/membershipDiscounts';
+import { useCentralinaProOverlay } from '../../hooks/useCentralinaProConfig';
 
 interface Booking {
   id: string;
@@ -29,6 +30,8 @@ interface Booking {
 const MyBookings = () => {
   const { user } = useAuth();
   const { t, lang } = useTranslation();
+  // DR7 Flex rules (refund %, price, tier) come from Centralina Pro.
+  const { overlay: proOverlay } = useCentralinaProOverlay();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -135,17 +138,31 @@ const MyBookings = () => {
     const now = new Date();
     const daysUntilPickup = (pickup.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
 
+    // DR7 Flex conditions from Centralina Pro (servizi.dr7_flex.refund_percent).
+    // If Pro hasn't set it, fall back to the baseline 90 that matches the documented policy.
+    const flexRefundPercent = proOverlay?.dr7Flex?.refundPercent ?? 90;
+
     if (hasFlex) {
-      // DR7 Flex / Prime Flex: 90% refund as DR7 Wallet credit, anytime before pickup/appointment
-      return { canCancel: true, hasFlex: true, refundPercent: 90, penaltyPercent: 10, message: hasPrimeFlex ? 'Con Prime Flex: rimborso del 90% come credito DR7 Wallet.' : 'Con DR7 Flex: rimborso del 90% come credito DR7 Wallet.' };
+      // DR7 Flex / Prime Flex: refund as DR7 Wallet credit, ANY time before pickup/appointment
+      // (waives the 5-day cutoff that applies to regular bookings).
+      const penalty = Math.max(0, 100 - flexRefundPercent);
+      return {
+        canCancel: true,
+        hasFlex: true,
+        refundPercent: flexRefundPercent,
+        penaltyPercent: penalty,
+        message: hasPrimeFlex
+          ? `Con Prime Flex: rimborso del ${flexRefundPercent}% come credito DR7 Wallet.`
+          : `Con DR7 Flex: rimborso del ${flexRefundPercent}% come credito DR7 Wallet.`,
+      };
     }
     if (daysUntilPickup >= 5) {
-      // More than 5 days before service: 90% wallet credit, 10% penalty (as per policy section 2)
+      // Standard policy (no Flex): >= 5 days out → 90% wallet credit, 10% penalty
       return { canCancel: true, hasFlex: false, refundPercent: 90, penaltyPercent: 10, message: 'Cancellazione con penale del 10% — rimborso del 90% come credito DR7 Wallet.' };
     }
     if (daysUntilPickup > 0) {
-      // Less than 5 days: no refund, no credit (as per policy section 3)
-      return { canCancel: false, hasFlex: false, refundPercent: 0, penaltyPercent: 0, message: 'Meno di 5 giorni dal servizio: cancellazione non disponibile. Nessun rimborso previsto.' };
+      // < 5 days: cannot cancel unless Flex (handled above)
+      return { canCancel: false, hasFlex: false, refundPercent: 0, penaltyPercent: 0, message: 'Meno di 5 giorni dal servizio: cancellazione non disponibile senza DR7 Flex.' };
     }
     return { canCancel: false, hasFlex: false, refundPercent: 0, penaltyPercent: 0, message: 'Non è più possibile cancellare questa prenotazione.' };
   };
