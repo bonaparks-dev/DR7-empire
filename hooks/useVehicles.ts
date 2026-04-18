@@ -172,8 +172,24 @@ const getVehicleSpecs = (name: string) => {
   };
 };
 
+// Get 1-day price from Centralina Pro tariffe for a vehicle category
+function getProDayPrice(proConfig: any, category: string | null): number | null {
+  if (!proConfig?.prezzoDinamico?.tariffe) return null
+  const PRO_TO_DB: Record<string, string> = { supercars: 'exotic', urban: 'urban', aziendali: 'aziendali' }
+  for (const tariff of proConfig.prezzoDinamico.tariffe) {
+    const dbCat = PRO_TO_DB[tariff.id] || tariff.id
+    if (dbCat === category) {
+      const table = tariff.unica || tariff.residente || tariff.non_residente || {}
+      const day1 = table['1']
+      if (typeof day1 === 'number' && day1 > 0) return day1
+    }
+  }
+  // Also check per-vehicle base_prices
+  return null
+}
+
 // Transform database vehicle to expected format
-const transformVehicle = (vehicle: Vehicle): TransformedVehicle => {
+const transformVehicle = (vehicle: Vehicle, proConfig?: any): TransformedVehicle => {
   const isAvailable = vehicle.status === 'available';
   // Use metadata.specs if available, otherwise use getVehicleSpecs
   const specs = vehicle.metadata?.specs || getVehicleSpecs(vehicle.display_name);
@@ -238,11 +254,15 @@ const transformVehicle = (vehicle: Vehicle): TransformedVehicle => {
     name: vehicle.display_name,
     image: vehicleImage,
     available: isAvailable,
-    pricePerDay: vehicle.daily_rate ? {
-      usd: Math.round(vehicle.daily_rate * EUR_TO_USD_RATE),
-      eur: vehicle.daily_rate,
-      crypto: 0
-    } : undefined,
+    pricePerDay: (() => {
+      // Priority: per-vehicle Pro base_price > category Pro tariffe > vehicle.daily_rate
+      const proVehiclePrice = proConfig?.prezzoDinamico?.dynamic?.base_prices?.[vehicle.id]
+      const proCategoryPrice = getProDayPrice(proConfig, vehicle.category)
+      const price = (typeof proVehiclePrice === 'number' && proVehiclePrice > 0)
+        ? proVehiclePrice
+        : (proCategoryPrice || vehicle.daily_rate || 0)
+      return price > 0 ? { usd: Math.round(price * EUR_TO_USD_RATE), eur: price, crypto: 0 } : undefined
+    })(),
     specs: specsArray,
     unavailableFrom: vehicle.metadata?.unavailable_from || undefined,
     bookingDisabled: vehicle.metadata?.booking_disabled || false
@@ -462,7 +482,18 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
 
         // Transform vehicles to expected format
         console.log(`[useVehicles] Raw DB returned ${(data || []).length} vehicles for category: ${category || 'all'}`, (data || []).map((v: any) => `${v.display_name} (${v.status})`));
-        const transformedVehicles = (data || []).map(transformVehicle);
+        // Fetch Pro config for card prices
+        let proConfig: any = null
+        try {
+          const { data: proRow } = await supabase
+            .from('centralina_pro_config')
+            .select('config')
+            .eq('id', 'main')
+            .maybeSingle()
+          proConfig = proRow?.config || null
+        } catch { /* use vehicle.daily_rate as fallback */ }
+
+        const transformedVehicles = (data || []).map((v: Vehicle) => transformVehicle(v, proConfig));
 
         // Group vehicles by display_group if they have one, or display_name otherwise
         const vehicleGroups = new Map<string, {
