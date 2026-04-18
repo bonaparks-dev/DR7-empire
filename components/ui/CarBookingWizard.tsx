@@ -35,9 +35,7 @@ import type { WashService } from '../../pages/CarWashServicesPage';
 import { classifyVehicle } from '../../utils/vehicleClassification';
 import { lookupTarga, isValidItalianPlate, normalizePlate, type TargaResult } from '../../utils/lookupTarga';
 import CalcolaCFButton from './CalcolaCFButton';
-import { useRentalConfig } from '../../hooks/useRentalConfig';
 import { useCentralinaProOverlay } from '../../hooks/useCentralinaProConfig';
-import { buildWebsiteConfigOverlay } from '../../utils/configOverlay';
 
 // Filter out dummy/placeholder names from auth profiles (e.g. "No Name", "User", "Test")
 const DUMMY_NAMES = ['no name', 'no-name', 'noname', 'user', 'test', 'unknown', 'n/a', 'none', 'cliente'];
@@ -396,40 +394,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const [driverTierInfo, setDriverTierInfo] = useState<TierClassification | null>(null);
   const driverTier: DriverTier | null = driverTierInfo?.tier || null;
 
-  // --- Centralina Pro Config Overlay ---
-  // Primary source: Centralina Pro (admin panel → Revenue → Centralina Pro).
-  // Old rental_config (useRentalConfig) is kept ONLY as a silent fallback
-  // for fields Pro hasn't populated yet — for any field present in Pro,
-  // Pro wins. Once Pro is fully populated, useRentalConfig can be removed.
-  const { overlay: proOverlay } = useCentralinaProOverlay();
-  const { config: rentalConfig } = useRentalConfig();
-  const legacyOverlay = useMemo(() => buildWebsiteConfigOverlay(rentalConfig), [rentalConfig]);
-  const configOverlay = useMemo(() => {
-    if (!proOverlay) return legacyOverlay;
-    if (!legacyOverlay) return proOverlay;
-    // Merge: Pro values take precedence, fall back to legacy field-by-field
-    return {
-      insuranceTier1: proOverlay.insuranceTier1.length > 0 ? proOverlay.insuranceTier1 : legacyOverlay.insuranceTier1,
-      insuranceTier2: proOverlay.insuranceTier2.length > 0 ? proOverlay.insuranceTier2 : legacyOverlay.insuranceTier2,
-      urbanInsurance: proOverlay.urbanInsurance.length > 0 ? proOverlay.urbanInsurance : legacyOverlay.urbanInsurance,
-      utilitaireInsurance: proOverlay.utilitaireInsurance.length > 0 ? proOverlay.utilitaireInsurance : legacyOverlay.utilitaireInsurance,
-      furgoneInsurance: proOverlay.furgoneInsurance.length > 0 ? proOverlay.furgoneInsurance : legacyOverlay.furgoneInsurance,
-      tierPricing: proOverlay.tierPricing,
-      noDepositSurchargePerDay: proOverlay.noDepositSurchargePerDay || legacyOverlay.noDepositSurchargePerDay,
-      deliveryPricePerKm: proOverlay.deliveryPricePerKm || legacyOverlay.deliveryPricePerKm,
-      experienceServices: proOverlay.experienceServices.length > 0 ? proOverlay.experienceServices : legacyOverlay.experienceServices,
-      dr7Flex: proOverlay.dr7Flex,
-      depositOptions: {
-        TIER_1_RESIDENT: proOverlay.depositOptions.TIER_1_RESIDENT.length > 0 ? proOverlay.depositOptions.TIER_1_RESIDENT : legacyOverlay.depositOptions.TIER_1_RESIDENT,
-        TIER_2_RESIDENT: proOverlay.depositOptions.TIER_2_RESIDENT.length > 0 ? proOverlay.depositOptions.TIER_2_RESIDENT : legacyOverlay.depositOptions.TIER_2_RESIDENT,
-        TIER_1_NON_RESIDENT: proOverlay.depositOptions.TIER_1_NON_RESIDENT.length > 0 ? proOverlay.depositOptions.TIER_1_NON_RESIDENT : legacyOverlay.depositOptions.TIER_1_NON_RESIDENT,
-        TIER_2_NON_RESIDENT: proOverlay.depositOptions.TIER_2_NON_RESIDENT.length > 0 ? proOverlay.depositOptions.TIER_2_NON_RESIDENT : legacyOverlay.depositOptions.TIER_2_NON_RESIDENT,
-      },
-      rentalDayRates: proOverlay.rentalDayRates ?? legacyOverlay.rentalDayRates,
-      kmIncluded: proOverlay.kmIncluded ?? legacyOverlay.kmIncluded,
-      kmPackagePrices: proOverlay.kmPackagePrices,
-    };
-  }, [proOverlay, legacyOverlay]);
+  // --- Centralina Pro is the ONLY pricing source ---
+  // No legacy fallback: every price comes from the admin Centralina Pro tab.
+  const { overlay: configOverlay } = useCentralinaProOverlay();
 
   // Override constants with config values when available
   const ACTIVE_INSURANCE_BY_TIER = useMemo(() => {
