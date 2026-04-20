@@ -2678,11 +2678,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           `*Totale:* €${totalPrice}\n\n` +
           `Grazie!`;
 
-        const officeWhatsAppNumber = '393457905205';
-        const whatsappUrl = `https://wa.me/${officeWhatsAppNumber}?text=${encodeURIComponent(whatsappMessage)}`;
-
-        // FIX 5: Robust WhatsApp open with popup-blocker fallback
-        openWhatsApp(whatsappUrl);
+        // WhatsApp sent automatically via Netlify functions — no manual window needed
       }
 
       // Auto-generate contract + fattura via admin webhook (bypasses auth)
@@ -3355,9 +3351,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             `*Totale:* €${totalPrice}\n\n` +
             `Grazie!`;
 
-          const whatsappUrl = `https://wa.me/393457905205?text=${encodeURIComponent(whatsappMessage)}`;
-          // FIX 5: Robust WhatsApp open with popup-blocker fallback
-          openWhatsApp(whatsappUrl);
+          // WhatsApp sent automatically via Netlify functions — no manual window needed
 
           // CRITICAL: Reset processing state after successful booking
           console.log("Resetting processing state to false");
@@ -3620,9 +3614,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           (selectedUpsellExtras.length > 0 ? `*Servizi Aggiuntivi:* ${selectedUpsellExtras.map(s => `${s.name} (€${roundToTwoDecimals(s.price * 0.90).toFixed(2)})`).join(', ')}\n` : '') +
             `*Totale:* €0.00 (coperto da codice sconto)\n\n` +
             `Grazie!`;
-          const whatsappUrl = `https://wa.me/393457905205?text=${encodeURIComponent(whatsappMessage)}`;
-          // FIX 5: Robust WhatsApp open with popup-blocker fallback
-          openWhatsApp(whatsappUrl);
+          // WhatsApp sent automatically via Netlify functions — no manual window needed
 
           isSubmittingRef.current = false;
           setIsProcessing(false);
