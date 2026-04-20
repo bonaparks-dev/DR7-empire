@@ -1083,8 +1083,8 @@ const CarWashServicesPage: React.FC = () => {
                     className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg overflow-hidden group transition-all duration-300 hover:border-white/50 hover:shadow-2xl hover:shadow-white/10 flex flex-col"
                   >
                     <img
-                      src={combo.image}
-                      alt={lang === 'it' ? combo.name : combo.nameEn}
+                      src={autoService?.image || combo.image}
+                      alt={lang === 'it' ? (autoService?.name || combo.name) : (autoService?.nameEn || combo.nameEn)}
                       className="w-full h-auto object-contain"
                     />
                     <div className="p-4">
