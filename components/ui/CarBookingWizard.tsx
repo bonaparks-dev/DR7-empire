@@ -395,7 +395,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   // --- Centralina Pro is the ONLY pricing source ---
   // No legacy fallback: every price comes from the admin Centralina Pro tab.
-  const { overlay: configOverlay } = useCentralinaProOverlay();
+  const { overlay: configOverlay, snapshot: proSnapshot } = useCentralinaProOverlay();
 
   // ──────────────────────────────────────────────────────────────────
   // Every pricing value below comes STRICTLY from Centralina Pro.
@@ -1590,9 +1590,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // Dynamic pricing: use base rate here, coefficient applied to FULL TOTAL later
       calculatedRentalCost = dynamicPricing.selectedBaseRateEur * billingDaysCalc;
     } else {
-      // Standard multi-day pricing (fallback when dynamic pricing is disabled or unavailable)
-      const vType = getVehicleType(item, categoryContext);
-      calculatedRentalCost = calculateMultiDayPrice(vType, billingDaysCalc, pricePerDay, undefined, ACTIVE_RENTAL_DAY_RATES);
+      // Centralina Pro per-vehicle override wins over category multi-day table
+      const rawVehicleId = (item as any).vehicleIds?.[0] || (item.id ? String(item.id).replace('car-', '') : '');
+      const perVehiclePrices = (proSnapshot as any)?.prezzoDinamico?.dynamic?.base_prices || {};
+      const rawOverride = perVehiclePrices[rawVehicleId];
+      const overridePrice = typeof rawOverride === 'number' ? rawOverride
+        : typeof rawOverride === 'string' ? parseFloat(rawOverride) : NaN;
+      if (!isNaN(overridePrice) && overridePrice > 0) {
+        calculatedRentalCost = billingDaysCalc * overridePrice;
+      } else {
+        const vType = getVehicleType(item, categoryContext);
+        calculatedRentalCost = calculateMultiDayPrice(vType, billingDaysCalc, pricePerDay, undefined, ACTIVE_RENTAL_DAY_RATES);
+      }
     }
 
 
