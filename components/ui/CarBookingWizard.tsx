@@ -341,9 +341,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // Auto-validate after a short delay to let form state settle
       setTimeout(async () => {
         try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+          if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
           const response = await fetch('/.netlify/functions/validate-discount-code', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify({ code: initialSearchDates.discountCode, serviceType: 'noleggio' })
           });
           const result = await response.json();
@@ -2754,9 +2757,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     try {
       // Call the admin API to validate the code with service context
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
       const response = await fetch('/.netlify/functions/validate-discount-code', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           action: 'validate',
           code: discountCode.trim().toUpperCase(),
@@ -2863,9 +2869,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
       await fetch('/.netlify/functions/validate-discount-code', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           action: 'apply_rental',
           code: appliedDiscount.code,
@@ -5671,7 +5680,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {/* Deposit surcharges */}
                   {noDepositSurcharge > 0 && (
                     <div className="flex justify-between text-white">
-                      <span>{`Supplemento cauzione (${formData.depositOption === 'no_deposit' ? `${Math.max(1, duration.days)} gg × €${ACTIVE_NO_DEPOSIT_SURCHARGE}` : formData.depositOption === 'vehicle_deposit' ? `${Math.max(1, duration.days)} gg × €20` : ''})`}</span>
+                      <span>{`Supplemento cauzione (${(() => {
+                        const days = Math.max(1, duration.days);
+                        const depositKey = `${(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'}_RESIDENT`;
+                        const depOpts = configOverlay?.depositOptions?.[depositKey as keyof typeof configOverlay.depositOptions] || [];
+                        const selectedDep = depOpts.find((d: any) => d.id === formData.depositOption);
+                        const perDay = selectedDep?.surchargePerDay || 0;
+                        return perDay > 0 ? `${days} gg × €${perDay}` : `${days} gg`;
+                      })()})`}</span>
                       <span>{formatPrice(noDepositSurcharge)}</span>
                     </div>
                   )}
