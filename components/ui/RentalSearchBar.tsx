@@ -113,7 +113,18 @@ export default function RentalSearchBar({ onSearch, isSearching }: Props) {
     setReturnTimeManual(true) // user took control
   }, [])
 
+  const HOLIDAYS = [
+    '01-01', '06-01', '25-04', '01-05', '02-06', '15-08', '01-11', '08-12', '25-12', '26-12',
+    '2024-03-31', '2024-04-01', '2025-04-20', '2025-04-21', '2026-04-05', '2026-04-06',
+    '2027-03-28', '2027-03-29',
+  ]
   const isSunday = (d: string) => new Date(d + 'T12:00:00').getDay() === 0
+  const isHoliday = (d: string) => {
+    if (!d) return false
+    const [, m, dd] = d.split('-')
+    return HOLIDAYS.includes(`${dd}-${m}`) || HOLIDAYS.includes(d)
+  }
+  const isBlocked = (d: string) => isSunday(d) || isHoliday(d)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -127,7 +138,7 @@ export default function RentalSearchBar({ onSearch, isSearching }: Props) {
     })
   }
 
-  const isValid = pickupDate && pickupTime && returnDate && returnTime && !isSunday(pickupDate) && !isSunday(returnDate)
+  const isValid = pickupDate && pickupTime && returnDate && returnTime && !isBlocked(pickupDate) && !isBlocked(returnDate)
 
   return (
     <form onSubmit={handleSubmit} className="bg-gray-900/60 backdrop-blur-sm border border-gray-800 rounded-2xl p-5 md:p-6 mb-8">
@@ -172,13 +183,13 @@ export default function RentalSearchBar({ onSearch, isSearching }: Props) {
             value={pickupDate}
             min={fmt(today)}
             onChange={e => {
+              if (isBlocked(e.target.value)) return
               setPickupDate(e.target.value)
-              // Ensure return date >= pickup date
               if (e.target.value > returnDate) setReturnDate(e.target.value)
             }}
             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm focus:ring-1 focus:ring-white focus:border-white"
           />
-          {isSunday(pickupDate) && <p className="text-xs text-red-400 mt-1">Chiusi la domenica</p>}
+          {isBlocked(pickupDate) && <p className="text-xs text-red-400 mt-1">Chiusi (domenica o festivo)</p>}
         </div>
 
         {/* Pickup Time */}
@@ -204,10 +215,13 @@ export default function RentalSearchBar({ onSearch, isSearching }: Props) {
             type="date"
             value={returnDate}
             min={pickupDate}
-            onChange={e => setReturnDate(e.target.value)}
+            onChange={e => {
+              if (isBlocked(e.target.value)) return
+              setReturnDate(e.target.value)
+            }}
             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm focus:ring-1 focus:ring-white focus:border-white"
           />
-          {isSunday(returnDate) && <p className="text-xs text-red-400 mt-1">Chiusi la domenica</p>}
+          {isBlocked(returnDate) && <p className="text-xs text-red-400 mt-1">Chiusi (domenica o festivo)</p>}
         </div>
 
         {/* Return Time */}
