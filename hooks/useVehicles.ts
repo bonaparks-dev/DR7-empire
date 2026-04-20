@@ -263,6 +263,7 @@ const transformVehicle = (vehicle: Vehicle, proConfig?: any): TransformedVehicle
       const price = (!isNaN(proVehiclePrice) && proVehiclePrice > 0)
         ? proVehiclePrice
         : (proCategoryPrice || 0)
+      console.log(`[useVehicles] ${vehicle.display_name}: raw=${rawProVehiclePrice} parsed=${proVehiclePrice} cat=${proCategoryPrice} → final=${price}`)
       return price > 0 ? { usd: Math.round(price * EUR_TO_USD_RATE), eur: price, crypto: 0 } : undefined
     })(),
     specs: specsArray,
