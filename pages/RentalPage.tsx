@@ -10,7 +10,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useVerification } from '../hooks/useVerification';
 import { useVehicles } from '../hooks/useVehicles';
 import { useAuth } from '../hooks/useAuth';
-import { useCentralinaProOverlay } from '../hooks/useCentralinaProConfig';
 import SEOHead from '../components/seo/SEOHead';
 import RentalSearchBar, { type SearchParams } from '../components/ui/RentalSearchBar';
 import RentalFilters from '../components/ui/RentalFilters';
@@ -236,26 +235,6 @@ const VehicleResults: React.FC<{
   setSelectedCategories: (c: string[]) => void
 }> = ({ categoryData, categoryId, hasSearched, availabilityResults, selectedCategories, maxBudget, sortBy, preDays, handleBook, setSortBy, setMaxBudget, setSelectedCategories }) => {
   const { user } = useAuth();
-  const { overlay: proOverlay } = useCentralinaProOverlay();
-
-  // Day-1 category price from Centralina Pro (no hardcoded fallback)
-  const categoryDay1Price: number | undefined = useMemo(() => {
-    const rates = proOverlay?.rentalDayRates;
-    if (!rates) return undefined;
-    if (categoryId === 'cars') {
-      const r = rates.exotic?.resident?.['1'];
-      return typeof r === 'number' && r > 0 ? r : undefined;
-    }
-    if (categoryId === 'urban-cars') {
-      const r = rates.urban?.flat?.['1'];
-      return typeof r === 'number' && r > 0 ? r : undefined;
-    }
-    if (categoryId === 'corporate-fleet') {
-      const r = rates.furgone?.flat?.['1'];
-      return typeof r === 'number' && r > 0 ? r : undefined;
-    }
-    return undefined;
-  }, [proOverlay, categoryId]);
 
   const displayData = useMemo(() => {
     let data = [...categoryData];
@@ -328,10 +307,14 @@ const VehicleResults: React.FC<{
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-4">
           {displayData.map(item => {
             const searchResult = hasSearched ? availabilityResults.get(item.id) : null;
+            // item.pricePerDay.eur is populated by useVehicles from Centralina Pro
+            // per-vehicle base_price (prezzoDinamico.dynamic.base_prices[vehicle.id]),
+            // falling back to category tariffe. No hardcoded price.
+            const vehicleDayPrice = item.pricePerDay?.eur;
             const marketingPrice = (!hasSearched && (categoryId === 'cars' || categoryId === 'urban-cars' || categoryId === 'corporate-fleet'))
-              ? categoryDay1Price : undefined;
+              ? vehicleDayPrice : undefined;
             const marketingTooltip = categoryId === 'urban-cars' ? 'Disponibile con formula long rent' : undefined;
-            const dailyRate = categoryDay1Price || 0;
+            const dailyRate = vehicleDayPrice || 0;
             const itemTotalPrice = searchResult ? searchResult.totalPrice
               : (preDays > 0 && dailyRate ? Math.round(dailyRate * preDays) : undefined);
             const itemDays = searchResult ? searchResult.days : (preDays || undefined);
