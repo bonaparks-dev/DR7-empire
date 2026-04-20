@@ -311,7 +311,7 @@ const VehicleResults: React.FC<{
             // per-vehicle base_price (prezzoDinamico.dynamic.base_prices[vehicle.id]),
             // falling back to category tariffe. No hardcoded price.
             const vehicleDayPrice = item.pricePerDay?.eur;
-            const marketingPrice = (!hasSearched && (categoryId === 'cars' || categoryId === 'urban-cars' || categoryId === 'corporate-fleet'))
+            const marketingPrice = (categoryId === 'cars' || categoryId === 'urban-cars' || categoryId === 'corporate-fleet')
               ? vehicleDayPrice : undefined;
             const marketingTooltip = categoryId === 'urban-cars' ? 'Disponibile con formula long rent' : undefined;
             const dailyRate = vehicleDayPrice || 0;
@@ -324,7 +324,7 @@ const VehicleResults: React.FC<{
                 key={item.id}
                 item={item}
                 onBook={handleBook}
-                marketingPrice={itemTotalPrice ? undefined : marketingPrice}
+                marketingPrice={marketingPrice}
                 marketingTooltip={marketingTooltip}
                 categoryId={categoryId}
                 totalPrice={itemTotalPrice}
