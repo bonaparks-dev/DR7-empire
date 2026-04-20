@@ -5597,10 +5597,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {insuranceCost > 0 && (
                     <div className="flex justify-between">
                       <span>Assicurazione {(() => {
-                        const opt = (ACTIVE_INSURANCE_BY_TIER[(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'] || []).find(o => o.id === formData.insuranceOption);
+                        const vType = getVehicleType(item);
+                        const activeTier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2';
+                        const allOpts = getInsuranceForVehicle(vType, activeTier);
+                        const opt = allOpts.find(o => o.id === formData.insuranceOption);
                         return opt?.name || formData.insuranceOption?.replace(/_/g, ' ');
                       })()} ({Math.max(1, duration.days)} gg × €{(() => {
-                        const opt = (ACTIVE_INSURANCE_BY_TIER[(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'] || []).find(o => o.id === formData.insuranceOption);
+                        const vType = getVehicleType(item);
+                        const activeTier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2';
+                        const allOpts = getInsuranceForVehicle(vType, activeTier);
+                        const opt = allOpts.find(o => o.id === formData.insuranceOption);
                         return opt?.dailyPrice || 0;
                       })()})</span>
                       <span>{formatPrice(insuranceCost)}</span>
@@ -6296,7 +6302,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
             <div className={step === 4 ? "lg:grid lg:grid-cols-3 lg:gap-8 px-2 sm:px-4" : "px-2 sm:px-4"}>
               {step === 4 && (
-                <aside className="lg:col-span-1 lg:sticky lg:top-32 self-start mb-8 lg:mb-0">
+                <aside className="hidden lg:block lg:col-span-1 lg:sticky lg:top-32 self-start mb-8 lg:mb-0">
                   <div className="bg-gray-900/50 p-6 rounded-lg border border-gray-800">
                     <p className="text-xs text-green-400 font-medium mb-2">Prezzo dinamico attivo, blocca ORA, potrebbe aumentare</p>
                     <h2 className="text-2xl font-bold text-white mb-4">RIEPILOGO COSTI</h2>
