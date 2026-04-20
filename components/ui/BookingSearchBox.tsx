@@ -1,7 +1,10 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import LocationAutocomplete from './LocationAutocomplete';
 import { DR7_OFFICE_LOCATION, type SardegnaLocation } from '../../data/sardegnaLocations';
+import { isBlockedDate } from '../../utils/blockedDates';
 
 // Pickup: Mon-Fri 10:30-12:30 / 16:30-18:30, Sat 10:30-12:30 / 15:30-17:30
 function getPickupTimes(dateStr: string): string[] {
@@ -183,13 +186,14 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
   })();
 
   const isSunday = (d: string) => d && new Date(d + 'T12:00:00').getDay() === 0;
+  const isBlocked = (d: string) => d && isBlockedDate(new Date(d + 'T12:00:00'));
 
   const handleSearch = () => {
     setError('');
     if (!pickupDate) { setError('Seleziona la data di ritiro'); return; }
     if (!returnDate) { setError('Seleziona la data di restituzione'); return; }
-    if (isSunday(pickupDate)) { setError('Chiusi la domenica'); return; }
-    if (isSunday(returnDate)) { setError('Chiusi la domenica'); return; }
+    if (isBlocked(pickupDate)) { setError('Data ritiro non disponibile (domenica o festivo)'); return; }
+    if (isBlocked(returnDate)) { setError('Data restituzione non disponibile (domenica o festivo)'); return; }
     if (returnDate < pickupDate) { setError('Data restituzione deve essere dopo il ritiro'); return; }
     if (returnDate === pickupDate && returnTime <= pickupTime) {
       setError('Orario restituzione deve essere dopo il ritiro');
@@ -241,12 +245,14 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
         <div>
           <p className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-2">Ritiro</p>
           <div className="flex gap-2">
-            <input
-              type="date"
-              value={pickupDate}
-              min={today}
-              onChange={(e) => {
-                const val = e.target.value;
+            <DatePicker
+              selected={pickupDate ? new Date(pickupDate + 'T12:00:00') : null}
+              onChange={(date: Date | null) => {
+                if (!date) return;
+                const yyyy = date.getFullYear();
+                const mm = String(date.getMonth() + 1).padStart(2, '0');
+                const dd = String(date.getDate()).padStart(2, '0');
+                const val = `${yyyy}-${mm}-${dd}`;
                 setPickupDate(val);
                 const times = getPickupTimes(val);
                 if (times.length > 0 && !times.includes(pickupTime)) setPickupTimeRaw(times[0]);
@@ -257,8 +263,11 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
                   if (!returnTimeManual) setReturnTime(calcAutoReturnTime(pickupTime, nextStr));
                 }
               }}
-              style={{ colorScheme: 'dark' }}
-              className="flex-1 bg-white/[0.06] text-white text-[15px] font-medium rounded-xl px-4 py-3.5 min-h-[50px] border-0 outline-none cursor-pointer"
+              filterDate={(date: Date) => !isBlockedDate(date)}
+              minDate={new Date()}
+              dateFormat="dd/MM/yyyy"
+              placeholderText="Seleziona data"
+              className="flex-1 bg-white/[0.06] text-white text-[15px] font-medium rounded-xl px-4 py-3.5 min-h-[50px] border-0 outline-none cursor-pointer w-full"
             />
             <select
               value={pickupTime}
@@ -271,7 +280,7 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
                 : <option value={pickupTime} className="bg-[#2c2c2e] text-white">{pickupTime}</option>}
             </select>
           </div>
-          {isSunday(pickupDate) && <p className="text-xs text-red-400 mt-1.5">Chiusi la domenica</p>}
+          {isBlocked(pickupDate) && <p className="text-xs text-red-400 mt-1.5">Chiusi (domenica o festivo)</p>}
         </div>
 
         {/* ── RETURN ── */}
@@ -285,18 +294,25 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
             )}
           </div>
           <div className="flex gap-2">
-            <input
-              type="date"
-              value={returnDate}
-              min={pickupDate || today}
-              onChange={(e) => {
-                setReturnDate(e.target.value);
-                const times = getReturnTimes(e.target.value);
+            <DatePicker
+              selected={returnDate ? new Date(returnDate + 'T12:00:00') : null}
+              onChange={(date: Date | null) => {
+                if (!date) return;
+                const yyyy = date.getFullYear();
+                const mm = String(date.getMonth() + 1).padStart(2, '0');
+                const dd = String(date.getDate()).padStart(2, '0');
+                const val = `${yyyy}-${mm}-${dd}`;
+                setReturnDate(val);
+                const times = getReturnTimes(val);
                 if (times.length > 0 && !times.includes(returnTime)) {
-                  if (!returnTimeManual) setReturnTime(calcAutoReturnTime(pickupTime, e.target.value));
+                  if (!returnTimeManual) setReturnTime(calcAutoReturnTime(pickupTime, val));
                   else setReturnTime(times[0]);
                 }
               }}
+              filterDate={(date: Date) => !isBlockedDate(date)}
+              minDate={pickupDate ? new Date(pickupDate + 'T12:00:00') : new Date()}
+              dateFormat="dd/MM/yyyy"
+              placeholderText="Seleziona data"
               style={{ colorScheme: 'dark' }}
               className="flex-1 bg-white/[0.06] text-white text-[15px] font-medium rounded-xl px-4 py-3.5 min-h-[50px] border-0 outline-none cursor-pointer"
             />
@@ -311,7 +327,7 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
                 : <option value={returnTime} className="bg-[#2c2c2e] text-white">{returnTime}</option>}
             </select>
           </div>
-          {isSunday(returnDate) && <p className="text-xs text-red-400 mt-1.5">Chiusi la domenica</p>}
+          {isBlocked(returnDate) && <p className="text-xs text-red-400 mt-1.5">Chiusi (domenica o festivo)</p>}
         </div>
 
         {error && <p className="text-xs text-red-400 text-center font-medium">{error}</p>}
