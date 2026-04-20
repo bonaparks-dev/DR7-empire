@@ -241,6 +241,7 @@ const VehicleResults: React.FC<{
 
     if (hasSearched && availabilityResults.size > 0) {
       data = data.filter(item => {
+        if (!item.available || item.bookingDisabled) return false;
         const r = availabilityResults.get(item.id);
         return r ? r.available : false;
       });
@@ -275,6 +276,7 @@ const VehicleResults: React.FC<{
     if (!hasSearched || availabilityResults.size === 0) return [];
     // Use ALL available vehicles (not filtered displayData) so category buttons don't disappear
     const allAvailable = categoryData.filter(item => {
+      if (!item.available || item.bookingDisabled) return false;
       const r = availabilityResults.get(item.id);
       return r?.available;
     });
