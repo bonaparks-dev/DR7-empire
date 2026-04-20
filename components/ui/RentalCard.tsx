@@ -42,11 +42,12 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
   const imageAspectRatio = (isJet || isYacht || isHelicopter) ? 'aspect-[16/9]' : isCar ? 'aspect-[9/16]' : 'aspect-[4/5]';
 
   const formatPrice = (price: number) => {
+    const hasDecimals = price % 1 !== 0;
     return new Intl.NumberFormat(currency === 'eur' ? 'it-IT' : 'en-US', {
       style: 'currency',
       currency: currency.toUpperCase(),
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      minimumFractionDigits: hasDecimals ? 2 : 0,
+      maximumFractionDigits: hasDecimals ? 2 : 0,
     }).format(price);
   };
 
