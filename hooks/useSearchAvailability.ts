@@ -107,38 +107,15 @@ export function useSearchAvailability(categoryContext?: string) {
         available = true
       }
 
-      // Try dynamic pricing if available
-      let dynamicTotal = totalPrice
-      if (vehicleIds.length > 0) {
-        try {
-          const priceRes = await fetchWithTimeout('/.netlify/functions/calculate-dynamic-price', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              vehicle_id: vehicleIds[0],
-              pickup_date: pickupISO,
-              dropoff_date: returnISO,
-            }),
-          }, 5000)
-
-          if (priceRes.ok) {
-            const priceData = await priceRes.json()
-            if (priceData.enabled && priceData.mode === 'auto_apply' && priceData.finalTotalEur) {
-              dynamicTotal = priceData.finalTotalEur
-            }
-          }
-        } catch {
-          // Fall back to static pricing
-        }
-      }
-
+      // Card shows BASE price only (per-vehicle Centralina Pro × days).
+      // Coefficients and min/max clamping are applied later in CarBookingWizard.
       const availableFrom = (item as any)._availableFrom || null
       newResults.set(item.id, {
         vehicleId: item.id,
         available: available || !!availableFrom,
         availableFrom,
-        totalPrice: Math.round(dynamicTotal),
-        dailyRate: Math.round(dynamicTotal / days),
+        totalPrice: Math.round(totalPrice * 100) / 100,
+        dailyRate: Math.round((totalPrice / days) * 100) / 100,
         days,
         vehicleType,
       })
