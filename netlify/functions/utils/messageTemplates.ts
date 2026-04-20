@@ -77,11 +77,9 @@ export async function resolveKeyForContext(key: string, _context?: RenderContext
   return proKey
 }
 
-let cache: { templates: MessageTemplate[]; loadedAt: number } | null = null
-const CACHE_TTL = 60_000
-
+// No cache — admin edits to Pro templates must take effect on the very next
+// message send. Kept in sync with the admin repo's version.
 async function loadAllTemplates(): Promise<MessageTemplate[]> {
-  if (cache && Date.now() - cache.loadedAt < CACHE_TTL) return cache.templates
   try {
     if (!supabaseUrl || !supabaseKey) return []
     const supabase = createClient(supabaseUrl, supabaseKey)
@@ -89,8 +87,7 @@ async function loadAllTemplates(): Promise<MessageTemplate[]> {
       .from('system_messages')
       .select('message_key, message_body, is_enabled, include_header')
     if (error) throw error
-    cache = { templates: data || [], loadedAt: Date.now() }
-    return cache.templates
+    return data || []
   } catch {
     return []
   }
