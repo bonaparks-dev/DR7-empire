@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import { useBooking } from '../../hooks/useBooking';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useCurrency } from '../../contexts/CurrencyContext';
@@ -7,6 +9,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../supabaseClient';
 import type { Booking } from '../../types';
 import NewClientModal from '../NewClientModal';
+import { isBlockedDate } from '../../utils/blockedDates';
 
 const BookingModal: React.FC = () => {
   const { isBookingOpen, closeBooking, bookingItem, bookingCategory } = useBooking();
@@ -28,19 +31,6 @@ const BookingModal: React.FC = () => {
   const today = new Date().toISOString().split('T')[0];
   const isCar = bookingCategory === 'cars';
 
-  // Holidays — same list as CarBookingWizard
-  const HOLIDAYS = [
-    '01-01', '06-01', '25-04', '01-05', '02-06', '15-08', '01-11', '08-12', '25-12', '26-12',
-    '2024-03-31', '2024-04-01', '2025-04-20', '2025-04-21', '2026-04-05', '2026-04-06',
-    '2027-03-28', '2027-03-29',
-  ];
-  const isBlockedDate = (dateStr: string): boolean => {
-    if (!dateStr) return false;
-    const d = new Date(dateStr);
-    if (d.getDay() === 0) return true; // Sunday
-    const [y, m, dd] = dateStr.split('-');
-    return HOLIDAYS.includes(`${dd}-${m}`) || HOLIDAYS.includes(dateStr);
-  };
   const isYacht = bookingCategory === 'yachts';
 
   useEffect(() => {
@@ -294,20 +284,22 @@ const BookingModal: React.FC = () => {
                         <label htmlFor="pickupDate" className="block text-sm font-medium text-gray-300">
                           {isCar ? t('Pickup_Date') : t('Check_in_Date')}
                         </label>
-                        <input
-                          type="date"
+                        <DatePicker
                           id="pickupDate"
-                          value={pickupDate}
-                          onChange={e => {
-                            if (isBlockedDate(e.target.value)) {
-                              alert('Data non disponibile (domenica o festivo). Seleziona un altro giorno.');
-                              return;
-                            }
-                            setPickupDate(e.target.value);
+                          selected={pickupDate ? new Date(pickupDate + 'T12:00:00') : null}
+                          onChange={(date: Date | null) => {
+                            if (!date) return;
+                            const yyyy = date.getFullYear();
+                            const mm = String(date.getMonth() + 1).padStart(2, '0');
+                            const dd = String(date.getDate()).padStart(2, '0');
+                            setPickupDate(`${yyyy}-${mm}-${dd}`);
                           }}
-                          min={today}
+                          filterDate={(date: Date) => !isBlockedDate(date)}
+                          minDate={new Date()}
+                          dateFormat="dd/MM/yyyy"
+                          placeholderText="Seleziona data"
                           required
-                          className="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm text-white focus:ring-white focus:border-white"
+                          className="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm text-white focus:ring-white focus:border-white px-3 py-2"
                         />
                       </div>
 
@@ -315,23 +307,25 @@ const BookingModal: React.FC = () => {
                         <label htmlFor="returnDate" className="block text-sm font-medium text-gray-300">
                           {isCar ? t('Return_Date') : t('Check_out_Date')}
                         </label>
-                        <input
-                          type="date"
+                        <DatePicker
                           id="returnDate"
-                          value={returnDate}
-                          onChange={e => {
-                            if (isBlockedDate(e.target.value)) {
-                              alert('Data non disponibile (domenica o festivo). Seleziona un altro giorno.');
-                              return;
-                            }
-                            setReturnDate(e.target.value);
+                          selected={returnDate ? new Date(returnDate + 'T12:00:00') : null}
+                          onChange={(date: Date | null) => {
+                            if (!date) return;
+                            const yyyy = date.getFullYear();
+                            const mm = String(date.getMonth() + 1).padStart(2, '0');
+                            const dd = String(date.getDate()).padStart(2, '0');
+                            setReturnDate(`${yyyy}-${mm}-${dd}`);
                           }}
-                          min={pickupDate || today}
+                          filterDate={(date: Date) => !isBlockedDate(date)}
+                          minDate={pickupDate ? new Date(pickupDate + 'T12:00:00') : new Date()}
                           disabled={!pickupDate}
+                          dateFormat="dd/MM/yyyy"
+                          placeholderText="Seleziona data"
                           required
-                          className="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm text-white focus:ring-white focus:border-white"
+                          className="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm text-white focus:ring-white focus:border-white px-3 py-2"
                         />
-                        <p className="text-xs text-yellow-400 mt-1">Chiusi la domenica - non è possibile riconsegnare</p>
+                        <p className="text-xs text-yellow-400 mt-1">Chiusi domenica e festivi</p>
                       </div>
 
                       <div>
