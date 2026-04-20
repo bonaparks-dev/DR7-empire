@@ -112,7 +112,7 @@ export const handler: Handler = async (event) => {
         const vehiclesMeta = await vehiclesMetaResponse.json();
 
         // Fetch bookings by vehicle_id
-        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,service_type&vehicle_id=in.(${vehicleIds.join(',')})&status=not.in.(cancelled,annullata,completed,completata)&dropoff_date=gte.${horizonStart.toISOString()}&pickup_date=lte.${horizonEnd.toISOString()}`;
+        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,service_type&vehicle_id=in.(${vehicleIds.join(',')})&status=not.in.(cancelled,annullata,completed,completata,expired)&dropoff_date=gte.${horizonStart.toISOString()}&pickup_date=lte.${horizonEnd.toISOString()}`;
 
         const bookingsResponse = await fetch(bookingsUrl, {
             headers: {
@@ -127,7 +127,7 @@ export const handler: Handler = async (event) => {
         // Also fetch bookings by plate (targa) to catch mismatched vehicle_id
         const plates = vehiclePlates || [];
         if (plates.length > 0) {
-            const plateBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,service_type&vehicle_plate=in.(${plates.join(',')})&status=not.in.(cancelled,annullata,completed,completata)&dropoff_date=gte.${horizonStart.toISOString()}&pickup_date=lte.${horizonEnd.toISOString()}`;
+            const plateBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,service_type&vehicle_plate=in.(${plates.join(',')})&status=not.in.(cancelled,annullata,completed,completata,expired)&dropoff_date=gte.${horizonStart.toISOString()}&pickup_date=lte.${horizonEnd.toISOString()}`;
             const plateResponse = await fetch(plateBookingsUrl, {
                 headers: {
                     'apikey': SUPABASE_SERVICE_ROLE_KEY!,
@@ -149,7 +149,7 @@ export const handler: Handler = async (event) => {
         }
 
         // Fetch reservations
-        const reservationsUrl = `${SUPABASE_URL}/rest/v1/reservations?select=start_at,end_at,vehicle_id,status&vehicle_id=in.(${vehicleIds.join(',')})&status=not.in.(cancelled,annullata,completed,completata)&end_at=gte.${horizonStart.toISOString()}&start_at=lte.${horizonEnd.toISOString()}`;
+        const reservationsUrl = `${SUPABASE_URL}/rest/v1/reservations?select=start_at,end_at,vehicle_id,status&vehicle_id=in.(${vehicleIds.join(',')})&status=not.in.(cancelled,annullata,completed,completata,expired)&end_at=gte.${horizonStart.toISOString()}&start_at=lte.${horizonEnd.toISOString()}`;
 
         const reservationsResponse = await fetch(reservationsUrl, {
             headers: {

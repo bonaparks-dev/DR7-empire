@@ -133,7 +133,7 @@ export const handler: Handler = async (event) => {
         vehiclesWithMeta = await vehiclesMetaResponse.json();
 
         // Query bookings
-        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id&status=not.in.(cancelled,annullata,completed,completata)&vehicle_id=in.(${resolvedIds.join(',')})&order=pickup_date.asc`;
+        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id&status=not.in.(cancelled,annullata,completed,completata,expired)&vehicle_id=in.(${resolvedIds.join(',')})&order=pickup_date.asc`;
 
         const bookingsResponse = await fetch(bookingsUrl, {
             headers: {
