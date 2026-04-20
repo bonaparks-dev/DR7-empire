@@ -7,6 +7,7 @@ import type { RentalItem } from '../types'
 import { calculateMultiDayPrice } from '../utils/multiDayPricing'
 import { fetchWithTimeout } from '../utils/fetchWithTimeout'
 import type { SearchParams } from '../components/ui/RentalSearchBar'
+import { useCentralinaProOverlay } from './useCentralinaProConfig'
 
 export interface VehicleSearchResult {
   vehicleId: string
@@ -37,6 +38,7 @@ export function useSearchAvailability(categoryContext?: string) {
   const [results, setResults] = useState<Map<string, VehicleSearchResult>>(new Map())
   const [isSearching, setIsSearching] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
+  const { overlay: proOverlay, snapshot: proSnapshot } = useCentralinaProOverlay()
 
   const search = useCallback(async (vehicles: RentalItem[], params: SearchParams) => {
     setIsSearching(true)
@@ -58,7 +60,15 @@ export function useSearchAvailability(categoryContext?: string) {
     const checks = vehicles.map(async (item) => {
       const vehicleType = classifyVehicle(item, categoryContext)
       const dailyRate = item.pricePerDay?.eur || 0
-      const totalPrice = calculateMultiDayPrice(vehicleType, days, dailyRate)
+      // Check Centralina Pro per-vehicle override first — if set, it wins over any multi-day table.
+      const rawVehicleId = (item as any).vehicleIds?.[0] || (item.id ? item.id.replace('car-', '') : '')
+      const perVehiclePrices = (proSnapshot as any)?.prezzoDinamico?.dynamic?.base_prices || {}
+      const rawOverride = perVehiclePrices[rawVehicleId]
+      const overridePrice = typeof rawOverride === 'number' ? rawOverride
+        : typeof rawOverride === 'string' ? parseFloat(rawOverride) : NaN
+      const totalPrice = (!isNaN(overridePrice) && overridePrice > 0)
+        ? days * overridePrice
+        : calculateMultiDayPrice(vehicleType, days, dailyRate, undefined, proOverlay?.rentalDayRates ?? null)
 
       // Get vehicle IDs for availability check
       const vehicleIds = (item as any).vehicleIds || (item.id ? [item.id.replace('car-', '')] : [])

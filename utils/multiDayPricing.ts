@@ -1,60 +1,14 @@
 /**
  * Multi-Day Pricing System
  *
- * Implements progressive discounts for longer rental periods.
- * Prices are driven by admin Centralina config (rental_day_rates).
- * Hardcoded tables below are FALLBACK defaults only.
+ * Centralina Pro is the single source of truth.
+ * No hardcoded prices, no hardcoded km tables.
+ * If Centralina Pro has no data, price = days × baseDailyRate and km = 0.
  */
 
 export interface MultiDayPriceTable {
     [days: number]: number;
 }
-
-// ========================================
-// FALLBACK PRICING TABLES (used only when admin config unavailable)
-// Source of truth: DR7-empire-admin → src/hooks/rentalConfigDefaults.ts
-// ========================================
-
-export const SUPERCAR_PRICES: MultiDayPriceTable = {
-    1: 349,
-    2: 698,
-    3: 980,
-    4: 1290,
-    5: 1590,
-    6: 1990,
-    7: 2290,
-};
-
-export const UTILITARIA_PRICES: { [days: number]: number } = {
-    1: 39,
-    2: 78,
-    3: 109,
-    4: 129,
-    5: 149,
-    6: 179,
-    7: 189,
-    30: 689,
-};
-
-export const V_CLASS_PRICES: { [days: number]: number } = {
-    1: 239,
-    2: 469,
-    3: 689,
-    4: 889,
-    5: 1090,
-    6: 1249,
-    7: 1390,
-};
-
-export const FURGONE_PRICES: { [days: number]: number } = {
-    1: 139,
-    2: 278,
-    3: 389,
-    4: 490,
-    5: 590,
-    6: 649,
-    7: 689,
-};
 
 // ========================================
 // DYNAMIC CONFIG TYPES
@@ -73,135 +27,53 @@ export interface DynamicRentalDayRates {
 // CALCULATION FUNCTIONS
 // ========================================
 
-/**
- * Calculate multi-day price for Supercar vehicles.
- * Uses dynamic rates from admin config when available, falls back to hardcoded table.
- */
-export function calculateSupercarMultiDayPrice(
-    days: number,
-    _isResident?: boolean,
+/** Pick the right Centralina Pro table for a vehicle type. */
+function pickTable(
+    vehicleType: string,
     dynamicRates?: DynamicRentalDayRates | null
-): number {
-    // Always use resident rates (single pricing, no resident/non-resident distinction)
-    const rateTable = dynamicRates?.exotic?.resident
-    const hasRates = rateTable && Object.keys(rateTable).length > 0
-
-    if (hasRates) {
-        if (rateTable[String(days)] !== undefined) {
-            return rateTable[String(days)]
-        }
-        const day7 = rateTable['7']
-        if (day7 !== undefined && days > 7) {
-            const avgRate = day7 / 7
-            return Math.round(day7 + (days - 7) * avgRate)
-        }
-        const day1 = rateTable['1']
-        if (day1 !== undefined) return days * day1
-    }
-
-    // Fallback: hardcoded table
-    if (days >= 1 && days <= 7 && SUPERCAR_PRICES[days] !== undefined) {
-        return SUPERCAR_PRICES[days]
-    }
-    if (days > 7) {
-        const day7Price = SUPERCAR_PRICES[7]
-        const day7AvgRate = day7Price / 7
-        return Math.round(day7Price + (days - 7) * day7AvgRate)
-    }
-    return days * SUPERCAR_PRICES[1]
+): Record<string, number> | null {
+    if (!dynamicRates) return null
+    if (vehicleType === 'SUPERCAR') return dynamicRates.exotic?.resident ?? null
+    if (vehicleType === 'UTILITARIA') return dynamicRates.urban?.flat ?? null
+    if (vehicleType === 'FURGONE' || vehicleType === 'V_CLASS') return dynamicRates.furgone?.flat ?? null
+    return null
 }
 
 /**
- * Calculate multi-day price for Utilitaria vehicles.
- * Uses dynamic rates from admin config when available.
+ * Look up total for `days` in a Centralina Pro table, extrapolating from
+ * day-7 average if the exact day isn't stored. Returns null if nothing usable.
  */
-export function calculateUtilitariaMultiDayPrice(
-    days: number,
-    dynamicRates?: DynamicRentalDayRates | null
-): number {
-    const flatRates = dynamicRates?.urban?.flat
+function lookupTable(table: Record<string, number> | null, days: number): number | null {
+    if (!table || Object.keys(table).length === 0) return null
+    const exact = table[String(days)]
+    if (typeof exact === 'number' && exact > 0) return exact
 
-    if (flatRates && Object.keys(flatRates).length > 0) {
-        if (flatRates[String(days)] !== undefined) return flatRates[String(days)]
+    const numericKeys = Object.keys(table)
+        .map(Number)
+        .filter((n) => !isNaN(n) && typeof table[String(n)] === 'number' && table[String(n)] > 0)
+        .sort((a, b) => a - b)
+    if (numericKeys.length === 0) return null
 
-        if (days > 7 && days <= 30) {
-            const day7 = flatRates['7'] ?? UTILITARIA_PRICES[7]
-            const day30 = flatRates['30'] ?? UTILITARIA_PRICES[30]
-            const dailyRate = (day30 - day7) / (30 - 7)
-            return Math.round(day7 + (days - 7) * dailyRate)
-        }
-        if (days > 30) {
-            const day30 = flatRates['30'] ?? UTILITARIA_PRICES[30]
-            const dailyRate = day30 / 30
-            return Math.round(day30 + (days - 30) * dailyRate)
-        }
-        const day1 = flatRates['1'] ?? UTILITARIA_PRICES[1]
-        return days * day1
+    const maxKey = numericKeys[numericKeys.length - 1]
+    const maxVal = table[String(maxKey)]
+    if (days > maxKey) {
+        const avg = maxVal / maxKey
+        return Math.round(maxVal + (days - maxKey) * avg)
     }
-
-    // Fallback: hardcoded table
-    if (days >= 1 && days <= 7 && UTILITARIA_PRICES[days]) return UTILITARIA_PRICES[days]
-    if (days > 7 && days <= 30) {
-        const day7Price = UTILITARIA_PRICES[7]
-        const day30Price = UTILITARIA_PRICES[30]
-        const dailyRate = (day30Price - day7Price) / (30 - 7)
-        return Math.round(day7Price + (days - 7) * dailyRate)
+    // days < maxKey but not in table: linear interpolation between nearest bookends
+    const lower = numericKeys.filter((k) => k < days).pop()
+    const upper = numericKeys.find((k) => k > days)
+    if (lower !== undefined && upper !== undefined) {
+        const vLower = table[String(lower)]
+        const vUpper = table[String(upper)]
+        return Math.round(vLower + ((days - lower) / (upper - lower)) * (vUpper - vLower))
     }
-    if (days > 30) {
-        const day30Price = UTILITARIA_PRICES[30]
-        const dailyRate = day30Price / 30
-        return Math.round(day30Price + (days - 30) * dailyRate)
-    }
-    return days * UTILITARIA_PRICES[1]
+    return null
 }
 
 /**
- * Calculate multi-day price for V_CLASS (Mercedes Vito) vehicles.
- */
-export function calculateVClassMultiDayPrice(days: number): number {
-    if (days >= 1 && days <= 7 && V_CLASS_PRICES[days]) return V_CLASS_PRICES[days]
-    if (days > 7) {
-        const day7Price = V_CLASS_PRICES[7]
-        const day7AvgRate = day7Price / 7
-        return Math.round(day7Price + (days - 7) * day7AvgRate)
-    }
-    return days * V_CLASS_PRICES[1]
-}
-
-/**
- * Calculate multi-day price for FURGONE (Fiat Ducato) vehicles.
- * Uses dynamic rates when available.
- */
-export function calculateFurgoneMultiDayPrice(
-    days: number,
-    dynamicRates?: DynamicRentalDayRates | null
-): number {
-    const flatRates = dynamicRates?.furgone?.flat
-
-    if (flatRates && Object.keys(flatRates).length > 0) {
-        if (flatRates[String(days)] !== undefined) return flatRates[String(days)]
-        if (days > 7) {
-            const day7 = flatRates['7'] ?? FURGONE_PRICES[7]
-            const avgRate = day7 / 7
-            return Math.round(day7 + (days - 7) * avgRate)
-        }
-        return days * (flatRates['1'] ?? FURGONE_PRICES[1])
-    }
-
-    // Fallback
-    if (days >= 1 && days <= 7 && FURGONE_PRICES[days]) return FURGONE_PRICES[days]
-    if (days > 7) {
-        const day7Price = FURGONE_PRICES[7]
-        const day7AvgRate = day7Price / 7
-        return Math.round(day7Price + (days - 7) * day7AvgRate)
-    }
-    return days * FURGONE_PRICES[1]
-}
-
-/**
- * Main function to calculate multi-day rental cost.
- * Accepts optional dynamic rates from admin Centralina config.
- * Falls back to hardcoded tables if config unavailable.
+ * Main multi-day total.
+ * Priority: Centralina Pro category table → per-vehicle baseDailyRate × days.
  */
 export function calculateMultiDayPrice(
     vehicleType: string,
@@ -210,27 +82,13 @@ export function calculateMultiDayPrice(
     _isResident?: boolean,
     dynamicRates?: DynamicRentalDayRates | null
 ): number {
-    switch (vehicleType) {
-        case 'SUPERCAR':
-            return calculateSupercarMultiDayPrice(days, undefined, dynamicRates)
-
-        case 'UTILITARIA':
-            return calculateUtilitariaMultiDayPrice(days, dynamicRates)
-
-        case 'V_CLASS':
-            return calculateVClassMultiDayPrice(days)
-
-        case 'FURGONE':
-            return calculateFurgoneMultiDayPrice(days, dynamicRates)
-
-        default:
-            return days * baseDailyRate
-    }
+    if (days <= 0) return 0
+    const tableTotal = lookupTable(pickTable(vehicleType, dynamicRates), days)
+    if (tableTotal !== null) return tableTotal
+    return days * (baseDailyRate || 0)
 }
 
-/**
- * Get the effective daily rate for display purposes.
- */
+/** Effective daily rate = total / days. */
 export function getEffectiveDailyRate(
     vehicleType: string,
     days: number,
@@ -238,46 +96,37 @@ export function getEffectiveDailyRate(
     _isResident?: boolean,
     dynamicRates?: DynamicRentalDayRates | null
 ): number {
+    if (days <= 0) return 0
     const totalCost = calculateMultiDayPrice(vehicleType, days, baseDailyRate, undefined, dynamicRates)
     return totalCost / days
 }
 
 /**
- * Calculate included km from admin config table.
- * Falls back to hardcoded progression if config unavailable.
+ * Included km from Centralina Pro km config.
+ * Returns 0 if config empty — no hardcoded fallback.
  */
 export function calculateIncludedKmFromConfig(
     days: number,
     kmConfig?: { table: Record<string, number>; extra_per_day: number } | null
 ): number {
     if (days <= 0) return 0
+    if (!kmConfig?.table || Object.keys(kmConfig.table).length === 0) return 0
 
-    if (kmConfig?.table && Object.keys(kmConfig.table).length > 0) {
-        const table = kmConfig.table
-        if (table[String(days)] !== undefined) return table[String(days)]
+    const table = kmConfig.table
+    if (table[String(days)] !== undefined) return table[String(days)]
 
-        // Find highest table entry and extrapolate
-        const keys = Object.keys(table).map(Number).sort((a, b) => a - b)
-        const maxKey = keys[keys.length - 1]
-        if (days > maxKey) {
-            const maxKm = table[String(maxKey)]
-            return maxKm + (days - maxKey) * (kmConfig.extra_per_day ?? 60)
-        }
-        // Interpolate between nearest entries
-        const lower = keys.filter(k => k <= days).pop()
-        const upper = keys.find(k => k > days)
-        if (lower !== undefined && upper !== undefined) {
-            const kmLower = table[String(lower)]
-            const kmUpper = table[String(upper)]
-            return Math.round(kmLower + ((days - lower) / (upper - lower)) * (kmUpper - kmLower))
-        }
+    const keys = Object.keys(table).map(Number).sort((a, b) => a - b)
+    const maxKey = keys[keys.length - 1]
+    if (days > maxKey) {
+        const maxKm = table[String(maxKey)]
+        return maxKm + (days - maxKey) * (kmConfig.extra_per_day ?? 0)
     }
-
-    // Hardcoded fallback (matches rentalConfigDefaults)
-    if (days === 1) return 100
-    if (days === 2) return 180
-    if (days === 3) return 240
-    if (days === 4) return 280
-    if (days === 5) return 300
-    return 300 + (days - 5) * 60
+    const lower = keys.filter((k) => k <= days).pop()
+    const upper = keys.find((k) => k > days)
+    if (lower !== undefined && upper !== undefined) {
+        const kmLower = table[String(lower)]
+        const kmUpper = table[String(upper)]
+        return Math.round(kmLower + ((days - lower) / (upper - lower)) * (kmUpper - kmLower))
+    }
+    return 0
 }
