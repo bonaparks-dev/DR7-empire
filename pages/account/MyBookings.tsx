@@ -5,6 +5,7 @@ import { supabase } from '../../supabaseClient';
 import { Link } from 'react-router-dom';
 import { getMembershipTierName } from '../../utils/membershipDiscounts';
 import { useCentralinaProOverlay } from '../../hooks/useCentralinaProConfig';
+import { addCredits } from '../../utils/creditWallet';
 
 interface Booking {
   id: string;
@@ -271,18 +272,20 @@ const MyBookings = () => {
         .eq('id', booking.id);
       if (error) throw error;
 
-      // If refund applies, add credits to wallet
+      // Auto-refund to DR7 Wallet via the add_credits RPC (atomic: updates
+      // user_credit_balance AND logs a credit_transactions row with
+      // transaction_type='credit' + balance_after). Amount in EUROS
+      // (price_total is stored in cents).
       if (policy.refundPercent > 0 && booking.price_total > 0) {
-        const refundAmount = Math.round(booking.price_total * policy.refundPercent / 100);
-        await supabase.from('credit_transactions').insert({
-          user_id: user!.id,
-          amount: refundAmount,
-          type: 'refund',
-          description: policy.hasFlex
-            ? `Rimborso DR7 Flex (${policy.refundPercent}%) — ${booking.service_name}`
-            : `Rimborso cancellazione — ${booking.service_name}`,
-          reference_id: booking.id,
-        });
+        // price_total(cents) × % / 100 = refund cents → /100 → euros rounded to 2 decimals
+        const refundEuros = Math.round((booking.price_total * policy.refundPercent) / 100) / 100;
+        const description = policy.hasFlex
+          ? `Rimborso DR7 Flex (${policy.refundPercent}%) — ${booking.service_name}`
+          : `Rimborso cancellazione (${policy.refundPercent}%) — ${booking.service_name}`;
+        const result = await addCredits(user!.id, refundEuros, description, booking.id, 'refund');
+        if (!result.success) {
+          console.error('[MyBookings] refund credit failed:', result.error);
+        }
       }
 
       // Send "Prenotazione Annullata da sito" from Messaggi di Sistema Pro.
