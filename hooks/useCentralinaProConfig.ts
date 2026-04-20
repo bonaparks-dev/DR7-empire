@@ -63,6 +63,7 @@ export interface WebsiteConfigOverlay {
   }
   rentalDayRates: RentalDayRates | null
   kmIncluded: KmIncludedConfig | null
+  kmIncludedAziendali: KmIncludedConfig | null
   kmPackagePrices: KmPackagePrices
   sforoPerKm: number
 }
@@ -402,11 +403,19 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
       }
     : null
 
-  // kmIncluded — use supercars as the global default (historical behavior)
+  // kmIncluded per category — supercars is the default, aziendali for furgone/ncc
   const kmIncluded: KmIncludedConfig | null = kmSupercars
     ? {
         table: cleanNumMap(kmSupercars.table),
         extra_per_day: num(kmSupercars.extraPerDay, 60),
+      }
+    : null
+
+  const kmAziendaliEntry = (snapshot.km || []).find(k => k.id === 'aziendali')
+  const kmIncludedAziendali: KmIncludedConfig | null = kmAziendaliEntry
+    ? {
+        table: cleanNumMap(kmAziendaliEntry.table),
+        extra_per_day: num(kmAziendaliEntry.extraPerDay, 0),
       }
     : null
 
@@ -458,6 +467,7 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
     },
     rentalDayRates,
     kmIncluded,
+    kmIncludedAziendali,
     kmPackagePrices,
     sforoPerKm: sforoSupercar,
   }
