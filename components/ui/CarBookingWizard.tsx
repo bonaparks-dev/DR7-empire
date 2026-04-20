@@ -2341,11 +2341,19 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
     }
     if (step === 3) {
-      const vType = getVehicleType(item, categoryContext);
-
-      // Urban/Furgone: fixed deposit, no selection needed
-      // Only validate deposit for supercars
-
+      const membershipTier = getMembershipTierName(user);
+      const skipsCauzione = membershipTier === 'gold' || membershipTier === 'platinum';
+      if (!skipsCauzione) {
+        const vTypeForDep = getVehicleType(item, categoryContext);
+        const activeTierForDep = driverTier || 'TIER_2';
+        const insOpts = getInsuranceForVehicle(vTypeForDep, activeTierForDep);
+        const rcaOpt = insOpts.find((o: any) => o.id === 'RCA');
+        const insIsRCA = formData.insuranceOption === 'RCA';
+        const mandatoryRcaDeposit = insIsRCA && (rcaOpt?.mandatoryDeposit || 0) > 0;
+        if (!mandatoryRcaDeposit && !formData.depositOption) {
+          newErrors.depositOption = "Seleziona un'opzione per la cauzione.";
+        }
+      }
     }
     if (step === 4) {
       if (!formData.confirmsDocuments) {

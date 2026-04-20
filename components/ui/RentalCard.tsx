@@ -101,7 +101,10 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
                       <span className="text-sm text-gray-400">totale</span>
                     </div>
                     <div className="text-xs text-gray-500 mt-0.5">
-                      {totalDays} {totalDays === 1 ? 'giorno' : 'giorni'} — {formatPrice(Math.round(totalPrice / totalDays))}/giorno
+                      {totalDays} {totalDays === 1 ? 'giorno' : 'giorni'}
+                      {item.pricePerDay && (
+                        <> — {formatPrice(item.pricePerDay[currency])}/giorno</>
+                      )}
                     </div>
                   </div>
                 ) : marketingPrice ? (
