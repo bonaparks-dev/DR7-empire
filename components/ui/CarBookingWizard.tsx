@@ -2702,6 +2702,31 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         await markDiscountCodeAsUsed(data.id);
       }
 
+      // DR7 Club 3% cashback — CARD payments only (not wallet credits).
+      // Granted only to users with an active DR7 Club subscription.
+      if (user?.id && data.payment_method !== 'credit') {
+        try {
+          const { data: sub } = await supabase
+            .from('dr7_club_subscriptions')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .gt('expires_at', new Date().toISOString())
+            .limit(1)
+            .maybeSingle();
+          if (sub) {
+            const paidEur = grandTotal;
+            const cashbackAmount = Math.floor(paidEur * 3) / 100;
+            if (cashbackAmount >= 0.01) {
+              await addCredits(user.id, cashbackAmount, `DR7 Club 3% — Prenotazione ${data.id?.substring(0, 8) || ''}`, data.id, 'cashback_3_percent');
+              console.log(`[booking] DR7 Club 3% cashback (card): €${cashbackAmount.toFixed(2)} → wallet`);
+            }
+          }
+        } catch (cashbackErr) {
+          console.error('[booking] DR7 Club cashback error (non-blocking):', cashbackErr);
+        }
+      }
+
       // DR7 Club subscription — activate after card payment (fee is included in total)
       const hasClubSubNexi = formData.extras.some(e => e.startsWith('subscription_'));
       if (hasClubSubNexi && user?.id) {
@@ -3286,17 +3311,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           }).then(res => res.ok ? console.log('[credit-booking] Webhook OK') : console.error('[credit-booking] Webhook failed:', res.status))
             .catch(e => console.error('[credit-booking] Webhook error:', e));
 
-          // DR7 Club 3% cashback — grant wallet credit on payment
-          try {
-            const paidEur = grandTotal;
-            const cashbackAmount = Math.floor(paidEur * 3) / 100; // 3%, round down to cents
-            if (cashbackAmount >= 0.01 && user?.id) {
-              await addCredits(user.id, cashbackAmount, `DR7 Club 3% — Prenotazione ${data.booking_id?.substring(0, 8) || ''}`, data.booking_id, 'cashback_3_percent');
-              console.log(`[credit-booking] DR7 Club 3% cashback: €${cashbackAmount.toFixed(2)} → wallet`);
-            }
-          } catch (cashbackErr) {
-            console.error('[credit-booking] DR7 Club cashback error (non-blocking):', cashbackErr);
-          }
+          // NB: no cashback on wallet-credit bookings — cashback is card-only.
 
           // DR7 Club subscription — activate + send payment link
           const hasClubSub = formData.extras.some(e => e.startsWith('subscription_'));
