@@ -4,8 +4,6 @@
  * Implements progressive discounts for longer rental periods.
  * Prices are driven by admin Centralina config (rental_day_rates).
  * Hardcoded tables below are FALLBACK defaults only.
- *
- * NOTE: Massimo Runchina has separate pricing logic that takes priority.
  */
 
 export interface MultiDayPriceTable {
