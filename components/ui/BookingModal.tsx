@@ -27,6 +27,20 @@ const BookingModal: React.FC = () => {
 
   const today = new Date().toISOString().split('T')[0];
   const isCar = bookingCategory === 'cars';
+
+  // Holidays — same list as CarBookingWizard
+  const HOLIDAYS = [
+    '01-01', '06-01', '25-04', '01-05', '02-06', '15-08', '01-11', '08-12', '25-12', '26-12',
+    '2024-03-31', '2024-04-01', '2025-04-20', '2025-04-21', '2026-04-05', '2026-04-06',
+    '2027-03-28', '2027-03-29',
+  ];
+  const isBlockedDate = (dateStr: string): boolean => {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    if (d.getDay() === 0) return true; // Sunday
+    const [y, m, dd] = dateStr.split('-');
+    return HOLIDAYS.includes(`${dd}-${m}`) || HOLIDAYS.includes(dateStr);
+  };
   const isYacht = bookingCategory === 'yachts';
 
   useEffect(() => {
@@ -284,7 +298,13 @@ const BookingModal: React.FC = () => {
                           type="date"
                           id="pickupDate"
                           value={pickupDate}
-                          onChange={e => setPickupDate(e.target.value)}
+                          onChange={e => {
+                            if (isBlockedDate(e.target.value)) {
+                              alert('Data non disponibile (domenica o festivo). Seleziona un altro giorno.');
+                              return;
+                            }
+                            setPickupDate(e.target.value);
+                          }}
                           min={today}
                           required
                           className="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm text-white focus:ring-white focus:border-white"
@@ -300,10 +320,8 @@ const BookingModal: React.FC = () => {
                           id="returnDate"
                           value={returnDate}
                           onChange={e => {
-                            // Check if selected date is Sunday (0 = Sunday)
-                            const selectedDate = new Date(e.target.value);
-                            if (selectedDate.getDay() === 0) {
-                              alert('Non è possibile riconsegnare il veicolo di domenica. Siamo chiusi la domenica.\n\nPer favore seleziona un altro giorno.');
+                            if (isBlockedDate(e.target.value)) {
+                              alert('Data non disponibile (domenica o festivo). Seleziona un altro giorno.');
                               return;
                             }
                             setReturnDate(e.target.value);
