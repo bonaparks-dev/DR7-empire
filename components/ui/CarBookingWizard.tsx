@@ -4013,6 +4013,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           const value = e.target.value;
                           if (!value) return;
 
+                          // Block Sundays & holidays
+                          const d = new Date(value);
+                          if (d.getDay() === 0 || isHoliday(value)) {
+                            setErrors(prev => ({ ...prev, pickupDate: 'Data non disponibile (domenica o festivo). Seleziona un altro giorno.' }));
+                            return;
+                          }
+                          setErrors(prev => { const next = { ...prev }; delete next.pickupDate; return next; });
+
                           // Block urban/corporate vehicles after March 25
                           if (isUtilitaria && value > UTILITARIE_MAX_DATE) {
                             setShowMaxDatePopup(true);
@@ -4105,6 +4113,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         onChange={(e) => {
                           const value = e.target.value;
                           if (!value) return;
+
+                          // Block Sundays & holidays
+                          const d = new Date(value);
+                          if (d.getDay() === 0 || isHoliday(value)) {
+                            setErrors(prev => ({ ...prev, returnDate: 'Data non disponibile (domenica o festivo). Seleziona un altro giorno.' }));
+                            return;
+                          }
+                          setErrors(prev => { const next = { ...prev }; delete next.returnDate; return next; });
 
                           // Block urban/corporate vehicles after March 25
                           if (isUtilitaria && value > UTILITARIE_MAX_DATE) {
