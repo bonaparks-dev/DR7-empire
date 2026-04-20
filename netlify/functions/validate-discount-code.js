@@ -209,7 +209,12 @@ exports.handler = async (event) => {
 
       // Rental service hierarchy: 'noleggio' is parent of 'supercar' and 'utilitarie'
       const isRentalService = ['noleggio', 'supercar', 'utilitarie', 'urban-cars', 'corporate-fleet'].includes(normalizedServiceType);
-      const isCarWashService = normalizedServiceType.includes('lavag') || normalizedServiceType === 'car_wash' || normalizedServiceType === 'car-wash';
+      // Prime Wash umbrella: car wash + mechanical (meccanica) both live under 'lavaggi'
+      const isPrimeWashService = normalizedServiceType.includes('lavag')
+        || normalizedServiceType === 'car_wash'
+        || normalizedServiceType === 'car-wash'
+        || normalizedServiceType === 'mechanical'
+        || normalizedServiceType === 'meccanica';
 
       // Check if scope includes 'tutti' or 'tutti_i_servizi' or the specific service
       const isValidScope = scope.some(s => {
@@ -222,9 +227,8 @@ exports.handler = async (event) => {
                // Specific rental type matches
                (normalizedServiceType.includes('supercar') && normalizedScope === 'supercar') ||
                (normalizedServiceType.includes('utilitari') && normalizedScope === 'utilitarie') ||
-               // Car wash matching
-               (isCarWashService && normalizedScope === 'lavaggi') ||
-               (normalizedServiceType.includes('lavag') && normalizedScope === 'lavaggi');
+               // Prime Wash matching (lavaggi + meccanica both covered by 'lavaggi' scope)
+               (isPrimeWashService && normalizedScope === 'lavaggi');
       });
 
       if (!isValidScope) {
