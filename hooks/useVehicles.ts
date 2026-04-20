@@ -487,13 +487,18 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
         // Fetch Pro config for card prices
         let proConfig: any = null
         try {
-          const { data: proRow } = await supabase
+          const { data: proRow, error: proError } = await supabase
             .from('centralina_pro_config')
             .select('config')
             .eq('id', 'main')
             .maybeSingle()
-          proConfig = proRow?.config || null
-        } catch { /* use vehicle.daily_rate as fallback */ }
+          if (proError) {
+            console.error('[useVehicles] Pro config fetch ERROR:', proError.message, proError.code)
+          } else {
+            proConfig = proRow?.config || null
+            console.log('[useVehicles] Pro config loaded:', proConfig ? `${Object.keys(proConfig).length} keys, base_prices: ${JSON.stringify(Object.keys(proConfig?.prezzoDinamico?.dynamic?.base_prices || {}))}` : 'NULL')
+          }
+        } catch (err) { console.error('[useVehicles] Pro config fetch EXCEPTION:', err) }
 
         const transformedVehicles = (data || []).map((v: Vehicle) => transformVehicle(v, proConfig));
 
