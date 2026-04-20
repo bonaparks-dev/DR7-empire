@@ -440,6 +440,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const ACTIVE_EXPERIENCE_SERVICES = configOverlay?.experienceServices ?? [];
   const ACTIVE_RENTAL_DAY_RATES = configOverlay?.rentalDayRates ?? null;
   const ACTIVE_KM_INCLUDED = configOverlay?.kmIncluded ?? null;
+  const ACTIVE_KM_INCLUDED_AZIENDALI = configOverlay?.kmIncludedAziendali ?? null;
   const ACTIVE_SFORO_PER_KM = configOverlay?.sforoPerKm ?? 0;
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -1666,8 +1667,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         calculatedKmPackageCost = roundToTwoDecimals(aziendaliPrice * billingDaysCalc);
       }
     } else if (vType !== 'SUPERCAR') {
-      // Urban/Furgone/VClass: use dynamic km included table from admin config
-      calculatedIncludedKm = calculateIncludedKm(billingDaysCalc, ACTIVE_KM_INCLUDED);
+      // Use correct KM table per vehicle type from Centralina Pro
+      const kmTable = (vType === 'FURGONE' || vType === 'V_CLASS')
+        ? (ACTIVE_KM_INCLUDED_AZIENDALI || ACTIVE_KM_INCLUDED)
+        : ACTIVE_KM_INCLUDED;
+      calculatedIncludedKm = calculateIncludedKm(billingDaysCalc, kmTable);
     }
 
     const calculatedRecommendedKm = recommendKmPackage(formData.expectedKm, item.name, billingDays);
@@ -3592,17 +3596,22 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
           // Redeem discount code
           if (appliedDiscount?.code) {
-            fetch('/.netlify/functions/redeem-discount-code', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                code: appliedDiscount.code,
-                bookingId: insertedBooking.id,
-                customerName: nFullName,
-                serviceType: categoryContext === 'cars' ? 'supercar' : categoryContext === 'urban-cars' ? 'utilitarie' : 'noleggio',
-                discountApplied: Math.round(discountAmount * 100),
-              })
-            }).catch(e => console.error('Redeem discount error', e));
+            (async () => {
+              const { data: { session } } = await supabase.auth.getSession();
+              const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+              if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+              fetch('/.netlify/functions/redeem-discount-code', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                  code: appliedDiscount.code,
+                  bookingId: insertedBooking.id,
+                  customerName: nFullName,
+                  serviceType: categoryContext === 'cars' ? 'supercar' : categoryContext === 'urban-cars' ? 'utilitarie' : 'noleggio',
+                  discountApplied: Math.round(discountAmount * 100),
+                })
+              }).catch(e => console.error('Redeem discount error', e));
+            })();
           }
 
           // FIX 2: Invalidate vehicle cache after successful booking
@@ -4767,7 +4776,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   >
                     <div className="flex justify-between items-center">
                       <div>
-                        <span className="font-bold text-white">{calculateIncludedKm(duration.days || 1, ACTIVE_KM_INCLUDED) || 0} km inclusi</span>
+                        <span className="font-bold text-white">{calculateIncludedKm(duration.days || 1, (vehicleType === 'FURGONE' || vehicleType === 'V_CLASS') ? (ACTIVE_KM_INCLUDED_AZIENDALI || ACTIVE_KM_INCLUDED) : ACTIVE_KM_INCLUDED) || 0} km inclusi</span>
                         <p className="text-sm text-gray-400">Calcolati sulla durata del noleggio ({duration.days || 1} {(duration.days || 1) === 1 ? 'giorno' : 'giorni'})</p>
                       </div>
                       <span className="font-bold text-green-400">Incluso</span>

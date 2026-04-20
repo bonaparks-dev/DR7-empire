@@ -664,9 +664,12 @@ const CarWashBookingPage: React.FC = () => {
     setDiscountCodeError(null);
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
       const response = await fetch('/.netlify/functions/validate-discount-code', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           action: 'validate',
           code: discountCode.trim().toUpperCase(),
@@ -756,9 +759,12 @@ const CarWashBookingPage: React.FC = () => {
     if (!appliedDiscount?.code) return;
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
       await fetch('/.netlify/functions/validate-discount-code', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           action: 'apply_car_wash',
           code: appliedDiscount.code,

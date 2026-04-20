@@ -18,7 +18,7 @@ const createResponse = (statusCode, body) => ({
   headers: {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': getCorsOrigin(_currentOrigin),
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   },
   body: JSON.stringify(body),
@@ -53,7 +53,7 @@ exports.handler = async (event) => {
       headers: {
         'Access-Control-Allow-Origin': getCorsOrigin(_currentOrigin),
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       },
       body: '',
     };
@@ -117,6 +117,54 @@ exports.handler = async (event) => {
         error: 'Codice non trovato',
         message: 'Questo codice sconto non esiste'
       });
+    }
+
+    // Per-customer restriction — same check as validate-discount-code.
+    const restrictedEmail = (discountCode.customer_email || '').toLowerCase().trim();
+    const restrictedPhone = (discountCode.customer_phone || '').replace(/[\s\-+()]/g, '').trim();
+    if (restrictedEmail || restrictedPhone) {
+      const authHeader = event.headers.authorization || event.headers.Authorization || '';
+      if (!authHeader.startsWith('Bearer ')) {
+        return createResponse(400, {
+          error: 'Codice riservato',
+          message: 'Questo codice è riservato a un cliente specifico. Accedi al tuo account per usarlo.'
+        });
+      }
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
+      if (authError || !authUser) {
+        return createResponse(400, {
+          error: 'Sessione non valida',
+          message: 'Accedi di nuovo al tuo account e riprova.'
+        });
+      }
+      if (restrictedEmail) {
+        const userEmail = (authUser.email || '').toLowerCase().trim();
+        if (userEmail !== restrictedEmail) {
+          return createResponse(400, {
+            error: 'Codice non valido per questo account',
+            message: 'Questo codice è riservato a un altro cliente.'
+          });
+        }
+      }
+      if (restrictedPhone) {
+        const normalize = (s) => (s || '').replace(/[\s\-+()]/g, '');
+        let userPhone = normalize(authUser.phone);
+        if (!userPhone) {
+          const { data: cust } = await supabase
+            .from('customers_extended')
+            .select('telefono')
+            .eq('user_id', authUser.id)
+            .maybeSingle();
+          if (cust?.telefono) userPhone = normalize(cust.telefono);
+        }
+        if (!userPhone || userPhone.slice(-9) !== restrictedPhone.slice(-9)) {
+          return createResponse(400, {
+            error: 'Codice non valido per questo account',
+            message: 'Questo codice è riservato a un altro cliente.'
+          });
+        }
+      }
     }
 
     // Validation checks
