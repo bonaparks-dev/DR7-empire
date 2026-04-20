@@ -103,30 +103,16 @@ exports.handler = async (event) => {
     const restrictedEmail = (discountCode.customer_email || '').toLowerCase().trim();
     const restrictedPhone = (discountCode.customer_phone || '').replace(/[\s\-+()]/g, '').trim();
     if (restrictedEmail || restrictedPhone) {
+      const invalid = () => createResponse(400, { error: 'Codice non valido', message: 'Questo codice non è valido' });
       const authHeader = event.headers.authorization || event.headers.Authorization || '';
-      if (!authHeader.startsWith('Bearer ')) {
-        return createResponse(400, {
-          error: 'Codice riservato',
-          message: 'Questo codice è riservato a un cliente specifico. Accedi al tuo account per usarlo.'
-        });
-      }
+      if (!authHeader.startsWith('Bearer ')) return invalid();
       const token = authHeader.replace('Bearer ', '');
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
-      if (authError || !authUser) {
-        return createResponse(400, {
-          error: 'Sessione non valida',
-          message: 'Accedi di nuovo al tuo account e riprova.'
-        });
-      }
+      if (authError || !authUser) return invalid();
 
       if (restrictedEmail) {
         const userEmail = (authUser.email || '').toLowerCase().trim();
-        if (userEmail !== restrictedEmail) {
-          return createResponse(400, {
-            error: 'Codice non valido per questo account',
-            message: 'Questo codice è riservato a un altro cliente.'
-          });
-        }
+        if (userEmail !== restrictedEmail) return invalid();
       }
 
       if (restrictedPhone) {
@@ -141,12 +127,7 @@ exports.handler = async (event) => {
           if (cust?.telefono) userPhone = normalize(cust.telefono);
         }
         // Compare last 9 digits to tolerate prefix differences (+39 / 39 / 0…)
-        if (!userPhone || userPhone.slice(-9) !== restrictedPhone.slice(-9)) {
-          return createResponse(400, {
-            error: 'Codice non valido per questo account',
-            message: 'Questo codice è riservato a un altro cliente.'
-          });
-        }
+        if (!userPhone || userPhone.slice(-9) !== restrictedPhone.slice(-9)) return invalid();
       }
     }
 
