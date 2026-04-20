@@ -96,6 +96,8 @@ export const handler: Handler = async (event) => {
         }
 
         const BUFFER_TIME_MS = 90 * 60 * 1000;
+        const CROSS_VEHICLE_GAP_MINUTES = 15;
+        const CROSS_VEHICLE_GAP_MS = CROSS_VEHICLE_GAP_MINUTES * 60 * 1000;
         const requestedPickup = new Date(pickupDate);
         const requestedDropoff = new Date(dropoffDate);
 
@@ -325,6 +327,75 @@ export const handler: Handler = async (event) => {
                     if (!nextBookingStart || mustReturnBy.toISOString() < nextBookingStart) {
                         nextBookingStart = mustReturnBy.toISOString();
                     }
+                }
+            }
+        }
+
+        // Cross-vehicle handover gap: any pickup or return on a DIFFERENT rental
+        // must be at least 15 minutes apart from our pickup and our return.
+        // Same-car 90-min buffer above stays untouched.
+        const targetIdSet = new Set<string>(vehicleIds);
+        const windowStart = new Date(requestedPickup.getTime() - CROSS_VEHICLE_GAP_MS).toISOString();
+        const windowEnd = new Date(requestedDropoff.getTime() + CROSS_VEHICLE_GAP_MS).toISOString();
+        const crossBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,service_type,customer_name&status=not.in.(cancelled,annullata,completed,completata,expired)&customer_name=neq.${encodeURIComponent('Lavaggio Rientro')}&pickup_date=lt.${encodeURIComponent(windowEnd)}&dropoff_date=gt.${encodeURIComponent(windowStart)}`;
+        const crossResponse = await fetch(crossBookingsUrl, {
+            headers: {
+                'apikey': SUPABASE_SERVICE_ROLE_KEY!,
+                'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                'Content-Type': 'application/json',
+            },
+        });
+        const crossBookings = await crossResponse.json();
+
+        if (Array.isArray(crossBookings)) {
+            let pickupBlockerMs: number | null = null;
+
+            for (const b of crossBookings) {
+                // Skip same-vehicle bookings (covered by 90-min buffer above)
+                if (b.vehicle_id && targetIdSet.has(b.vehicle_id)) continue;
+                if (b.vehicle_plate && targetPlates.some((p: string) => p === b.vehicle_plate)) continue;
+                // Only rental bookings compete for handover staff
+                if (b.service_type && b.service_type !== 'car_rental') continue;
+
+                const otherPickup = new Date(b.pickup_date).getTime();
+                const otherDropoff = new Date(b.dropoff_date).getTime();
+                const myPickup = requestedPickup.getTime();
+                const myDropoff = requestedDropoff.getTime();
+
+                const events = [
+                    { myKind: 'pickup', myTime: myPickup, otherTime: otherPickup },
+                    { myKind: 'pickup', myTime: myPickup, otherTime: otherDropoff },
+                    { myKind: 'dropoff', myTime: myDropoff, otherTime: otherPickup },
+                    { myKind: 'dropoff', myTime: myDropoff, otherTime: otherDropoff },
+                ];
+
+                let hit = false;
+                for (const e of events) {
+                    if (Math.abs(e.myTime - e.otherTime) < CROSS_VEHICLE_GAP_MS) {
+                        hit = true;
+                        if (e.myKind === 'pickup' && (pickupBlockerMs == null || e.otherTime > pickupBlockerMs)) {
+                            pickupBlockerMs = e.otherTime;
+                        }
+                    }
+                }
+
+                if (hit) {
+                    conflicts.push({
+                        pickup_date: b.pickup_date,
+                        dropoff_date: b.dropoff_date,
+                        vehicle_name: b.vehicle_name || 'altro veicolo',
+                        cross_vehicle_gap: true,
+                        gap_minutes: CROSS_VEHICLE_GAP_MINUTES,
+                    });
+                }
+            }
+
+            // Suggest availableFrom = blocker + 15 min (same mechanism the UI
+            // already uses for same-car conflicts → "disponibile dalle HH:MM").
+            if (pickupBlockerMs != null) {
+                const suggested = new Date(pickupBlockerMs + CROSS_VEHICLE_GAP_MS).toISOString();
+                if (!availableFrom || suggested < availableFrom) {
+                    availableFrom = suggested;
                 }
             }
         }
