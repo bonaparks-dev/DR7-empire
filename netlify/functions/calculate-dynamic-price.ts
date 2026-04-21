@@ -50,6 +50,8 @@ interface SeasonRule {
   type: string
 }
 
+interface NamedCoeff { key: string; label: string; coeff: number }
+
 interface RevenueConfig {
   enabled: boolean
   mode: 'disabled' | 'suggestion' | 'auto_apply'
@@ -59,7 +61,13 @@ interface RevenueConfig {
   occupation_coefficients: CoefficientRow[]
   advance_coefficients: CoefficientRow[]
   duration_coefficients: CoefficientRow[]
+  calendar_gap_coefficients: CoefficientRow[]
   season_rules: SeasonRule[]
+  day_type_coefficients: NamedCoeff[]
+  vehicle_occupation_coefficients: NamedCoeff[]
+  promo_push_coefficients: NamedCoeff[]
+  special_dates: Record<string, string>
+  active_promo_level: string
 }
 
 // ─── Default coefficients (must match admin revenuePricingEngine.ts) ───────
@@ -141,6 +149,8 @@ function matchSeason(
   return best
 }
 
+const DEFAULT_NAMED: NamedCoeff[] = []
+
 function getDefaultConfig(): RevenueConfig {
   return {
     enabled: true,
@@ -151,7 +161,13 @@ function getDefaultConfig(): RevenueConfig {
     occupation_coefficients: DEFAULT_OCCUPATION_COEFFICIENTS,
     advance_coefficients: DEFAULT_ADVANCE_COEFFICIENTS,
     duration_coefficients: DEFAULT_DURATION_COEFFICIENTS,
+    calendar_gap_coefficients: [],
     season_rules: [],
+    day_type_coefficients: DEFAULT_NAMED,
+    vehicle_occupation_coefficients: DEFAULT_NAMED,
+    promo_push_coefficients: DEFAULT_NAMED,
+    special_dates: {},
+    active_promo_level: '',
   }
 }
 
@@ -184,7 +200,13 @@ function parseConfigFromDB(row: any): RevenueConfig {
     occupation_coefficients: occCoeffs?.length ? occCoeffs : DEFAULT_OCCUPATION_COEFFICIENTS,
     advance_coefficients: advCoeffs?.length ? advCoeffs : DEFAULT_ADVANCE_COEFFICIENTS,
     duration_coefficients: durCoeffs?.length ? durCoeffs : DEFAULT_DURATION_COEFFICIENTS,
+    calendar_gap_coefficients: (c.calendar_gap_coefficients as CoefficientRow[]) || [],
     season_rules: (c.season_rules as SeasonRule[]) || [],
+    day_type_coefficients: (c.day_type_coefficients as NamedCoeff[]) || [],
+    vehicle_occupation_coefficients: (c.vehicle_occupation_coefficients as NamedCoeff[]) || [],
+    promo_push_coefficients: (c.promo_push_coefficients as NamedCoeff[]) || [],
+    special_dates: (c.special_dates as Record<string, string>) || {},
+    active_promo_level: (c.active_promo_level as string) || '',
   }
 }
 
@@ -242,6 +264,9 @@ export const handler: Handler = async (event) => {
         label: r.label || '',
       }))
 
+      const mapNamed = (rows: any[]) => (rows || []).map((r: any) => ({
+        key: r.key || '', label: r.label || '', coeff: typeof r.coeff === 'number' ? r.coeff : 1,
+      }))
       config = {
         enabled: proDynamic.enabled ?? true,
         mode: proDynamic.mode || 'suggestion',
@@ -254,7 +279,14 @@ export const handler: Handler = async (event) => {
           ? mapCoeffs(proDynamic.advance_coefficients, 'min_days', 'max_days') : config.advance_coefficients,
         duration_coefficients: proDynamic.duration_coefficients?.length
           ? mapCoeffs(proDynamic.duration_coefficients, 'min_days', 'max_days') : config.duration_coefficients,
+        calendar_gap_coefficients: proDynamic.calendar_gap_coefficients?.length
+          ? mapCoeffs(proDynamic.calendar_gap_coefficients, 'min_days', 'max_days') : [],
         season_rules: proDynamic.season_rules || [],
+        day_type_coefficients: mapNamed(proDynamic.day_type_coefficients),
+        vehicle_occupation_coefficients: mapNamed(proDynamic.vehicle_occupation_coefficients),
+        promo_push_coefficients: mapNamed(proDynamic.promo_push_coefficients),
+        special_dates: (proDynamic.special_dates && typeof proDynamic.special_dates === 'object') ? proDynamic.special_dates : {},
+        active_promo_level: proDynamic.active_promo_level || '',
       }
     } else {
       // Fallback: try old revenue_config table
@@ -312,6 +344,39 @@ export const handler: Handler = async (event) => {
     const busyVehicleIds = new Set((overlappingBookings || []).map((b: { vehicle_id: string }) => b.vehicle_id))
     const occupancyPct = Math.round((busyVehicleIds.size / totalInCategory) * 100)
 
+    // 3b. Per-vehicle own occupancy (last 30 + next 30 days window)
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    const thirtyDaysAhead = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    const { data: thisVehicleBookings } = await supabase
+      .from('bookings')
+      .select('pickup_date, dropoff_date')
+      .eq('vehicle_id', vehicle.id)
+      .not('status', 'in', '(cancelled,annullata)')
+      .gte('pickup_date', thirtyDaysAgo)
+      .lte('dropoff_date', thirtyDaysAhead)
+    let vehicleOwnOccupiedDays = 0
+    for (const b of (thisVehicleBookings || [])) {
+      const p = new Date(b.pickup_date).getTime()
+      const d = new Date(b.dropoff_date).getTime()
+      vehicleOwnOccupiedDays += Math.max(1, Math.ceil((d - p) / (1000 * 60 * 60 * 24)))
+    }
+    const vehicleOwnOccupancyPct = Math.min(100, Math.round((vehicleOwnOccupiedDays / 60) * 100))
+
+    // 3c. Calendar gap: days from nearest prior booking's dropoff to this pickup
+    const { data: priorBookings } = await supabase
+      .from('bookings')
+      .select('dropoff_date')
+      .eq('vehicle_id', vehicle.id)
+      .not('status', 'in', '(cancelled,annullata)')
+      .lt('dropoff_date', pickup_date)
+      .order('dropoff_date', { ascending: false })
+      .limit(1)
+    let calendarGapDays: number | undefined
+    if (priorBookings && priorBookings.length > 0) {
+      const prevDropMs = new Date(priorBookings[0].dropoff_date).getTime()
+      calendarGapDays = Math.max(0, Math.floor((new Date(pickup_date).getTime() - prevDropMs) / (1000 * 60 * 60 * 24)))
+    }
+
     // 4. Run pricing engine
     const vehicleDailyRateCents = (vehicle.daily_rate || 0) * 100
     const vehicleBaseRateEur = vehicleDailyRateCents / 100
@@ -356,8 +421,48 @@ export const handler: Handler = async (event) => {
     const seasonMatch = matchSeason(config.season_rules, pickup_date, dropoff_date)
     const seasonCoeff = seasonMatch?.coeff ?? 1.0
 
+    // Calendar gap
+    let gapCoeff = 1.0
+    let gapLabel = 'Nessun dato gap'
+    if ((config.calendar_gap_coefficients || []).length && typeof calendarGapDays === 'number') {
+      const gapBracket = matchBracket(config.calendar_gap_coefficients, calendarGapDays, 'days')
+      if (gapBracket) { gapCoeff = gapBracket.coeff; gapLabel = gapBracket.label }
+    }
+
+    // Day type (pickup date -> special_dates[YYYY-MM-DD] -> day_type key -> coeff)
+    let dayTypeCoeff = 1.0
+    let dayTypeLabel = 'Giorno standard'
+    const pickupYmd = pickup_date.slice(0, 10)
+    const dayTypeKey = config.special_dates?.[pickupYmd]
+    if (dayTypeKey) {
+      const dayTypeMatch = (config.day_type_coefficients || []).find(d => d.key === dayTypeKey)
+      if (dayTypeMatch) { dayTypeCoeff = dayTypeMatch.coeff; dayTypeLabel = dayTypeMatch.label }
+    }
+
+    // Vehicle own occupation bucket
+    let vehOccCoeff = 1.0
+    let vehOccLabel = 'Nessun dato singolo veicolo'
+    if ((config.vehicle_occupation_coefficients || []).length) {
+      const pct = vehicleOwnOccupancyPct
+      let bucketKey = 'medio'
+      if (pct < 33) bucketKey = 'basso'
+      else if (pct < 66) bucketKey = 'medio'
+      else bucketKey = 'alto'
+      const vehOccMatch = (config.vehicle_occupation_coefficients || []).find(v => v.key === bucketKey)
+        ?? (config.vehicle_occupation_coefficients || [])[0]
+      if (vehOccMatch) { vehOccCoeff = vehOccMatch.coeff; vehOccLabel = `${vehOccMatch.label} (${pct}%)` }
+    }
+
+    // Promo push (active level)
+    let promoCoeff = 1.0
+    let promoLabel = 'Nessuna promo attiva'
+    if (config.active_promo_level) {
+      const promoMatch = (config.promo_push_coefficients || []).find(p => p.key === config.active_promo_level)
+      if (promoMatch) { promoCoeff = promoMatch.coeff; promoLabel = promoMatch.label }
+    }
+
     // Formula
-    let rawDailyRate = selectedBaseRateEur * occCoeff * advCoeff * durCoeff * seasonCoeff
+    let rawDailyRate = selectedBaseRateEur * occCoeff * advCoeff * durCoeff * seasonCoeff * gapCoeff * dayTypeCoeff * vehOccCoeff * promoCoeff
 
     // Min/Max clamp
     const minPrice = config.min_prices[vehicle.id]
@@ -377,10 +482,14 @@ export const handler: Handler = async (event) => {
 
     // Build breakdown array for frontend coefficient display
     const breakdown: { label: string; coeff: number; description: string }[] = []
-    if (occBracket) breakdown.push({ label: occBracket.label, coeff: occCoeff, description: `Occupazione ${occupancyPct}%` })
-    if (advBracket) breakdown.push({ label: advBracket.label, coeff: advCoeff, description: `${daysAhead} giorni di anticipo` })
-    if (durBracket) breakdown.push({ label: durBracket.label, coeff: durCoeff, description: `${rentalDays} giorni di noleggio` })
-    if (seasonMatch) breakdown.push({ label: seasonMatch.name, coeff: seasonCoeff, description: `Stagione: ${seasonMatch.name}` })
+    breakdown.push({ label: 'Coefficienti Occupazione', coeff: occCoeff, description: occBracket?.label || `${occupancyPct}% occupata` })
+    breakdown.push({ label: 'Coefficienti Anticipo', coeff: advCoeff, description: advBracket?.label || `${daysAhead} giorni prima` })
+    breakdown.push({ label: 'Coefficienti Durata', coeff: durCoeff, description: durBracket?.label || `${rentalDays} giorni` })
+    breakdown.push({ label: 'Coefficienti Gap Calendario', coeff: gapCoeff, description: gapLabel })
+    breakdown.push({ label: 'Coefficienti Stagione', coeff: seasonCoeff, description: seasonMatch?.name || 'Nessuna regola stagionale' })
+    breakdown.push({ label: 'Coefficienti Tipo Giorno', coeff: dayTypeCoeff, description: dayTypeLabel })
+    breakdown.push({ label: 'Coefficienti Occupazione Veicolo', coeff: vehOccCoeff, description: vehOccLabel })
+    breakdown.push({ label: 'Coefficienti Spinta Direzionale (Promo)', coeff: promoCoeff, description: promoLabel })
 
     return {
       statusCode: 200, headers,
