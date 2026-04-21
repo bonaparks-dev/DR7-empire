@@ -513,17 +513,23 @@ export const handler: Handler = async (event) => {
       }
     }
 
-    // Vehicle own occupation bucket
+    // Vehicle own occupation bucket — admin logic (revenuePricingEngine.ts:482-497)
+    // Pro config keys can be 'basso/medio/alto' OR 'sotto/allineato/richiesto'.
+    // If no key match, fall back to math-based indexing: Math.floor(pct / (100 / length))
     let vehOccCoeff = 1.0
     let vehOccLabel = 'Nessun dato singolo veicolo'
-    if ((config.vehicle_occupation_coefficients || []).length) {
+    const vehOccArr = config.vehicle_occupation_coefficients || []
+    if (vehOccArr.length) {
       const pct = vehicleOwnOccupancyPct
       let bucketKey = 'medio'
       if (pct < 33) bucketKey = 'basso'
       else if (pct < 66) bucketKey = 'medio'
       else bucketKey = 'alto'
-      const vehOccMatch = (config.vehicle_occupation_coefficients || []).find(v => v.key === bucketKey)
-        ?? (config.vehicle_occupation_coefficients || [])[0]
+      const vehOccMatch = vehOccArr.find(v => v.key === bucketKey)
+        ?? vehOccArr[Math.min(
+          Math.floor(pct / (100 / Math.max(1, vehOccArr.length))),
+          vehOccArr.length - 1
+        )]
       if (vehOccMatch) { vehOccCoeff = vehOccMatch.coeff; vehOccLabel = `${vehOccMatch.label} (${pct}%)` }
     }
 
