@@ -1589,10 +1589,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     // --- RENTAL COST ---
     let calculatedRentalCost = billingDays * pricePerDay;
+    // listRentalCost = rental without coefficients (for prezzo listino strikethrough display)
+    let listRentalCost = billingDays * pricePerDay;
 
-    if (dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.selectedBaseRateEur) {
-      // Dynamic pricing: use base rate here, coefficient applied to FULL TOTAL later
-      calculatedRentalCost = dynamicPricing.selectedBaseRateEur * billingDaysCalc;
+    if (dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && typeof dynamicPricing.finalTotalEur === 'number') {
+      // Dynamic pricing: Netlify function already applied ALL 9 coefficients to rental cost.
+      // Use finalTotalEur directly — coefficients apply to rental ONLY, not to insurance/km/deposit.
+      calculatedRentalCost = dynamicPricing.finalTotalEur;
+      listRentalCost = (dynamicPricing.selectedBaseRateEur || pricePerDay) * billingDaysCalc;
     } else {
       // Centralina Pro per-vehicle override wins over category multi-day table
       const rawVehicleId = (item as any).vehicleIds?.[0] || (item.id ? String(item.id).replace('car-', '') : '');
@@ -1606,6 +1610,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const vType = getVehicleType(item, categoryContext);
         calculatedRentalCost = calculateMultiDayPrice(vType, billingDaysCalc, pricePerDay, undefined, ACTIVE_RENTAL_DAY_RATES);
       }
+      // No dynamic pricing in this branch — listRentalCost == calculatedRentalCost
+      listRentalCost = calculatedRentalCost;
     }
 
 
@@ -1732,16 +1738,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const calculatedNoDepositSurcharge = urbanNoDepositSurcharge + supercarDepositSurcharge;
     calculatedSubtotal = calculatedSubtotal + calculatedNoDepositSurcharge;
 
-    // --- DYNAMIC PRICING: apply combined coefficient to FULL TOTAL ---
-    let listSubtotal = calculatedSubtotal; // total before coefficients
+    // --- DYNAMIC PRICING: coefficients applied to RENTAL only (inside calculatedRentalCost).
+    // listSubtotal = what the total would be WITHOUT coefficients (for "prezzo listino" strikethrough).
+    const rentalDelta = calculatedRentalCost - listRentalCost; // negative if coeffs < 1, positive if > 1
+    const listSubtotal = roundToTwoDecimals(calculatedSubtotal - rentalDelta);
     const hasDynamicCoeffs = dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.breakdown && dynamicPricing.breakdown.length > 0;
     const combinedCoeff = hasDynamicCoeffs
       ? (dynamicPricing!.breakdown!.reduce((acc, b) => acc * b.coeff, 1))
       : 1;
     const hasDynamicDiscount = hasDynamicCoeffs && Math.abs(combinedCoeff - 1) > 0.001;
-    if (hasDynamicCoeffs) {
-      calculatedSubtotal = roundToTwoDecimals(calculatedSubtotal * combinedCoeff);
-    }
+    // NOTE: do NOT multiply calculatedSubtotal by combinedCoeff again —
+    // coefficients are already baked into calculatedRentalCost via finalTotalEur.
 
     const calculatedTaxes = 0;
     const calculatedTotal = calculatedSubtotal;
