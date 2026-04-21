@@ -1730,15 +1730,22 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const calculatedNoDepositSurcharge = urbanNoDepositSurcharge + supercarDepositSurcharge;
     calculatedSubtotal = calculatedSubtotal + calculatedNoDepositSurcharge;
 
-    // --- DYNAMIC PRICING: apply combined coefficient to FULL TOTAL ---
-    let listSubtotal = calculatedSubtotal; // total before coefficients
+    // --- DYNAMIC PRICING + MAGGIORAZIONE PREVENTIVO ---
+    // Website uses the SAME logic as admin PreventiviTab:
+    //   afterRevenue = listSubtotal × combinedCoeff
+    //   final       = afterRevenue × (1 + maggiorazione_pct / 100)
+    // `maggiorazione_pct` is fetched from Centralina Pro (proSnapshot.preventivi.maggiorazione_pct).
+    let listSubtotal = calculatedSubtotal; // total before coefficients + markup
     const hasDynamicCoeffs = dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.breakdown && dynamicPricing.breakdown.length > 0;
     const combinedCoeff = hasDynamicCoeffs
       ? (dynamicPricing!.breakdown!.reduce((acc, b) => acc * b.coeff, 1))
       : 1;
-    const hasDynamicDiscount = hasDynamicCoeffs && Math.abs(combinedCoeff - 1) > 0.001;
-    if (hasDynamicCoeffs) {
-      calculatedSubtotal = roundToTwoDecimals(calculatedSubtotal * combinedCoeff);
+    const maggiorazionePct = Number((proSnapshot as any)?.preventivi?.maggiorazione_pct) || 0;
+    const markupMultiplier = 1 + maggiorazionePct / 100;
+    const finalMultiplier = combinedCoeff * markupMultiplier;
+    const hasDynamicDiscount = Math.abs(finalMultiplier - 1) > 0.001 && (hasDynamicCoeffs || maggiorazionePct > 0);
+    if (hasDynamicCoeffs || maggiorazionePct > 0) {
+      calculatedSubtotal = roundToTwoDecimals(calculatedSubtotal * finalMultiplier);
     }
 
     const calculatedTaxes = 0;
@@ -1783,7 +1790,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       listSubtotal,
       combinedCoeff,
       hasDynamicDiscount,
-      dynamicDiscountPct: hasDynamicDiscount ? Math.round((1 - combinedCoeff) * 100) : 0,
+      dynamicDiscountPct: hasDynamicDiscount ? Math.round((1 - finalMultiplier) * 100) : 0,
     };
   }, [
     formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime,
