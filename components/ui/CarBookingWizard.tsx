@@ -6448,25 +6448,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         </div>
                       )}
 
-                      {/* Debug: Revenue coefficient breakdown (visible when dynamic pricing active) */}
-                      {dynamicPricing?.breakdown && dynamicPricing.breakdown.length > 0 && (
-                        <details className="mt-2 text-[10px] text-gray-500">
-                          <summary className="cursor-pointer hover:text-gray-300">Dettaglio coefficienti Centralina Pro</summary>
-                          <div className="mt-1 space-y-0.5 pl-2 border-l border-gray-700">
-                            {dynamicPricing.breakdown.map((b: { label: string; coeff: number; description: string }, i: number) => (
-                              <div key={i} className="flex justify-between">
-                                <span>{b.label.replace('Coefficienti ', '')}: {b.description}</span>
-                                <span className={b.coeff === 1 ? 'text-gray-600' : b.coeff < 1 ? 'text-green-500' : 'text-amber-500'}>x{b.coeff.toFixed(3)}</span>
-                              </div>
-                            ))}
-                            <div className="flex justify-between border-t border-gray-700 mt-1 pt-1 font-semibold">
-                              <span>Combinato</span>
-                              <span>x{(dynamicPricing.breakdown.reduce((a: number, b: { coeff: number }) => a * b.coeff, 1)).toFixed(4)}</span>
-                            </div>
-                          </div>
-                        </details>
-                      )}
-
                       {membershipDiscount > 0 ? (
                         <>
                           <div className="flex justify-between text-gray-400 line-through text-sm"><span>Totale</span><span>{formatPrice(originalTotal)}</span></div>
