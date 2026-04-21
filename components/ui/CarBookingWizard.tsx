@@ -6389,7 +6389,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <div className="border-t border-gray-700 my-2"></div>
 
                       <div className="flex justify-between"><span className="text-gray-400">Noleggio {item.name}</span><span className="text-white font-medium">{formatPrice(rentalCost)}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-400">Pacchetto chilometrici</span><span className="text-white font-medium">{formData.kmPackageType === '50km' || kmPackageCost === 0 ? 'Incluso' : formatPrice(kmPackageCost)}</span></div>
                       <div className="flex justify-between"><span className="text-gray-400 notranslate">Assicurazione {(() => { const opts = getInsuranceForVehicle(vehicleType, (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'); return opts.find(o => o.id === formData.insuranceOption)?.name || formData.insuranceOption?.replace(/_/g, ' '); })()}</span><span className="text-white font-medium">{formatPrice(insuranceCost)}</span></div>
                       {/* Lavaggio is now included in the price - no additional fee */}
                       {pickupFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Spese di ritiro</span><span className="text-white font-medium">{formatPrice(pickupFee)}</span></div>}
