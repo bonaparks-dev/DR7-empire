@@ -471,14 +471,46 @@ export const handler: Handler = async (event) => {
       if (gapBracket) { gapCoeff = gapBracket.coeff; gapLabel = gapBracket.label }
     }
 
-    // Day type (pickup date -> special_dates[YYYY-MM-DD] -> day_type key -> coeff)
+    // Day type — admin logic: iterate each rental day, map weekday -> key (monday, tuesday...),
+    // also check special_dates[YYYY-MM-DD] overrides. Average the per-day coefficients.
+    // Matches src/utils/revenuePricingEngine.ts::calculateDayTypeMeanCoeff in admin.
     let dayTypeCoeff = 1.0
     let dayTypeLabel = 'Giorno standard'
-    const pickupYmd = pickup_date.slice(0, 10)
-    const dayTypeKey = config.special_dates?.[pickupYmd]
-    if (dayTypeKey) {
-      const dayTypeMatch = (config.day_type_coefficients || []).find(d => d.key === dayTypeKey)
-      if (dayTypeMatch) { dayTypeCoeff = dayTypeMatch.coeff; dayTypeLabel = dayTypeMatch.label }
+    const dayTypeCoeffs = config.day_type_coefficients || []
+    if (dayTypeCoeffs.length) {
+      const WEEKDAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const
+      const byKey = new Map<string, { key: string; label: string; coeff: number }>()
+      for (const d of dayTypeCoeffs) byKey.set(d.key, d)
+      const pickupYmdStart = pickup_date.slice(0, 10)
+      const [py, pm, pd] = pickupYmdStart.split('-').map(Number)
+      const startUTC = new Date(Date.UTC(py, (pm || 1) - 1, pd || 1))
+      const days = Math.max(1, Math.floor(rentalDays))
+      const perDay: Array<{ date: string; key: string; label: string; coeff: number }> = []
+      let sum = 0
+      for (let i = 0; i < days; i++) {
+        const d = new Date(startUTC.getTime() + i * 86_400_000)
+        const y = d.getUTCFullYear()
+        const m = String(d.getUTCMonth() + 1).padStart(2, '0')
+        const day = String(d.getUTCDate()).padStart(2, '0')
+        const ymd = `${y}-${m}-${day}`
+        const specialKey = config.special_dates?.[ymd]
+        const key = specialKey || WEEKDAY_KEYS[d.getUTCDay()]
+        const match = byKey.get(key)
+        const coeff = match ? match.coeff : 1.0
+        const label = match ? match.label : 'Giorno standard'
+        perDay.push({ date: ymd, key, label, coeff })
+        sum += coeff
+      }
+      dayTypeCoeff = perDay.length > 0 ? sum / perDay.length : 1.0
+      if (perDay.length === 1) {
+        dayTypeLabel = `${perDay[0].label} (${perDay[0].date})`
+      } else {
+        // Summarize: count occurrences of each label, format "Label1×n + Label2"
+        const counts: Record<string, number> = {}
+        for (const p of perDay) counts[p.label] = (counts[p.label] ?? 0) + 1
+        const summary = Object.entries(counts).map(([l, n]) => (n > 1 ? `${l}×${n}` : l)).join(' + ')
+        dayTypeLabel = `Media ${perDay.length} giorni (${summary})`
+      }
     }
 
     // Vehicle own occupation bucket
