@@ -1646,28 +1646,26 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // --- KM PACKAGE ---
     let calculatedKmPackageCost = 0;
     let calculatedIncludedKm: number;
-    if (vType === 'SUPERCAR' && formData.kmPackageType === 'unlimited') {
-      // Unlimited km for supercars — tier-conditional price
-      calculatedKmPackageCost = roundToTwoDecimals(tierPricingForCalc.unlimitedKmPerDay * billingDaysCalc);
-    } else if (formData.kmPackageType === 'unlimited') {
+    if (formData.kmPackageType === 'unlimited') {
       calculatedIncludedKm = 9999;
-      // Use Centralina prices for all vehicle types (including urban)
-      if (isUrbanVehicle(item.name)) {
+      if (vType === 'SUPERCAR') {
+        // Tier-conditional unlimited price from Centralina Pro
+        calculatedKmPackageCost = roundToTwoDecimals(tierPricingForCalc.unlimitedKmPerDay * billingDaysCalc);
+      } else if (isUrbanVehicle(item.name)) {
         const urbanPrice = configOverlay?.kmPackagePrices?.unlimitedUrbanPerDay ?? 0;
         if (urbanPrice > 0) {
           calculatedKmPackageCost = roundToTwoDecimals(urbanPrice * billingDaysCalc);
         }
       } else if (vType === 'FURGONE' || vType === 'V_CLASS') {
-        // Both Furgone (Ducato) and NCC (V_CLASS) read from Aziendali category.
-        // No hardcoded fallback — if Pro has 0, cost is 0.
         const aziendaliPrice = configOverlay?.kmPackagePrices?.unlimitedFurgonePerDay ?? 0;
         calculatedKmPackageCost = roundToTwoDecimals(aziendaliPrice * billingDaysCalc);
       } else {
         const aziendaliPrice = configOverlay?.kmPackagePrices?.unlimitedFurgonePerDay ?? 0;
         calculatedKmPackageCost = roundToTwoDecimals(aziendaliPrice * billingDaysCalc);
       }
-    } else if (vType !== 'SUPERCAR') {
-      // Use correct KM table per vehicle type from Centralina Pro
+    } else {
+      // Default "km inclusi": read from Centralina Pro per vehicle category.
+      // Covers SUPERCAR (previously missing branch) and all other types.
       const kmTable = (vType === 'FURGONE' || vType === 'V_CLASS')
         ? (ACTIVE_KM_INCLUDED_AZIENDALI || ACTIVE_KM_INCLUDED)
         : ACTIVE_KM_INCLUDED;
@@ -2550,9 +2548,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           extras: formData.extras,
           kmPackage: {
             type: includedKm >= 9999 ? 'unlimited' : (formData.kmPackageType === 'unlimited' ? 'unlimited' : 'included'),
-            distance: (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'unlimited' : `${includedKm || 100} km`,
+            distance: (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'unlimited' : `${includedKm} km`,
             cost: kmPackageCost,
-            includedKm: includedKm || 100,
+            includedKm: includedKm,
             isPremium: isPremiumVehicle(item.name)
           },
           depositOption: formData.depositOption,
@@ -3167,9 +3165,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             extras: formData.extras,
             kmPackage: {
               type: (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'unlimited' : 'included',
-              distance: (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'unlimited' : `${includedKm || 100} km`,
+              distance: (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'unlimited' : `${includedKm} km`,
               cost: kmPackageCost,
-              includedKm: includedKm || 100,
+              includedKm: includedKm,
               isPremium: isPremiumVehicle(item.name)
             },
             depositOption: formData.depositOption,
@@ -3531,9 +3529,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             extras: formData.extras,
             kmPackage: {
               type: (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'unlimited' : recommendedKm.type,
-              distance: (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'unlimited' : recommendedKm.value || `${includedKm || 100} km`,
+              distance: (formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'unlimited' : recommendedKm.value || `${includedKm} km`,
               cost: kmPackageCost,
-              includedKm: includedKm || 100,
+              includedKm: includedKm,
               isPremium: isPremiumVehicle(item.name)
             },
             depositOption: formData.depositOption,
@@ -4784,7 +4782,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   >
                     <div className="flex justify-between items-center">
                       <div>
-                        <span className="font-bold text-white">{includedKm > 0 ? `${includedKm} km inclusi` : 'KM inclusi nel noleggio'}</span>
+                        <span className="font-bold text-white">{includedKm >= 9999 ? 'Illimitati' : includedKm > 0 ? `${includedKm} km inclusi` : 'KM inclusi nel noleggio'}</span>
                         <p className="text-sm text-gray-400">Calcolati in base alla durata del noleggio</p>
                       </div>
                       <span className="font-bold text-green-400">Inclusi</span>
@@ -5383,15 +5381,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
               <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6 space-y-3 text-sm">
                 <div className="flex justify-between"><span className="text-gray-400">Veicolo</span><span className="text-white font-semibold">{item.name}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Ritiro</span><span className="text-white">{formData.pickupDate} — {formData.pickupTime || '10:30'}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Riconsegna</span><span className="text-white">{formData.returnDate} — {formData.returnTime || '09:00'}</span></div>
+                <div className="flex justify-between"><span className="text-gray-400">Ritiro</span><span className="text-white">{formData.pickupDate ? new Date(formData.pickupDate).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Europe/Rome' }) : '—'} — {formData.pickupTime || '—'}</span></div>
+                <div className="flex justify-between"><span className="text-gray-400">Riconsegna</span><span className="text-white">{formData.returnDate ? new Date(formData.returnDate).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Europe/Rome' }) : '—'} — {formData.returnTime || '—'}</span></div>
                 <div className="flex justify-between"><span className="text-gray-400">Durata</span><span className="text-white">{Math.max(1, duration.days)} {Math.max(1, duration.days) === 1 ? 'giorno' : 'giorni'}</span></div>
                 <hr className="border-gray-600 my-1" />
                 <div className="flex justify-between"><span className="text-gray-400">Noleggio {item.name}</span><span className="text-white">{formatPrice(rentalCost)}</span></div>
                 {insuranceCost > 0 && <div className="flex justify-between"><span className="text-gray-400">Assicurazione {(() => { const opts = getInsuranceForVehicle(vehicleType, (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'); return opts.find(o => o.id === formData.insuranceOption)?.name || formData.insuranceOption?.replace(/_/g, ' '); })()}</span><span className="text-white">{formatPrice(insuranceCost)}</span></div>}
                 {lavaggioFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Lavaggio</span><span className="text-white">{formatPrice(lavaggioFee)}</span></div>}
                 {kmPackageCost > 0 && <div className="flex justify-between"><span className="text-gray-400">Km illimitati</span><span className="text-white">{formatPrice(kmPackageCost)}</span></div>}
-                {kmPackageCost === 0 && <div className="flex justify-between"><span className="text-gray-400">Chilometri</span><span className="text-white">{includedKm >= 9999 ? 'Illimitati inclusi' : `${includedKm || 100} km inclusi`}</span></div>}
+                {kmPackageCost === 0 && <div className="flex justify-between"><span className="text-gray-400">Chilometri</span><span className="text-white">{includedKm >= 9999 ? 'Illimitati inclusi' : `${includedKm} km inclusi`}</span></div>}
                 <div className="flex justify-between"><span className="text-green-400">Supplemento No Cauzione</span><span className="text-green-400">{formatPrice(noDepositSurcharge)}</span></div>
                 {hasDynamicDiscount && <div className="flex justify-between text-blue-400"><span>Sconto Revenue ({dynamicDiscountPct}%)</span><span>-{formatPrice(listSubtotal - subtotal)}</span></div>}
                 <hr className="border-gray-600 my-1" />
@@ -5614,15 +5612,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 <div>
                   <p className="font-bold text-base text-white mb-2">DATE E LOCALITÀ</p>
                   <hr className="border-gray-600 mb-2" />
-                  <p>Ritiro: {formData.pickupDate} alle {formData.pickupTime} - {PICKUP_LOCATIONS.find(l => l.id === formData.pickupLocation)?.label?.it || formData.pickupLocation}</p>
-                  <p>Riconsegna: {formData.returnDate} alle {formData.returnTime} - {RETURN_LOCATIONS.find(l => l.id === formData.returnLocation)?.label?.it || formData.returnLocation}</p>
+                  <p>Ritiro: {formData.pickupDate ? new Date(formData.pickupDate).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Europe/Rome' }) : '—'} alle {formData.pickupTime || '—'} - {PICKUP_LOCATIONS.find(l => l.id === formData.pickupLocation)?.label?.it || formData.pickupLocation}</p>
+                  <p>Riconsegna: {formData.returnDate ? new Date(formData.returnDate).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Europe/Rome' }) : '—'} alle {formData.returnTime || '—'} - {RETURN_LOCATIONS.find(l => l.id === formData.returnLocation)?.label?.it || formData.returnLocation}</p>
                   <p>Durata: {Math.max(1, duration.days)} {Math.max(1, duration.days) === 1 ? 'giorno' : 'giorni'}</p>
                   {extraDayApplied && (
                     <div className="mt-1 p-2 bg-amber-900/30 border border-amber-500/50 rounded">
                       <p className="text-amber-300 text-xs font-semibold">L'orario di riconsegna supera il margine di 1h30 prima del ritiro: viene conteggiato 1 giorno aggiuntivo.</p>
                     </div>
                   )}
-                  <p>Pacchetto km: {(formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm || 100} km`}</p>
+                  <p>Pacchetto km: {(formData.kmPackageType === 'unlimited' || includedKm >= 9999) ? 'ILLIMITATI' : `${includedKm} km`}</p>
                 </div>
 
                 <div>
@@ -6384,7 +6382,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <div className="flex justify-between">
                         <span className="text-gray-400">Km pacchetto:</span>
                         <span className="text-white font-medium">
-                          {(formData.kmPackageType === 'unlimited' || (includedKm && includedKm >= 9999)) ? 'ILLIMITATI' : `${includedKm || 100} km`}
+                          {(formData.kmPackageType === 'unlimited' || (includedKm && includedKm >= 9999)) ? 'ILLIMITATI' : `${includedKm} km`}
                         </span>
                       </div>
 
