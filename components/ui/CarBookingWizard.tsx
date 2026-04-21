@@ -4034,9 +4034,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           const value = e.target.value;
                           if (!value) return;
 
-                          // Block Sundays & holidays
-                          const d = new Date(value);
-                          if (d.getDay() === 0 || isHoliday(value)) {
+                          // Block Sundays & holidays — use local-time helper to avoid UTC-shift bugs
+                          if (getDayOfWeek(value) === 0 || isHoliday(value)) {
                             setErrors(prev => ({ ...prev, pickupDate: 'Data non disponibile (domenica o festivo). Seleziona un altro giorno.' }));
                             return;
                           }
@@ -4049,15 +4048,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           }
 
                           // Auto-Clear Return Date if Pickup > Return or invalid
-                          // IMPROVED: Reset return date cleanly to avoid "return date before pickup date" errors
+                          // Reset return date if same day or before pickup (minimum 1 day rental)
                           const newPickup = value;
                           const currentReturn = formData.returnDate;
 
                           if (currentReturn && newPickup >= currentReturn) {
-                            // Reset return date if same day or before pickup (minimum 1 day rental)
-                            const nextDay = new Date(value);
-                            nextDay.setDate(nextDay.getDate() + 1);
-                            const nextDayStr = nextDay.toISOString().split('T')[0];
+                            // Add 1 day via string math (avoids UTC-parse drift)
+                            const [yStr, mStr, dStr] = value.split('-').map(Number);
+                            const tmp = new Date(yStr, mStr - 1, dStr + 1);
+                            const nextDayStr = `${tmp.getFullYear()}-${String(tmp.getMonth() + 1).padStart(2, '0')}-${String(tmp.getDate()).padStart(2, '0')}`;
                             setFormData(prev => ({ ...prev, pickupDate: value, returnDate: nextDayStr, returnTime: prev.returnTime || '09:00' }));
                           } else {
                             // Just update pickup
@@ -4135,9 +4134,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           const value = e.target.value;
                           if (!value) return;
 
-                          // Block Sundays & holidays
-                          const d = new Date(value);
-                          if (d.getDay() === 0 || isHoliday(value)) {
+                          // Block Sundays & holidays — use local-time helper to avoid UTC-shift bugs
+                          if (getDayOfWeek(value) === 0 || isHoliday(value)) {
                             setErrors(prev => ({ ...prev, returnDate: 'Data non disponibile (domenica o festivo). Seleziona un altro giorno.' }));
                             return;
                           }
