@@ -151,6 +151,48 @@ function matchSeason(
 
 const DEFAULT_NAMED: NamedCoeff[] = []
 
+// Build engine-format season_rules from Pro's named tiers + month→tier map.
+// Pro stores: season_coefficients=[{key,label,coeff}], season_by_month={1:'alta',...}
+// Engine expects: [{name, type, start_date: 'MM-DD', end_date: 'MM-DD', coeff}]
+function buildSeasonRulesFromProConfig(proDynamic: any): SeasonRule[] {
+  const coeffs = Array.isArray(proDynamic?.season_coefficients) ? proDynamic.season_coefficients : []
+  const monthMap: Record<string, string> = (proDynamic?.season_by_month && typeof proDynamic.season_by_month === 'object') ? proDynamic.season_by_month : {}
+  if (!coeffs.length || Object.keys(monthMap).length === 0) return []
+
+  const tierToCoeff = new Map<string, number>()
+  const tierToLabel = new Map<string, string>()
+  for (const c of coeffs) {
+    if (c && typeof c.key === 'string' && typeof c.coeff === 'number') {
+      tierToCoeff.set(c.key, c.coeff)
+      tierToLabel.set(c.key, typeof c.label === 'string' ? c.label : c.key)
+    }
+  }
+
+  const daysInMonth = (m: number) => {
+    if (m === 2) return 28
+    if ([4, 6, 9, 11].includes(m)) return 30
+    return 31
+  }
+
+  const rules: SeasonRule[] = []
+  for (let m = 1; m <= 12; m++) {
+    const tier = monthMap[String(m)]
+    if (!tier) continue
+    const coeff = tierToCoeff.get(tier)
+    if (typeof coeff !== 'number') continue
+    const mm = String(m).padStart(2, '0')
+    const lastDay = String(daysInMonth(m)).padStart(2, '0')
+    rules.push({
+      name: tierToLabel.get(tier) || tier,
+      type: tier,
+      start_date: `${mm}-01`,
+      end_date: `${mm}-${lastDay}`,
+      coeff,
+    })
+  }
+  return rules
+}
+
 function getDefaultConfig(): RevenueConfig {
   return {
     enabled: true,
@@ -281,7 +323,7 @@ export const handler: Handler = async (event) => {
           ? mapCoeffs(proDynamic.duration_coefficients, 'min_days', 'max_days') : config.duration_coefficients,
         calendar_gap_coefficients: proDynamic.calendar_gap_coefficients?.length
           ? mapCoeffs(proDynamic.calendar_gap_coefficients, 'min_days', 'max_days') : [],
-        season_rules: proDynamic.season_rules || [],
+        season_rules: buildSeasonRulesFromProConfig(proDynamic),
         day_type_coefficients: mapNamed(proDynamic.day_type_coefficients),
         vehicle_occupation_coefficients: mapNamed(proDynamic.vehicle_occupation_coefficients),
         promo_push_coefficients: mapNamed(proDynamic.promo_push_coefficients),
