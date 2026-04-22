@@ -32,6 +32,9 @@ interface MessageTemplate {
 const LABEL_FALLBACKS: Record<string, string[]> = {
   pro_modifica_noleggio: ['modifica noleggio', 'modifica prenotazione', 'modifica rental', 'modifica rent'],
   pro_modifica_lavaggio: ['modifica lavaggio', 'modifica prime wash', 'modifica primewash', 'modifica wash'],
+  // "Link Pagamento" / "Richiesta Pagamento" — admin may use either the predefined
+  // slot or a custom template labeled "Link Pagamento" (common naming).
+  pro_richiesta_pagamento: ['link pagamento', 'richiesta pagamento', 'invio link pagamento', 'pay by link', 'payment link'],
 }
 
 /**
@@ -55,8 +58,8 @@ const OLD_TO_PRO: Record<string, string> = {
   signature_reminder_whatsapp: 'pro_conferma_preventivo',
   signature_otp_whatsapp: 'pro_promemoria_pickup',
 
-  payment_link_customer: 'pro_promemoria_dropoff',
-  booking_cancelled_whatsapp: 'pro_richiesta_pagamento',
+  payment_link_customer: 'pro_richiesta_pagamento',
+  booking_cancelled_whatsapp: 'pro_annullamento_cliente',
 
   preventivo_whatsapp: 'pro_promemoria_checkin',
   admin_new_website_quote: 'pro_richiesta_otp',
