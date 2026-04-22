@@ -583,6 +583,12 @@ export const handler: Handler = async (event) => {
         selectedBaseRateSource,
         occupancyPct,
         breakdown,
+        // Expose min/max so the wizard can apply the same clamp UI rules
+        // as the admin side (Prezzi Base + Limiti from Centralina Pro).
+        minPrice: minPrice ?? null,
+        maxPrice: maxPrice ?? null,
+        minHit: minPrice != null && finalDailyRate <= minPrice,
+        maxHit: maxPrice != null && finalDailyRate >= maxPrice,
         coefficients: {
           occupancy: occCoeff,
           advance: advCoeff,

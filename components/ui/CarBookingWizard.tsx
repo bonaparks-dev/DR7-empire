@@ -511,6 +511,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     rentalDays?: number
     selectedBaseRateEur?: number
     breakdown?: { label: string; coeff: number; description: string }[]
+    minPrice?: number | null
+    maxPrice?: number | null
   } | null>(null)
 
   // Compute max bookable pickup date from availability windows
@@ -1529,7 +1531,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     effectivePricePerDay,
     lavaggioFee, experienceCost, flexCost, supercarDepositSurcharge, deliveryFee,
     extraDayApplied,
-    listSubtotal, hasDynamicDiscount, dynamicDiscountPct
+    listSubtotal, hasDynamicDiscount, dynamicDiscountPct,
+    uncappedSubtotal, clampHit, clampLimitDaily, clampLimitTotal
   } = useMemo(() => {
     const zero = {
       duration: { days: 0, hours: 0 }, rentalCost: 0, insuranceCost: 0, extrasCost: 0, kmPackageCost: 0, pickupFee: 0, dropoffFee: 0, subtotal: 0, taxes: 0, total: 0, includedKm: 0, driverAge: 0, licenseYears: 0, youngDriverFee: 0, recentLicenseFee: 0, secondDriverFee: 0, recommendedKm: null, membershipDiscount: 0, membershipTier: null, originalTotal: 0, finalTotal: 0,
@@ -1537,7 +1540,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       effectivePricePerDay: 0,
       lavaggioFee: 0, experienceCost: 0, flexCost: 0, supercarDepositSurcharge: 0, deliveryFee: 0,
       extraDayApplied: false,
-      listSubtotal: 0, hasDynamicDiscount: false, dynamicDiscountPct: 0
+      listSubtotal: 0, hasDynamicDiscount: false, dynamicDiscountPct: 0,
+      uncappedSubtotal: 0, clampHit: null as 'min' | 'max' | null, clampLimitDaily: null as number | null, clampLimitTotal: null as number | null
     };
     if (!item) return zero;
 
@@ -1731,14 +1735,34 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     calculatedSubtotal = calculatedSubtotal + calculatedNoDepositSurcharge;
 
     // --- DYNAMIC PRICING: apply combined coefficient to FULL TOTAL ---
-    let listSubtotal = calculatedSubtotal; // total before coefficients
+    // Experience services are EXCLUDED from the per-vehicle min/max clamp
+    // (same rule as admin-side). Everything else is clamp-eligible.
+    const listSubtotal = calculatedSubtotal; // total before coefficients
+    const subtotalNoExperience = calculatedSubtotal - calculatedExperienceCost;
     const hasDynamicCoeffs = dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.breakdown && dynamicPricing.breakdown.length > 0;
     const combinedCoeff = hasDynamicCoeffs
       ? (dynamicPricing!.breakdown!.reduce((acc, b) => acc * b.coeff, 1))
       : 1;
     const hasDynamicDiscount = hasDynamicCoeffs && Math.abs(combinedCoeff - 1) > 0.001;
+
+    // Uncapped subtotal after coefficients (used for the "real price" display)
+    const uncappedSubtotal = roundToTwoDecimals(calculatedSubtotal * combinedCoeff);
+    let clampHit: 'min' | 'max' | null = null;
+    let clampLimitDaily: number | null = null;
+
     if (hasDynamicCoeffs) {
-      calculatedSubtotal = roundToTwoDecimals(calculatedSubtotal * combinedCoeff);
+      // Clamp the clamp-eligible portion (everything except experience) against
+      // the per-vehicle daily min/max from Centralina Pro.
+      const minDaily = typeof dynamicPricing?.minPrice === 'number' ? dynamicPricing.minPrice : null;
+      const maxDaily = typeof dynamicPricing?.maxPrice === 'number' ? dynamicPricing.maxPrice : null;
+      const daysForClamp = Math.max(1, billingDaysCalc);
+      const maxTotal = maxDaily != null ? maxDaily * daysForClamp : null;
+      const minTotal = minDaily != null ? minDaily * daysForClamp : null;
+      let afterCoeffNoExp = subtotalNoExperience * combinedCoeff;
+      if (maxTotal != null && afterCoeffNoExp > maxTotal) { afterCoeffNoExp = maxTotal; clampHit = 'max'; clampLimitDaily = maxDaily; }
+      if (minTotal != null && afterCoeffNoExp < minTotal) { afterCoeffNoExp = minTotal; clampHit = 'min'; clampLimitDaily = minDaily; }
+      const experienceAfter = calculatedExperienceCost * combinedCoeff;
+      calculatedSubtotal = roundToTwoDecimals(afterCoeffNoExp + experienceAfter);
     }
 
     const calculatedTaxes = 0;
@@ -1784,6 +1808,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       combinedCoeff,
       hasDynamicDiscount,
       dynamicDiscountPct: hasDynamicDiscount ? Math.round((1 - combinedCoeff) * 100) : 0,
+      // Clamp indicators for the price summary UI
+      uncappedSubtotal,
+      clampHit,
+      clampLimitDaily,
+      clampLimitTotal: clampLimitDaily != null ? clampLimitDaily * Math.max(1, billingDaysCalc) : null,
     };
   }, [
     formData.pickupDate, formData.pickupTime, formData.returnDate, formData.returnTime,
@@ -5759,12 +5788,33 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             {dynamicDiscountPct > 0 ? `-${dynamicDiscountPct}%` : `+${Math.abs(dynamicDiscountPct)}%`}
                           </span>
                         </span>
-                        <span className="font-semibold">{formatPrice(subtotal)}</span>
+                        <span className="font-semibold">{formatPrice(uncappedSubtotal)}</span>
                       </div>
                     </>
                   )}
                   {!hasDynamicDiscount && (
-                    <div className="flex justify-between text-gray-400"><span>Subtotale</span> <span>{formatPrice(finalTotal)}</span></div>
+                    <div className="flex justify-between text-gray-400"><span>Subtotale</span> <span>{formatPrice(uncappedSubtotal || finalTotal)}</span></div>
+                  )}
+
+                  {/* Min/Max clamp indicator (Prezzi Base in Centralina Pro).
+                      Shown only when the uncapped price was clipped. Experience
+                      services are excluded from the clamp — they're added on
+                      top of the "Nuovo totale". */}
+                  {clampHit && (
+                    <>
+                      <div className="flex justify-between text-yellow-400 text-sm">
+                        <span className="flex items-center gap-1">
+                          ⚠️ Limite {clampHit === 'max' ? 'Max' : 'Min'} Raggiunto
+                          {clampLimitDaily != null && (
+                            <span className="text-gray-400 text-xs">({formatPrice(clampLimitDaily)}/g × {Math.max(1, duration.days)}gg, escl. experience)</span>
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-white font-semibold">
+                        <span>Nuovo totale</span>
+                        <span>{formatPrice(subtotal)}</span>
+                      </div>
+                    </>
                   )}
 
                   {membershipDiscount > 0 && (
@@ -6442,8 +6492,24 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                               {dynamicDiscountPct > 0 ? `-${dynamicDiscountPct}%` : `+${Math.abs(dynamicDiscountPct)}%`}
                             </span>
                           </span>
-                          <span className="text-green-400 font-semibold">{formatPrice(subtotal)}</span>
+                          <span className="text-green-400 font-semibold">{formatPrice(uncappedSubtotal)}</span>
                         </div>
+                      )}
+                      {clampHit && (
+                        <>
+                          <div className="flex justify-between items-center text-sm text-yellow-400">
+                            <span className="flex items-center gap-1">
+                              ⚠️ Limite {clampHit === 'max' ? 'Max' : 'Min'} Raggiunto
+                              {clampLimitDaily != null && (
+                                <span className="text-gray-400 text-xs">({formatPrice(clampLimitDaily)}/g × {Math.max(1, duration.days)}gg, escl. experience)</span>
+                              )}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-white font-semibold">
+                            <span>Nuovo totale</span>
+                            <span>{formatPrice(subtotal)}</span>
+                          </div>
+                        </>
                       )}
 
                       {membershipDiscount > 0 ? (

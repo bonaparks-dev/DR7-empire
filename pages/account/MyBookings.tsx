@@ -520,9 +520,25 @@ const MyBookings = () => {
           : bd.depositOption === 'vehicle_deposit'
             ? 'Cauzione con Veicolo'
             : (bd.cauzione || bd.deposit_amount ? `€${bd.cauzione || bd.deposit_amount}` : 'Standard');
-        const kmInfo = bd.unlimited_km
+        // Derive km_info from whatever the original booking stored. Website
+        // bookings nest it under `bd.kmPackage` ({ type, includedKm, distance });
+        // admin bookings put it at `bd.km_limit` + `bd.unlimited_km`. Read both
+        // so the modification message shows the customer's actual package and
+        // never "0 km".
+        const bdKmPkg = (bd as any).kmPackage || {}
+        const isUnlimited =
+          bd.unlimited_km === true ||
+          bdKmPkg.type === 'unlimited' ||
+          bdKmPkg.distance === 'unlimited' ||
+          bd.km_limit === 'Illimitati'
+        const kmNumber =
+          (typeof bdKmPkg.includedKm === 'number' && bdKmPkg.includedKm > 0 && bdKmPkg.includedKm < 9999 ? bdKmPkg.includedKm : null) ??
+          (typeof bd.km_limit === 'number' && bd.km_limit > 0 ? bd.km_limit : null) ??
+          (typeof bd.km_limit === 'string' && /^\d+$/.test(bd.km_limit) ? parseInt(bd.km_limit, 10) : null) ??
+          (typeof bd.includedKm === 'number' && bd.includedKm > 0 ? bd.includedKm : null)
+        const kmInfo = isUnlimited
           ? 'Illimitati'
-          : `${bd.km_limit || bd.includedKm || 0} km inclusi`;
+          : (kmNumber && kmNumber > 0 ? `${kmNumber} km inclusi` : 'Illimitati');
         const paymentStatusLabel = (() => {
           const ps = (modifyingBooking.payment_status || '').toLowerCase();
           if (ps === 'paid' || ps === 'succeeded' || ps === 'completed') return 'Pagato';
