@@ -1,6 +1,7 @@
 import { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
 import { getCorsOrigin } from './utils/cors'
+import { getInsuranceNameById } from './utils/centralinaProLookups'
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || ''
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
@@ -125,13 +126,16 @@ const handler: Handler = async (event) => {
         ? `*Cauzione:* Senza cauzione (+€${Number(preventivo.no_cauzione_daily).toFixed(2)}/gg = €${Number(preventivo.no_cauzione_total).toFixed(2)})`
         : `*Cauzione:* €${Number(preventivo.deposit_amount).toFixed(2)}`
 
+      // Resolve insurance display name from Centralina Pro (no raw IDs in the message).
+      const insuranceLabel = await getInsuranceNameById(preventivo.insurance_option)
+
       const msg = `${title}\n\n`
         + `*Cliente:* ${preventivo.customer_name}\n`
         + `*Tel:* ${preventivo.customer_phone || 'N/A'}\n`
         + `*Veicolo:* ${preventivo.vehicle_name}\n`
         + `*Date:* ${pickupDate} - ${dropoffDate} (${preventivo.rental_days}gg)\n`
         + `*Totale:* €${Number(preventivo.total_final).toFixed(2)}\n`
-        + `*Assicurazione:* ${preventivo.insurance_option}\n`
+        + `*Assicurazione:* ${insuranceLabel}\n`
         + `*KM:* ${preventivo.unlimited_km ? 'Illimitati' : (preventivo.km_limit + ' km')}\n`
         + `${cauzioneLine}\n\n`
         + `Gestisci dal pannello admin > Preventivi`

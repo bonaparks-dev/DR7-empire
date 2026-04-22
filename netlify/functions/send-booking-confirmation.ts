@@ -1,6 +1,7 @@
 import type { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
 import nodemailer from "nodemailer";
 import { createCalendarEvent, formatCarRentalEvent, formatCarWashEvent } from './utils/googleCalendar';
+import { getInsuranceNameById } from './utils/centralinaProLookups';
 
 const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
   console.log('📧 [send-booking-confirmation] Function invoked');
@@ -122,19 +123,11 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     const pickupDate = new Date(booking.pickup_date);
     const dropoffDate = new Date(booking.dropoff_date);
     const customerPhone = booking.customer_phone || booking.booking_details?.customer?.phone || 'N/A';
-    const insuranceOption = booking.insurance_option || booking.booking_details?.insuranceOption || 'KASKO';
+    const insuranceOption = booking.insurance_option || booking.booking_details?.insuranceOption || '';
 
-    // Map insurance option for display
-    const insuranceDisplayMap: Record<string, string> = {
-      'RCA': 'Kasko',
-      'KASKO': 'Kasko',
-      'KASKO_BASE': 'Kasko',
-      'KASKO_BLACK': 'Kasko Black',
-      'KASKO_SIGNATURE': 'Kasko Signature',
-      'KASKO_DR7': 'Kasko DR7',
-      'DR7': 'Kasko DR7',
-    };
-    const insuranceDisplayName = insuranceDisplayMap[insuranceOption] || 'Kasko';
+    // Resolve display name from Centralina Pro (no hardcoded map). If Pro has
+    // no matching id, returns the raw id so the miss is visible.
+    const insuranceDisplayName = (await getInsuranceNameById(insuranceOption)) || insuranceOption;
 
     // Get deposit from booking data (calculated in frontend based on loyalty/membership)
     const depositAmount = booking.deposit_amount !== undefined && booking.deposit_amount !== null

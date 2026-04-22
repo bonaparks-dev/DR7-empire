@@ -1,39 +1,10 @@
 import type { Handler } from "@netlify/functions";
-import { createClient } from '@supabase/supabase-js';
 import { renderTemplate, resolveKeyForContext } from './utils/messageTemplates';
+import { getInsuranceNameById } from './utils/centralinaProLookups';
 
 const GREEN_API_INSTANCE_ID = process.env.GREEN_API_INSTANCE_ID;
 const GREEN_API_TOKEN = process.env.GREEN_API_TOKEN;
 const NOTIFICATION_PHONE = process.env.NOTIFICATION_PHONE || "393457905205";
-
-// Build id → name map for insurance options stored in Centralina Pro
-// (centralina_pro_config.config.insurance[]). Scans byFascia tiers + `all`
-// across every category so any admin-defined id resolves to its display name.
-async function getInsuranceNameById(id: string | null | undefined): Promise<string> {
-  if (!id) return '';
-  const key = String(id).trim();
-  if (!key) return '';
-  try {
-    const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
-    const svc = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-    if (!url || !svc) return key;
-    const sb = createClient(url, svc);
-    const { data } = await sb.from('centralina_pro_config').select('config').eq('id', 'main').maybeSingle();
-    const insurance = (data as { config?: { insurance?: Array<Record<string, unknown>> } } | null)?.config?.insurance;
-    if (!Array.isArray(insurance)) return key;
-    for (const cat of insurance) {
-      const byFascia = (cat.byFascia as Record<string, Array<Record<string, unknown>>> | undefined) || {};
-      for (const tier of Object.keys(byFascia)) {
-        const opt = (byFascia[tier] || []).find(o => o && o.id === key);
-        if (opt && typeof opt.name === 'string' && opt.name.trim()) return opt.name.trim();
-      }
-      const all = (cat.all as Array<Record<string, unknown>> | undefined) || [];
-      const opt = all.find(o => o && o.id === key);
-      if (opt && typeof opt.name === 'string' && opt.name.trim()) return opt.name.trim();
-    }
-  } catch { /* fallthrough → return the raw key */ }
-  return key;
-}
 
 // Return "Illimitati" whenever the booking is flagged unlimited OR the stored km count
 // is the sentinel 9999 (≥). Otherwise the numeric km count. Never show "9999".

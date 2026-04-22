@@ -1,6 +1,30 @@
 const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
 
+// Resolve insurance ID → display name from Centralina Pro (centralina_pro_config).
+// Inline copy of utils/centralinaProLookups.ts (TS import not available in .js handler).
+async function getInsuranceNameByIdNexi(sb, id) {
+  if (!id) return '';
+  const key = String(id).trim();
+  if (!key) return '';
+  try {
+    const { data } = await sb.from('centralina_pro_config').select('config').eq('id', 'main').maybeSingle();
+    const insurance = data && data.config && data.config.insurance;
+    if (!Array.isArray(insurance)) return key;
+    for (const cat of insurance) {
+      const byFascia = cat.byFascia || {};
+      for (const tier of Object.keys(byFascia)) {
+        const opt = (byFascia[tier] || []).find(o => o && o.id === key);
+        if (opt && typeof opt.name === 'string' && opt.name.trim()) return opt.name.trim();
+      }
+      const all = cat.all || [];
+      const opt = all.find(o => o && o.id === key);
+      if (opt && typeof opt.name === 'string' && opt.name.trim()) return opt.name.trim();
+    }
+  } catch (_) { /* fallthrough */ }
+  return key;
+}
+
 /**
  * Generate MAC to verify callback authenticity (old XPay format only)
  */
@@ -445,8 +469,9 @@ exports.handler = async (event) => {
             const pickupLoc = newBooking.pickup_location || details.pickupLocation || 'Sede DR7';
             const dropoffLoc = newBooking.dropoff_location || details.dropoffLocation || pickupLoc;
 
-            const insuranceMap = { 'RCA': 'Kasko', 'KASKO': 'Kasko', 'KASKO_BASE': 'Kasko', 'KASKO_BLACK': 'Kasko Black', 'KASKO_SIGNATURE': 'Kasko Signature', 'DR7': 'Kasko DR7' };
-            const insurance = insuranceMap[newBooking.insurance_option || details.insurance?.type] || 'Kasko';
+            // Resolve insurance display name from Centralina Pro (no hardcoded map).
+            const insuranceId = newBooking.insurance_option || (details.insurance && details.insurance.type) || '';
+            const insurance = (await getInsuranceNameByIdNexi(supabase, insuranceId)) || insuranceId;
 
             let custMsg = '';
             custMsg += `Gentile ${custFirstName},\n\nLa sua prenotazione è stata *confermata* con successo!\n\n`;
