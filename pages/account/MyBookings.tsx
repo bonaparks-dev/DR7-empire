@@ -960,26 +960,20 @@ const MyBookings = () => {
                   </div>
                 </div>
 
-                {/* Price diff summary */}
+                {/* Price summary — only shows diff when new total > paid; otherwise keeps paid amount silently */}
                 <div className="p-4 rounded-lg bg-gray-800/60 border border-gray-700 mb-4 text-sm space-y-1">
-                  <div className="flex justify-between"><span className="text-gray-400">Prezzo pagato</span><span className="text-white">€{paidEur.toFixed(2)}</span></div>
                   {rentalRecalcing ? (
                     <div className="text-gray-500 text-xs">Ricalcolo in corso…</div>
-                  ) : newTotal != null && (
+                  ) : diff > 0 ? (
                     <>
-                      <div className="flex justify-between"><span className="text-gray-400">Nuovo totale</span><span className="text-white">€{newTotal.toFixed(2)}</span></div>
-                      {diff > 0 ? (
-                        <>
-                          <div className="flex justify-between text-amber-400"><span>Differenza da pagare</span><span>+€{diff.toFixed(2)}</span></div>
-                          {willPayByWallet && <div className="text-green-400 text-xs mt-1">Addebito dal DR7 Wallet (saldo: €{rentalWalletBalance.toFixed(2)}). Nessuna fattura.</div>}
-                          {willPayByCard && <div className="text-blue-400 text-xs mt-1">Saldo wallet insufficiente → pagamento con carta. Verrà generata fattura.</div>}
-                        </>
-                      ) : diff < 0 ? (
-                        <div className="flex justify-between text-gray-500"><span>Nessun rimborso</span><span>mantieni €{paidEur.toFixed(2)}</span></div>
-                      ) : (
-                        <div className="text-gray-500 text-xs">Nessuna differenza</div>
-                      )}
+                      <div className="flex justify-between"><span className="text-gray-400">Prezzo pagato</span><span className="text-white">€{paidEur.toFixed(2)}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-400">Nuovo totale</span><span className="text-white">€{(newTotal as number).toFixed(2)}</span></div>
+                      <div className="flex justify-between text-amber-400"><span>Differenza da pagare</span><span>+€{diff.toFixed(2)}</span></div>
+                      {willPayByWallet && <div className="text-green-400 text-xs mt-1">Addebito dal DR7 Wallet (saldo: €{rentalWalletBalance.toFixed(2)}). Nessuna fattura.</div>}
+                      {willPayByCard && <div className="text-blue-400 text-xs mt-1">Saldo wallet insufficiente → pagamento con carta. Verrà generata fattura.</div>}
                     </>
+                  ) : (
+                    <div className="flex justify-between font-semibold"><span className="text-gray-300">Totale</span><span className="text-white">€{paidEur.toFixed(2)}</span></div>
                   )}
                 </div>
 
