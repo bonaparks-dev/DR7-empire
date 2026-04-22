@@ -10,11 +10,16 @@ const NOTIFICATION_PHONE = process.env.NOTIFICATION_PHONE || "393457905205";
 // is the sentinel 9999 (≥). Otherwise the numeric km count. Never show "9999".
 function formatKmInfo(booking: { booking_details?: Record<string, unknown> }): string {
   const bd = (booking.booking_details || {}) as Record<string, unknown>;
-  const unlimited = bd.unlimited_km === true || bd.unlimited_km === 'true';
   const kmPkg = (bd.kmPackage || {}) as Record<string, unknown>;
+  const unlimited =
+    bd.unlimited_km === true
+    || bd.unlimited_km === 'true'
+    || bd.km_limit === 'Illimitati'
+    || kmPkg.type === 'unlimited'
+    || kmPkg.distance === 'unlimited';
   const rawIncluded = Number(kmPkg.includedKm ?? bd.km_limit ?? 0);
   if (unlimited || rawIncluded >= 9999) return 'Illimitati';
-  return rawIncluded > 0 ? `${rawIncluded} km` : '';
+  return rawIncluded > 0 ? `${rawIncluded} km` : 'Illimitati';
 }
 
 /**
