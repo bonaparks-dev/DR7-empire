@@ -154,7 +154,8 @@ export async function getMessageTemplate(
 }
 
 export function invalidateTemplateCache() {
-  cache = null
+  // No cache to invalidate — loadAllTemplates always hits DB.
+  // Kept as a no-op for backward compat with callers.
 }
 
 export async function renderTemplate(
