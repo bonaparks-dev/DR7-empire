@@ -5,13 +5,16 @@ import { supabase } from '../../supabaseClient';
 import { Link } from 'react-router-dom';
 import { getMembershipTierName } from '../../utils/membershipDiscounts';
 import { useCentralinaProOverlay } from '../../hooks/useCentralinaProConfig';
-import { addCredits } from '../../utils/creditWallet';
+import { addCredits, deductCredits, getUserCreditBalance } from '../../utils/creditWallet';
+import { PICKUP_LOCATIONS, RETURN_LOCATIONS } from '../../constants';
 
 interface Booking {
   id: string;
   service_type: 'car_rental' | 'car_wash';
   service_name: string;
   vehicle_name?: string;
+  vehicle_id?: string;
+  vehicle_plate?: string;
   customer_name: string;
   customer_email: string;
   customer_phone: string;
@@ -20,6 +23,7 @@ interface Booking {
   pickup_date?: string;
   dropoff_date?: string;
   pickup_location?: string;
+  dropoff_location?: string;
   price_total: number;
   currency: string;
   payment_status: string;
@@ -39,12 +43,24 @@ const MyBookings = () => {
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [cancelSuccess, setCancelSuccess] = useState<string | null>(null);
-  // Modify state (car wash with Prime Flex)
+  // Modify state (car wash + car rental)
   const [modifyingBooking, setModifyingBooking] = useState<Booking | null>(null);
   const [modifyDate, setModifyDate] = useState('');
   const [modifyTime, setModifyTime] = useState('');
   const [modifySaving, setModifySaving] = useState(false);
   const [modifyError, setModifyError] = useState<string | null>(null);
+
+  // Rental-specific modify state
+  const [rentalPickupDate, setRentalPickupDate] = useState('');
+  const [rentalPickupTime, setRentalPickupTime] = useState('');
+  const [rentalPickupLocation, setRentalPickupLocation] = useState('');
+  const [rentalDropoffDate, setRentalDropoffDate] = useState('');
+  const [rentalDropoffTime, setRentalDropoffTime] = useState('');
+  const [rentalDropoffLocation, setRentalDropoffLocation] = useState('');
+  const [rentalRecalcTotal, setRentalRecalcTotal] = useState<number | null>(null); // euros
+  const [rentalRecalcing, setRentalRecalcing] = useState(false);
+  const [rentalWalletBalance, setRentalWalletBalance] = useState<number>(0);
+  const [rentalAvailabilityOk, setRentalAvailabilityOk] = useState<boolean | null>(null);
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -174,6 +190,31 @@ const MyBookings = () => {
     return { canCancel: false, hasFlex: false, refundPercent: 0, penaltyPercent: 0, message: 'Non è più possibile cancellare questa prenotazione.' };
   };
 
+  // Recalc rental total whenever the user changes pickup/dropoff while the modal is open
+  useEffect(() => {
+    if (!modifyingBooking || modifyingBooking.service_type !== 'car_rental') return;
+    if (!rentalPickupDate || !rentalPickupTime || !rentalDropoffDate || !rentalDropoffTime) return;
+    const timeZoneName = new Intl.DateTimeFormat('it-IT', { timeZoneName: 'short', timeZone: 'Europe/Rome' }).formatToParts(new Date()).find(p => p.type === 'timeZoneName')?.value || '';
+    const isDST = timeZoneName.includes('CEST') || timeZoneName.includes('+2');
+    const offset = isDST ? '+02:00' : '+01:00';
+    const pickupIso = new Date(`${rentalPickupDate}T${rentalPickupTime}:00${offset}`).toISOString();
+    const dropoffIso = new Date(`${rentalDropoffDate}T${rentalDropoffTime}:00${offset}`).toISOString();
+    if (new Date(dropoffIso) <= new Date(pickupIso)) { setRentalRecalcTotal(null); return; }
+    let cancelled = false;
+    setRentalRecalcing(true);
+    recalculateRentalTotal(modifyingBooking, pickupIso, dropoffIso).then(total => {
+      if (!cancelled) setRentalRecalcTotal(total);
+    }).finally(() => { if (!cancelled) setRentalRecalcing(false); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modifyingBooking?.id, rentalPickupDate, rentalPickupTime, rentalDropoffDate, rentalDropoffTime]);
+
+  // Load wallet balance when opening a rental modify modal
+  useEffect(() => {
+    if (!modifyingBooking || modifyingBooking.service_type !== 'car_rental' || !user?.id) return;
+    getUserCreditBalance(user.id).then(setRentalWalletBalance).catch(() => setRentalWalletBalance(0));
+  }, [modifyingBooking?.id, user?.id]);
+
   const canModify = (booking: Booking): boolean => {
     if (booking.status === 'cancelled' || booking.status === 'annullata' || booking.status === 'completed' || booking.status === 'completata') return false;
 
@@ -195,12 +236,91 @@ const MyBookings = () => {
     return !isNaN(when.getTime()) && when > new Date();
   };
 
+  // Recalculate rental total when the customer changes dates/locations.
+  // Formula mirrors admin preventivo (listSubtotal × combinedCoeff) — see CarBookingWizard.
+  // Per-day line items (rental, insurance, km unlimited, second driver, DR7 flex, no_cauzione)
+  // are scaled by new_days; flat items (lavaggio) are left unchanged.
+  const recalculateRentalTotal = async (
+    booking: Booking,
+    newPickupIso: string,
+    newDropoffIso: string,
+  ): Promise<number | null> => {
+    const bd = booking.booking_details || {};
+    const oldPickup = new Date(booking.pickup_date || '').getTime();
+    const oldDropoff = new Date(booking.dropoff_date || '').getTime();
+    if (!oldPickup || !oldDropoff) return null;
+    const oldDays = Math.max(1, Math.ceil((oldDropoff - oldPickup) / 86_400_000));
+
+    const newPickupMs = new Date(newPickupIso).getTime();
+    const newDropoffMs = new Date(newDropoffIso).getTime();
+    if (!newPickupMs || !newDropoffMs || newDropoffMs <= newPickupMs) return null;
+    const newDays = Math.max(1, Math.ceil((newDropoffMs - newPickupMs) / 86_400_000));
+
+    // Extract stored line items (cents where applicable). price_total is in cents.
+    const paidCents = booking.price_total || 0;
+    const paidEur = paidCents / 100;
+    // Per-day components derived from booking_details if present; else proportional from paid total.
+    const perDay = (field: string): number => {
+      const v = Number(bd[field]);
+      return Number.isFinite(v) && v > 0 ? v : 0;
+    };
+    const rentalDaily = perDay('base_daily_rate') || perDay('effectivePricePerDay') || (Number(bd.rental_cost || 0) / oldDays);
+    const insDaily = perDay('insurance_daily_price') || (Number(bd.insurance_total || bd.insurance_cost || 0) / oldDays);
+    const kmDaily = perDay('unlimited_km_daily') || (bd.unlimited_km ? Number(bd.km_cost || 0) / oldDays : 0);
+    const kmIncludedCostDaily = bd.unlimited_km ? 0 : Number(bd.km_cost || 0) / oldDays;
+    const secondDriverDaily = perDay('second_driver_daily') || (Number(bd.second_driver_total || bd.secondDriverFee || 0) / oldDays);
+    const flexDaily = perDay('flex_daily') || (Number(bd.flex_cost || 0) / oldDays);
+    const noCauzioneDaily = perDay('no_cauzione_daily') || (Number(bd.noDepositSurcharge || 0) / oldDays);
+    const lavaggioFlat = Number(bd.lavaggio_fee || 0);
+    const experienceFlat = Number(bd.experience_cost || 0); // treat as flat for simplicity
+    const deliveryFlat = Number(bd.delivery_fee || 0);
+
+    const listRental = rentalDaily * newDays;
+    const listInsurance = insDaily * newDays;
+    const listKm = (kmDaily + kmIncludedCostDaily) * newDays;
+    const listSecondDriver = secondDriverDaily * newDays;
+    const listFlex = flexDaily * newDays;
+    const listNoCauzione = noCauzioneDaily * newDays;
+    const listSubtotal = listRental + listInsurance + listKm + listSecondDriver + listFlex + listNoCauzione + lavaggioFlat + experienceFlat + deliveryFlat;
+
+    // Fetch new combined coefficient for the updated dates (same endpoint as wizard).
+    let combinedCoeff = 1;
+    try {
+      const vehicleId = booking.vehicle_id || bd.vehicle_id || bd.vehicleId;
+      if (vehicleId) {
+        const res = await fetch('/.netlify/functions/calculate-dynamic-price', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vehicle_id: vehicleId, pickup_date: newPickupIso, dropoff_date: newDropoffIso }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.enabled && Array.isArray(data.breakdown)) {
+            combinedCoeff = data.breakdown.reduce((a: number, b: { coeff: number }) => a * b.coeff, 1);
+          }
+        }
+      }
+    } catch { /* fallback: no coefficient adjustment */ }
+
+    // If we have no usable line items, return paidEur as the best available fallback.
+    if (listSubtotal <= 0) return paidEur;
+    return Math.round(listSubtotal * combinedCoeff * 100) / 100;
+  };
+
   const handleModify = async () => {
+    if (!modifyingBooking) return;
+    if (modifyingBooking.service_type === 'car_rental') {
+      await handleRentalModify();
+    } else {
+      await handleCarWashModify();
+    }
+  };
+
+  const handleCarWashModify = async () => {
     if (!modifyingBooking || !modifyDate || !modifyTime) return;
     setModifySaving(true);
     setModifyError(null);
     try {
-      // Build new appointment datetime with Rome timezone
       const timeZoneName = new Intl.DateTimeFormat('it-IT', { timeZoneName: 'short', timeZone: 'Europe/Rome' }).formatToParts(new Date()).find(p => p.type === 'timeZoneName')?.value || '';
       const isDST = timeZoneName.includes('CEST') || timeZoneName.includes('+2');
       const offset = isDST ? '+02:00' : '+01:00';
@@ -221,9 +341,7 @@ const MyBookings = () => {
 
       if (error) throw error;
 
-      // Send the "modifica" WhatsApp from Messaggi di Sistema Pro.
-      // rental_modified → pro_promemoria_appuntamento
-      // carwash_modified → pro_promemoria_pagamento
+      // "Modifica prime Wash" via pro_modifica_lavaggio slot
       try {
         const updatedBooking = {
           ...modifyingBooking,
@@ -243,7 +361,6 @@ const MyBookings = () => {
         console.warn('[MyBookings] modify WhatsApp send failed:', waErr);
       }
 
-      // Update local state
       setBookings(prev => prev.map(b =>
         b.id === modifyingBooking.id
           ? { ...b, appointment_date: newAppointment.toISOString(), appointment_time: modifyTime }
@@ -253,6 +370,175 @@ const MyBookings = () => {
       setCancelSuccess('Appuntamento modificato con successo!');
     } catch (err: any) {
       setModifyError(err.message || 'Errore durante la modifica');
+    } finally {
+      setModifySaving(false);
+    }
+  };
+
+  const handleRentalModify = async () => {
+    if (!modifyingBooking) return;
+    if (!rentalPickupDate || !rentalPickupTime || !rentalDropoffDate || !rentalDropoffTime || !rentalPickupLocation || !rentalDropoffLocation) {
+      setModifyError('Compila tutti i campi.');
+      return;
+    }
+    setModifySaving(true);
+    setModifyError(null);
+    try {
+      // Build Rome-timezone ISO strings for new pickup/dropoff
+      const timeZoneName = new Intl.DateTimeFormat('it-IT', { timeZoneName: 'short', timeZone: 'Europe/Rome' }).formatToParts(new Date()).find(p => p.type === 'timeZoneName')?.value || '';
+      const isDST = timeZoneName.includes('CEST') || timeZoneName.includes('+2');
+      const offset = isDST ? '+02:00' : '+01:00';
+      const newPickupIso = new Date(`${rentalPickupDate}T${rentalPickupTime}:00${offset}`).toISOString();
+      const newDropoffIso = new Date(`${rentalDropoffDate}T${rentalDropoffTime}:00${offset}`).toISOString();
+
+      if (new Date(newDropoffIso) <= new Date(newPickupIso)) {
+        throw new Error('La riconsegna deve essere successiva al ritiro.');
+      }
+
+      // Availability check (skip self)
+      const vehicleName = modifyingBooking.vehicle_name || '';
+      const vehicleId = modifyingBooking.vehicle_id || modifyingBooking.booking_details?.vehicle_id;
+      if (vehicleName) {
+        const availRes = await fetch('/.netlify/functions/checkVehicleAvailability', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            vehicleName,
+            pickupDate: newPickupIso,
+            dropoffDate: newDropoffIso,
+            targetVehicleId: vehicleId,
+            excludeBookingId: modifyingBooking.id,
+          }),
+        });
+        if (availRes.ok) {
+          const data = await availRes.json();
+          if (Array.isArray(data.conflicts) && data.conflicts.length > 0 && !data.availableFrom) {
+            throw new Error('Il veicolo non è disponibile per le date selezionate.');
+          }
+        }
+      }
+
+      // Recalculate total with new dates
+      const newTotalEur = rentalRecalcTotal ?? await recalculateRentalTotal(modifyingBooking, newPickupIso, newDropoffIso);
+      if (newTotalEur == null) throw new Error('Impossibile ricalcolare il prezzo.');
+
+      const paidEur = (modifyingBooking.price_total || 0) / 100;
+      const diffEur = Math.round((newTotalEur - paidEur) * 100) / 100;
+
+      // Price policy:
+      //   newTotal <= paid → keep paid price, no refund, just update dates/locations
+      //   newTotal >  paid → charge difference (wallet first, fallback to card → fattura)
+      let paymentMethodUsed: 'none' | 'wallet' | 'card' = 'none';
+
+      if (diffEur > 0) {
+        const balance = await getUserCreditBalance(user!.id);
+        if (balance >= diffEur) {
+          const ded = await deductCredits(user!.id, diffEur, `Modifica prenotazione — ${modifyingBooking.service_name}`, modifyingBooking.id, 'booking_modify');
+          if (!ded.success) throw new Error(ded.error || 'Errore addebito wallet.');
+          paymentMethodUsed = 'wallet';
+        } else {
+          // Card: create Nexi payment link for the difference
+          const nexiRes = await fetch('/.netlify/functions/create-nexi-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              orderId: `MODIFY-${modifyingBooking.id.substring(0, 8)}-${Date.now()}`,
+              amount: Math.round(diffEur * 100),
+              currency: 'EUR',
+              description: `Differenza modifica prenotazione ${modifyingBooking.id.substring(0, 8)}`,
+              customerEmail: modifyingBooking.customer_email,
+            }),
+          });
+          if (!nexiRes.ok) throw new Error('Impossibile creare il link di pagamento.');
+          const nexiData = await nexiRes.json();
+          const payUrl = nexiData.hostedPageUrl || nexiData.url || nexiData.paymentUrl;
+          if (!payUrl) throw new Error('Nessun link di pagamento ricevuto.');
+          // Hand off to Nexi; booking will be updated by the callback + fattura generated there.
+          window.location.href = payUrl;
+          return;
+        }
+      }
+
+      // Update booking (dates, locations, and price_total if diff > 0)
+      const updatePayload: Record<string, unknown> = {
+        pickup_date: newPickupIso,
+        dropoff_date: newDropoffIso,
+        pickup_location: rentalPickupLocation,
+        dropoff_location: rentalDropoffLocation,
+        booking_details: {
+          ...modifyingBooking.booking_details,
+          modified_at: new Date().toISOString(),
+          original_pickup_date: modifyingBooking.pickup_date,
+          original_dropoff_date: modifyingBooking.dropoff_date,
+          original_pickup_location: modifyingBooking.pickup_location,
+          original_dropoff_location: modifyingBooking.dropoff_location,
+          modification_payment_method: paymentMethodUsed,
+          modification_diff_eur: diffEur,
+          modification_new_total_eur: newTotalEur,
+        },
+      };
+      if (paymentMethodUsed === 'wallet' && diffEur > 0) {
+        updatePayload.price_total = Math.round(newTotalEur * 100);
+      }
+
+      const { error } = await supabase.from('bookings').update(updatePayload).eq('id', modifyingBooking.id);
+      if (error) throw error;
+
+      // Send "Modifica Noleggio" via pro_modifica_noleggio slot
+      try {
+        const firstName = (modifyingBooking.customer_name || user?.fullName || 'Cliente').split(' ')[0];
+        const pickupFmt = new Date(newPickupIso).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Rome' });
+        const dropoffFmt = new Date(newDropoffIso).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Rome' });
+        const locLabel = (id: string) => PICKUP_LOCATIONS.find(l => l.id === id)?.label?.it || id;
+        const templateVars: Record<string, string> = {
+          '{nome}': firstName,
+          '{custName}': modifyingBooking.customer_name || firstName,
+          '{customer_name}': modifyingBooking.customer_name || firstName,
+          '{booking_id}': modifyingBooking.id.substring(0, 8).toUpperCase(),
+          '{bookingRef}': modifyingBooking.id.substring(0, 8).toUpperCase(),
+          '{service_name}': modifyingBooking.service_name || modifyingBooking.vehicle_name || 'Noleggio',
+          '{vehicle_name}': modifyingBooking.vehicle_name || '',
+          '{plate}': modifyingBooking.vehicle_plate || '',
+          '{pickup_date}': pickupFmt,
+          '{dropoff_date}': dropoffFmt,
+          '{pickup_location}': locLabel(rentalPickupLocation),
+          '{dropoff_location}': locLabel(rentalDropoffLocation),
+          '{total}': newTotalEur.toFixed(2),
+          '{payment_info}': paymentMethodUsed === 'wallet' ? 'Differenza addebitata dal DR7 Wallet' : (paymentMethodUsed === 'card' ? 'Differenza pagata con carta' : 'Nessuna differenza da pagare'),
+          '{notes}': '',
+        };
+        await fetch('/.netlify/functions/send-whatsapp-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            templateKey: 'rental_modified',
+            templateVars,
+            customPhone: modifyingBooking.customer_phone,
+          }),
+        });
+      } catch (waErr) {
+        console.warn('[MyBookings] rental modify WhatsApp send failed:', waErr);
+      }
+
+      // Local state
+      setBookings(prev => prev.map(b =>
+        b.id === modifyingBooking.id
+          ? {
+              ...b,
+              pickup_date: newPickupIso,
+              dropoff_date: newDropoffIso,
+              pickup_location: rentalPickupLocation,
+              dropoff_location: rentalDropoffLocation,
+              price_total: paymentMethodUsed === 'wallet' && diffEur > 0 ? Math.round(newTotalEur * 100) : b.price_total,
+            }
+          : b
+      ));
+      setModifyingBooking(null);
+      setCancelSuccess(diffEur > 0
+        ? `Prenotazione modificata. Differenza di €${diffEur.toFixed(2)} addebitata dal wallet.`
+        : 'Prenotazione modificata con successo.');
+    } catch (err: any) {
+      setModifyError(err.message || 'Errore durante la modifica.');
     } finally {
       setModifySaving(false);
     }
@@ -477,20 +763,34 @@ const MyBookings = () => {
                       </div>
                     </div>
 
-                    {/* Modify button (car wash with Prime Flex) */}
+                    {/* Modify button — branches by service type */}
                     {canModify(booking) && (
                       <div className="mt-4 pt-4 border-t border-gray-700">
                         <button
                           onClick={() => {
                             setModifyingBooking(booking);
-                            const appt = new Date(booking.appointment_date || '');
-                            setModifyDate(appt.toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' }));
-                            setModifyTime(booking.appointment_time || appt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }));
                             setModifyError(null);
+                            if (booking.service_type === 'car_rental') {
+                              // Pre-fill with current rental dates/locations
+                              const p = new Date(booking.pickup_date || '');
+                              const d = new Date(booking.dropoff_date || '');
+                              setRentalPickupDate(p.toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' }));
+                              setRentalPickupTime(p.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }));
+                              setRentalDropoffDate(d.toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' }));
+                              setRentalDropoffTime(d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }));
+                              setRentalPickupLocation(booking.pickup_location || 'dr7_cagliari');
+                              setRentalDropoffLocation(booking.dropoff_location || booking.pickup_location || 'dr7_cagliari');
+                              setRentalRecalcTotal((booking.price_total || 0) / 100);
+                              setRentalAvailabilityOk(null);
+                            } else {
+                              const appt = new Date(booking.appointment_date || '');
+                              setModifyDate(appt.toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' }));
+                              setModifyTime(booking.appointment_time || appt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }));
+                            }
                           }}
                           className="px-4 py-2 bg-transparent border border-blue-500/50 text-blue-400 hover:bg-blue-500/10 text-sm font-medium rounded-lg transition-colors"
                         >
-                          Modifica appuntamento
+                          {booking.service_type === 'car_rental' ? 'Modifica prenotazione' : 'Modifica appuntamento'}
                         </button>
                       </div>
                     )}
@@ -581,8 +881,93 @@ const MyBookings = () => {
           </div>
         )}
 
-        {/* Modify appointment modal */}
-        {modifyingBooking && (
+        {/* Modify modal — branches by service type */}
+        {modifyingBooking && modifyingBooking.service_type === 'car_rental' && (() => {
+          const paidEur = (modifyingBooking.price_total || 0) / 100;
+          const newTotal = rentalRecalcTotal;
+          const diff = newTotal != null ? Math.round((newTotal - paidEur) * 100) / 100 : 0;
+          const willPayByCard = diff > 0 && rentalWalletBalance < diff;
+          const willPayByWallet = diff > 0 && rentalWalletBalance >= diff;
+          return (
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setModifyingBooking(null)}>
+              <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                <h3 className="text-lg font-bold text-white mb-2">Modifica Prenotazione</h3>
+                <p className="text-gray-400 text-sm mb-4">
+                  {modifyingBooking.vehicle_name || modifyingBooking.service_name}
+                </p>
+
+                <div className="space-y-4 mb-6">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-sm text-gray-400 mb-1 block">Ritiro — Data</label>
+                      <input type="date" value={rentalPickupDate} min={new Date().toISOString().split('T')[0]} onChange={e => setRentalPickupDate(e.target.value)} className="w-full px-3 py-2.5 bg-gray-800 border border-gray-600 rounded-lg text-white" />
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-400 mb-1 block">Ritiro — Orario</label>
+                      <input type="time" value={rentalPickupTime} onChange={e => setRentalPickupTime(e.target.value)} className="w-full px-3 py-2.5 bg-gray-800 border border-gray-600 rounded-lg text-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-400 mb-1 block">Luogo di ritiro</label>
+                    <select value={rentalPickupLocation} onChange={e => setRentalPickupLocation(e.target.value)} className="w-full px-3 py-2.5 bg-gray-800 border border-gray-600 rounded-lg text-white">
+                      {PICKUP_LOCATIONS.map(l => <option key={l.id} value={l.id}>{l.label.it}</option>)}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-sm text-gray-400 mb-1 block">Riconsegna — Data</label>
+                      <input type="date" value={rentalDropoffDate} min={rentalPickupDate || new Date().toISOString().split('T')[0]} onChange={e => setRentalDropoffDate(e.target.value)} className="w-full px-3 py-2.5 bg-gray-800 border border-gray-600 rounded-lg text-white" />
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-400 mb-1 block">Riconsegna — Orario</label>
+                      <input type="time" value={rentalDropoffTime} onChange={e => setRentalDropoffTime(e.target.value)} className="w-full px-3 py-2.5 bg-gray-800 border border-gray-600 rounded-lg text-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-400 mb-1 block">Luogo di riconsegna</label>
+                    <select value={rentalDropoffLocation} onChange={e => setRentalDropoffLocation(e.target.value)} className="w-full px-3 py-2.5 bg-gray-800 border border-gray-600 rounded-lg text-white">
+                      {RETURN_LOCATIONS.map(l => <option key={l.id} value={l.id}>{l.label.it}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Price diff summary */}
+                <div className="p-4 rounded-lg bg-gray-800/60 border border-gray-700 mb-4 text-sm space-y-1">
+                  <div className="flex justify-between"><span className="text-gray-400">Prezzo pagato</span><span className="text-white">€{paidEur.toFixed(2)}</span></div>
+                  {rentalRecalcing ? (
+                    <div className="text-gray-500 text-xs">Ricalcolo in corso…</div>
+                  ) : newTotal != null && (
+                    <>
+                      <div className="flex justify-between"><span className="text-gray-400">Nuovo totale</span><span className="text-white">€{newTotal.toFixed(2)}</span></div>
+                      {diff > 0 ? (
+                        <>
+                          <div className="flex justify-between text-amber-400"><span>Differenza da pagare</span><span>+€{diff.toFixed(2)}</span></div>
+                          {willPayByWallet && <div className="text-green-400 text-xs mt-1">Addebito dal DR7 Wallet (saldo: €{rentalWalletBalance.toFixed(2)}). Nessuna fattura.</div>}
+                          {willPayByCard && <div className="text-blue-400 text-xs mt-1">Saldo wallet insufficiente → pagamento con carta. Verrà generata fattura.</div>}
+                        </>
+                      ) : diff < 0 ? (
+                        <div className="flex justify-between text-gray-500"><span>Nessun rimborso</span><span>mantieni €{paidEur.toFixed(2)}</span></div>
+                      ) : (
+                        <div className="text-gray-500 text-xs">Nessuna differenza</div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {modifyError && <p className="text-red-400 text-sm mb-4">{modifyError}</p>}
+
+                <div className="flex gap-3">
+                  <button onClick={() => setModifyingBooking(null)} className="flex-1 py-3 border border-gray-600 text-white rounded-full font-semibold text-sm hover:bg-gray-800 transition-colors">Annulla</button>
+                  <button onClick={handleModify} disabled={modifySaving || !rentalPickupDate || !rentalPickupTime || !rentalDropoffDate || !rentalDropoffTime || rentalRecalcing} className="flex-1 py-3 bg-white text-black rounded-full font-bold text-sm hover:bg-gray-200 transition-colors disabled:opacity-50">
+                    {modifySaving ? 'Salvataggio…' : willPayByCard ? 'Paga differenza con carta' : diff > 0 ? 'Conferma e paga dal wallet' : 'Conferma modifica'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {modifyingBooking && modifyingBooking.service_type !== 'car_rental' && (
           <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setModifyingBooking(null)}>
             <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
               <h3 className="text-lg font-bold text-white mb-2">Modifica Appuntamento</h3>
