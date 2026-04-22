@@ -1745,14 +1745,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       : 1;
     const hasDynamicDiscount = hasDynamicCoeffs && Math.abs(combinedCoeff - 1) > 0.001;
 
-    // Uncapped subtotal after coefficients (used for the "real price" display)
-    const uncappedSubtotal = roundToTwoDecimals(calculatedSubtotal * combinedCoeff);
+    // Uncapped subtotal after coefficients (used for the "real price" display).
+    // Experience stays at LIST PRICE — no coefficient.
+    const uncappedSubtotal = roundToTwoDecimals(subtotalNoExperience * combinedCoeff + calculatedExperienceCost);
     let clampHit: 'min' | 'max' | null = null;
     let clampLimitDaily: number | null = null;
 
     if (hasDynamicCoeffs) {
       // Clamp the clamp-eligible portion (everything except experience) against
-      // the per-vehicle daily min/max from Centralina Pro.
+      // the per-vehicle daily min/max from Centralina Pro. Experience stays at
+      // LIST PRICE — no coefficient, no clamp — matching admin behaviour.
       const minDaily = typeof dynamicPricing?.minPrice === 'number' ? dynamicPricing.minPrice : null;
       const maxDaily = typeof dynamicPricing?.maxPrice === 'number' ? dynamicPricing.maxPrice : null;
       const daysForClamp = Math.max(1, billingDaysCalc);
@@ -1761,8 +1763,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       let afterCoeffNoExp = subtotalNoExperience * combinedCoeff;
       if (maxTotal != null && afterCoeffNoExp > maxTotal) { afterCoeffNoExp = maxTotal; clampHit = 'max'; clampLimitDaily = maxDaily; }
       if (minTotal != null && afterCoeffNoExp < minTotal) { afterCoeffNoExp = minTotal; clampHit = 'min'; clampLimitDaily = minDaily; }
-      const experienceAfter = calculatedExperienceCost * combinedCoeff;
-      calculatedSubtotal = roundToTwoDecimals(afterCoeffNoExp + experienceAfter);
+      calculatedSubtotal = roundToTwoDecimals(afterCoeffNoExp + calculatedExperienceCost);
     }
 
     const calculatedTaxes = 0;
