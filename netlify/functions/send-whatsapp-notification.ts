@@ -1,9 +1,50 @@
 import type { Handler } from "@netlify/functions";
+import { createClient } from '@supabase/supabase-js';
 import { renderTemplate, resolveKeyForContext } from './utils/messageTemplates';
 
 const GREEN_API_INSTANCE_ID = process.env.GREEN_API_INSTANCE_ID;
 const GREEN_API_TOKEN = process.env.GREEN_API_TOKEN;
 const NOTIFICATION_PHONE = process.env.NOTIFICATION_PHONE || "393457905205";
+
+// Build id → name map for insurance options stored in Centralina Pro
+// (centralina_pro_config.config.insurance[]). Scans byFascia tiers + `all`
+// across every category so any admin-defined id resolves to its display name.
+async function getInsuranceNameById(id: string | null | undefined): Promise<string> {
+  if (!id) return '';
+  const key = String(id).trim();
+  if (!key) return '';
+  try {
+    const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+    const svc = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    if (!url || !svc) return key;
+    const sb = createClient(url, svc);
+    const { data } = await sb.from('centralina_pro_config').select('config').eq('id', 'main').maybeSingle();
+    const insurance = (data as { config?: { insurance?: Array<Record<string, unknown>> } } | null)?.config?.insurance;
+    if (!Array.isArray(insurance)) return key;
+    for (const cat of insurance) {
+      const byFascia = (cat.byFascia as Record<string, Array<Record<string, unknown>>> | undefined) || {};
+      for (const tier of Object.keys(byFascia)) {
+        const opt = (byFascia[tier] || []).find(o => o && o.id === key);
+        if (opt && typeof opt.name === 'string' && opt.name.trim()) return opt.name.trim();
+      }
+      const all = (cat.all as Array<Record<string, unknown>> | undefined) || [];
+      const opt = all.find(o => o && o.id === key);
+      if (opt && typeof opt.name === 'string' && opt.name.trim()) return opt.name.trim();
+    }
+  } catch { /* fallthrough → return the raw key */ }
+  return key;
+}
+
+// Return "Illimitati" whenever the booking is flagged unlimited OR the stored km count
+// is the sentinel 9999 (≥). Otherwise the numeric km count. Never show "9999".
+function formatKmInfo(booking: { booking_details?: Record<string, unknown> }): string {
+  const bd = (booking.booking_details || {}) as Record<string, unknown>;
+  const unlimited = bd.unlimited_km === true || bd.unlimited_km === 'true';
+  const kmPkg = (bd.kmPackage || {}) as Record<string, unknown>;
+  const rawIncluded = Number(kmPkg.includedKm ?? bd.km_limit ?? 0);
+  if (unlimited || rawIncluded >= 9999) return 'Illimitati';
+  return rawIncluded > 0 ? `${rawIncluded} km` : '';
+}
 
 /**
  * Sends a WhatsApp notification via Green API.
@@ -145,9 +186,9 @@ const handler: Handler = async (event) => {
         dropoff_date: dropoff ? dropoff.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' }) : '',
         dropoff_time: dropoff ? dropoff.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '',
         pickup_location: booking.pickup_location || '',
-        insurance: booking.insurance_option || booking.booking_details?.insuranceOption || '',
+        insurance: await getInsuranceNameById(booking.insurance_option || booking.booking_details?.insuranceOption || ''),
         deposit: depositStr,
-        km_info: booking.booking_details?.unlimited_km ? 'Illimitati' : String(booking.booking_details?.kmPackage?.includedKm || ''),
+        km_info: formatKmInfo(booking),
         flex: booking.booking_details?.dr7_flex || booking.booking_details?.dr7Flex ? 'DR7 Flex' : '',
       });
     }

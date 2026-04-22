@@ -475,6 +475,11 @@ const MyBookings = () => {
           modification_payment_method: paymentMethodUsed,
           modification_diff_eur: diffEur,
           modification_new_total_eur: newTotalEur,
+          // Flag for admin: contract must be regenerated after this modification.
+          // Admin-side generate-contract endpoint can watch this flag + reset it once fired.
+          needs_contract_regen: true,
+          contract_regen_reason: 'rental_modified',
+          contract_regen_requested_at: new Date().toISOString(),
         },
       };
       if (paymentMethodUsed === 'wallet' && diffEur > 0) {
@@ -495,8 +500,21 @@ const MyBookings = () => {
 
         // Derived fields for the template
         const bd = modifyingBooking.booking_details || {};
-        const insuranceRaw = bd.insuranceOption || bd.insurance_option || '';
-        const insuranceLabel = String(insuranceRaw).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Standard';
+        const insuranceRaw = String(bd.insuranceOption || bd.insurance_option || '').trim();
+        // Read the display name from Centralina Pro (configOverlay insurance arrays).
+        // Pro config is the single source of truth — no hardcoded fallbacks.
+        const insuranceLabel = (() => {
+          if (!insuranceRaw || !proOverlay) return insuranceRaw;
+          const pools = [
+            proOverlay.insuranceTier1, proOverlay.insuranceTier2,
+            proOverlay.urbanInsurance, proOverlay.utilitaireInsurance, proOverlay.furgoneInsurance,
+          ].filter(Array.isArray) as Array<Array<{ id?: string; name?: string }>>;
+          for (const pool of pools) {
+            const hit = pool.find(o => o?.id === insuranceRaw);
+            if (hit?.name) return hit.name;
+          }
+          return insuranceRaw;
+        })();
         const depositLabel = bd.depositOption === 'no_deposit'
           ? 'No Cauzione'
           : bd.depositOption === 'vehicle_deposit'
@@ -532,7 +550,10 @@ const MyBookings = () => {
           '{deposit}': depositLabel,
           '{km_info}': kmInfo,
           '{payment_status}': paymentStatusLabel,
-          '{total}': newTotalEur.toFixed(2),
+          // When the new price is LOWER than paid, we keep the paid amount (no refund,
+          // and no confusing "less" total shown to the customer). Only show a higher
+          // total if the customer actually paid a difference.
+          '{total}': (diffEur > 0 ? newTotalEur : paidEur).toFixed(2),
           '{payment_info}': paymentMethodUsed === 'wallet' ? 'Differenza addebitata dal DR7 Wallet' : (paymentMethodUsed === 'card' ? 'Differenza pagata con carta' : 'Nessuna differenza da pagare'),
           '{notes}': '',
         };
