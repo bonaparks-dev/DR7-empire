@@ -435,12 +435,17 @@ export const handler: Handler = async (event) => {
 
     let calendarGapDays: number | undefined
     const hasNext = !!(nextBookings && nextBookings.length > 0)
-    if (hasNext && priorBookings && priorBookings.length > 0) {
-      const prevDropMs = new Date(priorBookings[0].dropoff_date).getTime()
-      calendarGapDays = Math.max(0, Math.floor((pickupMs - prevDropMs) / (1000 * 60 * 60 * 24)))
-    } else if (hasNext) {
+    const hasPrior = !!(priorBookings && priorBookings.length > 0)
+    if (hasNext) {
       const nextPickMs = new Date(nextBookings![0].pickup_date).getTime()
-      calendarGapDays = Math.max(0, Math.floor((nextPickMs - dropoffMs) / (1000 * 60 * 60 * 24)))
+      let windowMs: number
+      if (hasPrior) {
+        const prevDropMs = new Date(priorBookings![0].dropoff_date).getTime()
+        windowMs = nextPickMs - prevDropMs
+      } else {
+        windowMs = nextPickMs - dropoffMs
+      }
+      calendarGapDays = Math.max(1, Math.ceil(windowMs / (1000 * 60 * 60 * 24)))
     }
     // else: niente booking successivo entro 30gg → calendario aperto → no gap
 
