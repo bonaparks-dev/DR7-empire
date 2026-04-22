@@ -484,12 +484,35 @@ const MyBookings = () => {
       const { error } = await supabase.from('bookings').update(updatePayload).eq('id', modifyingBooking.id);
       if (error) throw error;
 
-      // Send "Modifica Noleggio" via pro_modifica_noleggio slot
+      // Send "Modifica Noleggio" via pro_modifica_noleggio slot (or custom label fallback)
       try {
         const firstName = (modifyingBooking.customer_name || user?.fullName || 'Cliente').split(' ')[0];
-        const pickupFmt = new Date(newPickupIso).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Rome' });
-        const dropoffFmt = new Date(newDropoffIso).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Rome' });
+        const pickup = new Date(newPickupIso);
+        const dropoff = new Date(newDropoffIso);
+        const dateOnly = (d: Date) => d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Rome' });
+        const timeOnly = (d: Date) => d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
         const locLabel = (id: string) => PICKUP_LOCATIONS.find(l => l.id === id)?.label?.it || id;
+
+        // Derived fields for the template
+        const bd = modifyingBooking.booking_details || {};
+        const insuranceRaw = bd.insuranceOption || bd.insurance_option || '';
+        const insuranceLabel = String(insuranceRaw).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Standard';
+        const depositLabel = bd.depositOption === 'no_deposit'
+          ? 'No Cauzione'
+          : bd.depositOption === 'vehicle_deposit'
+            ? 'Cauzione con Veicolo'
+            : (bd.cauzione || bd.deposit_amount ? `€${bd.cauzione || bd.deposit_amount}` : 'Standard');
+        const kmInfo = bd.unlimited_km
+          ? 'Illimitati'
+          : `${bd.km_limit || bd.includedKm || 0} km inclusi`;
+        const paymentStatusLabel = (() => {
+          const ps = (modifyingBooking.payment_status || '').toLowerCase();
+          if (ps === 'paid' || ps === 'succeeded' || ps === 'completed') return 'Pagato';
+          if (ps === 'pending') return 'In attesa';
+          if (ps === 'failed') return 'Fallito';
+          return modifyingBooking.payment_status || '-';
+        })();
+
         const templateVars: Record<string, string> = {
           '{nome}': firstName,
           '{custName}': modifyingBooking.customer_name || firstName,
@@ -499,10 +522,16 @@ const MyBookings = () => {
           '{service_name}': modifyingBooking.service_name || modifyingBooking.vehicle_name || 'Noleggio',
           '{vehicle_name}': modifyingBooking.vehicle_name || '',
           '{plate}': modifyingBooking.vehicle_plate || '',
-          '{pickup_date}': pickupFmt,
-          '{dropoff_date}': dropoffFmt,
+          '{pickup_date}': dateOnly(pickup),
+          '{pickup_time}': timeOnly(pickup),
+          '{dropoff_date}': dateOnly(dropoff),
+          '{dropoff_time}': timeOnly(dropoff),
           '{pickup_location}': locLabel(rentalPickupLocation),
           '{dropoff_location}': locLabel(rentalDropoffLocation),
+          '{insurance}': insuranceLabel,
+          '{deposit}': depositLabel,
+          '{km_info}': kmInfo,
+          '{payment_status}': paymentStatusLabel,
           '{total}': newTotalEur.toFixed(2),
           '{payment_info}': paymentMethodUsed === 'wallet' ? 'Differenza addebitata dal DR7 Wallet' : (paymentMethodUsed === 'card' ? 'Differenza pagata con carta' : 'Nessuna differenza da pagare'),
           '{notes}': '',
