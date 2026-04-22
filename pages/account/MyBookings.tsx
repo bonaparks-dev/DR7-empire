@@ -597,6 +597,23 @@ const MyBookings = () => {
         console.warn('[MyBookings] rental modify WhatsApp send failed:', waErr);
       }
 
+      // Regenerate the contract + send a fresh signing link (same pipeline the
+      // Nexi callback uses for new bookings). Best-effort: if it fails the
+      // `needs_contract_regen` flag is still set so admin can retry.
+      try {
+        const sess = await supabase.auth.getSession();
+        const jwt = sess.data?.session?.access_token;
+        if (jwt) {
+          await fetch('/.netlify/functions/regenerate-contract-after-modify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwt}` },
+            body: JSON.stringify({ bookingId: modifyingBooking.id }),
+          });
+        }
+      } catch (ctrErr) {
+        console.warn('[MyBookings] contract regeneration request failed:', ctrErr);
+      }
+
       // Local state
       setBookings(prev => prev.map(b =>
         b.id === modifyingBooking.id
