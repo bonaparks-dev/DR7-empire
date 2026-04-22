@@ -20,6 +20,18 @@ interface MessageTemplate {
   message_body: string
   is_enabled: boolean
   include_header: boolean
+  label?: string
+}
+
+/**
+ * Fallback label fragments for custom templates created by admin via
+ * "+ Nuovo Messaggio" (keys become pro_custom_<slug>_<ts>). When the
+ * predefined slot is empty but a customer-facing custom template exists
+ * with a matching label, use it instead of skipping.
+ */
+const LABEL_FALLBACKS: Record<string, string[]> = {
+  pro_modifica_noleggio: ['modifica noleggio', 'modifica prenotazione', 'modifica rental', 'modifica rent'],
+  pro_modifica_lavaggio: ['modifica lavaggio', 'modifica prime wash', 'modifica primewash', 'modifica wash'],
 }
 
 /**
@@ -73,8 +85,23 @@ export async function resolveKeyForContext(key: string, _context?: RenderContext
 
   const templates = await loadAllTemplates()
   const pro = templates.find(t => t.message_key === proKey)
-  if (!pro || !pro.is_enabled || !pro.message_body) return null
-  return proKey
+  if (pro && pro.is_enabled && pro.message_body) return proKey
+
+  // Fallback: if the predefined slot is empty/disabled, look for a custom
+  // template whose label matches one of the expected fragments. This lets
+  // admin-created custom messages ("Modifica prime Wash", etc.) work without
+  // the customer needing to fill the predefined slot.
+  const fragments = LABEL_FALLBACKS[proKey]
+  if (fragments && fragments.length) {
+    const match = templates.find(t => {
+      if (!t.is_enabled || !t.message_body) return false
+      const lbl = (t.label || '').toLowerCase()
+      return fragments.some(f => lbl.includes(f))
+    })
+    if (match) return match.message_key
+  }
+
+  return null
 }
 
 // No cache — admin edits to Pro templates must take effect on the very next
@@ -85,7 +112,7 @@ async function loadAllTemplates(): Promise<MessageTemplate[]> {
     const supabase = createClient(supabaseUrl, supabaseKey)
     const { data, error } = await supabase
       .from('system_messages')
-      .select('message_key, message_body, is_enabled, include_header')
+      .select('message_key, message_body, is_enabled, include_header, label')
     if (error) throw error
     return data || []
   } catch {
