@@ -11,6 +11,7 @@ import BookingSearchBox from '../ui/BookingSearchBox';
 const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
+  const nav = useNavigate();
   const [creditBalance, setCreditBalance] = useState<number>(0);
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
   const [showBookingPopup, setShowBookingPopup] = useState(false);
