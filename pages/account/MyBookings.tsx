@@ -520,25 +520,36 @@ const MyBookings = () => {
           : bd.depositOption === 'vehicle_deposit'
             ? 'Cauzione con Veicolo'
             : (bd.cauzione || bd.deposit_amount ? `€${bd.cauzione || bd.deposit_amount}` : 'Standard');
-        // Derive km_info from whatever the original booking stored. Website
-        // bookings nest it under `bd.kmPackage` ({ type, includedKm, distance });
-        // admin bookings put it at `bd.km_limit` + `bd.unlimited_km`. Read both
-        // so the modification message shows the customer's actual package and
-        // never "0 km".
+        // Derive km_info from ORIGINAL booking. Scan every known storage
+        // location (website/admin flows shape it differently) and treat
+        // any value >= 9999 as the sentinel for Illimitati.
         const bdKmPkg = (bd as any).kmPackage || {}
+        const toValidKm = (v: unknown): number | null => {
+          const n = typeof v === 'string' ? parseInt(v, 10) : Number(v)
+          return Number.isFinite(n) && n > 0 && n < 9999 ? n : null
+        }
+        const anyExceeds9999 = (v: unknown): boolean => {
+          const n = typeof v === 'string' ? parseInt(v, 10) : Number(v)
+          return Number.isFinite(n) && n >= 9999
+        }
         const isUnlimited =
-          bd.unlimited_km === true ||
+          bd.unlimited_km === true || bd.unlimited_km === 'true' ||
           bdKmPkg.type === 'unlimited' ||
           bdKmPkg.distance === 'unlimited' ||
-          bd.km_limit === 'Illimitati'
+          String(bd.km_limit).toLowerCase() === 'illimitati' ||
+          anyExceeds9999(bdKmPkg.includedKm) ||
+          anyExceeds9999(bd.km_limit) ||
+          anyExceeds9999(bd.includedKm) ||
+          anyExceeds9999((modifyingBooking as any).km_limit)
         const kmNumber =
-          (typeof bdKmPkg.includedKm === 'number' && bdKmPkg.includedKm > 0 && bdKmPkg.includedKm < 9999 ? bdKmPkg.includedKm : null) ??
-          (typeof bd.km_limit === 'number' && bd.km_limit > 0 ? bd.km_limit : null) ??
-          (typeof bd.km_limit === 'string' && /^\d+$/.test(bd.km_limit) ? parseInt(bd.km_limit, 10) : null) ??
-          (typeof bd.includedKm === 'number' && bd.includedKm > 0 ? bd.includedKm : null)
+          toValidKm(bdKmPkg.includedKm) ??
+          toValidKm(bd.includedKm) ??
+          toValidKm(bd.km_limit) ??
+          toValidKm((modifyingBooking as any).km_limit) ??
+          null
         const kmInfo = isUnlimited
           ? 'Illimitati'
-          : (kmNumber && kmNumber > 0 ? `${kmNumber} km inclusi` : 'Illimitati');
+          : (kmNumber ? `${kmNumber} km inclusi` : 'Km inclusi')
         const paymentStatusLabel = (() => {
           const ps = (modifyingBooking.payment_status || '').toLowerCase();
           if (ps === 'paid' || ps === 'succeeded' || ps === 'completed') return 'Pagato';
