@@ -558,6 +558,13 @@ const MyBookings = () => {
           return modifyingBooking.payment_status || '-';
         })();
 
+        // Old values so the template can show a "before → after" diff.
+        const oldPickup = modifyingBooking.pickup_date ? new Date(modifyingBooking.pickup_date) : null
+        const oldDropoff = modifyingBooking.dropoff_date ? new Date(modifyingBooking.dropoff_date) : null
+        const oldPaidEur = ((modifyingBooking.price_total || 0) / 100)
+        const diffEurStr = Math.abs(diffEur).toFixed(2)
+        const diffSign = diffEur > 0 ? '+' : (diffEur < 0 ? '−' : '')
+
         const templateVars: Record<string, string> = {
           '{nome}': firstName,
           '{custName}': modifyingBooking.customer_name || firstName,
@@ -567,20 +574,39 @@ const MyBookings = () => {
           '{service_name}': modifyingBooking.service_name || modifyingBooking.vehicle_name || 'Noleggio',
           '{vehicle_name}': modifyingBooking.vehicle_name || '',
           '{plate}': modifyingBooking.vehicle_plate || '',
+
+          // NEW dates / locations
           '{pickup_date}': dateOnly(pickup),
           '{pickup_time}': timeOnly(pickup),
           '{dropoff_date}': dateOnly(dropoff),
           '{dropoff_time}': timeOnly(dropoff),
           '{pickup_location}': locLabel(rentalPickupLocation),
           '{dropoff_location}': locLabel(rentalDropoffLocation),
+
+          // ORIGINAL dates / locations (for templates that show the change)
+          '{old_pickup_date}': oldPickup ? dateOnly(oldPickup) : '',
+          '{old_pickup_time}': oldPickup ? timeOnly(oldPickup) : '',
+          '{old_dropoff_date}': oldDropoff ? dateOnly(oldDropoff) : '',
+          '{old_dropoff_time}': oldDropoff ? timeOnly(oldDropoff) : '',
+          '{old_pickup_location}': locLabel(modifyingBooking.pickup_location || ''),
+          '{old_dropoff_location}': locLabel(modifyingBooking.dropoff_location || ''),
+
           '{insurance}': insuranceLabel,
           '{deposit}': depositLabel,
           '{km_info}': kmInfo,
           '{payment_status}': paymentStatusLabel,
+
+          // Pricing details
+          '{old_total}': oldPaidEur.toFixed(2),
+          '{new_total}': newTotalEur.toFixed(2),
           // When the new price is LOWER than paid, we keep the paid amount (no refund,
           // and no confusing "less" total shown to the customer). Only show a higher
           // total if the customer actually paid a difference.
           '{total}': (diffEur > 0 ? newTotalEur : paidEur).toFixed(2),
+          '{diff_amount}': diffEurStr,
+          '{diff_sign}': diffSign,
+          '{diff_signed}': diffEur === 0 ? '0,00' : `${diffSign}${diffEurStr}`,
+          '{payment_method}': paymentMethodUsed === 'wallet' ? 'DR7 Wallet' : (paymentMethodUsed === 'card' ? 'Carta' : '—'),
           '{payment_info}': paymentMethodUsed === 'wallet' ? 'Differenza addebitata dal DR7 Wallet' : (paymentMethodUsed === 'card' ? 'Differenza pagata con carta' : 'Nessuna differenza da pagare'),
           '{notes}': '',
         };
