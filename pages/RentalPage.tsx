@@ -610,6 +610,24 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
     returnLocLabel: urlReturnLocLabel,
   }));
 
+  // Re-sync barState whenever URL params change. Without this, opening the
+  // Prenota Ora popup again while already on /supercar-luxury would update
+  // the URL (via navigate) but barState would stay stuck on its initial
+  // mount values — making the user re-enter dates.
+  useEffect(() => {
+    setBarState(prev => ({
+      ...prev,
+      pickupDate: urlPickupDate || prev.pickupDate,
+      pickupTime: urlPickupTime || prev.pickupTime,
+      returnDate: urlReturnDate || prev.returnDate,
+      returnTime: urlReturnTime || prev.returnTime,
+      pickupLoc: urlPickupLoc || prev.pickupLoc,
+      pickupLocLabel: urlPickupLocLabel || prev.pickupLocLabel,
+      returnLoc: urlReturnLoc || prev.returnLoc,
+      returnLocLabel: urlReturnLocLabel || prev.returnLocLabel,
+    }));
+  }, [urlPickupDate, urlPickupTime, urlReturnDate, urlReturnTime, urlPickupLoc, urlPickupLocLabel, urlReturnLoc, urlReturnLocLabel]);
+
   // Sync context so the wizard initializes with these dates
   useEffect(() => {
     if (!hasSearchParams) {
