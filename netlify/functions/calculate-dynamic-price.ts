@@ -413,11 +413,15 @@ export const handler: Handler = async (event) => {
     const dropoffMs = new Date(dropoff_date).getTime()
     const horizon30Iso = new Date(dropoffMs + 30 * 24 * 60 * 60 * 1000).toISOString()
 
+    const vehicleMatch = vehicle.plate
+      ? `vehicle_id.eq.${vehicle.id},vehicle_plate.eq.${vehicle.plate}`
+      : `vehicle_id.eq.${vehicle.id}`
+
     const [{ data: priorBookings }, { data: nextBookings }] = await Promise.all([
       supabase
         .from('bookings')
         .select('dropoff_date')
-        .eq('vehicle_id', vehicle.id)
+        .or(vehicleMatch)
         .not('status', 'in', '(cancelled,annullata)')
         .lt('dropoff_date', pickup_date)
         .order('dropoff_date', { ascending: false })
@@ -425,7 +429,7 @@ export const handler: Handler = async (event) => {
       supabase
         .from('bookings')
         .select('pickup_date')
-        .eq('vehicle_id', vehicle.id)
+        .or(vehicleMatch)
         .not('status', 'in', '(cancelled,annullata)')
         .gte('pickup_date', dropoff_date)
         .lte('pickup_date', horizon30Iso)
@@ -445,7 +449,12 @@ export const handler: Handler = async (event) => {
       } else {
         windowMs = nextPickMs - dropoffMs
       }
-      calendarGapDays = Math.max(1, Math.ceil(windowMs / (1000 * 60 * 60 * 24)))
+      // "Gap giorni" = giorni interi LIBERI tra le due prenotazioni.
+      // prior.drop 22/04, next.pick 24/04 → finestra 48h → 1 giorno libero (23/04).
+      // I giorni di dropoff precedente e pickup successivo non contano come "liberi".
+      const windowDays = Math.round(windowMs / (1000 * 60 * 60 * 24))
+      const freeDays = Math.max(0, windowDays - 1)
+      if (freeDays > 0) calendarGapDays = freeDays
     }
     // else: niente booking successivo entro 30gg → calendario aperto → no gap
 
