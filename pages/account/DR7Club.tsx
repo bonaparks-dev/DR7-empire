@@ -34,7 +34,7 @@ const DR7Club = () => {
     setLoading(true)
     try {
       const [clubStatus, balance, txns] = await Promise.all([
-        getClubStatus(user.id),
+        getClubStatus(user.id, user.email),
         getUserCreditBalance(user.id),
         getCreditTransactions(user.id, 10),
       ])

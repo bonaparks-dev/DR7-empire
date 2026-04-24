@@ -161,38 +161,127 @@ export async function getClubSubscription(userId: string): Promise<ClubSubscript
   return data
 }
 
-/** Get annual spend (last 12 months) from completed bookings */
-export async function getAnnualSpend(userId: string): Promise<number> {
-  const oneYearAgo = new Date()
-  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
-
-  const { data, error } = await supabase
-    .from('bookings')
-    .select('price_total')
+/**
+ * Get spend for DR7 Club tier progression.
+ *
+ * The window is "since the user's DR7 Club signup" — NOT a rolling 12 months.
+ * Membership rewards only member-period spending; anything before they joined
+ * the club doesn't count toward tier.
+ *
+ * The rule (confirmed with the business):
+ *   Tier = money that actually flowed into DR7 from this customer, since signup.
+ *   - Bookings paid by CARD (or other real payment method) → count
+ *   - Wallet recharges paid by card (recharge_amount) → count
+ *   - Bookings paid FROM THE WALLET → DO NOT count (recycled credit, no new revenue)
+ *   - Package bonus on recharges → DO NOT count (it's a reward)
+ *   - Cancelled bookings → DO NOT count
+ *
+ * Bookings are matched via three linkage paths, like the rest of the codebase:
+ *   bookings.user_id = userId
+ *   bookings.booking_details.customer.customerId = userId
+ *   LOWER(bookings.customer_email) = email
+ * Without this, admin-created / pre-account / guest bookings are lost.
+ *
+ * Uses created_at — booked_at is unreliable (nullable on many rows).
+ */
+export async function getAnnualSpend(userId: string, email?: string | null): Promise<number> {
+  // Find the earliest DR7 Club subscription for this user — tier only counts
+  // spend made AFTER they joined the club. If they never subscribed, there's
+  // no tier to compute and spend is 0.
+  const { data: firstSub } = await supabase
+    .from('dr7_club_subscriptions')
+    .select('started_at, created_at')
     .eq('user_id', userId)
-    .in('status', ['completed', 'completata', 'confirmed', 'active'])
-    .in('payment_status', ['paid', 'completed', 'succeeded'])
-    .gte('booked_at', oneYearAgo.toISOString())
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
 
-  if (error) {
-    console.error('Error fetching annual spend:', error)
+  if (!firstSub) {
     return 0
   }
 
-  // price_total is in cents
-  const totalCents = (data || []).reduce((sum, b) => sum + (b.price_total || 0), 0)
-  return totalCents / 100 // return in euros
+  const signupIso = firstSub.started_at || firstSub.created_at
+  if (!signupIso) {
+    return 0
+  }
+  const cutoffIso = new Date(signupIso).toISOString()
+
+  // 1. Bookings paid by non-wallet methods, within 12mo, confirmed/active
+  const orClauses: string[] = [
+    `user_id.eq.${userId}`,
+    `booking_details->customer->>customerId.eq.${userId}`,
+  ]
+  if (email) {
+    orClauses.push(`customer_email.ilike.${email}`)
+  }
+
+  const { data: bookings, error: bookingErr } = await supabase
+    .from('bookings')
+    .select('price_total, payment_method')
+    .or(orClauses.join(','))
+    .in('status', ['completed', 'completata', 'confirmed', 'active'])
+    .in('payment_status', ['paid', 'completed', 'succeeded'])
+    .gte('created_at', cutoffIso)
+
+  if (bookingErr) {
+    console.error('[dr7club] Error fetching annual booking spend:', bookingErr)
+  }
+
+  const isWalletOrGift = (pm: string | null | undefined): boolean => {
+    const m = String(pm || '').toLowerCase().trim()
+    if (!m) return false
+    return (
+      m === 'credit' ||
+      m === 'credit_wallet' ||
+      m === 'credit wallet' ||
+      m === 'creditwallet' ||
+      m === 'wallet' ||
+      m === 'gift' ||
+      m === 'gift_card' ||
+      m === 'gift card' ||
+      m === 'giftcard' ||
+      m.includes('wallet') ||
+      m.includes('gift')
+    )
+  }
+
+  const bookingCents = (bookings || []).reduce((sum, b) => {
+    if (isWalletOrGift(b.payment_method)) return sum
+    return sum + (b.price_total || 0)
+  }, 0)
+  const bookingEur = bookingCents / 100
+
+  // 2. Wallet recharges paid by card — recharge_amount is euros actually paid.
+  //    received_amount includes the package bonus; we exclude the bonus
+  //    (not real spend, just a reward).
+  const { data: purchases, error: purchErr } = await supabase
+    .from('credit_wallet_purchases')
+    .select('recharge_amount')
+    .eq('user_id', userId)
+    .eq('payment_status', 'succeeded')
+    .gte('created_at', cutoffIso)
+
+  if (purchErr) {
+    console.error('[dr7club] Error fetching wallet recharges:', purchErr)
+  }
+  const rechargeEur = (purchases || []).reduce((sum, p) => {
+    const raw = p.recharge_amount
+    const n = typeof raw === 'number' ? raw : parseFloat(String(raw ?? 0))
+    return sum + (Number.isFinite(n) ? n : 0)
+  }, 0)
+
+  return bookingEur + rechargeEur
 }
 
 /** Get full club status for a user */
-export async function getClubStatus(userId: string): Promise<{
+export async function getClubStatus(userId: string, email?: string | null): Promise<{
   subscription: ClubSubscription | null
   tierInfo: ClubTierInfo
   isActive: boolean
 }> {
   const [subscription, annualSpend] = await Promise.all([
     getClubSubscription(userId),
-    getAnnualSpend(userId),
+    getAnnualSpend(userId, email),
   ])
 
   const tierInfo = calculateTier(annualSpend)
