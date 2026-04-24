@@ -18,15 +18,14 @@ interface CreditPackage {
 
 const CREDIT_PACKAGES: CreditPackage[] = [
   // STARTER SERIES
-  // TEST PACKAGE — TEMPORARY, revert to Starter 50 (€50 → €60) before go-live
   {
-    id: 'test-1',
+    id: 'starter-50',
     series: 'STARTER SERIES',
-    name: 'TEST €1',
-    rechargeAmount: 1,
-    receivedAmount: 1,
-    bonus: 0,
-    bonusPercentage: 0
+    name: 'Starter 50',
+    rechargeAmount: 50,
+    receivedAmount: 60,
+    bonus: 10,
+    bonusPercentage: 20
   },
   {
     id: 'starter-100',

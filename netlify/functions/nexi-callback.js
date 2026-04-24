@@ -664,17 +664,34 @@ exports.handler = async (event) => {
         // Atomically update purchase status - only succeeds if not already 'succeeded'
         const walletContractId = rawParams.contractId || rawParams.contract_id || null;
 
+        // Critical update — keep minimal so a missing optional column can never
+        // block the rest of the flow (credits, fattura, referral bonus).
         const { data: updatedPurchase, error: upErr } = await supabase
           .from('credit_wallet_purchases')
           .update({
             payment_status: 'succeeded',
-            payment_completed_at: new Date().toISOString(),
-            ...(walletContractId ? { nexi_contract_id: walletContractId } : {})
+            payment_completed_at: new Date().toISOString()
           })
           .eq('id', purchase.id)
           .neq('payment_status', 'succeeded')
           .select()
           .single();
+
+        // Best-effort tokenization write (depends on migration 20260424020000).
+        // Non-fatal: failure here must not stop credits/fattura/referral.
+        if (walletContractId) {
+          try {
+            const { error: tokColErr } = await supabase
+              .from('credit_wallet_purchases')
+              .update({ nexi_contract_id: walletContractId })
+              .eq('id', purchase.id);
+            if (tokColErr) {
+              console.warn('[nexi-callback] Could not save nexi_contract_id on purchase (run migration 20260424020000):', tokColErr.message);
+            }
+          } catch (tokColCatch) {
+            console.warn('[nexi-callback] nexi_contract_id write threw (non-blocking):', tokColCatch.message);
+          }
+        }
 
         // If no row returned, another callback already processed it
         if (!updatedPurchase) {
