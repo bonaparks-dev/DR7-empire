@@ -4943,9 +4943,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 {!selectedInsuranceIsRCA && <div className="space-y-3">
                   {depositOptions.map(opt => {
                     const isSelected = formData.depositOption === opt.id;
-                    // Disable "no_deposit" if insurance is RCA (solo con acquisto Kasko)
-                    // no_deposit: hide entirely for Fascia B, disable for RCA
-                    if (opt.id === 'no_deposit' && activeTier === 'TIER_1') return null;
+                    // no_deposit: disabled only if insurance is RCA (Kasko required).
+                    // Both Fascia A and Fascia B can request approval via the popup.
                     const isDisabled = opt.id === 'no_deposit' && selectedInsuranceIsRCA;
                     return (
                       <div
@@ -5012,7 +5011,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     Invieremo la tua richiesta e sarai contattato per conferma.
                   </p>
                   <p className="text-white text-sm mb-1">Supplemento: <span className="font-bold text-white">€{ACTIVE_NO_DEPOSIT_SURCHARGE}/giorno</span></p>
-                  <p className="text-gray-500 text-xs mb-4">Disponibile solo con Kasko attiva (Fascia A, residente in Sardegna)</p>
+                  <p className="text-gray-500 text-xs mb-4">Richiede Kasko attiva. Soggetto a verifica e approvazione del team DR7.</p>
                   <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg mb-4">
                     <p className="text-red-400 text-xs font-bold mb-1">ATTENZIONE</p>
                     <p className="text-gray-300 text-xs leading-relaxed">
