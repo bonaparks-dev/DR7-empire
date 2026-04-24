@@ -822,10 +822,10 @@ exports.handler = async (event) => {
           }
         }
 
-        // Generate fattura for wallet purchase
+        // Generate fattura for wallet purchase (card-paid recharge → IVA invoice required)
         try {
           const siteUrl = process.env.URL || 'https://dr7empire.com';
-          await fetch(`${siteUrl}/.netlify/functions/generate-fattura`, {
+          const fatturaRes = await fetch(`${siteUrl}/.netlify/functions/generate-fattura`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -835,15 +835,43 @@ exports.handler = async (event) => {
               purchaseData: {
                 userId: purchase.user_id,
                 packageName: purchase.package_name,
-                amount: purchase.amount,
+                amount: purchase.recharge_amount,
                 receivedAmount: purchase.received_amount,
                 bonusPercentage: purchase.bonus_percentage,
               }
             }),
           });
-          console.log(`Fattura generated for wallet purchase ${purchase.id}`);
+          if (fatturaRes.ok) {
+            console.log(`[nexi-callback] Fattura generated for wallet purchase ${purchase.id}`);
+          } else {
+            const errText = await fatturaRes.text().catch(() => '');
+            console.error(`[nexi-callback] Fattura generation failed (${fatturaRes.status}): ${errText}`);
+            setTimeout(async () => {
+              try {
+                const retryRes = await fetch(`${siteUrl}/.netlify/functions/generate-fattura`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    purchaseType: 'wallet_purchase',
+                    purchaseId: purchase.id,
+                    includeIVA: true,
+                    purchaseData: {
+                      userId: purchase.user_id,
+                      packageName: purchase.package_name,
+                      amount: purchase.recharge_amount,
+                      receivedAmount: purchase.received_amount,
+                      bonusPercentage: purchase.bonus_percentage,
+                    }
+                  }),
+                });
+                console.log('[nexi-callback] Fattura retry:', retryRes.ok ? 'SUCCESS' : `FAILED (${retryRes.status})`);
+              } catch (retryErr) {
+                console.error('[nexi-callback] Fattura retry failed:', retryErr);
+              }
+            }, 3000);
+          }
         } catch (e) {
-          console.error('Fattura generation failed for wallet purchase:', e);
+          console.error('[nexi-callback] Fattura generation error:', e);
         }
       } else {
         // Payment failed
