@@ -4618,7 +4618,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const insuranceOptions = getInsuranceForVehicle(displayVehicleType, activeTier);
         // Deposit options from Centralina Pro (RESIDENT by default)
         const depositKey = `${activeTier}_RESIDENT` as keyof typeof configOverlay.depositOptions;
-        const depositOptions = configOverlay?.depositOptions?.[depositKey] || [];
+        const rawDepositOptions = configOverlay?.depositOptions?.[depositKey] || [];
+        // Ensure "Nessuna cauzione" is always offered as a request for Fascia B as well —
+        // Centralina Pro only lists no_deposit for Fascia A, but Fascia B must still be
+        // able to submit a request. Borrow the Fascia A config when missing.
+        const depositOptions = (() => {
+          const hasNoDeposit = rawDepositOptions.some((o: any) => o.id === 'no_deposit');
+          if (hasNoDeposit) return rawDepositOptions;
+          const fasciaA = configOverlay?.depositOptions?.TIER_2_RESIDENT || [];
+          const fasciaAnoDep = fasciaA.find((o: any) => o.id === 'no_deposit');
+          const noDepOption = fasciaAnoDep || { id: 'no_deposit', label: 'Nessuna cauzione', amount: 0, surcharge_per_day: 49 };
+          return [noDepOption, ...rawDepositOptions];
+        })();
         const experienceServices = ACTIVE_EXPERIENCE_SERVICES.filter(s => !s.tierOnly || s.tierOnly === activeTier);
 
         // Check if "no deposit" requires Kasko (cannot select no_deposit with RCA only)
@@ -4955,16 +4966,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             ? 'border-green-500 bg-green-500/10 cursor-pointer'
                             : 'border-gray-600 hover:border-gray-500 cursor-pointer'}`}
                         onClick={() => {
-                          if (isDisabled) return;
                           if (opt.id === 'no_deposit') {
                             // Elite/Member: no approval needed, select directly
                             if (isLoyalCustomer) {
                               setFormData(prev => ({ ...prev, depositOption: 'no_deposit' }));
                               return;
                             }
+                            // Always open the request popup (Kasko requirement is stated inside).
                             setShowNoCauzionePopup(true);
                             return;
                           }
+                          if (isDisabled) return;
                           if (opt.id === 'vehicle_deposit') {
                             // Don't set depositOption yet — wait for popup confirmation
                             setShowVehicleDepositPopup(true);
