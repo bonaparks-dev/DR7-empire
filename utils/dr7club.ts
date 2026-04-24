@@ -181,6 +181,22 @@ export async function getClubSubscription(userId: string): Promise<ClubSubscript
  *
  * Uses created_at — booked_at is unreliable (nullable on many rows).
  */
+// ─── Per-user grandfathered overrides ───────────────────────────────────
+// Before the tier rules were corrected, these customers saw a certain
+// number on their profile that included bookings paid from the wallet.
+// Applying the new card-only rule retroactively would visibly demote them
+// (what they saw yesterday disappears today), so for specific customers
+// we lock in the displayed spend to the figure they had before the fix
+// plus subsequent card recharges. New tier activity going forward still
+// uses the real card-only rule — these overrides are a floor, not a
+// replacement.
+const TIER_SPEND_OVERRIDES: Record<string, number> = {
+  // Massimo Runchina — had €2155.20 displayed pre-fix, then recharged
+  // €1000 by card after. Business decision: preserve €3155.20 so he
+  // sees Black tier (≥€3000) matching what his profile implied.
+  '3b896d05-3d65-4819-a46a-ea9894343935': 3155.20,
+}
+
 export async function getAnnualSpend(userId: string, email?: string | null): Promise<number> {
   const oneYearAgo = new Date()
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
@@ -250,7 +266,15 @@ export async function getAnnualSpend(userId: string, email?: string | null): Pro
     return sum + (Number.isFinite(n) ? n : 0)
   }, 0)
 
-  return bookingEur + rechargeEur
+  const computed = bookingEur + rechargeEur
+
+  // Apply grandfather override if set — acts as a floor so customers whose
+  // pre-fix display would be lost get to keep the figure they saw.
+  const override = TIER_SPEND_OVERRIDES[userId]
+  if (typeof override === 'number' && override > computed) {
+    return override
+  }
+  return computed
 }
 
 /** Get full club status for a user */
