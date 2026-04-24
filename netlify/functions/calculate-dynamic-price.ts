@@ -353,7 +353,7 @@ export const handler: Handler = async (event) => {
     // 2. Fetch vehicle
     const { data: vehicle, error: vehicleError } = await supabase
       .from('vehicles')
-      .select('id, display_name, daily_rate, category, status')
+      .select('id, display_name, daily_rate, category, status, plate')
       .eq('id', vehicle_id)
       .single()
 
@@ -480,9 +480,7 @@ export const handler: Handler = async (event) => {
       selectedBaseRateSource = 'vehicle_daily_rate'
     }
 
-    // Rental days
-    const pickupMs = new Date(pickup_date).getTime()
-    const dropoffMs = new Date(dropoff_date).getTime()
+    // Rental days (reuse pickupMs/dropoffMs computed above)
     const rentalDays = Math.max(1, Math.ceil((dropoffMs - pickupMs) / (1000 * 60 * 60 * 24)))
 
     // Days ahead
