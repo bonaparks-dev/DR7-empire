@@ -839,12 +839,25 @@ const MyBookings = () => {
                                 const bd = booking.booking_details || {};
                                 const dep = bd.depositOption;
                                 const amount = bd.cauzione ?? bd.deposit_amount;
-                                if (dep === 'no_deposit') return lang === 'it' ? 'Nessuna Cauzione' : 'No Deposit';
-                                if (dep === 'vehicle_deposit') return lang === 'it' ? 'Cauzione con Veicolo' : 'Vehicle Deposit';
-                                if (dep === 'credit_card') return amount ? `${lang === 'it' ? 'Carta di Credito' : 'Credit Card'} (€${amount})` : (lang === 'it' ? 'Carta di Credito' : 'Credit Card');
-                                if (dep === 'cash_prepaid') return amount ? `${lang === 'it' ? 'Contanti/Prepagata' : 'Cash/Prepaid'} (€${amount})` : (lang === 'it' ? 'Contanti/Prepagata' : 'Cash/Prepaid');
-                                if (amount) return `€${amount}`;
-                                return 'N/A';
+                                if (!dep && !amount) return 'N/A';
+                                // Look up the label from Centralina Pro — single source of truth
+                                let label: string | undefined;
+                                if (dep && proOverlay?.depositOptions) {
+                                  const pools = [
+                                    proOverlay.depositOptions.TIER_1_RESIDENT,
+                                    proOverlay.depositOptions.TIER_2_RESIDENT,
+                                    proOverlay.depositOptions.TIER_1_NON_RESIDENT,
+                                    proOverlay.depositOptions.TIER_2_NON_RESIDENT,
+                                  ].filter(Array.isArray) as Array<Array<{ id?: string; label?: string }>>;
+                                  for (const pool of pools) {
+                                    const hit = pool.find(o => o?.id === dep);
+                                    if (hit?.label) { label = hit.label; break; }
+                                  }
+                                }
+                                // Fallback: humanize the id
+                                if (!label && dep) label = dep.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                                if (!label) return amount ? `€${amount}` : 'N/A';
+                                return amount ? `${label} (€${amount})` : label;
                               })()}
                             </p>
                           </div>
