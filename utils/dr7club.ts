@@ -266,15 +266,15 @@ export async function getAnnualSpend(userId: string, email?: string | null): Pro
     return sum + (Number.isFinite(n) ? n : 0)
   }, 0)
 
-  const computed = bookingEur + rechargeEur
-
-  // Apply grandfather override if set — acts as a floor so customers whose
-  // pre-fix display would be lost get to keep the figure they saw.
+  // Apply grandfather override if set — absolute value, replaces the
+  // computed figure entirely. Customers in this map are locked to a
+  // specific displayed spend regardless of real activity. Remove an
+  // entry to let the engine start computing their real number again.
   const override = TIER_SPEND_OVERRIDES[userId]
-  if (typeof override === 'number' && override > computed) {
+  if (typeof override === 'number') {
     return override
   }
-  return computed
+  return bookingEur + rechargeEur
 }
 
 /** Get full club status for a user */
