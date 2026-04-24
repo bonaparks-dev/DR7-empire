@@ -1,6 +1,7 @@
 import type { Handler } from "@netlify/functions";
 import { renderTemplate, resolveKeyForContext } from './utils/messageTemplates';
 import { getInsuranceNameById } from './utils/centralinaProLookups';
+import { formatLocation } from './utils/formatLocation';
 
 const GREEN_API_INSTANCE_ID = process.env.GREEN_API_INSTANCE_ID;
 const GREEN_API_TOKEN = process.env.GREEN_API_TOKEN;
@@ -161,7 +162,8 @@ const handler: Handler = async (event) => {
         pickup_time: pickup ? pickup.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '',
         dropoff_date: dropoff ? dropoff.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' }) : '',
         dropoff_time: dropoff ? dropoff.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '',
-        pickup_location: booking.pickup_location || '',
+        pickup_location: formatLocation(booking.pickup_location),
+        dropoff_location: formatLocation(booking.dropoff_location),
         insurance: await getInsuranceNameById(booking.insurance_option || booking.booking_details?.insuranceOption || ''),
         deposit: depositStr,
         km_info: formatKmInfo(booking),
