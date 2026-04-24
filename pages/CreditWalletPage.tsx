@@ -378,7 +378,9 @@ const CreditWalletPage: React.FC = () => {
         .update({ nexi_order_id: nexiOrderId })
         .eq('id', data.id);
 
-      // 4. Create Nexi payment
+      // 4. Create Nexi payment — tokenize the card (MIT_UNSCHEDULED) so admin
+      // can re-charge it later for penalties, late fees, or future recharges
+      // without the customer re-entering card details.
       const nexiResponse = await fetch('/.netlify/functions/create-nexi-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -388,7 +390,8 @@ const CreditWalletPage: React.FC = () => {
           currency: 'EUR',
           description: `Credit Wallet - ${selectedPackage.name}`,
           customerEmail: formData.email,
-          customerName: formData.fullName
+          customerName: formData.fullName,
+          recurringType: 'MIT_UNSCHEDULED'
         })
       });
 

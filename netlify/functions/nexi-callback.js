@@ -662,11 +662,14 @@ exports.handler = async (event) => {
 
       if (isSuccess) {
         // Atomically update purchase status - only succeeds if not already 'succeeded'
+        const walletContractId = rawParams.contractId || rawParams.contract_id || null;
+
         const { data: updatedPurchase, error: upErr } = await supabase
           .from('credit_wallet_purchases')
           .update({
             payment_status: 'succeeded',
-            payment_completed_at: new Date().toISOString()
+            payment_completed_at: new Date().toISOString(),
+            ...(walletContractId ? { nexi_contract_id: walletContractId } : {})
           })
           .eq('id', purchase.id)
           .neq('payment_status', 'succeeded')
@@ -795,6 +798,43 @@ exports.handler = async (event) => {
             }
           } catch (cashbackErr) {
             console.error('[nexi-callback] Wallet recharge cashback failed (non-blocking):', cashbackErr);
+          }
+        }
+
+        // Save the Nexi card token (contractId) to customers_extended.metadata
+        // so the admin can re-charge the same card later for penalties, late
+        // fees, or extra wallet top-ups without the customer re-entering it.
+        // Same storage location used by admin's nexi-preauth-callback flow.
+        if (walletContractId && purchase.user_id) {
+          try {
+            const { data: cust } = await supabase
+              .from('customers_extended')
+              .select('id, metadata')
+              .eq('user_id', purchase.user_id)
+              .maybeSingle();
+
+            if (cust) {
+              const newMetadata = {
+                ...(cust.metadata || {}),
+                nexi_contract_id: walletContractId,
+                nexi_contract_updated: new Date().toISOString(),
+                nexi_contract_source: 'wallet_recharge'
+              };
+              const { error: metaErr } = await supabase
+                .from('customers_extended')
+                .update({ metadata: newMetadata })
+                .eq('id', cust.id);
+
+              if (metaErr) {
+                console.error('[nexi-callback] Failed to save contractId on customer (non-blocking):', metaErr.message);
+              } else {
+                console.log(`[nexi-callback] Tokenized card saved: contractId=${walletContractId} on customer ${cust.id}`);
+              }
+            } else {
+              console.warn('[nexi-callback] No customers_extended row for user_id:', purchase.user_id);
+            }
+          } catch (tokErr) {
+            console.error('[nexi-callback] Token save failed (non-blocking):', tokErr);
           }
         }
 

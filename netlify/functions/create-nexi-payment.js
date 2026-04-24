@@ -196,13 +196,23 @@ exports.handler = async (event) => {
       },
     };
 
-    // Add recurrence for membership subscription creation (tokenize card)
+    // Recurrence: tokenize the card so future charges can be merchant-initiated.
+    // - MIT_SCHEDULED → memberships / DR7 Club (auto-renewal on a fixed frequency)
+    // - MIT_UNSCHEDULED → wallet recharges (no schedule; lets admin re-charge the
+    //   same card later for penalties, late fees, future top-ups)
     if (recurringType === 'MIT_SCHEDULED') {
       requestBody.recurrence = {
         action: 'CONTRACT_CREATION',
         contractId: sanitizedOrderId,
         contractType: 'MIT_SCHEDULED',
         contractFrequency: billingCycle === 'monthly' ? '30' : '365',
+        contractExpiryDate: new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0].replace(/-/g, ''),
+      };
+    } else if (recurringType === 'MIT_UNSCHEDULED') {
+      requestBody.recurrence = {
+        action: 'CONTRACT_CREATION',
+        contractId: sanitizedOrderId,
+        contractType: 'MIT_UNSCHEDULED',
         contractExpiryDate: new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0].replace(/-/g, ''),
       };
     }
