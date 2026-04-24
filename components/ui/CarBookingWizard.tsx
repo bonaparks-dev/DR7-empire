@@ -3080,6 +3080,19 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       return;
     }
 
+    // CRITICAL: block booking if Centralina config hasn't loaded.
+    // Without tierPricing, extras (km illimitati, secondo guidatore, lavaggio)
+    // silently fall back to €0 → sotto-prezzo del booking. Meglio bloccare
+    // che fatturare meno.
+    if (!configOverlay?.tierPricing) {
+      clearTimeout(safetyTimer);
+      setPaymentError('Configurazione prezzi non ancora caricata. Ricarica la pagina e riprova.');
+      console.error('[handleSubmit] BLOCKED: configOverlay.tierPricing missing — refuse to book to avoid underpricing');
+      isSubmittingRef.current = false;
+      setIsProcessing(false);
+      return;
+    }
+
     // Credit wallet requires login
     if (normalizedPaymentMethod === 'credit' && !user?.id) {
       clearTimeout(safetyTimer);
@@ -4991,8 +5004,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
             {/* No Cauzione Request Popup */}
             {showNoCauzionePopup && (
-              <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowNoCauzionePopup(false)}>
-                <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
+              <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowNoCauzionePopup(false)}>
+                <div className="bg-gray-900 border border-gray-700 rounded-t-2xl sm:rounded-2xl p-6 max-w-md w-full max-h-[90dvh] overflow-y-auto overscroll-contain" onClick={e => e.stopPropagation()}>
                   <h3 className="text-lg font-bold text-white mb-3">Richiesta No Cauzione</h3>
                   <p className="text-gray-400 text-sm mb-4">
                     L'opzione "Nessuna Cauzione" richiede l'approvazione del team DR7.
