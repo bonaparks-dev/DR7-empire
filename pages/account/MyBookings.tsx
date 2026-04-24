@@ -838,9 +838,11 @@ const MyBookings = () => {
                               {(() => {
                                 const bd = booking.booking_details || {};
                                 const dep = bd.depositOption;
-                                const amount = bd.cauzione ?? bd.deposit_amount;
-                                if (!dep && !amount) return 'N/A';
-                                // Look up the label from Centralina Pro — single source of truth
+                                // The real cauzione amount was stored on the booking at booking time.
+                                // Prefer booking.deposit_amount (top-level column, canonical), then legacy booking_details fields.
+                                const amount = (booking as any).deposit_amount ?? bd.deposit_amount ?? bd.cauzione;
+                                if (!dep && amount == null) return 'N/A';
+                                // Label from Centralina Pro (single source of truth for labels)
                                 let label: string | undefined;
                                 if (dep && proOverlay?.depositOptions) {
                                   const pools = [
@@ -854,10 +856,12 @@ const MyBookings = () => {
                                     if (hit?.label) { label = hit.label; break; }
                                   }
                                 }
-                                // Fallback: humanize the id
                                 if (!label && dep) label = dep.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-                                if (!label) return amount ? `€${amount}` : 'N/A';
-                                return amount ? `${label} (€${amount})` : label;
+                                const amountStr = typeof amount === 'number' && amount > 0
+                                  ? `€${amount.toLocaleString('it-IT')}`
+                                  : '';
+                                if (!label) return amountStr || 'N/A';
+                                return amountStr ? `${label} — ${amountStr}` : label;
                               })()}
                             </p>
                           </div>
