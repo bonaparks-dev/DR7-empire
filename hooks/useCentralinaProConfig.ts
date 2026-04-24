@@ -365,9 +365,35 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
 
   // No hardcoded fallbacks — if Pro has nothing, price is 0 and the gap is visible.
   // Aziendali category drives BOTH Furgone (Ducato) and NCC (V_CLASS) unlimited prices.
-  const unlimitedSupercar = num(kmSupercars?.unlimitedPerDay, 0)
-  const unlimitedAziendali = num(kmFurgone?.unlimitedPerDay, 0)
-  const unlimitedUrban = num(kmUrban?.unlimitedPerDay, 0)
+  // Helper: legge il prezzo unlimited per-tier. Se la categoria è in modalità
+  // "per_fascia" (A=189, B=289), ritorna il valore della fascia richiesta.
+  // Altrimenti usa il valore unico "Tutte le fasce".
+  // Fascia A ↔ TIER_2, Fascia B ↔ TIER_1 (convenzione DR7).
+  const unlimitedFor = (cat: any, tier: 'TIER_1' | 'TIER_2'): number => {
+    if (!cat) return 0
+    const mode = cat.unlimitedMode || 'all_tiers'
+    if (mode === 'per_fascia' && cat.unlimitedByFascia) {
+      const key = tier === 'TIER_2' ? 'A' : 'B'
+      const v = num(cat.unlimitedByFascia[key], 0)
+      if (v > 0) return v
+      // Fallback: se il valore della fascia richiesta è 0 ma l'altro è > 0,
+      // usa il maggiore tra i due invece di ritornare 0 (evita sotto-prezzo).
+      const other = num(cat.unlimitedByFascia[key === 'A' ? 'B' : 'A'], 0)
+      if (other > 0) return other
+    }
+    return num(cat.unlimitedPerDay, 0)
+  }
+
+  const unlimitedSupercarT1 = unlimitedFor(kmSupercars, 'TIER_1')
+  const unlimitedSupercarT2 = unlimitedFor(kmSupercars, 'TIER_2')
+  const unlimitedAziendaliT1 = unlimitedFor(kmFurgone, 'TIER_1')
+  const unlimitedAziendaliT2 = unlimitedFor(kmFurgone, 'TIER_2')
+  const unlimitedUrbanT1 = unlimitedFor(kmUrban, 'TIER_1')
+  const unlimitedUrbanT2 = unlimitedFor(kmUrban, 'TIER_2')
+  // Legacy single-tier vars kept for fields that don't split by tier
+  const unlimitedSupercar = unlimitedSupercarT2 || unlimitedSupercarT1
+  const unlimitedAziendali = unlimitedAziendaliT2 || unlimitedAziendaliT1
+  const unlimitedUrban = unlimitedUrbanT2 || unlimitedUrbanT1
   const sforoSupercar = num(kmSupercars?.sforo, 0)
 
   // No hardcoded fallbacks
@@ -422,8 +448,8 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
   // NCC (V_CLASS) reads from the Aziendali category, same as Furgone (Ducato).
   const kmPackagePrices: KmPackagePrices = {
     supercar50kmPerDay: 0, // Not yet in Pro — keep at 0 until admin adds a field
-    unlimitedSupercarT1PerDay: unlimitedSupercar,
-    unlimitedSupercarT2PerDay: unlimitedSupercar,
+    unlimitedSupercarT1PerDay: unlimitedSupercarT1,
+    unlimitedSupercarT2PerDay: unlimitedSupercarT2,
     unlimitedFurgonePerDay: unlimitedAziendali,
     unlimitedNccPerDay: unlimitedAziendali,
     unlimitedUrbanPerDay: unlimitedUrban,
@@ -437,12 +463,14 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
     furgoneInsurance,
     tierPricing: {
       TIER_1: {
-        unlimitedKmPerDay: unlimitedSupercar,
+        // Fascia B (TIER_1) usa il prezzo Fascia B dell'Admin Pro, non un valore
+        // condiviso. Se admin imposta A=189 B=289, TIER_1 riceve 289.
+        unlimitedKmPerDay: unlimitedSupercarT1,
         secondDriverPerDay: secondDriverFasciaB,
         lavaggio: lavaggioFee,
       },
       TIER_2: {
-        unlimitedKmPerDay: unlimitedSupercar,
+        unlimitedKmPerDay: unlimitedSupercarT2,
         secondDriverPerDay: secondDriverFasciaA,
         lavaggio: lavaggioFee,
       },
