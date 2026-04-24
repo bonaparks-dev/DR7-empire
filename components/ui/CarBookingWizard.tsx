@@ -5045,8 +5045,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
             {/* Vehicle Deposit Popup — Targa check + Upload libretto + reminder */}
             {showVehicleDepositPopup && (
-              <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => { setShowVehicleDepositPopup(false); if (!vehicleDepositVerified) setFormData(prev => ({ ...prev, depositOption: '' })); }}>
-                <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
+              <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => { setShowVehicleDepositPopup(false); if (!vehicleDepositVerified) setFormData(prev => ({ ...prev, depositOption: '' })); }}>
+                <div className="bg-gray-900 border border-gray-700 rounded-t-2xl sm:rounded-2xl p-6 max-w-md w-full max-h-[90dvh] overflow-y-auto overscroll-contain" onClick={e => e.stopPropagation()}>
                   <h3 className="text-lg font-bold text-white mb-3">Cauzione con Veicolo</h3>
                   <p className="text-gray-400 text-sm mb-4">
                     Il veicolo deve essere di proprietà e immatricolato dal <strong className="text-white">2020 in poi</strong>. Supplemento: <span className="font-bold text-white">€20/giorno</span>.
@@ -6007,8 +6007,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   return (
     <>
       {/* Full-screen modal overlay */}
-      <div className="fixed inset-0 z-50 overflow-y-auto bg-black/95">
-        <div className="min-h-screen px-2 sm:px-4 py-4 sm:py-8">
+      <div className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-black/95">
+        <div className="min-h-dvh px-2 sm:px-4 py-4 sm:py-8">
           <div className="max-w-6xl mx-auto">
 
             <AnimatePresence>
@@ -6039,14 +6039,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4"
+                  className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
                   onClick={handleWashUpsellDecline}
                 >
                   <motion.div
                     initial={{ scale: 0.9, opacity: 0, y: 20 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                    className="bg-gray-900 border border-gray-700 rounded-2xl p-5 sm:p-8 max-w-2xl w-full max-h-[92vh] overflow-y-auto"
+                    className="bg-gray-900 border border-gray-700 rounded-t-2xl sm:rounded-2xl p-5 sm:p-8 max-w-2xl w-full max-h-[90dvh] overflow-y-auto overscroll-contain"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {/* Header image */}
@@ -6286,14 +6286,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4"
+                  className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
                   onClick={handleSubscriptionDecline}
                 >
                   <motion.div
                     initial={{ scale: 0.9, opacity: 0, y: 20 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                    className="bg-gray-900 border border-gray-700 rounded-2xl p-5 sm:p-8 max-w-lg w-full"
+                    className="bg-gray-900 border border-gray-700 rounded-t-2xl sm:rounded-2xl p-5 sm:p-8 max-w-lg w-full max-h-[90dvh] overflow-y-auto overscroll-contain"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {/* Animated gift icon */}

@@ -246,7 +246,7 @@ const BookingModal: React.FC = () => {
     <AnimatePresence>
       {isBookingOpen && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4"
           aria-modal="true"
           role="dialog"
         >
@@ -262,14 +262,16 @@ const BookingModal: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="relative bg-gray-900/80 border border-gray-700 rounded-lg shadow-2xl shadow-black/50 w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+            className="relative bg-gray-900/80 border border-gray-700 rounded-t-lg sm:rounded-lg shadow-2xl shadow-black/50 w-full max-w-4xl max-h-[90dvh] overflow-y-auto overscroll-contain"
           >
             <button
               onClick={handleClose}
-              className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors z-10"
+              className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors z-10"
               aria-label={t('Close')}
             >
-
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
             </button>
 
             {!isConfirmed ? (

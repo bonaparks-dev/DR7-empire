@@ -109,7 +109,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ isOpen, onClo
     return (
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -121,7 +121,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ isOpen, onClo
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative bg-gray-900 border-2 border-yellow-500 rounded-xl shadow-2xl max-w-2xl w-full"
+              className="relative bg-gray-900 border-2 border-yellow-500 rounded-t-xl sm:rounded-xl shadow-2xl max-w-2xl w-full max-h-[90dvh] overflow-y-auto overscroll-contain"
             >
               <div className="p-6 md:p-8">
                 <div className="text-center mb-6">
@@ -193,7 +193,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ isOpen, onClo
     return (
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -205,7 +205,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ isOpen, onClo
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative bg-gray-900 border-2 border-red-500 rounded-xl shadow-2xl max-w-lg w-full"
+              className="relative bg-gray-900 border-2 border-red-500 rounded-t-xl sm:rounded-xl shadow-2xl max-w-lg w-full max-h-[90dvh] overflow-y-auto overscroll-contain"
             >
               <div className="p-6 md:p-8">
                 <div className="text-center mb-6">
@@ -251,7 +251,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ isOpen, onClo
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -263,7 +263,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ isOpen, onClo
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative bg-gray-900 border-2 border-yellow-500 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            className="relative bg-gray-900 border-2 border-yellow-500 rounded-t-xl sm:rounded-xl shadow-2xl max-w-2xl w-full max-h-[90dvh] overflow-y-auto overscroll-contain"
           >
             <button
               onClick={handleSkip}
