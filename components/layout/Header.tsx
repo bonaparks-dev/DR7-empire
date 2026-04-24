@@ -178,6 +178,14 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                       )}
                     </span>
                   </NavLink>
+                  <NavLink
+                    to={user ? '/account/referral' : '/signin'}
+                    state={user ? undefined : { from: { pathname: '/account/referral' } }}
+                    onClick={onClose}
+                    className={navLinkClasses}
+                  >
+                    <span>DR7 Referral</span>
+                  </NavLink>
                 </div>
               </div>
 
