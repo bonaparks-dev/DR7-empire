@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
 import DocumentUploadModal from '../components/ui/DocumentUploadModal';
@@ -41,6 +41,23 @@ const SignUpPage: React.FC = () => {
   const { t } = useTranslation();
   const { signup, user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const [referralCode, setReferralCode] = useState<string>('');
+
+  useEffect(() => {
+    const fromUrl = searchParams.get('ref');
+    if (fromUrl) {
+      const clean = fromUrl.trim().toUpperCase();
+      try { localStorage.setItem('dr7_referral_code', clean); } catch {}
+      setReferralCode(clean);
+    } else {
+      try {
+        const stored = localStorage.getItem('dr7_referral_code');
+        if (stored) setReferralCode(stored);
+      } catch {}
+    }
+  }, [searchParams]);
 
   const [tipoCliente, setTipoCliente] = useState<'azienda' | 'persona_fisica' | 'pubblica_amministrazione' | ''>('persona_fisica');
   const [formData, setFormData] = useState({
@@ -282,7 +299,8 @@ const SignUpPage: React.FC = () => {
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
-          customerData
+          customerData,
+          referralCode: referralCode || undefined
         })
       });
 
@@ -313,6 +331,8 @@ const SignUpPage: React.FC = () => {
       // The `signup` hook usually handles auto-login if email confirm is off.
       // But here we used backend. We should manual login?
       // Actually, let's try to sign them in immediately if we can, or just navigate.
+
+      try { localStorage.removeItem('dr7_referral_code'); } catch {}
 
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email: formData.email,

@@ -64,6 +64,7 @@ import CancellationPolicyPage from './pages/CancellationPolicyPage';
 import MyBookings from './pages/account/MyBookings';
 import MyPreventivi from './pages/account/MyPreventivi';
 import DR7Club from './pages/account/DR7Club';
+import ReferralProgram from './pages/account/ReferralProgram';
 import ConfirmationSuccessPage from './pages/ConfirmationSuccessPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
@@ -276,6 +277,7 @@ const AnimatedRoutes = () => {
           <Route path="membership" element={<MembershipStatus />} />
           <Route path="bookings" element={<MyBookings />} />
           <Route path="preventivi" element={<MyPreventivi />} />
+          <Route path="referral" element={<ReferralProgram />} />
           <Route path="notifications" element={<NotificationSettings />} />
         </Route>
 

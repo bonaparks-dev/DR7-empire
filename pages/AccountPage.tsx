@@ -17,6 +17,7 @@ const AccountPage = () => {
         { path: '/account/membership', label: t('My_Membership') },
         { path: '/account/bookings', label: t('My_Bookings') },
         { path: '/account/preventivi', label: 'I Miei Preventivi' },
+        { path: '/account/referral', label: 'Invita un Amico' },
         { path: '/account/notifications', label: t('Notifications') },
     ];
 

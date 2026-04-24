@@ -10,7 +10,7 @@ exports.handler = async (event) => {
     }
 
     try {
-        const { email, password, customerData } = JSON.parse(event.body);
+        const { email, password, customerData, referralCode } = JSON.parse(event.body);
 
         if (!email || !password) {
             return { statusCode: 400, body: JSON.stringify({ error: 'Email and password are required' }) };
@@ -250,6 +250,37 @@ exports.handler = async (event) => {
                 }
             } else {
                 console.log('Profile updated successfully:', updatedData);
+            }
+        }
+
+        // 3b. Link referrer (if a valid referral code was provided)
+        if (referralCode && typeof referralCode === 'string') {
+            const normalizedCode = referralCode.trim().toUpperCase();
+            try {
+                const { data: referrerRow, error: referrerErr } = await supabase
+                    .from('customers_extended')
+                    .select('user_id')
+                    .eq('referral_code', normalizedCode)
+                    .maybeSingle();
+
+                if (referrerErr) {
+                    console.warn('[register-customer] Referral lookup error (non-fatal):', referrerErr.message);
+                } else if (referrerRow && referrerRow.user_id && referrerRow.user_id !== userId) {
+                    const { error: linkErr } = await supabase
+                        .from('customers_extended')
+                        .update({ referred_by_user_id: referrerRow.user_id })
+                        .eq('user_id', userId);
+
+                    if (linkErr) {
+                        console.warn('[register-customer] Failed to set referred_by_user_id (non-fatal):', linkErr.message);
+                    } else {
+                        console.log(`[register-customer] User ${userId} referred by ${referrerRow.user_id} (code ${normalizedCode})`);
+                    }
+                } else {
+                    console.log('[register-customer] Referral code not found or self-referral, ignoring:', normalizedCode);
+                }
+            } catch (refErr) {
+                console.warn('[register-customer] Referral linking error (non-fatal):', refErr.message);
             }
         }
 

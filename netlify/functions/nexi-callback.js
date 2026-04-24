@@ -798,6 +798,30 @@ exports.handler = async (event) => {
           }
         }
 
+        // Referral bonus — €50 to referrer if this is the referee's first €100+ top-up
+        if (purchase.user_id && purchase.recharge_amount) {
+          try {
+            const { data: refResult, error: refError } = await supabase.rpc('grant_referral_bonus', {
+              p_referee_user_id: purchase.user_id,
+              p_purchase_id: purchase.id,
+              p_recharge_amount: parseFloat(purchase.recharge_amount)
+            });
+
+            if (refError) {
+              console.error('[nexi-callback] Referral bonus RPC error (non-blocking):', refError);
+            } else {
+              const r = refResult?.[0] || refResult;
+              if (r?.granted) {
+                console.log(`[nexi-callback] Referral bonus €${r.amount} credited to referrer ${r.referrer_user_id}`);
+              } else {
+                console.log('[nexi-callback] Referral bonus not granted:', r?.reason);
+              }
+            }
+          } catch (refErr) {
+            console.error('[nexi-callback] Referral bonus failed (non-blocking):', refErr);
+          }
+        }
+
         // Generate fattura for wallet purchase
         try {
           const siteUrl = process.env.URL || 'https://dr7empire.com';
