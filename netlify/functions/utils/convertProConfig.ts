@@ -93,7 +93,21 @@ export function convertProToLegacy(pro: any): any {
       }
 
       if (num(kmCfg.sforo) > 0) config.sforo_km.category[dbCat] = num(kmCfg.sforo)
-      if (num(kmCfg.unlimitedPerDay) > 0) config.unlimited_km[dbCat] = { _all_tiers: { per_day: num(kmCfg.unlimitedPerDay) } }
+
+      // Km illimitati: per_fascia (A→TIER_2, B→TIER_1) or all_tiers fallback.
+      const unlMode = kmCfg.unlimitedMode || 'all_tiers'
+      if (unlMode === 'per_fascia' && kmCfg.unlimitedByFascia) {
+        const faA = num(kmCfg.unlimitedByFascia.A)
+        const faB = num(kmCfg.unlimitedByFascia.B)
+        const entry: Record<string, { per_day: number }> = {}
+        if (faA > 0) entry.TIER_2 = { per_day: faA }
+        if (faB > 0) entry.TIER_1 = { per_day: faB }
+        if (Object.keys(entry).length > 0) {
+          config.unlimited_km[dbCat] = entry
+        }
+      } else if (num(kmCfg.unlimitedPerDay) > 0) {
+        config.unlimited_km[dbCat] = { _all_tiers: { per_day: num(kmCfg.unlimitedPerDay) } }
+      }
     }
   }
 
