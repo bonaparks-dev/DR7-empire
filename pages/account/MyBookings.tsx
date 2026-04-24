@@ -808,7 +808,26 @@ const MyBookings = () => {
                               {lang === 'it' ? 'Assicurazione' : 'Insurance'}:
                             </p>
                             <p className="text-white">
-                              {booking.insurance_option || booking.booking_details?.insuranceOption || 'N/A'}
+                              {(() => {
+                                const bd = booking.booking_details || {};
+                                // 1) Prefer the label stored at booking time
+                                if (bd.insuranceLabel) return bd.insuranceLabel;
+                                const raw = String(bd.insuranceOption || booking.insurance_option || '').trim();
+                                if (!raw) return 'N/A';
+                                // 2) Look up the name in Centralina Pro insurance pools
+                                if (proOverlay) {
+                                  const pools = [
+                                    proOverlay.insuranceTier1, proOverlay.insuranceTier2,
+                                    proOverlay.urbanInsurance, proOverlay.utilitaireInsurance, proOverlay.furgoneInsurance,
+                                  ].filter(Array.isArray) as Array<Array<{ id?: string; name?: string }>>;
+                                  for (const pool of pools) {
+                                    const hit = pool.find(o => o?.id === raw);
+                                    if (hit?.name) return hit.name;
+                                  }
+                                }
+                                // 3) Humanize the raw id
+                                return raw.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                              })()}
                             </p>
                           </div>
                           <div>
@@ -817,22 +836,14 @@ const MyBookings = () => {
                             </p>
                             <p className="text-white">
                               {(() => {
-                                const insurance = booking.insurance_option || booking.booking_details?.insuranceOption;
-                                // Handle both old KASKO_BASE and new KASKO for backward compatibility
-                                if (insurance === 'KASKO_BASE' || insurance === 'KASKO' || insurance === 'Kasko Base' || insurance === 'Kasko') {
-                                  // For new bookings, deposit is dynamic based on license/loyalty
-                                  const licenseYears = booking.booking_details?.customer?.licenseYears || 0;
-                                  const vehicleName = booking.vehicle_name || '';
-                                  const isUtilitaria = vehicleName.includes('Panda') || vehicleName.includes('Captur') ||
-                                    vehicleName.includes('Ducato') || vehicleName.includes('Vito');
-
-                                  if (isUtilitaria) {
-                                    return licenseYears <= 5 ? '1000€' : '500€';
-                                  } else {
-                                    return licenseYears <= 5 ? '2000€' : '1000€';
-                                  }
-                                }
-                                if (insurance === 'KASKO_DR7' || insurance === 'Kasko DR7') return '0€';
+                                const bd = booking.booking_details || {};
+                                const dep = bd.depositOption;
+                                const amount = bd.cauzione ?? bd.deposit_amount;
+                                if (dep === 'no_deposit') return lang === 'it' ? 'Nessuna Cauzione' : 'No Deposit';
+                                if (dep === 'vehicle_deposit') return lang === 'it' ? 'Cauzione con Veicolo' : 'Vehicle Deposit';
+                                if (dep === 'credit_card') return amount ? `${lang === 'it' ? 'Carta di Credito' : 'Credit Card'} (€${amount})` : (lang === 'it' ? 'Carta di Credito' : 'Credit Card');
+                                if (dep === 'cash_prepaid') return amount ? `${lang === 'it' ? 'Contanti/Prepagata' : 'Cash/Prepaid'} (€${amount})` : (lang === 'it' ? 'Contanti/Prepagata' : 'Cash/Prepaid');
+                                if (amount) return `€${amount}`;
                                 return 'N/A';
                               })()}
                             </p>
