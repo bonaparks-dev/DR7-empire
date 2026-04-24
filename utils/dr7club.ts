@@ -162,14 +162,11 @@ export async function getClubSubscription(userId: string): Promise<ClubSubscript
 }
 
 /**
- * Get spend for DR7 Club tier progression.
- *
- * The window is "since the user's DR7 Club signup" — NOT a rolling 12 months.
- * Membership rewards only member-period spending; anything before they joined
- * the club doesn't count toward tier.
+ * Get annual spend (rolling last 12 months) for DR7 Club tier progression.
  *
  * The rule (confirmed with the business):
- *   Tier = money that actually flowed into DR7 from this customer, since signup.
+ *   Tier = money that actually flowed into DR7 from this customer in the
+ *   last 12 months.
  *   - Bookings paid by CARD (or other real payment method) → count
  *   - Wallet recharges paid by card (recharge_amount) → count
  *   - Bookings paid FROM THE WALLET → DO NOT count (recycled credit, no new revenue)
@@ -185,26 +182,9 @@ export async function getClubSubscription(userId: string): Promise<ClubSubscript
  * Uses created_at — booked_at is unreliable (nullable on many rows).
  */
 export async function getAnnualSpend(userId: string, email?: string | null): Promise<number> {
-  // Find the earliest DR7 Club subscription for this user — tier only counts
-  // spend made AFTER they joined the club. If they never subscribed, there's
-  // no tier to compute and spend is 0.
-  const { data: firstSub } = await supabase
-    .from('dr7_club_subscriptions')
-    .select('started_at, created_at')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle()
-
-  if (!firstSub) {
-    return 0
-  }
-
-  const signupIso = firstSub.started_at || firstSub.created_at
-  if (!signupIso) {
-    return 0
-  }
-  const cutoffIso = new Date(signupIso).toISOString()
+  const oneYearAgo = new Date()
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+  const cutoffIso = oneYearAgo.toISOString()
 
   // 1. Bookings paid by non-wallet methods, within 12mo, confirmed/active
   const orClauses: string[] = [
