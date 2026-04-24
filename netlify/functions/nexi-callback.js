@@ -739,6 +739,65 @@ exports.handler = async (event) => {
           }
         }
 
+        // 3% cashback on wallet recharge paid by card — same rule as booking
+        // payments, same reference_type, same idempotency approach. The package
+        // bonus (received_amount - recharge_amount) is a separate reward; this
+        // adds the card-payment cashback on top of it.
+        // Column is recharge_amount (euros the customer paid on card), NOT
+        // received_amount (which bakes in the package bonus).
+        if (purchase.user_id && parseFloat(purchase.recharge_amount || 0) > 0) {
+          try {
+            const { data: existingCashback } = await supabase
+              .from('credit_transactions')
+              .select('id')
+              .eq('user_id', purchase.user_id)
+              .eq('reference_id', purchase.id)
+              .eq('reference_type', 'cashback_3_percent')
+              .limit(1);
+
+            if (!existingCashback || existingCashback.length === 0) {
+              const paidEur = parseFloat(purchase.recharge_amount);
+              const cashbackAmount = Math.floor(paidEur * 3) / 100; // 3%, rounded down to cents
+
+              if (cashbackAmount >= 0.01) {
+                const { data: balanceRow } = await supabase
+                  .from('user_credit_balance')
+                  .select('balance')
+                  .eq('user_id', purchase.user_id)
+                  .single();
+
+                const currentBalance = balanceRow?.balance ? parseFloat(balanceRow.balance) : 0;
+                const newBalance = Math.round((currentBalance + cashbackAmount) * 100) / 100;
+
+                await supabase
+                  .from('user_credit_balance')
+                  .upsert(
+                    { user_id: purchase.user_id, balance: newBalance, last_updated: new Date().toISOString() },
+                    { onConflict: 'user_id' }
+                  );
+
+                await supabase
+                  .from('credit_transactions')
+                  .insert({
+                    user_id: purchase.user_id,
+                    transaction_type: 'credit',
+                    amount: cashbackAmount,
+                    balance_after: newBalance,
+                    description: `Cashback 3% su ricarica wallet (€${paidEur.toFixed(2)} pagati con carta)`,
+                    reference_id: purchase.id,
+                    reference_type: 'cashback_3_percent'
+                  });
+
+                console.log(`[nexi-callback] Wallet recharge cashback €${cashbackAmount.toFixed(2)} credited to user ${purchase.user_id}`);
+              }
+            } else {
+              console.log('[nexi-callback] Wallet recharge cashback already applied for purchase:', purchase.id);
+            }
+          } catch (cashbackErr) {
+            console.error('[nexi-callback] Wallet recharge cashback failed (non-blocking):', cashbackErr);
+          }
+        }
+
         // Generate fattura for wallet purchase
         try {
           const siteUrl = process.env.URL || 'https://dr7empire.com';
