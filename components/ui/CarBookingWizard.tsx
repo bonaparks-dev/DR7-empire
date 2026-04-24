@@ -430,7 +430,23 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     };
   }, [configOverlay]);
 
-  const ACTIVE_NO_DEPOSIT_SURCHARGE = configOverlay?.noDepositSurchargePerDay ?? 0;
+  // Read the no_deposit surcharge per day from Centralina Pro. The Pro overlay stores
+  // it per deposit option (surchargePerDay), NOT as a global field. Look it up from the
+  // active tier's deposit list (Fascia A or B, resident).
+  const ACTIVE_NO_DEPOSIT_SURCHARGE = (() => {
+    const activeTier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2';
+    const depKey = `${activeTier}_RESIDENT` as keyof NonNullable<typeof configOverlay>['depositOptions'];
+    const pools = [
+      configOverlay?.depositOptions?.[depKey],
+      configOverlay?.depositOptions?.TIER_2_RESIDENT,
+      configOverlay?.depositOptions?.TIER_1_RESIDENT,
+    ].filter(Array.isArray) as Array<Array<{ id?: string; surchargePerDay?: number }>>;
+    for (const pool of pools) {
+      const hit = pool.find(o => o?.id === 'no_deposit');
+      if (hit?.surchargePerDay && hit.surchargePerDay > 0) return hit.surchargePerDay;
+    }
+    return configOverlay?.noDepositSurchargePerDay || 49;
+  })();
   const ACTIVE_DELIVERY_PRICE_PER_KM = configOverlay?.deliveryPricePerKm ?? 0;
   const ACTIVE_DR7_FLEX = {
     dailyPrice: configOverlay?.dr7Flex.dailyPrice ?? 0,
