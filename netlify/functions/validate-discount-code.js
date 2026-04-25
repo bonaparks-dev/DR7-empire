@@ -131,11 +131,18 @@ exports.handler = async (event) => {
       }
     }
 
-    // Check if expired by date (valid_until includes the entire day in Europe/Rome timezone)
+    // Check if expired by date.
+    // The admin form saves valid_until as `<date>T23:59:59` (end-of-day in
+    // Rome local time, then converted to UTC). So we honour the saved
+    // timestamp directly — NO +24h fudge factor. Older rows that lack a
+    // time component (saved at midnight) get a one-time "+1 day" so they
+    // still cover the chosen day end-to-end.
     const now = new Date();
-    // valid_until includes the entire expiry day (add 24h so 2026-04-08 means "valid until end of April 8")
     const validUntilRaw = new Date(discountCode.valid_until);
-    const validUntil = new Date(validUntilRaw.getTime() + 24 * 60 * 60 * 1000);
+    const isMidnightUTC = validUntilRaw.getUTCHours() === 0 && validUntilRaw.getUTCMinutes() === 0 && validUntilRaw.getUTCSeconds() === 0;
+    const validUntil = isMidnightUTC
+      ? new Date(validUntilRaw.getTime() + 24 * 60 * 60 * 1000 - 1)
+      : validUntilRaw;
     const validFrom = new Date(discountCode.valid_from);
 
     if (validUntil < now) {
@@ -207,8 +214,12 @@ exports.handler = async (event) => {
       const scope = discountCode.scope;
       const normalizedServiceType = serviceType.toLowerCase().replace(/\s+/g, '_');
 
-      // Rental service hierarchy: 'noleggio' is parent of 'supercar' and 'utilitarie'
-      const isRentalService = ['noleggio', 'supercar', 'utilitarie', 'urban-cars', 'corporate-fleet'].includes(normalizedServiceType);
+      // Rental service hierarchy: 'noleggio' is parent of 'supercar', 'utilitarie' and 'aziendali'
+      const isRentalService = ['noleggio', 'supercar', 'utilitarie', 'urban-cars', 'corporate-fleet', 'aziendali'].includes(normalizedServiceType);
+      // Aziendali = the corporate / commercial fleet (Furgoni + NCC)
+      const isAziendaliService = normalizedServiceType === 'aziendali'
+        || normalizedServiceType === 'corporate-fleet'
+        || normalizedServiceType === 'corporate_fleet';
       // Prime Wash umbrella: car wash + mechanical (meccanica) both live under 'lavaggi'
       const isPrimeWashService = normalizedServiceType.includes('lavag')
         || normalizedServiceType === 'car_wash'
@@ -222,11 +233,12 @@ exports.handler = async (event) => {
         return normalizedScope === 'tutti' ||
                normalizedScope === 'tutti_i_servizi' ||
                normalizedScope === normalizedServiceType ||
-               // 'noleggio' scope covers ALL rental types (supercar, utilitarie, etc.)
+               // 'noleggio' scope covers ALL rental types (supercar, utilitarie, aziendali, etc.)
                (isRentalService && normalizedScope === 'noleggio') ||
                // Specific rental type matches
                (normalizedServiceType.includes('supercar') && normalizedScope === 'supercar') ||
                (normalizedServiceType.includes('utilitari') && normalizedScope === 'utilitarie') ||
+               (isAziendaliService && normalizedScope === 'aziendali') ||
                // Prime Wash matching (lavaggi + meccanica both covered by 'lavaggi' scope)
                (isPrimeWashService && normalizedScope === 'lavaggi');
       });

@@ -350,6 +350,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           // 'noleggio' label and silently apply on Utilitarie / Aziendali.
           const autoServiceType = categoryContext === 'cars' ? 'supercar'
             : categoryContext === 'urban-cars' ? 'utilitarie'
+            : categoryContext === 'corporate-fleet' ? 'aziendali'
             : 'noleggio';
           const response = await fetch('/.netlify/functions/validate-discount-code', {
             method: 'POST',
@@ -2847,6 +2848,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       serviceType = 'supercar';
     } else if (categoryContext === 'urban-cars') {
       serviceType = 'utilitarie';
+    } else if (categoryContext === 'corporate-fleet') {
+      serviceType = 'aziendali';
     }
 
     try {
@@ -3702,7 +3705,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   code: appliedDiscount.code,
                   bookingId: insertedBooking.id,
                   customerName: nFullName,
-                  serviceType: categoryContext === 'cars' ? 'supercar' : categoryContext === 'urban-cars' ? 'utilitarie' : 'noleggio',
+                  serviceType: categoryContext === 'cars' ? 'supercar'
+                    : categoryContext === 'urban-cars' ? 'utilitarie'
+                    : categoryContext === 'corporate-fleet' ? 'aziendali'
+                    : 'noleggio',
                   discountApplied: Math.round(discountAmount * 100),
                 })
               }).catch(e => console.error('Redeem discount error', e));
