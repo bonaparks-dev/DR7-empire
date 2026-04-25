@@ -353,9 +353,14 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
         </div>
 
         {error && <p className="text-xs text-red-400 text-center font-medium">{error}</p>}
-        {/* Show tariff warning only when return time is 30+ min after default (pickupTime - 1h30) */}
+        {/* Tariff warning — only relevant for MULTI-day rentals where a late
+            return triggers the "+1 day" billing rule. For 1-day rentals
+            (same-day OR a single calendar-day cross-over) the warning would
+            be misleading: the customer is already paying for the only day
+            they have, so there's no extra-day risk to flag. */}
         {(() => {
           if (!pickupTime || !returnTime || !returnDate) return null;
+          if (days <= 1) return null;
           const [pH, pM] = pickupTime.split(':').map(Number);
           const [rH, rM] = returnTime.split(':').map(Number);
           const defaultReturnMin = pH * 60 + pM - 90;
