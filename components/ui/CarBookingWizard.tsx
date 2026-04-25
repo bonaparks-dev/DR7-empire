@@ -344,10 +344,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           const { data: { session } } = await supabase.auth.getSession();
           const headers: Record<string, string> = { 'Content-Type': 'application/json' };
           if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+          // Resolve serviceType from the page's category context, NOT a hardcoded
+          // 'noleggio'. Otherwise codes restricted to a single sub-category
+          // (e.g. scope=['supercar']) would slip through under the broader
+          // 'noleggio' label and silently apply on Utilitarie / Aziendali.
+          const autoServiceType = categoryContext === 'cars' ? 'supercar'
+            : categoryContext === 'urban-cars' ? 'utilitarie'
+            : 'noleggio';
           const response = await fetch('/.netlify/functions/validate-discount-code', {
             method: 'POST',
             headers,
-            body: JSON.stringify({ code: initialSearchDates.discountCode, serviceType: 'noleggio' })
+            body: JSON.stringify({ code: initialSearchDates.discountCode, serviceType: autoServiceType })
           });
           const result = await response.json();
           if (response.ok && result.valid) {
