@@ -48,11 +48,28 @@ function getReturnTimes(dateStr: string): string[] {
   return times;
 }
 
-function calcAutoReturnTime(pickupTime: string, returnDateStr: string): string {
+function calcAutoReturnTime(pickupTime: string, returnDateStr: string, pickupDateStr?: string): string {
   const validTimes = getReturnTimes(returnDateStr);
   if (validTimes.length === 0) return '09:00';
   const [h, m] = pickupTime.split(':').map(Number);
-  const idealMin = h * 60 + m - 90;
+  const pickupMin = h * 60 + m;
+
+  // Same-day rental → pick the LATEST available return slot that is still
+  // strictly after the pickup time. This way a 10:30 pickup defaults to
+  // a 17:00 return (the last weekday slot) rather than 09:00.
+  if (pickupDateStr && pickupDateStr === returnDateStr) {
+    let bestAfter = '';
+    for (const t of validTimes) {
+      const [th, tm] = t.split(':').map(Number);
+      const tMin = th * 60 + tm;
+      if (tMin > pickupMin) bestAfter = t;
+    }
+    return bestAfter || validTimes[validTimes.length - 1];
+  }
+
+  // Multi-day rental → pick the latest slot at or before (pickup − 90min)
+  // on the return day so the customer doesn't get billed an extra day.
+  const idealMin = pickupMin - 90;
   let best = validTimes[0];
   for (const t of validTimes) {
     const [th, tm] = t.split(':').map(Number);
@@ -163,9 +180,9 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
   const setPickupTime = useCallback((time: string) => {
     setPickupTimeRaw(time);
     if (!returnTimeManual && returnDate) {
-      setReturnTime(calcAutoReturnTime(time, returnDate));
+      setReturnTime(calcAutoReturnTime(time, returnDate, pickupDate));
     }
-  }, [returnTimeManual, returnDate]);
+  }, [returnTimeManual, returnDate, pickupDate]);
 
   const handleReturnTimeChange = useCallback((time: string) => {
     setReturnTime(time);
@@ -178,6 +195,11 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
 
   const days = (() => {
     if (!pickupDate || !returnDate) return 0;
+    // Same-day rental → always 1 day. The "return is less than 90min before
+    // pickup → +1 day" rule only applies when pickup and return are on
+    // different calendar days; on the same day there is no "next day" to
+    // bill for.
+    if (pickupDate === returnDate) return 1;
     const baseDays = Math.max(1, Math.ceil((new Date(returnDate).getTime() - new Date(pickupDate).getTime()) / (1000 * 60 * 60 * 24)));
     const [pH, pM] = pickupTime.split(':').map(Number);
     const [rH, rM] = returnTime.split(':').map(Number);
@@ -260,7 +282,7 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
                   const next = new Date(val); next.setDate(next.getDate() + 1);
                   const nextStr = next.toISOString().split('T')[0];
                   setReturnDate(nextStr);
-                  if (!returnTimeManual) setReturnTime(calcAutoReturnTime(pickupTime, nextStr));
+                  if (!returnTimeManual) setReturnTime(calcAutoReturnTime(pickupTime, nextStr, val));
                 }
               }}
               filterDate={(date: Date) => !isBlockedDate(date)}
@@ -305,7 +327,7 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
                 setReturnDate(val);
                 const times = getReturnTimes(val);
                 if (times.length > 0 && !times.includes(returnTime)) {
-                  if (!returnTimeManual) setReturnTime(calcAutoReturnTime(pickupTime, val));
+                  if (!returnTimeManual) setReturnTime(calcAutoReturnTime(pickupTime, val, pickupDate));
                   else setReturnTime(times[0]);
                 }
               }}
