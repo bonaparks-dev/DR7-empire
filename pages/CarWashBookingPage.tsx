@@ -625,10 +625,28 @@ const CarWashBookingPage: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Resolve the active discount amount in EUR for a given base price.
+  // Handles three types written by the validator:
+  //   - 'car_wash'   → flat amount (legacy birthday codes)
+  //   - 'fixed'      → flat amount (admin-created codes)
+  //   - 'percentage' → amount × basePrice / 100 (admin-created codes)
+  // Previously only 'car_wash' was honoured, so admin-created codes for
+  // lavaggio said "applicato" but the total stayed unchanged.
+  const computeDiscountAmount = (basePrice: number) => {
+    if (!appliedDiscount) return 0;
+    const t = appliedDiscount.type;
+    if (t === 'percentage') {
+      return Math.min(basePrice, basePrice * (appliedDiscount.amount / 100));
+    }
+    if (t === 'car_wash' || t === 'fixed') {
+      return Math.min(appliedDiscount.amount, basePrice);
+    }
+    return 0;
+  };
+
   const calculateTotal = () => {
-    // Use cart total if we have cart items, otherwise use selected service price
     const basePrice = hasCartItems ? cartTotal : (selectedService?.price || 0);
-    const discount = appliedDiscount?.type === 'car_wash' ? Math.min(appliedDiscount.amount, basePrice) : 0;
+    const discount = computeDiscountAmount(basePrice);
     const flexFee = primeFlexSelected ? PRIME_FLEX_PRICE : 0;
     return Math.max(0, basePrice - discount + flexFee);
   };
@@ -639,7 +657,7 @@ const CarWashBookingPage: React.FC = () => {
 
   const onlineDiscountAmount = 0;
 
-  const birthdayDiscountAmount = appliedDiscount?.type === 'car_wash' ? Math.min(appliedDiscount.amount, getBasePrice()) : 0;
+  const birthdayDiscountAmount = computeDiscountAmount(getBasePrice());
 
   // Validate birthday discount code
   const validateDiscountCode = async () => {
