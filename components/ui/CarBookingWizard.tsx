@@ -2194,20 +2194,25 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const diffHours = diffMs / (1000 * 60 * 60);
 
         // 1 rental day = 22h30 (22.5 hours)
-        // EXCEPTION: Friday pickup → Saturday return is always valid
-        // (Saturday has limited hours, so rental will naturally be < 22h30)
+        // EXCEPTION 1: Friday pickup → Saturday return is always valid
+        //   (Saturday has limited hours, so rental will naturally be < 22h30)
+        // EXCEPTION 2: Same-day booking (e.g. 10:30 → 16:30) is allowed
+        //   and billed as 1 day. Customers can rent for a few hours within
+        //   the same calendar day.
         const dayLength = 22.5;
         const rentalDays = diffHours / dayLength;
         const pickupDayOfWeek = getDayOfWeek(formData.pickupDate);
         const returnDayOfWeek = getDayOfWeek(formData.returnDate);
         const isFridayToSaturday = pickupDayOfWeek === 5 && returnDayOfWeek === 6;
+        const isSameDay = formData.returnDate === formData.pickupDate;
 
-        // Hard block: return date must be at least the next day
-        if (formData.returnDate <= formData.pickupDate) {
-          newErrors.date = "Il noleggio minimo è di 1 giorno. Seleziona almeno il giorno successivo al ritiro.";
+        // Reject only when the return is strictly BEFORE the pickup date,
+        // or when chronologically the return time is at/before pickup time.
+        if (formData.returnDate < formData.pickupDate) {
+          newErrors.date = "La data di riconsegna non può essere precedente al ritiro.";
         } else if (diffMs <= 0) {
-          newErrors.date = "La data di riconsegna deve essere successiva al ritiro.";
-        } else if (rentalDays < 0.99 && !isFridayToSaturday) {
+          newErrors.date = "L'ora di riconsegna deve essere successiva al ritiro.";
+        } else if (rentalDays < 0.99 && !isFridayToSaturday && !isSameDay) {
           // Check if this is a constrained availability window
           let isConstrainedSlot = false;
 
