@@ -262,9 +262,24 @@ exports.handler = async (event) => {
       });
     }
 
-    // Check service scope if serviceType provided
-    if (serviceType && discountCode.scope && Array.isArray(discountCode.scope)) {
-      const scope = discountCode.scope;
+    // Check service scope if serviceType provided.
+    // Be defensive about the stored shape: scope may be saved as a Postgres
+    // text[] (-> JS array), a single string, a JSON string, or null. Treat
+    // anything we can read as an array; only completely missing scope is
+    // treated as "all services" (legacy codes).
+    let scopeArr = null;
+    if (Array.isArray(discountCode.scope)) {
+      scopeArr = discountCode.scope;
+    } else if (typeof discountCode.scope === 'string' && discountCode.scope.trim()) {
+      try {
+        const parsed = JSON.parse(discountCode.scope);
+        scopeArr = Array.isArray(parsed) ? parsed : [discountCode.scope];
+      } catch {
+        scopeArr = [discountCode.scope];
+      }
+    }
+    if (serviceType && scopeArr && scopeArr.length > 0) {
+      const scope = scopeArr;
       const normalizedServiceType = serviceType.toLowerCase().replace(/\s+/g, '_');
 
       // Rental service hierarchy: 'noleggio' is parent of 'supercar', 'utilitarie' and 'aziendali'
