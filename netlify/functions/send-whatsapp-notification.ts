@@ -110,13 +110,24 @@ const handler: Handler = async (event) => {
     const vars: Record<string, string> = {
       nome: customerName.split(' ')[0] || customerName,
       customer_name: customerName,
+      cliente: customerName,
       customer_email: customerEmail,
       customer_phone: customerPhone,
       booking_id: bookingId,
       total: totalPrice,
+      totale: totalPrice,
+      importo: totalPrice,
+      amount: totalPrice,
       notes,
+      note: notes,
+      nota: notes,
       payment_status: paymentLabel,
       payment_method: booking.payment_method || '',
+      // Italian aliases — Pro / system templates often use {payment_info}
+      // and {pagamento}; without these the literal placeholder leaks into
+      // the customer's WhatsApp message (visible bug: "Pagamento: {payment_info}").
+      payment_info: paymentLabel,
+      pagamento: paymentLabel,
     };
 
     if (serviceType === 'car_wash') {
@@ -124,14 +135,24 @@ const handler: Handler = async (event) => {
       const plateValue: string = booking.vehicle_plate || booking.booking_details?.customerVehicle?.plate || booking.booking_details?.plate || booking.booking_details?.targa || '';
       const flexInfo: string = booking.booking_details?.prime_flex ? 'Prime Flex' : booking.booking_details?.dr7_flex ? 'DR7 Flex' : '';
       const baseService: string = booking.service_name || '';
+      const composedService = flexInfo ? `${baseService} + ${flexInfo}` : baseService;
+      const apptDateShort = appt ? appt.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Rome' }) : '';
+      const apptDateLong = appt ? appt.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Europe/Rome' }) : '';
+      const apptTime = appt ? appt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '';
       Object.assign(vars, {
-        service_name: flexInfo ? `${baseService} + ${flexInfo}` : baseService,
+        service_name: composedService,
+        servizio: composedService,
         plate: plateValue,
         targa: plateValue,
-        date: appt ? appt.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Europe/Rome' }) : '',
-        time: appt ? appt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '',
-        pickup_date: appt ? appt.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Rome' }) : '',
-        pickup_time: appt ? appt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '',
+        date: apptDateShort,
+        data: apptDateShort,
+        data_lunga: apptDateLong,
+        time: apptTime,
+        ora: apptTime,
+        appointment_date: apptDateShort,
+        appointment_time: apptTime,
+        pickup_date: apptDateShort,
+        pickup_time: apptTime,
         extras: booking.booking_details?.additionalService || '',
         flex: flexInfo,
       });
