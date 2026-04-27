@@ -215,8 +215,17 @@ export const handler: Handler = async (event) => {
       const phone = customer.telefono || customerPhone
       if (phone) {
         const firstName = (customerName || "").split(" ")[0] || "Cliente"
+        // Resolve the public site URL from env. Netlify auto-injects URL
+        // (production) or DEPLOY_PRIME_URL (preview). PUBLIC_SITE_URL is a
+        // user-defined override. Fall through to the canonical domain only
+        // if nothing else is set, so the WhatsApp link is always tappable.
+        const siteUrl =
+          process.env.PUBLIC_SITE_URL ||
+          process.env.URL ||
+          process.env.DEPLOY_PRIME_URL ||
+          "https://www.dr7empire.com"
         try {
-          await fetch(`${process.env.URL || "https://www.dr7empire.com"}/.netlify/functions/send-whatsapp-notification`, {
+          await fetch(`${siteUrl}/.netlify/functions/send-whatsapp-notification`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -226,14 +235,30 @@ export const handler: Handler = async (event) => {
                 nome: firstName,
                 customer_name: customerName || firstName,
                 cliente: customerName || firstName,
+                // Voucher code — every alias the admin's template might use.
                 code: voucherCode,
                 codice: voucherCode,
+                code_lavaggio: voucherCode,
+                codice_lavaggio: voucherCode,
+                code_sconto: voucherCode,
+                codice_sconto: voucherCode,
+                voucher: voucherCode,
+                buono: voucherCode,
                 amount: String(FIDELITY_VOUCHER_AMOUNT),
                 importo: String(FIDELITY_VOUCHER_AMOUNT),
                 valid_days: String(FIDELITY_VOUCHER_VALID_DAYS),
                 giorni: String(FIDELITY_VOUCHER_VALID_DAYS),
                 points: String(FIDELITY_THRESHOLD),
                 punti: String(FIDELITY_THRESHOLD),
+                // Website link — pulled from the Netlify-injected URL env var
+                // (deploy URL) with https:// guaranteed so WhatsApp auto-
+                // links it. NOT hardcoded; falls back to the canonical
+                // production URL only if no env var is present.
+                link: siteUrl,
+                url: siteUrl,
+                website: siteUrl,
+                sito: siteUrl,
+                site: siteUrl,
               },
             }),
           })
