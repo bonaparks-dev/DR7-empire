@@ -61,8 +61,15 @@ export interface WebsiteConfigOverlay {
   }
   // Dynamic rental day rates from admin Centralina
   rentalDayRates: RentalDayRates | null
-  // Dynamic km included config from admin Centralina
+  // Dynamic km included config from admin Centralina (legacy global default).
+  // Supercars values traditionally lived here; per-category overrides below.
   kmIncluded: KmIncludedConfig | null
+  // Per-category km tables. Keys are DB categories (exotic / urban / aziendali).
+  // The wizard picks these based on the booked vehicle's category and falls
+  // back to `kmIncluded` only when the category-specific table is missing.
+  kmIncludedSupercars: KmIncludedConfig | null
+  kmIncludedUrban: KmIncludedConfig | null
+  kmIncludedAziendali: KmIncludedConfig | null
   // KM package prices from admin Revenue management
   kmPackagePrices: KmPackagePrices
   // Sforo (overage) per km — from Centralina Pro km[supercars].sforo
@@ -129,15 +136,27 @@ export function buildWebsiteConfigOverlay(config: RentalConfig | null): WebsiteC
     }
   }
 
-  // Build km included config from admin
+  // Build km included config from admin — both the legacy _global default
+  // AND each per-category table (exotic / urban / aziendali) so the wizard
+  // can pick the right one for the booked vehicle.
+  type KmCfgRaw = Record<string, { table?: Record<string, number>; extra_per_day?: number; unlimited?: boolean }>
+  const kmRoot = (config.km_included as KmCfgRaw | undefined)
   let kmIncluded: KmIncludedConfig | null = null
-  const globalKm = (config.km_included as Record<string, { table?: Record<string, number>; extra_per_day?: number }>)?._global
+  const globalKm = kmRoot?._global
   if (globalKm?.table && typeof globalKm.extra_per_day === 'number') {
-    kmIncluded = {
-      table: globalKm.table,
-      extra_per_day: globalKm.extra_per_day,
-    }
+    kmIncluded = { table: globalKm.table, extra_per_day: globalKm.extra_per_day }
   }
+  const buildPerCat = (key: string): KmIncludedConfig | null => {
+    const c = kmRoot?.[key]
+    if (!c) return null
+    if (c.table && typeof c.extra_per_day === 'number') {
+      return { table: c.table, extra_per_day: c.extra_per_day }
+    }
+    return null
+  }
+  const kmIncludedSupercars = buildPerCat('exotic')
+  const kmIncludedUrban = buildPerCat('urban')
+  const kmIncludedAziendali = buildPerCat('aziendali')
 
   // Build km package prices — reads from BOTH sources:
   // 1. km_packages array (RevenuePricingTab) — flat list with ids
@@ -149,17 +168,24 @@ export function buildWebsiteConfigOverlay(config: RentalConfig | null): WebsiteC
     return item?.price ?? fallback
   }
 
-  // Centralina unlimited_km values (source of truth when present)
+  // Centralina unlimited_km values (source of truth when present).
+  // Centralina Pro uses 'aziendali' as the key for furgone/V_class vehicles;
+  // we ALSO read the legacy 'furgone' key for any callers that still write it.
   const centralinaT1 = config.unlimited_km?.exotic?.TIER_1?.per_day
   const centralinaT2 = config.unlimited_km?.exotic?.TIER_2?.per_day
-  const centralinaFurgone = config.unlimited_km?.furgone?._all_tiers?.flat ?? config.unlimited_km?.furgone?._all_tiers?.per_day
-  const centralinaNcc = config.unlimited_km?.furgone?.TIER_2?.per_day ?? config.unlimited_km?.furgone?._all_tiers?.per_day
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const aziendaliRaw = (config.unlimited_km as any)?.aziendali ?? (config.unlimited_km as any)?.furgone
+  const centralinaAziendali = aziendaliRaw?._all_tiers?.flat
+    ?? aziendaliRaw?._all_tiers?.per_day
+    ?? aziendaliRaw?.TIER_2?.per_day
+    ?? aziendaliRaw?.TIER_1?.per_day
+  const centralinaNcc = aziendaliRaw?.TIER_2?.per_day ?? aziendaliRaw?._all_tiers?.per_day
 
   const kmPackagePrices: KmPackagePrices = {
     supercar50kmPerDay: findKmPrice('supercar_50km', 199),
     unlimitedSupercarT1PerDay: centralinaT1 ?? findKmPrice('unlimited_km_supercar_t1', 289),
     unlimitedSupercarT2PerDay: centralinaT2 ?? findKmPrice('unlimited_km_supercar_t2', 189),
-    unlimitedFurgonePerDay: centralinaFurgone ?? findKmPrice('unlimited_km_furgone', 94.50),
+    unlimitedFurgonePerDay: centralinaAziendali ?? findKmPrice('unlimited_km_furgone', 94.50),
     unlimitedNccPerDay: centralinaNcc ?? findKmPrice('unlimited_km_ncc', 189),
     unlimitedUrbanPerDay: config.unlimited_km?.urban?._all_tiers?.per_day ?? findKmPrice('unlimited_km_urban', 0),
   }
@@ -222,6 +248,9 @@ export function buildWebsiteConfigOverlay(config: RentalConfig | null): WebsiteC
     },
     rentalDayRates,
     kmIncluded,
+    kmIncludedSupercars,
+    kmIncludedUrban,
+    kmIncludedAziendali,
     kmPackagePrices,
     sforoPerKm: 0,
   }
