@@ -210,5 +210,23 @@ export function convertProToLegacy(pro: any): any {
     config.preventivi.default_expiry_hours = num(pro.preventivi.scadenza_default_ore)
   }
 
+  // Penali — per-category, mirrored under DB category names for easy lookup
+  // by vehicle.category in PenaltyModal / website code.
+  if (pro.penali && typeof pro.penali === 'object') {
+    config.penali = { by_category: {} }
+    for (const [proCat, items] of Object.entries(pro.penali as Record<string, any>)) {
+      if (!Array.isArray(items)) continue
+      const dbCat = PRO_TO_DB[proCat] || proCat
+      config.penali.by_category[dbCat] = items
+        .filter((it: any) => it && it.enabled !== false)
+        .map((it: any) => ({
+          id: String(it.id || ''),
+          label: String(it.label || ''),
+          amount: num(it.amount),
+          description: String(it.description || ''),
+        }))
+    }
+  }
+
   return config
 }
