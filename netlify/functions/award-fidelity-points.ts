@@ -206,22 +206,34 @@ export const handler: Handler = async (event) => {
     })
 
     // Send WhatsApp if a voucher fired (best-effort).
+    // Body comes from Messaggi di Sistema Pro (key `pro_fidelity_voucher`,
+    // routed via legacy alias `fidelity_voucher_whatsapp`). Admin can edit
+    // the wording from the Pro tab without redeploying the function.
     if (voucherCode) {
       const phone = customer.telefono || customerPhone
       if (phone) {
         const firstName = (customerName || "").split(" ")[0] || "Cliente"
-        const messageBody =
-          `🎉 Complimenti ${firstName}! Hai raggiunto i 250 punti della tua Fidelity Card DR7.\n\n` +
-          `Hai sbloccato un buono sconto di *€${FIDELITY_VOUCHER_AMOUNT}* utilizzabile su tutto il sito.\n\n` +
-          `*Codice:* ${voucherCode}\n` +
-          `*Validità:* ${FIDELITY_VOUCHER_VALID_DAYS} giorni\n\n` +
-          `Inseriscilo al check-out della tua prossima prenotazione su www.dr7empire.com\n\n` +
-          `Con Stima\n*DR7*`
         try {
           await fetch(`${process.env.URL || "https://www.dr7empire.com"}/.netlify/functions/send-whatsapp-notification`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ customPhone: phone, customMessage: messageBody }),
+            body: JSON.stringify({
+              customPhone: phone,
+              templateKey: "fidelity_voucher_whatsapp",
+              templateVars: {
+                nome: firstName,
+                customer_name: customerName || firstName,
+                cliente: customerName || firstName,
+                code: voucherCode,
+                codice: voucherCode,
+                amount: String(FIDELITY_VOUCHER_AMOUNT),
+                importo: String(FIDELITY_VOUCHER_AMOUNT),
+                valid_days: String(FIDELITY_VOUCHER_VALID_DAYS),
+                giorni: String(FIDELITY_VOUCHER_VALID_DAYS),
+                points: String(FIDELITY_THRESHOLD),
+                punti: String(FIDELITY_THRESHOLD),
+              },
+            }),
           })
         } catch (waErr) {
           console.error("[award-fidelity-points] WhatsApp send failed (non-fatal):", waErr)
