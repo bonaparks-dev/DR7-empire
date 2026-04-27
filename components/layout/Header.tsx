@@ -4,7 +4,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { RENTAL_CATEGORIES, PICKUP_LOCATIONS } from '../../constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
-import { CogIcon, SignOutIcon } from '../icons/Icons';
+import { UserCircleIcon, SignOutIcon } from '../icons/Icons';
 import { getUserCreditBalance } from '../../utils/creditWallet';
 import BookingSearchBox from '../ui/BookingSearchBox';
 
@@ -591,7 +591,7 @@ const Header: React.FC = () => {
                       user.role === 'business' ? t('Partner_Dashboard') : t('My_Account')
                     }
                   >
-                    <CogIcon className="w-5 h-5" />
+                    <UserCircleIcon className="w-5 h-5" />
                   </Link>
                   <button
                     onClick={logout}
