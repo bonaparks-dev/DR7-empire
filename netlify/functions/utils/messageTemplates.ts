@@ -35,6 +35,10 @@ const LABEL_FALLBACKS: Record<string, string[]> = {
   // "Link Pagamento" / "Richiesta Pagamento" — admin may use either the predefined
   // slot or a custom template labeled "Link Pagamento" (common naming).
   pro_richiesta_pagamento: ['link pagamento', 'richiesta pagamento', 'invio link pagamento', 'pay by link', 'payment link'],
+  // Fidelity Card voucher — admin creates this template manually in Messaggi
+  // di Sistema Pro (any custom name works). The function looks up by these
+  // label keywords so the exact key/name doesn't matter.
+  pro_fidelity_voucher: ['fidelity', 'fedeltà', 'buono fidelity', 'voucher fidelity', '250 punti', 'buono prime wash'],
 }
 
 /**
