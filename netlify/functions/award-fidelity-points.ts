@@ -180,7 +180,9 @@ export const handler: Handler = async (event) => {
       }
 
       voucherUrl = `https://dr7empire.com/promo/${voucherCode}`
-      newLinePoints = sumPoints - FIDELITY_THRESHOLD
+      // Reset to zero when threshold is reached — overflow does NOT roll
+      // forward (e.g. 29 punti → voucher + 0/250, NOT 4/250).
+      newLinePoints = 0
     }
 
     // Persist the new balance + lifetime total.
