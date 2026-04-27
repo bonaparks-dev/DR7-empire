@@ -160,7 +160,8 @@ export const handler: Handler = async (event) => {
         code_type: "codice_sconto",
         value_type: "fixed",
         value_amount: FIDELITY_VOUCHER_AMOUNT,
-        scope: ["tutti_i_servizi"],
+        // Voucher è spendibile SOLO sui servizi di lavaggio (Prime Wash).
+        scope: ["lavaggi"],
         minimum_spend: null,
         single_use: true,
         status: "active",
@@ -168,8 +169,8 @@ export const handler: Handler = async (event) => {
         customer_phone: customer.telefono || customerPhone || null,
         valid_from: validFrom.toISOString(),
         valid_until: validUntil.toISOString(),
-        message: "Buono Fidelity Card",
-        usage_conditions: `Buono di €${FIDELITY_VOUCHER_AMOUNT} guadagnato con la Fidelity Card. Valido ${FIDELITY_VOUCHER_VALID_DAYS} giorni.`,
+        message: "Buono Fidelity Card — solo Prime Wash",
+        usage_conditions: `Buono di €${FIDELITY_VOUCHER_AMOUNT} guadagnato con la Fidelity Card. Utilizzabile solo per servizi di lavaggio. Valido ${FIDELITY_VOUCHER_VALID_DAYS} giorni.`,
         qr_url: `https://dr7empire.com/promo/${voucherCode}`,
       })
 
