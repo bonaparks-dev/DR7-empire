@@ -75,8 +75,8 @@ exports.handler = async (event) => {
     // Normalize code (uppercase, remove spaces)
     const normalizedCode = code.trim().toUpperCase().replace(/\s+/g, '');
 
-    // Query discount code from database
-    const { data: discountCode, error: queryError } = await supabase
+    // Query discount code from database (unified table)
+    let { data: discountCode, error: queryError } = await supabase
       .from('discount_codes')
       .select('*')
       .eq('code', normalizedCode)
@@ -88,6 +88,49 @@ exports.handler = async (event) => {
         error: 'Database error',
         message: 'Errore durante la validazione del codice'
       });
+    }
+
+    // Fallback for legacy birthday codes that were saved into the
+    // birthday_discount_codes table (BDAY-XXXX-XXXX). We adapt them to the
+    // shape the rest of the validator expects so a single code carries
+    // both the rental credit (€100, scope=supercar) and the lavaggio
+    // discount (€10, scope=lavaggi). Front-end picks the right value
+    // based on serviceType requested.
+    if (!discountCode) {
+      const { data: birthdayCode } = await supabase
+        .from('birthday_discount_codes')
+        .select('*')
+        .eq('code', normalizedCode)
+        .maybeSingle();
+      if (birthdayCode) {
+        const isLavaggio = serviceType && /lavag|wash|meccan/i.test(String(serviceType));
+        const valueAmount = isLavaggio
+          ? Number(birthdayCode.car_wash_discount || 10)
+          : Number(birthdayCode.rental_credit || 100);
+        const alreadyUsed = isLavaggio ? !!birthdayCode.car_wash_used : !!birthdayCode.rental_used;
+        discountCode = {
+          id: birthdayCode.id,
+          code: birthdayCode.code,
+          code_type: 'codice_sconto',
+          value_type: 'fixed',
+          value_amount: valueAmount,
+          scope: isLavaggio ? ['lavaggi'] : ['supercar'],
+          minimum_spend: isLavaggio ? 40 : 400,
+          valid_from: birthdayCode.created_at || new Date(0).toISOString(),
+          valid_until: birthdayCode.expires_at || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+          single_use: true,
+          status: alreadyUsed ? 'deactivated' : 'active',
+          customer_email: null, // legacy birthday codes are NOT per-user restricted on the website
+          customer_phone: null,
+          message: 'Codice compleanno',
+          usage_conditions: null,
+          rental_credit: birthdayCode.rental_credit,
+          rental_used: birthdayCode.rental_used,
+          car_wash_discount: birthdayCode.car_wash_discount,
+          car_wash_used: birthdayCode.car_wash_used,
+          _legacy_birthday: true,
+        };
+      }
     }
 
     if (!discountCode) {

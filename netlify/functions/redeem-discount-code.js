@@ -97,8 +97,8 @@ exports.handler = async (event) => {
     // Normalize code
     const normalizedCode = code.trim().toUpperCase().replace(/\s+/g, '');
 
-    // Query discount code
-    const { data: discountCode, error: queryError } = await supabase
+    // Query discount code (unified table)
+    let { data: discountCode, error: queryError } = await supabase
       .from('discount_codes')
       .select('*')
       .eq('code', normalizedCode)
@@ -110,6 +110,39 @@ exports.handler = async (event) => {
         error: 'Errore database',
         message: 'Errore durante il riscatto del codice'
       });
+    }
+
+    // Legacy birthday code fallback — redeem against birthday_discount_codes
+    // by setting the matching used flag (rental_used / car_wash_used).
+    let isLegacyBirthday = false;
+    let birthdayCodeRow = null;
+    if (!discountCode) {
+      const { data: bday } = await supabase
+        .from('birthday_discount_codes')
+        .select('*')
+        .eq('code', normalizedCode)
+        .maybeSingle();
+      if (bday) {
+        isLegacyBirthday = true;
+        birthdayCodeRow = bday;
+        const isLavaggio = /lavag|wash|meccan/i.test(String(serviceType));
+        const alreadyUsed = isLavaggio ? !!bday.car_wash_used : !!bday.rental_used;
+        const valueAmount = isLavaggio
+          ? Number(bday.car_wash_discount || 10)
+          : Number(bday.rental_credit || 100);
+        discountCode = {
+          id: bday.id,
+          code: bday.code,
+          single_use: true,
+          status: alreadyUsed ? 'deactivated' : 'active',
+          customer_email: null,
+          customer_phone: null,
+          value_type: 'fixed',
+          value_amount: valueAmount,
+          valid_from: bday.created_at || new Date(0).toISOString(),
+          valid_until: bday.expires_at || new Date(Date.now() + 365 * 86400000).toISOString(),
+        };
+      }
     }
 
     if (!discountCode) {
@@ -174,54 +207,80 @@ exports.handler = async (event) => {
       });
     }
 
-    // Check if single-use and already used
+    // Check if single-use and already used.
     if (discountCode.single_use) {
-      const { count, error: usageError } = await supabase
-        .from('discount_code_usages')
-        .select('*', { count: 'exact', head: true })
-        .eq('discount_code_id', discountCode.id);
+      if (isLegacyBirthday && birthdayCodeRow) {
+        const isLavaggio = /lavag|wash|meccan/i.test(String(serviceType));
+        const used = isLavaggio ? !!birthdayCodeRow.car_wash_used : !!birthdayCodeRow.rental_used;
+        if (used) {
+          return createResponse(400, {
+            error: 'Codice già utilizzato',
+            message: 'Questo codice è già stato utilizzato'
+          });
+        }
+      } else {
+        const { count, error: usageError } = await supabase
+          .from('discount_code_usages')
+          .select('*', { count: 'exact', head: true })
+          .eq('discount_code_id', discountCode.id);
 
-      if (usageError) {
-        console.error('[RedeemDiscountCode] Usage check error:', usageError);
-      } else if (count > 0) {
-        return createResponse(400, {
-          error: 'Codice già utilizzato',
-          message: 'Questo codice è già stato utilizzato'
-        });
+        if (usageError) {
+          console.error('[RedeemDiscountCode] Usage check error:', usageError);
+        } else if (count > 0) {
+          return createResponse(400, {
+            error: 'Codice già utilizzato',
+            message: 'Questo codice è già stato utilizzato'
+          });
+        }
       }
     }
 
-    // Record the usage
-    const usageData = {
-      discount_code_id: discountCode.id,
-      customer_id: customerId || null,
-      customer_name: customerName || null,
-      service_type: serviceType,
-      booking_id: bookingId || null,
-      discount_applied: discountApplied / 100, // Convert from cents to euros
-      notes: notes || null
-    };
+    // Record the usage. Skip discount_code_usages insert for legacy birthday
+    // codes (they're not in discount_codes — the FK would fail). Their usage
+    // is tracked via rental_used / car_wash_used flags below.
+    let usage = null;
+    if (!isLegacyBirthday) {
+      const usageData = {
+        discount_code_id: discountCode.id,
+        customer_id: customerId || null,
+        customer_name: customerName || null,
+        service_type: serviceType,
+        booking_id: bookingId || null,
+        discount_applied: discountApplied / 100,
+        notes: notes || null
+      };
 
-    const { data: usage, error: insertError } = await supabase
-      .from('discount_code_usages')
-      .insert(usageData)
-      .select()
-      .single();
+      const { data: usageRow, error: insertError } = await supabase
+        .from('discount_code_usages')
+        .insert(usageData)
+        .select()
+        .single();
 
-    if (insertError) {
-      console.error('[RedeemDiscountCode] Insert usage error:', insertError);
-      return createResponse(500, {
-        error: 'Errore nel salvataggio',
-        message: insertError.message
-      });
+      if (insertError) {
+        console.error('[RedeemDiscountCode] Insert usage error:', insertError);
+        return createResponse(500, {
+          error: 'Errore nel salvataggio',
+          message: insertError.message
+        });
+      }
+      usage = usageRow;
     }
 
-    // If single-use, update the discount code status to 'deactivated' after use
+    // If single-use, deactivate / mark used.
     if (discountCode.single_use) {
-      await supabase
-        .from('discount_codes')
-        .update({ status: 'deactivated', updated_at: new Date().toISOString() })
-        .eq('id', discountCode.id);
+      if (isLegacyBirthday && birthdayCodeRow) {
+        // Birthday code: flip the matching used flag in birthday_discount_codes
+        const isLavaggio = /lavag|wash|meccan/i.test(String(serviceType));
+        const updates = isLavaggio
+          ? { car_wash_used: true, car_wash_used_at: new Date().toISOString(), car_wash_booking_id: bookingId || null }
+          : { rental_used: true, rental_used_at: new Date().toISOString(), rental_booking_id: bookingId || null };
+        await supabase.from('birthday_discount_codes').update(updates).eq('id', birthdayCodeRow.id);
+      } else {
+        await supabase
+          .from('discount_codes')
+          .update({ status: 'deactivated', updated_at: new Date().toISOString() })
+          .eq('id', discountCode.id);
+      }
     }
 
     console.log(`[RedeemDiscountCode] Successfully redeemed ${normalizedCode} for ${discountApplied} cents`);
@@ -233,8 +292,8 @@ exports.handler = async (event) => {
         code: discountCode.code,
         discount_applied: discountApplied,
         service_type: serviceType,
-        usage_id: usage.id,
-        redeemed_at: usage.used_at
+        usage_id: usage?.id || null,
+        redeemed_at: usage?.used_at || new Date().toISOString()
       }
     });
 
