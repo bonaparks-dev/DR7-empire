@@ -39,6 +39,11 @@ interface CustomerExtended {
 
     status_cliente?: 'standard' | 'member' | 'elite' | 'blacklist';
     metadata?: any;
+    // Fidelity Card — accumulates points from car wash bookings.
+    // 1 € spent = 1 punto. At 250 punti the system auto-issues a €25 voucher
+    // and the line resets to 0/250 (overflow rolls forward).
+    fidelity_points?: number;
+    fidelity_lifetime_points?: number;
 }
 
 const sanitizeDate = (dateString: string | undefined | null): string | null => {
@@ -404,6 +409,54 @@ const ProfileSettings = () => {
                     )}
                 </div>
             </div>
+
+            {/* Fidelity Card — 1 € speso al lavaggio auto = 1 punto.
+                A 250 punti scatta automaticamente un buono di €25 valido 15 giorni. */}
+            {(() => {
+                const FIDELITY_MAX = 250
+                const points = Math.min(Number(extendedProfile?.fidelity_points || 0), FIDELITY_MAX)
+                const lifetime = Number(extendedProfile?.fidelity_lifetime_points || 0)
+                const pct = (points / FIDELITY_MAX) * 100
+                return (
+                    <div className="bg-gradient-to-br from-[#1a2332] to-black border border-[#2d8a7e]/40 rounded-lg overflow-hidden">
+                        <div className="p-4 md:p-6 border-b border-gray-800 flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <span className="px-3 py-1.5 text-xs font-bold rounded-full bg-gradient-to-r from-[#2d8a7e] to-[#247a6f] text-white">
+                                    Fidelity Card
+                                </span>
+                                <div>
+                                    <p className="text-white font-bold">Programma Fedeltà DR7</p>
+                                    <p className="text-gray-400 text-xs">1 € speso al lavaggio = 1 punto · A 250 punti ricevi un buono di €25</p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-gray-400 text-xs">Punti accumulati</p>
+                                <p className="text-white font-bold text-2xl tabular-nums">
+                                    {points}<span className="text-gray-500 text-lg"> / {FIDELITY_MAX}</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div className="p-4 md:p-6">
+                            <div className="w-full h-3 bg-gray-800 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-gradient-to-r from-[#2d8a7e] to-[#3aada0] transition-all duration-500"
+                                    style={{ width: `${pct}%` }}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between mt-3 text-xs">
+                                <span className="text-gray-400">
+                                    Mancano <span className="text-white font-semibold">{Math.max(0, FIDELITY_MAX - points)}</span> punti al prossimo buono
+                                </span>
+                                {lifetime > 0 && (
+                                    <span className="text-gray-500">
+                                        Totale punti guadagnati: <span className="text-gray-300 font-semibold">{lifetime}</span>
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )
+            })()}
 
             {/* Profile Form */}
             <form onSubmit={handleSubmit} className="bg-gray-900/50 border border-gray-800 rounded-lg">

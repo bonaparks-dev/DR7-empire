@@ -326,6 +326,22 @@ exports.handler = async (event) => {
           }
         }
 
+        // Fidelity Card: car wash spend earns 1 punto per €. Function is
+        // idempotent (locked by booking_id) so retries / duplicate webhooks
+        // can't double-count. Best-effort — never fails the callback.
+        const svcType = booking.service_type || booking.booking_details?.type || '';
+        if (svcType === 'car_wash' || svcType === 'carwash') {
+          try {
+            await fetch(`${siteUrl}/.netlify/functions/award-fidelity-points`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ bookingId: booking.id }),
+            });
+          } catch (e) {
+            console.error('Fidelity Card award failed (non-fatal):', e);
+          }
+        }
+
         // Generate contract + signing links + invoice (car rental only)
         const serviceType = booking.service_type || booking.booking_details?.type || '';
         const isWashOrMech = serviceType === 'car_wash' || serviceType === 'mechanical_service' || serviceType === 'mechanical';
