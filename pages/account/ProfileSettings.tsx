@@ -425,7 +425,7 @@ const ProfileSettings = () => {
                                     Fidelity Card
                                 </span>
                                 <div>
-                                    <p className="text-white font-bold">Programma Fedeltà DR7</p>
+                                    <p className="text-white font-bold">Programma Fedeltà Prime Wash</p>
                                     <p className="text-gray-400 text-xs">1 € speso al lavaggio = 1 punto · A 250 punti ricevi un buono di €25</p>
                                 </div>
                             </div>
