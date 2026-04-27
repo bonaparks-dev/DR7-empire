@@ -5,8 +5,7 @@ const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-// TEMP — lowered from 250 to 25 for end-to-end testing. Revert before launch.
-const FIDELITY_THRESHOLD = 25
+const FIDELITY_THRESHOLD = 250
 const FIDELITY_VOUCHER_AMOUNT = 25
 const FIDELITY_VOUCHER_VALID_DAYS = 15
 const CHARSET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"

@@ -413,10 +413,7 @@ const ProfileSettings = () => {
             {/* Fidelity Card — 1 € speso al lavaggio auto = 1 punto.
                 A 250 punti scatta automaticamente un buono di €25 valido 15 giorni. */}
             {(() => {
-                // TEMP — keep in sync with FIDELITY_THRESHOLD in
-                // netlify/functions/award-fidelity-points.ts. Lowered to 25
-                // for testing; revert to 250 before launch.
-                const FIDELITY_MAX = 25
+                const FIDELITY_MAX = 250
                 const points = Math.min(Number(extendedProfile?.fidelity_points || 0), FIDELITY_MAX)
                 const lifetime = Number(extendedProfile?.fidelity_lifetime_points || 0)
                 const pct = (points / FIDELITY_MAX) * 100
