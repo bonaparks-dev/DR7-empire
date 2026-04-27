@@ -494,10 +494,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   // Read the no_deposit surcharge per day from Centralina Pro. The Pro overlay stores
   // it per deposit option (surchargePerDay), NOT as a global field. Look it up from the
   // active tier's deposit list (Fascia A or B, resident).
+  // Source of truth: Centralina Pro. NO hardcoded fallbacks.
+  // If Pro doesn't define no_deposit, the popup shows 0 — the admin must add the option.
   const ACTIVE_NO_DEPOSIT_SURCHARGE = (() => {
     const activeTier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2';
     const depKey = `${activeTier}_RESIDENT` as 'TIER_1_RESIDENT' | 'TIER_2_RESIDENT';
-    // Prefer per-category, fall back to legacy flat keys.
     const pools = [
       pickDepositOptions(configOverlay, vehicleType, depKey),
       pickDepositOptions(configOverlay, vehicleType, 'TIER_2_RESIDENT'),
@@ -505,9 +506,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     ].filter(arr => Array.isArray(arr) && arr.length > 0) as Array<Array<{ id?: string; surchargePerDay?: number }>>;
     for (const pool of pools) {
       const hit = pool.find(o => o?.id === 'no_deposit');
-      if (hit?.surchargePerDay && hit.surchargePerDay > 0) return hit.surchargePerDay;
+      if (typeof hit?.surchargePerDay === 'number' && hit.surchargePerDay > 0) return hit.surchargePerDay;
     }
-    return configOverlay?.noDepositSurchargePerDay || 49;
+    return configOverlay?.noDepositSurchargePerDay ?? 0;
   })();
   const ACTIVE_DELIVERY_PRICE_PER_KM = configOverlay?.deliveryPricePerKm ?? 0;
   const ACTIVE_DR7_FLEX = {
@@ -4713,10 +4714,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const depositOptions = (() => {
           const hasNoDeposit = rawDepositOptions.some((o: { id: string }) => o.id === 'no_deposit');
           if (hasNoDeposit) return rawDepositOptions;
+          // If Centralina Pro defines no_deposit on Fascia A, mirror that exact entry to
+          // Fascia B (so Fascia B can also request it). NO hardcoded fallback — if Pro
+          // hasn't configured it anywhere, the option simply isn't offered and the admin
+          // must add it via Centralina Pro > Cauzioni.
           const fasciaA = pickDepositOptions(configOverlay, displayVehicleType, 'TIER_2_RESIDENT');
           const fasciaAnoDep = fasciaA.find((o: { id: string }) => o.id === 'no_deposit');
-          const noDepOption = fasciaAnoDep || { id: 'no_deposit', label: 'Nessuna cauzione', amount: 0, surcharge_per_day: 49 };
-          return [noDepOption, ...rawDepositOptions];
+          if (!fasciaAnoDep) return rawDepositOptions;
+          return [fasciaAnoDep, ...rawDepositOptions];
         })();
         const experienceServices = ACTIVE_EXPERIENCE_SERVICES.filter(s => !s.tierOnly || s.tierOnly === activeTier);
 
