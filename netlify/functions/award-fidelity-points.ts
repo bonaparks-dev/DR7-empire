@@ -86,11 +86,9 @@ export const handler: Handler = async (event) => {
       return { statusCode: 200, body: JSON.stringify({ success: true, skipped: true, reason: "not_paid" }) }
     }
 
-    // Skip wallet / gift / credit payments — those are redemption, not new spend.
-    const pm = (booking.payment_method || "").toLowerCase().trim()
-    if (pm.includes("wallet") || pm.includes("gift") || pm === "credit" || pm === "credit_wallet" || pm === "credito") {
-      return { statusCode: 200, body: JSON.stringify({ success: true, skipped: true, reason: "non_invoiceable_payment_method" }) }
-    }
+    // Note: ALL paid car wash bookings earn points, including credit wallet
+    // and gift card. Per product decision the fidelity line tracks every euro
+    // spent on a wash regardless of method.
 
     // Resolve the customer record. Priority: user_id → email lookup → phone lookup.
     const customerEmail = (booking.customer_email || booking.booking_details?.customer?.email || "").toLowerCase().trim()

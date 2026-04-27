@@ -1025,6 +1025,15 @@ const CarWashBookingPage: React.FC = () => {
           }).catch(e => console.error('Customer WhatsApp error:', e));
         }
 
+        // Fidelity Card — award points on the wallet-paid car wash booking too.
+        // The Nexi callback path covers card payments separately. Idempotent
+        // server-side via fidelity_point_awards.booking_id UNIQUE.
+        fetch('/.netlify/functions/award-fidelity-points', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bookingId: data.id })
+        }).catch(e => console.error('Fidelity Card award error (non-blocking):', e));
+
         const emailSent = true;
         const whatsappSent = true;
 
