@@ -60,6 +60,14 @@ export interface WebsiteConfigOverlay {
     TIER_2_RESIDENT: DepositOption[]
     TIER_1_NON_RESIDENT: DepositOption[]
     TIER_2_NON_RESIDENT: DepositOption[]
+    /** Per-vehicle-category overrides (supercars/urban/aziendali). When the
+     *  category-specific list exists, the wizard prefers it over the flat
+     *  TIER_*_RESIDENT/NON_RESIDENT keys above. */
+    byCategory?: {
+      supercars?: { TIER_1_RESIDENT: DepositOption[]; TIER_2_RESIDENT: DepositOption[]; TIER_1_NON_RESIDENT: DepositOption[]; TIER_2_NON_RESIDENT: DepositOption[] }
+      urban?: { TIER_1_RESIDENT: DepositOption[]; TIER_2_RESIDENT: DepositOption[]; TIER_1_NON_RESIDENT: DepositOption[]; TIER_2_NON_RESIDENT: DepositOption[] }
+      aziendali?: { TIER_1_RESIDENT: DepositOption[]; TIER_2_RESIDENT: DepositOption[]; TIER_1_NON_RESIDENT: DepositOption[]; TIER_2_NON_RESIDENT: DepositOption[] }
+    }
   }
   rentalDayRates: RentalDayRates | null
   kmIncluded: KmIncludedConfig | null
@@ -118,7 +126,13 @@ export interface ProDepositsByFascia {
   residente?: ProDepositOption[]
   non_residente?: ProDepositOption[]
 }
-export type ProDepositsConfig = Record<string, ProDepositsByFascia> // keyed by fascia id
+// New shape (post April 2026): deposits[category][fascia] = { residente, non_residente }
+// Old shape (pre April 2026): deposits[fascia] = { residente, non_residente }
+// Both are accepted at runtime — see buildWebsiteConfigOverlayFromPro for migration.
+export type ProDepositsByFasciaMap = Record<string, ProDepositsByFascia> // fascia id → options
+export type ProDepositsConfig =
+  | ProDepositsByFasciaMap                                // legacy
+  | Record<string, ProDepositsByFasciaMap>                // category → fascia → options
 
 export interface ProExperienceService {
   id?: string
@@ -401,9 +415,51 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
   const secondDriverFasciaB = num(snapshot.servizi?.second_driver?.[FASCIA_B_ID], 0)
   const lavaggioFee = num(snapshot.servizi?.lavaggio?.fee, 0)
 
-  // Deposits by fascia → TIER label
-  const depFasciaA = snapshot.deposits?.[FASCIA_A_ID] ?? {}
-  const depFasciaB = snapshot.deposits?.[FASCIA_B_ID] ?? {}
+  // Deposits — accept BOTH new shape (deposits[category][fascia]) and legacy
+  // (deposits[fascia]). Detection: a category-keyed value would itself be an
+  // object whose entries are { residente, non_residente }; a fascia-keyed
+  // value has those fields directly.
+  const rawDeposits = (snapshot.deposits || {}) as Record<string, ProDepositsByFascia | ProDepositsByFasciaMap>
+  const firstDepValue = Object.values(rawDeposits)[0] as Record<string, unknown> | undefined
+  const isLegacyDepositShape = !!firstDepValue
+    && typeof firstDepValue === 'object'
+    && ('residente' in firstDepValue || 'non_residente' in firstDepValue)
+
+  const pickFasciaFor = (catId?: string) => {
+    if (isLegacyDepositShape || !catId) {
+      return {
+        A: (rawDeposits[FASCIA_A_ID] as ProDepositsByFascia | undefined) ?? {},
+        B: (rawDeposits[FASCIA_B_ID] as ProDepositsByFascia | undefined) ?? {},
+      }
+    }
+    const cat = (rawDeposits[catId] as ProDepositsByFasciaMap | undefined) ?? {}
+    return {
+      A: cat[FASCIA_A_ID] ?? {},
+      B: cat[FASCIA_B_ID] ?? {},
+    }
+  }
+  // Legacy / fallback (used when no per-category data is available — copies
+  // the supercars set into the flat keys for back-compat with non-category
+  // call sites).
+  const fallbackCat = isLegacyDepositShape ? undefined : 'supercars'
+  const flatPick = pickFasciaFor(fallbackCat)
+  const depFasciaA = flatPick.A
+  const depFasciaB = flatPick.B
+  // Per-category sets — only emitted when the new shape is in use.
+  const buildCatSet = (catId: string) => {
+    const f = pickFasciaFor(catId)
+    return {
+      TIER_1_RESIDENT: toDepositOpts(f.B.residente),
+      TIER_2_RESIDENT: toDepositOpts(f.A.residente),
+      TIER_1_NON_RESIDENT: toDepositOpts(f.B.non_residente),
+      TIER_2_NON_RESIDENT: toDepositOpts(f.A.non_residente),
+    }
+  }
+  const depositByCategory = isLegacyDepositShape ? undefined : {
+    supercars: buildCatSet('supercars'),
+    urban: buildCatSet('urban'),
+    aziendali: buildCatSet('aziendali'),
+  }
 
   const experienceServices: ExperienceService[] = (snapshot.servizi?.experience || [])
     .filter(s => s.is_active !== false)
@@ -492,6 +548,7 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
       TIER_2_RESIDENT: toDepositOpts(depFasciaA.residente),
       TIER_1_NON_RESIDENT: toDepositOpts(depFasciaB.non_residente),
       TIER_2_NON_RESIDENT: toDepositOpts(depFasciaA.non_residente),
+      ...(depositByCategory ? { byCategory: depositByCategory } : {}),
     },
     rentalDayRates,
     kmIncluded,

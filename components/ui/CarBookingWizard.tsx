@@ -62,10 +62,11 @@ type KaskoTier = 'KASKO' | 'KASKO_BLACK' | 'KASKO_SIGNATURE';
 // Helper function to determine vehicle type
 // Helper function to determine vehicle type
 // Map vehicle type → deposit category key as stored in
-// configOverlay.depositOptions.byCategory (admin Centralina sets these
-// per category: 'exotic' / 'urban' / 'aziendali').
+// configOverlay.depositOptions.byCategory. The hook keys these by Pro names
+// ('supercars' / 'urban' / 'aziendali'), so we return those — and also try
+// the legacy DB names ('exotic') as a fallback inside pickDepositOptions.
 function vTypeToDepositCategory(vType: 'UTILITARIA' | 'FURGONE' | 'V_CLASS' | 'SUPERCAR'): string {
-  if (vType === 'SUPERCAR') return 'exotic'
+  if (vType === 'SUPERCAR') return 'supercars'
   if (vType === 'UTILITARIA') return 'urban'
   return 'aziendali' // FURGONE / V_CLASS
 }
@@ -85,9 +86,16 @@ function pickDepositOptions(
   if (!dOpts) return []
   if (vType) {
     const cat = vTypeToDepositCategory(vType)
-    const byCat = dOpts.byCategory?.[cat]
-    const fromCat = byCat?.[depKey]
-    if (Array.isArray(fromCat) && fromCat.length > 0) return fromCat
+    // Try Pro name first ('supercars'/'urban'/'aziendali'), then legacy DB name
+    // ('exotic') for back-compat.
+    const candidates = [cat]
+    if (cat === 'supercars') candidates.push('exotic')
+    if (cat === 'aziendali') candidates.push('furgone')
+    for (const k of candidates) {
+      const byCat = dOpts.byCategory?.[k]
+      const fromCat = byCat?.[depKey]
+      if (Array.isArray(fromCat) && fromCat.length > 0) return fromCat
+    }
   }
   return dOpts[depKey] || []
 }
@@ -4953,11 +4961,24 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         <p className="text-sm text-gray-400">Senza limiti di percorrenza</p>
                       </div>
                       <span className="font-bold text-white">
-                        {isUrbanVehicle(item.name) && (configOverlay?.kmPackagePrices?.unlimitedUrbanPerDay ?? 0) === 0
-                          ? 'Gratis'
-                          : isUrbanVehicle(item.name)
-                          ? formatPrice((configOverlay?.kmPackagePrices?.unlimitedUrbanPerDay ?? 0) * (duration.days || 1))
-                          : formatPrice(calculateUnlimitedKmPrice(item.name, duration.days || 1))}
+                        {(() => {
+                          // ALWAYS read from Centralina Pro. No hardcoded fallback.
+                          // Aziendali (Ducato/V_Class) → unlimitedFurgonePerDay
+                          // Urban → unlimitedUrbanPerDay
+                          // Supercars → tierPricing[tier].unlimitedKmPerDay
+                          const days = duration.days || 1;
+                          let perDay = 0;
+                          if (vehicleType === 'FURGONE' || vehicleType === 'V_CLASS') {
+                            perDay = configOverlay?.kmPackagePrices?.unlimitedFurgonePerDay ?? 0;
+                          } else if (isUrbanVehicle(item.name)) {
+                            perDay = configOverlay?.kmPackagePrices?.unlimitedUrbanPerDay ?? 0;
+                          } else if (vehicleType === 'SUPERCAR') {
+                            const tier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2';
+                            perDay = configOverlay?.tierPricing?.[tier]?.unlimitedKmPerDay ?? 0;
+                          }
+                          if (perDay === 0) return 'Gratis';
+                          return formatPrice(perDay * days);
+                        })()}
                       </span>
                     </div>
                   </div>
