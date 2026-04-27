@@ -156,15 +156,16 @@ exports.handler = async (event) => {
     const restrictedEmail = (discountCode.customer_email || '').toLowerCase().trim();
     const restrictedPhone = (discountCode.customer_phone || '').replace(/[\s\-+()]/g, '').trim();
     if (restrictedEmail || restrictedPhone) {
-      const invalid = () => createResponse(400, { error: 'Codice non valido', message: 'Questo codice non è valido' });
+      const notLogged = () => createResponse(400, { error: 'Login richiesto', message: 'Devi effettuare il login per utilizzare questo codice' });
+      const wrongAccount = () => createResponse(400, { error: 'Codice riservato', message: 'Questo codice è riservato a un altro cliente. Effettua il login con l\'account corretto.' });
       const authHeader = event.headers.authorization || event.headers.Authorization || '';
-      if (!authHeader.startsWith('Bearer ')) return invalid();
+      if (!authHeader.startsWith('Bearer ')) return notLogged();
       const token = authHeader.replace('Bearer ', '');
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
-      if (authError || !authUser) return invalid();
+      if (authError || !authUser) return notLogged();
       if (restrictedEmail) {
         const userEmail = (authUser.email || '').toLowerCase().trim();
-        if (userEmail !== restrictedEmail) return invalid();
+        if (userEmail !== restrictedEmail) return wrongAccount();
       }
       if (restrictedPhone) {
         const normalize = (s) => (s || '').replace(/[\s\-+()]/g, '');
@@ -177,7 +178,7 @@ exports.handler = async (event) => {
             .maybeSingle();
           if (cust?.telefono) userPhone = normalize(cust.telefono);
         }
-        if (!userPhone || userPhone.slice(-9) !== restrictedPhone.slice(-9)) return invalid();
+        if (!userPhone || userPhone.slice(-9) !== restrictedPhone.slice(-9)) return wrongAccount();
       }
     }
 
@@ -201,9 +202,17 @@ exports.handler = async (event) => {
     }
 
     if (discountCode.status !== 'active') {
+      let statusMsg = 'Questo codice non è più valido';
+      if (discountCode.status === 'deactivated') {
+        statusMsg = discountCode.single_use
+          ? 'Questo codice è già stato utilizzato e non è più disponibile'
+          : 'Questo codice è stato disattivato';
+      } else if (discountCode.status === 'expired') {
+        statusMsg = 'Questo codice è scaduto';
+      }
       return createResponse(400, {
         error: `Codice ${discountCode.status}`,
-        message: `Questo codice non può essere utilizzato (stato: ${discountCode.status})`
+        message: statusMsg
       });
     }
 

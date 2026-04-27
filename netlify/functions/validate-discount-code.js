@@ -146,16 +146,23 @@ exports.handler = async (event) => {
     const restrictedEmail = (discountCode.customer_email || '').toLowerCase().trim();
     const restrictedPhone = (discountCode.customer_phone || '').replace(/[\s\-+()]/g, '').trim();
     if (restrictedEmail || restrictedPhone) {
-      const invalid = () => createResponse(400, { error: 'Codice non valido', message: 'Questo codice non è valido' });
+      const notLogged = () => createResponse(400, {
+        error: 'Login richiesto',
+        message: 'Devi effettuare il login per utilizzare questo codice'
+      });
+      const wrongAccount = () => createResponse(400, {
+        error: 'Codice riservato',
+        message: 'Questo codice è riservato a un altro cliente. Effettua il login con l\'account corretto.'
+      });
       const authHeader = event.headers.authorization || event.headers.Authorization || '';
-      if (!authHeader.startsWith('Bearer ')) return invalid();
+      if (!authHeader.startsWith('Bearer ')) return notLogged();
       const token = authHeader.replace('Bearer ', '');
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
-      if (authError || !authUser) return invalid();
+      if (authError || !authUser) return notLogged();
 
       if (restrictedEmail) {
         const userEmail = (authUser.email || '').toLowerCase().trim();
-        if (userEmail !== restrictedEmail) return invalid();
+        if (userEmail !== restrictedEmail) return wrongAccount();
       }
 
       if (restrictedPhone) {
@@ -170,7 +177,7 @@ exports.handler = async (event) => {
           if (cust?.telefono) userPhone = normalize(cust.telefono);
         }
         // Compare last 9 digits to tolerate prefix differences (+39 / 39 / 0…)
-        if (!userPhone || userPhone.slice(-9) !== restrictedPhone.slice(-9)) return invalid();
+        if (!userPhone || userPhone.slice(-9) !== restrictedPhone.slice(-9)) return wrongAccount();
       }
     }
 
@@ -212,11 +219,35 @@ exports.handler = async (event) => {
       });
     }
 
-    // Check status
+    // Check single-use FIRST (before generic status), so a redeemed code
+    // reports "già utilizzato" instead of the vaguer "disattivato".
+    if (discountCode.single_use) {
+      const { count, error: usageError } = await supabase
+        .from('discount_code_usages')
+        .select('*', { count: 'exact', head: true })
+        .eq('discount_code_id', discountCode.id);
+
+      if (usageError) {
+        console.error('[ValidateDiscountCode] Usage check error:', usageError);
+      } else if (count > 0) {
+        return createResponse(400, {
+          error: 'Codice già utilizzato',
+          message: 'Questo codice è già stato utilizzato e non è più disponibile',
+          discountCode: {
+            code: discountCode.code,
+            status: 'already_used'
+          }
+        });
+      }
+    }
+
+    // Status check — anything that isn't 'active' beyond single-use redemption.
     if (discountCode.status !== 'active') {
-      let message = 'Questo codice non è attivo';
+      let message = 'Questo codice non è più valido';
       if (discountCode.status === 'deactivated') {
-        message = 'Questo codice è stato disattivato';
+        message = discountCode.single_use
+          ? 'Questo codice è già stato utilizzato e non è più disponibile'
+          : 'Questo codice è stato disattivato';
       } else if (discountCode.status === 'expired') {
         message = 'Questo codice è scaduto';
       }
@@ -229,27 +260,6 @@ exports.handler = async (event) => {
           status: discountCode.status
         }
       });
-    }
-
-    // Check if single-use and already used
-    if (discountCode.single_use) {
-      const { count, error: usageError } = await supabase
-        .from('discount_code_usages')
-        .select('*', { count: 'exact', head: true })
-        .eq('discount_code_id', discountCode.id);
-
-      if (usageError) {
-        console.error('[ValidateDiscountCode] Usage check error:', usageError);
-      } else if (count > 0) {
-        return createResponse(400, {
-          error: 'Codice già utilizzato',
-          message: 'Questo codice è già stato utilizzato',
-          discountCode: {
-            code: discountCode.code,
-            status: 'already_used'
-          }
-        });
-      }
     }
 
     // Check service scope if serviceType provided
