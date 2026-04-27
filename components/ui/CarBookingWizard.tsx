@@ -61,6 +61,37 @@ type KaskoTier = 'KASKO' | 'KASKO_BLACK' | 'KASKO_SIGNATURE';
 
 // Helper function to determine vehicle type
 // Helper function to determine vehicle type
+// Map vehicle type → deposit category key as stored in
+// configOverlay.depositOptions.byCategory (admin Centralina sets these
+// per category: 'exotic' / 'urban' / 'aziendali').
+function vTypeToDepositCategory(vType: 'UTILITARIA' | 'FURGONE' | 'V_CLASS' | 'SUPERCAR'): string {
+  if (vType === 'SUPERCAR') return 'exotic'
+  if (vType === 'UTILITARIA') return 'urban'
+  return 'aziendali' // FURGONE / V_CLASS
+}
+
+// Pick deposit options for a vehicle: prefer the per-category set from
+// admin Centralina, fall back to the legacy flat tier keys when the
+// category override isn't configured.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function pickDepositOptions(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  configOverlay: any,
+  vType: 'UTILITARIA' | 'FURGONE' | 'V_CLASS' | 'SUPERCAR' | undefined,
+  depKey: 'TIER_1_RESIDENT' | 'TIER_2_RESIDENT' | 'TIER_1_NON_RESIDENT' | 'TIER_2_NON_RESIDENT'
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): any[] {
+  const dOpts = configOverlay?.depositOptions
+  if (!dOpts) return []
+  if (vType) {
+    const cat = vTypeToDepositCategory(vType)
+    const byCat = dOpts.byCategory?.[cat]
+    const fromCat = byCat?.[depKey]
+    if (Array.isArray(fromCat) && fromCat.length > 0) return fromCat
+  }
+  return dOpts[depKey] || []
+}
+
 function getVehicleType(item: RentalItem, categoryContext?: string): 'UTILITARIA' | 'FURGONE' | 'V_CLASS' | 'SUPERCAR' {
   if (!item || !item.name) return 'SUPERCAR';
 
@@ -443,12 +474,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   // active tier's deposit list (Fascia A or B, resident).
   const ACTIVE_NO_DEPOSIT_SURCHARGE = (() => {
     const activeTier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2';
-    const depKey = `${activeTier}_RESIDENT` as keyof NonNullable<typeof configOverlay>['depositOptions'];
+    const depKey = `${activeTier}_RESIDENT` as 'TIER_1_RESIDENT' | 'TIER_2_RESIDENT';
+    // Prefer per-category, fall back to legacy flat keys.
     const pools = [
-      configOverlay?.depositOptions?.[depKey],
-      configOverlay?.depositOptions?.TIER_2_RESIDENT,
-      configOverlay?.depositOptions?.TIER_1_RESIDENT,
-    ].filter(Array.isArray) as Array<Array<{ id?: string; surchargePerDay?: number }>>;
+      pickDepositOptions(configOverlay, vehicleType, depKey),
+      pickDepositOptions(configOverlay, vehicleType, 'TIER_2_RESIDENT'),
+      pickDepositOptions(configOverlay, vehicleType, 'TIER_1_RESIDENT'),
+    ].filter(arr => Array.isArray(arr) && arr.length > 0) as Array<Array<{ id?: string; surchargePerDay?: number }>>;
     for (const pool of pools) {
       const hit = pool.find(o => o?.id === 'no_deposit');
       if (hit?.surchargePerDay && hit.surchargePerDay > 0) return hit.surchargePerDay;
@@ -1747,9 +1779,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // Deposit surcharges from Centralina (no_deposit = €49/day, vehicle_deposit = €20/day, etc.)
     let supercarDepositSurcharge = 0;
     if (formData.depositOption) {
-      const depositCfgKey = `${activeTierForCalc}_RESIDENT` as keyof typeof configOverlay.depositOptions;
-      const depOpts = configOverlay?.depositOptions?.[depositCfgKey] || [];
-      const selectedDep = depOpts.find(d => d.id === formData.depositOption);
+      const depositCfgKey = `${activeTierForCalc}_RESIDENT` as 'TIER_1_RESIDENT' | 'TIER_2_RESIDENT';
+      const depOpts = pickDepositOptions(configOverlay, getVehicleType(item, categoryContext), depositCfgKey);
+      const selectedDep = depOpts.find((d: { id: string }) => d.id === formData.depositOption);
       if (selectedDep?.surchargePerDay) {
         supercarDepositSurcharge = roundToTwoDecimals(selectedDep.surchargePerDay * billingDaysCalc);
       }
@@ -4650,17 +4682,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const tierPricing = ACTIVE_TIER_PRICING[activeTier] || ACTIVE_TIER_PRICING.TIER_2;
         // Insurance options from Centralina per vehicle category
         const insuranceOptions = getInsuranceForVehicle(displayVehicleType, activeTier);
-        // Deposit options from Centralina Pro (RESIDENT by default)
-        const depositKey = `${activeTier}_RESIDENT` as keyof typeof configOverlay.depositOptions;
-        const rawDepositOptions = configOverlay?.depositOptions?.[depositKey] || [];
+        // Deposit options from Centralina Pro (per-category, RESIDENT by default)
+        const depositKey = `${activeTier}_RESIDENT` as 'TIER_1_RESIDENT' | 'TIER_2_RESIDENT';
+        const rawDepositOptions = pickDepositOptions(configOverlay, displayVehicleType, depositKey);
         // Ensure "Nessuna cauzione" is always offered as a request for Fascia B as well —
         // Centralina Pro only lists no_deposit for Fascia A, but Fascia B must still be
         // able to submit a request. Borrow the Fascia A config when missing.
         const depositOptions = (() => {
-          const hasNoDeposit = rawDepositOptions.some((o: any) => o.id === 'no_deposit');
+          const hasNoDeposit = rawDepositOptions.some((o: { id: string }) => o.id === 'no_deposit');
           if (hasNoDeposit) return rawDepositOptions;
-          const fasciaA = configOverlay?.depositOptions?.TIER_2_RESIDENT || [];
-          const fasciaAnoDep = fasciaA.find((o: any) => o.id === 'no_deposit');
+          const fasciaA = pickDepositOptions(configOverlay, displayVehicleType, 'TIER_2_RESIDENT');
+          const fasciaAnoDep = fasciaA.find((o: { id: string }) => o.id === 'no_deposit');
           const noDepOption = fasciaAnoDep || { id: 'no_deposit', label: 'Nessuna cauzione', amount: 0, surcharge_per_day: 49 };
           return [noDepOption, ...rawDepositOptions];
         })();
@@ -5817,9 +5849,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     <div className="flex justify-between text-white">
                       <span>{`Supplemento cauzione (${(() => {
                         const days = Math.max(1, duration.days);
-                        const depositKey = `${(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'}_RESIDENT`;
-                        const depOpts = configOverlay?.depositOptions?.[depositKey as keyof typeof configOverlay.depositOptions] || [];
-                        const selectedDep = depOpts.find((d: any) => d.id === formData.depositOption);
+                        const depositKey = `${(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'}_RESIDENT` as 'TIER_1_RESIDENT' | 'TIER_2_RESIDENT';
+                        const depOpts = pickDepositOptions(configOverlay, vehicleType, depositKey);
+                        const selectedDep = depOpts.find((d: { id: string }) => d.id === formData.depositOption);
                         const perDay = selectedDep?.surchargePerDay || 0;
                         return perDay > 0 ? `${days} gg × €${perDay}` : `${days} gg`;
                       })()})`}</span>
@@ -5934,8 +5966,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                           {formData.depositOption && !isUrbanOrCorporate && (
                             <p className="text-sm text-gray-400 mt-1">
                               Tipo: {(() => {
-                                const depKey = `${(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'}_${'RESIDENT'}`;
-                                const opt = (configOverlay?.depositOptions?.[depKey] || []).find((d: any) => d.id === formData.depositOption);
+                                const depKey = `${(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'}_RESIDENT` as 'TIER_1_RESIDENT' | 'TIER_2_RESIDENT';
+                                const opts = pickDepositOptions(configOverlay, vehicleType, depKey);
+                                const opt = opts.find((d: { id: string }) => d.id === formData.depositOption);
                                 return opt?.label || formData.depositOption;
                               })()}
                             </p>

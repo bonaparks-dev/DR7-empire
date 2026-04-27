@@ -112,13 +112,55 @@ export function convertProToLegacy(pro: any): any {
   }
 
   // Deposits
+  // Two shapes are accepted:
+  //   NEW: pro.deposits[category][fasciaId] = { residente, non_residente }
+  //        category is one of 'supercars' / 'urban' / 'aziendali'
+  //   OLD: pro.deposits[fasciaId] = { residente, non_residente }
+  //        (no category dimension — applied to all categories)
+  // Detection: outermost values that look like { residente, non_residente }
+  // mean OLD shape; otherwise it's the NEW per-category shape.
   if (pro.deposits) {
-    for (const [fId, fd] of Object.entries(pro.deposits as Record<string, any>)) {
-      const tier = PRO_TO_TIER[fId]
-      if (!tier) continue
-      const mapDep = (o: any) => ({ id: o.id, label: o.label, amount: num(o.amount), surcharge_per_day: num(o.surcharge_per_day) })
-      config.deposits[`${tier}_RESIDENT`] = (fd.residente || []).map(mapDep)
-      config.deposits[`${tier}_NON_RESIDENT`] = (fd.non_residente || []).map(mapDep)
+    const mapDep = (o: any) => ({ id: o.id, label: o.label, amount: num(o.amount), surcharge_per_day: num(o.surcharge_per_day) })
+    const fillTierKeys = (out: any, byFascia: any) => {
+      for (const [fId, fd] of Object.entries((byFascia || {}) as Record<string, any>)) {
+        const tier = PRO_TO_TIER[fId]
+        if (!tier) continue
+        out[`${tier}_RESIDENT`] = (fd.residente || []).map(mapDep)
+        out[`${tier}_NON_RESIDENT`] = (fd.non_residente || []).map(mapDep)
+      }
+    }
+    const firstVal = Object.values(pro.deposits as Record<string, any>)[0]
+    const isOld = firstVal && typeof firstVal === 'object'
+      && ('residente' in firstVal || 'non_residente' in firstVal)
+
+    config.deposits.by_category = {}
+
+    if (isOld) {
+      // Legacy single-set: same options for all categories.
+      fillTierKeys(config.deposits, pro.deposits)
+      const dbCats = ['exotic', 'urban', 'aziendali']
+      for (const dbCat of dbCats) {
+        config.deposits.by_category[dbCat] = {
+          TIER_1_RESIDENT: [], TIER_2_RESIDENT: [],
+          TIER_1_NON_RESIDENT: [], TIER_2_NON_RESIDENT: [],
+        }
+        fillTierKeys(config.deposits.by_category[dbCat], pro.deposits)
+      }
+    } else {
+      // New per-category shape
+      for (const [proCat, byFascia] of Object.entries(pro.deposits as Record<string, any>)) {
+        const dbCat = PRO_TO_DB[proCat]
+        if (!dbCat) continue
+        config.deposits.by_category[dbCat] = {
+          TIER_1_RESIDENT: [], TIER_2_RESIDENT: [],
+          TIER_1_NON_RESIDENT: [], TIER_2_NON_RESIDENT: [],
+        }
+        fillTierKeys(config.deposits.by_category[dbCat], byFascia)
+      }
+      // Top-level keys mirror the supercars set for back-compat callers
+      // that still read deposits.TIER_1_RESIDENT etc. directly.
+      const supercarsByFascia = pro.deposits.supercars
+      if (supercarsByFascia) fillTierKeys(config.deposits, supercarsByFascia)
     }
   }
 

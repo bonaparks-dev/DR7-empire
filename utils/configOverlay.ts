@@ -49,6 +49,15 @@ export interface WebsiteConfigOverlay {
     TIER_2_RESIDENT: DepositOption[]
     TIER_1_NON_RESIDENT: DepositOption[]
     TIER_2_NON_RESIDENT: DepositOption[]
+    /** Per-vehicle-category overrides. Key = vehicle DB category
+     *  ('exotic' / 'urban' / 'aziendali'). Falls back to top-level
+     *  TIER_*_RESIDENT keys above when category is missing. */
+    byCategory?: Record<string, {
+      TIER_1_RESIDENT: DepositOption[]
+      TIER_2_RESIDENT: DepositOption[]
+      TIER_1_NON_RESIDENT: DepositOption[]
+      TIER_2_NON_RESIDENT: DepositOption[]
+    }>
   }
   // Dynamic rental day rates from admin Centralina
   rentalDayRates: RentalDayRates | null
@@ -195,6 +204,21 @@ export function buildWebsiteConfigOverlay(config: RentalConfig | null): WebsiteC
       TIER_2_RESIDENT: toDepositOpts(config.deposits?.TIER_2_RESIDENT),
       TIER_1_NON_RESIDENT: toDepositOpts(config.deposits?.TIER_1_NON_RESIDENT),
       TIER_2_NON_RESIDENT: toDepositOpts(config.deposits?.TIER_2_NON_RESIDENT),
+      byCategory: (() => {
+        const raw = (config.deposits as Record<string, unknown> | undefined)?.by_category as
+          Record<string, Record<string, { id: string; label: string; amount: number; surcharge_per_day?: number }[]>> | undefined
+        if (!raw || typeof raw !== 'object') return undefined
+        const out: WebsiteConfigOverlay['depositOptions']['byCategory'] = {}
+        for (const [cat, tiers] of Object.entries(raw)) {
+          out![cat] = {
+            TIER_1_RESIDENT: toDepositOpts(tiers?.TIER_1_RESIDENT),
+            TIER_2_RESIDENT: toDepositOpts(tiers?.TIER_2_RESIDENT),
+            TIER_1_NON_RESIDENT: toDepositOpts(tiers?.TIER_1_NON_RESIDENT),
+            TIER_2_NON_RESIDENT: toDepositOpts(tiers?.TIER_2_NON_RESIDENT),
+          }
+        }
+        return out
+      })(),
     },
     rentalDayRates,
     kmIncluded,
