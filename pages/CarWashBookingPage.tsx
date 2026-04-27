@@ -780,18 +780,28 @@ const CarWashBookingPage: React.FC = () => {
       const { data: { session } } = await supabase.auth.getSession();
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
-      await fetch('/.netlify/functions/validate-discount-code', {
+      // Use the redeem endpoint, NOT validate. validate-discount-code does
+      // not have an "apply_car_wash" handler — calling it here used to
+      // silently no-op, leaving birthday / fidelity / admin codes reusable
+      // forever after a car wash booking.
+      // redeem-discount-code handles BOTH discount_codes (sets status
+      // 'deactivated' + writes to discount_code_usages) and the legacy
+      // birthday_discount_codes table (sets car_wash_used = true).
+      const discountAppliedCents = Math.round(birthdayDiscountAmount * 100);
+      await fetch('/.netlify/functions/redeem-discount-code', {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          action: 'apply_car_wash',
           code: appliedDiscount.code,
-          booking_id: bookingId
+          bookingId,
+          customerName: formData.fullName || formData.email || 'Cliente',
+          serviceType: 'lavaggi',
+          discountApplied: discountAppliedCents,
         })
       });
-      console.log('Discount code marked as used:', appliedDiscount.code);
+      console.log('Discount code redeemed:', appliedDiscount.code);
     } catch (error) {
-      console.error('Error marking discount code as used:', error);
+      console.error('Error redeeming discount code:', error);
     }
   };
 
