@@ -112,6 +112,20 @@ function getVehicleType(item: RentalItem, categoryContext?: string): 'UTILITARIA
     return 'UTILITARIA'; // Fallback for corporate fleet
   }
 
+  // PRIMARY signal: vehicle.category from DB (set by admin in Centralina Pro
+  // Categorie & Veicoli). This bypasses brittle name parsing — if the admin
+  // tags a vehicle as 'aziendali', it's aziendali regardless of its name.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dbCat = String(((item as any).category ?? '')).toLowerCase().trim();
+  if (dbCat === 'aziendali' || dbCat === 'furgone') {
+    const n = item.name.toLowerCase();
+    if (n.includes('vito') || n.includes('v class') || n.includes('v-class') || n.includes('classe v')) return 'V_CLASS';
+    return 'FURGONE';
+  }
+  if (dbCat === 'urban' || dbCat === 'utilitaria') return 'UTILITARIA';
+  if (dbCat === 'exotic' || dbCat === 'supercar' || dbCat === 'supercars') return 'SUPERCAR';
+
+  // Name-based fallback only when DB category is missing.
   const name = item.name.toLowerCase();
   const id = item.id ? item.id.toLowerCase() : '';
 
