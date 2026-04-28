@@ -87,6 +87,7 @@ const ProfileSettings = () => {
     const [successMessage, setSuccessMessage] = useState('');
     const [successError, setSuccessError] = useState(false);
     const [creditBalance, setCreditBalance] = useState<number>(0);
+    const [bonusTotal, setBonusTotal] = useState<number>(0);
     const [recentTransactions, setRecentTransactions] = useState<CreditTransaction[]>([]);
     const [isLoadingCredits, setIsLoadingCredits] = useState(true);
     const [extendedProfile, setExtendedProfile] = useState<CustomerExtended | null>(null);
@@ -118,6 +119,30 @@ const ProfileSettings = () => {
                 const transactions = await getCreditTransactions(user.id, 5);
                 setCreditBalance(balance);
                 setRecentTransactions(transactions);
+
+                // Compute lifetime bonus credits = sum of credit transactions
+                // whose reference_type is in the BONUS list. The "card-paid"
+                // portion is then balance - bonus (capped at 0). Same rule
+                // the daily club-interest cron uses, so the breakdown shown
+                // here matches what earns 0,1%/giorno for club members.
+                const BONUS_REFS = new Set([
+                    'card_bonus', 'admin_manual', 'admin_credit',
+                    'referral', 'referral_bonus', 'milestone',
+                    'registration_bonus', 'club_interest_payout',
+                    'gift', 'voucher', 'compensation',
+                ]);
+                const { data: allTxs } = await supabase
+                    .from('credit_transactions')
+                    .select('amount, transaction_type, reference_type')
+                    .eq('user_id', user.id);
+                let lifetimeBonus = 0;
+                for (const t of (allTxs || [])) {
+                    if (t.transaction_type !== 'credit') continue;
+                    const ref = String(t.reference_type || '').toLowerCase();
+                    if (BONUS_REFS.has(ref)) lifetimeBonus += Number(t.amount || 0);
+                }
+                // Cap at current balance (bonuses can't exceed total).
+                setBonusTotal(Math.min(balance, lifetimeBonus));
 
                 // Fetch Extended Profile
                 const { data, error } = await supabase
@@ -322,9 +347,21 @@ const ProfileSettings = () => {
                     ) : (
                         <>
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                                <div>
-                                    <p className="text-sm text-gray-400 mb-1">Saldo Disponibile</p>
-                                    <p className="text-4xl font-bold text-white">€{creditBalance.toFixed(2)}</p>
+                                <div className="space-y-2">
+                                    {/* Card-paid portion (earns 0,1%/giorno for DR7 CLUB PRIVILEGE) */}
+                                    <div className="flex items-baseline gap-3">
+                                        <p className="text-sm text-gray-400 w-40">Credit Wallet</p>
+                                        <p className="text-xl font-semibold text-white">€{Math.max(0, creditBalance - bonusTotal).toFixed(2)}</p>
+                                    </div>
+                                    {/* Bonus credits (referral / club / admin / etc.) */}
+                                    <div className="flex items-baseline gap-3">
+                                        <p className="text-sm text-gray-400 w-40">Bonus</p>
+                                        <p className="text-xl font-semibold text-yellow-400">€{bonusTotal.toFixed(2)}</p>
+                                    </div>
+                                    <div className="border-t border-gray-700 pt-2 flex items-baseline gap-3">
+                                        <p className="text-sm text-gray-400 w-40">Saldo Disponibile</p>
+                                        <p className="text-4xl font-bold text-white">€{creditBalance.toFixed(2)}</p>
+                                    </div>
                                 </div>
                                 <div className="flex items-center gap-3">
                                     {/* Client Status Badge */}
