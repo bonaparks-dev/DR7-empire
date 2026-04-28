@@ -2009,10 +2009,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (memberTier === 'gold' || memberTier === 'platinum') return 0;
     if (isLoyalCustomer) return 0;
 
-    // Supercars: use tier-based deposit options (always RESIDENT since distinction removed)
+    // Supercars: use tier-based deposit options (always RESIDENT since distinction removed).
+    // Centralina Pro stores options under `${tier}_RESIDENT` (e.g. 'TIER_2_RESIDENT'),
+    // so without the suffix the lookup returned [] and getDeposit silently
+    // fell through to the DEFAULT card amount — meaning the customer's actual
+    // pick (card €2000, cash €4999, vehicle deposit, etc.) was thrown away
+    // before being shown in the riepilogo or written to the booking.
     const activeTier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2';
-    const depositKey = `${activeTier}`;
-    const depOptions = configOverlay?.depositOptions?.[depositKey] || [];
+    const depositKey = `${activeTier}_RESIDENT`;
+    const depOptions = pickDepositOptions(configOverlay, getVehicleType(item, categoryContext), depositKey as 'TIER_1_RESIDENT' | 'TIER_2_RESIDENT');
     const selectedDep = depOptions.find(d => d.id === formData.depositOption);
 
     if (selectedDep) {
