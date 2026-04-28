@@ -602,7 +602,14 @@ export const handler: Handler = async (event) => {
     }
 
     // Formula
-    let rawDailyRate = selectedBaseRateEur * occCoeff * advCoeff * durCoeff * seasonCoeff * gapCoeff * dayTypeCoeff * vehOccCoeff * promoCoeff
+    // Combined coefficient = arithmetic MEAN of all individual coefficients,
+    // not their product. Product would let a single low coefficient (e.g.
+    // anticipo at 0.50) crash the whole price even when every other factor
+    // is neutral; the mean smooths the discount across all dimensions.
+    // Per admin on 2026-04-28: explicit business decision.
+    const allCoeffs = [occCoeff, advCoeff, durCoeff, seasonCoeff, gapCoeff, dayTypeCoeff, vehOccCoeff, promoCoeff]
+    const combinedCoeff = allCoeffs.reduce((s, c) => s + c, 0) / allCoeffs.length
+    let rawDailyRate = selectedBaseRateEur * combinedCoeff
 
     // Min/Max clamp
     const minPrice = config.min_prices[vehicle.id]

@@ -1820,8 +1820,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const listSubtotal = calculatedSubtotal; // total before coefficients
     const subtotalNoExperience = calculatedSubtotal - calculatedExperienceCost;
     const hasDynamicCoeffs = dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.breakdown && dynamicPricing.breakdown.length > 0;
+    // Combined coefficient = arithmetic MEAN of every breakdown entry, NOT
+    // the product. Backend `calculate-dynamic-price.ts` uses the same rule
+    // when computing finalDailyRateEur — keep them aligned.
     const combinedCoeff = hasDynamicCoeffs
-      ? (dynamicPricing!.breakdown!.reduce((acc, b) => acc * b.coeff, 1))
+      ? (dynamicPricing!.breakdown!.reduce((acc, b) => acc + b.coeff, 0) / dynamicPricing!.breakdown!.length)
       : 1;
     const hasDynamicDiscount = hasDynamicCoeffs && Math.abs(combinedCoeff - 1) > 0.001;
 
@@ -6034,9 +6037,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             </div>
                           ))}
                           <div className="flex justify-between pt-1 border-t border-gray-700/50">
-                            <span className="text-gray-400">Coefficiente combinato</span>
+                            <span className="text-gray-400">Coefficiente combinato (media)</span>
                             <span className="font-mono text-white">
-                              ×{(dynamicPricing.breakdown.reduce((acc, b) => acc * b.coeff, 1)).toFixed(3)}
+                              ×{(dynamicPricing.breakdown.reduce((acc, b) => acc + b.coeff, 0) / dynamicPricing.breakdown.length).toFixed(3)}
                             </span>
                           </div>
                         </div>
