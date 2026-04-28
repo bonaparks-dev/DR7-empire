@@ -6056,7 +6056,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
                   {/* Cauzione info */}
                   {(() => {
-                    const depositAmt = getDeposit();
                     if (formData.depositOption === 'no_deposit') {
                       return (
                         <div className="mt-3 p-3 bg-green-900/30 border border-green-500/30 rounded-lg">
@@ -6066,22 +6065,33 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         </div>
                       );
                     }
-                    if (depositAmt > 0 || formData.depositOption) {
+                    // Read the amount + label DIRECTLY from the chosen option in
+                    // configOverlay, not via getDeposit(). getDeposit returns €0
+                    // for Gold/Platinum members and Loyal customers, which used
+                    // to hide the amount line entirely from the recap. The
+                    // customer still picked an explicit option (€1000 / €2000 /
+                    // €4999) and expects to see what they chose.
+                    if (formData.depositOption) {
+                      const depKey = `${(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'}_RESIDENT` as 'TIER_1_RESIDENT' | 'TIER_2_RESIDENT';
+                      const opts = pickDepositOptions(configOverlay, vehicleType, depKey);
+                      const opt = opts.find((d: { id: string }) => d.id === formData.depositOption);
+                      const optAmount = Number(opt?.amount || 0);
+                      const optLabel = opt?.label || formData.depositOption;
+                      const memberTier = getMembershipTierName(user);
+                      const reducedToZero = memberTier === 'gold' || memberTier === 'platinum' || isLoyalCustomer;
                       return (
                         <div className="mt-3 p-3 bg-gray-700/50 rounded-lg">
                           <p className="text-sm font-semibold text-white">CAUZIONE AL RITIRO</p>
-                          {depositAmt > 0 && (
-                            <p className="text-sm text-gray-300 mt-1">Importo: €{depositAmt.toLocaleString()}</p>
-                          )}
-                          {formData.depositOption && !isUrbanOrCorporate && (
-                            <p className="text-sm text-gray-400 mt-1">
-                              Tipo: {(() => {
-                                const depKey = `${(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'}_RESIDENT` as 'TIER_1_RESIDENT' | 'TIER_2_RESIDENT';
-                                const opts = pickDepositOptions(configOverlay, vehicleType, depKey);
-                                const opt = opts.find((d: { id: string }) => d.id === formData.depositOption);
-                                return opt?.label || formData.depositOption;
-                              })()}
+                          {optAmount > 0 && (
+                            <p className="text-sm text-gray-300 mt-1">
+                              Importo: €{optAmount.toLocaleString()}
+                              {reducedToZero && (
+                                <span className="text-green-400 ml-2">— gratuita per cliente {memberTier === 'platinum' ? 'Platinum' : memberTier === 'gold' ? 'Gold' : 'fidelizzato'}</span>
+                              )}
                             </p>
+                          )}
+                          {!isUrbanOrCorporate && (
+                            <p className="text-sm text-gray-400 mt-1">Tipo: {optLabel}</p>
                           )}
                         </div>
                       );
