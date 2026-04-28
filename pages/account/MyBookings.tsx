@@ -652,6 +652,22 @@ const MyBookings = () => {
         .eq('id', booking.id);
       if (error) throw error;
 
+      // Release any cauzione rows linked to this booking. The customer never
+      // picked up the vehicle, so the deposit was never actually held — mark
+      // it as 'Sbloccata' (released) instead of leaving it as 'Attiva' which
+      // would keep showing in the admin's Cauzioni tab as if still pending.
+      // Best-effort: if the update fails (RLS or absent row) the booking
+      // cancellation still succeeds.
+      try {
+        await supabase
+          .from('cauzioni')
+          .update({ stato: 'Sbloccata', updated_at: new Date().toISOString() })
+          .eq('riferimento_contratto_id', booking.id)
+          .not('stato', 'in', '("Restituita","Sbloccata","Incassata")');
+      } catch (cauzErr) {
+        console.warn('[MyBookings] cauzione release failed:', cauzErr);
+      }
+
       // Auto-refund to DR7 Wallet via the add_credits RPC (atomic: updates
       // user_credit_balance AND logs a credit_transactions row with
       // transaction_type='credit' + balance_after). Amount in EUROS
