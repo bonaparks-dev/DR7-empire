@@ -327,7 +327,7 @@ const DR7Club = () => {
         return (
           <div className="bg-gradient-to-br from-yellow-900/20 to-gray-900/50 border border-yellow-700/40 rounded-lg p-6">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-lg font-bold text-white">Interesse DR7 Club</h3>
+              <h3 className="text-lg font-bold text-white">Interesse DR7 CLUB PRIVILEGE</h3>
               <span className="text-xs text-yellow-400 font-medium">0,1% / giorno</span>
             </div>
             <p className="text-gray-400 text-sm mb-4">
