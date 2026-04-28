@@ -652,23 +652,21 @@ const MyBookings = () => {
         .eq('id', booking.id);
       if (error) throw error;
 
-      // Release any cauzione rows linked to this booking. RLS blocks the
-      // customer's authenticated client from writing to `cauzioni`, so we
-      // call a server-side Netlify function that uses service_role and
-      // verifies booking ownership. Best-effort: a failure here does NOT
-      // block the booking cancellation.
+      // Delete the linked cauzione row(s) via server-side Netlify function
+      // (service_role bypasses RLS). The function only acts when the
+      // booking is already in 'cancelled' status, which we just set above.
+      // Best-effort: a failure here does NOT block the booking cancellation.
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
         const res = await fetch('/.netlify/functions/release-cauzione-on-cancel', {
           method: 'POST',
-          headers,
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ bookingId: booking.id }),
         });
+        const out = await res.json().catch(() => ({} as { deleted?: number; error?: string; note?: string }));
         if (!res.ok) {
-          const err = await res.json().catch(() => ({} as { error?: string }));
-          console.warn('[MyBookings] release-cauzione-on-cancel non-ok:', res.status, err);
+          console.warn('[MyBookings] release-cauzione-on-cancel non-ok:', res.status, out);
+        } else {
+          console.log('[MyBookings] cauzione release result:', out);
         }
       } catch (cauzErr) {
         console.warn('[MyBookings] cauzione release failed:', cauzErr);

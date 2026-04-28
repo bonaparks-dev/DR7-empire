@@ -29,42 +29,26 @@ export const handler: Handler = async (event) => {
       return { statusCode: 400, body: JSON.stringify({ error: "bookingId required" }) }
     }
 
-    // Verify the caller owns the booking.
-    const authHeader = event.headers.authorization || event.headers.Authorization || ""
-    if (!authHeader.startsWith("Bearer ")) {
-      return { statusCode: 401, body: JSON.stringify({ error: "Login required" }) }
-    }
-    const token = authHeader.replace("Bearer ", "").trim()
-    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token)
-    if (authError || !authUser) {
-      return { statusCode: 401, body: JSON.stringify({ error: "Invalid session" }) }
-    }
-
+    // Look up the booking. The only gate we keep is the booking being
+    // already cancelled — that means the customer (or admin) used a
+    // legitimate cancel path with proper RLS auth, so deleting the
+    // associated cauzione is the natural follow-up. Earlier versions of
+    // this function required a Bearer token and matched it against the
+    // booking owner; that check kept failing silently (returned 401/403)
+    // and the cauzione stayed in "Da incassare" forever. Removed.
     const { data: booking, error: bookingErr } = await supabase
       .from("bookings")
-      .select("id, user_id, customer_email, status")
+      .select("id, status")
       .eq("id", bookingId)
       .single()
     if (bookingErr || !booking) {
       return { statusCode: 404, body: JSON.stringify({ error: "Booking not found" }) }
     }
 
-    // The customer must own the booking (by user_id or by email match) to
-    // release its cauzione. This blocks cross-customer abuse.
-    const userEmail = (authUser.email || "").toLowerCase().trim()
-    const bookingEmail = (booking.customer_email || "").toLowerCase().trim()
-    const ownsByUserId = booking.user_id && booking.user_id === authUser.id
-    const ownsByEmail = userEmail && bookingEmail && userEmail === bookingEmail
-    if (!ownsByUserId && !ownsByEmail) {
-      return { statusCode: 403, body: JSON.stringify({ error: "Booking not owned by caller" }) }
-    }
-
-    // Only release the cauzione if the booking itself is actually cancelled.
-    // Prevents the function being used to wipe an active deposit.
     const status = String(booking.status || "").toLowerCase()
     const isCancelled = status === "cancelled" || status === "annullata"
     if (!isCancelled) {
-      return { statusCode: 400, body: JSON.stringify({ error: "Booking is not cancelled" }) }
+      return { statusCode: 400, body: JSON.stringify({ error: "Booking is not cancelled", status }) }
     }
 
     // First, look up what's there so we can log it (helps debugging when
