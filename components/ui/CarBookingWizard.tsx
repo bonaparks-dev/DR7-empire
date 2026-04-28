@@ -2378,14 +2378,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       //   - a house number (a separate digit token, not just the CAP)
       //   - a street name (at least one 3+ letter word)
       //   - reasonable length (>= 12 chars, common minimum for "Via X 1, 09100 Y")
+      // Stricter on what matters for the fattura (CAP + city/street + reasonable
+      // length); permissive on house number — Nominatim suggestions don't
+      // always include one (e.g. "Via Roma, 09100 Cagliari, Sardegna") and
+      // requiring it was rejecting valid dropdown picks.
       const residenzaTrim = (formData.residenza || formData.address || '').trim();
       const hasCap = /\b\d{5}\b/.test(residenzaTrim);
-      const digitTokens = (residenzaTrim.match(/\b\d+\b/g) || []);
-      const hasHouseNumber = digitTokens.length >= 2; // CAP + at least one more
       const hasStreetWord = /[A-Za-zÀ-ÿ]{3,}/.test(residenzaTrim);
-      const longEnough = residenzaTrim.length >= 12;
-      if (!residenzaTrim || !longEnough || !hasCap || !hasHouseNumber || !hasStreetWord) {
-        newErrors.residenza = "Indirizzo di residenza incompleto. Selezionalo dalla lista o inserisci via, numero civico, CAP e città (es: Via Roma 10, 09100 Cagliari).";
+      const longEnough = residenzaTrim.length >= 10;
+      if (!residenzaTrim || !longEnough || !hasCap || !hasStreetWord) {
+        newErrors.residenza = "Indirizzo di residenza incompleto. Selezionalo dalla lista o inserisci via, CAP e città (es: Via Roma 10, 09100 Cagliari).";
       }
       if (!formData.birthDate) {
         newErrors.birthDate = "La data di nascita è obbligatoria.";
@@ -6872,13 +6874,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         onClick={handleNext}
                         className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={(step === 1 && !isFromSearch && isCheckingAvailability) || (licenseYears < 3 && step === 2) || (step === 2 && !formData.confirmsInformation) || (step === 2 && (() => {
-                          // Block until the residence address is a complete
-                          // Italian address (street + house number + CAP + city).
-                          // Same rules as the Step 2 validator — keep in sync.
+                          // Keep this check in sync with the Step 2 residenza
+                          // validator. Strict on CAP + street/city + length;
+                          // permissive on house number so Nominatim picks
+                          // without a civico still pass.
                           const r = (formData.residenza || formData.address || '').trim();
-                          if (!r || r.length < 12) return true;
+                          if (!r || r.length < 10) return true;
                           if (!/\b\d{5}\b/.test(r)) return true;
-                          if ((r.match(/\b\d+\b/g) || []).length < 2) return true;
                           if (!/[A-Za-zÀ-ÿ]{3,}/.test(r)) return true;
                           return false;
                         })())}
