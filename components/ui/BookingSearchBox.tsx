@@ -6,7 +6,7 @@ import LocationAutocomplete from './LocationAutocomplete';
 import { DR7_OFFICE_LOCATION, type SardegnaLocation } from '../../data/sardegnaLocations';
 import { isBlockedDate } from '../../utils/blockedDates';
 
-// Pickup: Mon-Fri 10:30-12:30 / 16:30-18:30, Sat 10:30-12:30 / 15:30-17:30
+// Pickup: Mon-Fri 10:30-12:30 / 16:30-18:30, Sat 10:30-16:30 (single window)
 function getPickupTimes(dateStr: string): string[] {
   if (!dateStr) return [];
   const day = new Date(dateStr + 'T12:00:00').getDay();
@@ -21,13 +21,12 @@ function getPickupTimes(dateStr: string): string[] {
     add(10 * 60 + 30, 12 * 60 + 30);
     add(16 * 60 + 30, 18 * 60 + 30);
   } else if (day === 6) {
-    add(10 * 60 + 30, 12 * 60 + 30);
-    add(15 * 60 + 30, 17 * 60 + 30);
+    add(10 * 60 + 30, 16 * 60 + 30);
   }
   return times;
 }
 
-// Return: Mon-Fri 9:00-11:00 / 15:00-17:00, Sat 9:00-11:00 / 14:00-16:00
+// Return: Mon-Fri 9:00-11:00 / 15:00-17:00, Sat 9:00-15:00 (single window)
 function getReturnTimes(dateStr: string): string[] {
   if (!dateStr) return [];
   const day = new Date(dateStr + 'T12:00:00').getDay();
@@ -42,8 +41,7 @@ function getReturnTimes(dateStr: string): string[] {
     add(9 * 60, 11 * 60);
     add(15 * 60, 17 * 60);
   } else if (day === 6) {
-    add(9 * 60, 11 * 60);
-    add(14 * 60, 16 * 60);
+    add(9 * 60, 15 * 60);
   }
   return times;
 }

@@ -1102,11 +1102,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
     };
 
-    // PICKUP hours (15-minute intervals) — Sabato uguale a Mon-Fri
-    // Mon-Sat: 10:30-12:30, 16:30-18:30
-    if (dayOfWeek >= 1 && dayOfWeek <= 6) {
+    // PICKUP hours (15-minute intervals)
+    //   Mon-Fri: 10:30-12:30, 16:30-18:30 (two windows)
+    //   Sat:     10:30-16:30 (single continuous window)
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
       addTimes(10 * 60 + 30, 12 * 60 + 30, 15); // 10:30 to 12:30
       addTimes(16 * 60 + 30, 18 * 60 + 30, 15); // 16:30 to 18:30
+    } else if (dayOfWeek === 6) {
+      addTimes(10 * 60 + 30, 16 * 60 + 30, 15); // Saturday 10:30 to 16:30
     }
 
     const selectedDate = safeDate(date);
@@ -1139,11 +1142,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
     };
 
-    // RETURN (Check-out) hours (15-minute intervals) — Sabato uguale a Mon-Fri
-    // Mon-Sat: 9:00-11:00, 15:00-17:00
-    if (dayOfWeek >= 1 && dayOfWeek <= 6) {
+    // RETURN (Check-out) hours (15-minute intervals)
+    //   Mon-Fri: 9:00-11:00, 15:00-17:00 (two windows)
+    //   Sat:     9:00-15:00 (single continuous window)
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
       addTimes(9 * 60, 11 * 60, 15);  // 09:00 to 11:00
       addTimes(15 * 60, 17 * 60, 15); // 15:00 to 17:00
+    } else if (dayOfWeek === 6) {
+      addTimes(9 * 60, 15 * 60, 15);  // Saturday 09:00 to 15:00
     }
 
     // Filter out past times if today
@@ -2333,9 +2339,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               newErrors.returnTime = "Il sabato, la riconsegna in aeroporto deve essere entro le 11:00.";
             }
           } else {
-            // Office: maximum 14:00
-            if (returnTimeInMinutes > 14 * 60) {
-              newErrors.returnTime = "Il sabato, la riconsegna in ufficio deve essere entro le 14:00.";
+            // Office Saturday: 09:00–15:00 single window (no afternoon return)
+            if (returnTimeInMinutes < 9 * 60 || returnTimeInMinutes > 15 * 60) {
+              newErrors.returnTime = "Il sabato, la riconsegna in ufficio è dalle 09:00 alle 15:00.";
             }
           }
         }

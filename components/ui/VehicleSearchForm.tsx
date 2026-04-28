@@ -30,13 +30,15 @@ function buildSlots(...windows: Array<[number, number]>): string[] {
     return out;
 }
 
-// Pickup Mon-Sat: 10:30-12:30, 16:30-18:30
+// Pickup Mon-Fri: 10:30-12:30, 16:30-18:30
 const PICKUP_TIMES = buildSlots([10 * 60 + 30, 12 * 60 + 30], [16 * 60 + 30, 18 * 60 + 30]);
-const PICKUP_TIMES_SAT = PICKUP_TIMES;
+// Pickup Sat: 10:30-16:30 single window
+const PICKUP_TIMES_SAT = buildSlots([10 * 60 + 30, 16 * 60 + 30]);
 
-// Return Mon-Sat: 9:00-11:00, 15:00-17:00
+// Return Mon-Fri: 9:00-11:00, 15:00-17:00
 const RETURN_TIMES = buildSlots([9 * 60, 11 * 60], [15 * 60, 17 * 60]);
-const RETURN_TIMES_SAT = RETURN_TIMES;
+// Return Sat: 9:00-15:00 single window
+const RETURN_TIMES_SAT = buildSlots([9 * 60, 15 * 60]);
 
 const LOCATIONS = [
     'Cagliari Centro',
