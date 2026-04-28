@@ -652,18 +652,24 @@ const MyBookings = () => {
         .eq('id', booking.id);
       if (error) throw error;
 
-      // Release any cauzione rows linked to this booking. The customer never
-      // picked up the vehicle, so the deposit was never actually held — mark
-      // it as 'Sbloccata' (released) instead of leaving it as 'Attiva' which
-      // would keep showing in the admin's Cauzioni tab as if still pending.
-      // Best-effort: if the update fails (RLS or absent row) the booking
-      // cancellation still succeeds.
+      // Release any cauzione rows linked to this booking. RLS blocks the
+      // customer's authenticated client from writing to `cauzioni`, so we
+      // call a server-side Netlify function that uses service_role and
+      // verifies booking ownership. Best-effort: a failure here does NOT
+      // block the booking cancellation.
       try {
-        await supabase
-          .from('cauzioni')
-          .update({ stato: 'Sbloccata', updated_at: new Date().toISOString() })
-          .eq('riferimento_contratto_id', booking.id)
-          .not('stato', 'in', '("Restituita","Sbloccata","Incassata")');
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+        const res = await fetch('/.netlify/functions/release-cauzione-on-cancel', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ bookingId: booking.id }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({} as { error?: string }));
+          console.warn('[MyBookings] release-cauzione-on-cancel non-ok:', res.status, err);
+        }
       } catch (cauzErr) {
         console.warn('[MyBookings] cauzione release failed:', cauzErr);
       }
