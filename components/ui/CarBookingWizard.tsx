@@ -2377,7 +2377,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       if (!formData.email) newErrors.email = "L'email è obbligatoria.";
       if (!formData.phone) newErrors.phone = "Il telefono è obbligatorio.";
       if (!formData.codiceFiscale) newErrors.codiceFiscale = "Il codice fiscale è obbligatorio per la fatturazione.";
-      if (!formData.residenza) newErrors.residenza = "La residenza è obbligatoria per la fatturazione.";
+      // Residenza must be a real address (not blank, not whitespace, not a
+      // single-word stub). The cauzione price and resident/non-resident
+      // pricing branch read from this field, so accepting a blank value
+      // silently shipped the wrong price.
+      const residenzaTrim = (formData.residenza || formData.address || '').trim();
+      if (!residenzaTrim || residenzaTrim.length < 5 || !residenzaTrim.includes(' ')) {
+        newErrors.residenza = "Inserisci l'indirizzo completo di residenza (via, numero, CAP, città).";
+      }
       if (!formData.birthDate) {
         newErrors.birthDate = "La data di nascita è obbligatoria.";
       } else {
@@ -4450,13 +4457,21 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               {driverType === 'main' && (
                 <div className="md:col-span-2">
                   <label className="text-sm text-gray-400">Indirizzo di residenza *</label>
+                  {/* Mirror the typed value into BOTH `address` (autocomplete UI
+                      state) and `residenza` (the field the validator and the
+                      cauzione/pricing logic actually read). Previously the
+                      input only wrote to `address`; validation checked
+                      `residenza` which was either empty or auto-filled from
+                      the saved profile, so customers could click Avanti
+                      without entering a real address even though it changes
+                      the cauzione price. */}
                   <AddressAutocomplete
-                    value={formData.address}
-                    onChange={(val) => setFormData(prev => ({ ...prev, address: val }))}
+                    value={formData.address || formData.residenza}
+                    onChange={(val) => setFormData(prev => ({ ...prev, address: val, residenza: val }))}
                     className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"
                     placeholder="Via Roma 10, 09100 Cagliari"
                   />
-                  {errors.address && <p className="text-xs text-red-400 mt-1">{errors.address}</p>}
+                  {(errors.residenza || errors.address) && <p className="text-xs text-red-400 mt-1">{errors.residenza || errors.address}</p>}
                 </div>
               )}
               {driverType === 'second' && (
@@ -6808,7 +6823,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         type="button"
                         onClick={handleNext}
                         className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={(step === 1 && !isFromSearch && isCheckingAvailability) || (licenseYears < 3 && step === 2) || (step === 2 && !formData.confirmsInformation)}
+                        disabled={(step === 1 && !isFromSearch && isCheckingAvailability) || (licenseYears < 3 && step === 2) || (step === 2 && !formData.confirmsInformation) || (step === 2 && (() => { const r = (formData.residenza || formData.address || '').trim(); return !r || r.length < 5 || !r.includes(' '); })())}
                       >
                         Continua
                       </button>
