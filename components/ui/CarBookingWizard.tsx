@@ -2772,6 +2772,27 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             }).catch(e => console.error('[booking] customers_extended lookup error:', e));
         }
 
+        // Sync cauzione record so the deposit lands in Cauzioni → Da
+        // Incassare. Mirrors the wallet path; runs for any non-zero
+        // deposit regardless of payment method.
+        const insertDeposit = Number(data.deposit_amount || bookingData.deposit_amount || 0);
+        if (insertDeposit > 0) {
+          fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/sync-booking-cauzione`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              bookingId: data.id,
+              customerId: data.user_id,
+              vehicleId: data.vehicle_id,
+              returnDate: data.dropoff_date,
+              depositAmount: insertDeposit,
+              paymentMethod: data.payment_method || bookingData.payment_method || 'carta',
+              depositPaid: data.payment_status === 'paid' || data.payment_status === 'succeeded',
+              depositStatus: 'da_incassare',
+            }),
+          }).catch(cauzErr => console.error('[booking] Cauzione sync error:', cauzErr));
+        }
+
         // Send email confirmation
         fetchWithTimeout(`${FUNCTIONS_BASE}/.netlify/functions/send-booking-confirmation`, {
           method: 'POST',
@@ -3432,6 +3453,28 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     .catch(e => console.error('[credit-booking] customers_extended insert error:', e));
                 }
               }).catch(e => console.error('[credit-booking] customers_extended lookup error:', e));
+          }
+
+          // Sync cauzione record so the deposit lands in Cauzioni → Da
+          // Incassare. Wallet bookings still need a cauzione tracked for
+          // the return-of-vehicle flow even though the rental itself
+          // was paid from credits.
+          const walletDeposit = Number(bookingPayload.deposit_amount || 0);
+          if (walletDeposit > 0) {
+            fetch(`${FUNCTIONS_BASE}/.netlify/functions/sync-booking-cauzione`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                bookingId: data.booking_id,
+                customerId: bookingPayload.user_id,
+                vehicleId: bookingPayload.vehicle_id,
+                returnDate: bookingPayload.dropoff_date,
+                depositAmount: walletDeposit,
+                paymentMethod: 'credit_wallet',
+                depositPaid: false,
+                depositStatus: 'da_incassare',
+              }),
+            }).catch(e => console.error('[credit-booking] Cauzione sync error:', e));
           }
 
           // Fire-and-forget notifications (no abort signal — page may navigate away)
