@@ -67,27 +67,65 @@ export const handler: Handler = async (event) => {
       return { statusCode: 400, body: JSON.stringify({ error: "Booking is not cancelled" }) }
     }
 
-    // Flip any non-final cauzione row(s) to 'Sbloccata'. The filter preserves
-    // rows already in a final state so a prior manual admin action (refund,
-    // damage hold, etc.) is never overwritten.
-    const { data: updated, error: updErr } = await supabase
+    // First, look up what's there so we can log it (helps debugging when
+    // the user reports "didn't work" — we'll see in Netlify logs whether
+    // the rows even exist).
+    const { data: existing, error: lookupErr } = await supabase
       .from("cauzioni")
-      .update({ stato: "Sbloccata", updated_at: new Date().toISOString() })
+      .select("id, stato, data_incasso")
       .eq("riferimento_contratto_id", bookingId)
-      .not("stato", "in", '("Restituita","Sbloccata","Incassata")')
-      .select("id")
+    if (lookupErr) {
+      console.error("[release-cauzione-on-cancel] lookup failed:", lookupErr)
+    }
+    console.log(
+      `[release-cauzione-on-cancel] booking=${bookingId} found ${existing?.length || 0} cauzione row(s):`,
+      existing?.map(r => ({ id: r.id, stato: r.stato, incassata: !!r.data_incasso })) || []
+    )
 
-    if (updErr) {
-      console.error("[release-cauzione-on-cancel] update failed:", updErr)
-      return { statusCode: 500, body: JSON.stringify({ error: updErr.message }) }
+    if (!existing || existing.length === 0) {
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ success: true, deleted: 0, note: "No cauzione rows for this booking" }),
+      }
+    }
+
+    // DELETE non-finalized cauzione rows. We exclude rows that are
+    // 'Restituita', 'Incassata', or already have a data_incasso timestamp
+    // (real money moved) so we never destroy financial history. Cancelled-
+    // before-pickup bookings only ever have 'Attiva'/'In scadenza' rows.
+    const idsToDelete = existing
+      .filter(r => !["Restituita", "Incassata"].includes(r.stato || ""))
+      .filter(r => !r.data_incasso)
+      .map(r => r.id)
+
+    console.log(
+      `[release-cauzione-on-cancel] booking=${bookingId} deleting ${idsToDelete.length}/${existing.length} row(s)`
+    )
+
+    if (idsToDelete.length === 0) {
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          success: true,
+          deleted: 0,
+          note: "All cauzione rows are finalized — preserved for audit",
+        }),
+      }
+    }
+
+    const { error: delErr } = await supabase
+      .from("cauzioni")
+      .delete()
+      .in("id", idsToDelete)
+
+    if (delErr) {
+      console.error("[release-cauzione-on-cancel] delete failed:", delErr)
+      return { statusCode: 500, body: JSON.stringify({ error: delErr.message }) }
     }
 
     return {
       statusCode: 200,
-      body: JSON.stringify({
-        success: true,
-        released: updated?.length || 0,
-      }),
+      body: JSON.stringify({ success: true, deleted: idsToDelete.length }),
     }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
