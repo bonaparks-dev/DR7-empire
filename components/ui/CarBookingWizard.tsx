@@ -1102,15 +1102,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
     };
 
-    // PICKUP hours (15-minute intervals)
-    // Mon-Fri: 10:30-12:30, 16:30-18:30
-    // Saturday: 10:30-12:30, 15:30-17:30
-    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+    // PICKUP hours (15-minute intervals) — Sabato uguale a Mon-Fri
+    // Mon-Sat: 10:30-12:30, 16:30-18:30
+    if (dayOfWeek >= 1 && dayOfWeek <= 6) {
       addTimes(10 * 60 + 30, 12 * 60 + 30, 15); // 10:30 to 12:30
       addTimes(16 * 60 + 30, 18 * 60 + 30, 15); // 16:30 to 18:30
-    } else if (dayOfWeek === 6) {
-      addTimes(10 * 60 + 30, 12 * 60 + 30, 15); // 10:30 to 12:30
-      addTimes(15 * 60 + 30, 17 * 60 + 30, 15); // 15:30 to 17:30
     }
 
     const selectedDate = safeDate(date);
@@ -1143,15 +1139,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
     };
 
-    // RETURN (Check-out) hours (15-minute intervals)
-    // Mon-Fri: 9:00-11:00, 15:00-17:00
-    // Saturday: 9:00-11:00, 14:00-16:00
-    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+    // RETURN (Check-out) hours (15-minute intervals) — Sabato uguale a Mon-Fri
+    // Mon-Sat: 9:00-11:00, 15:00-17:00
+    if (dayOfWeek >= 1 && dayOfWeek <= 6) {
       addTimes(9 * 60, 11 * 60, 15);  // 09:00 to 11:00
       addTimes(15 * 60, 17 * 60, 15); // 15:00 to 17:00
-    } else if (dayOfWeek === 6) {
-      addTimes(9 * 60, 11 * 60, 15);  // 09:00 to 11:00
-      addTimes(14 * 60, 16 * 60, 15); // 14:00 to 16:00
     }
 
     // Filter out past times if today

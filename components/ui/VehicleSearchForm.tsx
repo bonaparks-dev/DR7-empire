@@ -18,27 +18,25 @@ interface VehicleSearchFormProps {
     category: string; // 'cars' | 'urban-cars' | 'corporate-fleet'
 }
 
-// Office hours for pickup
-const PICKUP_TIMES = [
-    '10:30', '11:00', '11:30', '12:00', '12:30',
-    '17:30', '18:00', '18:30'
-];
+// Office hours — slot ogni 15 minuti, sabato uguale a Mon-Fri.
+// Coerente con CarBookingWizard.tsx (unica fonte di verità).
+function buildSlots(...windows: Array<[number, number]>): string[] {
+    const out: string[] = [];
+    for (const [startMin, endMin] of windows) {
+        for (let m = startMin; m <= endMin; m += 15) {
+            out.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`);
+        }
+    }
+    return out;
+}
 
-// Saturday pickup has extra afternoon slot
-const PICKUP_TIMES_SAT = [
-    '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
-    '17:30', '18:00', '18:30'
-];
+// Pickup Mon-Sat: 10:30-12:30, 16:30-18:30
+const PICKUP_TIMES = buildSlots([10 * 60 + 30, 12 * 60 + 30], [16 * 60 + 30, 18 * 60 + 30]);
+const PICKUP_TIMES_SAT = PICKUP_TIMES;
 
-// Return times
-const RETURN_TIMES = [
-    '09:00', '09:30', '10:00', '10:30', '11:00',
-    '16:00', '16:30', '17:00'
-];
-
-const RETURN_TIMES_SAT = [
-    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00'
-];
+// Return Mon-Sat: 9:00-11:00, 15:00-17:00
+const RETURN_TIMES = buildSlots([9 * 60, 11 * 60], [15 * 60, 17 * 60]);
+const RETURN_TIMES_SAT = RETURN_TIMES;
 
 const LOCATIONS = [
     'Cagliari Centro',
