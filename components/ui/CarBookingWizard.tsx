@@ -2003,11 +2003,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     // Utilitaria/Furgone: use same tier-based deposit as supercars
     // All deposit options from Centralina now (no more hardcoded with_deposit)
-
-    // Gold/Platinum members OR 3+ rentals = NO deposit
-    const memberTier = getMembershipTierName(user);
-    if (memberTier === 'gold' || memberTier === 'platinum') return 0;
-    if (isLoyalCustomer) return 0;
+    //
+    // No membership-based €0 override — DR7 has never had a "cauzione gratis
+    // per cliente fidelizzato / Gold / Platinum" policy. The customer always
+    // pays the cauzione they pick. Removed the previous code that returned 0
+    // for memberTier='gold'/'platinum' and isLoyalCustomer.
 
     // Supercars: use tier-based deposit options (always RESIDENT since distinction removed).
     // Centralina Pro stores options under `${tier}_RESIDENT` (e.g. 'TIER_2_RESIDENT'),
@@ -6077,18 +6077,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       const opt = opts.find((d: { id: string }) => d.id === formData.depositOption);
                       const optAmount = Number(opt?.amount || 0);
                       const optLabel = opt?.label || formData.depositOption;
-                      const memberTier = getMembershipTierName(user);
-                      const reducedToZero = memberTier === 'gold' || memberTier === 'platinum' || isLoyalCustomer;
                       return (
                         <div className="mt-3 p-3 bg-gray-700/50 rounded-lg">
                           <p className="text-sm font-semibold text-white">CAUZIONE AL RITIRO</p>
                           {optAmount > 0 && (
-                            <p className="text-sm text-gray-300 mt-1">
-                              Importo: €{optAmount.toLocaleString()}
-                              {reducedToZero && (
-                                <span className="text-green-400 ml-2">— gratuita per cliente {memberTier === 'platinum' ? 'Platinum' : memberTier === 'gold' ? 'Gold' : 'fidelizzato'}</span>
-                              )}
-                            </p>
+                            <p className="text-sm text-gray-300 mt-1">Importo: €{optAmount.toLocaleString()}</p>
                           )}
                           {!isUrbanOrCorporate && (
                             <p className="text-sm text-gray-400 mt-1">Tipo: {optLabel}</p>
