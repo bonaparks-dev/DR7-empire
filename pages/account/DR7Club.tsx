@@ -23,6 +23,7 @@ const DR7Club = () => {
   const [walletBalance, setWalletBalance] = useState(0)
   const [transactions, setTransactions] = useState<CreditTransaction[]>([])
   const [subscribing, setSubscribing] = useState(false)
+  const [interestAccruals, setInterestAccruals] = useState<{ accrual_date: string; principal_eur: number; accrual_eur: number; paid_out_at: string | null }[]>([])
 
   useEffect(() => {
     if (!user?.id) return
@@ -43,6 +44,20 @@ const DR7Club = () => {
       setIsActive(clubStatus.isActive)
       setWalletBalance(balance)
       setTransactions(txns)
+
+      // DR7 Club daily interest accruals (last 90 days). The cron
+      // accrue-club-wallet-interest writes 0.1%/day on the card-paid
+      // wallet portion; payout-club-wallet-interest stamps paid_out_at
+      // on the 1st of each month when the monthly total is credited.
+      const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+        .toISOString().split('T')[0]
+      const { data: accruals } = await supabase
+        .from('wallet_interest_accruals')
+        .select('accrual_date, principal_eur, accrual_eur, paid_out_at')
+        .eq('user_id', user.id)
+        .gte('accrual_date', ninetyDaysAgo)
+        .order('accrual_date', { ascending: false })
+      setInterestAccruals(accruals || [])
     } catch (err) {
       console.error('Error loading club data:', err)
     } finally {
@@ -304,6 +319,55 @@ const DR7Club = () => {
           ))}
         </div>
       </div>
+
+      {/* Interesse Wallet — 0.1%/giorno DR7 Club */}
+      {isActive && interestAccruals.length > 0 && (() => {
+        const totalUnpaid = interestAccruals.filter(a => !a.paid_out_at).reduce((s, a) => s + Number(a.accrual_eur || 0), 0)
+        const totalPaid = interestAccruals.filter(a => a.paid_out_at).reduce((s, a) => s + Number(a.accrual_eur || 0), 0)
+        return (
+          <div className="bg-gradient-to-br from-yellow-900/20 to-gray-900/50 border border-yellow-700/40 rounded-lg p-6">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-bold text-white">Interesse DR7 Club</h3>
+              <span className="text-xs text-yellow-400 font-medium">0,1% / giorno</span>
+            </div>
+            <p className="text-gray-400 text-sm mb-4">
+              Ogni giorno guadagni lo 0,1% sul saldo del wallet pagato con carta. Pagamento automatico il 1° del mese successivo.
+            </p>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="rounded-lg border border-yellow-700/40 bg-yellow-900/10 p-3">
+                <p className="text-xs text-gray-400 mb-1">Maturato (in attesa)</p>
+                <p className="text-2xl font-bold text-yellow-400">€{(Math.round(totalUnpaid * 100) / 100).toFixed(2)}</p>
+              </div>
+              <div className="rounded-lg border border-gray-700 bg-gray-900/50 p-3">
+                <p className="text-xs text-gray-400 mb-1">Pagato (ultimi 90gg)</p>
+                <p className="text-2xl font-bold text-green-400">€{(Math.round(totalPaid * 100) / 100).toFixed(2)}</p>
+              </div>
+            </div>
+            <details className="text-sm">
+              <summary className="cursor-pointer text-yellow-400 hover:text-yellow-300 font-medium">
+                Mostra storico giornaliero
+              </summary>
+              <div className="mt-3 space-y-2 max-h-64 overflow-y-auto">
+                {interestAccruals.slice(0, 31).map(a => (
+                  <div key={a.accrual_date} className="flex justify-between items-center py-2 border-b border-gray-800 last:border-0">
+                    <div>
+                      <p className="text-white text-sm">
+                        {new Date(a.accrual_date).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </p>
+                      <p className="text-gray-500 text-xs">
+                        Capitale: €{Number(a.principal_eur).toFixed(2)} · {a.paid_out_at ? 'Pagato' : 'In attesa'}
+                      </p>
+                    </div>
+                    <span className="font-bold text-sm text-yellow-400">
+                      +€{Number(a.accrual_eur).toFixed(4)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </details>
+          </div>
+        )
+      })()}
 
       {/* Wallet */}
       <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6">
