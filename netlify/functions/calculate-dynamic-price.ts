@@ -375,34 +375,57 @@ export const handler: Handler = async (event) => {
 
     const totalInCategory = categoryVehicles?.length || 1
 
+    // Window = first day of pickup month → last day of pickup month.
+    // Mirrors the admin's calculate-dynamic-price exactly so a website
+    // booking made in April for an August pickup uses the AUGUST occupancy
+    // numbers (vehicle's August + fleet's August), not today's snapshot.
+    const pickupForMonth = new Date(pickup_date)
+    const monthStart = new Date(Date.UTC(
+      pickupForMonth.getUTCFullYear(),
+      pickupForMonth.getUTCMonth(),
+      1, 0, 0, 0, 0
+    )).toISOString()
+    const monthEnd = new Date(Date.UTC(
+      pickupForMonth.getUTCFullYear(),
+      pickupForMonth.getUTCMonth() + 1,
+      0, 23, 59, 59, 999
+    )).toISOString()
+
     const { data: overlappingBookings } = await supabase
       .from('bookings')
       .select('vehicle_id')
       .in('vehicle_id', (categoryVehicles || []).map((v: { id: string }) => v.id))
       .not('status', 'in', '(cancelled,annullata,completed,completata)')
-      .lte('pickup_date', dropoff_date)
-      .gte('dropoff_date', pickup_date)
+      .lte('pickup_date', monthEnd)
+      .gte('dropoff_date', monthStart)
 
     const busyVehicleIds = new Set((overlappingBookings || []).map((b: { vehicle_id: string }) => b.vehicle_id))
     const occupancyPct = Math.round((busyVehicleIds.size / totalInCategory) * 100)
 
-    // 3b. Per-vehicle own occupancy (last 30 + next 30 days window)
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-    const thirtyDaysAhead = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    // 3b. Per-vehicle own occupancy for `vehicle_occupation_coefficients`.
+    //     Calculated over the BOOKING's calendar month, NOT today ±30 days
+    //     — same fix as admin/calculate-dynamic-price commit 59ccf0b5.
+    //     Each overlapping booking is clipped to the month window so a
+    //     long booking that spills past doesn't over-count.
+    const periodStartMs = new Date(monthStart).getTime()
+    const periodEndMs = new Date(monthEnd).getTime()
+    const periodDays = Math.max(1, Math.ceil((periodEndMs - periodStartMs) / (1000 * 60 * 60 * 24)))
     const { data: thisVehicleBookings } = await supabase
       .from('bookings')
       .select('pickup_date, dropoff_date')
       .eq('vehicle_id', vehicle.id)
       .not('status', 'in', '(cancelled,annullata)')
-      .gte('pickup_date', thirtyDaysAgo)
-      .lte('dropoff_date', thirtyDaysAhead)
+      .lte('pickup_date', monthEnd)
+      .gte('dropoff_date', monthStart)
     let vehicleOwnOccupiedDays = 0
     for (const b of (thisVehicleBookings || [])) {
-      const p = new Date(b.pickup_date).getTime()
-      const d = new Date(b.dropoff_date).getTime()
-      vehicleOwnOccupiedDays += Math.max(1, Math.ceil((d - p) / (1000 * 60 * 60 * 24)))
+      const p = Math.max(periodStartMs, new Date(b.pickup_date).getTime())
+      const d = Math.min(periodEndMs, new Date(b.dropoff_date).getTime())
+      if (d > p) {
+        vehicleOwnOccupiedDays += Math.max(1, Math.ceil((d - p) / (1000 * 60 * 60 * 24)))
+      }
     }
-    const vehicleOwnOccupancyPct = Math.min(100, Math.round((vehicleOwnOccupiedDays / 60) * 100))
+    const vehicleOwnOccupancyPct = Math.min(100, Math.round((vehicleOwnOccupiedDays / periodDays) * 100))
 
     // 3c. Calendar gap: finestra "stretta" tra prenotazione precedente e
     // successiva sullo stesso veicolo. Il coefficiente serve a incentivare il

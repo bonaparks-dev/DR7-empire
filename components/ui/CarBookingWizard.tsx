@@ -621,6 +621,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   // Customer loyalty state (for deposit calculation)
   const [customerRentalCount, setCustomerRentalCount] = useState<number>(0);
   const [isLoyalCustomer, setIsLoyalCustomer] = useState<boolean>(false);
+  // Coefficient breakdown toggle for the recap — same UX pattern as admin's
+  // ReservationsTab "Mostra dettagli" link.
+  const [coeffExpanded, setCoeffExpanded] = useState<boolean>(false);
 
   // Nexi payment state
   const [paymentError, setPaymentError] = useState<string | null>(null);
@@ -6001,6 +6004,46 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   )}
                   {!hasDynamicDiscount && (
                     <div className="flex justify-between text-gray-400"><span>Subtotale</span> <span>{formatPrice(uncappedSubtotal || finalTotal)}</span></div>
+                  )}
+
+                  {/* Coefficient breakdown — toggle reveals each coefficient
+                      from Centralina Pro (occupazione flotta, occupazione
+                      veicolo, anticipo, durata, stagione, gap, tipo giorno,
+                      promo). Same UX as admin's ReservationsTab. */}
+                  {dynamicPricing?.breakdown && dynamicPricing.breakdown.length > 0 && (
+                    <div className="text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setCoeffExpanded(!coeffExpanded)}
+                        className="text-blue-400 hover:text-blue-300 underline"
+                      >
+                        {coeffExpanded ? 'Nascondi dettagli coefficienti' : 'Mostra dettagli coefficienti'}
+                      </button>
+                      {coeffExpanded && (
+                        <div className="space-y-1 pt-2 mt-1 border-t border-gray-700">
+                          {dynamicPricing.selectedBaseRateEur != null && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Base selezionata</span>
+                              <span className="text-white">€{dynamicPricing.selectedBaseRateEur.toFixed(2)}/g</span>
+                            </div>
+                          )}
+                          {dynamicPricing.breakdown.map((item, i) => (
+                            <div key={i} className="flex justify-between">
+                              <span className="text-gray-400">{item.label} <span className="text-gray-500">({item.description})</span></span>
+                              <span className={`font-mono ${item.coeff > 1 ? 'text-red-400' : item.coeff < 1 ? 'text-green-400' : 'text-white'}`}>
+                                ×{item.coeff.toFixed(2)}
+                              </span>
+                            </div>
+                          ))}
+                          <div className="flex justify-between pt-1 border-t border-gray-700/50">
+                            <span className="text-gray-400">Coefficiente combinato</span>
+                            <span className="font-mono text-white">
+                              ×{(dynamicPricing.breakdown.reduce((acc, b) => acc * b.coeff, 1)).toFixed(3)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )}
 
                   {/* Min/Max clamp indicator (Prezzi Base in Centralina Pro).
