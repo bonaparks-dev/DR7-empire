@@ -88,7 +88,12 @@ const ProfileSettings = () => {
     const [successError, setSuccessError] = useState(false);
     const [creditBalance, setCreditBalance] = useState<number>(0);
     const [bonusTotal, setBonusTotal] = useState<number>(0);
+    const [bonusBreakdown, setBonusBreakdown] = useState<Array<{ source: string; amount: number; count: number }>>([]);
+    const [showBonusBreakdown, setShowBonusBreakdown] = useState(false);
     const [recentTransactions, setRecentTransactions] = useState<CreditTransaction[]>([]);
+    const [allTransactions, setAllTransactions] = useState<CreditTransaction[] | null>(null);
+    const [showAllTransactions, setShowAllTransactions] = useState(false);
+    const [loadingAllTx, setLoadingAllTx] = useState(false);
     const [isLoadingCredits, setIsLoadingCredits] = useState(true);
     const [extendedProfile, setExtendedProfile] = useState<CustomerExtended | null>(null);
     const [isLoadingProfile, setIsLoadingProfile] = useState(true);
@@ -133,16 +138,44 @@ const ProfileSettings = () => {
                 ]);
                 const { data: allTxs } = await supabase
                     .from('credit_transactions')
-                    .select('amount, transaction_type, reference_type')
+                    .select('amount, transaction_type, reference_type, description')
                     .eq('user_id', user.id);
                 let lifetimeBonus = 0;
+                const breakdown = new Map<string, { amount: number; count: number }>();
                 for (const t of (allTxs || [])) {
                     if (t.transaction_type !== 'credit') continue;
                     const ref = String(t.reference_type || '').toLowerCase();
-                    if (BONUS_REFS.has(ref)) lifetimeBonus += Number(t.amount || 0);
+                    if (BONUS_REFS.has(ref)) {
+                        const amt = Number(t.amount || 0);
+                        lifetimeBonus += amt;
+                        const cur = breakdown.get(ref) || { amount: 0, count: 0 };
+                        breakdown.set(ref, { amount: cur.amount + amt, count: cur.count + 1 });
+                    }
                 }
                 // Cap at current balance (bonuses can't exceed total).
                 setBonusTotal(Math.min(balance, lifetimeBonus));
+                // Map raw reference_types to friendly Italian labels.
+                const REF_LABELS: Record<string, string> = {
+                    'card_bonus':           'Cashback pagamento con carta',
+                    'admin_manual':         'Credito manuale (admin)',
+                    'admin_credit':         'Credito manuale (admin)',
+                    'referral':             'Bonus invito amico',
+                    'referral_bonus':       'Bonus invito amico',
+                    'milestone':            'Traguardo invito amico',
+                    'registration_bonus':   'Bonus registrazione',
+                    'club_interest_payout': 'Interesse DR7 CLUB PRIVILEGE',
+                    'gift':                 'Regalo / omaggio',
+                    'voucher':              'Buono / voucher',
+                    'compensation':         'Indennizzo',
+                };
+                const breakdownArr = Array.from(breakdown.entries())
+                    .map(([source, v]) => ({
+                        source: REF_LABELS[source] || source,
+                        amount: Math.round(v.amount * 100) / 100,
+                        count: v.count,
+                    }))
+                    .sort((a, b) => b.amount - a.amount);
+                setBonusBreakdown(breakdownArr);
 
                 // Fetch Extended Profile
                 const { data, error } = await supabase
@@ -347,16 +380,41 @@ const ProfileSettings = () => {
                     ) : (
                         <>
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                                <div className="space-y-2">
+                                <div className="space-y-2 w-full sm:w-auto">
                                     {/* Card-paid portion (earns 0,1%/giorno for DR7 CLUB PRIVILEGE) */}
                                     <div className="flex items-baseline gap-3">
                                         <p className="text-sm text-gray-400 w-40">Credit Wallet</p>
                                         <p className="text-xl font-semibold text-white">€{Math.max(0, creditBalance - bonusTotal).toFixed(2)}</p>
                                     </div>
-                                    {/* Bonus credits (referral / club / admin / etc.) */}
-                                    <div className="flex items-baseline gap-3">
-                                        <p className="text-sm text-gray-400 w-40">Bonus</p>
-                                        <p className="text-xl font-semibold text-yellow-400">€{bonusTotal.toFixed(2)}</p>
+                                    {/* Bonus — clickable to reveal where it came from */}
+                                    <div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowBonusBreakdown(v => !v)}
+                                            disabled={bonusBreakdown.length === 0}
+                                            className="flex items-baseline gap-3 group disabled:cursor-default"
+                                        >
+                                            <span className="text-sm text-gray-400 w-40 text-left flex items-center gap-1">
+                                                Bonus
+                                                {bonusBreakdown.length > 0 && (
+                                                    <span className={`text-yellow-400 transition-transform inline-block ${showBonusBreakdown ? 'rotate-90' : ''}`}>›</span>
+                                                )}
+                                            </span>
+                                            <span className="text-xl font-semibold text-yellow-400 group-hover:text-yellow-300">€{bonusTotal.toFixed(2)}</span>
+                                        </button>
+                                        {showBonusBreakdown && bonusBreakdown.length > 0 && (
+                                            <div className="ml-3 mt-2 pl-3 border-l-2 border-yellow-500/30 space-y-1.5">
+                                                {bonusBreakdown.map(b => (
+                                                    <div key={b.source} className="flex items-baseline justify-between gap-4 text-xs">
+                                                        <span className="text-gray-400">
+                                                            {b.source}
+                                                            {b.count > 1 && <span className="text-gray-600 ml-1">× {b.count}</span>}
+                                                        </span>
+                                                        <span className="font-medium text-yellow-300">+€{b.amount.toFixed(2)}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="border-t border-gray-700 pt-2 flex items-baseline gap-3">
                                         <p className="text-sm text-gray-400 w-40">Saldo Disponibile</p>
@@ -404,44 +462,77 @@ const ProfileSettings = () => {
                                 </div>
                             </div>
 
-                            {/* Recent Transactions */}
-                            {recentTransactions.length > 0 && (
-                                <div>
-                                    <h3 className="text-sm font-semibold text-gray-300 mb-3">Ultime Transazioni</h3>
-                                    <div className="space-y-2">
-                                        {recentTransactions.map((transaction) => (
-                                            <div
-                                                key={transaction.id}
-                                                className="flex items-center justify-between py-2 px-3 bg-gray-800/50 rounded-md"
+                            {/* Transactions — show last 5 by default, "Mostra tutte" expands to full history */}
+                            {recentTransactions.length > 0 && (() => {
+                                const txList = (showAllTransactions && allTransactions) ? allTransactions : recentTransactions;
+                                return (
+                                    <div>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h3 className="text-sm font-semibold text-gray-300">
+                                                {showAllTransactions ? 'Tutte le Transazioni' : 'Ultime Transazioni'}
+                                                {showAllTransactions && allTransactions && (
+                                                    <span className="text-gray-500 font-normal ml-2">({allTransactions.length})</span>
+                                                )}
+                                            </h3>
+                                            <button
+                                                type="button"
+                                                onClick={async () => {
+                                                    if (showAllTransactions) {
+                                                        setShowAllTransactions(false);
+                                                        return;
+                                                    }
+                                                    if (!allTransactions && user?.id) {
+                                                        setLoadingAllTx(true);
+                                                        try {
+                                                            const all = await getCreditTransactions(user.id, 500);
+                                                            setAllTransactions(all);
+                                                        } finally {
+                                                            setLoadingAllTx(false);
+                                                        }
+                                                    }
+                                                    setShowAllTransactions(true);
+                                                }}
+                                                disabled={loadingAllTx}
+                                                className="text-xs font-semibold text-white/70 hover:text-white transition-colors"
                                             >
-                                                <div className="flex-1">
-                                                    <p className="text-sm text-white">{transaction.description}</p>
-                                                    <p className="text-xs text-gray-500">
-                                                        {new Date(transaction.created_at).toLocaleDateString('it-IT', {
-                                                            day: '2-digit',
-                                                            month: '2-digit',
-                                                            year: 'numeric',
-                                                            hour: '2-digit',
-                                                            minute: '2-digit'
-                                                        })}
-                                                    </p>
+                                                {loadingAllTx ? 'Caricamento…' : showAllTransactions ? 'Mostra solo ultime ▲' : 'Mostra tutte ▼'}
+                                            </button>
+                                        </div>
+                                        <div className={`space-y-2 ${showAllTransactions ? 'max-h-96 overflow-y-auto pr-2' : ''}`}>
+                                            {txList.map((transaction) => (
+                                                <div
+                                                    key={transaction.id}
+                                                    className="flex items-center justify-between py-2 px-3 bg-gray-800/50 rounded-md"
+                                                >
+                                                    <div className="flex-1">
+                                                        <p className="text-sm text-white">{transaction.description}</p>
+                                                        <p className="text-xs text-gray-500">
+                                                            {new Date(transaction.created_at).toLocaleDateString('it-IT', {
+                                                                day: '2-digit',
+                                                                month: '2-digit',
+                                                                year: 'numeric',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit'
+                                                            })}
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className={`text-sm font-bold ${transaction.transaction_type === 'credit'
+                                                            ? 'text-green-400'
+                                                            : 'text-red-400'
+                                                            }`}>
+                                                            {transaction.transaction_type === 'credit' ? '+' : '-'}€{transaction.amount.toFixed(2)}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500">
+                                                            Saldo: €{transaction.balance_after.toFixed(2)}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <div className="text-right">
-                                                    <p className={`text-sm font-bold ${transaction.transaction_type === 'credit'
-                                                        ? 'text-green-400'
-                                                        : 'text-red-400'
-                                                        }`}>
-                                                        {transaction.transaction_type === 'credit' ? '+' : '-'}€{transaction.amount.toFixed(2)}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500">
-                                                        Saldo: €{transaction.balance_after.toFixed(2)}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                );
+                            })()}
                         </>
                     )}
                 </div>
