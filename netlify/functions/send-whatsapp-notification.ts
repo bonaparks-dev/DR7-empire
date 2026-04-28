@@ -178,16 +178,32 @@ const handler: Handler = async (event) => {
       }
       Object.assign(vars, {
         vehicle_name: booking.vehicle_name || '',
+        veicolo: booking.vehicle_name || '',
         plate: booking.vehicle_plate || '',
+        targa: booking.vehicle_plate || '',
         pickup_date: pickup ? pickup.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' }) : '',
         pickup_time: pickup ? pickup.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '',
+        ritiro_data: pickup ? pickup.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' }) : '',
+        ritiro_ora: pickup ? pickup.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '',
         dropoff_date: dropoff ? dropoff.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' }) : '',
         dropoff_time: dropoff ? dropoff.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '',
+        riconsegna_data: dropoff ? dropoff.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' }) : '',
+        riconsegna_ora: dropoff ? dropoff.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '',
         pickup_location: formatLocation(booking.pickup_location),
         dropoff_location: formatLocation(booking.dropoff_location),
+        luogo_ritiro: formatLocation(booking.pickup_location),
+        luogo_riconsegna: formatLocation(booking.dropoff_location),
         insurance: await getInsuranceNameById(booking.insurance_option || booking.booking_details?.insuranceOption || ''),
+        assicurazione: await getInsuranceNameById(booking.insurance_option || booking.booking_details?.insuranceOption || ''),
+        // Deposit/cauzione — both English and Italian aliases. Without
+        // {cauzione} a Pro template referencing the Italian placeholder
+        // would render as empty when the customer picked "Senza cauzione".
         deposit: depositStr,
+        cauzione: depositStr,
+        caution: depositStr,
         km_info: formatKmInfo(booking),
+        km: formatKmInfo(booking),
+        chilometraggio: formatKmInfo(booking),
         flex: booking.booking_details?.dr7_flex || booking.booking_details?.dr7Flex ? 'DR7 Flex' : '',
       });
     }
