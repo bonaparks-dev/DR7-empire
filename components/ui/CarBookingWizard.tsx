@@ -2377,13 +2377,23 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       if (!formData.email) newErrors.email = "L'email è obbligatoria.";
       if (!formData.phone) newErrors.phone = "Il telefono è obbligatorio.";
       if (!formData.codiceFiscale) newErrors.codiceFiscale = "Il codice fiscale è obbligatorio per la fatturazione.";
-      // Residenza must be a real address (not blank, not whitespace, not a
-      // single-word stub). The cauzione price and resident/non-resident
-      // pricing branch read from this field, so accepting a blank value
-      // silently shipped the wrong price.
+      // Residenza must be a COMPLETE Italian address — the SDI rejects
+      // (scarta) the fattura without a valid CAP + city. Either the
+      // customer picked a Nominatim suggestion (always well-formatted) OR
+      // they typed it manually; in both cases the final string must
+      // contain:
+      //   - a 5-digit CAP (Italian postal code)
+      //   - a house number (a separate digit token, not just the CAP)
+      //   - a street name (at least one 3+ letter word)
+      //   - reasonable length (>= 12 chars, common minimum for "Via X 1, 09100 Y")
       const residenzaTrim = (formData.residenza || formData.address || '').trim();
-      if (!residenzaTrim || residenzaTrim.length < 5 || !residenzaTrim.includes(' ')) {
-        newErrors.residenza = "Inserisci l'indirizzo completo di residenza (via, numero, CAP, città).";
+      const hasCap = /\b\d{5}\b/.test(residenzaTrim);
+      const digitTokens = (residenzaTrim.match(/\b\d+\b/g) || []);
+      const hasHouseNumber = digitTokens.length >= 2; // CAP + at least one more
+      const hasStreetWord = /[A-Za-zÀ-ÿ]{3,}/.test(residenzaTrim);
+      const longEnough = residenzaTrim.length >= 12;
+      if (!residenzaTrim || !longEnough || !hasCap || !hasHouseNumber || !hasStreetWord) {
+        newErrors.residenza = "Indirizzo di residenza incompleto. Selezionalo dalla lista o inserisci via, numero civico, CAP e città (es: Via Roma 10, 09100 Cagliari).";
       }
       if (!formData.birthDate) {
         newErrors.birthDate = "La data di nascita è obbligatoria.";
@@ -4471,6 +4481,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     className="w-full bg-gray-800 border-gray-700 rounded-md px-3 py-1.5 mt-1 text-white text-sm"
                     placeholder="Via Roma 10, 09100 Cagliari"
                   />
+                  <p className="text-[11px] text-gray-500 mt-1">
+                    Seleziona dall'elenco oppure scrivi <strong>via, numero civico, CAP e città</strong> — necessario per la fattura.
+                  </p>
                   {(errors.residenza || errors.address) && <p className="text-xs text-red-400 mt-1">{errors.residenza || errors.address}</p>}
                 </div>
               )}
@@ -6823,7 +6836,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         type="button"
                         onClick={handleNext}
                         className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={(step === 1 && !isFromSearch && isCheckingAvailability) || (licenseYears < 3 && step === 2) || (step === 2 && !formData.confirmsInformation) || (step === 2 && (() => { const r = (formData.residenza || formData.address || '').trim(); return !r || r.length < 5 || !r.includes(' '); })())}
+                        disabled={(step === 1 && !isFromSearch && isCheckingAvailability) || (licenseYears < 3 && step === 2) || (step === 2 && !formData.confirmsInformation) || (step === 2 && (() => {
+                          // Block until the residence address is a complete
+                          // Italian address (street + house number + CAP + city).
+                          // Same rules as the Step 2 validator — keep in sync.
+                          const r = (formData.residenza || formData.address || '').trim();
+                          if (!r || r.length < 12) return true;
+                          if (!/\b\d{5}\b/.test(r)) return true;
+                          if ((r.match(/\b\d+\b/g) || []).length < 2) return true;
+                          if (!/[A-Za-zÀ-ÿ]{3,}/.test(r)) return true;
+                          return false;
+                        })())}
                       >
                         Continua
                       </button>
