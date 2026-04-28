@@ -433,7 +433,11 @@ const MyBookings = () => {
       if (diffEur > 0) {
         const balance = await getUserCreditBalance(user!.id);
         if (balance >= diffEur) {
-          const ded = await deductCredits(user!.id, diffEur, `Modifica prenotazione — ${modifyingBooking.service_name}`, modifyingBooking.id, 'booking_modify');
+          // Fallback chain so the credit-transactions row never ends with "— null"
+          // when the booking is a rental (service_name is empty for rentals,
+          // populated only for car_wash / mechanical).
+          const modifyLabel = modifyingBooking.service_name || modifyingBooking.vehicle_name || 'Prenotazione';
+          const ded = await deductCredits(user!.id, diffEur, `Modifica prenotazione — ${modifyLabel}`, modifyingBooking.id, 'booking_modify');
           if (!ded.success) throw new Error(ded.error || 'Errore addebito wallet.');
           paymentMethodUsed = 'wallet';
         } else {
