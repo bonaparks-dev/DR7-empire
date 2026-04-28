@@ -27,6 +27,17 @@ const CarBookingConfirmationPage: React.FC = () => {
   const pickupLocationDetails = PICKUP_LOCATIONS.find(loc => loc.id === booking.pickup_location);
   const customerEmail = booking.booking_details?.customer?.email || 'N/A';
 
+  // Cauzione: prefer the explicit booking column, fall back to the snapshot
+  // in booking_details. Renders Senza Cauzione for the no_deposit path.
+  const depositAmount = Number(booking.deposit_amount || booking.booking_details?.deposit || 0);
+  const depositOption = booking.booking_details?.depositOption;
+  const isNoDeposit = depositOption === 'no_deposit';
+  const cauzioneLabel = isNoDeposit
+    ? 'Senza Cauzione (in attesa di approvazione DR7)'
+    : depositAmount > 0
+      ? `Cauzione: €${depositAmount.toLocaleString('it-IT')} (al ritiro)`
+      : 'Cauzione';
+
   const getPickupAddress = () => {
     return 'Viale Marconi 229, Cagliari 09131';
   };
@@ -62,6 +73,16 @@ const CarBookingConfirmationPage: React.FC = () => {
               <p><span className="font-semibold">Riconsegna:</span> {dropoffDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })} alle {dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })}</p>
               <p><span className="font-semibold">Luogo:</span> {pickupLocationDetails ? getTranslated(pickupLocationDetails.label) : booking.pickup_location}</p>
               <p className="text-2xl font-bold mt-4">{formatPrice(booking.price_total)}</p>
+              {!isNoDeposit && depositAmount > 0 && (
+                <p className="text-sm text-gray-300 mt-1">
+                  Cauzione al ritiro: <span className="font-semibold text-white">€{depositAmount.toLocaleString('it-IT')}</span>
+                </p>
+              )}
+              {isNoDeposit && (
+                <p className="text-sm text-amber-300 mt-1">
+                  Senza Cauzione (in attesa di approvazione)
+                </p>
+              )}
               {booking.payment_method === 'agency' && (
                 <p className="text-sm text-yellow-400 mt-2">Da pagare in sede</p>
               )}
@@ -75,7 +96,7 @@ const CarBookingConfirmationPage: React.FC = () => {
             <ul className="space-y-2 text-gray-300">
               <li>Carta d'identità o passaporto valido</li>
               <li>Patente di guida valida</li>
-              <li>Cauzione</li>
+              <li>{cauzioneLabel}</li>
               <li>Codice prenotazione: <span className="font-mono">{`DR7-${booking.id.substring(0, 8).toUpperCase()}`}</span></li>
             </ul>
           </div>
