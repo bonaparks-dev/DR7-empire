@@ -679,9 +679,15 @@ const MyBookings = () => {
       if (policy.refundPercent > 0 && booking.price_total > 0) {
         // price_total(cents) × % / 100 = refund cents → /100 → euros rounded to 2 decimals
         const refundEuros = Math.round((booking.price_total * policy.refundPercent) / 100) / 100;
+        // Rental bookings store the car under `vehicle_name`; only car-wash
+        // / mechanical bookings populate `service_name`. Use a fallback
+        // chain so the description never ends with "— null".
+        const itemLabel = booking.service_name
+          || (booking as { vehicle_name?: string }).vehicle_name
+          || 'Prenotazione';
         const description = policy.hasFlex
-          ? `Rimborso DR7 Flex (${policy.refundPercent}%) — ${booking.service_name}`
-          : `Rimborso cancellazione (${policy.refundPercent}%) — ${booking.service_name}`;
+          ? `Rimborso DR7 Flex (${policy.refundPercent}%) — ${itemLabel}`
+          : `Rimborso cancellazione (${policy.refundPercent}%) — ${itemLabel}`;
         const result = await addCredits(user!.id, refundEuros, description, booking.id, 'refund');
         if (!result.success) {
           console.error('[MyBookings] refund credit failed:', result.error);
