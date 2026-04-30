@@ -136,7 +136,7 @@ export const handler: Handler = async (event) => {
             .filter(Boolean);
 
         // Fetch bookings by vehicle_id (exclude Lavaggio Rientro — covered by buffer)
-        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name&status=not.in.(cancelled,annullata,completed,completata,expired)&customer_name=neq.${encodeURIComponent('Lavaggio Rientro')}&vehicle_id=in.(${vehicleIds.join(',')})&order=pickup_date.asc`;
+        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name&status=not.in.(cancelled,annullata,completed,completata,expired)&customer_name=neq.${encodeURIComponent('Lavaggio Rientro')}&vehicle_plate=not.in.(TEST000,TEST002)&vehicle_id=in.(${vehicleIds.join(',')})&order=pickup_date.asc`;
         console.log('[checkVehicleAvailability] bookingsUrl:', bookingsUrl);
 
         const bookingsResponse = await fetch(bookingsUrl, {
@@ -151,7 +151,7 @@ export const handler: Handler = async (event) => {
 
         // Also fetch bookings by plate (targa) to catch mismatched vehicle_id
         if (targetPlates.length > 0) {
-            const plateBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name&status=not.in.(cancelled,annullata,completed,completata,expired)&customer_name=neq.${encodeURIComponent('Lavaggio Rientro')}&vehicle_plate=in.(${targetPlates.join(',')})&order=pickup_date.asc`;
+            const plateBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name&status=not.in.(cancelled,annullata,completed,completata,expired)&customer_name=neq.${encodeURIComponent('Lavaggio Rientro')}&vehicle_plate=in.(${targetPlates.filter(p => p !== 'TEST000' && p !== 'TEST002').join(',')})&order=pickup_date.asc`;
             const plateResponse = await fetch(plateBookingsUrl, {
                 headers: {
                     'apikey': SUPABASE_SERVICE_ROLE_KEY!,
@@ -293,6 +293,67 @@ export const handler: Handler = async (event) => {
                     all_vehicles_busy: true
                 });
             }
+        }
+
+        // CROSS-VEHICLE HANDOVER GAP (15 min) — staff can only handle one pickup/return
+        // at a time. Mirrors admin's vehicleAvailability.ts CROSS_VEHICLE_GAP_MINUTES rule.
+        // Test plates (TEST000/TEST002) are excluded so test bookings never block real ones.
+        const CROSS_VEHICLE_GAP_MS = 15 * 60 * 1000;
+        const TEST_PLATES = new Set(['TEST000', 'TEST002']);
+        const isTestPlate = (plate: string | null | undefined): boolean =>
+            !!plate && TEST_PLATES.has(plate.replace(/\s+/g, '').toUpperCase());
+
+        // Fetch any active car_rental booking whose pickup OR dropoff sits within ±1h of
+        // our requested pickup or dropoff (1h margin around the 15-min check window).
+        const crossWindowStart = new Date(Math.min(requestedPickup.getTime(), requestedDropoff.getTime()) - 60 * 60 * 1000).toISOString();
+        const crossWindowEnd = new Date(Math.max(requestedPickup.getTime(), requestedDropoff.getTime()) + 60 * 60 * 1000).toISOString();
+        const crossUrl = `${SUPABASE_URL}/rest/v1/bookings?select=id,pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name,service_type,status,payment_status&status=not.in.(cancelled,annullata,completed,completata,expired)&service_type=eq.car_rental&or=(and(pickup_date.gte.${crossWindowStart},pickup_date.lte.${crossWindowEnd}),and(dropoff_date.gte.${crossWindowStart},dropoff_date.lte.${crossWindowEnd}))`;
+
+        try {
+            const crossResp = await fetch(crossUrl, {
+                headers: {
+                    'apikey': SUPABASE_SERVICE_ROLE_KEY!,
+                    'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            const crossBookings = await crossResp.json();
+
+            if (Array.isArray(crossBookings)) {
+                const myPickup = requestedPickup.getTime();
+                const myDropoff = requestedDropoff.getTime();
+
+                for (const b of crossBookings) {
+                    // Same-vehicle conflicts already handled by the per-vehicle buffer above
+                    if (b.vehicle_id && vehicleIds.includes(b.vehicle_id)) continue;
+                    if (isTestPlate(b.vehicle_plate)) continue;
+                    if (b.status === 'pending_payment' && b.payment_status === 'expired') continue;
+
+                    const otherPickup = new Date(b.pickup_date).getTime();
+                    const otherDropoff = new Date(b.dropoff_date).getTime();
+
+                    const pairs: Array<[number, number]> = [
+                        [myPickup, otherPickup],
+                        [myPickup, otherDropoff],
+                        [myDropoff, otherPickup],
+                        [myDropoff, otherDropoff],
+                    ];
+
+                    const tooClose = pairs.some(([a, c]) => Math.abs(a - c) < CROSS_VEHICLE_GAP_MS);
+                    if (tooClose) {
+                        conflicts.push({
+                            pickup_date: b.pickup_date,
+                            dropoff_date: b.dropoff_date,
+                            vehicle_name: b.vehicle_name || b.vehicle_plate || 'altro veicolo',
+                            cross_vehicle_gap: true,
+                        });
+                        break;
+                    }
+                }
+            }
+        } catch (crossErr) {
+            console.error('[checkVehicleAvailability] cross-vehicle gap check failed:', crossErr);
+            // Soft-fail — don't block bookings if the cross-gap query errors out
         }
 
         // Check if any conflict ends same day as requested pickup → availableFrom
