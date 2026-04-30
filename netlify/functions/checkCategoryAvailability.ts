@@ -96,7 +96,7 @@ export const handler: Handler = async (event) => {
         const allPlates = vehicles.map((v: any) => v.plate).filter(Boolean);
 
         // 2. Fetch bookings overlapping the requested period
-        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,service_type,customer_name&vehicle_id=in.(${allVehicleIds.join(',')})&status=not.in.(cancelled,annullata,completed,completata,expired)&dropoff_date=gte.${pickup.toISOString()}&pickup_date=lte.${dropoff.toISOString()}`;
+        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,service_type,customer_name&vehicle_id=in.(${allVehicleIds.join(',')})&vehicle_plate=not.in.(TEST000,TEST002)&status=not.in.(cancelled,annullata,completed,completata,expired)&dropoff_date=gte.${pickup.toISOString()}&pickup_date=lte.${dropoff.toISOString()}`;
         const bookingsResponse = await fetch(bookingsUrl, {
             headers: {
                 'apikey': SUPABASE_SERVICE_ROLE_KEY!,
@@ -108,7 +108,8 @@ export const handler: Handler = async (event) => {
 
         // Also fetch by plate
         if (allPlates.length > 0) {
-            const plateBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,service_type&vehicle_plate=in.(${allPlates.join(',')})&status=not.in.(cancelled,annullata,completed,completata,expired)&dropoff_date=gte.${pickup.toISOString()}&pickup_date=lte.${dropoff.toISOString()}`;
+            const realPlates = allPlates.filter((p: string) => p !== 'TEST000' && p !== 'TEST002');
+            const plateBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,service_type&vehicle_plate=in.(${realPlates.join(',')})&status=not.in.(cancelled,annullata,completed,completata,expired)&dropoff_date=gte.${pickup.toISOString()}&pickup_date=lte.${dropoff.toISOString()}`;
             const plateResponse = await fetch(plateBookingsUrl, {
                 headers: {
                     'apikey': SUPABASE_SERVICE_ROLE_KEY!,
