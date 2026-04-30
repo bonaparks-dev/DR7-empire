@@ -26,18 +26,27 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ isOpen, onClo
 
   const uploadFile = async (file: File, bucket: string, prefix: string): Promise<boolean> => {
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('bucket', bucket);
-      formData.append('userId', userId);
-      formData.append('prefix', prefix);
-
-      // Get auth token for authenticated upload
+      // Get auth token + identity for authenticated upload
       const { data: { session } } = await supabase.auth.getSession();
       const headers: Record<string, string> = {};
       if (session?.access_token) {
         headers['Authorization'] = `Bearer ${session.access_token}`;
       }
+
+      const meta = session?.user?.user_metadata || {};
+      const fullName =
+        meta.full_name ||
+        meta.fullName ||
+        meta.name ||
+        [meta.nome, meta.cognome].filter(Boolean).join(' ').trim();
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('bucket', bucket);
+      formData.append('userId', userId);
+      formData.append('prefix', prefix);
+      if (session?.user?.email) formData.append('userEmail', session.user.email);
+      if (fullName) formData.append('userFullName', fullName);
 
       const response = await fetch(`${FUNCTIONS_BASE}/.netlify/functions/upload-file`, {
         method: 'POST',
@@ -68,11 +77,11 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ isOpen, onClo
 
     try {
       const uploads = [
-        uploadFile(patenteFront, 'driver-licenses', 'patente_front'),
-        uploadFile(patenteBack, 'driver-licenses', 'patente_back'),
-        uploadFile(cartaIdentitaFront, 'carta-identita', 'carta_front'),
-        uploadFile(cartaIdentitaBack, 'carta-identita', 'carta_back'),
-        uploadFile(codiceFiscale, 'codice-fiscale', 'codice_fiscale'),
+        uploadFile(patenteFront, 'driver-licenses', 'patenteFront'),
+        uploadFile(patenteBack, 'driver-licenses', 'patenteBack'),
+        uploadFile(cartaIdentitaFront, 'carta-identita', 'cartaIdentitaFront'),
+        uploadFile(cartaIdentitaBack, 'carta-identita', 'cartaIdentitaBack'),
+        uploadFile(codiceFiscale, 'codice-fiscale', 'codiceFiscaleFront'),
       ];
 
       const results = await Promise.all(uploads);
