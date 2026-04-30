@@ -321,8 +321,12 @@ const DR7Club = () => {
       </div>
 
       {/* Interesse Wallet — 0.1%/giorno DR7 Club */}
-      {isActive && interestAccruals.length > 0 && (() => {
-        const totalUnpaid = interestAccruals.filter(a => !a.paid_out_at).reduce((s, a) => s + Number(a.accrual_eur || 0), 0)
+      {isActive && (() => {
+        const todayRome = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' })
+        const todayRow = interestAccruals.find(a => a.accrual_date === todayRome)
+        const month = todayRome.slice(0, 7)
+        const monthAccruals = interestAccruals.filter(a => a.accrual_date.startsWith(month))
+        const monthUnpaid = monthAccruals.filter(a => !a.paid_out_at).reduce((s, a) => s + Number(a.accrual_eur || 0), 0)
         const totalPaid = interestAccruals.filter(a => a.paid_out_at).reduce((s, a) => s + Number(a.accrual_eur || 0), 0)
         return (
           <div className="bg-gradient-to-br from-yellow-900/20 to-gray-900/50 border border-yellow-700/40 rounded-lg p-6">
@@ -331,40 +335,60 @@ const DR7Club = () => {
               <span className="text-xs text-yellow-400 font-medium">0,1% / giorno</span>
             </div>
             <p className="text-gray-400 text-sm mb-4">
-              Ogni giorno guadagni lo 0,1% sul saldo del wallet pagato con carta. Pagamento automatico il 1° del mese successivo.
+              Ogni giorno guadagni lo 0,1% sul saldo del wallet pagato con carta. Accredito automatico il 1° del mese successivo.
             </p>
-            <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
               <div className="rounded-lg border border-yellow-700/40 bg-yellow-900/10 p-3">
-                <p className="text-xs text-gray-400 mb-1">Maturato (in attesa)</p>
-                <p className="text-2xl font-bold text-yellow-400">€{(Math.round(totalUnpaid * 100) / 100).toFixed(2)}</p>
+                <p className="text-xs text-gray-400 mb-1">Maturato oggi</p>
+                <p className="text-2xl font-bold text-yellow-400">
+                  {todayRow ? `+€${Number(todayRow.accrual_eur).toFixed(4)}` : '—'}
+                </p>
+                <p className="text-[10px] text-gray-500 mt-1">
+                  {todayRow
+                    ? `su €${Number(todayRow.principal_eur).toFixed(2)} di capitale`
+                    : 'in calcolo questa notte'}
+                </p>
+              </div>
+              <div className="rounded-lg border border-yellow-700/40 bg-yellow-900/10 p-3">
+                <p className="text-xs text-gray-400 mb-1">Mese in corso (in attesa)</p>
+                <p className="text-2xl font-bold text-amber-400">€{(Math.round(monthUnpaid * 100) / 100).toFixed(2)}</p>
+                <p className="text-[10px] text-gray-500 mt-1">
+                  {monthAccruals.length} giorn{monthAccruals.length === 1 ? 'o' : 'i'}
+                </p>
               </div>
               <div className="rounded-lg border border-gray-700 bg-gray-900/50 p-3">
-                <p className="text-xs text-gray-400 mb-1">Pagato (ultimi 90gg)</p>
+                <p className="text-xs text-gray-400 mb-1">Accreditato (ultimi 90gg)</p>
                 <p className="text-2xl font-bold text-green-400">€{(Math.round(totalPaid * 100) / 100).toFixed(2)}</p>
               </div>
             </div>
-            <details className="text-sm">
-              <summary className="cursor-pointer text-yellow-400 hover:text-yellow-300 font-medium">
-                Mostra storico giornaliero
-              </summary>
-              <div className="mt-3 space-y-2 max-h-64 overflow-y-auto">
-                {interestAccruals.slice(0, 31).map(a => (
-                  <div key={a.accrual_date} className="flex justify-between items-center py-2 border-b border-gray-800 last:border-0">
-                    <div>
-                      <p className="text-white text-sm">
-                        {new Date(a.accrual_date).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      </p>
-                      <p className="text-gray-500 text-xs">
-                        Capitale: €{Number(a.principal_eur).toFixed(2)} · {a.paid_out_at ? 'Pagato' : 'In attesa'}
-                      </p>
+            {interestAccruals.length === 0 ? (
+              <p className="text-xs text-gray-400 italic">
+                Il primo interesse viene calcolato la notte successiva alla tua iscrizione. Torna domani per vedere il maturato giornaliero.
+              </p>
+            ) : (
+              <details className="text-sm">
+                <summary className="cursor-pointer text-yellow-400 hover:text-yellow-300 font-medium">
+                  Mostra storico giornaliero
+                </summary>
+                <div className="mt-3 space-y-2 max-h-64 overflow-y-auto">
+                  {interestAccruals.slice(0, 31).map(a => (
+                    <div key={a.accrual_date} className="flex justify-between items-center py-2 border-b border-gray-800 last:border-0">
+                      <div>
+                        <p className="text-white text-sm">
+                          {new Date(a.accrual_date).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </p>
+                        <p className="text-gray-500 text-xs">
+                          Capitale: €{Number(a.principal_eur).toFixed(2)} · {a.paid_out_at ? 'Accreditato' : 'In attesa'}
+                        </p>
+                      </div>
+                      <span className="font-bold text-sm text-yellow-400">
+                        +€{Number(a.accrual_eur).toFixed(4)}
+                      </span>
                     </div>
-                    <span className="font-bold text-sm text-yellow-400">
-                      +€{Number(a.accrual_eur).toFixed(4)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </details>
+                  ))}
+                </div>
+              </details>
+            )}
           </div>
         )
       })()}

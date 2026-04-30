@@ -1089,10 +1089,11 @@ exports.handler = async (event) => {
     }
 
     // 5. Try dr7_club_subscriptions
+    // Match by payment_reference (always set by website) OR nexi_order_id (legacy).
     const { data: clubSubs, error: clubError } = await supabase
       .from('dr7_club_subscriptions')
       .select('*')
-      .eq('nexi_order_id', orderId)
+      .or(`payment_reference.eq.${orderId},nexi_order_id.eq.${orderId}`)
       .limit(1);
 
     if (clubError) {
@@ -1140,20 +1141,23 @@ exports.handler = async (event) => {
             const signupBonus = 10; // €10 signup bonus (matches SIGNUP_BONUS constant)
             const newBalance = currentBalance + signupBonus;
 
-            await supabase
+            const { error: balanceErr } = await supabase
               .from('user_credit_balance')
-              .upsert({ user_id: clubSub.user_id, balance: newBalance, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+              .upsert({ user_id: clubSub.user_id, balance: newBalance, last_updated: new Date().toISOString() }, { onConflict: 'user_id' });
+            if (balanceErr) throw balanceErr;
 
-            await supabase
+            const { error: txErr } = await supabase
               .from('credit_transactions')
               .insert({
                 user_id: clubSub.user_id,
+                transaction_type: 'credit',
                 amount: signupBonus,
-                type: 'credit',
+                balance_after: newBalance,
                 description: 'Bonus iscrizione DR7 Club',
                 reference_id: clubSub.id,
                 reference_type: 'dr7_club_signup_bonus',
               });
+            if (txErr) throw txErr;
 
             console.log(`[nexi-callback] DR7 Club signup bonus €${signupBonus} credited to user ${clubSub.user_id}`);
           } catch (bonusErr) {
