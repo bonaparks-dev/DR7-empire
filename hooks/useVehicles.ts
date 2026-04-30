@@ -237,17 +237,9 @@ const transformVehicle = (vehicle: Vehicle, proConfig?: any): TransformedVehicle
     });
   }
 
-  // Force correct image for Vito/V-Class vehicles, otherwise use metadata or fallback
-  const lowerName = vehicle.display_name ? vehicle.display_name.toLowerCase() : '';
-  let vehicleImage: string;
-
-  if (lowerName.includes('vito') || lowerName.includes('v class')) {
-    // Force correct image for Vito vehicles regardless of metadata
-    vehicleImage = '/vito.jpeg';
-  } else {
-    // Use metadata.image if available, otherwise fallback to getVehicleImage
-    vehicleImage = vehicle.metadata?.image || getVehicleImage(vehicle.display_name);
-  }
+  // Image priority: metadata.image (set by admin Veicoli tab) > hardcoded name map.
+  // metadata.image wins for every vehicle so admin uploads can override anything.
+  const vehicleImage = vehicle.metadata?.image || getVehicleImage(vehicle.display_name);
 
   return {
     id: `car-${vehicle.id}`,
