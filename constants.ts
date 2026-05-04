@@ -640,11 +640,9 @@ export const EXPERIENCE_SERVICES: ExperienceService[] = [
   { id: 'chauffeur_vip', name: 'Noleggio con autista + itinerario VIP', price: 189, unit: 'per_hour', description: 'Chauffeur con itinerario personalizzato VIP' },
 ];
 
-export const DR7_FLEX = {
-  dailyPrice: 19.90,
-  refundPercent: 90,
-  description: 'Cancella fino al giorno del noleggio — rimborso del 90% come credito DR7 Wallet',
-} as const;
+// DR7_FLEX rimosso: ora è gestito come servizio in EXPERIENCE_SERVICES
+// via Centralina Pro. La costante hardcoded creava un duplicato del
+// servizio in fase di prenotazione (sezione addon "G. DR7 FLEX").
 
 export const PAYMENT_MODES = [
   { id: 'full' as const, label: 'Paga tutto subito', savingsLabel: 'Risparmia il 50%', description: 'Paga l\'intero importo e assicurati il veicolo con priorità assoluta e la migliore tariffa disponibile.' },

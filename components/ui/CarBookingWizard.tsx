@@ -9,7 +9,7 @@ import { addCredits } from '../../utils/creditWallet';
 import { useAuth } from '../../hooks/useAuth';
 import { useBooking } from '../../hooks/useBooking';
 import { supabase } from '../../supabaseClient';
-import { PICKUP_LOCATIONS, RETURN_LOCATIONS, AUTO_INSURANCE, INSURANCE_DEDUCTIBLES, RENTAL_EXTRAS, DEPOSIT_RULES, INSURANCE_COVERAGE_TEXT, EXPERIENCE_SERVICES as BOOKING_EXPERIENCE_SERVICES, DR7_FLEX, PAYMENT_MODES, DELIVERY_PRICE_PER_KM } from '../../constants';
+import { PICKUP_LOCATIONS, RETURN_LOCATIONS, AUTO_INSURANCE, INSURANCE_DEDUCTIBLES, RENTAL_EXTRAS, DEPOSIT_RULES, INSURANCE_COVERAGE_TEXT, EXPERIENCE_SERVICES as BOOKING_EXPERIENCE_SERVICES, PAYMENT_MODES, DELIVERY_PRICE_PER_KM } from '../../constants';
 import type { Booking, RentalItem, DriverTier, TierClassification, PaymentMode } from '../../types';
 import { classifyDriverTier } from '../../utils/tierClassification';
 import DocumentUploader from './DocumentUploader';
@@ -511,11 +511,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     return configOverlay?.noDepositSurchargePerDay ?? 0;
   })();
   const ACTIVE_DELIVERY_PRICE_PER_KM = configOverlay?.deliveryPricePerKm ?? 0;
-  const ACTIVE_DR7_FLEX = {
-    dailyPrice: configOverlay?.dr7Flex.dailyPrice ?? 0,
-    refundPercent: configOverlay?.dr7Flex.refundPercent ?? 0,
-    description: '',
-  };
+  // ACTIVE_DR7_FLEX rimosso — DR7 Flex ora è in EXPERIENCE_SERVICES.
   const ACTIVE_EXPERIENCE_SERVICES = configOverlay?.experienceServices ?? [];
   const ACTIVE_RENTAL_DAY_RATES = configOverlay?.rentalDayRates ?? null;
   const ACTIVE_KM_INCLUDED = configOverlay?.kmIncluded ?? null;
@@ -1784,7 +1780,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
 
     // --- DR7 FLEX ---
-    const calculatedFlexCost = formData.dr7Flex ? roundToTwoDecimals(ACTIVE_DR7_FLEX.dailyPrice * billingDaysCalc) : 0;
+    // DR7 Flex addon rimosso — il costo viene ora applicato come servizio
+    // dentro experienceCost. Manteniamo flexCost = 0 per compat con i tipi
+    // di state esistenti, da rimuovere completamente in un prossimo passo.
+    const calculatedFlexCost = 0;
 
     // Car wash included in price - no additional fee
     let carWashFee = 0;
@@ -5552,29 +5551,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               </div>
             </section>
 
-            {/* === G. DR7 FLEX === Available for Fascia A and Fascia B.
-                 Hidden entirely when admin disables it from Centralina Pro. */}
-            {configOverlay?.dr7Flex.enabled !== false && (
-              <section className="border-t border-gray-700 pt-6">
-                <h3 className="text-lg font-bold text-white mb-2">G. DR7 FLEX — Cancellazione Premium</h3>
-                <div
-                  className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.dr7Flex
-                    ? 'border-green-500 bg-green-500/10' : 'border-gray-600 hover:border-gray-500'}`}
-                  onClick={() => setFormData(prev => ({ ...prev, dr7Flex: !prev.dr7Flex }))}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <input type="checkbox" checked={formData.dr7Flex} onChange={() => {}} className="h-5 w-5" />
-                      <div>
-                        <span className="font-bold text-white">DR7 Flex</span>
-                        <p className="text-sm text-gray-400 mt-1">{ACTIVE_DR7_FLEX.description}</p>
-                      </div>
-                    </div>
-                    <span className="font-bold text-white whitespace-nowrap ml-4">€{ACTIVE_DR7_FLEX.dailyPrice.toFixed(2)}/giorno</span>
-                  </div>
-                </div>
-              </section>
-            )}
+            {/* DR7 FLEX rimosso come addon dedicato — ora è un servizio
+                 in EXPERIENCE_SERVICES via Centralina Pro. */}
           </div>
         );
       }
@@ -5956,13 +5934,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     );
                   })}
 
-                  {/* DR7 Flex */}
-                  {flexCost > 0 && (
-                    <div className="flex justify-between">
-                      <span>DR7 Flex ({Math.max(1, duration.days)} gg × €{ACTIVE_DR7_FLEX.dailyPrice.toFixed(2)})</span>
-                      <span>{formatPrice(flexCost)}</span>
-                    </div>
-                  )}
+                  {/* DR7 Flex addon rimosso — ora è un servizio in EXPERIENCE_SERVICES */}
 
                   {/* Deposit surcharges */}
                   {noDepositSurcharge > 0 && (

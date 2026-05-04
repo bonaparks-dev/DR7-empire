@@ -56,7 +56,7 @@ const AuthPage: React.FC = () => {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg shadow-2xl shadow-black/50 p-8 space-y-6"
+            className="bg-black border border-white/10 rounded-lg shadow-2xl shadow-black/60 p-8 space-y-6"
           >
             <div className="text-center">
               <h2 className="text-3xl font-bold text-white">{t('Access_Your_Account')}</h2>
@@ -86,7 +86,7 @@ const AuthPage: React.FC = () => {
               <div className="text-right text-sm">
                 <Link to="/forgot-password" className="font-medium text-white hover:text-gray-300">{t('Forgot_Password')}</Link>
               </div>
-              <button type="submit" disabled={isSubmitting} className="w-full py-3 px-4 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors disabled:opacity-60">{isSubmitting ? t('Please_wait') : t('Sign_In')}</button>
+              <button type="submit" disabled={isSubmitting} className="w-full py-3 px-4 text-white font-bold rounded-full transition-all disabled:opacity-60 bg-gradient-to-r from-[#0A8FA3] via-[#19C2D6] to-[#4DE3F0] hover:from-[#19C2D6] hover:via-[#4DE3F0] hover:to-[#19C2D6]">{isSubmitting ? t('Please_wait') : t('Sign_In')}</button>
             </form>
 
             <div className="text-sm text-center pt-2">
