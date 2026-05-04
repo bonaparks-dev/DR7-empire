@@ -5552,26 +5552,29 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               </div>
             </section>
 
-            {/* === G. DR7 FLEX === Available for Fascia A and Fascia B */}
-            <section className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-bold text-white mb-2">G. DR7 FLEX — Cancellazione Premium</h3>
-              <div
-                className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.dr7Flex
-                  ? 'border-green-500 bg-green-500/10' : 'border-gray-600 hover:border-gray-500'}`}
-                onClick={() => setFormData(prev => ({ ...prev, dr7Flex: !prev.dr7Flex }))}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <input type="checkbox" checked={formData.dr7Flex} onChange={() => {}} className="h-5 w-5" />
-                    <div>
-                      <span className="font-bold text-white">DR7 Flex</span>
-                      <p className="text-sm text-gray-400 mt-1">{ACTIVE_DR7_FLEX.description}</p>
+            {/* === G. DR7 FLEX === Available for Fascia A and Fascia B.
+                 Hidden entirely when admin disables it from Centralina Pro. */}
+            {configOverlay?.dr7Flex.enabled !== false && (
+              <section className="border-t border-gray-700 pt-6">
+                <h3 className="text-lg font-bold text-white mb-2">G. DR7 FLEX — Cancellazione Premium</h3>
+                <div
+                  className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.dr7Flex
+                    ? 'border-green-500 bg-green-500/10' : 'border-gray-600 hover:border-gray-500'}`}
+                  onClick={() => setFormData(prev => ({ ...prev, dr7Flex: !prev.dr7Flex }))}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <input type="checkbox" checked={formData.dr7Flex} onChange={() => {}} className="h-5 w-5" />
+                      <div>
+                        <span className="font-bold text-white">DR7 Flex</span>
+                        <p className="text-sm text-gray-400 mt-1">{ACTIVE_DR7_FLEX.description}</p>
+                      </div>
                     </div>
+                    <span className="font-bold text-white whitespace-nowrap ml-4">€{ACTIVE_DR7_FLEX.dailyPrice.toFixed(2)}/giorno</span>
                   </div>
-                  <span className="font-bold text-white whitespace-nowrap ml-4">€{ACTIVE_DR7_FLEX.dailyPrice.toFixed(2)}/giorno</span>
                 </div>
-              </div>
-            </section>
+              </section>
+            )}
           </div>
         );
       }

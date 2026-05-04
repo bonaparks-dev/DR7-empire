@@ -54,7 +54,7 @@ export interface WebsiteConfigOverlay {
   noDepositSurchargePerDay: number
   deliveryPricePerKm: number
   experienceServices: ExperienceService[]
-  dr7Flex: { dailyPrice: number; refundPercent: number; tierRestriction: string }
+  dr7Flex: { enabled: boolean; dailyPrice: number; refundPercent: number; tierRestriction: string }
   depositOptions: {
     TIER_1_RESIDENT: DepositOption[]
     TIER_2_RESIDENT: DepositOption[]
@@ -147,6 +147,7 @@ export interface ProExperienceService {
 export interface ProServiziConfig {
   experience?: ProExperienceService[]
   dr7_flex?: {
+    enabled?: boolean
     daily_price?: number | ''
     refund_percent?: number | ''
     tier_restriction?: string
@@ -535,6 +536,9 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
     deliveryPricePerKm: num(snapshot.servizi?.delivery?.price_per_km, 0),
     experienceServices,
     dr7Flex: {
+      // Default true so existing tenants keep showing the option until they
+      // explicitly disable it from Centralina Pro > Servizi.
+      enabled: snapshot.servizi?.dr7_flex?.enabled !== false,
       dailyPrice: num(snapshot.servizi?.dr7_flex?.daily_price, 0),
       refundPercent: num(snapshot.servizi?.dr7_flex?.refund_percent, 0),
       tierRestriction: snapshot.servizi?.dr7_flex?.tier_restriction === FASCIA_A_ID
