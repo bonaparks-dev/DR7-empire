@@ -110,9 +110,35 @@ const CarWashBookingPage: React.FC = () => {
   const isSubmittingRef = useRef(false);
   const [pendingBookingData, setPendingBookingData] = useState<any>(null);
 
-  // Prime Flex state (cancellation protection for car wash — flat €4.90)
+  // Prime Flex (cancellation protection for car wash). Price is editable
+  // by admin from Catalogo Prime Wash and stored in
+  // centralina_pro_config.config.servizi.prime_flex.price. We fall back to
+  // 4.90 so that the option keeps working if the row is missing or the
+  // fetch fails. The state default 4.90 also avoids any flash before the
+  // remote value lands (it's the same value the admin starts from).
   const [primeFlexSelected, setPrimeFlexSelected] = useState(false);
-  const PRIME_FLEX_PRICE = 4.90;
+  const [PRIME_FLEX_PRICE, setPrimeFlexPrice] = useState<number>(4.90);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('centralina_pro_config')
+          .select('config')
+          .eq('id', 'main')
+          .maybeSingle();
+        if (cancelled) return;
+        const cfg = (data?.config || {}) as Record<string, unknown>;
+        const servizi = (cfg.servizi || {}) as Record<string, unknown>;
+        const pf = (servizi.prime_flex || {}) as Record<string, unknown>;
+        const raw = typeof pf.price === 'number' ? pf.price : Number(pf.price);
+        if (Number.isFinite(raw) && raw >= 0) setPrimeFlexPrice(raw);
+      } catch (e) {
+        console.warn('[CarWashBookingPage] Prime Flex price fetch failed, using fallback 4.90:', e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // Credit wallet state
   const [paymentMethod, setPaymentMethod] = useState<'nexi' | 'credit'>('nexi');
