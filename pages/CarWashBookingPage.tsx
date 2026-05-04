@@ -1602,15 +1602,20 @@ const CarWashBookingPage: React.FC = () => {
                   ? 'border-green-500 bg-green-500/10' : 'border-gray-600 hover:border-gray-500'}`}
                 onClick={() => setPrimeFlexSelected(!primeFlexSelected)}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <input type="checkbox" checked={primeFlexSelected} onChange={() => {}} className="h-5 w-5" />
-                    <div>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <input type="checkbox" checked={primeFlexSelected} onChange={() => {}} className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0">
                       <span className="font-bold text-white">PRIME FLEX</span>
-                      <p className="text-sm text-gray-400 mt-1">Cancella fino al giorno dell'appuntamento — rimborso del 90% come credito DR7 Wallet</p>
+                      <ul className="text-sm text-gray-400 mt-2 space-y-1 list-disc list-inside marker:text-yellow-400">
+                        <li>Cancellazione consentita fino al giorno stesso del servizio.</li>
+                        <li>Rimborso del 90% in credito DR7 Wallet per utilizzi futuri.</li>
+                        <li>È possibile 1 solo spostamento gratuito, salvo eventuale differenza di prezzo.</li>
+                        <li>Nessuna perdita totale dell'importo, salvo promozioni non rimborsabili o mancata presentazione.</li>
+                      </ul>
                     </div>
                   </div>
-                  <span className="font-bold text-yellow-400 whitespace-nowrap ml-4">€{PRIME_FLEX_PRICE.toFixed(2)}</span>
+                  <span className="font-bold text-yellow-400 whitespace-nowrap ml-4 mt-0.5 flex-shrink-0">€{PRIME_FLEX_PRICE.toFixed(2)}</span>
                 </div>
               </div>
             </div>

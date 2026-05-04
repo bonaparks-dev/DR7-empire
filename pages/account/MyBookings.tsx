@@ -228,6 +228,14 @@ const MyBookings = () => {
     const isElite = !!getMembershipTierName(user);
     if (!hasPrimeFlex && !hasDr7Flex && !isElite) return false;
 
+    // Policy: "1 solo spostamento gratuito" — vale sia per Prime Flex
+    // (lavaggio) sia per DR7 Flex (noleggio). I membri DR7 Club (Elite)
+    // restano illimitati come da policy attuale.
+    if ((hasPrimeFlex || hasDr7Flex) && !isElite) {
+      const used = Number(bd.modification_count || 0);
+      if (used >= 1) return false;
+    }
+
     // Must still be in the future
     const dateStr = booking.service_type === 'car_wash'
       ? (booking.appointment_date || booking.pickup_date || '')
@@ -326,6 +334,11 @@ const MyBookings = () => {
       const offset = isDST ? '+02:00' : '+01:00';
       const newAppointment = new Date(`${modifyDate}T${modifyTime}:00${offset}`);
 
+      // Conta gli spostamenti gia' fatti su questa prenotazione: la policy
+      // Prime Flex consente 1 solo spostamento gratuito. canModify() controlla
+      // questo counter prima di mostrare il bottone "Modifica".
+      const prevCount = Number(modifyingBooking.booking_details?.modification_count || 0)
+
       const { error } = await supabase
         .from('bookings')
         .update({
@@ -335,6 +348,7 @@ const MyBookings = () => {
             ...modifyingBooking.booking_details,
             modified_at: new Date().toISOString(),
             original_appointment: modifyingBooking.appointment_date,
+            modification_count: prevCount + 1,
           }
         })
         .eq('id', modifyingBooking.id);
@@ -463,6 +477,10 @@ const MyBookings = () => {
         }
       }
 
+      // Conta gli spostamenti gia' fatti — policy "1 spostamento gratuito"
+      // condivisa tra Prime Flex (lavaggio) e DR7 Flex (noleggio).
+      const prevModCount = Number(modifyingBooking.booking_details?.modification_count || 0)
+
       // Update booking (dates, locations, and price_total if diff > 0)
       const updatePayload: Record<string, unknown> = {
         pickup_date: newPickupIso,
@@ -479,6 +497,7 @@ const MyBookings = () => {
           modification_payment_method: paymentMethodUsed,
           modification_diff_eur: diffEur,
           modification_new_total_eur: newTotalEur,
+          modification_count: prevModCount + 1,
           // Flag for admin: contract must be regenerated after this modification.
           // Admin-side generate-contract endpoint can watch this flag + reset it once fired.
           needs_contract_regen: true,
