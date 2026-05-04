@@ -1630,7 +1630,11 @@ const CarWashBookingPage: React.FC = () => {
                 <div className="flex items-center justify-between p-4 bg-green-900/30 border border-green-500/50 rounded-lg">
                   <div>
                     <p className="text-green-400 font-bold">{appliedDiscount.code}</p>
-                    <p className="text-green-300 text-sm">Sconto di €{appliedDiscount.amount} applicato</p>
+                    <p className="text-green-300 text-sm">
+                      {appliedDiscount.type === 'percentage'
+                        ? `Sconto del ${appliedDiscount.amount}% applicato (-€${birthdayDiscountAmount.toFixed(2)})`
+                        : `Sconto di €${appliedDiscount.amount} applicato`}
+                    </p>
                   </div>
                   <button
                     type="button"
