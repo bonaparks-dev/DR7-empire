@@ -766,13 +766,14 @@ const CarWashBookingPage: React.FC = () => {
         }
       }
 
-      // Apply discount based on code type
-      let discountAmount = result.car_wash_discount || 0;
+      // Apply discount based on code type. Postgres NUMERIC arrives as string
+      // from supabase-js — coerce so the math + the message render predictably.
+      let discountAmount = Number(result.car_wash_discount) || 0;
       let discountType: string = 'car_wash';
 
       if (result.code_type !== 'birthday' && result.value_type) {
         discountType = result.value_type; // 'fixed' or 'percentage'
-        discountAmount = result.value_amount || 0;
+        discountAmount = Number(result.value_amount) || 0;
       }
 
       setDiscountCodeValid(true);
@@ -1632,8 +1633,8 @@ const CarWashBookingPage: React.FC = () => {
                     <p className="text-green-400 font-bold">{appliedDiscount.code}</p>
                     <p className="text-green-300 text-sm">
                       {appliedDiscount.type === 'percentage'
-                        ? `Sconto del ${appliedDiscount.amount}% applicato (-€${birthdayDiscountAmount.toFixed(2)})`
-                        : `Sconto di €${appliedDiscount.amount} applicato`}
+                        ? `Sconto del ${Math.round(Number(appliedDiscount.amount))}% applicato (-€${birthdayDiscountAmount.toFixed(2)})`
+                        : `Sconto di €${Number(appliedDiscount.amount).toFixed(2)} applicato`}
                     </p>
                   </div>
                   <button

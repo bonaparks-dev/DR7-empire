@@ -97,8 +97,13 @@ const MechanicalBookingPage: React.FC = () => {
       const result = await response.json();
       if (!response.ok || !result.valid) { setDiscountCodeError(result.message || 'Codice non valido'); setIsValidatingCode(false); return; }
       const data = { ...result, ...(result.discountCode || {}) };
-      const amt = data.discount_amount ?? data.amount ?? 0;
-      const type = (data.discount_type === 'percentage' || data.type === 'percentage') ? 'percentage' as const : 'fixed' as const;
+      // The validate function returns value_type / value_amount (not
+      // discount_type / discount_amount). Postgres NUMERIC arrives as
+      // string from supabase-js — coerce to Number.
+      const amt = Number(data.value_amount ?? data.discount_amount ?? data.amount ?? 0) || 0;
+      const type = (data.value_type === 'percentage' || data.discount_type === 'percentage' || data.type === 'percentage')
+        ? 'percentage' as const
+        : 'fixed' as const;
       setAppliedDiscount({ code: discountCode.trim().toUpperCase(), amount: amt, type });
       setDiscountCodeError(null);
     } catch { setDiscountCodeError('Errore nella verifica del codice'); }
@@ -995,8 +1000,8 @@ const MechanicalBookingPage: React.FC = () => {
                     <p className="text-green-400 font-bold">{appliedDiscount.code}</p>
                     <p className="text-green-300 text-sm">
                       {appliedDiscount.type === 'percentage'
-                        ? `Sconto del ${appliedDiscount.amount}% applicato (-€${discountAmount.toFixed(2)})`
-                        : `Sconto di €${appliedDiscount.amount} applicato`}
+                        ? `Sconto del ${Math.round(Number(appliedDiscount.amount))}% applicato (-€${discountAmount.toFixed(2)})`
+                        : `Sconto di €${Number(appliedDiscount.amount).toFixed(2)} applicato`}
                     </p>
                   </div>
                   <button type="button" onClick={removeDiscount} className="text-red-400 hover:text-red-300 text-sm underline">Rimuovi</button>

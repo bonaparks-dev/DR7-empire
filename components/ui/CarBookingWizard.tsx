@@ -3017,14 +3017,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       let discountAmount = 0;
       let discountType: 'fixed' | 'percentage' | 'rental' = 'fixed';
 
-      if (result.value_type && result.value_amount) {
-        // Prefer explicit value_type and value_amount (works for all code types)
+      if (result.value_type && result.value_amount != null) {
+        // Prefer explicit value_type and value_amount (works for all code types).
+        // Postgres NUMERIC arrives as string from supabase-js — coerce to Number
+        // so the math + the message text both render predictably.
         discountType = result.value_type; // 'fixed' or 'percentage'
-        discountAmount = result.value_amount;
+        discountAmount = Number(result.value_amount) || 0;
       } else if (result.rental_credit) {
         // Fallback for birthday codes that only have rental_credit
         discountType = 'fixed';
-        discountAmount = result.rental_credit;
+        discountAmount = Number(result.rental_credit) || 0;
       }
 
       setDiscountCodeValid(true);
@@ -4884,8 +4886,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <p className="text-green-400 font-bold">{appliedDiscount.code}</p>
                       <p className="text-green-300 text-sm">
                         {appliedDiscount.type === 'percentage'
-                          ? `Sconto del ${appliedDiscount.amount}% applicato (-€${discountAmount.toFixed(2)})`
-                          : `Sconto di €${appliedDiscount.amount} applicato`}
+                          ? `Sconto del ${Math.round(Number(appliedDiscount.amount))}% applicato (-€${discountAmount.toFixed(2)})`
+                          : `Sconto di €${Number(appliedDiscount.amount).toFixed(2)} applicato`}
                       </p>
                     </div>
                     <button type="button" onClick={removeDiscount} className="text-red-400 hover:text-red-300 text-sm underline">Rimuovi</button>
@@ -6124,8 +6126,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         <p className="text-green-400 font-bold">{appliedDiscount.code}</p>
                         <p className="text-green-300 text-sm">
                           {appliedDiscount.type === 'percentage'
-                            ? `Sconto del ${appliedDiscount.amount}% applicato (-€${discountAmount.toFixed(2)})`
-                            : `Sconto di €${appliedDiscount.amount} applicato`}
+                            ? `Sconto del ${Math.round(Number(appliedDiscount.amount))}% applicato (-€${discountAmount.toFixed(2)})`
+                            : `Sconto di €${Number(appliedDiscount.amount).toFixed(2)} applicato`}
                         </p>
                       </div>
                       <button
