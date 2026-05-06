@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from '../hooks/useTranslation';
 import { RENTAL_CATEGORIES, COMMERCIAL_OPERATION_GIVEAWAY } from '../constants';
 import { motion, AnimatePresence } from 'framer-motion';
+import FAQSection from '../sections/FAQSection';
 
 // Display titles matching the menu division names
 const DISPLAY_TITLE: Record<string, string> = {
@@ -231,6 +232,9 @@ const HomePage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* ===== FAQ Section (SEO: FAQPage JSON-LD) ===== */}
+      <FAQSection />
     </motion.div>
   );
 };
