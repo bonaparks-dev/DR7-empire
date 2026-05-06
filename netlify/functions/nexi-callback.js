@@ -26,6 +26,62 @@ async function getInsuranceNameByIdNexi(sb, id) {
 }
 
 /**
+ * Sends the "Ingresso DR7 Club" template (from Messaggi di Sistema Pro)
+ * to the customer who just subscribed. Matched by LABEL because admin-created
+ * templates have auto-generated keys. No fallback body: if the template is
+ * missing, disabled, or empty, nothing is sent.
+ *
+ * Best-effort: never throws — caller treats it as fire-and-forget.
+ */
+async function sendIngressoDR7ClubToCustomer(sb, userId, siteUrl) {
+  if (!userId) return;
+  try {
+    const { data: cust } = await sb
+      .from('customers_extended')
+      .select('nome, cognome, telefono, full_name')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    const rawPhone = cust && cust.telefono ? String(cust.telefono) : '';
+    if (!rawPhone) {
+      console.warn('[nexi-callback] Ingresso DR7 Club: no phone for user', userId);
+      return;
+    }
+
+    const { data: rows } = await sb
+      .from('system_messages')
+      .select('message_body, is_enabled, updated_at, label')
+      .ilike('label', 'Ingresso DR7 Club')
+      .like('message_key', 'pro_%')
+      .order('updated_at', { ascending: false });
+    const tpl = (rows || []).find(r => r.is_enabled !== false && r.message_body) || null;
+    if (!tpl || !tpl.message_body) {
+      console.warn('[nexi-callback] Ingresso DR7 Club: template missing or disabled');
+      return;
+    }
+
+    const firstName = (cust && cust.nome)
+      || (cust && cust.full_name ? String(cust.full_name).split(' ')[0] : '')
+      || '';
+    const message = String(tpl.message_body).replace(/\{nome\}/g, firstName);
+    if (!message.trim()) return;
+
+    let phone = rawPhone.replace(/[\s\-+()]/g, '').replace(/[^\d]/g, '');
+    if (phone.startsWith('00')) phone = phone.substring(2);
+    if (phone.length === 10) phone = '39' + phone;
+
+    await fetch(`${siteUrl}/.netlify/functions/send-whatsapp-notification`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customPhone: phone, customMessage: message, skipHeader: true }),
+    });
+    console.log('[nexi-callback] Ingresso DR7 Club sent to', phone);
+  } catch (e) {
+    console.error('[nexi-callback] Ingresso DR7 Club send failed (non-blocking):', e);
+  }
+}
+
+/**
  * Generate MAC to verify callback authenticity (old XPay format only)
  */
 function generateMAC(params, macKey) {
@@ -1049,6 +1105,14 @@ exports.handler = async (event) => {
           console.error('WhatsApp notification failed:', whatsErr);
         }
 
+        // Send "Ingresso DR7 Club" template to the customer (Messaggi di
+        // Sistema Pro, matched by label). Fire-and-forget.
+        await sendIngressoDR7ClubToCustomer(
+          supabase,
+          membership.user_id,
+          process.env.URL || 'https://dr7empire.com'
+        );
+
         // Generate fattura for membership purchase
         try {
           const membershipSiteUrl = process.env.URL || 'https://dr7empire.com';
@@ -1177,6 +1241,14 @@ exports.handler = async (event) => {
         } catch (whatsErr) {
           console.error('WhatsApp notification failed:', whatsErr);
         }
+
+        // Send "Ingresso DR7 Club" template to the customer (Messaggi di
+        // Sistema Pro, matched by label). Fire-and-forget.
+        await sendIngressoDR7ClubToCustomer(
+          supabase,
+          clubSub.user_id,
+          process.env.URL || 'https://dr7empire.com'
+        );
 
         console.log(`DR7 Club subscription ${clubSub.id} activated with contractId: ${contractId}`);
       } else {
