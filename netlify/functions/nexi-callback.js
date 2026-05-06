@@ -714,6 +714,30 @@ exports.handler = async (event) => {
           }
         }
 
+        // Referral bonus — €50 to referrer if this is the referee's first €100+ top-up
+        if (purchase.user_id && purchase.recharge_amount) {
+          try {
+            const { data: refResult, error: refError } = await supabase.rpc('grant_referral_bonus', {
+              p_referee_user_id: purchase.user_id,
+              p_purchase_id: purchase.id,
+              p_recharge_amount: parseFloat(purchase.recharge_amount)
+            });
+
+            if (refError) {
+              console.error('[nexi-callback] Referral bonus RPC error (non-blocking):', refError);
+            } else {
+              const r = refResult?.[0] || refResult;
+              if (r?.granted) {
+                console.log(`[nexi-callback] Referral bonus €${r.amount} credited to referrer ${r.referrer_user_id}`);
+              } else {
+                console.log('[nexi-callback] Referral bonus not granted:', r?.reason);
+              }
+            }
+          } catch (refErr) {
+            console.error('[nexi-callback] Referral bonus failed (non-blocking):', refErr);
+          }
+        }
+
         // Generate fattura for wallet purchase
         try {
           const siteUrl = process.env.URL || 'https://dr7empire.com';
@@ -736,6 +760,93 @@ exports.handler = async (event) => {
           console.log(`Fattura generated for wallet purchase ${purchase.id}`);
         } catch (e) {
           console.error('Fattura generation failed for wallet purchase:', e);
+        }
+
+        // DR7 Club tier cashback on wallet recharge (Access 2% / Black 3% / Signature 4%).
+        // Active Club members only. Tier from 12mo card-paid spend (bookings + recharges).
+        // Cashback lands in user_credit_balance with reference_type='card_bonus' so daily
+        // interest accrual (accrue-club-wallet-interest) excludes it from principal.
+        try {
+          const rechargeAmount = parseFloat(purchase.recharge_amount || 0);
+          if (purchase.user_id && rechargeAmount > 0) {
+            const { data: sub } = await supabase
+              .from('dr7_club_subscriptions')
+              .select('id')
+              .eq('user_id', purchase.user_id)
+              .eq('status', 'active')
+              .gte('expires_at', new Date().toISOString())
+              .maybeSingle();
+
+            if (!sub) {
+              console.log(`[nexi-callback] No active DR7 Club for user ${purchase.user_id} — skipping cashback`);
+            } else {
+              const since = new Date();
+              since.setFullYear(since.getFullYear() - 1);
+              const sinceIso = since.toISOString();
+
+              let annualSpend = 0;
+              const { data: bookings } = await supabase
+                .from('bookings')
+                .select('price_total, total_amount, payment_method, payment_status, status, created_at')
+                .eq('user_id', purchase.user_id)
+                .gte('created_at', sinceIso)
+                .in('payment_status', ['paid', 'completed', 'succeeded']);
+              for (const b of (bookings || [])) {
+                const pm = String(b.payment_method || '').toLowerCase();
+                if (!pm.includes('nexi') && !pm.includes('card') && !pm.includes('stripe')) continue;
+                const st = String(b.status || '').toLowerCase();
+                if (st === 'cancelled' || st === 'annullata') continue;
+                const amt = Number(b.price_total ?? b.total_amount ?? 0);
+                if (amt > 0) annualSpend += amt;
+              }
+              const { data: recharges } = await supabase
+                .from('credit_wallet_purchases')
+                .select('recharge_amount')
+                .eq('user_id', purchase.user_id)
+                .eq('payment_status', 'succeeded')
+                .gte('created_at', sinceIso);
+              for (const r of (recharges || [])) {
+                annualSpend += Number(r.recharge_amount || 0);
+              }
+
+              const pct = annualSpend >= 10000 ? 4 : annualSpend >= 3000 ? 3 : 2;
+              const cashbackEur = Math.round(rechargeAmount * pct) / 100;
+
+              if (cashbackEur > 0) {
+                const { data: cb } = await supabase
+                  .from('user_credit_balance')
+                  .select('balance')
+                  .eq('user_id', purchase.user_id)
+                  .maybeSingle();
+                const currentBal = parseFloat(cb?.balance || 0);
+                const newBal = Math.round((currentBal + cashbackEur) * 100) / 100;
+
+                await supabase
+                  .from('user_credit_balance')
+                  .upsert({
+                    user_id: purchase.user_id,
+                    balance: newBal,
+                    last_updated: new Date().toISOString()
+                  }, { onConflict: 'user_id' });
+
+                await supabase
+                  .from('credit_transactions')
+                  .insert({
+                    user_id: purchase.user_id,
+                    transaction_type: 'credit',
+                    amount: cashbackEur,
+                    balance_after: newBal,
+                    description: `Cashback DR7 Club ${pct}% - Ricarica wallet €${rechargeAmount.toFixed(2)}`,
+                    reference_id: purchase.id,
+                    reference_type: 'card_bonus'
+                  });
+
+                console.log(`[nexi-callback] DR7 Club cashback ${pct}%: €${cashbackEur.toFixed(2)} → user ${purchase.user_id} (annual spend €${annualSpend.toFixed(2)})`);
+              }
+            }
+          }
+        } catch (cashbackErr) {
+          console.error('[nexi-callback] DR7 Club cashback error (non-blocking):', cashbackErr);
         }
       } else {
         // Payment failed
