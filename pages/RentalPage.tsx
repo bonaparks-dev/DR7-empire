@@ -313,7 +313,6 @@ const VehicleResults: React.FC<{
               ? item.pricePerDay?.eur : undefined;
             const marketingTooltip = categoryId === 'urban-cars' ? 'Disponibile con formula long rent' : undefined;
             const dailyRate = item.pricePerDay?.eur || 0;
-            const days = searchResult ? searchResult.days : (preDays || 1);
             const itemTotalPrice = searchResult ? searchResult.totalPrice
               : (preDays > 0 && dailyRate ? Math.round(dailyRate * preDays) : undefined);
             const itemDays = searchResult ? searchResult.days : (preDays || undefined);
