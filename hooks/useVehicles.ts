@@ -10,7 +10,7 @@ interface Vehicle {
   plate: string | null;
   status: 'available' | 'unavailable' | 'rented' | 'maintenance' | 'retired';
   daily_rate: number;
-  category: 'exotic' | 'urban' | 'aziendali' | null;
+  category: 'exotic' | 'supercars' | 'urban' | 'aziendali' | null;
   metadata: Record<string, any> | null;
   created_at: string;
   updated_at: string;
@@ -172,13 +172,20 @@ const getVehicleSpecs = (name: string) => {
   };
 };
 
-// Get 1-day price from Centralina Pro tariffe for a vehicle category
+// Get 1-day price from Centralina Pro tariffe for a vehicle category.
+// During the legacy "exotic" → "supercars" rename, DB rows can carry either
+// id depending on when they were last edited; treat both as the same bucket.
 function getProDayPrice(proConfig: any, category: string | null): number | null {
   if (!proConfig?.prezzoDinamico?.tariffe) return null
   const PRO_TO_DB: Record<string, string> = { supercars: 'exotic', urban: 'urban', aziendali: 'aziendali' }
+  const matches = (dbCat: string, vehicleCat: string | null): boolean => {
+    if (dbCat === vehicleCat) return true
+    if ((dbCat === 'exotic' && vehicleCat === 'supercars') || (dbCat === 'supercars' && vehicleCat === 'exotic')) return true
+    return false
+  }
   for (const tariff of proConfig.prezzoDinamico.tariffe) {
     const dbCat = PRO_TO_DB[tariff.id] || tariff.id
-    if (dbCat === category) {
+    if (matches(dbCat, category)) {
       const table = tariff.unica || tariff.residente || tariff.non_residente || {}
       const day1 = table['1']
       if (typeof day1 === 'number' && day1 > 0) return day1
@@ -293,7 +300,18 @@ export const invalidateVehicleCache = (category?: string) => {
   }
 };
 
-export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
+// Some vehicle categories were renamed in Centralina Pro (e.g. legacy
+// "exotic" → "supercars"). DB rows updated through the admin can have
+// either id depending on when they were last edited, so we accept both
+// at the input layer and expand to the full alias set when filtering.
+const CATEGORY_ALIASES: Record<string, string[]> = {
+  exotic: ['exotic', 'supercars'],
+  supercars: ['exotic', 'supercars'],
+  urban: ['urban'],
+  aziendali: ['aziendali'],
+};
+
+export const useVehicles = (category?: 'exotic' | 'supercars' | 'urban' | 'aziendali') => {
   const [vehicles, setVehicles] = useState<TransformedVehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -365,9 +383,14 @@ export const useVehicles = (category?: 'exotic' | 'urban' | 'aziendali') => {
             .neq('status', 'retired')
             .order('display_name', { ascending: true });
 
-          // Filter by category if specified
-          if (category && ['exotic', 'urban', 'aziendali'].includes(category)) {
-            query = query.eq('category', category);
+          // Filter by category if specified — expand legacy/new aliases
+          // so the same query covers DB rows that haven't been migrated yet
+          // alongside ones that have.
+          if (category && CATEGORY_ALIASES[category]) {
+            const aliases = CATEGORY_ALIASES[category];
+            query = aliases.length === 1
+              ? query.eq('category', aliases[0])
+              : query.in('category', aliases);
           }
 
           // Execute query directly
