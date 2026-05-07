@@ -9,7 +9,7 @@ import { addCredits } from '../../utils/creditWallet';
 import { useAuth } from '../../hooks/useAuth';
 import { useBooking } from '../../hooks/useBooking';
 import { supabase } from '../../supabaseClient';
-import { PICKUP_LOCATIONS, RETURN_LOCATIONS, AUTO_INSURANCE, INSURANCE_DEDUCTIBLES, RENTAL_EXTRAS, DEPOSIT_RULES, INSURANCE_COVERAGE_TEXT, EXPERIENCE_SERVICES as BOOKING_EXPERIENCE_SERVICES, PAYMENT_MODES, DELIVERY_PRICE_PER_KM } from '../../constants';
+import { PICKUP_LOCATIONS, RETURN_LOCATIONS, RENTAL_EXTRAS, DEPOSIT_RULES } from '../../constants';
 import type { Booking, RentalItem, DriverTier, TierClassification, PaymentMode } from '../../types';
 import { classifyDriverTier } from '../../utils/tierClassification';
 import DocumentUploader from './DocumentUploader';
@@ -319,7 +319,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
       // Step 3
       insuranceOption: 'KASKO_BASE', // Default to Kasko Base
-      depositOption: '' as string, // deposit option id from TIER_DEPOSIT_OPTIONS
+      depositOption: '' as string, // deposit option id from configOverlay.depositOptions
       extras: [] as string[],
       kmPackageType: 'none' as 'none' | 'unlimited' | '50km',
       kmPackageDistance: 100,

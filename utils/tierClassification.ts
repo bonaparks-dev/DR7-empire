@@ -1,10 +1,4 @@
-import type { TierClassification, DriverTier, InsuranceTierOption, DepositOption, ExperienceService } from '../types';
-import {
-  INSURANCE_OPTIONS_BY_TIER,
-  TIER_PRICING,
-  TIER_DEPOSIT_OPTIONS,
-  EXPERIENCE_SERVICES,
-} from '../constants';
+import type { TierClassification } from '../types';
 
 /**
  * Classify a driver into Tier 1, Tier 2, or Blocked based on age and license years.
@@ -39,36 +33,4 @@ export function classifyDriverTier(driverAge: number, licenseYears: number): Tie
 
   // Fallback blocked (shouldn't reach here but safety net)
   return { ...base, tier: 'BLOCKED', reason: 'Noleggio non disponibile con i requisiti forniti. Contattaci per una verifica personalizzata.' };
-}
-
-/**
- * Get insurance options available for a given tier.
- */
-export function getInsuranceForTier(tier: DriverTier): InsuranceTierOption[] {
-  if (tier === 'BLOCKED') return [];
-  return INSURANCE_OPTIONS_BY_TIER[tier] || [];
-}
-
-/**
- * Get deposit options based on tier.
- */
-export function getDepositOptionsForTier(tier: DriverTier): DepositOption[] {
-  if (tier === 'BLOCKED') return [];
-  return TIER_DEPOSIT_OPTIONS[tier] || [];
-}
-
-/**
- * Get km and extras pricing for a given tier.
- */
-export function getKmPricingForTier(tier: DriverTier) {
-  if (tier === 'BLOCKED') return { unlimitedKmPerDay: 0, secondDriverPerDay: 0, lavaggio: 0 };
-  return TIER_PRICING[tier] || TIER_PRICING.TIER_2;
-}
-
-/**
- * Get experience services available for a given tier.
- */
-export function getExperienceServicesForTier(tier: DriverTier): ExperienceService[] {
-  if (tier === 'BLOCKED') return [];
-  return EXPERIENCE_SERVICES.filter(s => !s.tierOnly || s.tierOnly === tier);
 }
