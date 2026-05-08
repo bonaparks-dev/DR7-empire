@@ -233,7 +233,8 @@ const VehicleResults: React.FC<{
   setSortBy: (s: string) => void
   setMaxBudget: (b: number | null) => void
   setSelectedCategories: (c: string[]) => void
-}> = ({ categoryData, categoryId, hasSearched, availabilityResults, selectedCategories, maxBudget, sortBy, preDays, handleBook, setSortBy, setMaxBudget, setSelectedCategories }) => {
+  categoryLabels?: Record<string, string>
+}> = ({ categoryData, categoryId, hasSearched, availabilityResults, selectedCategories, maxBudget, sortBy, preDays, handleBook, setSortBy, setMaxBudget, setSelectedCategories, categoryLabels }) => {
   const { user } = useAuth();
 
   const displayData = useMemo(() => {
@@ -250,7 +251,7 @@ const VehicleResults: React.FC<{
     if (selectedCategories.length > 0 && hasSearched) {
       data = data.filter(item => {
         const r = availabilityResults.get(item.id);
-        return r ? selectedCategories.includes(r.vehicleType) : true;
+        return r ? selectedCategories.includes(r.categoryId) : true;
       });
     }
 
@@ -280,7 +281,10 @@ const VehicleResults: React.FC<{
       const r = availabilityResults.get(item.id);
       return r?.available;
     });
-    return [...new Set(allAvailable.map(item => availabilityResults.get(item.id)?.vehicleType).filter(Boolean) as string[])];
+    // Chip filter usa categoryId (categoria DB Centralina Pro) cosi' le
+    // nuove categorie create dall'admin compaiono come chip senza
+    // modifiche al codice.
+    return [...new Set(allAvailable.map(item => availabilityResults.get(item.id)?.categoryId).filter(Boolean) as string[])];
   }, [categoryData, hasSearched, availabilityResults]);
 
   return (
@@ -295,6 +299,7 @@ const VehicleResults: React.FC<{
           selectedCategories={selectedCategories}
           onCategoryChange={setSelectedCategories}
           totalResults={displayData.length}
+          categoryLabels={categoryLabels}
         />
       )}
 
@@ -573,6 +578,33 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   const [sortBy, setSortBy] = useState('default');
   const [maxBudget, setMaxBudget] = useState<number | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
+  // Etichette delle categorie veicolo lette dalla Centralina Pro: cosi'
+  // i chip filtro mostrano "Hypercar", "Supercar Elite", ecc. invece
+  // dell'id grezzo. Aggiornare una categoria in admin si riflette al
+  // prossimo refresh del sito.
+  const [categoryLabels, setCategoryLabels] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from('centralina_pro_config')
+      .select('config')
+      .eq('id', 'main')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const cats = ((data?.config as any) || {}).categories;
+        if (Array.isArray(cats)) {
+          const map: Record<string, string> = {};
+          for (const c of cats as Array<{ id?: string; label?: string }>) {
+            if (c?.id && c.label) map[c.id] = c.label;
+          }
+          setCategoryLabels(map);
+        }
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   // Read pre-selected dates from Prenota Ora popup
   const prePickup = searchParams.get('pickup');
@@ -1274,6 +1306,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
               setSortBy={setSortBy}
               setMaxBudget={setMaxBudget}
               setSelectedCategories={setSelectedCategories}
+              categoryLabels={categoryLabels}
             />
           )}
           </>)}

@@ -10,7 +10,9 @@ interface Vehicle {
   plate: string | null;
   status: 'available' | 'unavailable' | 'rented' | 'maintenance' | 'retired';
   daily_rate: number;
-  category: 'exotic' | 'supercars' | 'urban' | 'aziendali' | null;
+  // Qualunque categoria definita in Centralina Pro (es. 'hypercar',
+  // 'supercar_elite', 'moto', ecc.) oltre alle 4 storiche.
+  category: string | null;
   metadata: Record<string, any> | null;
   created_at: string;
   updated_at: string;
@@ -31,6 +33,10 @@ interface TransformedVehicle {
     value: string;
     icon: any;
   }>;
+  // Categoria DB del veicolo (es. 'hypercar', 'supercar_elite', ecc.) —
+  // usata dai chip filtro nei risultati ricerca per raggruppare/filtrare
+  // dinamicamente dalle categorie create in Centralina Pro.
+  category?: string | null;
   vehicleIds?: string[]; // For grouped vehicles, stores all actual vehicle IDs
   displayNames?: string[]; // For grouped vehicles, stores all actual vehicle display names
   plates?: string[]; // For grouped vehicles, stores all license plates (targa)
@@ -266,6 +272,7 @@ const transformVehicle = (vehicle: Vehicle, proConfig?: any): TransformedVehicle
       return price > 0 ? { usd: Math.round(price * EUR_TO_USD_RATE), eur: price, crypto: 0 } : undefined
     })(),
     specs: specsArray,
+    category: vehicle.category,
     unavailableFrom: vehicle.metadata?.unavailable_from || undefined,
     bookingDisabled: vehicle.metadata?.booking_disabled || false
   };
@@ -618,6 +625,25 @@ export const useVehicles = (category?: string) => {
     };
 
     fetchVehicles();
+
+    // Realtime: ricarica i veicoli quando l'admin cambia lo stato di
+    // qualsiasi auto (disponibile/non disponibile/manutenzione/ritirata)
+    // o aggiorna la categoria. Cosi' il sito riflette in tempo reale le
+    // modifiche fatte dal backoffice senza aspettare i 24h di cache.
+    const channel = supabase
+      .channel(`website-vehicles-${category || 'all'}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, () => {
+        // Invalidate cache + refetch
+        try {
+          localStorage.removeItem(`${CACHE_KEY_PREFIX}${category || 'all'}`);
+        } catch { /* ignore */ }
+        fetchVehicles();
+      })
+      .subscribe();
+
+    return () => {
+      try { channel.unsubscribe(); } catch { /* ignore */ }
+    };
   }, [category]);
 
   return { vehicles, loading, error, usingCache };

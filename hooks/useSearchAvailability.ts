@@ -16,6 +16,10 @@ export interface VehicleSearchResult {
   dailyRate: number
   days: number
   vehicleType: string
+  // Categoria DB grezza (es. 'hypercar', 'supercar_elite', ecc.). Usata
+  // dai chip filtro nei risultati per raggruppare per categoria reale,
+  // indipendentemente dal vehicleType (che invece guida la pricing).
+  categoryId: string
 }
 
 // Classify vehicle type from item name/id (same logic as CarBookingWizard)
@@ -110,6 +114,11 @@ export function useSearchAvailability(categoryContext?: string) {
       // Card shows BASE price only (per-vehicle Centralina Pro × days).
       // Coefficients and min/max clamping are applied later in CarBookingWizard.
       const availableFrom = (item as any)._availableFrom || null
+      // categoryId per i chip filtro: usa la categoria DB del veicolo
+      // (qualunque id Centralina Pro). Fallback al vehicleType se la
+      // categoria DB e' assente, cosi' i chip continuano a funzionare
+      // anche per veicoli legacy senza category.
+      const categoryId = (item.category as string | null | undefined) || vehicleType
       newResults.set(item.id, {
         vehicleId: item.id,
         available: available || !!availableFrom,
@@ -118,6 +127,7 @@ export function useSearchAvailability(categoryContext?: string) {
         dailyRate: Math.round((totalPrice / days) * 100) / 100,
         days,
         vehicleType,
+        categoryId,
       })
     })
 

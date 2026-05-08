@@ -11,21 +11,38 @@ interface Props {
   selectedCategories: string[]
   onCategoryChange: (cats: string[]) => void
   totalResults: number
+  // Mappa id-categoria → label di display, popolata dalla Centralina
+  // Pro a runtime. Fallback alle 4 etichette legacy se non fornita.
+  categoryLabels?: Record<string, string>
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
+// Fallback per i 4 vehicleType storici. Il caller (RentalPage) deve
+// passare categoryLabels caricate dalla Centralina Pro per le categorie
+// custom (es. 'hypercar' → 'Hypercar', 'supercar_elite' → 'Supercar Elite').
+const LEGACY_LABELS: Record<string, string> = {
   SUPERCAR: 'Supercar & Luxury',
   UTILITARIA: 'Utilitarie',
   V_CLASS: 'Van & Minivan',
   FURGONE: 'Furgoni',
+  exotic: 'Supercar & Luxury',
+  supercars: 'Supercar & Luxury',
+  urban: 'Urban',
+  aziendali: 'Aziendali',
+}
+
+function humanize(id: string): string {
+  return id.replace(/[_-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 }
 
 export default function RentalFilters({
   sortBy, onSortChange,
   maxBudget, onBudgetChange,
   categories, selectedCategories, onCategoryChange,
-  totalResults
+  totalResults,
+  categoryLabels = {},
 }: Props) {
+  const labelFor = (id: string) =>
+    categoryLabels[id] || LEGACY_LABELS[id] || humanize(id)
   return (
     <div className="flex flex-wrap items-center gap-3 mb-6 bg-gray-900/40 border border-gray-800 rounded-xl px-4 py-3">
       {/* Results count */}
@@ -63,7 +80,7 @@ export default function RentalFilters({
                   : 'bg-gray-800 text-gray-400 border border-gray-700'
               }`}
             >
-              {CATEGORY_LABELS[cat] || cat}
+              {labelFor(cat)}
             </button>
           ))}
         </div>

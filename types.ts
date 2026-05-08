@@ -34,6 +34,10 @@ export interface RentalItem {
   };
   specs: RentalSpec[];
 
+  // Categoria DB del veicolo (es. 'hypercar', 'supercar_elite', ecc.) —
+  // usata per i chip filtro dinamici dalle categorie Centralina Pro.
+  category?: string | null;
+
   // New optional fields for villas
   location?: string;
   distanceToBeach?: string;
