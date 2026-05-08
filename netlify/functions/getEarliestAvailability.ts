@@ -1,9 +1,10 @@
 import { Handler } from '@netlify/functions';
 import { getCorsOrigin } from './utils/cors';
+import { getRentalBufferMs } from './utils/loadAutomations';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const BUFFER_TIME_MS = 90 * 60 * 1000; // 90 minutes
+// Buffer post-noleggio: dinamico, letto da Centralina Pro > Automazioni.
 
 interface Interval {
     start: Date;
@@ -89,6 +90,8 @@ export const handler: Handler = async (event) => {
                 body: JSON.stringify({ error: 'vehicleName or vehicleIds is required' }),
             };
         }
+
+        const BUFFER_TIME_MS = await getRentalBufferMs();
 
         // Resolve vehicle IDs if only name provided
         let resolvedIds: string[] = vehicleIds || [];

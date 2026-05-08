@@ -1,5 +1,31 @@
 import { supabase } from '../supabaseClient';
 
+// Buffer post-noleggio (return → next pickup sullo stesso veicolo).
+// Hydrated dal Centralina Pro al module load; fallback 75 minuti.
+// L'operatore lo modifica in admin > Centralina Pro > Automazioni;
+// effettivo dopo refresh pagina sito.
+let RENTAL_BUFFER_MINUTES = 75;
+let RENTAL_BUFFER_MS = RENTAL_BUFFER_MINUTES * 60 * 1000;
+
+;(async () => {
+  try {
+    const { data } = await supabase
+      .from('centralina_pro_config')
+      .select('config')
+      .eq('id', 'main')
+      .maybeSingle();
+    const cfg = (data?.config ?? null) as Record<string, unknown> | null;
+    const automations = cfg?.automations as Record<string, unknown> | undefined;
+    const v = automations?.rental_buffer_minutes;
+    if (typeof v === 'number' && v >= 0 && v <= 720) {
+      RENTAL_BUFFER_MINUTES = v;
+      RENTAL_BUFFER_MS = v * 60 * 1000;
+    }
+  } catch {
+    // Keep default
+  }
+})();
+
 export interface BookingConflict {
   pickup_date: string;
   dropoff_date: string;
@@ -47,7 +73,7 @@ export async function checkGroupedVehicleAvailability(
   try {
     const requestedPickup = safeDate(pickupDate);
     const requestedDropoff = safeDate(dropoffDate);
-    const BUFFER_TIME_MS = 90 * 60 * 1000;
+    const BUFFER_TIME_MS = RENTAL_BUFFER_MS;
 
     // Helper to check conflict
     const hasConflict = (existingStart: Date, existingEnd: Date) => {
@@ -190,7 +216,7 @@ export async function checkGroupedVehicleAvailability(
       // No, we want the earliest hole. That's complex. 
       // Just return end of the first conflict + buffer for now as a naive suggestion
       const lastConflict = relevantConflicts.sort((a, b) => new Date(a.dropoff_date).getTime() - new Date(b.dropoff_date).getTime())[0];
-      closestAvailableDate = new Date(safeDate(lastConflict.dropoff_date).getTime() + (90 * 60 * 1000));
+      closestAvailableDate = new Date(safeDate(lastConflict.dropoff_date).getTime() + RENTAL_BUFFER_MS);
     }
 
     return {
@@ -399,10 +425,9 @@ export async function checkVehiclePartialUnavailability(
       unavailableUntilTime.trim() !== '';
 
     if (hasValidTimes) {
-      // Add 1h30 buffer to unavailability end time (same as booking buffer)
-      const BUFFER_MINUTES = 90;
+      // Aggiunge il buffer post-noleggio (Centralina Pro > Automazioni).
       const unavailableEndMinutes = timeToMinutes(unavailableUntilTime);
-      const availableAfterMinutes = unavailableEndMinutes + BUFFER_MINUTES;
+      const availableAfterMinutes = unavailableEndMinutes + RENTAL_BUFFER_MINUTES;
 
       // Convert back to HH:MM format
       const hours = Math.floor(availableAfterMinutes / 60);
