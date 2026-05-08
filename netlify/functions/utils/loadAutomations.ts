@@ -11,7 +11,7 @@
  */
 
 const TTL_MS = 60_000 // 1 minute
-const DEFAULT_BUFFER = 75 // unified default with admin's INITIAL_AUTOMATIONS
+const DEFAULT_BUFFER = 90 // unified default with admin's INITIAL_AUTOMATIONS (include lavaggio automatico)
 
 interface Cache {
     bufferMinutes: number

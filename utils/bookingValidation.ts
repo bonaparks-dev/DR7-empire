@@ -1,10 +1,10 @@
 import { supabase } from '../supabaseClient';
 
 // Buffer post-noleggio (return → next pickup sullo stesso veicolo).
-// Hydrated dal Centralina Pro al module load; fallback 75 minuti.
-// L'operatore lo modifica in admin > Centralina Pro > Automazioni;
-// effettivo dopo refresh pagina sito.
-let RENTAL_BUFFER_MINUTES = 75;
+// Hydrated dal Centralina Pro al module load; fallback 90 minuti
+// (include il lavaggio automatico). L'operatore lo modifica in
+// admin > Centralina Pro > Automazioni; effettivo dopo refresh pagina sito.
+let RENTAL_BUFFER_MINUTES = 90;
 let RENTAL_BUFFER_MS = RENTAL_BUFFER_MINUTES * 60 * 1000;
 
 ;(async () => {
