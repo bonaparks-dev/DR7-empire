@@ -1658,13 +1658,27 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const diffTime = Math.abs(ret.getTime() - pickup.getTime());
         const standardHours = diffTime / (1000 * 60 * 60);
 
-        // Allinea il calcolo dei giorni a quello del contratto/fattura
-        // (generate-contract.ts e generate-invoice-from-booking.ts usano
-        // tutti Math.ceil(diff / 24h)). Prima il sito faceva un calendar-day
-        // diff + grace di 90 minuti che a volte aggiungeva un giorno extra
-        // rispetto al contratto, confondendo il cliente.
-        billingDays = Math.max(1, Math.ceil(standardHours / 24));
-        extraDay = false;
+        // Calendar Day Logic (Midnight to Midnight)
+        const pDate = new Date(pickup); pDate.setHours(0, 0, 0, 0);
+        const rDate = new Date(ret); rDate.setHours(0, 0, 0, 0);
+        const diffDaysCalendar = Math.round((rDate.getTime() - pDate.getTime()) / (1000 * 60 * 60 * 24));
+
+        // Unified Duration & Billing Logic
+        // Ensures that if price is for 4 days, display says "4 days"
+        billingDays = Math.max(1, diffDaysCalendar);
+
+        // BUSINESS RULE — 1h30 grace before pickup time:
+        // l'auto deve rientrare almeno 90 min prima dell'orario di ritiro
+        // sul giorno di riconsegna; altrimenti +1 giorno di addebito.
+        // Esempio: ritiro lun 10:00 → riconsegna deve essere entro mar 08:30,
+        // altrimenti il cliente paga 2 giorni invece di 1.
+        const pickupMinutes = pickup.getHours() * 60 + pickup.getMinutes();
+        const returnMinutes = ret.getHours() * 60 + ret.getMinutes();
+        const graceThreshold = pickupMinutes - 90; // 1h30 before pickup time
+        if (diffDaysCalendar > 0 && returnMinutes > graceThreshold) {
+          billingDays += 1;
+          extraDay = true;
+        }
 
         days = billingDays;
         hours = Math.floor(standardHours % 24);
