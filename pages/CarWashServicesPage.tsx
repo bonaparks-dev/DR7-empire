@@ -1,9 +1,10 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { useNavigate } from 'react-router-dom';
 import { classifyVehicle, type VehicleCategory } from '../utils/vehicleClassification';
 import { lookupTarga, isValidItalianPlate, normalizePlate, type TargaResult } from '../utils/lookupTarga';
+import { useCarWashServices } from '../hooks/useCarWashServices';
 import SEOHead from '../components/seo/SEOHead';
 
 export interface WashService {
@@ -30,201 +31,10 @@ interface CartItem {
   selectedOption?: { label: string; price: number };
 }
 
-// ==================== LAVAGGIO SERVICES ====================
-
-// PRIME MOTO EXPERIENCE
-const MOTO_SERVICES: WashService[] = [
-  {
-    id: 'moto-essential',
-    name: 'PRIME MOTO ESSENTIAL',
-    nameEn: 'PRIME MOTO ESSENTIAL',
-    price: 9.90,
-    duration: '20 min',
-    description: 'Prelavaggio, lavaggio parti esterne con detergenti safe, pulizia zone accessibili, asciugatura a mano.',
-    descriptionEn: 'Pre-wash, exterior wash with safe detergents, accessible areas cleaning, hand drying.',
-    features: ['Prelavaggio', 'Lavaggio parti esterne con detergenti safe', 'Pulizia zone accessibili', 'Asciugatura a mano'],
-    featuresEn: ['Pre-wash', 'Exterior wash with safe detergents', 'Accessible areas cleaning', 'Hand drying'],
-    image: '/moto.jpeg',
-  }
-];
-
-// PRIME URBAN CLASS
-const URBAN_SERVICES: WashService[] = [
-  {
-    id: 'urban-exterior',
-    name: 'PRIME EXTERIOR CLEAN',
-    nameEn: 'PRIME EXTERIOR CLEAN',
-    price: 14.90,
-    duration: '30 min',
-    description: 'Auto presentabile, pulita, ordinata.',
-    descriptionEn: 'Presentable, clean, tidy car.',
-    features: ['Prelavaggio', 'Lavaggio carrozzeria', 'Vetri esterni', 'Cerchi rapidi', 'Asciugatura a mano'],
-    featuresEn: ['Pre-wash', 'Body wash', 'Exterior glass', 'Quick wheels', 'Hand drying'],
-    image: '/exterior.jpeg',
-  },
-  {
-    id: 'urban-interior',
-    name: 'PRIME INTERIOR CLEAN',
-    nameEn: 'PRIME INTERIOR CLEAN',
-    price: 19.90,
-    duration: '40 min',
-    description: 'Abitacolo pulito, aria migliore, comfort immediato.',
-    descriptionEn: 'Clean cabin, better air, immediate comfort.',
-    features: ['Aspirazione completa (sedili, moquette, tappetini)', 'Pulizia superfici interne', 'Vetri interni anti-aloni', 'Rifinitura plastiche'],
-    featuresEn: ['Complete vacuuming (seats, carpet, mats)', 'Interior surfaces cleaning', 'Anti-halo interior glass', 'Plastic finishing'],
-    image: '/interior.jpeg',
-  },
-  {
-    id: 'urban-full',
-    name: 'PRIME FULL CLEAN',
-    nameEn: 'PRIME FULL CLEAN',
-    price: 24.90,
-    duration: '80 min',
-    description: 'Pulita dentro e fuori senza "mezze misure".',
-    descriptionEn: 'Clean inside and out, no half measures.',
-    features: ['Interni + esterni completi', 'Schiuma profumata', 'Cerchi/Passaruota/Vetri', 'Aspirazione profonda', 'Asciugatura e rifinitura'],
-    featuresEn: ['Complete interior + exterior', 'Scented foam', 'Wheels/Wheel arches/Glass', 'Deep vacuuming', 'Drying and finishing'],
-    image: '/full.jpeg',
-  },
-  {
-    id: 'urban-full-n2',
-    name: 'PRIME FULL CLEAN N₂',
-    nameEn: 'PRIME FULL CLEAN N₂',
-    price: 34.90,
-    duration: '80 min',
-    description: 'Aria pulita, odori eliminati alla radice.',
-    descriptionEn: 'Clean air, odors eliminated at the root.',
-    features: ['Tutto il Full Clean', 'Sanificazione abitacolo all\'azoto'],
-    featuresEn: ['Everything from Full Clean', 'Nitrogen cabin sanitization'],
-    image: '/full-n2.jpeg',
-  },
-  {
-    id: 'urban-top-shine',
-    name: 'PRIME TOP SHINE',
-    nameEn: 'PRIME TOP SHINE',
-    price: 49,
-    duration: '120 min',
-    description: 'Più brillantezza, più protezione, più presenza.',
-    descriptionEn: 'More shine, more protection, more presence.',
-    features: ['Full Clean + trattamento lucidante veloce', 'Rifinitura extra plastiche e bocchette', 'Dettagli più curati', 'Acqua Prime Luxury'],
-    featuresEn: ['Full Clean + quick polish treatment', 'Extra plastic and vent finishing', 'More detailed care', 'Prime Luxury Water'],
-    image: '/topshine.jpeg',
-  },
-  {
-    id: 'urban-vip',
-    name: 'PRIME VIP EXPERIENCE',
-    nameEn: 'PRIME VIP EXPERIENCE',
-    price: 75,
-    duration: '140 min',
-    description: 'Auto rigenerata, non solo pulita.',
-    descriptionEn: 'Regenerated car, not just clean.',
-    features: ['Top Shine + decontaminazione carrozzeria', 'Pulizia e igienizzazione sedili pelle', 'Sanificazione all\'azoto', 'Sigillante premium', 'Profumo premium + omaggio', 'Acqua Prime Luxury'],
-    featuresEn: ['Top Shine + body decontamination', 'Leather seat cleaning and sanitization', 'Nitrogen sanitization', 'Premium sealant', 'Premium perfume + gift', 'Prime Luxury Water'],
-    image: '/vip.jpeg',
-  },
-  {
-    id: 'urban-luxury',
-    name: 'PRIME LUXURY DETAIL',
-    nameEn: 'PRIME LUXURY DETAIL',
-    price: 119,
-    duration: '220 min',
-    description: 'Effetto concessionaria. Punto.',
-    descriptionEn: 'Dealership effect. Period.',
-    features: ['VIP Experience + igienizzazione totale dettagli', 'Sedili (tessuto o pelle), moquette e tappetini', 'Cielo interno', 'Vano motore con prodotti specifici', 'Profumo premium + Acqua Prime Luxury'],
-    featuresEn: ['VIP Experience + total detail sanitization', 'Seats (fabric or leather), carpet and mats', 'Headliner', 'Engine bay with specific products', 'Premium perfume + Prime Luxury Water'],
-    image: '/luxury.jpeg',
-  }
-];
-
-// PRIME MAXI CLASS
-const MAXI_SERVICES: WashService[] = [
-  {
-    id: 'maxi-exterior',
-    name: 'PRIME MAXI EXTERIOR CLEAN',
-    nameEn: 'PRIME MAXI EXTERIOR CLEAN',
-    price: 19.90,
-    duration: '40 min',
-    description: 'Grande auto, grande impatto.',
-    descriptionEn: 'Big car, big impact.',
-    features: ['Prelavaggio, lavaggio carrozzeria', 'Vetri, cerchi rapidi', 'Asciugatura a mano'],
-    featuresEn: ['Pre-wash, body wash', 'Glass, quick wheels', 'Hand drying'],
-    image: '/maxi-exterior.jpeg',
-  },
-  {
-    id: 'maxi-interior',
-    name: 'PRIME MAXI INTERIOR CLEAN',
-    nameEn: 'PRIME MAXI INTERIOR CLEAN',
-    price: 24.90,
-    duration: '45 min',
-    description: 'Ordine reale, niente zone "saltate".',
-    descriptionEn: 'Real order, no "skipped" areas.',
-    features: ['Aspirazione completa (volumi grandi)', 'Pulizia superfici', 'Vetri interni', 'Rifinitura plastiche'],
-    featuresEn: ['Complete vacuuming (large volumes)', 'Surface cleaning', 'Interior glass', 'Plastic finishing'],
-    image: '/maxi-interior.jpeg',
-  },
-  {
-    id: 'maxi-full',
-    name: 'PRIME MAXI FULL CLEAN',
-    nameEn: 'PRIME MAXI FULL CLEAN',
-    price: 29.90,
-    duration: '90 min',
-    description: 'Pulizia totale, visibile.',
-    descriptionEn: 'Total, visible cleaning.',
-    features: ['Interni + esterni completi', 'Schiuma profumata', 'Cerchi/passaruota/vetri', 'Aspirazione e rifinitura'],
-    featuresEn: ['Complete interior + exterior', 'Scented foam', 'Wheels/wheel arches/glass', 'Vacuuming and finishing'],
-    image: '/maxi-full.jpeg',
-  },
-  {
-    id: 'maxi-full-n2',
-    name: 'PRIME MAXI FULL CLEAN N₂',
-    nameEn: 'PRIME MAXI FULL CLEAN N₂',
-    price: 39.90,
-    duration: '90 min',
-    description: 'Igiene profonda per famiglie e viaggi.',
-    descriptionEn: 'Deep hygiene for families and travel.',
-    features: ['Maxi Full Clean + sanificazione all\'azoto'],
-    featuresEn: ['Maxi Full Clean + nitrogen sanitization'],
-    image: '/maxi-full-n2.jpeg',
-  },
-  {
-    id: 'maxi-top-shine',
-    name: 'PRIME TOP SHINE MAXI',
-    nameEn: 'PRIME TOP SHINE MAXI',
-    price: 59,
-    duration: '130 min',
-    description: 'Presenza premium.',
-    descriptionEn: 'Premium presence.',
-    features: ['Maxi Full Clean + lucidante veloce', 'Rifiniture extra', 'Dettagli curati', 'Acqua Prime Luxury'],
-    featuresEn: ['Maxi Full Clean + quick polish', 'Extra finishing', 'Detailed care', 'Prime Luxury Water'],
-    image: '/maxi-topshine.jpeg',
-  },
-  {
-    id: 'maxi-vip',
-    name: 'PRIME VIP EXPERIENCE MAXI',
-    nameEn: 'PRIME VIP EXPERIENCE MAXI',
-    price: 85,
-    duration: '150 min',
-    description: '"Come nuova", anche sui grandi volumi.',
-    descriptionEn: '"Like new", even on large vehicles.',
-    features: ['Top Shine Maxi + decontaminazione', 'Sedili pelle', 'Sanificazione all\'azoto', 'Sigillante premium', 'Profumo premium + omaggio', 'Acqua Prime Luxury'],
-    featuresEn: ['Top Shine Maxi + decontamination', 'Leather seats', 'Nitrogen sanitization', 'Premium sealant', 'Premium perfume + gift', 'Prime Luxury Water'],
-    image: '/maxi-vip.jpeg',
-  },
-  {
-    id: 'maxi-luxury',
-    name: 'PRIME LUXURY DETAIL MAXI',
-    nameEn: 'PRIME LUXURY DETAIL MAXI',
-    price: 179,
-    duration: '280 min',
-    description: 'Rigenerazione completa.',
-    descriptionEn: 'Complete regeneration.',
-    features: ['VIP Maxi + igienizzazione totale', 'Sedili (tessuto/pelle)', 'Moquette/tappetini', 'Cielo', 'Vano motore', 'Profumo premium + Acqua Prime Luxury'],
-    featuresEn: ['VIP Maxi + total sanitization', 'Seats (fabric/leather)', 'Carpet/mats', 'Headliner', 'Engine bay', 'Premium perfume + Prime Luxury Water'],
-    image: '/maxi-luxury.jpeg',
-  }
-];
-
-// COMBINED WASH SERVICES (Urban + Maxi paired)
+// COMBINED WASH SERVICES (Urban + Maxi paired) — UI scaffolding for the
+// side-by-side comparison cards. Service data (price, features) comes
+// from the DB via useCarWashServices(); only the comparison-card
+// image + suffix→pairing rule is defined here.
 interface CombinedWashService {
   id: string;
   name: string;
@@ -234,312 +44,14 @@ interface CombinedWashService {
   maxi: WashService;
 }
 
-const COMBINED_WASH_SERVICES: CombinedWashService[] = [
-  {
-    id: 'combined-exterior',
-    name: 'PRIME EXTERIOR CLEAN',
-    nameEn: 'PRIME EXTERIOR CLEAN',
-    image: '/combined-exterior.jpeg',
-    urban: URBAN_SERVICES[0],
-    maxi: MAXI_SERVICES[0],
-  },
-  {
-    id: 'combined-interior',
-    name: 'PRIME INTERIOR CLEAN',
-    nameEn: 'PRIME INTERIOR CLEAN',
-    image: '/combined-interior.jpeg',
-    urban: URBAN_SERVICES[1],
-    maxi: MAXI_SERVICES[1],
-  },
-  {
-    id: 'combined-full',
-    name: 'PRIME FULL CLEAN',
-    nameEn: 'PRIME FULL CLEAN',
-    image: '/combined-full.jpeg',
-    urban: URBAN_SERVICES[2],
-    maxi: MAXI_SERVICES[2],
-  },
-  {
-    id: 'combined-full-n2',
-    name: 'PRIME FULL CLEAN N₂',
-    nameEn: 'PRIME FULL CLEAN N₂',
-    image: '/combined-full-n2.jpeg',
-    urban: URBAN_SERVICES[3],
-    maxi: MAXI_SERVICES[3],
-  },
-  {
-    id: 'combined-topshine',
-    name: 'PRIME TOP SHINE',
-    nameEn: 'PRIME TOP SHINE',
-    image: '/combined-topshine.jpeg',
-    urban: URBAN_SERVICES[4],
-    maxi: MAXI_SERVICES[4],
-  },
-  {
-    id: 'combined-vip',
-    name: 'PRIME VIP EXPERIENCE',
-    nameEn: 'PRIME VIP EXPERIENCE',
-    image: '/combined-vip.jpeg',
-    urban: URBAN_SERVICES[5],
-    maxi: MAXI_SERVICES[5],
-  },
-  {
-    id: 'combined-luxury',
-    name: 'PRIME LUXURY DETAIL',
-    nameEn: 'PRIME LUXURY DETAIL',
-    image: '/combined-luxury.jpeg',
-    urban: URBAN_SERVICES[6],
-    maxi: MAXI_SERVICES[6],
-  },
-];
-
-// PRIME EXTRA CARE (add-ons for Lavaggio - 10 services: 15-24)
-const EXTRA_CARE_SERVICES: WashService[] = [
-  {
-    id: 'extra-child',
-    name: 'PRIME CHILD CARE',
-    nameEn: 'PRIME CHILD CARE',
-    price: 14.90,
-    duration: '15 min',
-    description: 'Igiene e tranquillità.',
-    descriptionEn: 'Hygiene and peace of mind.',
-    features: ['Pulizia e igienizzazione seggiolino', 'Trattamento macchie'],
-    featuresEn: ['Child seat cleaning and sanitization', 'Stain treatment'],
-    image: '/child.jpeg',
-  },
-  {
-    id: 'extra-engine',
-    name: 'PRIME ENGINE CLEAN',
-    nameEn: 'PRIME ENGINE CLEAN',
-    price: 29.90,
-    duration: '30 min',
-    description: 'Motore pulito e ordinato.',
-    descriptionEn: 'Clean and tidy engine.',
-    features: ['Pulizia vano motore con prodotti specifici', 'Tecnica safe', 'Rifinitura plastiche'],
-    featuresEn: ['Engine bay cleaning with specific products', 'Safe technique', 'Plastic finishing'],
-    image: '/engine.jpeg',
-  },
-  {
-    id: 'extra-glass',
-    name: 'PRIME GLASS CARE',
-    nameEn: 'PRIME GLASS CARE',
-    price: 9.90,
-    duration: '10 min',
-    description: 'Visibilità perfetta.',
-    descriptionEn: 'Perfect visibility.',
-    features: ['Vetri interni/esterni + anti-aloni'],
-    featuresEn: ['Interior/exterior glass + anti-halo'],
-    image: '/glass.jpeg',
-  },
-  {
-    id: 'extra-odor',
-    name: 'PRIME ODOR CONTROL',
-    nameEn: 'PRIME ODOR CONTROL',
-    price: 9.90,
-    duration: '5 min',
-    description: 'Aria pulita.',
-    descriptionEn: 'Clean air.',
-    features: ['Trattamento neutralizzante + profumazione premium'],
-    featuresEn: ['Neutralizing treatment + premium fragrance'],
-    image: '/odor.jpeg',
-  },
-  {
-    id: 'extra-pet',
-    name: 'PRIME PET CLEAN',
-    nameEn: 'PRIME PET CLEAN',
-    price: 19.90,
-    duration: '20 min',
-    description: 'Tessuti liberi dai peli.',
-    descriptionEn: 'Fabrics free from pet hair.',
-    features: ['Rimozione peli con strumenti dedicati', 'Aspirazione mirata'],
-    featuresEn: ['Pet hair removal with dedicated tools', 'Targeted vacuuming'],
-    image: '/pet.jpeg',
-  },
-  {
-    id: 'extra-plastic',
-    name: 'PRIME PLASTIC REFRESH',
-    nameEn: 'PRIME PLASTIC REFRESH',
-    price: 14.90,
-    duration: '15 min',
-    description: 'Plastiche piene e curate.',
-    descriptionEn: 'Full and well-maintained plastics.',
-    features: ['Pulizia + ravvivante protettivo (no effetto unto)'],
-    featuresEn: ['Cleaning + protective revitalizer (no greasy effect)'],
-    image: '/plastic.jpeg',
-  },
-  {
-    id: 'extra-quick-shine',
-    name: 'PRIME QUICK SHINE',
-    nameEn: 'PRIME QUICK SHINE',
-    price: 14.90,
-    duration: '10 min',
-    description: 'Più gloss subito.',
-    descriptionEn: 'More gloss immediately.',
-    features: ['Cera spray protettiva + rifinitura'],
-    featuresEn: ['Protective spray wax + finishing'],
-    image: '/quickshine.jpeg',
-  },
-  {
-    id: 'extra-rim',
-    name: 'PRIME RIM CARE',
-    nameEn: 'PRIME RIM CARE',
-    price: 9.90,
-    duration: '10 min',
-    description: 'Look più "nuovo".',
-    descriptionEn: 'More "new" look.',
-    features: ['Detergente specifico', 'Spazzolatura fronte cerchio', 'Rifinitura gomme'],
-    featuresEn: ['Specific detergent', 'Wheel face brushing', 'Tire finishing'],
-    priceUnit: 'per 4 cerchi',
-    image: '/rim.jpeg',
-  },
-  {
-    id: 'extra-seat-clean',
-    name: 'PRIME SEAT CLEAN',
-    nameEn: 'PRIME SEAT CLEAN',
-    price: 9.90,
-    duration: '15 min',
-    description: 'Sedile davvero pulito.',
-    descriptionEn: 'Truly clean seat.',
-    features: ['Pretrattamento', 'Pulizia profonda in base al materiale', 'Asciugatura controllata'],
-    featuresEn: ['Pre-treatment', 'Deep cleaning based on material', 'Controlled drying'],
-    priceUnit: 'a sedile',
-    image: '/seat-clean.jpeg',
-  },
-  {
-    id: 'extra-seat-protect',
-    name: 'PRIME SEAT PROTECT',
-    nameEn: 'PRIME SEAT PROTECT',
-    price: 14.90,
-    duration: '10 min',
-    description: 'Sedili più protetti nel tempo.',
-    descriptionEn: 'Seats more protected over time.',
-    features: ['Trattamento protettivo sedili'],
-    featuresEn: ['Seat protective treatment'],
-    priceUnit: 'a sedile',
-    image: '/seat-protect.jpeg',
-  },
-];
-
-// PRIME EXPERIENCE (courtesy car and supercar experiences - 25-28)
-const EXPERIENCE_SERVICES: WashService[] = [
-  {
-    id: 'extra-courtesy',
-    name: 'PRIME COURTESY DRIVE',
-    nameEn: 'PRIME COURTESY DRIVE',
-    price: 9.90,
-    duration: '-',
-    description: 'Nessuna attesa, nessuna perdita di tempo.',
-    descriptionEn: 'No waiting, no time wasted.',
-    features: ['Auto pronta all\'uso mentre la tua viene lavata'],
-    featuresEn: ['Car ready to use while yours is being washed'],
-    priceOptions: [
-      { label: '1 ora', price: 9.90 },
-      { label: '2 ore', price: 14.90 },
-      { label: '3 ore', price: 19.90 },
-      { label: '4+ ore', price: 5.90 },
-    ],
-    image: '/courtesy.jpeg',
-  },
-  {
-    id: 'extra-supercar',
-    name: 'SUPERCAR EXPERIENCE',
-    nameEn: 'SUPERCAR EXPERIENCE',
-    price: 89,
-    duration: '-',
-    description: 'Non è un servizio. È un\'esperienza.',
-    descriptionEn: 'It\'s not a service. It\'s an experience.',
-    features: ['Guida una delle nostre supercar mentre la tua auto viene trattata'],
-    featuresEn: ['Drive one of our supercars while your car is being treated'],
-    priceOptions: [
-      { label: '1 ora', price: 89 },
-      { label: '2 ore', price: 149 },
-      { label: '3 ore', price: 189 },
-      { label: '4+ ore', price: 69 },
-    ],
-    image: '/supercar.jpeg',
-  },
-  {
-    id: 'extra-icon',
-    name: 'PRIME ICON EXPERIENCE',
-    nameEn: 'PRIME ICON EXPERIENCE',
-    price: 149,
-    duration: '-',
-    description: 'L\'esperienza definitiva. Lamborghini & Ferrari.',
-    descriptionEn: 'The ultimate experience. Lamborghini & Ferrari.',
-    features: ['Guidi una Lamborghini o una Ferrari mentre la tua auto viene rigenerata'],
-    featuresEn: ['Drive a Lamborghini or Ferrari while your car is being regenerated'],
-    priceOptions: [
-      { label: '1 ora', price: 149 },
-      { label: '2 ore', price: 249 },
-      { label: '3 ore', price: 289 },
-      { label: '4 ore', price: 356 },
-      { label: '5 ore', price: 445 },
-      { label: '6 ore', price: 534 },
-      { label: '7 ore', price: 623 },
-    ],
-    image: '/icon-experience.jpeg',
-  }
-];
-
-// ==================== MECCANICA SERVICES ====================
-
-// PRIME TECH SERVICE (manodopera - 29-32)
-const TECH_SERVICES: WashService[] = [
-  {
-    id: 'tech-brake',
-    name: 'PRIME BRAKE SERVICE',
-    nameEn: 'PRIME BRAKE SERVICE',
-    price: 49,
-    duration: '30 min',
-    description: 'Cambio pastiglie freni. Anteriore o posteriore, prezzo identico.',
-    descriptionEn: 'Brake pad replacement. Front or rear, same price.',
-    features: ['Smontaggio gruppo freno', 'Sostituzione pastiglie', 'Controllo visivo di disco e pinza', 'Rimontaggio e verifica funzionamento'],
-    featuresEn: ['Brake assembly disassembly', 'Pad replacement', 'Visual disc and caliper check', 'Reassembly and function test'],
-    priceUnit: 'manodopera – anteriore o posteriore',
-    image: '/brake.jpeg',
-  },
-  {
-    id: 'tech-battery',
-    name: 'PRIME BATTERY SWAP',
-    nameEn: 'PRIME BATTERY SWAP',
-    price: 19,
-    duration: '15 min',
-    description: 'Sostituzione batteria rapida.',
-    descriptionEn: 'Quick battery replacement.',
-    features: ['Rimozione batteria vecchia', 'Installazione batteria nuova', 'Test avviamento'],
-    featuresEn: ['Old battery removal', 'New battery installation', 'Start test'],
-    image: '/battery.jpeg',
-  },
-  {
-    id: 'tech-wiper',
-    name: 'PRIME WIPER SERVICE',
-    nameEn: 'PRIME WIPER SERVICE',
-    price: 9.90,
-    duration: '5 min',
-    description: 'Visibilità e sicurezza di guida.',
-    descriptionEn: 'Visibility and driving safety.',
-    features: ['Rimozione spazzole usurate', 'Installazione nuove spazzole', 'Verifica corretta aderenza'],
-    featuresEn: ['Worn blade removal', 'New blade installation', 'Proper adhesion check'],
-    priceUnit: 'anteriore o posteriore',
-    image: '/wiper.jpeg',
-  },
-  {
-    id: 'tech-headlight',
-    name: 'PRIME HEADLIGHT RESTORE',
-    nameEn: 'PRIME HEADLIGHT RESTORE',
-    price: 34.90,
-    duration: '30 min',
-    description: 'Migliora estetica, visibilità e sicurezza.',
-    descriptionEn: 'Improves aesthetics, visibility and safety.',
-    features: ['Pulizia profonda del faro', 'Lucidatura progressiva', 'Ripristino trasparenza'],
-    featuresEn: ['Deep headlight cleaning', 'Progressive polishing', 'Transparency restoration'],
-    priceOptions: [
-      { label: '1 faro', price: 34.90 },
-      { label: '2 fari', price: 59.90 },
-      { label: '4 fari', price: 89.90 },
-    ],
-    image: '/headlight.jpeg',
-  }
+const COMBINED_TEMPLATES: { suffix: string; name: string; nameEn: string; image: string }[] = [
+  { suffix: 'exterior',  name: 'PRIME EXTERIOR CLEAN', nameEn: 'PRIME EXTERIOR CLEAN', image: '/combined-exterior.jpeg' },
+  { suffix: 'interior',  name: 'PRIME INTERIOR CLEAN', nameEn: 'PRIME INTERIOR CLEAN', image: '/combined-interior.jpeg' },
+  { suffix: 'full',      name: 'PRIME FULL CLEAN',     nameEn: 'PRIME FULL CLEAN',     image: '/combined-full.jpeg' },
+  { suffix: 'full-n2',   name: 'PRIME FULL CLEAN N2',  nameEn: 'PRIME FULL CLEAN N2',  image: '/combined-full-n2.jpeg' },
+  { suffix: 'top-shine', name: 'PRIME TOP SHINE',      nameEn: 'PRIME TOP SHINE',      image: '/combined-topshine.jpeg' },
+  { suffix: 'vip',       name: 'PRIME VIP',            nameEn: 'PRIME VIP',            image: '/combined-vip.jpeg' },
+  { suffix: 'luxury',    name: 'PRIME LUXURY',         nameEn: 'PRIME LUXURY',         image: '/combined-luxury.jpeg' },
 ];
 
 type MainTabType = 'lavaggio' | 'meccanica';
@@ -570,46 +82,28 @@ const CarWashServicesPage: React.FC = () => {
   const [detectedCategory, setDetectedCategory] = useState<VehicleCategory | null>(null);
   const [detectedModel, setDetectedModel] = useState<string | null>(null);
 
-  // DB-sourced services: override hardcoded prices/features with live data
-  const [dbServices, setDbServices] = useState<WashService[]>([]);
-  const dbFetched = useRef(false);
-  useEffect(() => {
-    if (dbFetched.current) return;
-    dbFetched.current = true;
-    fetch('/.netlify/functions/get-car-wash-services')
-      .then(r => r.json())
-      .then(data => { if (data.services) setDbServices(data.services); })
-      .catch(() => {});
-  }, []);
+  // Single source of truth: admin Catalogo Lavaggio (car_wash_services table).
+  // useCarWashServices() fetches once per page load with module-level cache.
+  const dbServices = useCarWashServices();
 
-  // Merge: DB service overrides hardcoded by ID, keeping structure intact
-  const mergeService = useCallback((hardcoded: WashService): WashService => {
-    const db = dbServices.find(s => s.id === hardcoded.id);
-    if (!db) return hardcoded;
-    return { ...hardcoded, ...db, image: db.image || hardcoded.image };
-  }, [dbServices]);
+  const liveUrban = dbServices.filter(s => s.category === 'urban');
+  const liveMaxi = dbServices.filter(s => s.category === 'maxi');
+  const liveExtra = dbServices.filter(s => s.category === 'extra');
+  const liveMoto = dbServices.filter(s => s.category === 'moto');
+  const liveExperience = dbServices.filter(s => s.category === 'experience');
+  const liveTech = dbServices.filter(s => s.category === 'tech');
 
-  // Extra DB-only services (added from admin, not in hardcoded arrays)
-  const extraDbUrban = dbServices.filter(s => (s as any).category === 'urban' && !URBAN_SERVICES.find(h => h.id === s.id));
-  const extraDbMaxi = dbServices.filter(s => (s as any).category === 'maxi' && !MAXI_SERVICES.find(h => h.id === s.id));
-  const extraDbExtra = dbServices.filter(s => (s as any).category === 'extra' && !EXTRA_CARE_SERVICES.find(h => h.id === s.id));
-  const extraDbMoto = dbServices.filter(s => (s as any).category === 'moto' && !MOTO_SERVICES.find(h => h.id === s.id));
-  const extraDbExperience = dbServices.filter(s => (s as any).category === 'experience' && !EXPERIENCE_SERVICES.find(h => h.id === s.id));
-  const extraDbTech = dbServices.filter(s => (s as any).category === 'tech' && !TECH_SERVICES.find(h => h.id === s.id));
-
-  const liveUrban = [...URBAN_SERVICES.map(mergeService), ...extraDbUrban];
-  const liveMaxi = [...MAXI_SERVICES.map(mergeService), ...extraDbMaxi];
-  const liveExtra = [...EXTRA_CARE_SERVICES.map(mergeService), ...extraDbExtra];
-  const liveMoto = [...MOTO_SERVICES.map(mergeService), ...extraDbMoto];
-  const liveExperience = [...EXPERIENCE_SERVICES.map(mergeService), ...extraDbExperience];
-  const liveTech = [...TECH_SERVICES.map(mergeService), ...extraDbTech];
-
-  // Live combined wash services (uses DB-overridden prices)
-  const liveCombined = COMBINED_WASH_SERVICES.map((combo, i) => ({
-    ...combo,
-    urban: liveUrban[i] || combo.urban,
-    maxi: liveMaxi[i] || combo.maxi,
-  }));
+  // Combined cards pair URBAN+MAXI services that share the same suffix
+  // (e.g. urban-exterior + maxi-exterior). If either side is missing in DB,
+  // that combined card is skipped silently.
+  const liveCombined: CombinedWashService[] = COMBINED_TEMPLATES
+    .map(tpl => {
+      const urban = liveUrban.find(s => s.id === `urban-${tpl.suffix}`);
+      const maxi = liveMaxi.find(s => s.id === `maxi-${tpl.suffix}`);
+      if (!urban || !maxi) return null;
+      return { id: `combined-${tpl.suffix}`, name: tpl.name, nameEn: tpl.nameEn, image: tpl.image, urban, maxi };
+    })
+    .filter((x): x is CombinedWashService => x !== null);
 
   // Targa lookup state
   const [targaInput, setTargaInput] = useState('');
@@ -1513,24 +1007,9 @@ const CarWashServicesPage: React.FC = () => {
   );
 };
 
-// Export all services combined for backward compatibility
-export const SERVICES: WashService[] = [
-  ...MOTO_SERVICES,
-  ...URBAN_SERVICES,
-  ...MAXI_SERVICES,
-  ...EXTRA_CARE_SERVICES,
-  ...EXPERIENCE_SERVICES,
-  ...TECH_SERVICES,
-];
-
-// Export individual service arrays
-export {
-  MOTO_SERVICES,
-  URBAN_SERVICES,
-  MAXI_SERVICES,
-  EXTRA_CARE_SERVICES,
-  EXPERIENCE_SERVICES,
-  TECH_SERVICES,
-};
+// SERVICES, URBAN_SERVICES, MAXI_SERVICES, EXTRA_CARE_SERVICES,
+// EXPERIENCE_SERVICES, TECH_SERVICES, MOTO_SERVICES exports rimossi.
+// Fonte unica: admin Catalogo Lavaggio (car_wash_services table) via
+// `useCarWashServices()` hook. Importa il hook nei consumer.
 
 export default CarWashServicesPage;

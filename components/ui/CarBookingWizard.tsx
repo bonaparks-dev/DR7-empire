@@ -29,7 +29,7 @@ import { getUserCreditBalance, deductCredits, hasSufficientBalance } from '../..
 import { calculateDiscountedPrice, getMembershipTierName } from '../../utils/membershipDiscounts';
 import { roundToTwoDecimals, eurosToCents } from '../../utils/pricing';
 import { fetchWithTimeout } from '../../utils/fetchWithTimeout';
-import { URBAN_SERVICES, MAXI_SERVICES, EXTRA_CARE_SERVICES, EXPERIENCE_SERVICES } from '../../pages/CarWashServicesPage';
+import { useCarWashServices } from '../../hooks/useCarWashServices';
 import type { WashService } from '../../pages/CarWashServicesPage';
 import { classifyVehicle } from '../../utils/vehicleClassification';
 import { lookupTarga, isValidItalianPlate, normalizePlate, type TargaResult } from '../../utils/lookupTarga';
@@ -46,8 +46,8 @@ const isRealName = (name: string | null | undefined): string => {
   return trimmed;
 };
 
-// All extra/add-on services available in the wash upsell (exclude Cortesia)
-const UPSELL_EXTRAS = [...EXTRA_CARE_SERVICES, ...EXPERIENCE_SERVICES].filter(s => s.id !== 'extra-courtesy');
+// UPSELL_EXTRAS now derived inside the component from the live DB catalog
+// (see `upsellExtras` in the component body). Cortesia is excluded as before.
 
 const FUNCTIONS_BASE =
   import.meta.env.VITE_FUNCTIONS_BASE ??
@@ -513,6 +513,26 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const ACTIVE_DELIVERY_PRICE_PER_KM = configOverlay?.deliveryPricePerKm ?? 0;
   // ACTIVE_DR7_FLEX rimosso — DR7 Flex ora è in EXPERIENCE_SERVICES.
   const ACTIVE_EXPERIENCE_SERVICES = configOverlay?.experienceServices ?? [];
+
+  // Live Prime Wash catalog from admin (car_wash_services). Replaces the
+  // old hardcoded URBAN_SERVICES/MAXI_SERVICES/EXTRA_CARE_SERVICES/
+  // EXPERIENCE_SERVICES imports. Single source of truth = Catalogo Lavaggio.
+  const washServices = useCarWashServices();
+  const upsellUrbanServices = useMemo(
+    () => washServices.filter(s => s.category === 'urban'),
+    [washServices]
+  );
+  const upsellMaxiServices = useMemo(
+    () => washServices.filter(s => s.category === 'maxi'),
+    [washServices]
+  );
+  const upsellExtras = useMemo(
+    () => washServices.filter(s =>
+      (s.category === 'extra' || s.category === 'experience') && s.id !== 'extra-courtesy'
+    ),
+    [washServices]
+  );
+
   const ACTIVE_RENTAL_DAY_RATES = configOverlay?.rentalDayRates ?? null;
   const ACTIVE_KM_INCLUDED = configOverlay?.kmIncluded ?? null;
   const ACTIVE_KM_INCLUDED_AZIENDALI = configOverlay?.kmIncludedAziendali ?? null;
@@ -6381,7 +6401,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     {/* Service grid — card design with images */}
                     {upsellCarCategory && (
                       <div className="grid grid-cols-2 gap-3 mb-5">
-                        {(upsellCarCategory === 'urban' ? URBAN_SERVICES : MAXI_SERVICES).map((svc) => {
+                        {(upsellCarCategory === 'urban' ? upsellUrbanServices : upsellMaxiServices).map((svc) => {
                           const discountedPrice = roundToTwoDecimals(svc.price * 0.90);
                           const isSelected = selectedUpsellWash?.id === svc.id;
                           return (
@@ -6417,7 +6437,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <div className="mb-5">
                         <h4 className="text-white font-bold text-sm tracking-widest mb-3">SERVIZI AGGIUNTIVI</h4>
                         <div className="grid grid-cols-2 gap-3">
-                          {UPSELL_EXTRAS.map((svc) => {
+                          {upsellExtras.map((svc) => {
                             const discountedPrice = roundToTwoDecimals(svc.price * 0.90);
                             const isSelected = selectedUpsellExtras.some(s => s.id === svc.id);
                             return (

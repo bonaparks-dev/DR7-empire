@@ -4,7 +4,8 @@ import { useTranslation } from '../hooks/useTranslation';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
-import { SERVICES, Service } from './CarWashServicesPage';
+import type { Service } from './CarWashServicesPage';
+import { useCarWashServices } from '../hooks/useCarWashServices';
 import { useCarWashAvailability } from '../hooks/useRealtimeBookings';
 import { getUserCreditBalance, deductCredits, addCredits, hasSufficientBalance } from '../utils/creditWallet';
 
@@ -35,7 +36,8 @@ const CarWashBookingPage: React.FC = () => {
 
   // Legacy single service support
   const serviceId = locationState?.serviceId;
-  const selectedService = serviceId ? SERVICES.find(s => s.id === serviceId) : null;
+  const washServices = useCarWashServices();
+  const selectedService = serviceId ? washServices.find(s => s.id === serviceId) : null;
 
   // Determine if we have valid booking data
   const hasCartItems = cartItems.length > 0;
@@ -159,11 +161,11 @@ const CarWashBookingPage: React.FC = () => {
   // Use the real-time hook for bookings
   const { bookings: existingBookings, loading: bookingsLoading } = useCarWashAvailability(formData.appointmentDate);
 
-  // Build duration map from SERVICES (real durations from CarWashServicesPage)
-  // Parses duration strings like '10 min', '90 min', '120 min' into hours
+  // Build duration map from the live wash catalog (admin Catalogo Lavaggio).
+  // Parses duration strings like '10 min', '90 min', '120 min' into hours.
   const SERVICE_DURATION_MAP: Record<string, number> = useMemo(() => {
     const map: Record<string, number> = {};
-    for (const svc of SERVICES) {
+    for (const svc of washServices) {
       if (svc.duration && svc.duration !== '-') {
         const minutes = parseInt(svc.duration, 10);
         if (!isNaN(minutes)) {
@@ -172,7 +174,7 @@ const CarWashBookingPage: React.FC = () => {
       }
     }
     return map;
-  }, []);
+  }, [washServices]);
 
   // Real working durations for admin calendar (not shown to customers)
   // Urban = lower value, Maxi = higher value
