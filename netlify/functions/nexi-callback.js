@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
+const { getClubCashbackPct } = require('./utils/dr7ClubCashback');
 
 // Resolve insurance ID → display name from Centralina Pro (centralina_pro_config).
 // Inline copy of utils/centralinaProLookups.ts (TS import not available in .js handler).
@@ -645,50 +646,57 @@ exports.handler = async (event) => {
           }
         }
 
-        // Cashback 3% — credit wallet after successful payment
+        // DR7 Club cashback — gated by active club + tier-based % from
+        // Centralina Pro (centralina_pro_config.dr7_club.tiers). Returns
+        // null if the user has no active subscription or no matching tier.
         if (newBooking.user_id && newBooking.price_total > 0) {
           try {
-            // Check if cashback already applied (idempotency)
+            // Idempotency: accept either the new ('card_bonus') or legacy
+            // ('cashback_3_percent') reference_type so an old in-flight
+            // payment doesn't get cashback re-awarded post-migration.
             const { data: existingCashback } = await supabase
               .from('credit_transactions')
               .select('id')
               .eq('user_id', newBooking.user_id)
               .eq('reference_id', newBooking.id)
-              .eq('reference_type', 'cashback_3_percent')
+              .in('reference_type', ['card_bonus', 'cashback_3_percent'])
               .limit(1);
 
             if (!existingCashback || existingCashback.length === 0) {
-              const paidEur = newBooking.price_total / 100;
-              const cashbackAmount = Math.floor(paidEur * 3) / 100; // 3%, round down to cents
+              const cashbackPct = await getClubCashbackPct(supabase, newBooking.user_id);
+              if (cashbackPct == null) {
+                console.log(`[nexi-callback] No DR7 Club cashback for user ${newBooking.user_id} (no active club or no matching tier)`);
+              } else {
+                const paidEur = newBooking.price_total / 100;
+                const cashbackAmount = Math.floor(paidEur * cashbackPct) / 100;
 
-              if (cashbackAmount >= 0.01) {
-                // Add to balance
-                const { data: balanceRow } = await supabase
-                  .from('user_credit_balance')
-                  .select('balance')
-                  .eq('user_id', newBooking.user_id)
-                  .single();
+                if (cashbackAmount >= 0.01) {
+                  const { data: balanceRow } = await supabase
+                    .from('user_credit_balance')
+                    .select('balance')
+                    .eq('user_id', newBooking.user_id)
+                    .single();
 
-                const currentBalance = balanceRow?.balance ? parseFloat(balanceRow.balance) : 0;
-                const newBalance = currentBalance + cashbackAmount;
+                  const currentBalance = balanceRow?.balance ? parseFloat(balanceRow.balance) : 0;
+                  const newBalance = Math.round((currentBalance + cashbackAmount) * 100) / 100;
 
-                await supabase
-                  .from('user_credit_balance')
-                  .upsert({ user_id: newBooking.user_id, balance: newBalance, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+                  await supabase
+                    .from('user_credit_balance')
+                    .upsert({ user_id: newBooking.user_id, balance: newBalance, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
 
-                // Record transaction in ledger
-                await supabase
-                  .from('credit_transactions')
-                  .insert({
-                    user_id: newBooking.user_id,
-                    amount: cashbackAmount,
-                    type: 'credit',
-                    description: `Cashback 3% su prenotazione DR7-${newBooking.id.substring(0, 8).toUpperCase()}`,
-                    reference_id: newBooking.id,
-                    reference_type: 'cashback_3_percent'
-                  });
+                  await supabase
+                    .from('credit_transactions')
+                    .insert({
+                      user_id: newBooking.user_id,
+                      amount: cashbackAmount,
+                      type: 'credit',
+                      description: `Cashback DR7 Club ${cashbackPct}% su prenotazione DR7-${newBooking.id.substring(0, 8).toUpperCase()}`,
+                      reference_id: newBooking.id,
+                      reference_type: 'card_bonus'
+                    });
 
-                console.log(`[nexi-callback] Cashback €${cashbackAmount.toFixed(2)} credited to user ${newBooking.user_id}`);
+                  console.log(`[nexi-callback] DR7 Club cashback ${cashbackPct}% = €${cashbackAmount.toFixed(2)} credited to user ${newBooking.user_id}`);
+                }
               }
             } else {
               console.log('[nexi-callback] Cashback already applied for booking:', newBooking.id);
@@ -831,56 +839,63 @@ exports.handler = async (event) => {
           }
         }
 
-        // 3% cashback on wallet recharge paid by card — same rule as booking
-        // payments, same reference_type, same idempotency approach. The package
-        // bonus (received_amount - recharge_amount) is a separate reward; this
-        // adds the card-payment cashback on top of it.
-        // Column is recharge_amount (euros the customer paid on card), NOT
-        // received_amount (which bakes in the package bonus).
+        // DR7 Club cashback on wallet recharge paid by card — same rule as
+        // booking payments: gated by active club + tier-based % from
+        // Centralina Pro. The package bonus (received_amount -
+        // recharge_amount) is a separate reward; this adds club cashback
+        // on top of it. Column is recharge_amount (euros paid on card),
+        // NOT received_amount (which bakes in the package bonus).
         if (purchase.user_id && parseFloat(purchase.recharge_amount || 0) > 0) {
           try {
+            // Idempotency: accept legacy 'cashback_3_percent' too so
+            // mid-migration recharges aren't re-rewarded.
             const { data: existingCashback } = await supabase
               .from('credit_transactions')
               .select('id')
               .eq('user_id', purchase.user_id)
               .eq('reference_id', purchase.id)
-              .eq('reference_type', 'cashback_3_percent')
+              .in('reference_type', ['card_bonus', 'cashback_3_percent'])
               .limit(1);
 
             if (!existingCashback || existingCashback.length === 0) {
-              const paidEur = parseFloat(purchase.recharge_amount);
-              const cashbackAmount = Math.floor(paidEur * 3) / 100; // 3%, rounded down to cents
+              const cashbackPct = await getClubCashbackPct(supabase, purchase.user_id);
+              if (cashbackPct == null) {
+                console.log(`[nexi-callback] No DR7 Club cashback on recharge for user ${purchase.user_id} (no active club or no matching tier)`);
+              } else {
+                const paidEur = parseFloat(purchase.recharge_amount);
+                const cashbackAmount = Math.floor(paidEur * cashbackPct) / 100;
 
-              if (cashbackAmount >= 0.01) {
-                const { data: balanceRow } = await supabase
-                  .from('user_credit_balance')
-                  .select('balance')
-                  .eq('user_id', purchase.user_id)
-                  .single();
+                if (cashbackAmount >= 0.01) {
+                  const { data: balanceRow } = await supabase
+                    .from('user_credit_balance')
+                    .select('balance')
+                    .eq('user_id', purchase.user_id)
+                    .single();
 
-                const currentBalance = balanceRow?.balance ? parseFloat(balanceRow.balance) : 0;
-                const newBalance = Math.round((currentBalance + cashbackAmount) * 100) / 100;
+                  const currentBalance = balanceRow?.balance ? parseFloat(balanceRow.balance) : 0;
+                  const newBalance = Math.round((currentBalance + cashbackAmount) * 100) / 100;
 
-                await supabase
-                  .from('user_credit_balance')
-                  .upsert(
-                    { user_id: purchase.user_id, balance: newBalance, last_updated: new Date().toISOString() },
-                    { onConflict: 'user_id' }
-                  );
+                  await supabase
+                    .from('user_credit_balance')
+                    .upsert(
+                      { user_id: purchase.user_id, balance: newBalance, last_updated: new Date().toISOString() },
+                      { onConflict: 'user_id' }
+                    );
 
-                await supabase
-                  .from('credit_transactions')
-                  .insert({
-                    user_id: purchase.user_id,
-                    transaction_type: 'credit',
-                    amount: cashbackAmount,
-                    balance_after: newBalance,
-                    description: `Cashback 3% su ricarica wallet (€${paidEur.toFixed(2)} pagati con carta)`,
-                    reference_id: purchase.id,
-                    reference_type: 'cashback_3_percent'
-                  });
+                  await supabase
+                    .from('credit_transactions')
+                    .insert({
+                      user_id: purchase.user_id,
+                      transaction_type: 'credit',
+                      amount: cashbackAmount,
+                      balance_after: newBalance,
+                      description: `Cashback DR7 Club ${cashbackPct}% su ricarica wallet (€${paidEur.toFixed(2)} pagati con carta)`,
+                      reference_id: purchase.id,
+                      reference_type: 'card_bonus'
+                    });
 
-                console.log(`[nexi-callback] Wallet recharge cashback €${cashbackAmount.toFixed(2)} credited to user ${purchase.user_id}`);
+                  console.log(`[nexi-callback] Wallet recharge DR7 Club cashback ${cashbackPct}% = €${cashbackAmount.toFixed(2)} credited to user ${purchase.user_id}`);
+                }
               }
             } else {
               console.log('[nexi-callback] Wallet recharge cashback already applied for purchase:', purchase.id);
