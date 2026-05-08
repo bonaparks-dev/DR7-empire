@@ -585,7 +585,11 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   }, [prePickup, preReturn]);
 
   // ── Read URL search params ──────────────────────────────────────────────
-  const isVehicleCategory = categoryId === 'cars' || categoryId === 'urban-cars' || categoryId === 'corporate-fleet';
+  // Pagine NON-veicolo: yachts/villas/jets/helicopters usano dati statici da
+  // RENTAL_CATEGORIES. Tutte le altre categorie (3 legacy + qualunque nuova
+  // creata in Centralina Pro) sono trattate come veicolari → fetch da DB.
+  const NON_VEHICLE_ROUTES = new Set(['yachts', 'villas', 'jets', 'helicopters'])
+  const isVehicleCategory = !NON_VEHICLE_ROUTES.has(categoryId);
 
   const urlPickupDate = searchParams.get('pickup') ?? '';
   const urlPickupTime = searchParams.get('pickupTime') ?? '';
@@ -680,11 +684,19 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
     }
   };
 
-  // Determine if this is a vehicle category and map to database category
-  const vehicleCategory = categoryId === 'cars' ? 'exotic'
-    : categoryId === 'urban-cars' ? 'urban'
-      : categoryId === 'corporate-fleet' ? 'aziendali'
-        : undefined;
+  // Mappa categoryId di route → category id sul DB.
+  // 1. Mappature LEGACY mantenute per retrocompatibilita' (route URL → category nel DB).
+  // 2. Per qualunque altro categoryId (incluse le NUOVE categorie create
+  //    dall'admin in Centralina Pro), usiamo direttamente la stringa
+  //    cosi' /<category-id> mostra i veicoli con quel category id sul DB.
+  const LEGACY_ROUTE_TO_DB: Record<string, string> = {
+    'cars': 'exotic',
+    'urban-cars': 'urban',
+    'corporate-fleet': 'aziendali',
+  };
+  const vehicleCategory = isVehicleCategory
+    ? (LEGACY_ROUTE_TO_DB[categoryId] || categoryId)
+    : undefined;
 
   // Fetch vehicles for this category (default display)
   const { vehicles: fetchedVehicles, loading: vehiclesLoading, error: vehiclesError, usingCache } = useVehicles(vehicleCategory);

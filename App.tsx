@@ -219,6 +219,44 @@ const ConsentPopupManager: React.FC = () => {
 
 const AnimatedRoutes = () => {
   const location = useLocation();
+
+  // Carica le categorie dalle Centralina Pro (admin-editabili).
+  // Ogni categoria genera automaticamente una route /<id> che apre la
+  // RentalPage filtrata per quella categoria → veicoli sempre visibili
+  // sul sito senza modifiche al codice.
+  const [dynamicCategories, setDynamicCategories] = React.useState<{ id: string; label: string }[]>([]);
+  React.useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from('centralina_pro_config')
+      .select('config')
+      .eq('id', 'main')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const cats = ((data?.config as any) || {}).categories;
+        if (Array.isArray(cats)) {
+          setDynamicCategories(
+            cats
+              .filter((c: { id?: unknown; label?: unknown }) => typeof c?.id === 'string' && c.id)
+              .map((c: { id: string; label?: string }) => ({ id: c.id, label: c.label || c.id }))
+          );
+        }
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Path gia' coperti da route esplicite (legacy + service pages).
+  // Non duplichiamo le Route per le categorie con id che coincide con queste.
+  const RESERVED_PATHS = new Set([
+    'cars', 'urban-cars', 'corporate-fleet', 'supercar-luxury', 'urban',
+    'car-wash-services', 'prime-wash', 'mechanical-services',
+    'membership', 'credit-wallet',
+    'yachts', 'villas', 'jets', 'helicopters',
+    'aviation-quote', 'contact',
+  ]);
+
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
@@ -248,6 +286,20 @@ const AnimatedRoutes = () => {
               key={category.id}
               path={`/${category.id}`}
               element={<RentalPage categoryId={category.id} />}
+            />
+          ))}
+        {/* Route dinamiche per ogni categoria definita in Centralina Pro
+            (admin → Veicoli → Categorie). Aggiungere una nuova categoria
+            in admin abilita automaticamente /<id> sul sito, con la lista
+            dei veicoli della categoria. Non sovrascrivere le route legacy
+            (RESERVED_PATHS). */}
+        {dynamicCategories
+          .filter(c => !RESERVED_PATHS.has(c.id))
+          .map(c => (
+            <Route
+              key={`dyn-${c.id}`}
+              path={`/${c.id}`}
+              element={<RentalPage categoryId={c.id} />}
             />
           ))}
         <Route

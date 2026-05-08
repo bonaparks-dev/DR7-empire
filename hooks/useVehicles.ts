@@ -304,14 +304,19 @@ export const invalidateVehicleCache = (category?: string) => {
 // "exotic" → "supercars"). DB rows updated through the admin can have
 // either id depending on when they were last edited, so we accept both
 // at the input layer and expand to the full alias set when filtering.
+//
+// Per qualunque NUOVA categoria creata in Centralina (es. "motorcycles",
+// "furgoni", ecc.) non serve un alias: la query usa direttamente la stringa
+// passata. Aggiornare questa mappa solo per casi di rename storico.
 const CATEGORY_ALIASES: Record<string, string[]> = {
   exotic: ['exotic', 'supercars'],
   supercars: ['exotic', 'supercars'],
-  urban: ['urban'],
-  aziendali: ['aziendali'],
 };
 
-export const useVehicles = (category?: 'exotic' | 'supercars' | 'urban' | 'aziendali') => {
+// Accetta qualunque category id definito in Centralina Pro
+// (centralina_pro_config.config.categories[].id). Se la category non e' tra
+// quelle con alias storici, viene usata come singolo valore .eq nel query.
+export const useVehicles = (category?: string) => {
   const [vehicles, setVehicles] = useState<TransformedVehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -383,14 +388,18 @@ export const useVehicles = (category?: 'exotic' | 'supercars' | 'urban' | 'azien
             .neq('status', 'retired')
             .order('display_name', { ascending: true });
 
-          // Filter by category if specified — expand legacy/new aliases
-          // so the same query covers DB rows that haven't been migrated yet
-          // alongside ones that have.
-          if (category && CATEGORY_ALIASES[category]) {
+          // Filter by category if specified. Le categorie con alias storici
+          // (exotic↔supercars) usano .in. Tutte le altre — incluse quelle
+          // create dall'admin in Centralina Pro — usano .eq con la stringa
+          // grezza, cosi' qualunque nuova categoria funziona senza modifiche
+          // al codice.
+          if (category) {
             const aliases = CATEGORY_ALIASES[category];
-            query = aliases.length === 1
-              ? query.eq('category', aliases[0])
-              : query.in('category', aliases);
+            if (aliases && aliases.length > 1) {
+              query = query.in('category', aliases);
+            } else {
+              query = query.eq('category', category);
+            }
           }
 
           // Execute query directly
