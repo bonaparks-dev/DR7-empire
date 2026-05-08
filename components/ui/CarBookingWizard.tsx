@@ -2870,30 +2870,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         await markDiscountCodeAsUsed(data.id);
       }
 
-      // DR7 Club 3% cashback — CARD payments only (not wallet credits).
-      // Granted only to users with an active DR7 Club subscription.
-      if (user?.id && data.payment_method !== 'credit') {
-        try {
-          const { data: sub } = await supabase
-            .from('dr7_club_subscriptions')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('status', 'active')
-            .gt('expires_at', new Date().toISOString())
-            .limit(1)
-            .maybeSingle();
-          if (sub) {
-            const paidEur = grandTotal;
-            const cashbackAmount = Math.floor(paidEur * 3) / 100;
-            if (cashbackAmount >= 0.01) {
-              await addCredits(user.id, cashbackAmount, `DR7 Club 3% — Prenotazione ${data.id?.substring(0, 8) || ''}`, data.id, 'cashback_3_percent');
-              console.log(`[booking] DR7 Club 3% cashback (card): €${cashbackAmount.toFixed(2)} → wallet`);
-            }
-          }
-        } catch (cashbackErr) {
-          console.error('[booking] DR7 Club cashback error (non-blocking):', cashbackErr);
-        }
-      }
+      // DR7 Club cashback is granted server-side by nexi-callback.js once
+      // the Nexi payment is actually confirmed. Tier-based % is read from
+      // Centralina Pro (centralina_pro_config.dr7_club.tiers). Don't
+      // duplicate the logic here — premature client-side grant would
+      // award cashback for payments that may fail or be abandoned.
 
       // DR7 Club subscription — activate after card payment (fee is included in total)
       const hasClubSubNexi = formData.extras.some(e => e.startsWith('subscription_'));
