@@ -145,7 +145,7 @@ const MyBookings = () => {
     return getCancelPolicy(booking).canCancel;
   };
 
-  const getCancelPolicy = (booking: Booking): { canCancel: boolean; hasFlex: boolean; refundPercent: number; penaltyPercent: number; message: string } => {
+  const getCancelPolicy = (booking: Booking): { canCancel: boolean; hasFlex: boolean; refundPercent: number; penaltyPercent: number; refundMethod: 'wallet' | 'card'; message: string } => {
     const bd = booking.booking_details || {};
     const hasDr7Flex = bd.dr7Flex === true || bd.dr7Flex === 'true' || bd.dr7_flex === true || bd.dr7_flex === 'true' || bd.extras?.dr7_flex === true || bd.extras?.dr7_flex === 'true';
     const hasPrimeFlex = booking.booking_details?.prime_flex === true || booking.booking_details?.prime_flex === 'true';
@@ -178,6 +178,7 @@ const MyBookings = () => {
         hasFlex: true,
         refundPercent: flexRefundPercent,
         penaltyPercent: penalty,
+        refundMethod: 'wallet',
         message: `Con ${label}: rimborso del ${flexRefundPercent}% come credito DR7 Wallet.`,
       };
     }
@@ -186,12 +187,16 @@ const MyBookings = () => {
       const rule = pickRule(cancelRules, daysUntilPickup);
       if (rule) {
         const penalty = Math.max(0, 100 - rule.refundPercent);
+        const dest = rule.refundMethod === 'card'
+          ? 'rimborsato sulla carta originale (gestito manualmente da DR7 entro 7 giorni)'
+          : 'come credito DR7 Wallet';
         return {
           canCancel: true,
           hasFlex: false,
           refundPercent: rule.refundPercent,
           penaltyPercent: penalty,
-          message: `${rule.label}: rimborso del ${rule.refundPercent}% come credito DR7 Wallet${penalty > 0 ? ` (penale ${penalty}%)` : ''}.`,
+          refundMethod: rule.refundMethod,
+          message: `${rule.label}: rimborso del ${rule.refundPercent}% ${dest}${penalty > 0 ? ` (penale ${penalty}%)` : ''}.`,
         };
       }
       // No active rule matches → blocked unless Flex (handled above)
@@ -202,10 +207,11 @@ const MyBookings = () => {
         hasFlex: false,
         refundPercent: 0,
         penaltyPercent: 0,
+        refundMethod: 'wallet',
         message: `Meno di ${minNotice} giorni dal servizio: cancellazione non disponibile senza DR7 Flex.`,
       };
     }
-    return { canCancel: false, hasFlex: false, refundPercent: 0, penaltyPercent: 0, message: 'Non è più possibile cancellare questa prenotazione.' };
+    return { canCancel: false, hasFlex: false, refundPercent: 0, penaltyPercent: 0, refundMethod: 'wallet', message: 'Non è più possibile cancellare questa prenotazione.' };
   };
 
   // Recalc rental total whenever the user changes pickup/dropoff while the modal is open
@@ -713,25 +719,48 @@ const MyBookings = () => {
         console.warn('[MyBookings] cauzione release failed:', cauzErr);
       }
 
-      // Auto-refund to DR7 Wallet via the add_credits RPC (atomic: updates
-      // user_credit_balance AND logs a credit_transactions row with
-      // transaction_type='credit' + balance_after). Amount in EUROS
-      // (price_total is stored in cents).
+      // Refund processing depends on the matched rule's refundMethod:
+      //   - 'wallet' (default + DR7 Flex/Elite): auto-credited via add_credits RPC
+      //   - 'card':   admin processes manually via Nexi terminal — we log a
+      //               pending refund task (no auto-credit)
       if (policy.refundPercent > 0 && booking.price_total > 0) {
-        // price_total(cents) × % / 100 = refund cents → /100 → euros rounded to 2 decimals
         const refundEuros = Math.round((booking.price_total * policy.refundPercent) / 100) / 100;
-        // Rental bookings store the car under `vehicle_name`; only car-wash
-        // / mechanical bookings populate `service_name`. Use a fallback
-        // chain so the description never ends with "— null".
         const itemLabel = booking.service_name
           || (booking as { vehicle_name?: string }).vehicle_name
           || 'Prenotazione';
-        const description = policy.hasFlex
-          ? `Rimborso DR7 Flex (${policy.refundPercent}%) — ${itemLabel}`
-          : `Rimborso cancellazione (${policy.refundPercent}%) — ${itemLabel}`;
-        const result = await addCredits(user!.id, refundEuros, description, booking.id, 'refund');
-        if (!result.success) {
-          console.error('[MyBookings] refund credit failed:', result.error);
+
+        if (policy.refundMethod === 'card') {
+          // Card refund: don't credit wallet. Log a pending task on the booking
+          // so admin sees it in the cancellation queue and processes via Nexi.
+          try {
+            await supabase
+              .from('bookings')
+              .update({
+                booking_details: {
+                  ...(booking.booking_details || {}),
+                  pending_card_refund: {
+                    amount_eur: refundEuros,
+                    refund_pct: policy.refundPercent,
+                    requested_at: new Date().toISOString(),
+                    status: 'pending',
+                    note: 'Cancellazione cliente — admin deve processare rimborso su carta via Nexi terminal',
+                  },
+                },
+              })
+              .eq('id', booking.id);
+            console.log(`[MyBookings] card refund pending: €${refundEuros} for booking ${booking.id}`);
+          } catch (cardRefundErr) {
+            console.error('[MyBookings] card refund pending update failed:', cardRefundErr);
+          }
+        } else {
+          // Wallet refund: auto-credit
+          const description = policy.hasFlex
+            ? `Rimborso DR7 Flex (${policy.refundPercent}%) — ${itemLabel}`
+            : `Rimborso cancellazione (${policy.refundPercent}%) — ${itemLabel}`;
+          const result = await addCredits(user!.id, refundEuros, description, booking.id, 'refund');
+          if (!result.success) {
+            console.error('[MyBookings] refund credit failed:', result.error);
+          }
         }
       }
 
@@ -760,9 +789,13 @@ const MyBookings = () => {
 
       // Update local state
       setBookings(prev => prev.map(b => b.id === booking.id ? { ...b, status: 'cancelled' } : b));
-      setCancelSuccess(policy.refundPercent > 0
-        ? `Prenotazione cancellata. Rimborso del ${policy.refundPercent}% accreditato sul tuo DR7 Wallet.`
-        : 'Prenotazione cancellata.');
+      setCancelSuccess(
+        policy.refundPercent > 0
+          ? policy.refundMethod === 'card'
+            ? `Prenotazione cancellata. DR7 processerà il rimborso del ${policy.refundPercent}% sulla tua carta entro 7 giorni lavorativi.`
+            : `Prenotazione cancellata. Rimborso del ${policy.refundPercent}% accreditato sul tuo DR7 Wallet.`
+          : 'Prenotazione cancellata.'
+      );
     } catch (err: any) {
       setCancelError(err.message || 'Errore durante la cancellazione');
     } finally {

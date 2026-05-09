@@ -15,16 +15,24 @@ import { supabase } from '../supabaseClient';
  * configured refund_percent (handled separately in the wizard).
  */
 
+export type RefundMethod = 'wallet' | 'card';
+
 export interface CancellationRule {
   id: string;
   label: string;
   minDaysNotice: number;
   refundPercent: number;
+  /** Where the refund goes:
+   *  - 'wallet': auto-credited to the customer's DR7 Wallet on cancel.
+   *  - 'card':   manual refund via Nexi terminal — the cancellation
+   *              flow does NOT auto-credit; admin processes externally.
+   */
+  refundMethod: RefundMethod;
   isActive: boolean;
 }
 
 const DEFAULT_RULES: CancellationRule[] = [
-  { id: 'standard', label: 'Cancellazione standard', minDaysNotice: 5, refundPercent: 90, isActive: true },
+  { id: 'standard', label: 'Cancellazione standard', minDaysNotice: 5, refundPercent: 90, refundMethod: 'wallet', isActive: true },
 ];
 
 let cache: CancellationRule[] | null = null;
@@ -35,6 +43,7 @@ interface RawRule {
   label?: unknown;
   min_days_notice?: unknown;
   refund_pct?: unknown;
+  refund_method?: unknown;
   is_active?: unknown;
 }
 
@@ -61,6 +70,7 @@ async function fetchOnce(): Promise<CancellationRule[]> {
           label: typeof r.label === 'string' ? r.label : 'Regola',
           minDaysNotice: typeof r.min_days_notice === 'number' ? r.min_days_notice : Number(r.min_days_notice ?? 0),
           refundPercent: typeof r.refund_pct === 'number' ? r.refund_pct : Number(r.refund_pct ?? 0),
+          refundMethod: r.refund_method === 'card' ? 'card' as const : 'wallet' as const,
           isActive: r.is_active !== false,
         }))
         .filter((r) => r.id && Number.isFinite(r.minDaysNotice) && Number.isFinite(r.refundPercent));
