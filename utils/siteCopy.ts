@@ -49,6 +49,7 @@ interface SiteCopySnapshot {
   mechanical?: MechanicalCopy;
   carwash?: CarWashCopy;
   investitori?: InvestitoriCopy;
+  franchising?: FranchisingCopy;
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -228,6 +229,50 @@ export interface MechanicalCopy {
   hours_heading_it: string; hours_heading_en: string;
   hours_main_it: string; hours_main_en: string;
   hours_sub_it: string; hours_sub_en: string;
+}
+
+// ─── Franchising (IT-only sales page) ──────────────────────────────────────
+//
+// `{reviewCount}` placeholder in stats_lines is replaced at render time with
+// the live Google reviews count.
+export type FranchisingExpansionIcon = 'square' | 'diamond' | 'lines';
+export type FranchisingBenefitIcon = 'check' | 'shield' | 'star';
+
+export interface FranchisingExpansionLocation {
+  id: string;
+  icon: FranchisingExpansionIcon;
+  name: string;
+  description: string;
+}
+
+export interface FranchisingBenefit {
+  id: string;
+  icon: FranchisingBenefitIcon;
+  title: string;
+  description: string;
+}
+
+export interface FranchisingCopy {
+  hero_h2: string;
+  hero_p1: string;
+  hero_p2: string;
+  stats_heading: string;
+  stats_lines: string[];               // supports {reviewCount}
+  stats_footer_main: string;
+  stats_footer_sub: string;
+  expansion_heading: string;
+  expansion_locations: FranchisingExpansionLocation[];
+  about_heading: string;
+  about_paragraphs: string[];
+  benefits: FranchisingBenefit[];
+  cta_heading: string;
+  cta_intro: string;
+  cta_box_main: string;
+  cta_box_sub: string;
+  contact_heading: string;
+  contact_intro: string;
+  contact_email: string;
+  footer_statement: string;
 }
 
 // ─── Investitori (IT-only sales page) ──────────────────────────────────────
@@ -641,6 +686,13 @@ export async function getLegalPage(id: LegalPageId): Promise<LegalPageCopy | nul
   return found;
 }
 
+/** Franchising sales page — IT-only copy. */
+export async function getFranchisingCopy(): Promise<FranchisingCopy> {
+  const snap = await loadOnce();
+  if (snap.franchising && snap.franchising.hero_h2) return snap.franchising;
+  return DEFAULT_FRANCHISING;
+}
+
 /** Investitori (investor page) — IT-only copy. */
 export async function getInvestitoriCopy(): Promise<InvestitoriCopy> {
   const snap = await loadOnce();
@@ -729,6 +781,48 @@ export function invalidateSiteCopyCache(): void {
   CACHE = null;
   pending = null;
 }
+
+// ─── Default Franchising seed ──────────────────────────────────────────────
+const DEFAULT_FRANCHISING: FranchisingCopy = {
+  hero_h2: 'Vuoi aprire la tua sede DR7 nella tua città?',
+  hero_p1: 'Diventa partner del gruppo che sta rivoluzionando il concetto di lusso in Italia.',
+  hero_p2: 'Nessun investimento impossibile, supporto totale della casa madre\ne un brand che cresce ogni singolo giorno.',
+  stats_heading: 'In soli 18 mesi di attività',
+  stats_lines: [
+    '* oltre 1.800 contratti firmati',
+    '* più di €1.500.000 di fatturato netto',
+    '* oltre €1.500.000 in parco auto',
+    '* più di 900 clienti attivi',
+    '* {reviewCount} recensioni a 5 stelle reali',
+    '* Valutazione aziendale: €15.000.000',
+    '* Valutazione brand: oltre €4.000.000',
+    '* Da S.R.L. a S.P.A. in un solo anno.',
+  ],
+  stats_footer_main: 'Il brand di lusso più riconosciuto d\'Italia.',
+  stats_footer_sub: 'Italia • Dubai Rent 7.0 S.p.A.',
+  expansion_heading: 'Il Nostro Piano di Espansione',
+  expansion_locations: [
+    { id: 'cagliari', icon: 'square',  name: 'Cagliari', description: 'Sede Principale' },
+    { id: 'iglesias', icon: 'diamond', name: 'Iglesias', description: 'Franchising Operativo' },
+    { id: 'target',   icon: 'lines',   name: '300 Sedi',  description: 'Obiettivo Italia' },
+  ],
+  about_heading: 'L\'Impero DR7',
+  about_paragraphs: [
+    'Nata come Dubai Rent 7.0 S.p.A., oggi DR7 è un impero del lusso e della mobilità. Non un marchio. Non un esperimento. Ma una macchina che funziona, cresce e domina.',
+    'Abbiamo costruito un modello che integra mobilità, lusso ed esperienza in un solo ecosistema: auto, supercar, yacht, elicotteri, jet privati e ville di lusso. Un sistema già operativo, già profittevole, già riconosciuto.',
+  ],
+  benefits: [
+    { id: 'brand', icon: 'check', title: 'Più di un Brand', description: 'Un metodo, una struttura, una reputazione. Un nome sinonimo di dominio.' },
+  ],
+  cta_heading: 'Cerchiamo Dominatori di Mercato',
+  cta_intro: 'Non affiliati. Imprenditori pronti a portare il nome DR7 Luxury Empire nel proprio territorio.',
+  cta_box_main: 'Se vuoi entrare in un impero destinato a durare, il momento è ora.',
+  cta_box_sub: 'I posti sono limitati. Le sedi non si conquistano due volte.',
+  contact_heading: 'Invia la tua candidatura',
+  contact_intro: 'e scopri come aprire la tua sede ufficiale DR7.',
+  contact_email: 'franchising@dr7.app',
+  footer_statement: '-\n> "Solo per veri imprenditori. Posti limitati per le nuove aperture 2025."',
+};
 
 // ─── Default Investitori seed ──────────────────────────────────────────────
 const DEFAULT_INVESTITORI: InvestitoriCopy = {
