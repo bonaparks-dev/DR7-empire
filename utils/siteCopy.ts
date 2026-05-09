@@ -48,6 +48,7 @@ interface SiteCopySnapshot {
   contact?: ContactCopy;
   mechanical?: MechanicalCopy;
   carwash?: CarWashCopy;
+  investitori?: InvestitoriCopy;
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -227,6 +228,42 @@ export interface MechanicalCopy {
   hours_heading_it: string; hours_heading_en: string;
   hours_main_it: string; hours_main_en: string;
   hours_sub_it: string; hours_sub_en: string;
+}
+
+// ─── Investitori (IT-only sales page) ──────────────────────────────────────
+//
+// The whole /investitori page is currently IT-only. Schema reflects that —
+// single-string fields. Add EN siblings later if/when the page gets a
+// language switcher.
+export interface InvestitoriStrength {
+  id: string;
+  title: string;
+  description: string;
+}
+
+export interface InvestitoriInfoItem {
+  label: string;
+  value: string;
+}
+
+export interface InvestitoriCopy {
+  hero_title: string;
+  hero_subtitle: string;
+  intro_paragraphs: string[];
+  opportunity_heading: string;
+  opportunity_paragraphs: string[];
+  strength_heading: string;
+  strength_points: InvestitoriStrength[];
+  cta_heading: string;
+  cta_paragraphs: string[];
+  cta_button_label: string;
+  cta_whatsapp_url: string;
+  cta_email: string;
+  info_heading: string;
+  info_items: InvestitoriInfoItem[];
+  info_footnote: string;
+  legal_heading: string;
+  legal_paragraphs: string[];
 }
 
 // ─── Car Wash chrome (catalog stays in car_wash_services table) ────────────
@@ -604,6 +641,13 @@ export async function getLegalPage(id: LegalPageId): Promise<LegalPageCopy | nul
   return found;
 }
 
+/** Investitori (investor page) — IT-only copy. */
+export async function getInvestitoriCopy(): Promise<InvestitoriCopy> {
+  const snap = await loadOnce();
+  if (snap.investitori && snap.investitori.hero_title) return snap.investitori;
+  return DEFAULT_INVESTITORI;
+}
+
 /** Car wash page chrome (UI labels — catalog stays in car_wash_services). */
 export async function getCarWashCopy(): Promise<CarWashCopy> {
   const snap = await loadOnce();
@@ -685,6 +729,55 @@ export function invalidateSiteCopyCache(): void {
   CACHE = null;
   pending = null;
 }
+
+// ─── Default Investitori seed ──────────────────────────────────────────────
+const DEFAULT_INVESTITORI: InvestitoriCopy = {
+  hero_title: 'SEZIONE INVESTITORI',
+  hero_subtitle: 'Partecipa alla crescita del gruppo DR7',
+  intro_paragraphs: [
+    'Dubai Rent 7.0 S.p.A. rappresenta il cuore del progetto DR7 Luxury Empire, una realtà italiana in espansione internazionale nel settore Luxury Mobility & Lifestyle.',
+    'Fondata da Valerio Saia, la società persegue l\'obiettivo di costruire entro il 2030 un gruppo di riferimento nel panorama del lusso globale, integrando noleggio supercar, yacht, elicotteri, ville di pregio e servizi di concierge in un\'unica piattaforma.',
+  ],
+  opportunity_heading: 'Opportunità di partecipazione al capitale',
+  opportunity_paragraphs: [
+    'Il Consiglio di Amministrazione di Dubai Rent 7.0 S.p.A. ha deliberato l\'apertura selettiva del capitale sociale a investitori privati e partner strategici, con l\'intento di favorire la crescita e l\'espansione del brand a livello internazionale.',
+    'L\'ingresso nel capitale è riservato a soggetti qualificati, selezionati direttamente dalla Direzione Generale, nel rispetto delle normative vigenti e delle procedure interne di valutazione.',
+    'L\'obiettivo è consolidare la struttura patrimoniale della società e accelerare il piano Vision 2030, che prevede il rafforzamento delle attività operative, lo sviluppo di nuove divisioni e, in prospettiva, la quotazione in mercati regolamentati.',
+  ],
+  strength_heading: 'Punti di forza',
+  strength_points: [
+    { id: 'crescita',         title: 'Crescita documentata',          description: 'Fatturato in costante incremento con proiezione di sviluppo superiore al +100% annuo.' },
+    { id: 'posizionamento',   title: 'Posizionamento strategico',     description: 'Brand di riferimento nel comparto luxury mobility in Italia e in Europa.' },
+    { id: 'espansione',       title: 'Espansione internazionale',     description: 'Apertura verso mercati ad alto potenziale, tra cui Emirati Arabi Uniti e Francia.' },
+    { id: 'integrazione',     title: 'Integrazione verticale',        description: 'Un unico ecosistema che combina mobilità di lusso, hospitality e servizi esperienziali.' },
+    { id: 'visione',          title: 'Visione a lungo termine',       description: 'Programma industriale orientato alla creazione di valore e alla sostenibilità economica del gruppo.' },
+  ],
+  cta_heading: 'Modalità di adesione',
+  cta_paragraphs: [
+    'Gli interessati possono inoltrare richiesta di ammissione al Club Azionisti DR7, compilando il modulo dedicato e avviando la fase di verifica da parte dell\'Ufficio Investor Relations.',
+    'Ogni proposta di partecipazione viene valutata singolarmente in base ai requisiti dell\'investitore, alla compatibilità strategica e alle disponibilità di quote.',
+  ],
+  cta_button_label: 'RICHIEDI ACCESSO INVESTITORI',
+  cta_whatsapp_url: 'https://wa.me/393457905205?text=Buongiorno%2C%20sono%20interessato%20ad%20entrare%20nel%20Club%20Azionisti%20DR7.%20Vorrei%20ricevere%20maggiori%20informazioni%20sulle%20opportunit%C3%A0%20di%20investimento%20e%20partecipazione%20al%20capitale.',
+  cta_email: 'investor@dr7.app',
+  info_heading: 'Informazioni sintetiche',
+  info_items: [
+    { label: 'Denominazione',                 value: 'Dubai Rent 7.0 S.p.A.' },
+    { label: 'Sede legale',                   value: 'Cagliari, Italia' },
+    { label: 'Settore',                       value: 'Luxury Mobility & Lifestyle' },
+    { label: 'Forma giuridica',               value: 'Società per Azioni' },
+    { label: 'Capitale sociale',              value: 'In aumento progressivo secondo piano Vision 2030' },
+    { label: 'Tipologia quote',               value: 'Azioni ordinarie nominative' },
+    { label: 'Investimento minimo indicativo', value: 'Da €25.000' },
+    { label: 'Distribuzione utili',           value: 'Secondo deliberazioni dell\'Assemblea e risultati di bilancio' },
+  ],
+  info_footnote: 'I dettagli economico-finanziari completi, nonché la documentazione ufficiale, sono forniti esclusivamente su richiesta riservata e previa verifica dei requisiti soggettivi dell\'investitore.',
+  legal_heading: 'Avvertenza legale',
+  legal_paragraphs: [
+    'Le informazioni contenute in questa sezione hanno finalità esclusivamente informative e non costituiscono, in alcun modo, un\'offerta pubblica di sottoscrizione o una sollecitazione all\'investimento ai sensi dell\'art. 94 del D.Lgs. 58/1998 (TUF) e della normativa europea vigente.',
+    'L\'adesione a operazioni di partecipazione al capitale è riservata a soggetti selezionati, previa valutazione da parte di Dubai Rent 7.0 S.p.A. e nel pieno rispetto delle procedure legali e regolamentari applicabili.',
+  ],
+};
 
 // ─── Default Car Wash chrome ───────────────────────────────────────────────
 const DEFAULT_CARWASH: CarWashCopy = {
