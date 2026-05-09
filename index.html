@@ -284,6 +284,39 @@
     <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
 
+    <!-- Mobile UX fixes (load BEFORE app to avoid FOUC) -->
+    <style>
+      /* iOS Safari auto-zooms input fields when font-size < 16px.
+         This was causing every form tap in the wizard / profile / etc.
+         to zoom-in and visually break the layout. Force 16px on mobile,
+         keep Tailwind's responsive sizes on tablet+ where zoom doesn't apply. */
+      @media (max-width: 767px) {
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="number"],
+        input[type="date"],
+        input[type="time"],
+        input[type="datetime-local"],
+        input[type="password"],
+        input[type="url"],
+        input[type="search"],
+        select,
+        textarea {
+          font-size: 16px !important;
+        }
+      }
+
+      /* Use the dynamic viewport height where supported (iOS Safari hides
+         the bottom URL bar but `100vh` still includes that area, so any
+         `h-screen` element gets ~75px clipped under the chrome). `100dvh`
+         is the modern way to size to the visible viewport. */
+      @supports (height: 100dvh) {
+        .h-screen { height: 100dvh; }
+        .min-h-screen { min-height: 100dvh; }
+      }
+    </style>
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
