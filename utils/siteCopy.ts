@@ -22,7 +22,8 @@ export interface FaqEntry {
 interface SiteCopySnapshot {
   faq?: FaqEntry[];
   cancellazione?: CancellazioneCopy;
-  // Future: membership, hero, chi_siamo, footer, legali
+  membership?: MembershipCopy;
+  // Future: hero, chi_siamo, footer, legali
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -57,6 +58,69 @@ export interface CancellazioneCopy {
   contact_address: string;
   last_updated_it: string;
   last_updated_en: string;
+}
+
+// ─── Membership / DR7 Club ──────────────────────────────────────────────────
+//
+// Pricing numbers (€39 / €/month / annual savings) come from
+// MEMBERSHIP_TIERS at runtime — they're not editable here. What IS editable:
+// hero copy, pricing-card surround text, the entire "DR7 Elite Rewards"
+// section (header + sub-sections with rich blocks), and the reward-system
+// grid items. Use the same `{monthlyPrice}` / `{annualPrice}` /
+// `{annualMonthly}` placeholders if you want admin to inline live numbers.
+export interface MembershipRewardItem {
+  label_it: string;
+  label_en: string;
+  reward: string;       // "2%", "1%", "3%", ... — free-form badge text
+  note_it: string | null;
+  note_en: string | null;
+}
+
+export interface MembershipCopy {
+  // Hero band
+  hero_eyebrow_it: string; hero_eyebrow_en: string;
+  hero_title: string;
+  hero_subtitle_it: string; hero_subtitle_en: string;
+  hero_opener_it: string; hero_opener_en: string;     // "...starting from just {monthlyPrice}/mese"
+  // Pricing card surround
+  pricing_card_title: string;
+  pricing_billing_monthly_it: string; pricing_billing_monthly_en: string;
+  pricing_billing_annual_it: string; pricing_billing_annual_en: string;
+  pricing_billing_save_badge: string;                  // e.g. "-33%"
+  pricing_cycle_month_it: string; pricing_cycle_month_en: string;
+  pricing_cycle_year_it: string; pricing_cycle_year_en: string;
+  pricing_savings_it: string; pricing_savings_en: string;  // template w/ {annualMonthly},{annualSavings}
+  pricing_cta_it: string; pricing_cta_en: string;
+  pricing_cta_footnote_it: string; pricing_cta_footnote_en: string;
+  // DR7 Elite Rewards block
+  elite_title: string;
+  elite_subtitle_it: string; elite_subtitle_en: string;
+  elite_intro_it: string; elite_intro_en: string;
+  elite_sections: CancellazioneSection[];              // reuse rich-block schema
+  elite_cta_title_it: string; elite_cta_title_en: string;
+  elite_cta_text_it: string; elite_cta_text_en: string;
+  elite_cta_logged_out_it: string; elite_cta_logged_out_en: string;
+  elite_cta_logged_in_it: string; elite_cta_logged_in_en: string;
+  // Reward-system grid
+  reward_title_it: string; reward_title_en: string;
+  reward_intro_it: string; reward_intro_en: string;
+  reward_items: MembershipRewardItem[];
+  reward_footnote_it: string; reward_footnote_en: string;
+}
+
+export interface MembershipPlaceholderValues {
+  monthlyPrice: string;     // formatted e.g. "39,00"
+  annualPrice: string;      // formatted e.g. "390"
+  annualMonthly: string;    // formatted e.g. "32,50"
+  annualSavings: string;    // formatted savings
+}
+
+export function applyMembershipPlaceholders(s: string, vals: MembershipPlaceholderValues): string {
+  return s
+    .split('{monthlyPrice}').join(vals.monthlyPrice)
+    .split('{annualPrice}').join(vals.annualPrice)
+    .split('{annualMonthly}').join(vals.annualMonthly)
+    .split('{annualSavings}').join(vals.annualSavings);
 }
 
 // ─── Defaults ────────────────────────────────────────────────────────────────
@@ -160,11 +224,150 @@ export function applyCancellazionePlaceholders(s: string, vals: CancellazionePla
   return out;
 }
 
+/**
+ * Membership / DR7 Club page copy — falls back to the legacy hardcoded
+ * strings when admin hasn't customized.
+ */
+export async function getMembershipCopy(): Promise<MembershipCopy> {
+  const snap = await loadOnce();
+  if (snap.membership && Array.isArray(snap.membership.elite_sections)) {
+    return snap.membership;
+  }
+  return DEFAULT_MEMBERSHIP;
+}
+
 /** Force a re-fetch (useful after admin edits in dev). */
 export function invalidateSiteCopyCache(): void {
   CACHE = null;
   pending = null;
 }
+
+// ─── Default Membership seed ────────────────────────────────────────────────
+const DEFAULT_MEMBERSHIP: MembershipCopy = {
+  hero_eyebrow_it: 'Exclusive',
+  hero_eyebrow_en: 'Exclusive',
+  hero_title: 'DR7 CLUB',
+  hero_subtitle_it: 'Ogni prenotazione ti premia. Ogni servizio ti ripaga.',
+  hero_subtitle_en: 'Every booking rewards you. Every service pays you back.',
+  hero_opener_it: 'Attiva il tuo wallet reward a partire da soli €{monthlyPrice}/mese',
+  hero_opener_en: 'Activate your reward wallet starting from just €{monthlyPrice}/month',
+
+  pricing_card_title: 'DR7 CLUB',
+  pricing_billing_monthly_it: 'Mensile',
+  pricing_billing_monthly_en: 'Monthly',
+  pricing_billing_annual_it: 'Annuale',
+  pricing_billing_annual_en: 'Annual',
+  pricing_billing_save_badge: '-33%',
+  pricing_cycle_month_it: 'mese',
+  pricing_cycle_month_en: 'month',
+  pricing_cycle_year_it: 'anno',
+  pricing_cycle_year_en: 'year',
+  pricing_savings_it: 'Solo €{annualMonthly} al mese — risparmi €{annualSavings} all’anno',
+  pricing_savings_en: 'Just €{annualMonthly}/month — save €{annualSavings}/year',
+  pricing_cta_it: 'Iscriviti ora',
+  pricing_cta_en: 'Subscribe now',
+  pricing_cta_footnote_it: 'Puoi annullare in qualsiasi momento dal tuo account.',
+  pricing_cta_footnote_en: 'Cancel anytime from your account.',
+
+  elite_title: 'DR7 Elite Rewards',
+  elite_subtitle_it: 'Accumula credito e utilizzalo sui servizi DR7',
+  elite_subtitle_en: 'Earn credit and spend it on DR7 services',
+  elite_intro_it: 'Con DR7 puoi ottenere vantaggi concreti fin da subito e aumentare il tuo credito semplicemente utilizzando la piattaforma e invitando i tuoi contatti.',
+  elite_intro_en: 'With DR7 you get concrete benefits from day one and grow your credit simply by using the platform and inviting your contacts.',
+
+  elite_sections: [
+    {
+      id: 'vantaggi-immediati',
+      variant: 'standard',
+      title_it: 'Vantaggi immediati',
+      title_en: 'Immediate benefits',
+      blocks: [
+        { type: 'p', text_it: 'Alla registrazione ricevi:', text_en: 'On registration you receive:' },
+        { type: 'ul',
+          items_it: ['10€ nel tuo Wallet DR7', '50€ di vantaggio utilizzabile su prenotazioni da almeno 250€'],
+          items_en: ['€10 in your DR7 Wallet', '€50 benefit usable on bookings of at least €250'] },
+        { type: 'p-italic',
+          text_it: 'Il credito è utilizzabile direttamente sui servizi DR7 disponibili in piattaforma.',
+          text_en: 'The credit can be used directly on DR7 services available on the platform.' },
+      ],
+    },
+    {
+      id: 'invita-e-guadagna',
+      variant: 'standard',
+      title_it: 'Invita e guadagna',
+      title_en: 'Invite and earn',
+      blocks: [
+        { type: 'p',
+          text_it: 'Condividi DR7 con i tuoi contatti e accumula credito in modo illimitato.',
+          text_en: 'Share DR7 with your contacts and accumulate credit without limits.' },
+        { type: 'p', text_it: 'Per ogni amico che:', text_en: 'For each friend who:' },
+        { type: 'ul',
+          items_it: ['si registra tramite il tuo invito', 'effettua una ricarica minima di 100€'],
+          items_en: ['signs up via your invitation', 'tops up at least €100'] },
+        { type: 'p', text_it: 'riceverai:', text_en: 'you receive:' },
+        { type: 'ul',
+          items_it: ['50€ di credito nel tuo Wallet DR7'],
+          items_en: ['€50 credit in your DR7 Wallet'] },
+        { type: 'p-italic',
+          text_it: 'Non sono previsti limiti al numero di inviti.',
+          text_en: 'There is no limit to the number of invitations.' },
+      ],
+    },
+    {
+      id: 'come-funziona',
+      variant: 'standard',
+      title_it: 'Come funziona',
+      title_en: 'How it works',
+      blocks: [
+        { type: 'ul',
+          items_it: ['Registrati su DR7', 'Accedi al tuo Wallet personale', 'Condividi il tuo invito', 'Ricevi credito per ogni ricarica valida effettuata dai tuoi amici', 'Utilizza il credito sui servizi disponibili'],
+          items_en: ['Sign up on DR7', 'Access your personal Wallet', 'Share your invitation', 'Receive credit for every valid top-up made by your friends', 'Use the credit on available services'] },
+      ],
+    },
+    {
+      id: 'condizioni-utilizzo',
+      variant: 'standard',
+      title_it: 'Condizioni di utilizzo',
+      title_en: 'Terms of use',
+      blocks: [
+        { type: 'ul',
+          items_it: [
+            'Il credito è utilizzabile esclusivamente all’interno della piattaforma DR7',
+            'I bonus vengono accreditati solo a seguito di ricariche effettivamente completate',
+            'DR7 si riserva il diritto di verificare e validare ogni operazione',
+            'Eventuali abusi o utilizzi non conformi comportano la sospensione dei benefici',
+          ],
+          items_en: [
+            'Credit can only be used within the DR7 platform',
+            'Bonuses are credited only after top-ups are actually completed',
+            'DR7 reserves the right to verify and validate every transaction',
+            'Abuse or non-compliant use results in benefits being suspended',
+          ] },
+      ],
+    },
+  ],
+  elite_cta_title_it: 'Inizia ora',
+  elite_cta_title_en: 'Start now',
+  elite_cta_text_it: 'Registrati, attiva il tuo Wallet e inizia ad accumulare credito con DR7.',
+  elite_cta_text_en: 'Sign up, activate your Wallet and start earning credit with DR7.',
+  elite_cta_logged_out_it: 'Registrati ora',
+  elite_cta_logged_out_en: 'Sign up now',
+  elite_cta_logged_in_it: 'Vai al tuo Wallet',
+  elite_cta_logged_in_en: 'Go to your Wallet',
+
+  reward_title_it: 'Come funziona il Reward',
+  reward_title_en: 'How Rewards Work',
+  reward_intro_it: 'Accumula credito nel tuo wallet ad ogni prenotazione e servizio. Il reward dipende dal tuo comportamento, non dal metodo di pagamento.',
+  reward_intro_en: 'Earn wallet credit on every booking and service. Rewards are based on your behavior, not your payment method.',
+  reward_items: [
+    { label_it: 'Pagamento anticipato (100%)', label_en: 'Full prepayment (100%)', reward: '2%', note_it: 'fino al 4% per livelli più alti', note_en: 'up to 4% at higher levels' },
+    { label_it: 'Pagamento con acconto (30%)', label_en: 'Deposit payment (30%)', reward: '1%', note_it: null, note_en: null },
+    { label_it: 'Servizi extra', label_en: 'Extra services', reward: '2%', note_it: null, note_en: null },
+    { label_it: 'Prime Wash', label_en: 'Prime Wash', reward: '3%', note_it: null, note_en: null },
+  ],
+  reward_footnote_it: 'Senza DR7 Club il sistema reward non è attivo.',
+  reward_footnote_en: 'Without DR7 Club the reward system is not active.',
+};
 
 // ─── Default Cancellazione seed ─────────────────────────────────────────────
 // Mirrors the legacy hardcoded /cancellation page word-for-word so swapping
