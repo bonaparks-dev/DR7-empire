@@ -174,7 +174,10 @@ export default function RegistrazioneClientePage() {
             // pubblica_amministrazione -> 'azienda' (entrambi richiedono SDI),
             // ma passiamo anche il valore originale come ente_ufficio/codice_ipa.
             const payloadCustomer: Record<string, string> = {
-                tipo_cliente: form.tipo_cliente === 'persona_fisica' ? 'privato' : 'azienda',
+                // I 3 valori esatti accettati dal CHECK constraint su
+                // customers_extended.tipo_cliente (persona_fisica / azienda /
+                // pubblica_amministrazione) — niente piu' alias 'privato'.
+                tipo_cliente: form.tipo_cliente,
                 telefono: form.telefono.trim(),
                 email: form.email.trim(),
                 indirizzo: form.indirizzo.trim(),

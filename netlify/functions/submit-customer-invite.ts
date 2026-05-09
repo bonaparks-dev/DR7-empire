@@ -87,7 +87,14 @@ const handler: Handler = async (event) => {
             insert.data_scadenza_patente = customer.data_scadenza_patente
         }
 
-        const tipoCliente = (insert.tipo_cliente as string) || 'privato'
+        // Allineato al CHECK constraint su customers_extended.tipo_cliente:
+        // accetta solo 'persona_fisica' | 'azienda' | 'pubblica_amministrazione'.
+        // Default a 'persona_fisica' se mancante.
+        const tipoCliente = (insert.tipo_cliente as string) || 'persona_fisica'
+        if (!['persona_fisica', 'azienda', 'pubblica_amministrazione'].includes(tipoCliente)) {
+            return { statusCode: 400, headers, body: JSON.stringify({ error: `tipo_cliente non valido: ${tipoCliente}` }) }
+        }
+        insert.tipo_cliente = tipoCliente
         const missing: string[] = []
 
         if (!insert.telefono) missing.push('Telefono')
@@ -100,10 +107,14 @@ const handler: Handler = async (event) => {
         if (tipoCliente === 'azienda') {
             if (!insert.ragione_sociale && !insert.denominazione) missing.push('Ragione sociale')
             if (!insert.partita_iva) missing.push('P.IVA')
-            if (!insert.pec && !insert.codice_destinatario && !insert.codice_univoco) {
-                missing.push('PEC, Codice Destinatario SDI o Codice Univoco IPA')
+            if (!insert.pec && !insert.codice_destinatario) {
+                missing.push('PEC o Codice Destinatario SDI')
             }
+        } else if (tipoCliente === 'pubblica_amministrazione') {
+            if (!insert.ente_ufficio && !insert.ragione_sociale && !insert.denominazione) missing.push('Ente / Ufficio')
+            if (!insert.codice_univoco && !insert.codice_ipa) missing.push('Codice Univoco IPA')
         } else {
+            // persona_fisica
             if (!insert.nome) missing.push('Nome')
             if (!insert.cognome) missing.push('Cognome')
             if (!insert.codice_fiscale) missing.push('Codice Fiscale')
