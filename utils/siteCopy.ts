@@ -43,6 +43,9 @@ interface SiteCopySnapshot {
   about?: AboutCopy;
   footer?: FooterCopy;
   legal?: LegalCopy;
+  careers?: CareersCopy;
+  press?: PressCopy;
+  contact?: ContactCopy;
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -189,6 +192,71 @@ export interface AboutCopy {
   story_outro_main_it: string; story_outro_main_en: string;
   story_outro_sub_it: string; story_outro_sub_en: string;
   story_signature: string;    // "— Valerio & Ilenia"
+}
+
+// ─── Careers ────────────────────────────────────────────────────────────────
+export interface CareersJob {
+  id: string;
+  title_it: string; title_en: string;
+  location_it: string; location_en: string;
+  type_it: string; type_en: string;
+  description_it: string; description_en: string;
+}
+
+export interface CareersCopy {
+  page_title_it: string; page_title_en: string;
+  intro_it: string; intro_en: string;
+  jobs_heading_it: string; jobs_heading_en: string;
+  jobs: CareersJob[];
+  apply_heading_it: string; apply_heading_en: string;
+  apply_text_it: string; apply_text_en: string;     // supports inline markdown ([label](url))
+  apply_email: string;
+}
+
+// ─── Press ──────────────────────────────────────────────────────────────────
+export interface PressArticle {
+  id: string;
+  title: string;            // article titles usually stay in source language
+  publication: string;
+  date: string;
+  summary_it: string; summary_en: string;
+  link: string;
+}
+
+export interface PressCopy {
+  page_title_it: string; page_title_en: string;
+  subtitle_it: string; subtitle_en: string;
+  inquiries_heading_it: string; inquiries_heading_en: string;
+  inquiries_text_it: string; inquiries_text_en: string;
+  inquiries_email_label_it: string; inquiries_email_label_en: string;
+  inquiries_email: string;
+  news_heading_it: string; news_heading_en: string;
+  read_more_label_it: string; read_more_label_en: string;
+  articles: PressArticle[];
+  releases_heading_it: string; releases_heading_en: string;
+  releases_text_it: string; releases_text_en: string;
+}
+
+// ─── Contact ────────────────────────────────────────────────────────────────
+export interface ContactCopy {
+  page_title_it: string; page_title_en: string;
+  subtitle_it: string; subtitle_en: string;
+  phone_label_it: string; phone_label_en: string;
+  phone_display: string;
+  phone_tel_url: string;
+  whatsapp_label_it: string; whatsapp_label_en: string;
+  whatsapp_button_it: string; whatsapp_button_en: string;
+  whatsapp_url: string;
+  email_label_it: string; email_label_en: string;
+  email_address: string;
+  hours_label_it: string; hours_label_en: string;
+  hours_lines_it: string[]; hours_lines_en: string[];
+  office_heading_it: string; office_heading_en: string;
+  office_company_name: string;
+  office_address_it: string; office_address_en: string;
+  office_piva: string;
+  map_title: string;
+  map_iframe_url: string;
 }
 
 // ─── Legal pages (Privacy, Cookie, Rental Agreement, Terms) ────────────────
@@ -468,11 +536,170 @@ export async function getLegalPage(id: LegalPageId): Promise<LegalPageCopy | nul
   return found;
 }
 
+/** Careers page copy. */
+export async function getCareersCopy(): Promise<CareersCopy> {
+  const snap = await loadOnce();
+  if (snap.careers && Array.isArray(snap.careers.jobs)) return snap.careers;
+  return DEFAULT_CAREERS;
+}
+
+/** Press page copy. */
+export async function getPressCopy(): Promise<PressCopy> {
+  const snap = await loadOnce();
+  if (snap.press && Array.isArray(snap.press.articles)) return snap.press;
+  return DEFAULT_PRESS;
+}
+
+/** Contact page copy. */
+export async function getContactCopy(): Promise<ContactCopy> {
+  const snap = await loadOnce();
+  if (snap.contact && snap.contact.email_address) return snap.contact;
+  return DEFAULT_CONTACT;
+}
+
 /** Force a re-fetch (useful after admin edits in dev). */
 export function invalidateSiteCopyCache(): void {
   CACHE = null;
   pending = null;
 }
+
+// ─── Default Careers seed ──────────────────────────────────────────────────
+const DEFAULT_CAREERS: CareersCopy = {
+  page_title_it: 'Careers',
+  page_title_en: 'Careers',
+  intro_it: 'Unisciti a un team appassionato di lusso e dedicato a fornire esperienze senza pari. In DR7 Empire, siamo sempre alla ricerca di talenti eccezionali per aiutarci a superare i confini dell\'eccellenza.',
+  intro_en: 'Join a team passionate about luxury and dedicated to delivering unparalleled experiences. At DR7 Empire we are always looking for exceptional talent to help us push the boundaries of excellence.',
+  jobs_heading_it: 'Posizioni Aperte',
+  jobs_heading_en: 'Open Positions',
+  jobs: [
+    {
+      id: 'curatore-esperienze',
+      title_it: 'Curatore di Esperienze di Lusso', title_en: 'Luxury Experience Curator',
+      location_it: 'Sede: Cagliari, Italia', location_en: 'Location: Cagliari, Italy',
+      type_it: 'Tempo pieno', type_en: 'Full-time',
+      description_it: 'Cerchiamo una persona creativa e attenta ai dettagli per progettare e gestire esperienze di lusso su misura per la nostra clientela d\'élite.',
+      description_en: 'We are looking for a creative, detail-oriented person to design and manage tailored luxury experiences for our elite clientele.',
+    },
+    {
+      id: 'specialista-relazioni',
+      title_it: 'Specialista Relazioni Clienti', title_en: 'Client Relations Specialist',
+      location_it: 'Sede: Remoto', location_en: 'Location: Remote',
+      type_it: 'Tempo pieno', type_en: 'Full-time',
+      description_it: 'Come Specialista Relazioni Clienti, sarai il punto di contatto principale per i nostri membri, assicurando che le loro esigenze siano soddisfatte con il massimo livello di servizio.',
+      description_en: 'As a Client Relations Specialist you will be the main point of contact for our members, ensuring their needs are met with the highest level of service.',
+    },
+  ],
+  apply_heading_it: 'Come Candidarsi',
+  apply_heading_en: 'How to Apply',
+  apply_text_it: 'Se pensi di avere ciò che serve per far parte di DR7 Empire, invia il tuo curriculum vitae e una lettera di presentazione a [candidatura@dr7.app](mailto:candidatura@dr7.app).',
+  apply_text_en: 'If you think you have what it takes to join DR7 Empire, send your CV and cover letter to [candidatura@dr7.app](mailto:candidatura@dr7.app).',
+  apply_email: 'candidatura@dr7.app',
+};
+
+// ─── Default Press seed ────────────────────────────────────────────────────
+const DEFAULT_PRESS: PressCopy = {
+  page_title_it: 'Press',
+  page_title_en: 'Press',
+  subtitle_it: 'Scopri le ultime notizie, articoli e comunicati stampa su DR7 Empire',
+  subtitle_en: 'Discover the latest news, features, and press releases about DR7 Empire',
+  inquiries_heading_it: 'Richieste Stampa',
+  inquiries_heading_en: 'Media Inquiries',
+  inquiries_text_it: 'Per richieste stampa, interviste o altre questioni relative ai media, contatta il nostro team di relazioni con i media. Saremo lieti di fornire informazioni sulla nostra azienda, i servizi e la nostra visione del futuro del lusso.',
+  inquiries_text_en: 'For all media inquiries, interviews, or other press-related matters, please contact our media relations team. We are happy to provide information about our company, services, and vision for the future of luxury.',
+  inquiries_email_label_it: 'Email:',
+  inquiries_email_label_en: 'Email:',
+  inquiries_email: 'info@dr7.app',
+  news_heading_it: 'Sui Media',
+  news_heading_en: 'In the News',
+  read_more_label_it: 'Leggi l\'articolo',
+  read_more_label_en: 'Read full article',
+  articles: [
+    {
+      id: 'art-1',
+      title: 'Dubai Rent, la prima startup al mondo nel noleggio auto di lusso, a diventare Società per Azioni con €100.000 di capitale sociale',
+      publication: 'Casteddu Online',
+      date: '28 Maggio 2025',
+      summary_it: 'Dubai Rent è diventata la prima startup mondiale nel settore del noleggio auto di lusso a trasformarsi in una Società per Azioni, con un capitale sociale di 100.000 euro, segnando un importante punto di svolta nel proprio sviluppo imprenditoriale.',
+      summary_en: 'Dubai Rent became the world\'s first luxury car rental startup to transform into a joint-stock company with €100,000 in share capital, marking a significant turning point in its entrepreneurial development.',
+      link: 'https://www.castedduonline.it/dubai-rent-la-prima-startup-al-mondo-nel-noleggio-auto-di-lusso-a-diventare-societa-per-azioni-con-e100-000-di-capitale-sociale/',
+    },
+    {
+      id: 'art-2',
+      title: 'DR7: nasce la prima piattaforma al mondo dedicata al lusso integrato',
+      publication: 'Casteddu Online',
+      date: '18 Settembre 2025',
+      summary_it: 'DR7 è la prima piattaforma globale che riunisce in un unico ecosistema integrato supercar, yacht, jet, elicotteri, ville, B&B, SPA ed esperienze esclusive. Il progetto rappresenta un punto di svolta innovativo nel settore del lusso.',
+      summary_en: 'DR7 is the first global platform bringing together supercars, yachts, jets, helicopters, villas, B&Bs, spas and exclusive experiences in a single integrated ecosystem — a turning point in the luxury sector.',
+      link: 'https://www.castedduonline.it/dr7-nasce-la-prima-piattaforma-al-mondo-dedicata-al-lusso-integrato/',
+    },
+    {
+      id: 'art-3',
+      title: 'DR7: Saia Valerio, l\'uomo che sta costruendo il nuovo impero del lusso globale entro il 2030',
+      publication: 'Casteddu Online',
+      date: '31 Luglio 2025',
+      summary_it: 'Valerio Saia ha un obiettivo chiaro: raggiungere un traguardo miliardario entro il 2030 attraverso la costruzione di un nuovo impero nel settore del lusso globale con una strategia di espansione ambiziosa.',
+      summary_en: 'Valerio Saia has a clear goal: reaching a billion-euro milestone by 2030 by building a new global luxury empire with an ambitious expansion strategy.',
+      link: 'https://www.castedduonline.it/dr7-saia-valerio-luomo-che-sta-costruendo-il-nuovo-impero-del-lusso-globale-entro-il-2030/',
+    },
+    {
+      id: 'art-4',
+      title: 'DR7 Exotic Cars e Luxury - Servizi di lusso a Cagliari',
+      publication: 'Estate in Sardegna',
+      date: '2025',
+      summary_it: 'Fondata da Valerio Saia, DR7 è cresciuta rapidamente a oltre 1.500 clienti certificati. Offre noleggio auto di lusso, yacht, elicotteri e servizi premium, con l\'obiettivo di raggiungere €1 miliardo di fatturato entro il 2030.',
+      summary_en: 'Founded by Valerio Saia, DR7 has rapidly grown to over 1,500 certified clients. It offers luxury car rentals, yachts, helicopters and premium services, aiming for €1 billion in revenue by 2030.',
+      link: 'https://www.estateinsardegna.it/fr/servizi-turistici/cagliari/dr7-exotic-cars-e-luxury/',
+    },
+    {
+      id: 'art-5',
+      title: 'DR7, la nuova struttura del lusso operativo',
+      publication: 'Casteddu Online',
+      date: '24 Luglio 2025',
+      summary_it: 'DR7 (ex Dubai Rent 7.0 S.p.A.) si è trasformata da startup locale a società per azioni operativa e scalabile in poco più di un anno, sviluppando margini attivi e asset reali.',
+      summary_en: 'DR7 (formerly Dubai Rent 7.0 S.p.A.) transformed from a local startup into an operational, scalable joint-stock company in just over a year, developing real margins and assets.',
+      link: 'https://www.castedduonline.it/dr7-la-nuova-struttura-del-lusso-operativo/',
+    },
+    {
+      id: 'art-6',
+      title: 'DR7 (Dubai Rent 7.0) – La piattaforma mondiale del lusso',
+      publication: 'Casteddu Online',
+      date: '2 Settembre 2025',
+      summary_it: 'Il futuro del lusso non può più essere frammentato: va reso accessibile in un\'unica infrastruttura globale. DR7 si presenta come piattaforma mondiale per rendere il lusso più accessibile.',
+      summary_en: 'The future of luxury can no longer be fragmented: it must be accessible through a single global infrastructure. DR7 positions itself as a world platform to make luxury more accessible.',
+      link: 'https://www.castedduonline.it/dr7-dubai-rent-7-0-la-piattaforma-mondiale-del-lusso/',
+    },
+  ],
+  releases_heading_it: 'Comunicati Stampa',
+  releases_heading_en: 'Press Releases',
+  releases_text_it: 'Per maggiori informazioni sui nostri ultimi annunci e traguardi, contatta il nostro team di relazioni con i media.',
+  releases_text_en: 'For more information about our latest announcements and achievements, please contact our media relations team.',
+};
+
+// ─── Default Contact seed ──────────────────────────────────────────────────
+const DEFAULT_CONTACT: ContactCopy = {
+  page_title_it: 'Contattaci',
+  page_title_en: 'Contact Us',
+  subtitle_it: 'Il nostro team è a disposizione per prenotazioni, informazioni e assistenza personalizzata.',
+  subtitle_en: 'Our team is available for bookings, information, and personalized support.',
+  phone_label_it: 'Telefono', phone_label_en: 'Phone',
+  phone_display: '+39 345 790 5205',
+  phone_tel_url: 'tel:+393457905205',
+  whatsapp_label_it: 'WhatsApp', whatsapp_label_en: 'WhatsApp',
+  whatsapp_button_it: 'Scrivici su WhatsApp', whatsapp_button_en: 'Message us on WhatsApp',
+  whatsapp_url: 'https://wa.me/393457905205',
+  email_label_it: 'Email', email_label_en: 'Email',
+  email_address: 'info@dr7.app',
+  hours_label_it: 'Orari', hours_label_en: 'Hours',
+  hours_lines_it: ['Lun–Ven: 9:00–13:00 / 15:00–19:00', 'Sabato: 9:00–17:00', 'Domenica: Chiuso'],
+  hours_lines_en: ['Mon–Fri: 9:00–13:00 / 15:00–19:00', 'Saturday: 9:00–17:00', 'Sunday: Closed'],
+  office_heading_it: 'Sede Operativa', office_heading_en: 'Operating Office',
+  office_company_name: 'Dubai Rent 7.0 S.p.A.',
+  office_address_it: 'Viale Marconi, 229 – 09131 Cagliari (CA), Italia',
+  office_address_en: 'Viale Marconi, 229 – 09131 Cagliari (CA), Italy',
+  office_piva: 'P.IVA / C.F.: 04104640927',
+  map_title: 'DR7 Empire – Sede Operativa Cagliari',
+  map_iframe_url: 'https://www.openstreetmap.org/export/embed.html?bbox=9.1000%2C39.2200%2C9.1300%2C39.2300&layer=mapnik&marker=39.2253%2C9.1150',
+};
 
 // ─── Default Footer seed ────────────────────────────────────────────────────
 const DEFAULT_FOOTER: FooterCopy = {
