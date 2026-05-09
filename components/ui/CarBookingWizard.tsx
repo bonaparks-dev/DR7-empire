@@ -24,7 +24,7 @@ import {
   isDucatoVehicle,
   isUrbanVehicle
 } from '../../data/kmPricingData';
-import { checkVehicleAvailability, checkVehiclePartialUnavailability, checkGroupedVehicleAvailability, safeDate } from '../../utils/bookingValidation';
+import { checkVehicleAvailability, checkVehiclePartialUnavailability, checkGroupedVehicleAvailability, safeDate, getLateReturnGraceMinutes } from '../../utils/bookingValidation';
 import { getUserCreditBalance, deductCredits, hasSufficientBalance } from '../../utils/creditWallet';
 import { calculateDiscountedPrice, getMembershipTierName } from '../../utils/membershipDiscounts';
 import { roundToTwoDecimals, eurosToCents } from '../../utils/pricing';
@@ -1667,14 +1667,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         // Ensures that if price is for 4 days, display says "4 days"
         billingDays = Math.max(1, diffDaysCalendar);
 
-        // BUSINESS RULE — 1h30 grace before pickup time:
-        // l'auto deve rientrare almeno 90 min prima dell'orario di ritiro
+        // BUSINESS RULE — late-return grace before pickup time:
+        // l'auto deve rientrare almeno X minuti prima dell'orario di ritiro
         // sul giorno di riconsegna; altrimenti +1 giorno di addebito.
-        // Esempio: ritiro lun 10:00 → riconsegna deve essere entro mar 08:30,
-        // altrimenti il cliente paga 2 giorni invece di 1.
+        // X e' configurabile in admin > Centralina Pro > Automazioni > Grace
+        // ritardo riconsegna (default 90 = 1h30).
         const pickupMinutes = pickup.getHours() * 60 + pickup.getMinutes();
         const returnMinutes = ret.getHours() * 60 + ret.getMinutes();
-        const graceThreshold = pickupMinutes - 90; // 1h30 before pickup time
+        const graceThreshold = pickupMinutes - getLateReturnGraceMinutes();
         if (diffDaysCalendar > 0 && returnMinutes > graceThreshold) {
           billingDays += 1;
           extraDay = true;

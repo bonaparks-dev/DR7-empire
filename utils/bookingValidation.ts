@@ -1,11 +1,13 @@
 import { supabase } from '../supabaseClient';
 
-// Buffer post-noleggio (return → next pickup sullo stesso veicolo).
-// Hydrated dal Centralina Pro al module load; fallback 90 minuti
-// (include il lavaggio automatico). L'operatore lo modifica in
-// admin > Centralina Pro > Automazioni; effettivo dopo refresh pagina sito.
+// Hydrated dal Centralina Pro al module load. L'operatore li modifica
+// in admin > Centralina Pro > Automazioni; effettivo dopo refresh pagina.
+//   - RENTAL_BUFFER (90): pausa post-noleggio sullo stesso veicolo
+//   - LATE_RETURN_GRACE (90): cushion prima del pickup time, oltre cui
+//     scatta +1 giorno di addebito (CarBookingWizard billing logic)
 let RENTAL_BUFFER_MINUTES = 90;
 let RENTAL_BUFFER_MS = RENTAL_BUFFER_MINUTES * 60 * 1000;
+let LATE_RETURN_GRACE_MINUTES = 90;
 
 ;(async () => {
   try {
@@ -16,15 +18,25 @@ let RENTAL_BUFFER_MS = RENTAL_BUFFER_MINUTES * 60 * 1000;
       .maybeSingle();
     const cfg = (data?.config ?? null) as Record<string, unknown> | null;
     const automations = cfg?.automations as Record<string, unknown> | undefined;
-    const v = automations?.rental_buffer_minutes;
-    if (typeof v === 'number' && v >= 0 && v <= 720) {
-      RENTAL_BUFFER_MINUTES = v;
-      RENTAL_BUFFER_MS = v * 60 * 1000;
+    if (automations) {
+      const a = automations.rental_buffer_minutes;
+      if (typeof a === 'number' && a >= 0 && a <= 720) {
+        RENTAL_BUFFER_MINUTES = a;
+        RENTAL_BUFFER_MS = a * 60 * 1000;
+      }
+      const b = automations.late_return_grace_minutes;
+      if (typeof b === 'number' && b >= 0 && b <= 720) {
+        LATE_RETURN_GRACE_MINUTES = b;
+      }
     }
   } catch {
-    // Keep default
+    // Keep defaults
   }
 })();
+
+/** Read-only getter so other modules (e.g. CarBookingWizard) can read the
+ * latest hydrated grace minutes without importing supabase themselves. */
+export function getLateReturnGraceMinutes(): number { return LATE_RETURN_GRACE_MINUTES; }
 
 export interface BookingConflict {
   pickup_date: string;
