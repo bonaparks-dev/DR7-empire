@@ -502,6 +502,71 @@ exports.handler = async (event) => {
 
         console.log(`Booking ${newBooking.id} created from pending after successful payment`);
 
+        // ─── Supercar / Icon Experience: shadow rental block ──────────
+        // The website carwash booking persists supercar_experience info
+        // in booking_details when the customer picks a car at submit time.
+        // After the parent booking is created here, we insert a shadow
+        // rental row that blocks the supercar for the experience window
+        // so isVehicleAvailable on admin + website treats it as taken.
+        try {
+          const supExp = newBooking.booking_details?.supercar_experience;
+          if (supExp && supExp.vehicle_id && supExp.window_start && supExp.window_end) {
+            const shadowPayload = {
+              service_type: 'rental',
+              service_name: `${supExp.service_name || 'Supercar Experience'} (${supExp.duration_label || ''})`,
+              vehicle_id: supExp.vehicle_id,
+              vehicle_name: supExp.vehicle_name,
+              vehicle_plate: supExp.vehicle_plate || null,
+              customer_name: newBooking.customer_name,
+              customer_email: newBooking.customer_email,
+              customer_phone: newBooking.customer_phone,
+              guest_name: newBooking.customer_name,
+              guest_email: newBooking.customer_email,
+              guest_phone: newBooking.customer_phone,
+              pickup_date: supExp.window_start,
+              dropoff_date: supExp.window_end,
+              pickup_location: 'DR7 Empire - Supercar Experience',
+              dropoff_location: 'DR7 Empire - Supercar Experience',
+              price_total: 0,
+              currency: 'EUR',
+              status: 'confirmed',
+              payment_status: 'paid',
+              payment_method: 'Supercar Experience (Prime Wash)',
+              booking_details: {
+                is_supercar_experience_block: true,
+                parent_carwash_booking_id: newBooking.id,
+                experience_label: supExp.duration_label || null,
+                experience_service_id: supExp.service_id || null,
+                experience_service_name: supExp.service_name || null,
+                experience_tier: supExp.tier || 'supercar',
+                duration_minutes: supExp.duration_minutes || null,
+                createdBy: 'website_nexi_callback',
+              },
+            };
+            const { data: shadowRow, error: shadowErr } = await supabase
+              .from('bookings')
+              .insert(shadowPayload)
+              .select('id')
+              .single();
+            if (shadowErr) {
+              console.error('[nexi-callback] supercar shadow insert failed:', shadowErr);
+            } else {
+              // Link the shadow id back on the parent for cascade lookups.
+              const nextDetails = {
+                ...(newBooking.booking_details || {}),
+                supercar_experience: {
+                  ...supExp,
+                  shadow_booking_id: shadowRow.id,
+                },
+              };
+              await supabase.from('bookings').update({ booking_details: nextDetails }).eq('id', newBooking.id);
+              console.log(`[nexi-callback] Supercar shadow ${shadowRow.id} created for ${supExp.vehicle_name}`);
+            }
+          }
+        } catch (supErr) {
+          console.error('[nexi-callback] supercar shadow exception:', supErr);
+        }
+
         // Send notifications
         const siteUrl = process.env.URL || 'https://dr7empire.com';
         try {

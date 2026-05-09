@@ -77,8 +77,11 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
             .neq('status', 'retired')
             .order('display_name', { ascending: true });
 
-        // Filter by category if specified (fixed urban cars issue)
-        if (category && ['exotic', 'urban', 'aziendali'].includes(category)) {
+        // Filter by category if specified. Allowlist mirrors the dynamic
+        // categories that vehicles can have in DR7 today: legacy three
+        // (exotic/urban/aziendali) plus hypercar (Icon Experience tier
+        // added May 2026 for the supercar fleet picker).
+        if (category && ['exotic', 'urban', 'aziendali', 'hypercar'].includes(category)) {
             query = query.eq('category', category);
             console.log(`[getVehicles] Filtering by category: ${category}`);
         }

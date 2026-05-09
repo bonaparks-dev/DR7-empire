@@ -106,6 +106,169 @@ const CarWashBookingPage: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // ─── Supercar / Icon Experience: vehicle picker ──────────────────
+  // When the cart contains a Supercar or Icon Experience extra (with a
+  // duration option), show a picker of supercars/hypercars filtered by
+  // availability for the chosen appointment date+time + duration.
+  // The picked vehicle is persisted on booking_details.supercar_experience
+  // and a shadow rental row is created server-side at submit-time so
+  // the car is blocked on the calendar / from other bookings.
+  interface FleetVehicleAvailability {
+    id: string
+    display_name: string
+    plate: string | null
+    category: string | null
+    available: boolean
+    reason: string | null
+  }
+  const experienceItem = cartItems.find(item =>
+    item.serviceId === 'extra-supercar' || item.serviceId === 'extra-icon',
+  );
+  const experienceTier: 'supercar' | 'hypercar' | null = experienceItem
+    ? (experienceItem.serviceId === 'extra-icon' ? 'hypercar' : 'supercar')
+    : null;
+  // Parse "1 ora" / "2 ore" / "4+ ore" → minutes (default 60).
+  const experienceDurationMin = (() => {
+    if (!experienceItem?.option) return 0;
+    const m = String(experienceItem.option).match(/(\d+)/);
+    if (!m) return 60;
+    return parseInt(m[1], 10) * 60;
+  })();
+  const experienceWindow = (() => {
+    if (!experienceItem || !experienceDurationMin) return null;
+    if (!formData.appointmentDate || !formData.appointmentTime) return null;
+    const [y, mo, d] = formData.appointmentDate.split('-').map(Number);
+    const [h, m] = formData.appointmentTime.split(':').map(Number);
+    const start = new Date(y, mo - 1, d, h, m, 0);
+    if (isNaN(start.getTime())) return null;
+    const end = new Date(start.getTime() + experienceDurationMin * 60_000);
+    return { start, end };
+  })();
+  const [supercarFleet, setSupercarFleet] = useState<FleetVehicleAvailability[]>([]);
+  const [fleetLoading, setFleetLoading] = useState(false);
+  const [chosenSupercar, setChosenSupercar] = useState<FleetVehicleAvailability | null>(null);
+
+  // Fetch fleet+availability when the experience window is ready.
+  useEffect(() => {
+    if (!experienceTier || !experienceWindow) {
+      setSupercarFleet([]);
+      return;
+    }
+    let cancelled = false;
+    setFleetLoading(true);
+    const url = `/.netlify/functions/get-supercar-experience-fleet?tier=${experienceTier}&start=${encodeURIComponent(experienceWindow.start.toISOString())}&end=${encodeURIComponent(experienceWindow.end.toISOString())}`;
+    fetch(url)
+      .then((r) => r.json())
+      .then((json) => {
+        if (cancelled) return;
+        if (Array.isArray(json?.fleet)) {
+          setSupercarFleet(json.fleet as FleetVehicleAvailability[]);
+        } else {
+          setSupercarFleet([]);
+        }
+      })
+      .catch((err) => {
+        console.error('[CarWashBookingPage] fleet fetch failed', err);
+        if (!cancelled) setSupercarFleet([]);
+      })
+      .finally(() => {
+        if (!cancelled) setFleetLoading(false);
+      });
+    return () => { cancelled = true };
+  }, [experienceTier, experienceWindow?.start.getTime(), experienceWindow?.end.getTime()]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reset chosen car if the experience extra is removed or duration changes
+  // (the previously-picked car may now be busy for the new window).
+  useEffect(() => {
+    if (!experienceTier || !experienceItem?.option) {
+      if (chosenSupercar) setChosenSupercar(null);
+    }
+  }, [experienceTier, experienceItem?.option]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Insert the shadow rental row that blocks the chosen supercar for the
+  // experience window. Called after the parent carwash booking row is
+  // created, in every payment branch (credit wallet + online/Nexi). The
+  // row is service_type='rental' so existing isVehicleAvailable checks
+  // (admin calendar + website availability) treat the supercar as busy.
+  // Failures are non-fatal: the carwash booking is already saved, but a
+  // missing shadow will let the car be double-booked. Logged for follow-up.
+  async function createSupercarShadowRow(carwashBooking: { id: string; customer_name?: string | null; customer_email?: string | null; customer_phone?: string | null }): Promise<void> {
+    if (!chosenSupercar || !experienceTier || !experienceWindow || !experienceItem) return;
+    try {
+      const shadowPayload = {
+        service_type: 'rental',
+        service_name: `${experienceItem.serviceName} (${experienceItem.option || ''})`,
+        vehicle_id: chosenSupercar.id,
+        vehicle_name: chosenSupercar.display_name,
+        vehicle_plate: chosenSupercar.plate || null,
+        customer_name: carwashBooking.customer_name || formData.fullName,
+        customer_email: carwashBooking.customer_email || formData.email,
+        customer_phone: carwashBooking.customer_phone || formData.phone,
+        guest_name: carwashBooking.customer_name || formData.fullName,
+        guest_email: carwashBooking.customer_email || formData.email,
+        guest_phone: carwashBooking.customer_phone || formData.phone,
+        pickup_date: experienceWindow.start.toISOString(),
+        dropoff_date: experienceWindow.end.toISOString(),
+        pickup_location: 'DR7 Empire - Supercar Experience',
+        dropoff_location: 'DR7 Empire - Supercar Experience',
+        // Price 0: cost lives on parent. Status 'confirmed' so isVehicleAvailable
+        // includes it (the filter excludes cancelled/completed only).
+        price_total: 0,
+        currency: 'EUR',
+        status: 'confirmed',
+        payment_status: 'paid',
+        payment_method: 'Supercar Experience (Prime Wash)',
+        booking_details: {
+          is_supercar_experience_block: true,
+          parent_carwash_booking_id: carwashBooking.id,
+          experience_label: experienceItem.option || null,
+          experience_service_id: experienceItem.serviceId,
+          experience_service_name: experienceItem.serviceName,
+          experience_tier: experienceTier,
+          duration_minutes: experienceDurationMin,
+          createdBy: 'website_carwash_booking',
+        },
+      };
+      const { data: shadowRow, error: shadowErr } = await supabase
+        .from('bookings')
+        .insert(shadowPayload)
+        .select('id')
+        .single();
+      if (shadowErr) {
+        console.error('[CarWashBookingPage] failed to insert supercar shadow row:', shadowErr);
+        return;
+      }
+      // Persist the shadow id on the parent for cascade lookups.
+      try {
+        const { data: parent } = await supabase
+          .from('bookings')
+          .select('booking_details')
+          .eq('id', carwashBooking.id)
+          .single();
+        const nextDetails = {
+          ...((parent?.booking_details as Record<string, unknown>) || {}),
+          supercar_experience: {
+            vehicle_id: chosenSupercar.id,
+            vehicle_name: chosenSupercar.display_name,
+            vehicle_plate: chosenSupercar.plate || null,
+            tier: experienceTier,
+            duration_label: experienceItem.option || null,
+            duration_minutes: experienceDurationMin,
+            window_start: experienceWindow.start.toISOString(),
+            window_end: experienceWindow.end.toISOString(),
+            shadow_booking_id: shadowRow.id,
+          },
+        };
+        await supabase.from('bookings').update({ booking_details: nextDetails }).eq('id', carwashBooking.id);
+      } catch (linkErr) {
+        console.warn('[CarWashBookingPage] failed to link shadow id on parent (non-fatal):', linkErr);
+      }
+      console.log('[CarWashBookingPage] supercar shadow created:', shadowRow.id, 'for', chosenSupercar.display_name);
+    } catch (err) {
+      console.error('[CarWashBookingPage] supercar shadow exception:', err);
+    }
+  }
+
   // Payment state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
@@ -819,6 +982,22 @@ const CarWashBookingPage: React.FC = () => {
       return;
     }
 
+    // Supercar / Icon Experience guard: refuse to submit until the
+    // customer picks a vehicle. The chosen car is what the shadow
+    // rental row will block — without it the experience can't be sold.
+    if (experienceTier && experienceItem && !chosenSupercar) {
+      setErrors(prev => ({
+        ...prev,
+        chosenSupercar: lang === 'it'
+          ? `Seleziona la ${experienceTier === 'hypercar' ? 'hypercar' : 'supercar'} per completare la prenotazione.`
+          : `Pick the ${experienceTier === 'hypercar' ? 'hypercar' : 'supercar'} to complete the booking.`,
+      }));
+      // Scroll the picker into view
+      const picker = document.querySelector('[data-supercar-picker]');
+      if (picker && 'scrollIntoView' in picker) (picker as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
     // Prepare booking data and open payment modal
     console.log('User object:', user);
     console.log('User ID:', user?.id);
@@ -897,6 +1076,25 @@ const CarWashBookingPage: React.FC = () => {
         ...(hasCartItems ? { cart_items: cartItems } : {}),
         ...(customerVehicle ? { customerVehicle } : {}),
         ...(primeFlexSelected ? { prime_flex: true, prime_flex_price: PRIME_FLEX_PRICE } : {}),
+        // Supercar / Icon Experience: chosen vehicle + window. Used by
+        // the credit-wallet branch (createSupercarShadowRow runs client-
+        // side immediately after the carwash insert) and by the Nexi
+        // callback (which finalizes the booking server-side after
+        // payment succeeds and reads this to create the shadow row).
+        ...(chosenSupercar && experienceTier && experienceWindow && experienceItem ? {
+          supercar_experience: {
+            vehicle_id: chosenSupercar.id,
+            vehicle_name: chosenSupercar.display_name,
+            vehicle_plate: chosenSupercar.plate || null,
+            tier: experienceTier,
+            duration_label: experienceItem.option || null,
+            duration_minutes: experienceDurationMin,
+            window_start: experienceWindow.start.toISOString(),
+            window_end: experienceWindow.end.toISOString(),
+            service_id: experienceItem.serviceId,
+            service_name: experienceItem.serviceName,
+          },
+        } : {}),
       },
       status: 'confirmed',
       payment_status: 'pending',
@@ -1013,6 +1211,10 @@ const CarWashBookingPage: React.FC = () => {
         }
 
         console.log('Booking created successfully:', data);
+
+        // Supercar / Icon Experience: block the chosen vehicle by inserting
+        // a shadow rental row. Non-blocking — logs on failure.
+        await createSupercarShadowRow(data);
 
         // Fire-and-forget: email + WhatsApp (don't block the UI)
         fetch('/.netlify/functions/send-booking-confirmation', {
@@ -1556,6 +1758,102 @@ const CarWashBookingPage: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {/* ─── Supercar / Icon Experience: vehicle picker ──────────
+                Visible when the cart contains a supercar/icon experience
+                with a duration option. Cards are loaded from the fleet
+                netlify function and filtered for availability against the
+                chosen appointment window. */}
+            {experienceTier && experienceItem && experienceItem.option && (
+              <div className="bg-gray-900/50 border border-yellow-500/40 rounded-lg p-8" data-supercar-picker>
+                <h2 className="text-2xl font-bold text-white mb-2">
+                  {experienceTier === 'hypercar'
+                    ? (lang === 'it' ? 'Scegli la tua hypercar' : 'Choose your hypercar')
+                    : (lang === 'it' ? 'Scegli la tua supercar' : 'Choose your supercar')}
+                </h2>
+                <p className="text-sm text-gray-400 mb-6">
+                  {lang === 'it'
+                    ? `Durata ${experienceItem.option}. Seleziona il veicolo: verrà bloccato per la finestra del tuo appuntamento.`
+                    : `Duration ${experienceItem.option}. Pick the vehicle: it will be blocked for your appointment window.`}
+                </p>
+
+                {!formData.appointmentDate || !formData.appointmentTime ? (
+                  <div className="p-4 rounded-lg border border-amber-500/30 bg-amber-500/10 text-sm text-amber-300">
+                    {lang === 'it'
+                      ? 'Seleziona prima la data e l\'orario sopra per vedere le auto disponibili.'
+                      : 'Pick a date and time above first to see available cars.'}
+                  </div>
+                ) : fleetLoading ? (
+                  <div className="text-sm text-gray-400">{lang === 'it' ? 'Caricamento flotta...' : 'Loading fleet...'}</div>
+                ) : supercarFleet.length === 0 ? (
+                  <div className="p-4 rounded-lg border border-amber-500/30 bg-amber-500/10 text-sm text-amber-300">
+                    {lang === 'it'
+                      ? `Nessun veicolo della flotta ${experienceTier === 'hypercar' ? 'hypercar' : 'supercar'} disponibile in questo momento.`
+                      : `No ${experienceTier === 'hypercar' ? 'hypercar' : 'supercar'} fleet vehicles available right now.`}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {supercarFleet.map((vehicle) => {
+                      const isSelected = chosenSupercar?.id === vehicle.id;
+                      const canSelect = vehicle.available || isSelected;
+                      return (
+                        <button
+                          key={vehicle.id}
+                          type="button"
+                          disabled={!canSelect}
+                          onClick={() => setChosenSupercar(vehicle)}
+                          className={`text-left rounded-lg border p-4 transition-colors ${
+                            isSelected
+                              ? 'border-yellow-400 bg-yellow-400/10'
+                              : vehicle.available
+                                ? 'border-gray-700 bg-gray-800 hover:border-yellow-400 hover:bg-yellow-400/5'
+                                : 'border-red-500/30 bg-red-500/5 opacity-60 cursor-not-allowed'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-white truncate">{vehicle.display_name}</p>
+                              {vehicle.plate && (
+                                <p className="text-[11px] font-mono text-gray-400">{vehicle.plate}</p>
+                              )}
+                            </div>
+                            <span
+                              className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                isSelected
+                                  ? 'bg-yellow-400 text-black border-yellow-400'
+                                  : vehicle.available
+                                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                                    : 'bg-red-500/15 text-red-400 border-red-500/30'
+                              }`}
+                            >
+                              {isSelected
+                                ? (lang === 'it' ? 'Selezionata' : 'Selected')
+                                : vehicle.available
+                                  ? (lang === 'it' ? 'Disponibile' : 'Available')
+                                  : (lang === 'it' ? 'Occupata' : 'Busy')}
+                            </span>
+                          </div>
+                          {!vehicle.available && !isSelected && vehicle.reason && (
+                            <p className="text-[11px] text-red-400 mt-2 line-clamp-2">{vehicle.reason}</p>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {experienceTier && formData.appointmentDate && formData.appointmentTime && supercarFleet.length > 0 && !chosenSupercar && (
+                  <p className="text-xs text-amber-400 mt-3">
+                    {lang === 'it'
+                      ? 'Seleziona un veicolo per completare la prenotazione.'
+                      : 'Select a vehicle to complete the booking.'}
+                  </p>
+                )}
+                {errors.chosenSupercar && (
+                  <p className="text-xs text-red-400 mt-2 font-semibold">{errors.chosenSupercar}</p>
+                )}
+              </div>
+            )}
 
             {/* Notes */}
             <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
