@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from '../hooks/useTranslation';
+import { getAviationQuoteCopy, type AviationQuoteCopy } from '../utils/siteCopy';
 
 const AviationQuoteRequestPage: React.FC = () => {
   const navigate = useNavigate();
@@ -10,10 +11,15 @@ const AviationQuoteRequestPage: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
   const { lang } = useTranslation();
   const [submitting, setSubmitting] = useState(false);
+  const [copy, setCopy] = useState<AviationQuoteCopy | null>(null);
 
-  // Determine if jet or helicopter based on URL
+  useEffect(() => {
+    let cancelled = false;
+    getAviationQuoteCopy().then((c) => { if (!cancelled) setCopy(c); });
+    return () => { cancelled = true; };
+  }, []);
+
   const isHelicopter = location.pathname.includes('helicopter');
-  const serviceType = isHelicopter ? 'Elicottero' : 'Jet Privato';
 
   const [formData, setFormData] = useState({
     customer_name: '',
@@ -27,63 +33,76 @@ const AviationQuoteRequestPage: React.FC = () => {
     notes: ''
   });
 
+  const tx = (it: keyof AviationQuoteCopy, en: keyof AviationQuoteCopy, fallback = ''): string => {
+    if (!copy) return fallback;
+    const key = lang === 'it' ? it : en;
+    return (copy as Record<string, string>)[key as string] || fallback;
+  };
+
+  const serviceType = copy
+    ? (isHelicopter ? copy.service_label_helicopter : copy.service_label_jet)
+    : (isHelicopter ? 'Elicottero' : 'Jet Privato');
+
+  // Substitute placeholders in WhatsApp template strings.
+  function applyVars(s: string): string {
+    const vars: Record<string, string> = {
+      '{service}': serviceType,
+      '{nome}': formData.customer_name,
+      '{email}': formData.customer_email,
+      '{telefono}': formData.customer_phone,
+      '{partenza}': formData.departure_location,
+      '{arrivo}': formData.arrival_location,
+      '{data_partenza}': formData.departure_date,
+      '{data_ritorno}': formData.return_date,
+      '{passeggeri}': String(formData.passenger_count),
+      '{note}': formData.notes,
+    };
+    let out = s;
+    for (const [k, v] of Object.entries(vars)) out = out.split(k).join(v);
+    return out;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!copy) return;
     setSubmitting(true);
-
     try {
-      // Generate WhatsApp message
-      let msg = `Ciao DR7 Empire\nVorrei richiedere un preventivo per ${serviceType}.\n\n`;
-
-      msg += `DATI CLIENTE\n`;
-      msg += `Nome: ${formData.customer_name}\n`;
-      msg += `Email: ${formData.customer_email}\n`;
-      msg += `Telefono: ${formData.customer_phone}\n\n`;
-
-      msg += `DETTAGLI RICHIESTA\n`;
-      msg += `Partenza: ${formData.departure_location}\n`;
-      msg += `Arrivo: ${formData.arrival_location}\n`;
-      msg += `Data partenza: ${formData.departure_date}\n`;
+      const isIt = lang === 'it';
+      let msg = applyVars(isIt ? copy.whatsapp_template_main_it : copy.whatsapp_template_main_en);
       if (formData.return_date) {
-        msg += `Data ritorno: ${formData.return_date}\n`;
+        msg += '\n' + applyVars(isIt ? copy.whatsapp_template_return_it : copy.whatsapp_template_return_en);
       }
-      msg += `Passeggeri: ${formData.passenger_count}\n`;
-
       if (formData.notes) {
-        msg += `\nNote: ${formData.notes}\n`;
+        msg += '\n' + applyVars(isIt ? copy.whatsapp_template_notes_it : copy.whatsapp_template_notes_en);
+      } else {
+        // Notes template carries the closing line — append a default closing if no notes.
+        msg += isIt ? '\n\nPotete fornirmi un preventivo? Grazie!' : '\n\nCan you send me a quote? Thanks!';
       }
-
-      msg += `\nPotete fornirmi un preventivo? Grazie!`;
-
-      const whatsappUrl = `https://wa.me/393457905205?text=${encodeURIComponent(msg)}`;
+      const whatsappUrl = `https://wa.me/${copy.whatsapp_phone}?text=${encodeURIComponent(msg)}`;
       window.open(whatsappUrl, '_blank');
-
-      // Show success and redirect
-      alert('Richiesta inviata! Ti contatteremo presto.');
+      alert(isIt ? copy.alert_success_it : copy.alert_success_en);
       navigate('/');
     } catch (error) {
       console.error('Failed to submit quote request:', error);
-      alert('Errore durante l\'invio della richiesta. Riprova.');
+      alert(lang === 'it' ? copy.alert_error_it : copy.alert_error_en);
     } finally {
       setSubmitting(false);
     }
   }
 
-  // Show loading while checking authentication
-  if (authLoading) {
+  if (authLoading || !copy) {
     return (
       <div className="min-h-screen bg-black py-20 px-4">
         <div className="max-w-2xl mx-auto flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
-            <p className="text-white text-lg">{lang === 'it' ? 'Caricamento...' : 'Loading...'}</p>
+            <p className="text-white text-lg">{tx('loading_it', 'loading_en', lang === 'it' ? 'Caricamento...' : 'Loading...')}</p>
           </div>
         </div>
       </div>
     );
   }
 
-  // Require authentication
   if (!user) {
     return (
       <div className="min-h-screen bg-black py-20 px-4">
@@ -95,25 +114,23 @@ const AviationQuoteRequestPage: React.FC = () => {
               </svg>
             </div>
             <h2 className="text-3xl font-bold text-white mb-4">
-              {lang === 'it' ? 'Accesso Richiesto' : 'Login Required'}
+              {tx('auth_title_it', 'auth_title_en')}
             </h2>
             <p className="text-gray-400 mb-8">
-              {lang === 'it'
-                ? 'Devi essere registrato e aver effettuato l\'accesso per richiedere un preventivo.'
-                : 'You must be registered and logged in to request a quote.'}
+              {tx('auth_body_it', 'auth_body_en')}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
                 onClick={() => navigate('/signin', { state: { from: location.pathname } })}
                 className="px-8 py-3 bg-white text-black font-bold rounded hover:bg-gray-200 transition-colors"
               >
-                {lang === 'it' ? 'Accedi' : 'Login'}
+                {tx('auth_login_cta_it', 'auth_login_cta_en')}
               </button>
               <button
                 onClick={() => navigate('/signup', { state: { from: location.pathname } })}
                 className="px-8 py-3 bg-gray-700 text-white font-bold rounded hover:bg-gray-600 transition-colors"
               >
-                {lang === 'it' ? 'Registrati' : 'Sign Up'}
+                {tx('auth_signup_cta_it', 'auth_signup_cta_en')}
               </button>
             </div>
           </div>
@@ -121,6 +138,8 @@ const AviationQuoteRequestPage: React.FC = () => {
       </div>
     );
   }
+
+  const headerTitle = applyVars(lang === 'it' ? copy.header_title_template_it : copy.header_title_template_en);
 
   return (
     <div className="min-h-screen bg-black py-20 px-4">
@@ -131,21 +150,21 @@ const AviationQuoteRequestPage: React.FC = () => {
       >
         <div className="text-center mb-10">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Richiedi Preventivo {serviceType}
+            {headerTitle}
           </h1>
           <p className="text-gray-400">
-            Compila il form e ti contatteremo con un preventivo personalizzato
+            {tx('header_subtitle_it', 'header_subtitle_en')}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-gray-900 rounded-2xl p-6 md:p-8 border border-gray-800 space-y-6">
           {/* Customer Info */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-white">Dati Cliente</h3>
+            <h3 className="text-lg font-semibold text-white">{tx('section_customer_it', 'section_customer_en')}</h3>
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Nome Completo *
+                {tx('field_name_label_it', 'field_name_label_en')}
               </label>
               <input
                 type="text"
@@ -153,14 +172,14 @@ const AviationQuoteRequestPage: React.FC = () => {
                 value={formData.customer_name}
                 onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
                 className="w-full px-4 py-3 bg-black border border-gray-700 rounded-lg text-white focus:border-white focus:ring-1 focus:ring-white"
-                placeholder="Mario Rossi"
+                placeholder={tx('field_name_placeholder_it', 'field_name_placeholder_en')}
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Email *
+                  {tx('field_email_label_it', 'field_email_label_en')}
                 </label>
                 <input
                   type="email"
@@ -168,13 +187,13 @@ const AviationQuoteRequestPage: React.FC = () => {
                   value={formData.customer_email}
                   onChange={(e) => setFormData({ ...formData, customer_email: e.target.value })}
                   className="w-full px-4 py-3 bg-black border border-gray-700 rounded-lg text-white focus:border-white focus:ring-1 focus:ring-white"
-                  placeholder="mario@email.com"
+                  placeholder={tx('field_email_placeholder_it', 'field_email_placeholder_en')}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Telefono *
+                  {tx('field_phone_label_it', 'field_phone_label_en')}
                 </label>
                 <input
                   type="tel"
@@ -182,7 +201,7 @@ const AviationQuoteRequestPage: React.FC = () => {
                   value={formData.customer_phone}
                   onChange={(e) => setFormData({ ...formData, customer_phone: e.target.value })}
                   className="w-full px-4 py-3 bg-black border border-gray-700 rounded-lg text-white focus:border-white focus:ring-1 focus:ring-white"
-                  placeholder="+39 333 123 4567"
+                  placeholder={tx('field_phone_placeholder_it', 'field_phone_placeholder_en')}
                 />
               </div>
             </div>
@@ -190,12 +209,12 @@ const AviationQuoteRequestPage: React.FC = () => {
 
           {/* Flight Details */}
           <div className="space-y-4 pt-4 border-t border-gray-800">
-            <h3 className="text-lg font-semibold text-white">Dettagli Viaggio</h3>
+            <h3 className="text-lg font-semibold text-white">{tx('section_flight_it', 'section_flight_en')}</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Partenza da *
+                  {tx('field_departure_label_it', 'field_departure_label_en')}
                 </label>
                 <input
                   type="text"
@@ -203,13 +222,13 @@ const AviationQuoteRequestPage: React.FC = () => {
                   value={formData.departure_location}
                   onChange={(e) => setFormData({ ...formData, departure_location: e.target.value })}
                   className="w-full px-4 py-3 bg-black border border-gray-700 rounded-lg text-white focus:border-white focus:ring-1 focus:ring-white"
-                  placeholder="Milano, Roma, Cagliari..."
+                  placeholder={tx('field_departure_placeholder_it', 'field_departure_placeholder_en')}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Arrivo a *
+                  {tx('field_arrival_label_it', 'field_arrival_label_en')}
                 </label>
                 <input
                   type="text"
@@ -217,7 +236,7 @@ const AviationQuoteRequestPage: React.FC = () => {
                   value={formData.arrival_location}
                   onChange={(e) => setFormData({ ...formData, arrival_location: e.target.value })}
                   className="w-full px-4 py-3 bg-black border border-gray-700 rounded-lg text-white focus:border-white focus:ring-1 focus:ring-white"
-                  placeholder="Parigi, Londra, Ibiza..."
+                  placeholder={tx('field_arrival_placeholder_it', 'field_arrival_placeholder_en')}
                 />
               </div>
             </div>
@@ -225,7 +244,7 @@ const AviationQuoteRequestPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Data Partenza *
+                  {tx('field_departure_date_label_it', 'field_departure_date_label_en')}
                 </label>
                 <input
                   type="date"
@@ -239,7 +258,7 @@ const AviationQuoteRequestPage: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Data Ritorno (opzionale)
+                  {tx('field_return_date_label_it', 'field_return_date_label_en')}
                 </label>
                 <input
                   type="date"
@@ -253,7 +272,7 @@ const AviationQuoteRequestPage: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Numero Passeggeri *
+                {tx('field_passengers_label_it', 'field_passengers_label_en')}
               </label>
               <input
                 type="number"
@@ -270,28 +289,29 @@ const AviationQuoteRequestPage: React.FC = () => {
           {/* Notes */}
           <div className="pt-4 border-t border-gray-800">
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Note Aggiuntive
+              {tx('field_notes_label_it', 'field_notes_label_en')}
             </label>
             <textarea
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={3}
               className="w-full px-4 py-3 bg-black border border-gray-700 rounded-lg text-white focus:border-white focus:ring-1 focus:ring-white"
-              placeholder="Richieste speciali, bagagli, preferenze..."
+              placeholder={tx('field_notes_placeholder_it', 'field_notes_placeholder_en')}
             />
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={submitting}
             className="w-full bg-white text-black font-bold py-4 px-6 rounded-full hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg"
           >
-            {submitting ? 'Invio in corso...' : 'Richiedi Preventivo'}
+            {submitting
+              ? tx('submit_submitting_it', 'submit_submitting_en')
+              : tx('submit_idle_it', 'submit_idle_en')}
           </button>
 
           <p className="text-xs text-center text-gray-500">
-            Verrai reindirizzato su WhatsApp. Ti contatteremo entro 24 ore con un preventivo personalizzato.
+            {tx('disclaimer_it', 'disclaimer_en')}
           </p>
         </form>
       </motion.div>

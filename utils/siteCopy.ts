@@ -50,6 +50,7 @@ interface SiteCopySnapshot {
   carwash?: CarWashCopy;
   investitori?: InvestitoriCopy;
   franchising?: FranchisingCopy;
+  aviationQuote?: AviationQuoteCopy;
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -229,6 +230,55 @@ export interface MechanicalCopy {
   hours_heading_it: string; hours_heading_en: string;
   hours_main_it: string; hours_main_en: string;
   hours_sub_it: string; hours_sub_en: string;
+}
+
+// ─── Aviation Quote Request page (bilingual: IT-only form, IT+EN gate) ────
+//
+// Form is currently IT-only on screen, but auth gate uses lang. Schema
+// covers both. WhatsApp template uses placeholders: {service}, {nome},
+// {email}, {telefono}, {partenza}, {arrivo}, {data_partenza},
+// {data_ritorno}, {passeggeri}, {note}.
+export interface AviationQuoteCopy {
+  // Loading + auth gate
+  loading_it: string; loading_en: string;
+  auth_title_it: string; auth_title_en: string;
+  auth_body_it: string; auth_body_en: string;
+  auth_login_cta_it: string; auth_login_cta_en: string;
+  auth_signup_cta_it: string; auth_signup_cta_en: string;
+  // Header (with {service} token)
+  service_label_jet: string;          // "Jet Privato"
+  service_label_helicopter: string;   // "Elicottero"
+  header_title_template_it: string; header_title_template_en: string;
+  header_subtitle_it: string; header_subtitle_en: string;
+  // Form sections + fields
+  section_customer_it: string; section_customer_en: string;
+  section_flight_it: string; section_flight_en: string;
+  field_name_label_it: string; field_name_label_en: string;
+  field_name_placeholder_it: string; field_name_placeholder_en: string;
+  field_email_label_it: string; field_email_label_en: string;
+  field_email_placeholder_it: string; field_email_placeholder_en: string;
+  field_phone_label_it: string; field_phone_label_en: string;
+  field_phone_placeholder_it: string; field_phone_placeholder_en: string;
+  field_departure_label_it: string; field_departure_label_en: string;
+  field_departure_placeholder_it: string; field_departure_placeholder_en: string;
+  field_arrival_label_it: string; field_arrival_label_en: string;
+  field_arrival_placeholder_it: string; field_arrival_placeholder_en: string;
+  field_departure_date_label_it: string; field_departure_date_label_en: string;
+  field_return_date_label_it: string; field_return_date_label_en: string;
+  field_passengers_label_it: string; field_passengers_label_en: string;
+  field_notes_label_it: string; field_notes_label_en: string;
+  field_notes_placeholder_it: string; field_notes_placeholder_en: string;
+  // Submit + footer
+  submit_idle_it: string; submit_idle_en: string;
+  submit_submitting_it: string; submit_submitting_en: string;
+  disclaimer_it: string; disclaimer_en: string;
+  alert_success_it: string; alert_success_en: string;
+  alert_error_it: string; alert_error_en: string;
+  // WhatsApp delivery
+  whatsapp_phone: string;             // wa.me number
+  whatsapp_template_main_it: string; whatsapp_template_main_en: string;
+  whatsapp_template_return_it: string; whatsapp_template_return_en: string;
+  whatsapp_template_notes_it: string; whatsapp_template_notes_en: string;
 }
 
 // ─── Franchising (IT-only sales page) ──────────────────────────────────────
@@ -686,6 +736,13 @@ export async function getLegalPage(id: LegalPageId): Promise<LegalPageCopy | nul
   return found;
 }
 
+/** Aviation quote request page (bilingual). */
+export async function getAviationQuoteCopy(): Promise<AviationQuoteCopy> {
+  const snap = await loadOnce();
+  if (snap.aviationQuote && snap.aviationQuote.header_title_template_it) return snap.aviationQuote;
+  return DEFAULT_AVIATION_QUOTE;
+}
+
 /** Franchising sales page — IT-only copy. */
 export async function getFranchisingCopy(): Promise<FranchisingCopy> {
   const snap = await loadOnce();
@@ -781,6 +838,54 @@ export function invalidateSiteCopyCache(): void {
   CACHE = null;
   pending = null;
 }
+
+// ─── Default Aviation Quote seed ───────────────────────────────────────────
+const DEFAULT_AVIATION_QUOTE: AviationQuoteCopy = {
+  loading_it: 'Caricamento...', loading_en: 'Loading...',
+  auth_title_it: 'Accesso Richiesto', auth_title_en: 'Login Required',
+  auth_body_it: 'Devi essere registrato e aver effettuato l\'accesso per richiedere un preventivo.',
+  auth_body_en: 'You must be registered and logged in to request a quote.',
+  auth_login_cta_it: 'Accedi', auth_login_cta_en: 'Login',
+  auth_signup_cta_it: 'Registrati', auth_signup_cta_en: 'Sign Up',
+  service_label_jet: 'Jet Privato', service_label_helicopter: 'Elicottero',
+  header_title_template_it: 'Richiedi Preventivo {service}',
+  header_title_template_en: 'Request Quote {service}',
+  header_subtitle_it: 'Compila il form e ti contatteremo con un preventivo personalizzato',
+  header_subtitle_en: 'Fill in the form and we\'ll get back to you with a personalized quote',
+  section_customer_it: 'Dati Cliente', section_customer_en: 'Customer Details',
+  section_flight_it: 'Dettagli Viaggio', section_flight_en: 'Trip Details',
+  field_name_label_it: 'Nome Completo *', field_name_label_en: 'Full Name *',
+  field_name_placeholder_it: 'Mario Rossi', field_name_placeholder_en: 'John Smith',
+  field_email_label_it: 'Email *', field_email_label_en: 'Email *',
+  field_email_placeholder_it: 'mario@email.com', field_email_placeholder_en: 'john@email.com',
+  field_phone_label_it: 'Telefono *', field_phone_label_en: 'Phone *',
+  field_phone_placeholder_it: '+39 333 123 4567', field_phone_placeholder_en: '+39 333 123 4567',
+  field_departure_label_it: 'Partenza da *', field_departure_label_en: 'Departure from *',
+  field_departure_placeholder_it: 'Milano, Roma, Cagliari...', field_departure_placeholder_en: 'Milan, Rome, Cagliari...',
+  field_arrival_label_it: 'Arrivo a *', field_arrival_label_en: 'Arrival at *',
+  field_arrival_placeholder_it: 'Parigi, Londra, Ibiza...', field_arrival_placeholder_en: 'Paris, London, Ibiza...',
+  field_departure_date_label_it: 'Data Partenza *', field_departure_date_label_en: 'Departure Date *',
+  field_return_date_label_it: 'Data Ritorno (opzionale)', field_return_date_label_en: 'Return Date (optional)',
+  field_passengers_label_it: 'Numero Passeggeri *', field_passengers_label_en: 'Number of Passengers *',
+  field_notes_label_it: 'Note Aggiuntive', field_notes_label_en: 'Additional Notes',
+  field_notes_placeholder_it: 'Richieste speciali, bagagli, preferenze...',
+  field_notes_placeholder_en: 'Special requests, luggage, preferences...',
+  submit_idle_it: 'Richiedi Preventivo', submit_idle_en: 'Request Quote',
+  submit_submitting_it: 'Invio in corso...', submit_submitting_en: 'Submitting...',
+  disclaimer_it: 'Verrai reindirizzato su WhatsApp. Ti contatteremo entro 24 ore con un preventivo personalizzato.',
+  disclaimer_en: 'You\'ll be redirected to WhatsApp. We\'ll contact you within 24 hours with a personalized quote.',
+  alert_success_it: 'Richiesta inviata! Ti contatteremo presto.',
+  alert_success_en: 'Request sent! We\'ll be in touch soon.',
+  alert_error_it: 'Errore durante l\'invio della richiesta. Riprova.',
+  alert_error_en: 'Error submitting your request. Please try again.',
+  whatsapp_phone: '393457905205',
+  whatsapp_template_main_it: 'Ciao DR7 Empire\nVorrei richiedere un preventivo per {service}.\n\nDATI CLIENTE\nNome: {nome}\nEmail: {email}\nTelefono: {telefono}\n\nDETTAGLI RICHIESTA\nPartenza: {partenza}\nArrivo: {arrivo}\nData partenza: {data_partenza}\nPasseggeri: {passeggeri}',
+  whatsapp_template_main_en: 'Hello DR7 Empire\nI\'d like to request a quote for {service}.\n\nCUSTOMER DETAILS\nName: {nome}\nEmail: {email}\nPhone: {telefono}\n\nREQUEST DETAILS\nFrom: {partenza}\nTo: {arrivo}\nDeparture date: {data_partenza}\nPassengers: {passeggeri}',
+  whatsapp_template_return_it: 'Data ritorno: {data_ritorno}',
+  whatsapp_template_return_en: 'Return date: {data_ritorno}',
+  whatsapp_template_notes_it: '\nNote: {note}\n\nPotete fornirmi un preventivo? Grazie!',
+  whatsapp_template_notes_en: '\nNotes: {note}\n\nCan you send me a quote? Thanks!',
+};
 
 // ─── Default Franchising seed ──────────────────────────────────────────────
 const DEFAULT_FRANCHISING: FranchisingCopy = {
