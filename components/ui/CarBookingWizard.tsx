@@ -35,6 +35,7 @@ import { classifyVehicle } from '../../utils/vehicleClassification';
 import { lookupTarga, isValidItalianPlate, normalizePlate, type TargaResult } from '../../utils/lookupTarga';
 import CalcolaCFButton from './CalcolaCFButton';
 import { useCentralinaProOverlay } from '../../hooks/useCentralinaProConfig';
+import { getPickupTimesForDateString, getReturnTimesForDateString } from '../../utils/noleggioHours';
 
 // Filter out dummy/placeholder names from auth profiles (e.g. "No Name", "User", "Test")
 const DUMMY_NAMES = ['no name', 'no-name', 'noname', 'user', 'test', 'unknown', 'n/a', 'none', 'cliente'];
@@ -1109,27 +1110,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   };
 
   const getValidPickupTimes = (date: string): string[] => {
-    const dayOfWeek = getDayOfWeek(date);
-    if (dayOfWeek === 0 || isHoliday(date)) return []; // Block Sundays & Holidays
-
-    const times: string[] = [];
-    const addTimes = (start: number, end: number, interval: number) => {
-      for (let i = start; i <= end; i += interval) {
-        const hours = Math.floor(i / 60);
-        const minutes = i % 60;
-        times.push(`${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`);
-      }
-    };
-
-    // PICKUP hours (15-minute intervals)
-    //   Mon-Fri: 10:30-12:30, 16:30-18:30 (two windows)
-    //   Sat:     10:30-16:30 (single continuous window)
-    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-      addTimes(10 * 60 + 30, 12 * 60 + 30, 15); // 10:30 to 12:30
-      addTimes(16 * 60 + 30, 18 * 60 + 30, 15); // 16:30 to 18:30
-    } else if (dayOfWeek === 6) {
-      addTimes(10 * 60 + 30, 16 * 60 + 30, 15); // Saturday 10:30 to 16:30
-    }
+    if (isHoliday(date)) return []; // Block Holidays
+    // Office-hour windows + slot granularity come from Centralina Pro
+    // (Orari Noleggio); helper closes Sundays via config (default Dom CHIUSO).
+    const times: string[] = getPickupTimesForDateString(date);
+    if (times.length === 0) return [];
 
     const selectedDate = safeDate(date);
     const now = new Date();
@@ -1149,27 +1134,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   };
 
   const getValidReturnTimes = (date: string): string[] => {
-    const dayOfWeek = getDayOfWeek(date);
-    if (dayOfWeek === 0 || isHoliday(date)) return []; // Block Sundays & Holidays
-
-    const times: string[] = [];
-    const addTimes = (start: number, end: number, interval: number) => {
-      for (let i = start; i <= end; i += interval) {
-        const hours = Math.floor(i / 60);
-        const minutes = i % 60;
-        times.push(`${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`);
-      }
-    };
-
-    // RETURN (Check-out) hours (15-minute intervals)
-    //   Mon-Fri: 9:00-11:00, 15:00-17:00 (two windows)
-    //   Sat:     9:00-15:00 (single continuous window)
-    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-      addTimes(9 * 60, 11 * 60, 15);  // 09:00 to 11:00
-      addTimes(15 * 60, 17 * 60, 15); // 15:00 to 17:00
-    } else if (dayOfWeek === 6) {
-      addTimes(9 * 60, 15 * 60, 15);  // Saturday 09:00 to 15:00
-    }
+    if (isHoliday(date)) return []; // Block Holidays
+    // Office-hour windows + slot granularity come from Centralina Pro
+    // (Orari Noleggio); helper closes Sundays via config (default Dom CHIUSO).
+    const times: string[] = getReturnTimesForDateString(date);
+    if (times.length === 0) return [];
 
     // Filter out past times if today
     const selectedDate = safeDate(date);

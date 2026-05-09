@@ -5,46 +5,12 @@ import 'react-datepicker/dist/react-datepicker.css';
 import LocationAutocomplete from './LocationAutocomplete';
 import { DR7_OFFICE_LOCATION, type SardegnaLocation } from '../../data/sardegnaLocations';
 import { isBlockedDate } from '../../utils/blockedDates';
+import {
+  getPickupTimesForDateString as getPickupTimes,
+  getReturnTimesForDateString as getReturnTimes,
+} from '../../utils/noleggioHours';
 
-// Pickup: Mon-Fri 10:30-12:30 / 16:30-18:30, Sat 10:30-16:30 (single window)
-function getPickupTimes(dateStr: string): string[] {
-  if (!dateStr) return [];
-  const day = new Date(dateStr + 'T12:00:00').getDay();
-  if (day === 0) return [];
-  const times: string[] = [];
-  const add = (startMin: number, endMin: number) => {
-    for (let m = startMin; m <= endMin; m += 30) {
-      times.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`);
-    }
-  };
-  if (day >= 1 && day <= 5) {
-    add(10 * 60 + 30, 12 * 60 + 30);
-    add(16 * 60 + 30, 18 * 60 + 30);
-  } else if (day === 6) {
-    add(10 * 60 + 30, 16 * 60 + 30);
-  }
-  return times;
-}
-
-// Return: Mon-Fri 9:00-11:00 / 15:00-17:00, Sat 9:00-15:00 (single window)
-function getReturnTimes(dateStr: string): string[] {
-  if (!dateStr) return [];
-  const day = new Date(dateStr + 'T12:00:00').getDay();
-  if (day === 0) return [];
-  const times: string[] = [];
-  const add = (startMin: number, endMin: number) => {
-    for (let m = startMin; m <= endMin; m += 30) {
-      times.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`);
-    }
-  };
-  if (day >= 1 && day <= 5) {
-    add(9 * 60, 11 * 60);
-    add(15 * 60, 17 * 60);
-  } else if (day === 6) {
-    add(9 * 60, 15 * 60);
-  }
-  return times;
-}
+// Pickup/return office hours come from Centralina Pro > Orari Noleggio.
 
 function calcAutoReturnTime(pickupTime: string, returnDateStr: string, pickupDateStr?: string): string {
   const validTimes = getReturnTimes(returnDateStr);

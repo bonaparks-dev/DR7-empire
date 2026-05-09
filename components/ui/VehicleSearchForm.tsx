@@ -1,6 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { motion } from 'framer-motion';
+import {
+    getPickupTimesForDateString,
+    getReturnTimesForDateString,
+    isPickupClosed,
+    isReturnClosed,
+} from '../../utils/noleggioHours';
 
 export interface SearchFormData {
     pickupLocation: string;
@@ -18,27 +24,7 @@ interface VehicleSearchFormProps {
     category: string; // 'cars' | 'urban-cars' | 'corporate-fleet'
 }
 
-// Office hours — slot ogni 15 minuti, sabato uguale a Mon-Fri.
-// Coerente con CarBookingWizard.tsx (unica fonte di verità).
-function buildSlots(...windows: Array<[number, number]>): string[] {
-    const out: string[] = [];
-    for (const [startMin, endMin] of windows) {
-        for (let m = startMin; m <= endMin; m += 15) {
-            out.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`);
-        }
-    }
-    return out;
-}
-
-// Pickup Mon-Fri: 10:30-12:30, 16:30-18:30
-const PICKUP_TIMES = buildSlots([10 * 60 + 30, 12 * 60 + 30], [16 * 60 + 30, 18 * 60 + 30]);
-// Pickup Sat: 10:30-16:30 single window
-const PICKUP_TIMES_SAT = buildSlots([10 * 60 + 30, 16 * 60 + 30]);
-
-// Return Mon-Fri: 9:00-11:00, 15:00-17:00
-const RETURN_TIMES = buildSlots([9 * 60, 11 * 60], [15 * 60, 17 * 60]);
-// Return Sat: 9:00-15:00 single window
-const RETURN_TIMES_SAT = buildSlots([9 * 60, 15 * 60]);
+// Office hours come from Centralina Pro > Orari Noleggio (utils/noleggioHours).
 
 const LOCATIONS = [
     'Cagliari Centro',
@@ -72,23 +58,26 @@ const VehicleSearchForm: React.FC<VehicleSearchFormProps> = ({ onSearch, isSearc
 
     const [sameLocation, setSameLocation] = useState(true);
 
-    const getDayOfWeek = (dateStr: string) => new Date(dateStr + 'T12:00:00').getDay();
+    const pickupTimesForDay = useMemo(
+        () => getPickupTimesForDateString(formData.pickupDate),
+        [formData.pickupDate],
+    );
 
-    const pickupTimesForDay = useMemo(() => {
-        const day = getDayOfWeek(formData.pickupDate);
-        if (day === 0) return []; // Sunday closed
-        if (day === 6) return PICKUP_TIMES_SAT;
-        return PICKUP_TIMES;
-    }, [formData.pickupDate]);
+    const returnTimesForDay = useMemo(
+        () => getReturnTimesForDateString(formData.returnDate),
+        [formData.returnDate],
+    );
 
-    const returnTimesForDay = useMemo(() => {
-        const day = getDayOfWeek(formData.returnDate);
-        if (day === 0) return []; // Sunday closed
-        if (day === 6) return RETURN_TIMES_SAT;
-        return RETURN_TIMES;
-    }, [formData.returnDate]);
-
-    const isSunday = (dateStr: string) => getDayOfWeek(dateStr) === 0;
+    const pickupClosedFor = (dateStr: string) => {
+        if (!dateStr) return false;
+        const d = new Date(dateStr + 'T12:00:00');
+        return !isNaN(d.getTime()) && isPickupClosed(d);
+    };
+    const returnClosedFor = (dateStr: string) => {
+        if (!dateStr) return false;
+        const d = new Date(dateStr + 'T12:00:00');
+        return !isNaN(d.getTime()) && isReturnClosed(d);
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -151,10 +140,10 @@ const VehicleSearchForm: React.FC<VehicleSearchFormProps> = ({ onSearch, isSearc
                             value={formData.pickupDate}
                             onChange={e => update('pickupDate', e.target.value)}
                             min={formatDate(tomorrow)}
-                            className={`w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white text-sm focus:ring-2 focus:ring-white ${isSunday(formData.pickupDate) ? 'border-red-500' : ''}`}
+                            className={`w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white text-sm focus:ring-2 focus:ring-white ${pickupClosedFor(formData.pickupDate) ? 'border-red-500' : ''}`}
                         />
-                        {isSunday(formData.pickupDate) && (
-                            <p className="text-xs text-red-400 mt-1">Chiusi la domenica</p>
+                        {pickupClosedFor(formData.pickupDate) && (
+                            <p className="text-xs text-red-400 mt-1">Chiuso in questa data</p>
                         )}
                     </div>
 
@@ -214,10 +203,10 @@ const VehicleSearchForm: React.FC<VehicleSearchFormProps> = ({ onSearch, isSearc
                             value={formData.returnDate}
                             onChange={e => update('returnDate', e.target.value)}
                             min={formData.pickupDate}
-                            className={`w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white text-sm focus:ring-2 focus:ring-white ${isSunday(formData.returnDate) ? 'border-red-500' : ''}`}
+                            className={`w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white text-sm focus:ring-2 focus:ring-white ${returnClosedFor(formData.returnDate) ? 'border-red-500' : ''}`}
                         />
-                        {isSunday(formData.returnDate) && (
-                            <p className="text-xs text-red-400 mt-1">Chiusi la domenica</p>
+                        {returnClosedFor(formData.returnDate) && (
+                            <p className="text-xs text-red-400 mt-1">Chiuso in questa data</p>
                         )}
                     </div>
 
@@ -258,7 +247,7 @@ const VehicleSearchForm: React.FC<VehicleSearchFormProps> = ({ onSearch, isSearc
                 <div className="mt-6 flex justify-center">
                     <button
                         type="submit"
-                        disabled={isSearching || isSunday(formData.pickupDate) || isSunday(formData.returnDate)}
+                        disabled={isSearching || pickupClosedFor(formData.pickupDate) || returnClosedFor(formData.returnDate)}
                         className="px-10 py-3.5 bg-white text-black font-bold rounded-full text-sm uppercase tracking-wider hover:bg-gray-200 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none flex items-center gap-2"
                     >
                         {isSearching ? (
