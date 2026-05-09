@@ -1,10 +1,23 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { Link } from 'react-router-dom';
+import { getCheckEmailCopy, type CheckEmailCopy } from '../utils/siteCopy';
 
 const CheckEmailPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
+  const [copy, setCopy] = useState<CheckEmailCopy | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getCheckEmailCopy().then((c) => { if (!cancelled) setCopy(c); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const tx = (it: keyof CheckEmailCopy, en: keyof CheckEmailCopy, fallback: string): string => {
+    if (!copy) return fallback;
+    return (copy as Record<string, string>)[(lang === 'it' ? it : en) as string] || fallback;
+  };
 
   return (
     <motion.div
@@ -21,15 +34,15 @@ const CheckEmailPage: React.FC = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg shadow-2xl shadow-black/50 p-8"
         >
-          <h1 className="text-3xl font-bold mb-4">{t('Check_Your_Email')}</h1>
+          <h1 className="text-3xl font-bold mb-4">{tx('title_it', 'title_en', t('Check_Your_Email'))}</h1>
           <p className="mb-8 text-gray-300">
-            {t('Weve_sent_a_verification_link_to_your_email')}
+            {tx('body_it', 'body_en', t('Weve_sent_a_verification_link_to_your_email'))}
           </p>
           <Link
             to="/signin"
             className="font-medium text-white hover:text-gray-300 underline"
           >
-            {t('Back_to_Sign_In')}
+            {tx('back_link_it', 'back_link_en', t('Back_to_Sign_In'))}
           </Link>
         </motion.div>
       </div>

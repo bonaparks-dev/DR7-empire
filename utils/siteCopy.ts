@@ -51,6 +51,8 @@ interface SiteCopySnapshot {
   investitori?: InvestitoriCopy;
   franchising?: FranchisingCopy;
   aviationQuote?: AviationQuoteCopy;
+  checkEmail?: CheckEmailCopy;
+  jetSearchResults?: JetSearchResultsCopy;
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -230,6 +232,24 @@ export interface MechanicalCopy {
   hours_heading_it: string; hours_heading_en: string;
   hours_main_it: string; hours_main_en: string;
   hours_sub_it: string; hours_sub_en: string;
+}
+
+// ─── Jet Search Results page (chrome only) ────────────────────────────────
+export interface JetSearchResultsCopy {
+  title_it: string; title_en: string;
+  subtitle_connector_it: string; subtitle_connector_en: string;     // "to"
+  passengers_suffix_it: string; passengers_suffix_en: string;       // "Passengers"
+  modify_search_cta_it: string; modify_search_cta_en: string;
+  airport_fallback: string;                                         // "N/A"
+  empty_title_it: string; empty_title_en: string;
+  empty_body_it: string; empty_body_en: string;
+}
+
+// ─── Check Email page (post-signup) ────────────────────────────────────────
+export interface CheckEmailCopy {
+  title_it: string; title_en: string;
+  body_it: string; body_en: string;
+  back_link_it: string; back_link_en: string;
 }
 
 // ─── Aviation Quote Request page (bilingual: IT-only form, IT+EN gate) ────
@@ -736,6 +756,20 @@ export async function getLegalPage(id: LegalPageId): Promise<LegalPageCopy | nul
   return found;
 }
 
+/** Jet Search Results page chrome (catalog stays in RENTAL_CATEGORIES). */
+export async function getJetSearchResultsCopy(): Promise<JetSearchResultsCopy> {
+  const snap = await loadOnce();
+  if (snap.jetSearchResults && snap.jetSearchResults.title_it) return snap.jetSearchResults;
+  return DEFAULT_JET_SEARCH_RESULTS;
+}
+
+/** Check Email page (post-signup confirmation prompt). */
+export async function getCheckEmailCopy(): Promise<CheckEmailCopy> {
+  const snap = await loadOnce();
+  if (snap.checkEmail && snap.checkEmail.title_it) return snap.checkEmail;
+  return DEFAULT_CHECK_EMAIL;
+}
+
 /** Aviation quote request page (bilingual). */
 export async function getAviationQuoteCopy(): Promise<AviationQuoteCopy> {
   const snap = await loadOnce();
@@ -838,6 +872,26 @@ export function invalidateSiteCopyCache(): void {
   CACHE = null;
   pending = null;
 }
+
+// ─── Default Jet Search Results seed ──────────────────────────────────────
+const DEFAULT_JET_SEARCH_RESULTS: JetSearchResultsCopy = {
+  title_it: 'Risultati di Ricerca', title_en: 'Search Results',
+  subtitle_connector_it: 'a', subtitle_connector_en: 'to',
+  passengers_suffix_it: 'Passeggeri', passengers_suffix_en: 'Passengers',
+  modify_search_cta_it: 'Modifica Ricerca', modify_search_cta_en: 'Modify Search',
+  airport_fallback: 'N/A',
+  empty_title_it: 'Nessun jet trovato', empty_title_en: 'No jets found',
+  empty_body_it: 'Prova a modificare i criteri di ricerca o contatta il nostro concierge per assistenza.',
+  empty_body_en: 'Try adjusting your search criteria or contact our concierge for assistance.',
+};
+
+// ─── Default Check Email seed ──────────────────────────────────────────────
+const DEFAULT_CHECK_EMAIL: CheckEmailCopy = {
+  title_it: 'Controlla la tua email', title_en: 'Check Your Email',
+  body_it: 'Ti abbiamo inviato un link di verifica all\'indirizzo email che hai indicato. Clicca sul link per attivare il tuo account.',
+  body_en: 'We\'ve sent a verification link to your email. Click the link to activate your account.',
+  back_link_it: 'Torna al Login', back_link_en: 'Back to Sign In',
+};
 
 // ─── Default Aviation Quote seed ───────────────────────────────────────────
 const DEFAULT_AVIATION_QUOTE: AviationQuoteCopy = {

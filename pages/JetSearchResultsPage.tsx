@@ -1,5 +1,5 @@
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { RENTAL_CATEGORIES, AIRPORTS } from '../constants';
 import type { RentalItem } from '../types';
@@ -7,12 +7,23 @@ import RentalCard from '../components/ui/RentalCard';
 import { useTranslation } from '../hooks/useTranslation';
 import { motion } from 'framer-motion';
 import { useVerification } from '../hooks/useVerification';
+import { getJetSearchResultsCopy, type JetSearchResultsCopy } from '../utils/siteCopy';
 
 const JetSearchResultsPage: React.FC = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const { t } = useTranslation();
+    const { lang } = useTranslation();
     const { checkVerificationAndProceed } = useVerification();
+    const [copy, setCopy] = useState<JetSearchResultsCopy | null>(null);
+    useEffect(() => {
+        let cancelled = false;
+        getJetSearchResultsCopy().then((c) => { if (!cancelled) setCopy(c); });
+        return () => { cancelled = true; };
+    }, []);
+    const tx = (it: keyof JetSearchResultsCopy, en: keyof JetSearchResultsCopy, fallback = ''): string => {
+        if (!copy) return fallback;
+        return (copy as Record<string, string>)[(lang === 'it' ? it : en) as string] || fallback;
+    };
 
     const searchCriteria = useMemo(() => ({
         tripType: searchParams.get('tripType') || 'one-way',
@@ -62,7 +73,7 @@ const JetSearchResultsPage: React.FC = () => {
     };
     
     const getAirportName = (iata: string | null) => {
-        if (!iata) return 'N/A';
+        if (!iata) return copy?.airport_fallback || 'N/A';
         const airport = AIRPORTS.find(a => a.iata === iata);
         return airport ? `${airport.city} (${airport.iata})` : iata;
     };
@@ -83,16 +94,16 @@ const JetSearchResultsPage: React.FC = () => {
                     className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4"
                 >
                     <div>
-                        <h1 className="text-4xl md:text-5xl font-bold text-white">{t('Search_Results')}</h1>
+                        <h1 className="text-4xl md:text-5xl font-bold text-white">{tx('title_it', 'title_en', 'Search Results')}</h1>
                         <p className="text-gray-400 mt-1">
-                            {getAirportName(searchCriteria.departure)} to {getAirportName(searchCriteria.arrival)} &middot; {searchCriteria.passengers} Passengers
+                            {getAirportName(searchCriteria.departure)} {tx('subtitle_connector_it', 'subtitle_connector_en', 'to')} {getAirportName(searchCriteria.arrival)} &middot; {searchCriteria.passengers} {tx('passengers_suffix_it', 'passengers_suffix_en', 'Passengers')}
                         </p>
                     </div>
-                    <button 
+                    <button
                         onClick={() => navigate('/jets')}
                         className="bg-gray-800 text-white px-6 py-2 rounded-full font-semibold text-sm hover:bg-gray-700 transition-colors"
                     >
-                        {t('Modify_Search')}
+                        {tx('modify_search_cta_it', 'modify_search_cta_en', 'Modify Search')}
                     </button>
                 </motion.div>
 
@@ -116,8 +127,8 @@ const JetSearchResultsPage: React.FC = () => {
                     </div>
                 ) : (
                     <div className="text-center py-20 bg-gray-900/50 border border-gray-800 rounded-lg">
-                        <h2 className="text-2xl font-bold text-white">{t('No_jets_found')}</h2>
-                        <p className="text-gray-400 mt-2">Try adjusting your search criteria or contact our concierge for assistance.</p>
+                        <h2 className="text-2xl font-bold text-white">{tx('empty_title_it', 'empty_title_en', 'No jets found')}</h2>
+                        <p className="text-gray-400 mt-2">{tx('empty_body_it', 'empty_body_en', 'Try adjusting your search criteria.')}</p>
                     </div>
                 )}
             </div>
