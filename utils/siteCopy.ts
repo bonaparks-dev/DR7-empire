@@ -23,7 +23,8 @@ interface SiteCopySnapshot {
   faq?: FaqEntry[];
   cancellazione?: CancellazioneCopy;
   membership?: MembershipCopy;
-  // Future: hero, chi_siamo, footer, legali
+  home?: HomeCopy;
+  // Future: chi_siamo, footer, legali
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -121,6 +122,32 @@ export function applyMembershipPlaceholders(s: string, vals: MembershipPlacehold
     .split('{annualPrice}').join(vals.annualPrice)
     .split('{annualMonthly}').join(vals.annualMonthly)
     .split('{annualSavings}').join(vals.annualSavings);
+}
+
+// ─── Home / Hero ────────────────────────────────────────────────────────────
+export interface HomeSlide {
+  id: string;
+  video_src: string;       // path under /public, e.g. "/main.mp4"
+}
+
+/**
+ * Override for a single category card on the homepage. Only the categories
+ * with a matching `id` get overridden; the others keep the hardcoded
+ * DISPLAY_TITLE / CATEGORY_IMAGE values from HomePage.tsx.
+ */
+export interface HomeCategoryOverride {
+  id: string;              // must match a RENTAL_CATEGORIES id
+  display_title_it: string;
+  display_title_en: string;
+  image_src: string;       // path under /public, e.g. "/car.jpeg"
+}
+
+export interface HomeCopy {
+  seo_h1_it: string;
+  seo_h1_en: string;
+  hero_autoplay_seconds: number;     // default 8
+  hero_slides: HomeSlide[];
+  categories: HomeCategoryOverride[];
 }
 
 // ─── Defaults ────────────────────────────────────────────────────────────────
@@ -236,11 +263,51 @@ export async function getMembershipCopy(): Promise<MembershipCopy> {
   return DEFAULT_MEMBERSHIP;
 }
 
+/**
+ * Home page copy + hero slides + category overrides. Falls back to
+ * hardcoded defaults so the page never goes blank if config is missing.
+ */
+export async function getHomeCopy(): Promise<HomeCopy> {
+  const snap = await loadOnce();
+  if (snap.home && Array.isArray(snap.home.hero_slides) && snap.home.hero_slides.length > 0) {
+    return snap.home;
+  }
+  return DEFAULT_HOME;
+}
+
 /** Force a re-fetch (useful after admin edits in dev). */
 export function invalidateSiteCopyCache(): void {
   CACHE = null;
   pending = null;
 }
+
+// ─── Default Home seed ──────────────────────────────────────────────────────
+// Mirrors the legacy hardcoded HomePage values (HERO_SLIDES + DISPLAY_TITLE
+// + CATEGORY_IMAGE) so swapping to admin-managed copy is a no-op until edited.
+const DEFAULT_HOME: HomeCopy = {
+  seo_h1_it: 'DR7 Empire — Noleggio Auto di Lusso, Supercar e Servizi Premium in Sardegna',
+  seo_h1_en: 'DR7 Empire — Luxury Car Rental, Supercars & Premium Services in Sardinia',
+  hero_autoplay_seconds: 8,
+  hero_slides: [
+    { id: 'slide-1', video_src: '/main.mp4' },
+    { id: 'slide-2', video_src: '/video2.mp4' },
+    { id: 'slide-3', video_src: '/video3.mp4' },
+    { id: 'slide-4', video_src: '/video4.mp4' },
+    { id: 'slide-5', video_src: '/video5.mp4' },
+    { id: 'slide-6', video_src: '/video6.mp4' },
+  ],
+  categories: [
+    { id: 'cars',                 display_title_it: 'DR7 Supercar & Luxury Division',         display_title_en: 'DR7 Supercar & Luxury Division',         image_src: '/car.jpeg' },
+    { id: 'urban-cars',           display_title_it: 'DR7 Urban Mobility Division',            display_title_en: 'DR7 Urban Mobility Division',            image_src: '/urbanc.jpeg' },
+    { id: 'corporate-fleet',      display_title_it: 'DR7 Corporate & Utility Fleet Division', display_title_en: 'DR7 Corporate & Utility Fleet Division', image_src: '/utili.jpeg' },
+    { id: 'yachts',               display_title_it: 'DR7 Yachting Division',                  display_title_en: 'DR7 Yachting Division',                  image_src: '/yacht.jpeg' },
+    { id: 'jets',                 display_title_it: 'DR7 Aviation Division',                  display_title_en: 'DR7 Aviation Division',                  image_src: '/privatejet.jpeg' },
+    { id: 'car-wash-services',    display_title_it: 'Prime Car Wash',                         display_title_en: 'Prime Car Wash',                         image_src: '/luxurywash.jpeg' },
+    { id: 'mechanical-services',  display_title_it: 'DR7 Rapid Response Services',            display_title_en: 'DR7 Rapid Response Services',            image_src: '/rapids.jpeg' },
+    { id: 'membership',           display_title_it: 'DR7 Exclusive Members Club',             display_title_en: 'DR7 Exclusive Members Club',             image_src: '/exclusivemc.jpeg' },
+    { id: 'credit-wallet',        display_title_it: 'DR7 Credit Wallet',                      display_title_en: 'DR7 Credit Wallet',                      image_src: '/cwallet.jpeg' },
+  ],
+};
 
 // ─── Default Membership seed ────────────────────────────────────────────────
 const DEFAULT_MEMBERSHIP: MembershipCopy = {
