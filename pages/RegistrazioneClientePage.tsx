@@ -267,36 +267,36 @@ export default function RegistrazioneClientePage() {
     }
 
     // ─── Render gates ────────────────────────────────────────────────────
-    if (invite.valid === null) return <Centered><p>Verifica link…</p></Centered>
+    if (invite.valid === null) return <Centered><p className="text-zinc-300">Verifica link…</p></Centered>
     if (!invite.valid) {
         const reason = invite.expired ? 'Il link è scaduto.' :
             invite.used ? 'Questo link è già stato utilizzato.' :
             invite.revoked ? 'Il link è stato revocato.' :
             invite.error || 'Link non valido.'
         return <Centered>
-            <h1 className="text-2xl font-bold text-red-600 mb-2">Link non utilizzabile</h1>
-            <p className="text-gray-600">{reason}</p>
-            <p className="text-sm text-gray-500 mt-4">Contatta DR7 Empire per un nuovo link di registrazione.</p>
+            <h1 className="text-2xl font-bold text-red-400 mb-2">Link non utilizzabile</h1>
+            <p className="text-zinc-300">{reason}</p>
+            <p className="text-sm text-zinc-500 mt-4">Contatta DR7 Empire per un nuovo link di registrazione.</p>
         </Centered>
     }
 
     if (step === 'done') {
         return <Centered>
-            <h1 className="text-3xl font-bold text-emerald-700 mb-2">Registrazione completata</h1>
-            <p className="text-gray-600">Grazie. Il team DR7 Empire verificherà i documenti caricati al più presto.</p>
+            <h1 className="text-3xl font-bold text-emerald-400 mb-2">Registrazione completata</h1>
+            <p className="text-zinc-300">Grazie. Il team DR7 Empire verificherà i documenti caricati al più presto.</p>
         </Centered>
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8 px-4">
+        <div className="py-10 px-4 sm:px-6">
             <div className="max-w-3xl mx-auto">
-                <Header />
+                <PageIntro />
 
                 {step === 'form' && (
-                    <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow border border-gray-200 p-6 space-y-5">
+                    <form onSubmit={handleSubmit} className="bg-zinc-900/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-amber-400/20 p-6 sm:p-8 space-y-7">
                         {/* 1. Tipo Cliente */}
-                        <div>
-                            <h2 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">1. Tipo Cliente</h2>
+                        <section>
+                            <SectionTitle index="1" title="Tipo Cliente" />
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                 {(['persona_fisica', 'azienda', 'pubblica_amministrazione'] as const).map(t => {
                                     const active = form.tipo_cliente === t
@@ -305,10 +305,10 @@ export default function RegistrazioneClientePage() {
                                             key={t}
                                             type="button"
                                             onClick={() => update('tipo_cliente', t)}
-                                            className={`px-4 py-3 rounded-lg border-2 text-sm font-semibold transition-colors ${
+                                            className={`px-4 py-3 rounded-xl border text-sm font-semibold transition-all ${
                                                 active
-                                                    ? 'border-amber-600 bg-amber-50 text-amber-700'
-                                                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                                                    ? 'border-amber-400 bg-amber-400/10 text-amber-300 shadow-[0_0_0_1px_rgba(251,191,36,0.6)]'
+                                                    : 'border-zinc-700 bg-zinc-800/40 text-zinc-300 hover:border-zinc-500 hover:bg-zinc-800'
                                             }`}
                                         >
                                             {TIPO_LABELS[t]}
@@ -316,68 +316,69 @@ export default function RegistrazioneClientePage() {
                                     )
                                 })}
                             </div>
-                        </div>
+                        </section>
 
                         {/* 2. Dati anagrafici / azienda / PA */}
                         {form.tipo_cliente === 'persona_fisica' && (
                             <section>
-                                <h3 className="text-md font-semibold mb-3">Dati Anagrafici</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <Field label="Nome *" value={form.nome} onChange={v => update('nome', v)} required />
-                                    <Field label="Cognome *" value={form.cognome} onChange={v => update('cognome', v)} required />
+                                <SectionTitle index="2" title="Dati Anagrafici" />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <Field label="Nome" value={form.nome} onChange={v => update('nome', v)} required />
+                                    <Field label="Cognome" value={form.cognome} onChange={v => update('cognome', v)} required />
                                     <div className="md:col-span-2">
                                         <label className="block">
-                                            <span className="text-xs font-medium text-gray-700">Codice Fiscale *</span>
-                                            <div className="mt-1 flex gap-2">
+                                            <span className="text-xs font-semibold text-zinc-300 tracking-wide">CODICE FISCALE *</span>
+                                            <div className="mt-2 flex flex-col sm:flex-row gap-2">
                                                 <input
                                                     value={form.codice_fiscale}
                                                     onChange={e => update('codice_fiscale', e.target.value.toUpperCase())}
                                                     required
                                                     maxLength={16}
                                                     minLength={16}
-                                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent uppercase"
+                                                    placeholder="ABCDEF12G34H567I"
+                                                    className={INPUT_CLASS + ' uppercase tracking-wider'}
                                                 />
                                                 <CalcolaCFButton
                                                     config={cfConfig}
-                                                    className="px-3 py-2 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 disabled:opacity-50"
+                                                    className="px-4 py-2.5 rounded-xl bg-amber-400 text-zinc-900 text-sm font-bold hover:bg-amber-300 active:scale-[0.98] transition-all disabled:opacity-50 whitespace-nowrap shadow-lg shadow-amber-400/20"
                                                 />
                                             </div>
                                             {cfMsg && (
-                                                <p className={`mt-1 text-xs ${cfMsg.type === 'success' ? 'text-emerald-600' : 'text-red-600'}`}>{cfMsg.text}</p>
+                                                <p className={`mt-2 text-xs ${cfMsg.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>{cfMsg.text}</p>
                                             )}
                                         </label>
                                     </div>
                                     <SelectField label="Sesso" value={form.sesso} onChange={v => update('sesso', v)} options={[
                                         { value: '', label: 'Seleziona…' },
-                                        { value: 'M', label: 'M' },
-                                        { value: 'F', label: 'F' },
+                                        { value: 'M', label: 'Maschio' },
+                                        { value: 'F', label: 'Femmina' },
                                     ]} />
-                                    <Field label="Data di Nascita *" type="date" value={form.data_nascita} onChange={v => update('data_nascita', v)} required />
-                                    <Field label="Luogo di Nascita *" value={form.luogo_nascita} onChange={v => update('luogo_nascita', v)} required placeholder="es. Cagliari, Torino…" />
-                                    <Field label="Provincia di Nascita" value={form.provincia_nascita} onChange={v => update('provincia_nascita', v.toUpperCase())} maxLength={2} placeholder="ES. CA, TO, MI…" />
+                                    <Field label="Data di Nascita" type="date" value={form.data_nascita} onChange={v => update('data_nascita', v)} required />
+                                    <Field label="Luogo di Nascita" value={form.luogo_nascita} onChange={v => update('luogo_nascita', v)} required placeholder="es. Cagliari, Torino…" />
+                                    <Field label="Provincia di Nascita" value={form.provincia_nascita} onChange={v => update('provincia_nascita', v.toUpperCase())} maxLength={2} placeholder="es. CA, TO, MI…" />
                                 </div>
                             </section>
                         )}
 
                         {form.tipo_cliente === 'azienda' && (
                             <section>
-                                <h3 className="text-md font-semibold mb-3">Dati Azienda</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <Field label="Ragione Sociale *" value={form.ragione_sociale} onChange={v => update('ragione_sociale', v)} required />
-                                    <Field label="P.IVA *" value={form.partita_iva} onChange={v => update('partita_iva', v.replace(/\D/g, ''))} required maxLength={11} minLength={11} />
-                                    <Field label="PEC (richiesta se nessun Codice SDI)" type="email" value={form.pec} onChange={v => update('pec', v)} />
-                                    <Field label="Codice Destinatario SDI (richiesto se nessuna PEC)" value={form.codice_destinatario} onChange={v => update('codice_destinatario', v.toUpperCase())} maxLength={7} />
-                                    <Field label="Codice Fiscale (rappresentante)" value={form.codice_fiscale} onChange={v => update('codice_fiscale', v.toUpperCase())} maxLength={16} />
+                                <SectionTitle index="2" title="Dati Azienda" />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <Field label="Ragione Sociale" value={form.ragione_sociale} onChange={v => update('ragione_sociale', v)} required />
+                                    <Field label="P.IVA" value={form.partita_iva} onChange={v => update('partita_iva', v.replace(/\D/g, ''))} required maxLength={11} minLength={11} placeholder="11 cifre" />
+                                    <Field label="PEC (se nessun Codice SDI)" type="email" value={form.pec} onChange={v => update('pec', v)} placeholder="azienda@pec.it" />
+                                    <Field label="Codice Destinatario SDI (se nessuna PEC)" value={form.codice_destinatario} onChange={v => update('codice_destinatario', v.toUpperCase())} maxLength={7} placeholder="7 caratteri" />
+                                    <Field label="Codice Fiscale Rappresentante" value={form.codice_fiscale} onChange={v => update('codice_fiscale', v.toUpperCase())} maxLength={16} />
                                 </div>
                             </section>
                         )}
 
                         {form.tipo_cliente === 'pubblica_amministrazione' && (
                             <section>
-                                <h3 className="text-md font-semibold mb-3">Pubblica Amministrazione</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <Field label="Ente / Ufficio *" value={form.ente_ufficio} onChange={v => update('ente_ufficio', v)} required />
-                                    <Field label="Codice Univoco IPA *" value={form.codice_univoco} onChange={v => update('codice_univoco', v.toUpperCase())} required maxLength={6} />
+                                <SectionTitle index="2" title="Pubblica Amministrazione" />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <Field label="Ente / Ufficio" value={form.ente_ufficio} onChange={v => update('ente_ufficio', v)} required />
+                                    <Field label="Codice Univoco IPA" value={form.codice_univoco} onChange={v => update('codice_univoco', v.toUpperCase())} required maxLength={6} placeholder="6 caratteri" />
                                     <Field label="P.IVA" value={form.partita_iva} onChange={v => update('partita_iva', v.replace(/\D/g, ''))} maxLength={11} />
                                     <Field label="Codice Fiscale Ente" value={form.codice_fiscale} onChange={v => update('codice_fiscale', v.toUpperCase())} maxLength={16} />
                                     <Field label="PEC" type="email" value={form.pec} onChange={v => update('pec', v)} />
@@ -387,87 +388,89 @@ export default function RegistrazioneClientePage() {
 
                         {/* 3. Residenza / Sede */}
                         <section>
-                            <h3 className="text-md font-semibold mb-3">
-                                {form.tipo_cliente === 'persona_fisica' ? 'Residenza' : 'Sede'}
-                            </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <SectionTitle index="3" title={form.tipo_cliente === 'persona_fisica' ? 'Residenza' : 'Sede'} />
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="md:col-span-2">
-                                    <Field label="Indirizzo *" value={form.indirizzo} onChange={v => update('indirizzo', v)} required />
+                                    <Field label="Indirizzo" value={form.indirizzo} onChange={v => update('indirizzo', v)} required placeholder="Via / Viale / Corso…" />
                                 </div>
-                                <Field label="Civico" value={form.numero_civico} onChange={v => update('numero_civico', v)} maxLength={10} />
-                                <Field label="Città *" value={form.citta} onChange={v => update('citta', v)} required placeholder="es. Cagliari, Torino…" />
-                                <Field label="Provincia *" value={form.provincia} onChange={v => update('provincia', v.toUpperCase())} maxLength={2} minLength={2} required placeholder="ES. CA, TO, MI…" />
-                                <Field label="CAP *" value={form.cap} onChange={v => update('cap', v.replace(/\D/g, ''))} maxLength={5} minLength={5} required />
-                                <Field label="Nazione" value={form.nazione} onChange={v => update('nazione', v.toUpperCase())} maxLength={2} />
+                                <Field label="Civico" value={form.numero_civico} onChange={v => update('numero_civico', v)} maxLength={10} placeholder="es. 12/A" />
+                                <Field label="Città" value={form.citta} onChange={v => update('citta', v)} required placeholder="es. Cagliari" />
+                                <Field label="Provincia" value={form.provincia} onChange={v => update('provincia', v.toUpperCase())} maxLength={2} minLength={2} required placeholder="es. CA" />
+                                <Field label="CAP" value={form.cap} onChange={v => update('cap', v.replace(/\D/g, ''))} maxLength={5} minLength={5} required placeholder="5 cifre" />
+                                <Field label="Nazione" value={form.nazione} onChange={v => update('nazione', v.toUpperCase())} maxLength={2} placeholder="IT" />
                             </div>
                         </section>
 
                         {/* 4. Contatti */}
                         <section>
-                            <h3 className="text-md font-semibold mb-3">Contatti</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <Field label="Telefono *" type="tel" value={form.telefono} onChange={v => update('telefono', v)} required placeholder="+39 ..." />
-                                <Field label="Email *" type="email" value={form.email} onChange={v => update('email', v)} required />
+                            <SectionTitle index="4" title="Contatti" />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Field label="Telefono" type="tel" value={form.telefono} onChange={v => update('telefono', v)} required placeholder="+39 333 1234567" />
+                                <Field label="Email" type="email" value={form.email} onChange={v => update('email', v)} required placeholder="nome@esempio.com" />
                             </div>
                         </section>
 
-                        <p className="text-xs text-gray-500 pt-2">I campi contrassegnati con * sono obbligatori.</p>
+                        <p className="text-xs text-zinc-500 pt-1">I campi contrassegnati con * sono obbligatori.</p>
 
                         {submitErr && (
-                            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{submitErr}</p>
+                            <p className="text-sm text-red-300 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">{submitErr}</p>
                         )}
 
-                        <div className="pt-4 border-t flex justify-end">
+                        <div className="pt-5 border-t border-zinc-800 flex flex-col sm:flex-row sm:justify-end gap-2">
                             <button
                                 type="submit"
                                 disabled={submitting}
-                                className="px-6 py-2.5 bg-amber-600 text-white font-semibold rounded-lg hover:bg-amber-700 disabled:opacity-50"
+                                className="px-8 py-3 bg-amber-400 text-zinc-900 font-bold rounded-xl hover:bg-amber-300 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg shadow-amber-400/20"
                             >
-                                {submitting ? 'Invio…' : 'Continua'}
+                                {submitting ? 'Invio…' : 'Continua →'}
                             </button>
                         </div>
                     </form>
                 )}
 
                 {step === 'documents' && customerId && (
-                    <div className="bg-white rounded-lg shadow border border-gray-200 p-6 space-y-4">
-                        <h2 className="text-xl font-semibold">Documenti</h2>
-                        <p className="text-sm text-gray-600">
-                            Carica i tuoi documenti. Saranno verificati dal team DR7 prima di confermare la registrazione.
-                            Formati: JPG, PNG, PDF (max 10 MB ciascuno).
-                        </p>
+                    <div className="bg-zinc-900/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-amber-400/20 p-6 sm:p-8 space-y-5">
+                        <div>
+                            <SectionTitle index="✓" title="Documenti" />
+                            <p className="text-sm text-zinc-400">
+                                Carica i tuoi documenti. Saranno verificati dal team DR7 prima di confermare la registrazione.
+                                Formati: JPG, PNG, PDF (max 10 MB ciascuno).
+                            </p>
+                        </div>
 
-                        <DocPicker label="Carta d'identità o Passaporto" kind="identity_document" onAdd={addDoc} />
-                        <DocPicker label="Patente di guida" kind="drivers_license" onAdd={addDoc} />
-                        <DocPicker label="Codice Fiscale / Tessera Sanitaria" kind="codice_fiscale" onAdd={addDoc} />
+                        <div className="space-y-3">
+                            <DocPicker label="Carta d'identità o Passaporto" kind="identity_document" onAdd={addDoc} />
+                            <DocPicker label="Patente di guida" kind="drivers_license" onAdd={addDoc} />
+                            <DocPicker label="Codice Fiscale / Tessera Sanitaria" kind="codice_fiscale" onAdd={addDoc} />
+                        </div>
 
                         {docs.length > 0 && (
-                            <ul className="border rounded divide-y">
+                            <ul className="border border-zinc-800 rounded-xl divide-y divide-zinc-800 overflow-hidden">
                                 {docs.map((d, i) => (
-                                    <li key={i} className="px-3 py-2 flex items-center gap-3 text-sm">
-                                        <span className="font-mono text-xs px-2 py-0.5 rounded bg-gray-100">{d.kind.replace('_', ' ')}</span>
-                                        <span className="flex-1 truncate">{d.file.name}</span>
-                                        {d.uploaded ? <span className="text-emerald-600">caricato</span>
-                                            : d.uploading ? <span className="text-blue-600">caricamento…</span>
-                                                : d.error ? <span className="text-red-600 text-xs">{d.error}</span>
-                                                    : <button type="button" onClick={() => removeDoc(i)} className="text-red-600 text-xs">rimuovi</button>}
+                                    <li key={i} className="px-4 py-3 flex items-center gap-3 text-sm bg-zinc-950/50">
+                                        <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-300">{d.kind.replace('_', ' ')}</span>
+                                        <span className="flex-1 truncate text-zinc-200">{d.file.name}</span>
+                                        {d.uploaded ? <span className="text-emerald-400 text-xs font-semibold">✓ caricato</span>
+                                            : d.uploading ? <span className="text-amber-300 text-xs">caricamento…</span>
+                                                : d.error ? <span className="text-red-400 text-xs">{d.error}</span>
+                                                    : <button type="button" onClick={() => removeDoc(i)} className="text-red-400 text-xs hover:text-red-300">rimuovi</button>}
                                     </li>
                                 ))}
                             </ul>
                         )}
 
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 pt-4 border-t">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 pt-5 border-t border-zinc-800">
                             <button type="button" onClick={() => setStep('done')}
-                                className="text-sm text-gray-600 underline self-start">Salta i documenti per ora</button>
-                            <div className="flex gap-2">
+                                className="text-sm text-zinc-400 underline self-start hover:text-zinc-200">Salta i documenti per ora</button>
+                            <div className="flex flex-col sm:flex-row gap-2">
                                 <button type="button" onClick={uploadDocs}
                                     disabled={docs.length === 0 || docs.every(d => d.uploaded)}
-                                    className="px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 disabled:opacity-50">
+                                    className="px-5 py-2.5 bg-zinc-800 text-zinc-100 font-semibold rounded-xl hover:bg-zinc-700 active:scale-[0.98] transition-all disabled:opacity-40">
                                     Carica selezionati
                                 </button>
                                 <button type="button" onClick={() => setStep('done')}
                                     disabled={docs.some(d => !d.uploaded && !d.error)}
-                                    className="px-4 py-2 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 disabled:opacity-50">
+                                    className="px-5 py-2.5 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-400 active:scale-[0.98] transition-all disabled:opacity-40 shadow-lg shadow-emerald-500/20">
                                     Concludi
                                 </button>
                             </div>
@@ -479,22 +482,40 @@ export default function RegistrazioneClientePage() {
     )
 }
 
-function Header() {
+// ─── Style tokens ───────────────────────────────────────────────────────
+// Centralizzate qui cosi' tutti gli input hanno la STESSA visibilita' su
+// dark theme (placeholder leggibile, bordo sempre presente, focus chiaro).
+const INPUT_CLASS =
+    'w-full px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-700 text-zinc-100 ' +
+    'placeholder:text-zinc-500 placeholder:font-normal ' +
+    'focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30 ' +
+    'transition-colors'
+
+function PageIntro() {
     return (
-        <div className="text-center mb-6">
-            <div className="text-3xl font-bold text-amber-700">DR7 Empire</div>
-            <p className="text-sm text-gray-600 mt-1">Registrazione cliente</p>
+        <div className="text-center mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Registrazione Cliente</h1>
+            <p className="text-sm text-zinc-400 mt-2">Compila i tuoi dati per completare la registrazione DR7 Empire</p>
         </div>
     )
 }
 
 function Centered({ children }: { children: React.ReactNode }) {
     return (
-        <div className="min-h-screen flex items-center justify-center px-4 bg-gray-50">
-            <div className="bg-white border border-gray-200 rounded-lg shadow p-8 max-w-md text-center">
+        <div className="min-h-[60vh] flex items-center justify-center px-4 py-10">
+            <div className="bg-zinc-900/80 backdrop-blur-sm border border-amber-400/20 rounded-2xl shadow-2xl p-8 max-w-md text-center">
                 {children}
             </div>
         </div>
+    )
+}
+
+function SectionTitle({ index, title }: { index: string; title: string }) {
+    return (
+        <h3 className="flex items-center gap-2 text-sm font-bold text-amber-300 uppercase tracking-wider mb-4">
+            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-400/15 border border-amber-400/40 text-[11px] text-amber-300">{index}</span>
+            {title}
+        </h3>
     )
 }
 
@@ -510,7 +531,7 @@ function Field({ label, value, onChange, type = 'text', required, maxLength, min
 }) {
     return (
         <label className="block">
-            <span className="text-xs font-medium text-gray-700">{label}</span>
+            <span className="text-xs font-semibold text-zinc-300 tracking-wide uppercase">{label}{required ? ' *' : ''}</span>
             <input
                 type={type}
                 value={value}
@@ -519,7 +540,7 @@ function Field({ label, value, onChange, type = 'text', required, maxLength, min
                 maxLength={maxLength}
                 minLength={minLength}
                 placeholder={placeholder}
-                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                className={`mt-2 ${INPUT_CLASS}`}
             />
         </label>
     )
@@ -533,13 +554,14 @@ function SelectField({ label, value, onChange, options }: {
 }) {
     return (
         <label className="block">
-            <span className="text-xs font-medium text-gray-700">{label}</span>
+            <span className="text-xs font-semibold text-zinc-300 tracking-wide uppercase">{label}</span>
             <select
                 value={value}
                 onChange={e => onChange(e.target.value)}
-                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
+                className={`mt-2 ${INPUT_CLASS} appearance-none pr-8 bg-no-repeat bg-right`}
+                style={{ backgroundImage: 'url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%23a1a1aa\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundSize: '18px', backgroundPosition: 'right 12px center' }}
             >
-                {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {options.map(o => <option key={o.value} value={o.value} className="bg-zinc-900 text-zinc-100">{o.label}</option>)}
             </select>
         </label>
     )
@@ -551,8 +573,8 @@ function DocPicker({ label, kind, onAdd }: {
     onAdd: (kind: DocKind, f: File) => void
 }) {
     return (
-        <div className="border border-gray-200 rounded-lg p-3 flex flex-wrap items-center gap-3">
-            <span className="text-sm font-medium text-gray-700 flex-1">{label}</span>
+        <label className="border border-zinc-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 cursor-pointer bg-zinc-950/40 hover:border-amber-400/40 hover:bg-zinc-950 transition-colors">
+            <span className="text-sm font-medium text-zinc-200 flex-1">{label}</span>
             <input
                 type="file"
                 accept="image/*,application/pdf"
@@ -561,8 +583,8 @@ function DocPicker({ label, kind, onAdd }: {
                     if (f) onAdd(kind, f)
                     e.currentTarget.value = ''
                 }}
-                className="text-sm"
+                className="text-xs text-zinc-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-zinc-700 file:bg-zinc-800 file:text-zinc-100 file:font-semibold file:text-xs hover:file:bg-zinc-700 file:cursor-pointer"
             />
-        </div>
+        </label>
     )
 }
