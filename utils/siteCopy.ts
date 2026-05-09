@@ -24,7 +24,8 @@ interface SiteCopySnapshot {
   cancellazione?: CancellazioneCopy;
   membership?: MembershipCopy;
   home?: HomeCopy;
-  // Future: chi_siamo, footer, legali
+  about?: AboutCopy;
+  // Future: footer, legali
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -148,6 +149,29 @@ export interface HomeCopy {
   hero_autoplay_seconds: number;     // default 8
   hero_slides: HomeSlide[];
   categories: HomeCategoryOverride[];
+}
+
+// ─── Chi Siamo (About) ──────────────────────────────────────────────────────
+export interface AboutFounder {
+  id: string;
+  name: string;
+  role_it: string; role_en: string;
+  photo_src: string;          // path under /public, e.g. "/Valerio.jpg"
+  alt_it: string; alt_en: string;
+}
+
+export interface BilingualParagraph {
+  text_it: string;
+  text_en: string;
+}
+
+export interface AboutCopy {
+  founders: AboutFounder[];
+  story_title_it: string; story_title_en: string;
+  story_paragraphs: BilingualParagraph[];
+  story_outro_main_it: string; story_outro_main_en: string;
+  story_outro_sub_it: string; story_outro_sub_en: string;
+  story_signature: string;    // "— Valerio & Ilenia"
 }
 
 // ─── Defaults ────────────────────────────────────────────────────────────────
@@ -275,11 +299,72 @@ export async function getHomeCopy(): Promise<HomeCopy> {
   return DEFAULT_HOME;
 }
 
+/**
+ * Chi Siamo (About) page copy. Falls back to legacy hardcoded text when
+ * admin hasn't customized.
+ */
+export async function getAboutCopy(): Promise<AboutCopy> {
+  const snap = await loadOnce();
+  if (snap.about && Array.isArray(snap.about.founders) && Array.isArray(snap.about.story_paragraphs)) {
+    return snap.about;
+  }
+  return DEFAULT_ABOUT;
+}
+
 /** Force a re-fetch (useful after admin edits in dev). */
 export function invalidateSiteCopyCache(): void {
   CACHE = null;
   pending = null;
 }
+
+// ─── Default About seed ─────────────────────────────────────────────────────
+const DEFAULT_ABOUT: AboutCopy = {
+  founders: [
+    {
+      id: 'valerio',
+      name: 'Valerio',
+      role_it: 'Co-fondatore',
+      role_en: 'Co-founder',
+      photo_src: '/Valerio.jpg',
+      alt_it: 'Valerio - Co-fondatore DR7 Empire',
+      alt_en: 'Valerio - Co-founder DR7 Empire',
+    },
+    {
+      id: 'ilenia',
+      name: 'Ilenia',
+      role_it: 'Co-fondatrice',
+      role_en: 'Co-founder',
+      photo_src: '/Ilenia.jpg',
+      alt_it: 'Ilenia - Co-fondatrice DR7 Empire',
+      alt_en: 'Ilenia - Co-founder DR7 Empire',
+    },
+  ],
+  story_title_it: 'DR7 Empire non è un nome. È una misura.',
+  story_title_en: 'DR7 Empire is not a name. It’s a standard.',
+  story_paragraphs: [
+    {
+      text_it: 'Nasce da un’idea semplice: il lusso va organizzato, non esibito. Per questo l’abbiamo costruito come un impero del lusso: supercar pronte quando arrivate, ville che respirano ordine, yacht che aspettano la rotta giusta, elicotteri e jet privati che accorciano le distanze, una membership che apre porte con discrezione.',
+      text_en: 'Born from a simple idea: luxury must be organized, not flaunted. That’s why we built it as an empire of luxury: supercars ready when you arrive, villas that breathe order, yachts waiting for the right course, helicopters and private jets that shorten distances, a membership that opens doors with discretion.',
+    },
+    {
+      text_it: 'Siamo Valerio e Ilenia, co-leader e creatori del brand. Camminiamo allo stesso passo: uniamo la calma delle cose fatte bene alla precisione dei tempi rispettati. La Sardegna ci ha insegnato l’essenziale: il mare all’alba, il vento che cambia, il valore del silenzio. DR7 Empire prende da qui la sua regola: meno rumore, più certezza.',
+      text_en: 'We are Valerio and Ilenia, co-leaders and creators of the brand. We walk in step: combining the calm of things done well with the precision of times respected. Sardinia taught us the essentials: the sea at dawn, the changing wind, the value of silence. DR7 Empire takes its rule from here: less noise, more certainty.',
+    },
+    {
+      text_it: 'Non promettiamo scintille; promettiamo cura. Una chiave consegnata a mano, un itinerario che scorre senza attriti, un arrivo dove è già tutto pronto. Ogni esperienza porta la nostra firma: supercar, ville, yacht, elicotteri, jet, membership — diverse forme, lo stesso standard.',
+      text_en: 'We don’t promise sparks; we promise care. A key handed over personally, an itinerary that flows without friction, an arrival where everything is already prepared. Every experience carries our signature: supercars, villas, yachts, helicopters, jets, membership — different forms, the same standard.',
+    },
+    {
+      text_it: 'La nostra promessa è semplice: tempo guadagnato, bellezza preservata, serenità garantita. Se cercate un effetto speciale, troverete invece una costanza rara: quella delle cose organizzate con intelligenza e rispetto.',
+      text_en: 'Our promise is simple: time gained, beauty preserved, serenity guaranteed. If you’re looking for a special effect, you’ll find instead a rare consistency: that of things organized with intelligence and respect.',
+    },
+  ],
+  story_outro_main_it: 'Benvenuti in DR7 Empire',
+  story_outro_main_en: 'Welcome to DR7 Empire',
+  story_outro_sub_it: 'L’impero del lusso che vi accompagna, con discrezione, ovunque scegliate di andare.',
+  story_outro_sub_en: 'The empire of luxury that accompanies you, with discretion, wherever you choose to go.',
+  story_signature: '— Valerio & Ilenia',
+};
 
 // ─── Default Home seed ──────────────────────────────────────────────────────
 // Mirrors the legacy hardcoded HomePage values (HERO_SLIDES + DISPLAY_TITLE
