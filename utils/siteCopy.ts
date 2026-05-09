@@ -53,6 +53,7 @@ interface SiteCopySnapshot {
   aviationQuote?: AviationQuoteCopy;
   checkEmail?: CheckEmailCopy;
   jetSearchResults?: JetSearchResultsCopy;
+  confirmationSuccess?: ConfirmationSuccessCopy;
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -232,6 +233,45 @@ export interface MechanicalCopy {
   hours_heading_it: string; hours_heading_en: string;
   hours_main_it: string; hours_main_en: string;
   hours_sub_it: string; hours_sub_en: string;
+}
+
+// ─── Confirmation Success page (booking + email fallback) ─────────────────
+// `{total}` placeholder in rental_agency_footnote is replaced with the
+// formatted total price at render time.
+export interface ConfirmationSuccessCopy {
+  // Booking branch
+  booking_title_it: string; booking_title_en: string;
+  booking_subtitle_it: string; booking_subtitle_en: string;
+  booking_summary_heading_it: string; booking_summary_heading_en: string;
+  booking_cta_account_it: string; booking_cta_account_en: string;
+  // Car wash variant
+  carwash_row_servizio_it: string; carwash_row_servizio_en: string;
+  carwash_row_data_it: string; carwash_row_data_en: string;
+  carwash_row_orario_it: string; carwash_row_orario_en: string;
+  carwash_row_cliente_it: string; carwash_row_cliente_en: string;
+  carwash_row_pagamento_it: string; carwash_row_pagamento_en: string;
+  carwash_payment_online_it: string; carwash_payment_online_en: string;
+  carwash_default_customer_it: string; carwash_default_customer_en: string;
+  carwash_totale_pagato_it: string; carwash_totale_pagato_en: string;
+  carwash_whatsapp_note_it: string; carwash_whatsapp_note_en: string;
+  // Rental variant
+  rental_row_veicolo_it: string; rental_row_veicolo_en: string;
+  rental_row_ritiro_it: string; rental_row_ritiro_en: string;
+  rental_row_riconsegna_it: string; rental_row_riconsegna_en: string;
+  rental_row_luogo_it: string; rental_row_luogo_en: string;
+  rental_row_pagamento_it: string; rental_row_pagamento_en: string;
+  rental_time_connector_it: string; rental_time_connector_en: string;
+  rental_payment_in_sede_it: string; rental_payment_in_sede_en: string;
+  rental_payment_online_it: string; rental_payment_online_en: string;
+  rental_totale_pagato_it: string; rental_totale_pagato_en: string;
+  rental_totale_da_pagare_it: string; rental_totale_da_pagare_en: string;
+  rental_agency_footnote_it: string; rental_agency_footnote_en: string;     // {total}
+  // Email-confirmed fallback
+  email_title_it: string; email_title_en: string;
+  email_body_logged_in_it: string; email_body_logged_in_en: string;
+  email_body_logged_out_it: string; email_body_logged_out_en: string;
+  email_cta_logged_in_it: string; email_cta_logged_in_en: string;
+  email_cta_logged_out_it: string; email_cta_logged_out_en: string;
 }
 
 // ─── Jet Search Results page (chrome only) ────────────────────────────────
@@ -756,6 +796,13 @@ export async function getLegalPage(id: LegalPageId): Promise<LegalPageCopy | nul
   return found;
 }
 
+/** Confirmation Success page (booking summary + email fallback). */
+export async function getConfirmationSuccessCopy(): Promise<ConfirmationSuccessCopy> {
+  const snap = await loadOnce();
+  if (snap.confirmationSuccess && snap.confirmationSuccess.booking_title_it) return snap.confirmationSuccess;
+  return DEFAULT_CONFIRMATION_SUCCESS;
+}
+
 /** Jet Search Results page chrome (catalog stays in RENTAL_CATEGORIES). */
 export async function getJetSearchResultsCopy(): Promise<JetSearchResultsCopy> {
   const snap = await loadOnce();
@@ -872,6 +919,42 @@ export function invalidateSiteCopyCache(): void {
   CACHE = null;
   pending = null;
 }
+
+// ─── Default Confirmation Success seed ────────────────────────────────────
+const DEFAULT_CONFIRMATION_SUCCESS: ConfirmationSuccessCopy = {
+  booking_title_it: 'Prenotazione Confermata', booking_title_en: 'Booking Confirmed',
+  booking_subtitle_it: 'Ti abbiamo inviato una conferma via email.', booking_subtitle_en: 'We\'ve sent you a confirmation email.',
+  booking_summary_heading_it: 'Riepilogo Prenotazione', booking_summary_heading_en: 'Booking Summary',
+  booking_cta_account_it: 'Vai al Mio Account', booking_cta_account_en: 'Proceed to My Account',
+  carwash_row_servizio_it: 'Servizio:', carwash_row_servizio_en: 'Service:',
+  carwash_row_data_it: 'Data:', carwash_row_data_en: 'Date:',
+  carwash_row_orario_it: 'Orario:', carwash_row_orario_en: 'Time:',
+  carwash_row_cliente_it: 'Cliente:', carwash_row_cliente_en: 'Customer:',
+  carwash_row_pagamento_it: 'Pagamento:', carwash_row_pagamento_en: 'Payment:',
+  carwash_payment_online_it: 'Online', carwash_payment_online_en: 'Online',
+  carwash_default_customer_it: 'Cliente', carwash_default_customer_en: 'Customer',
+  carwash_totale_pagato_it: 'TOTALE PAGATO:', carwash_totale_pagato_en: 'TOTAL PAID:',
+  carwash_whatsapp_note_it: 'Riceverai una conferma via WhatsApp', carwash_whatsapp_note_en: 'You\'ll receive a WhatsApp confirmation',
+  rental_row_veicolo_it: 'Veicolo:', rental_row_veicolo_en: 'Vehicle:',
+  rental_row_ritiro_it: 'Ritiro:', rental_row_ritiro_en: 'Pickup:',
+  rental_row_riconsegna_it: 'Riconsegna:', rental_row_riconsegna_en: 'Return:',
+  rental_row_luogo_it: 'Luogo:', rental_row_luogo_en: 'Location:',
+  rental_row_pagamento_it: 'Pagamento:', rental_row_pagamento_en: 'Payment:',
+  rental_time_connector_it: 'alle', rental_time_connector_en: 'at',
+  rental_payment_in_sede_it: 'In Sede', rental_payment_in_sede_en: 'In Office',
+  rental_payment_online_it: 'Online', rental_payment_online_en: 'Online',
+  rental_totale_pagato_it: 'TOTALE PAGATO:', rental_totale_pagato_en: 'TOTAL PAID:',
+  rental_totale_da_pagare_it: 'TOTALE DA PAGARE:', rental_totale_da_pagare_en: 'TOTAL TO PAY:',
+  rental_agency_footnote_it: 'L\'importo totale di {total} sarà dovuto al momento del ritiro.',
+  rental_agency_footnote_en: 'The total of {total} will be due upon pickup.',
+  email_title_it: 'Email Confermata', email_title_en: 'Email Confirmed',
+  email_body_logged_in_it: 'Account creato con successo. Ora puoi accedere a tutti i servizi DR7.',
+  email_body_logged_in_en: 'Account successfully created. You can now access all DR7 services.',
+  email_body_logged_out_it: 'Il tuo indirizzo email è stato verificato con successo. Accedi per entrare nel tuo account.',
+  email_body_logged_out_en: 'Your email address has been verified successfully. Sign in to access your account.',
+  email_cta_logged_in_it: 'Vai al Mio Account', email_cta_logged_in_en: 'Proceed to My Account',
+  email_cta_logged_out_it: 'Accedi', email_cta_logged_out_en: 'Sign In',
+};
 
 // ─── Default Jet Search Results seed ──────────────────────────────────────
 const DEFAULT_JET_SEARCH_RESULTS: JetSearchResultsCopy = {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { Link, useLocation } from 'react-router-dom';
@@ -6,9 +6,10 @@ import { useAuth } from '../hooks/useAuth';
 import { Button } from '../components/ui/Button';
 import type { Booking } from '../types';
 import { useCurrency } from '../contexts/CurrencyContext';
+import { getConfirmationSuccessCopy, type ConfirmationSuccessCopy } from '../utils/siteCopy';
 
-const BookingConfirmationDetails: React.FC<{ booking: any }> = ({ booking }) => {
-  const { t } = useTranslation();
+const BookingConfirmationDetails: React.FC<{ booking: any; copy: ConfirmationSuccessCopy }> = ({ booking, copy }) => {
+  const { lang } = useTranslation();
   const { currency } = useCurrency();
 
   const formatPrice = (priceInCents: number) =>
@@ -21,103 +22,126 @@ const BookingConfirmationDetails: React.FC<{ booking: any }> = ({ booking }) => 
   const totalPrice = booking.price_total;
   const isCarWash = booking.service_type === 'car_wash';
   const isPaid = booking.payment_method !== 'agency';
+  const tx = (it: keyof ConfirmationSuccessCopy, en: keyof ConfirmationSuccessCopy): string =>
+    (copy as Record<string, string>)[(lang === 'it' ? it : en) as string];
 
-  // For car wash bookings
   if (isCarWash) {
     return (
       <div className="text-left space-y-4">
-        <h2 className="text-xl font-bold text-white border-b border-gray-700 pb-2 mb-4">Riepilogo Prenotazione</h2>
+        <h2 className="text-xl font-bold text-white border-b border-gray-700 pb-2 mb-4">
+          {tx('booking_summary_heading_it', 'booking_summary_heading_en')}
+        </h2>
 
         <div className="flex justify-between">
-          <span className="text-gray-400">Servizio:</span>
+          <span className="text-gray-400">{tx('carwash_row_servizio_it', 'carwash_row_servizio_en')}</span>
           <span className="font-semibold text-white">{booking.service_name}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-400">Data:</span>
+          <span className="text-gray-400">{tx('carwash_row_data_it', 'carwash_row_data_en')}</span>
           <span className="font-semibold text-white">
-            {new Date(booking.appointment_date).toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })}
+            {new Date(booking.appointment_date).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-GB', { timeZone: 'Europe/Rome' })}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-400">Orario:</span>
+          <span className="text-gray-400">{tx('carwash_row_orario_it', 'carwash_row_orario_en')}</span>
           <span className="font-semibold text-white">{booking.appointment_time}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-400">Cliente:</span>
-          <span className="font-semibold text-white">{booking.customer_name || booking.booking_details?.customer?.fullName || 'Cliente'}</span>
+          <span className="text-gray-400">{tx('carwash_row_cliente_it', 'carwash_row_cliente_en')}</span>
+          <span className="font-semibold text-white">{booking.customer_name || booking.booking_details?.customer?.fullName || tx('carwash_default_customer_it', 'carwash_default_customer_en')}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-400">Pagamento:</span>
-          <span className="font-semibold text-white">Online</span>
+          <span className="text-gray-400">{tx('carwash_row_pagamento_it', 'carwash_row_pagamento_en')}</span>
+          <span className="font-semibold text-white">{tx('carwash_payment_online_it', 'carwash_payment_online_en')}</span>
         </div>
         <div className="border-t border-gray-700 pt-4 mt-4 flex justify-between text-lg">
-          <span className="font-bold text-white">TOTALE PAGATO:</span>
+          <span className="font-bold text-white">{tx('carwash_totale_pagato_it', 'carwash_totale_pagato_en')}</span>
           <span className="font-bold text-white">{formatPrice(totalPrice)}</span>
         </div>
         <p className="text-xs text-gray-400 text-center pt-2">
-          Riceverai una conferma via WhatsApp
+          {tx('carwash_whatsapp_note_it', 'carwash_whatsapp_note_en')}
         </p>
       </div>
     );
   }
 
-  // For car rental bookings
+  // Rental
   const pickupDate = new Date(booking.pickup_date);
   const dropoffDate = new Date(booking.dropoff_date);
+  const dateLocale = lang === 'it' ? 'it-IT' : 'en-GB';
+  const timeConnector = tx('rental_time_connector_it', 'rental_time_connector_en');
+  const agencyFootnote = (lang === 'it' ? copy.rental_agency_footnote_it : copy.rental_agency_footnote_en)
+    .split('{total}').join(formatPrice(totalPrice));
 
   return (
     <div className="text-left space-y-4">
-      <h2 className="text-xl font-bold text-white border-b border-gray-700 pb-2 mb-4">Riepilogo Prenotazione</h2>
+      <h2 className="text-xl font-bold text-white border-b border-gray-700 pb-2 mb-4">
+        {tx('booking_summary_heading_it', 'booking_summary_heading_en')}
+      </h2>
 
       <div className="flex justify-between">
-        <span className="text-gray-400">Veicolo:</span>
+        <span className="text-gray-400">{tx('rental_row_veicolo_it', 'rental_row_veicolo_en')}</span>
         <span className="font-semibold text-white">{booking.vehicle_name}</span>
       </div>
       <div className="flex justify-between">
-        <span className="text-gray-400">Ritiro:</span>
+        <span className="text-gray-400">{tx('rental_row_ritiro_it', 'rental_row_ritiro_en')}</span>
         <span className="font-semibold text-white">
-          {pickupDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })} alle {pickupDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })}
+          {pickupDate.toLocaleDateString(dateLocale, { timeZone: 'Europe/Rome' })} {timeConnector} {pickupDate.toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })}
         </span>
       </div>
       <div className="flex justify-between">
-        <span className="text-gray-400">Riconsegna:</span>
+        <span className="text-gray-400">{tx('rental_row_riconsegna_it', 'rental_row_riconsegna_en')}</span>
         <span className="font-semibold text-white">
-          {dropoffDate.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })} alle {dropoffDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })}
+          {dropoffDate.toLocaleDateString(dateLocale, { timeZone: 'Europe/Rome' })} {timeConnector} {dropoffDate.toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })}
         </span>
       </div>
       <div className="flex justify-between">
-        <span className="text-gray-400">Luogo:</span>
+        <span className="text-gray-400">{tx('rental_row_luogo_it', 'rental_row_luogo_en')}</span>
         <span className="font-semibold text-white capitalize">{booking.pickup_location}</span>
       </div>
       <div className="flex justify-between">
-        <span className="text-gray-400">Pagamento:</span>
+        <span className="text-gray-400">{tx('rental_row_pagamento_it', 'rental_row_pagamento_en')}</span>
         <span className="font-semibold text-white capitalize">
-          {booking.payment_method === 'agency' ? 'In Sede' : 'Online'}
+          {booking.payment_method === 'agency'
+            ? tx('rental_payment_in_sede_it', 'rental_payment_in_sede_en')
+            : tx('rental_payment_online_it', 'rental_payment_online_en')}
         </span>
       </div>
       <div className="border-t border-gray-700 pt-4 mt-4 flex justify-between text-lg">
-        <span className="font-bold text-white">TOTALE {isPaid ? 'PAGATO' : 'DA PAGARE'}:</span>
+        <span className="font-bold text-white">
+          {isPaid
+            ? tx('rental_totale_pagato_it', 'rental_totale_pagato_en')
+            : tx('rental_totale_da_pagare_it', 'rental_totale_da_pagare_en')}
+        </span>
         <span className="font-bold text-white">{formatPrice(totalPrice)}</span>
       </div>
       {booking.payment_method === 'agency' && (
         <p className="text-xs text-gray-400 text-center pt-2">
-          L'importo totale di {formatPrice(totalPrice)} sarà dovuto al momento del ritiro.
+          {agencyFootnote}
         </p>
       )}
     </div>
   );
 };
+
 const ConfirmationSuccessPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { lang } = useTranslation();
   const { user, loading } = useAuth();
   const location = useLocation();
   const { booking } = (location.state || {}) as { booking?: Booking };
+  const [copy, setCopy] = useState<ConfirmationSuccessCopy | null>(null);
 
-  if (loading) {
-    return null; // Render nothing while auth state is resolving to avoid flicker
-  }
+  useEffect(() => {
+    let cancelled = false;
+    getConfirmationSuccessCopy().then((c) => { if (!cancelled) setCopy(c); });
+    return () => { cancelled = true; };
+  }, []);
 
-  // If there's booking data, show the booking confirmation.
+  if (loading || !copy) return null;
+
+  const tx = (it: keyof ConfirmationSuccessCopy, en: keyof ConfirmationSuccessCopy): string =>
+    (copy as Record<string, string>)[(lang === 'it' ? it : en) as string];
+
   if (booking) {
     const destination = user?.role === 'business' ? '/partner/dashboard' : '/account';
     return (
@@ -135,16 +159,14 @@ const ConfirmationSuccessPage: React.FC = () => {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg shadow-2xl shadow-black/50 p-8"
           >
-            <div className="w-20 h-20 bg-green-500/20 text-green-300 rounded-full flex items-center justify-center mx-auto mb-6">
-              
-            </div>
-            <h1 className="text-3xl font-bold mb-2">{t('Booking_Confirmed')}</h1>
-            <p className="mb-6 text-gray-300">{t('Booking_Confirmation_Sent')}</p>
+            <div className="w-20 h-20 bg-green-500/20 text-green-300 rounded-full flex items-center justify-center mx-auto mb-6"></div>
+            <h1 className="text-3xl font-bold mb-2">{tx('booking_title_it', 'booking_title_en')}</h1>
+            <p className="mb-6 text-gray-300">{tx('booking_subtitle_it', 'booking_subtitle_en')}</p>
 
-            <BookingConfirmationDetails booking={booking} />
+            <BookingConfirmationDetails booking={booking} copy={copy} />
 
             <Button as={Link} to={destination} variant="primary" size="lg" className="mt-8 w-full">
-              {t('Proceed_to_My_Account')}
+              {tx('booking_cta_account_it', 'booking_cta_account_en')}
             </Button>
           </motion.div>
         </div>
@@ -152,10 +174,14 @@ const ConfirmationSuccessPage: React.FC = () => {
     );
   }
 
-  // Fallback for email confirmation if no booking data is present.
+  // Email-confirmed fallback
   const destination = user ? (user.role === 'business' ? '/partner/dashboard' : '/account') : '/signin';
-  const message = user ? t('Account_Successfully_Created') : 'Il tuo indirizzo email è stato verificato con successo. Accedi per entrare nel tuo account.';
-  const buttonText = user ? t('Proceed_to_My_Account') : 'Accedi';
+  const message = user
+    ? tx('email_body_logged_in_it', 'email_body_logged_in_en')
+    : tx('email_body_logged_out_it', 'email_body_logged_out_en');
+  const buttonText = user
+    ? tx('email_cta_logged_in_it', 'email_cta_logged_in_en')
+    : tx('email_cta_logged_out_it', 'email_cta_logged_out_en');
 
   return (
     <motion.div
@@ -172,10 +198,8 @@ const ConfirmationSuccessPage: React.FC = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg shadow-2xl shadow-black/50 p-8"
         >
-          <div className="w-20 h-20 bg-green-500/20 text-green-300 rounded-full flex items-center justify-center mx-auto mb-6">
-            
-          </div>
-          <h1 className="text-3xl font-bold mb-4">{t('Email_Confirmed')}</h1>
+          <div className="w-20 h-20 bg-green-500/20 text-green-300 rounded-full flex items-center justify-center mx-auto mb-6"></div>
+          <h1 className="text-3xl font-bold mb-4">{tx('email_title_it', 'email_title_en')}</h1>
           <p className="mb-8 text-gray-300">{message}</p>
           <Button as={Link} to={destination} variant="primary" size="lg">
             {buttonText}
