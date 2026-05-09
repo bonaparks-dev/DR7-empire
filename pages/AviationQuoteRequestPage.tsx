@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from '../hooks/useTranslation';
-import { getAviationQuoteCopy, type AviationQuoteCopy } from '../utils/siteCopy';
+import { getAviationQuoteCopy, getAviationQuoteTemplate, type AviationQuoteCopy } from '../utils/siteCopy';
 
 const AviationQuoteRequestPage: React.FC = () => {
   const navigate = useNavigate();
@@ -12,10 +12,15 @@ const AviationQuoteRequestPage: React.FC = () => {
   const { lang } = useTranslation();
   const [submitting, setSubmitting] = useState(false);
   const [copy, setCopy] = useState<AviationQuoteCopy | null>(null);
+  const [template, setTemplate] = useState<string>('');
 
   useEffect(() => {
     let cancelled = false;
-    getAviationQuoteCopy().then((c) => { if (!cancelled) setCopy(c); });
+    Promise.all([getAviationQuoteCopy(), getAviationQuoteTemplate()]).then(([c, t]) => {
+      if (cancelled) return;
+      setCopy(c);
+      setTemplate(t);
+    });
     return () => { cancelled = true; };
   }, []);
 
@@ -43,8 +48,17 @@ const AviationQuoteRequestPage: React.FC = () => {
     ? (isHelicopter ? copy.service_label_helicopter : copy.service_label_jet)
     : (isHelicopter ? 'Elicottero' : 'Jet Privato');
 
-  // Substitute placeholders in WhatsApp template strings.
+  // Apply all WhatsApp template placeholders. Supports tokens + the
+  // optional inline rows {return_line} / {notes_line} which collapse to
+  // empty when the corresponding form field is blank (so no awkward empty
+  // lines in the message).
   function applyVars(s: string): string {
+    const returnLine = formData.return_date
+      ? (lang === 'it' ? `Data ritorno: ${formData.return_date}\n` : `Return date: ${formData.return_date}\n`)
+      : '';
+    const notesLine = formData.notes
+      ? (lang === 'it' ? `\nNote: ${formData.notes}\n` : `\nNotes: ${formData.notes}\n`)
+      : '';
     const vars: Record<string, string> = {
       '{service}': serviceType,
       '{nome}': formData.customer_name,
@@ -53,9 +67,12 @@ const AviationQuoteRequestPage: React.FC = () => {
       '{partenza}': formData.departure_location,
       '{arrivo}': formData.arrival_location,
       '{data_partenza}': formData.departure_date,
-      '{data_ritorno}': formData.return_date,
+      '{data_ritorno}': formData.return_date || '',
       '{passeggeri}': String(formData.passenger_count),
-      '{note}': formData.notes,
+      '{note}': formData.notes || '',
+      // Optional whole-line tokens (collapse to empty when field blank).
+      '{return_line}': returnLine,
+      '{notes_line}': notesLine,
     };
     let out = s;
     for (const [k, v] of Object.entries(vars)) out = out.split(k).join(v);
@@ -68,16 +85,7 @@ const AviationQuoteRequestPage: React.FC = () => {
     setSubmitting(true);
     try {
       const isIt = lang === 'it';
-      let msg = applyVars(isIt ? copy.whatsapp_template_main_it : copy.whatsapp_template_main_en);
-      if (formData.return_date) {
-        msg += '\n' + applyVars(isIt ? copy.whatsapp_template_return_it : copy.whatsapp_template_return_en);
-      }
-      if (formData.notes) {
-        msg += '\n' + applyVars(isIt ? copy.whatsapp_template_notes_it : copy.whatsapp_template_notes_en);
-      } else {
-        // Notes template carries the closing line — append a default closing if no notes.
-        msg += isIt ? '\n\nPotete fornirmi un preventivo? Grazie!' : '\n\nCan you send me a quote? Thanks!';
-      }
+      const msg = applyVars(template);
       const whatsappUrl = `https://wa.me/${copy.whatsapp_phone}?text=${encodeURIComponent(msg)}`;
       window.open(whatsappUrl, '_blank');
       alert(isIt ? copy.alert_success_it : copy.alert_success_en);

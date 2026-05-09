@@ -292,12 +292,12 @@ export interface CheckEmailCopy {
   back_link_it: string; back_link_en: string;
 }
 
-// ─── Aviation Quote Request page (bilingual: IT-only form, IT+EN gate) ────
+// ─── Aviation Quote Request page (bilingual chrome only) ──────────────────
 //
-// Form is currently IT-only on screen, but auth gate uses lang. Schema
-// covers both. WhatsApp template uses placeholders: {service}, {nome},
-// {email}, {telefono}, {partenza}, {arrivo}, {data_partenza},
-// {data_ritorno}, {passeggeri}, {note}.
+// IMPORTANT: the WhatsApp message TEMPLATE lives in admin > Messaggi di
+// Sistema Pro under key `pro_aviation_quote_request` (NOT here). siteCopy
+// holds only the page chrome (form labels, buttons, alerts, gate). The
+// template body is loaded by the page via `getMessageTemplateBody()`.
 export interface AviationQuoteCopy {
   // Loading + auth gate
   loading_it: string; loading_en: string;
@@ -334,11 +334,8 @@ export interface AviationQuoteCopy {
   disclaimer_it: string; disclaimer_en: string;
   alert_success_it: string; alert_success_en: string;
   alert_error_it: string; alert_error_en: string;
-  // WhatsApp delivery
-  whatsapp_phone: string;             // wa.me number
-  whatsapp_template_main_it: string; whatsapp_template_main_en: string;
-  whatsapp_template_return_it: string; whatsapp_template_return_en: string;
-  whatsapp_template_notes_it: string; whatsapp_template_notes_en: string;
+  // WhatsApp recipient phone (template body now in system_messages).
+  whatsapp_phone: string;
 }
 
 // ─── Franchising (IT-only sales page) ──────────────────────────────────────
@@ -1016,13 +1013,52 @@ const DEFAULT_AVIATION_QUOTE: AviationQuoteCopy = {
   alert_error_it: 'Errore durante l\'invio della richiesta. Riprova.',
   alert_error_en: 'Error submitting your request. Please try again.',
   whatsapp_phone: '393457905205',
-  whatsapp_template_main_it: 'Ciao DR7 Empire\nVorrei richiedere un preventivo per {service}.\n\nDATI CLIENTE\nNome: {nome}\nEmail: {email}\nTelefono: {telefono}\n\nDETTAGLI RICHIESTA\nPartenza: {partenza}\nArrivo: {arrivo}\nData partenza: {data_partenza}\nPasseggeri: {passeggeri}',
-  whatsapp_template_main_en: 'Hello DR7 Empire\nI\'d like to request a quote for {service}.\n\nCUSTOMER DETAILS\nName: {nome}\nEmail: {email}\nPhone: {telefono}\n\nREQUEST DETAILS\nFrom: {partenza}\nTo: {arrivo}\nDeparture date: {data_partenza}\nPassengers: {passeggeri}',
-  whatsapp_template_return_it: 'Data ritorno: {data_ritorno}',
-  whatsapp_template_return_en: 'Return date: {data_ritorno}',
-  whatsapp_template_notes_it: '\nNote: {note}\n\nPotete fornirmi un preventivo? Grazie!',
-  whatsapp_template_notes_en: '\nNotes: {note}\n\nCan you send me a quote? Thanks!',
 };
+
+// Hardcoded fallback template — used when system_messages is missing the row
+// or the row is empty/disabled. Mirrors the legacy inline template.
+const AVIATION_FALLBACK_TEMPLATE_IT = `Ciao DR7 Empire
+Vorrei richiedere un preventivo per {service}.
+
+DATI CLIENTE
+Nome: {nome}
+Email: {email}
+Telefono: {telefono}
+
+DETTAGLI RICHIESTA
+Partenza: {partenza}
+Arrivo: {arrivo}
+Data partenza: {data_partenza}
+{return_line}Passeggeri: {passeggeri}
+{notes_line}
+Potete fornirmi un preventivo? Grazie!`;
+
+/**
+ * Load a system_messages template body by key. Returns null when the row
+ * is missing, empty, or disabled — caller should fall back. Read-only:
+ * client-side fetch, no service-role access.
+ */
+export async function getMessageTemplateBody(messageKey: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from('system_messages')
+      .select('message_body, is_enabled')
+      .eq('message_key', messageKey)
+      .maybeSingle();
+    if (error) return null;
+    if (!data || data.is_enabled === false) return null;
+    const body = (data.message_body as string | null) || '';
+    return body.trim().length > 0 ? body : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Aviation Quote WhatsApp template — falls back to legacy IT body. */
+export async function getAviationQuoteTemplate(): Promise<string> {
+  const remote = await getMessageTemplateBody('pro_aviation_quote_request');
+  return remote || AVIATION_FALLBACK_TEMPLATE_IT;
+}
 
 // ─── Default Franchising seed ──────────────────────────────────────────────
 const DEFAULT_FRANCHISING: FranchisingCopy = {
