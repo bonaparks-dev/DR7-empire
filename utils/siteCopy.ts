@@ -19,14 +19,30 @@ export interface FaqEntry {
   answer: string;
 }
 
+/**
+ * Full FAQ page copy. Page title + eyebrow + subtitle live alongside
+ * the entries so the operator can re-brand the /faq page from admin.
+ */
+export interface FaqCopy {
+  eyebrow_it: string;
+  eyebrow_en: string;
+  page_title_it: string;
+  page_title_en: string;
+  subtitle_it: string;
+  subtitle_en: string;
+  entries: FaqEntry[];
+}
+
 interface SiteCopySnapshot {
-  faq?: FaqEntry[];
+  // Stored as either the new FaqCopy object or — for back-compat with the
+  // first migration — a raw FaqEntry[]. The getter normalizes both shapes.
+  faq?: FaqCopy | FaqEntry[];
   cancellazione?: CancellazioneCopy;
   membership?: MembershipCopy;
   home?: HomeCopy;
   about?: AboutCopy;
   footer?: FooterCopy;
-  // Future: legali
+  legal?: LegalCopy;
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -175,6 +191,43 @@ export interface AboutCopy {
   story_signature: string;    // "— Valerio & Ilenia"
 }
 
+// ─── Legal pages (Privacy, Cookie, Rental Agreement, Terms) ────────────────
+//
+// Pages share one rich-content schema: an optional intro band + an
+// ordered list of headed sections + an optional outro band. Each
+// "block" inside a section / band uses the same shape as Cancellazione
+// (paragraph variants + bullet lists). Inline emphasis + links are
+// supported via a tiny markdown subset:
+//   **bold**          →  <strong>bold</strong>
+//   [label](url)      →  <a href="url" target="_blank">label</a>  (or mailto:)
+// Anything else is rendered as plain text.
+export type LegalPageId = 'privacy' | 'cookie' | 'rental_agreement' | 'terms';
+
+export interface LegalSection {
+  id: string;
+  heading_it: string;
+  heading_en: string;
+  blocks: CancellazioneBlock[];
+}
+
+export interface LegalPageCopy {
+  id: LegalPageId;
+  enabled: boolean;             // false → page falls back to hardcoded JSX (used for Terms today)
+  title_it: string;
+  title_en: string;
+  /** When true, the rendered "last updated" string prepends today's local date. */
+  last_updated_dynamic: boolean;
+  last_updated_label_it: string;   // e.g. "Ultimo aggiornamento" — used as prefix
+  last_updated_label_en: string;
+  intro_blocks: CancellazioneBlock[];
+  sections: LegalSection[];
+  outro_blocks: CancellazioneBlock[];
+}
+
+export interface LegalCopy {
+  pages: LegalPageCopy[];
+}
+
 // ─── Footer ─────────────────────────────────────────────────────────────────
 export type FooterSocialIcon = 'instagram' | 'tiktok' | 'facebook' | 'linkedin' | 'youtube' | 'x';
 
@@ -225,7 +278,7 @@ export interface FooterCopy {
 }
 
 // ─── Defaults ────────────────────────────────────────────────────────────────
-const DEFAULT_FAQ: FaqEntry[] = [
+const DEFAULT_FAQ_ENTRIES: FaqEntry[] = [
   {
     id: 'requisiti-noleggio',
     question: 'Quali sono i requisiti per noleggiare un\'auto?',
@@ -247,6 +300,16 @@ const DEFAULT_FAQ: FaqEntry[] = [
     answer: 'Accettiamo le principali carte di credito (Visa, MasterCard, American Express) e una selezione di criptovalute. Le opzioni di pagamento vengono presentate in fase di checkout.',
   },
 ];
+
+const DEFAULT_FAQ: FaqCopy = {
+  eyebrow_it: 'DR7 · Supporto',
+  eyebrow_en: 'DR7 · Support',
+  page_title_it: 'Domande Frequenti',
+  page_title_en: 'Frequently Asked Questions',
+  subtitle_it: 'Le risposte alle domande piu’ frequenti su noleggio, membership e pagamenti.',
+  subtitle_en: 'Answers to the most common questions on rentals, membership, and payments.',
+  entries: DEFAULT_FAQ_ENTRIES,
+};
 
 // ─── Cache ───────────────────────────────────────────────────────────────────
 let CACHE: SiteCopySnapshot | null = null;
@@ -281,16 +344,34 @@ void loadOnce();
 
 // ─── Getters ─────────────────────────────────────────────────────────────────
 /**
- * FAQ entries to render on the /faq page.
- * Returns the admin-configured list when present + non-empty,
- * otherwise the hardcoded fallback.
+ * Normalize whatever's stored in `snap.faq` (legacy raw array or new
+ * FaqCopy object) into the canonical FaqCopy shape. Falls back to the
+ * hardcoded default when nothing is stored.
  */
-export async function getFaqEntries(): Promise<FaqEntry[]> {
+export async function getFaqCopy(): Promise<FaqCopy> {
   const snap = await loadOnce();
-  if (snap.faq && Array.isArray(snap.faq) && snap.faq.length > 0) {
-    return snap.faq;
+  if (!snap.faq) return DEFAULT_FAQ;
+  if (Array.isArray(snap.faq)) {
+    // Legacy shape: just an array of entries — wrap with default chrome.
+    if (snap.faq.length === 0) return DEFAULT_FAQ;
+    return { ...DEFAULT_FAQ, entries: snap.faq };
   }
-  return DEFAULT_FAQ;
+  // New shape: object. Fall back per-field if anything's missing.
+  const obj = snap.faq;
+  return {
+    eyebrow_it: obj.eyebrow_it || DEFAULT_FAQ.eyebrow_it,
+    eyebrow_en: obj.eyebrow_en || DEFAULT_FAQ.eyebrow_en,
+    page_title_it: obj.page_title_it || DEFAULT_FAQ.page_title_it,
+    page_title_en: obj.page_title_en || DEFAULT_FAQ.page_title_en,
+    subtitle_it: obj.subtitle_it || DEFAULT_FAQ.subtitle_it,
+    subtitle_en: obj.subtitle_en || DEFAULT_FAQ.subtitle_en,
+    entries: Array.isArray(obj.entries) && obj.entries.length > 0 ? obj.entries : DEFAULT_FAQ.entries,
+  };
+}
+
+/** Backwards-compat: just the entries array. */
+export async function getFaqEntries(): Promise<FaqEntry[]> {
+  return (await getFaqCopy()).entries;
 }
 
 /**
@@ -371,6 +452,20 @@ export async function getFooterCopy(): Promise<FooterCopy> {
     return snap.footer;
   }
   return DEFAULT_FOOTER;
+}
+
+/**
+ * Legal page copy by id (privacy / cookie / rental_agreement / terms).
+ * Returns the configured page if enabled + has sections, otherwise null —
+ * the page component should fall back to its hardcoded JSX.
+ */
+export async function getLegalPage(id: LegalPageId): Promise<LegalPageCopy | null> {
+  const snap = await loadOnce();
+  const all = snap.legal?.pages || DEFAULT_LEGAL.pages;
+  const found = all.find((p) => p.id === id);
+  if (!found || !found.enabled) return null;
+  if (!Array.isArray(found.sections) || found.sections.length === 0) return null;
+  return found;
 }
 
 /** Force a re-fetch (useful after admin edits in dev). */
@@ -794,6 +889,302 @@ const DEFAULT_CANCELLAZIONE: CancellazioneCopy = {
           text_it: 'In assenza dell’acquisto del servizio PRIME FLEX, si applica integralmente la presente policy standard per il lavaggio.',
           text_en: 'In the absence of purchasing the PRIME FLEX service, this standard policy applies in full for the car wash.' },
       ],
+    },
+  ],
+};
+
+// ─── Default Legal seed (Privacy + Cookie + Rental Agreement) ──────────────
+// Terms ships with `enabled: false` for now — the legacy hardcoded page
+// keeps rendering. Admin can enable it later and paste the content.
+const DEFAULT_LEGAL: LegalCopy = {
+  pages: [
+    {
+      id: 'privacy',
+      enabled: true,
+      title_it: 'Informativa sulla Privacy',
+      title_en: 'Privacy Policy',
+      last_updated_dynamic: true,
+      last_updated_label_it: 'Ultimo aggiornamento',
+      last_updated_label_en: 'Last updated',
+      intro_blocks: [],
+      sections: [
+        { id: 'introduzione', heading_it: '1. Introduzione e Titolare del Trattamento', heading_en: '1. Introduction and Data Controller',
+          blocks: [
+            { type: 'p',
+              text_it: 'Dubai Rent 7.0 S.p.A. – DR7 Empire ("noi", "nostro" o "ci") si impegna a proteggere la tua privacy. Questa Informativa sulla Privacy spiega come raccogliamo, utilizziamo, divulghiamo e proteggiamo i tuoi dati personali quando utilizzi i nostri servizi. Questa informativa è fornita in conformità con il Regolamento Generale sulla Protezione dei Dati (GDPR) dell\'UE.',
+              text_en: 'Dubai Rent 7.0 S.p.A. – DR7 Empire ("we", "our" or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your personal data when you use our services. This notice is provided in compliance with the EU General Data Protection Regulation (GDPR).' },
+            { type: 'p',
+              text_it: 'DR7 Empire è il Titolare del Trattamento dei dati personali raccolti attraverso la nostra piattaforma ed è responsabile dei tuoi dati personali.',
+              text_en: 'DR7 Empire is the Data Controller for personal data collected via our platform and is responsible for your personal data.' },
+          ] },
+        { id: 'dati-raccolti', heading_it: '2. Dati Personali che Raccogliamo', heading_en: '2. Personal Data We Collect',
+          blocks: [
+            { type: 'p',
+              text_it: 'Possiamo raccogliere, utilizzare, archiviare e trasferire diversi tipi di dati personali su di te, che abbiamo raggruppato come segue:',
+              text_en: 'We may collect, use, store and transfer different kinds of personal data about you, which we have grouped as follows:' },
+            { type: 'ul',
+              items_it: [
+                '**Dati di Identità:** Include nome, cognome, nome utente, data di nascita e copie di documenti d\'identità rilasciati dal governo (es. patente di guida, passaporto) per la verifica.',
+                '**Dati di Contatto:** Include indirizzo di fatturazione, indirizzo email e numeri di telefono.',
+                '**Dati Finanziari:** Include dettagli della carta di pagamento o informazioni sul portafoglio di criptovalute.',
+                '**Dati Transazionali:** Include dettagli sui pagamenti da e verso di te e altri dettagli dei servizi che hai acquistato tramite noi.',
+                '**Dati Tecnici:** Include indirizzo IP (Internet Protocol), i tuoi dati di accesso, tipo e versione del browser e altre tecnologie sui dispositivi che utilizzi per accedere alla nostra piattaforma.',
+              ],
+              items_en: [
+                '**Identity Data:** Includes first name, last name, username, date of birth, and copies of government-issued ID (e.g. driver\'s license, passport) for verification.',
+                '**Contact Data:** Includes billing address, email address, and phone numbers.',
+                '**Financial Data:** Includes payment card details or cryptocurrency wallet information.',
+                '**Transaction Data:** Includes details about payments to and from you and other details of services you have purchased through us.',
+                '**Technical Data:** Includes IP address, your login data, browser type and version, and other technologies on the devices you use to access our platform.',
+              ] },
+          ] },
+        { id: 'come-utilizzo', heading_it: '3. Come Utilizziamo i Tuoi Dati Personali', heading_en: '3. How We Use Your Personal Data',
+          blocks: [
+            { type: 'p',
+              text_it: 'Utilizzeremo i tuoi dati personali solo quando la legge ce lo consente. Più comunemente, utilizzeremo i tuoi dati personali nelle seguenti circostanze:',
+              text_en: 'We will only use your personal data when the law allows us to. Most commonly, we will use your personal data in the following circumstances:' },
+            { type: 'ul',
+              items_it: [
+                'Per eseguire il contratto di intermediazione che stiamo per stipulare o abbiamo stipulato con te.',
+                'Per facilitare la prenotazione e il contratto di noleggio tra te e il proprietario dell\'asset di terze parti.',
+                'Per rispettare un obbligo legale o normativo (come la verifica dell\'identità).',
+                'Dove è necessario per i nostri legittimi interessi (o quelli di terzi) e i tuoi interessi e diritti fondamentali non prevalgono su tali interessi.',
+              ],
+              items_en: [
+                'To perform the brokerage contract we are about to enter into or have entered into with you.',
+                'To facilitate the booking and rental contract between you and the third-party asset owner.',
+                'To comply with a legal or regulatory obligation (such as identity verification).',
+                'Where it is necessary for our legitimate interests (or those of third parties) and your interests and fundamental rights do not override those interests.',
+              ] },
+          ] },
+        { id: 'divulgazione', heading_it: '4. Divulgazione dei Tuoi Dati Personali', heading_en: '4. Disclosure of Your Personal Data',
+          blocks: [
+            { type: 'p',
+              text_it: 'Potremmo dover condividere i tuoi dati personali con le parti indicate di seguito per gli scopi indicati nella Sezione 3:',
+              text_en: 'We may have to share your personal data with the parties set out below for the purposes set out in Section 3:' },
+            { type: 'ul',
+              items_it: [
+                '**Proprietari di Asset di Terze Parti:** Condivideremo i dati di Identità, Contatto e Transazione necessari con i proprietari degli asset che desideri prenotare per facilitare il Contratto di Noleggio tra te e loro.',
+                '**Fornitori di Servizi:** Impieghiamo società di terze parti per l\'elaborazione dei pagamenti e la verifica dell\'identità.',
+                '**Consulenti Professionali:** Inclusi avvocati, banchieri, revisori e assicuratori che forniscono servizi di consulenza, bancari, legali, assicurativi e contabili.',
+                '**Autorità di Regolamentazione:** Potremmo essere tenuti a condividere i tuoi dati personali con le forze dell\'ordine o altre autorità in Italia se richiesto dalla legge.',
+              ],
+              items_en: [
+                '**Third-Party Asset Owners:** We will share necessary Identity, Contact and Transaction data with the asset owners you wish to book in order to facilitate the Rental Agreement between you and them.',
+                '**Service Providers:** We employ third-party companies for payment processing and identity verification.',
+                '**Professional Advisers:** Including lawyers, bankers, auditors and insurers who provide consultancy, banking, legal, insurance and accounting services.',
+                '**Regulatory Authorities:** We may be required to share your personal data with law enforcement or other authorities in Italy if required by law.',
+              ] },
+            { type: 'p',
+              text_it: 'Richiediamo a tutte le terze parti di rispettare la sicurezza dei tuoi dati personali e di trattarli in conformità con la legge. Non consentiamo ai nostri fornitori di servizi di terze parti di utilizzare i tuoi dati personali per i propri scopi.',
+              text_en: 'We require all third parties to respect the security of your personal data and to treat it in accordance with the law. We do not allow our third-party service providers to use your personal data for their own purposes.' },
+          ] },
+        { id: 'sicurezza', heading_it: '5. Sicurezza dei Dati', heading_en: '5. Data Security',
+          blocks: [
+            { type: 'p',
+              text_it: 'Abbiamo messo in atto misure di sicurezza tecniche e organizzative appropriate per prevenire che i tuoi dati personali vengano accidentalmente persi, utilizzati o accessibili in modo non autorizzato. Limitiamo l\'accesso ai tuoi dati personali a quei dipendenti e terze parti che hanno una necessità aziendale di conoscerli.',
+              text_en: 'We have put in place appropriate technical and organizational security measures to prevent your personal data from being accidentally lost, used or accessed in an unauthorized way. We limit access to your personal data to those employees and third parties who have a business need to know.' },
+          ] },
+        { id: 'diritti-gdpr', heading_it: '6. I Tuoi Diritti Legali ai sensi del GDPR', heading_en: '6. Your Legal Rights under GDPR',
+          blocks: [
+            { type: 'p',
+              text_it: 'In determinate circostanze, hai diritti ai sensi delle leggi sulla protezione dei dati in relazione ai tuoi dati personali. Questi includono:',
+              text_en: 'Under certain circumstances, you have rights under data protection laws in relation to your personal data. These include:' },
+            { type: 'ul',
+              items_it: [
+                '**Richiedere l\'accesso** ai tuoi dati personali.',
+                '**Richiedere la correzione** dei dati personali che deteniamo su di te.',
+                '**Richiedere la cancellazione** dei tuoi dati personali.',
+                '**Opporsi al trattamento** dei tuoi dati personali.',
+                '**Richiedere la limitazione del trattamento** dei tuoi dati personali.',
+                '**Richiedere il trasferimento** dei tuoi dati personali a te o a terzi.',
+                '**Revocare il consenso in qualsiasi momento** quando ci affidiamo al consenso per trattare i tuoi dati personali.',
+              ],
+              items_en: [
+                '**Request access** to your personal data.',
+                '**Request correction** of the personal data we hold about you.',
+                '**Request erasure** of your personal data.',
+                '**Object to processing** of your personal data.',
+                '**Request restriction of processing** of your personal data.',
+                '**Request transfer** of your personal data to you or to a third party.',
+                '**Withdraw consent at any time** where we are relying on consent to process your personal data.',
+              ] },
+            { type: 'p',
+              text_it: 'Se desideri esercitare uno di questi diritti, ti preghiamo di contattarci. Hai anche il diritto di presentare un reclamo in qualsiasi momento presso l\'autorità italiana per la protezione dei dati, il Garante per la protezione dei dati personali.',
+              text_en: 'If you wish to exercise any of these rights, please contact us. You also have the right to lodge a complaint at any time with the Italian data protection authority, the Garante per la protezione dei dati personali.' },
+          ] },
+        { id: 'contatti', heading_it: '7. Contattaci', heading_en: '7. Contact Us',
+          blocks: [
+            { type: 'p',
+              text_it: 'Se hai domande su questa Informativa sulla Privacy o sulle nostre pratiche di privacy, contatta il nostro Responsabile della Privacy dei Dati all\'indirizzo: [info@dr7.app](mailto:info@dr7.app).',
+              text_en: 'If you have questions about this Privacy Policy or our privacy practices, please contact our Data Privacy Officer at: [info@dr7.app](mailto:info@dr7.app).' },
+          ] },
+      ],
+      outro_blocks: [
+        { type: 'p-italic',
+          text_it: 'Dubai Rent 7.0 S.p.A.\nViale Marconi, 229, 09131 Cagliari CA\nEmail: info@dr7.app',
+          text_en: 'Dubai Rent 7.0 S.p.A.\nViale Marconi, 229, 09131 Cagliari CA\nEmail: info@dr7.app' },
+      ],
+    },
+    {
+      id: 'cookie',
+      enabled: true,
+      title_it: 'Cookie Policy',
+      title_en: 'Cookie Policy',
+      last_updated_dynamic: true,
+      last_updated_label_it: 'Ultimo Aggiornamento',
+      last_updated_label_en: 'Last Updated',
+      intro_blocks: [],
+      sections: [
+        { id: 'cosa-sono', heading_it: '1. Cosa Sono i Cookie?', heading_en: '1. What Are Cookies?',
+          blocks: [
+            { type: 'p',
+              text_it: 'I cookie sono piccoli file di testo che vengono memorizzati sul tuo computer, smartphone o altro dispositivo quando visiti un sito web. Sono ampiamente utilizzati per far funzionare i siti web, o farli funzionare in modo più efficiente, nonché per fornire informazioni ai proprietari del sito. I cookie ci aiutano a ricordare le tue preferenze e a capire come utilizzi il nostro sito, il che ci permette di migliorare la tua esperienza.',
+              text_en: 'Cookies are small text files stored on your computer, smartphone or other device when you visit a website. They are widely used to make websites work, or to work more efficiently, as well as to provide information to site owners. Cookies help us remember your preferences and understand how you use our site, which allows us to improve your experience.' },
+          ] },
+        { id: 'come-utilizziamo', heading_it: '2. Come Utilizziamo i Cookie', heading_en: '2. How We Use Cookies',
+          blocks: [
+            { type: 'p',
+              text_it: 'Utilizziamo i cookie per diversi scopi importanti. Possono essere classificati come segue:',
+              text_en: 'We use cookies for several important purposes. They can be classified as follows:' },
+            { type: 'ul',
+              items_it: [
+                '**Cookie Strettamente Necessari:** Questi cookie sono essenziali per navigare nel sito web e utilizzare le sue funzionalità, come l\'accesso ad aree protette del sito. Senza questi cookie, servizi come il login utente e il processo di prenotazione non possono essere forniti.',
+                '**Cookie di Prestazioni e Analisi:** Questi cookie raccolgono informazioni su come utilizzi il nostro sito web, ad esempio quali pagine visiti più spesso. Questi dati ci aiutano a ottimizzare il nostro sito web e renderlo più facile da navigare. Tutte le informazioni raccolte da questi cookie sono aggregate e quindi anonime.',
+                '**Cookie Funzionali:** Questi cookie permettono al nostro sito web di ricordare le scelte che fai durante la navigazione. Ad esempio, possiamo memorizzare la tua posizione geografica in un cookie per assicurarci di mostrarti il sito web localizzato per la tua area, oppure possiamo ricordare preferenze come lingua e valuta. Questo ci consente di fornirti un\'esperienza più personalizzata e conveniente.',
+                '**Cookie di Targeting o Pubblicitari:** Questi cookie vengono utilizzati per fornire pubblicità più pertinenti a te e ai tuoi interessi. Vengono utilizzati anche per limitare il numero di volte in cui vedi una pubblicità e per misurare l\'efficacia delle campagne pubblicitarie. Di solito vengono inseriti da reti pubblicitarie con il permesso del gestore del sito web.',
+              ],
+              items_en: [
+                '**Strictly Necessary Cookies:** These cookies are essential for browsing the website and using its features, such as accessing secure areas of the site. Without these cookies, services such as user login and the booking process cannot be provided.',
+                '**Performance and Analytics Cookies:** These cookies collect information about how you use our website, for example which pages you visit most often. This data helps us optimize our website and make it easier to navigate. All information these cookies collect is aggregated and therefore anonymous.',
+                '**Functional Cookies:** These cookies allow our website to remember choices you make while browsing. For example, we may store your geographical location in a cookie to make sure we show you the website localized for your area, or we may remember preferences such as language and currency. This enables us to provide a more personalized and convenient experience.',
+                '**Targeting or Advertising Cookies:** These cookies are used to deliver advertising more relevant to you and your interests. They are also used to limit the number of times you see an advertisement and to measure the effectiveness of advertising campaigns. They are usually placed by advertising networks with the website operator\'s permission.',
+              ] },
+          ] },
+        { id: 'terze-parti', heading_it: '3. Cookie di Terze Parti', heading_en: '3. Third-Party Cookies',
+          blocks: [
+            { type: 'p',
+              text_it: 'Oltre ai nostri cookie, possiamo anche utilizzare vari cookie di terze parti per segnalare statistiche di utilizzo del Servizio, fornire pubblicità sul e attraverso il Servizio, e così via. Ad esempio, utilizziamo Google Analytics per aiutarci a comprendere il traffico del nostro sito web.',
+              text_en: 'In addition to our own cookies, we may also use various third-party cookies to report usage statistics of the Service, deliver advertisements on and through the Service, and so on. For example, we use Google Analytics to help us understand the traffic on our website.' },
+          ] },
+        { id: 'scelte', heading_it: '4. Le Tue Scelte e Gestione dei Cookie', heading_en: '4. Your Choices and Cookie Management',
+          blocks: [
+            { type: 'p',
+              text_it: 'Hai il diritto di decidere se accettare o rifiutare i cookie. Puoi esercitare le tue preferenze sui cookie utilizzando le impostazioni del tuo browser web. La maggior parte dei browser ti consente di controllare i cookie attraverso le loro impostazioni di preferenza. Tuttavia, se limiti la capacità dei siti web di impostare cookie, potresti peggiorare la tua esperienza utente complessiva, poiché non sarà più personalizzata per te. Potrebbe anche impedirti di salvare impostazioni personalizzate come le informazioni di login.',
+              text_en: 'You have the right to decide whether to accept or refuse cookies. You can exercise your cookie preferences using your web browser settings. Most browsers allow you to control cookies through their preference settings. However, if you limit the ability of websites to set cookies, you may worsen your overall user experience, since it will no longer be personalized for you. It may also prevent you from saving customized settings such as login information.' },
+            { type: 'p',
+              text_it: 'Per saperne di più sui cookie, incluso come vedere quali cookie sono stati impostati e come gestirli ed eliminarli, visita [www.allaboutcookies.org](https://www.allaboutcookies.org).',
+              text_en: 'To learn more about cookies, including how to see which cookies have been set and how to manage and delete them, visit [www.allaboutcookies.org](https://www.allaboutcookies.org).' },
+          ] },
+        { id: 'modifiche', heading_it: '5. Modifiche a Questa Politica sui Cookie', heading_en: '5. Changes to This Cookie Policy',
+          blocks: [
+            { type: 'p',
+              text_it: 'Possiamo aggiornare questa Politica sui Cookie di tanto in tanto per riflettere, ad esempio, modifiche ai cookie che utilizziamo o per altri motivi operativi, legali o normativi. Ti invitiamo quindi a rivisitare regolarmente questa Politica sui Cookie per rimanere informato sul nostro utilizzo dei cookie e delle tecnologie correlate.',
+              text_en: 'We may update this Cookie Policy from time to time to reflect, for example, changes to the cookies we use or for other operational, legal or regulatory reasons. We therefore encourage you to revisit this Cookie Policy regularly to stay informed about our use of cookies and related technologies.' },
+          ] },
+      ],
+      outro_blocks: [],
+    },
+    {
+      id: 'rental_agreement',
+      enabled: true,
+      title_it: 'Contratto di Noleggio (Riassunto)',
+      title_en: 'Rental Agreement (Overview)',
+      last_updated_dynamic: false,
+      last_updated_label_it: '',
+      last_updated_label_en: '',
+      intro_blocks: [
+        { type: 'p-bold',
+          text_it: 'Avviso Importante: Questo documento fornisce una panoramica generale dei termini e delle condizioni tipici che disciplinano il noleggio di asset di lusso attraverso la piattaforma DR7 Empire. DR7 agisce come intermediario e non è parte del contratto di noleggio finale. L\'accordo legalmente vincolante ("Contratto di Noleggio") sarà tra te ("il Noleggiatore") e il proprietario di terze parti ("il Proprietario"), e i suoi termini specifici possono variare.',
+          text_en: '**Important Notice:** This document provides a general overview of the typical terms and conditions governing the rental of luxury assets through the DR7 Empire platform. DR7 acts as a broker and is not a party to the final rental contract. The legally binding agreement ("Rental Agreement") will be between you ("the Renter") and the third-party asset owner ("the Owner"), and its specific terms may vary.' },
+      ],
+      sections: [
+        { id: 'brokerage', heading_it: '1. Il Ruolo di Intermediazione di DR7', heading_en: '1. The Brokerage Role of DR7',
+          blocks: [
+            { type: 'p',
+              text_it: 'DR7 facilita la connessione tra il Noleggiatore e il Proprietario. Non siamo proprietari né operatori degli asset elencati. Questo documento ha lo scopo di fornire un riassunto dei termini comuni che ci si può aspettare nel Contratto di Noleggio finale del Proprietario.',
+              text_en: 'DR7 facilitates the connection between the Renter and the Owner. We are not the owner or operator of the assets listed. This document is intended to provide a summary of common terms to expect in the Owner\'s final Rental Agreement.' },
+          ] },
+        { id: 'parties', heading_it: '2. Parti Principali', heading_en: '2. Key Parties',
+          blocks: [
+            { type: 'ul',
+              items_it: [
+                '**Il Noleggiatore ("tu"):** Il cliente che prenota l\'asset.',
+                '**Il Proprietario:** La società o persona di terze parti che possiede e fornisce l\'asset in noleggio.',
+                '**DR7 Empire ("l\'Intermediario"):** L\'intermediario che facilita la transazione.',
+              ],
+              items_en: [
+                '**The Renter ("you"):** The client booking the asset.',
+                '**The Owner:** The third-party company or individual who owns and provides the asset for rent.',
+                '**DR7 Empire ("the Broker"):** The intermediary facilitating the transaction.',
+              ] },
+          ] },
+        { id: 'obligations', heading_it: '3. Obblighi Generali del Noleggiatore', heading_en: '3. General Renter Obligations',
+          blocks: [
+            { type: 'p',
+              text_it: 'Il Contratto di Noleggio finale con il Proprietario richiederà tipicamente al Noleggiatore di:',
+              text_en: 'The final Rental Agreement with the Owner will typically require the Renter to:' },
+            { type: 'ul',
+              items_it: [
+                'Soddisfare i requisiti minimi di età e di patente (es. 25+ con patente di guida valida per le auto).',
+                'Fornire una cauzione contro potenziali danni, multe o altre spese accessorie.',
+                'Operare l\'asset in sicurezza e conformemente a tutte le leggi applicabili e alle regole specifiche del Proprietario.',
+                'Restituire l\'asset all\'orario e nel luogo concordati, nelle stesse condizioni in cui è stato ricevuto, salvo normale usura.',
+              ],
+              items_en: [
+                'Meet minimum age and licensing requirements (e.g. 25+ with a valid driver\'s license for cars).',
+                'Provide a security deposit against potential damages, fines, or other incidental charges.',
+                'Operate the asset safely and in accordance with all applicable laws and the Owner\'s specific rules.',
+                'Return the asset at the agreed time and location, in the same condition it was received, allowing for normal wear and tear.',
+              ] },
+          ] },
+        { id: 'insurance', heading_it: '4. Assicurazione e Responsabilità', heading_en: '4. Insurance and Liability',
+          blocks: [
+            { type: 'p',
+              text_it: 'L\'assicurazione per l\'asset è fornita dal Proprietario, non da DR7. Le specifiche della copertura, inclusa la franchigia di cui sei responsabile in caso di danno, saranno dettagliate nel Contratto di Noleggio del Proprietario. Il Noleggiatore è tipicamente responsabile per tutti i danni, le perdite e le violazioni di legge non coperte dalla polizza assicurativa del Proprietario. DR7 non è responsabile per alcun incidente relativo all\'asset.',
+              text_en: 'Insurance for the asset is provided by the Owner, not by DR7. The specifics of the coverage, including the deductible (excess) amount for which you are responsible in case of damage, will be detailed in the Owner\'s Rental Agreement. The Renter is typically liable for all damages, losses, and legal violations that are not covered by the Owner\'s insurance policy. DR7 is not liable for any incidents related to the asset.' },
+          ] },
+        { id: 'prohibited', heading_it: '5. Usi Vietati', heading_en: '5. Prohibited Uses',
+          blocks: [
+            { type: 'p',
+              text_it: 'Ogni Contratto di Noleggio conterrà una lista di usi vietati. Questi includono quasi universalmente, ma non sono limitati a:',
+              text_en: 'Every Rental Agreement will contain a list of prohibited uses. These almost universally include, but are not limited to:' },
+            { type: 'ul',
+              items_it: [
+                'Uso per qualsiasi scopo illegale.',
+                'Partecipazione a gare, competizioni o test di prestazione.',
+                'Operazione da parte di qualsiasi persona non esplicitamente autorizzata nel Contratto di Noleggio.',
+                'Uso sotto l\'effetto di alcol, narcotici o altre sostanze che alterano le facoltà.',
+                'Uso al di fuori dell\'area geografica contrattualmente consentita.',
+              ],
+              items_en: [
+                'Use for any illegal purpose.',
+                'Participation in races, competitions, or performance tests.',
+                'Operation by any person not explicitly authorized in the Rental Agreement.',
+                'Use while under the influence of alcohol, narcotics, or other impairing substances.',
+                'Use outside of the contractually permitted geographical area.',
+              ] },
+          ] },
+        { id: 'final', heading_it: '6. Accordo Finale', heading_en: '6. Final Agreement',
+          blocks: [
+            { type: 'p',
+              text_it: 'Alla conferma della tua richiesta di prenotazione, ti verrà presentato il Contratto di Noleggio finale del Proprietario. Devi leggerlo, comprenderlo e accettarne i termini prima che il noleggio possa iniziare. Procedendo con la prenotazione, riconosci che DR7 è esclusivamente un intermediario e che il tuo rapporto legale per il noleggio è con il Proprietario dell\'asset.',
+              text_en: 'Upon confirmation of your booking request, you will be presented with the Owner\'s final Rental Agreement. You must read, understand, and agree to its terms before the rental can commence. By proceeding with the booking, you acknowledge that DR7 is solely a broker and that your legal relationship for the rental is with the Owner of the asset.' },
+          ] },
+      ],
+      outro_blocks: [],
+    },
+    {
+      id: 'terms',
+      enabled: false,    // Page falls back to the legacy hardcoded JSX until admin enables.
+      title_it: 'Termini di Servizio',
+      title_en: 'Terms of Service',
+      last_updated_dynamic: false,
+      last_updated_label_it: '',
+      last_updated_label_en: '',
+      intro_blocks: [],
+      sections: [],
+      outro_blocks: [],
     },
   ],
 };

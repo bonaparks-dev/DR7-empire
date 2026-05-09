@@ -2,23 +2,24 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import BackButton from '../components/ui/BackButton';
-import { getFaqEntries, type FaqEntry } from '../utils/siteCopy';
+import { getFaqCopy, type FaqCopy } from '../utils/siteCopy';
 
 const FAQPage: React.FC = () => {
-    const { t, lang } = useTranslation();
-    const [entries, setEntries] = useState<FaqEntry[] | null>(null);
+    const { lang } = useTranslation();
+    const [copy, setCopy] = useState<FaqCopy | null>(null);
     const [openId, setOpenId] = useState<string | null>(null);
 
     useEffect(() => {
         let cancelled = false;
-        getFaqEntries().then((rows) => {
+        getFaqCopy().then((c) => {
             if (cancelled) return;
-            setEntries(rows);
-            // Open the first item by default so the page never looks empty.
-            if (rows.length > 0) setOpenId(rows[0].id);
+            setCopy(c);
+            if (c.entries.length > 0) setOpenId(c.entries[0].id);
         });
         return () => { cancelled = true; };
     }, []);
+
+    const entries = copy?.entries ?? null;
 
     const toggle = (id: string) => setOpenId((cur) => (cur === id ? null : id));
 
@@ -37,12 +38,14 @@ const FAQPage: React.FC = () => {
 
                     {/* Hero */}
                     <div className="text-center mb-14">
-                        <p className="uppercase tracking-[0.3em] text-xs text-gray-500 mb-3">DR7 · Support</p>
-                        <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">{t('FAQ')}</h1>
+                        <p className="uppercase tracking-[0.3em] text-xs text-gray-500 mb-3">
+                            {copy ? (lang === 'it' ? copy.eyebrow_it : copy.eyebrow_en) : 'DR7 · Support'}
+                        </p>
+                        <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                            {copy ? (lang === 'it' ? copy.page_title_it : copy.page_title_en) : (lang === 'it' ? 'Domande Frequenti' : 'FAQ')}
+                        </h1>
                         <p className="text-gray-400 text-base md:text-lg">
-                            {lang === 'it'
-                                ? 'Le risposte alle domande piu’ frequenti su noleggio, membership e pagamenti.'
-                                : 'Answers to the most common questions on rentals, membership, and payments.'}
+                            {copy ? (lang === 'it' ? copy.subtitle_it : copy.subtitle_en) : ''}
                         </p>
                     </div>
 
