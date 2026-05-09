@@ -6,9 +6,10 @@ import type { WashService } from '../pages/CarWashServicesPage';
  * Fetches from `/.netlify/functions/get-car-wash-services` (which reads
  * `car_wash_services` in Supabase, managed by admin Catalogo Lavaggio).
  *
- * Module-level cache so multiple components (page, wizard, booking page)
- * share one network request per page load. Call `invalidateCarWashServicesCache()`
- * after admin edits if you want a forced re-fetch.
+ * No persistent cache: admin updates to images, prices, descriptions etc
+ * must be visible immediately. We only de-duplicate concurrent in-flight
+ * requests via the `pending` Promise so multiple components mounting in
+ * the same render don't hammer the function.
  */
 
 interface RawService extends WashService {
@@ -16,18 +17,13 @@ interface RawService extends WashService {
   main_tab?: string;
 }
 
-let cache: RawService[] | null = null;
 let pending: Promise<RawService[]> | null = null;
 
 async function fetchOnce(): Promise<RawService[]> {
-  if (cache) return cache;
   if (pending) return pending;
-  pending = fetch('/.netlify/functions/get-car-wash-services')
+  pending = fetch('/.netlify/functions/get-car-wash-services', { cache: 'no-store' })
     .then((r) => r.json())
-    .then((data: { services?: RawService[] }) => {
-      cache = data.services || [];
-      return cache;
-    })
+    .then((data: { services?: RawService[] }) => data.services || [])
     .catch((err) => {
       console.error('[useCarWashServices] fetch failed:', err);
       return [];
@@ -39,7 +35,7 @@ async function fetchOnce(): Promise<RawService[]> {
 }
 
 export function useCarWashServices(): RawService[] {
-  const [services, setServices] = useState<RawService[]>(cache || []);
+  const [services, setServices] = useState<RawService[]>([]);
   useEffect(() => {
     let cancelled = false;
     fetchOnce().then((list) => {
@@ -53,7 +49,6 @@ export function useCarWashServices(): RawService[] {
 }
 
 export function invalidateCarWashServicesCache(): void {
-  cache = null;
   pending = null;
 }
 

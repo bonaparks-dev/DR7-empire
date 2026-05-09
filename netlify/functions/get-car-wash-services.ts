@@ -11,7 +11,10 @@ export const handler: Handler = async (event) => {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Content-Type': 'application/json',
-    'Cache-Control': 'public, max-age=60',
+    // No edge cache: admin updates to Catalogo Lavaggio (images, prices,
+    // descriptions) must be visible on the next website refresh, not after
+    // a 60-second TTL.
+    'Cache-Control': 'no-store, must-revalidate',
   }
 
   if (event.httpMethod === 'OPTIONS') {
