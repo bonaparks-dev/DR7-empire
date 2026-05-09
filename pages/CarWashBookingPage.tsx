@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
 import type { Service } from './CarWashServicesPage';
 import { useCarWashServices } from '../hooks/useCarWashServices';
+import { generateLavaggioSlotsForDate, canFitWithinWindowsForDate } from '../utils/lavaggioHours';
 import { useCarWashAvailability } from '../hooks/useRealtimeBookings';
 import { getUserCreditBalance, deductCredits, addCredits, hasSufficientBalance } from '../utils/creditWallet';
 
@@ -490,25 +491,12 @@ const CarWashBookingPage: React.FC = () => {
       ? cartItems.reduce((total, item) => total + getServiceDurationById(item.serviceId) * item.quantity, 0)
       : getServiceDurationById(selectedService?.id || '');
 
-    // Weekdays: 9:00-13:00 / 15:00-19:00 (must FINISH by 13:00 or 19:00)
-    // Saturday: 9:00-17:00 continuous (must FINISH by 17:00)
+    // Slot dinamici da Centralina Pro > Orari Lavaggio
+    // (centralina_pro_config.config.lavaggio_hours)
     const [year, month, day] = formData.appointmentDate.split('-').map(Number);
-    const isSaturday = new Date(year, month - 1, day).getDay() === 6;
-
-    // 15-minute intervals to maximize booking capacity
-    const allTimeSlots = isSaturday
-      ? [
-          '09:00', '09:15', '09:30', '09:45', '10:00', '10:15', '10:30', '10:45',
-          '11:00', '11:15', '11:30', '11:45', '12:00', '12:15', '12:30', '12:45',
-          '13:00', '13:15', '13:30', '13:45', '14:00', '14:15', '14:30', '14:45',
-          '15:00', '15:15', '15:30', '15:45', '16:00', '16:15', '16:30', '16:45'
-        ]
-      : [
-          '09:00', '09:15', '09:30', '09:45', '10:00', '10:15', '10:30', '10:45',
-          '11:00', '11:15', '11:30', '11:45', '12:00', '12:15', '12:30', '12:45',
-          '15:00', '15:15', '15:30', '15:45', '16:00', '16:15', '16:30', '16:45',
-          '17:00', '17:15', '17:30', '17:45', '18:00', '18:15', '18:30', '18:45'
-        ];
+    const dateObj = new Date(year, month - 1, day);
+    const isSaturday = dateObj.getDay() === 6;
+    const allTimeSlots = generateLavaggioSlotsForDate(dateObj);
 
     // Check if selected date is today in Rome timezone
     const isToday = isTodayRome(formData.appointmentDate);
@@ -542,24 +530,10 @@ const CarWashBookingPage: React.FC = () => {
       return overlappingCount >= MAX_CONCURRENT_WASHES;
     };
 
-    // Helper to check if service can fit in time range
-    // Rule from Valerio: must FINISH by 13:00 (morning), 19:00 (afternoon), 17:00 (Saturday)
+    // Verifica se il servizio (start + durata) entra in una delle finestre
+    // configurate per il giorno scelto (Centralina Pro > Orari Lavaggio).
     const canFitInRange = (startTime: string, durationHours: number) => {
-      const startMinutes = timeToMinutes(startTime);
-      const endMinutes = startMinutes + (durationHours * 60);
-
-      // Saturday: 9:00-17:00 continuous — must finish by 17:00
-      if (isSaturday) {
-        return startMinutes >= 9 * 60 && endMinutes <= 17 * 60;
-      }
-
-      // Weekdays: morning must finish by 13:00, afternoon must finish by 19:00
-      // Morning window: start from 9:00, end by 13:00
-      if (startMinutes >= 9 * 60 && endMinutes <= 13 * 60) return true;
-      // Afternoon window: start from 15:00, end by 19:00
-      if (startMinutes >= 15 * 60 && endMinutes <= 19 * 60) return true;
-
-      return false;
+      return canFitWithinWindowsForDate(dateObj, startTime, Math.round(durationHours * 60));
     };
 
     return allTimeSlots.map(slot => {
