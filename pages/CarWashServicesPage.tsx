@@ -6,6 +6,7 @@ import { classifyVehicle, type VehicleCategory } from '../utils/vehicleClassific
 import { lookupTarga, isValidItalianPlate, normalizePlate, type TargaResult } from '../utils/lookupTarga';
 import { useCarWashServices } from '../hooks/useCarWashServices';
 import SEOHead from '../components/seo/SEOHead';
+import { getCarWashCopy, type CarWashCopy } from '../utils/siteCopy';
 
 export interface WashService {
   id: string;
@@ -70,6 +71,18 @@ const MECCANICA_CATEGORIES = [
 const CarWashServicesPage: React.FC = () => {
   const { lang } = useTranslation();
   const navigate = useNavigate();
+  const [copy, setCopy] = useState<CarWashCopy | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    getCarWashCopy().then((c) => { if (!cancelled) setCopy(c); });
+    return () => { cancelled = true; };
+  }, []);
+  // Helper for IT/EN switch with safe fallback while config loads.
+  const cw = (it: keyof CarWashCopy, en: keyof CarWashCopy, fallback = ''): string => {
+    if (!copy) return fallback;
+    const k = lang === 'it' ? it : en;
+    return (copy as Record<string, string>)[k as string] || fallback;
+  };
   const [mainTab, setMainTab] = useState<MainTabType>('lavaggio');
   const [lavaggioCategory, setLavaggioCategory] = useState<LavaggioCategory>('wash');
   const [meccanicaCategory, setMeccanicaCategory] = useState<MeccanicaCategory>('tech');
@@ -353,10 +366,10 @@ const CarWashServicesPage: React.FC = () => {
       <div className="container mx-auto px-4 mb-8">
         <div className="max-w-lg mx-auto">
           <label className="block text-white text-lg font-bold mb-2 text-center">
-            {lang === 'it' ? 'Inserisci la targa del tuo veicolo' : 'Enter your vehicle plate'}
+            {cw('plate_label_it', 'plate_label_en', 'Inserisci la targa del tuo veicolo')}
           </label>
           <p className="block text-gray-400 text-sm mb-4 text-center">
-            {lang === 'it' ? 'Per continuare, inserisci la targa per scoprire i servizi disponibili e il prezzo.' : 'To continue, enter your plate to see available services and pricing.'}
+            {cw('plate_helper_it', 'plate_helper_en', 'Per continuare, inserisci la targa.')}
           </p>
 
           {/* Targa Search */}
@@ -367,7 +380,7 @@ const CarWashServicesPage: React.FC = () => {
               value={targaInput}
               onChange={(e) => setTargaInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8))}
               onKeyDown={(e) => { if (e.key === 'Enter' && isValidItalianPlate(targaInput)) handleTargaSearch(); }}
-              placeholder={lang === 'it' ? 'es. EX117YA' : 'e.g. EX117YA'}
+              placeholder={cw('plate_placeholder_it', 'plate_placeholder_en', 'es. EX117YA')}
               className="flex-1 bg-gray-900/80 border border-gray-700 rounded-full px-5 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-white transition-colors text-center font-mono tracking-widest uppercase"
               maxLength={8}
             />
@@ -381,8 +394,8 @@ const CarWashServicesPage: React.FC = () => {
               }`}
             >
               {targaLoading
-                ? (lang === 'it' ? 'Cercando...' : 'Searching...')
-                : (lang === 'it' ? 'Cerca' : 'Search')
+                ? cw('plate_searching_it', 'plate_searching_en', 'Cercando...')
+                : cw('plate_search_it', 'plate_search_en', 'Cerca')
               }
             </button>
           </div>
@@ -396,7 +409,7 @@ const CarWashServicesPage: React.FC = () => {
             >
               <p className="text-red-400 text-sm mb-2">{targaError}</p>
               <p className="text-gray-400 text-xs mb-2">
-                {lang === 'it' ? 'Seleziona manualmente la categoria del tuo veicolo:' : 'Manually select your vehicle category:'}
+                {cw('plate_manual_prompt_it', 'plate_manual_prompt_en', 'Seleziona manualmente la categoria:')}
               </p>
               <div className="flex justify-center gap-2">
                 <button
@@ -448,7 +461,7 @@ const CarWashServicesPage: React.FC = () => {
                 onClick={clearTargaSearch}
                 className="block mx-auto mt-1 text-gray-500 hover:text-white text-xs transition-colors"
               >
-                {lang === 'it' ? 'Cambia veicolo' : 'Change vehicle'}
+                {cw('plate_change_it', 'plate_change_en', 'Cambia veicolo')}
               </button>
             </motion.div>
           )}
@@ -497,7 +510,7 @@ const CarWashServicesPage: React.FC = () => {
                 onClick={clearTargaSearch}
                 className="block mx-auto mt-2 text-gray-500 hover:text-white text-xs transition-colors"
               >
-                {lang === 'it' ? 'Cambia veicolo' : 'Change vehicle'}
+                {cw('plate_change_it', 'plate_change_en', 'Cambia veicolo')}
               </button>
             </motion.div>
           )}
@@ -677,7 +690,7 @@ const CarWashServicesPage: React.FC = () => {
                         onClick={() => addToCart(service)}
                         className="w-full bg-black/50 border-2 border-white text-white px-6 py-2 rounded-full font-semibold text-sm hover:bg-white hover:text-black transition-all duration-300"
                       >
-                        {lang === 'it' ? 'AGGIUNGI AL CARRELLO' : 'ADD TO CART'}
+                        {cw('add_to_cart_it', 'add_to_cart_en', 'AGGIUNGI AL CARRELLO')}
                       </button>
                     </div>
                   )}
@@ -739,7 +752,7 @@ const CarWashServicesPage: React.FC = () => {
             >
               <div className="p-6 border-b border-gray-800 flex justify-between items-center">
                 <h2 className="text-xl font-bold text-white">
-                  {lang === 'it' ? 'Il tuo carrello' : 'Your cart'}
+                  {cw('cart_title_it', 'cart_title_en', 'Il tuo carrello')}
                 </h2>
                 <button onClick={() => setShowCart(false)} className="text-gray-400 hover:text-white text-2xl">
                   &times;
@@ -749,7 +762,7 @@ const CarWashServicesPage: React.FC = () => {
               <div className="flex-grow overflow-y-auto p-6 space-y-4">
                 {cart.length === 0 ? (
                   <p className="text-gray-400 text-center py-8">
-                    {lang === 'it' ? 'Il carrello è vuoto' : 'Your cart is empty'}
+                    {cw('cart_empty_it', 'cart_empty_en', 'Il carrello è vuoto')}
                   </p>
                 ) : (
                   cart.map((item, index) => (
@@ -764,7 +777,7 @@ const CarWashServicesPage: React.FC = () => {
                           )}
                         </div>
                         <button onClick={() => removeFromCart(index)} className="text-red-500 hover:text-red-400 text-sm">
-                          {lang === 'it' ? 'Rimuovi' : 'Remove'}
+                          {cw('cart_remove_it', 'cart_remove_en', 'Rimuovi')}
                         </button>
                       </div>
                       <div className="flex justify-between items-center">
@@ -795,14 +808,14 @@ const CarWashServicesPage: React.FC = () => {
               {cart.length > 0 && (
                 <div className="p-6 border-t border-gray-800">
                   <div className="flex justify-between items-center mb-4">
-                    <span className="text-lg text-white">{lang === 'it' ? 'Totale' : 'Total'}</span>
+                    <span className="text-lg text-white">{cw('cart_total_it', 'cart_total_en', 'Totale')}</span>
                     <span className="text-2xl font-bold text-white">€{getCartTotal().toFixed(2)}</span>
                   </div>
                   <button
                     onClick={handleCheckout}
                     className="w-full bg-white text-black py-4 rounded-full font-bold text-lg hover:bg-gray-200 transition-colors"
                   >
-                    {lang === 'it' ? 'PROCEDI' : 'CHECKOUT'}
+                    {cw('cart_checkout_it', 'cart_checkout_en', 'PROCEDI')}
                   </button>
                 </div>
               )}
@@ -835,7 +848,7 @@ const CarWashServicesPage: React.FC = () => {
                   onClick={handleReviewCart}
                   className="bg-white text-black px-5 py-2 rounded-full font-bold text-sm hover:bg-gray-200 transition-colors flex-shrink-0"
                 >
-                  {lang === 'it' ? 'Rivedi carrello' : 'Review Cart'}
+                  {cw('upsell_review_cart_it', 'upsell_review_cart_en', 'Rivedi carrello')}
                 </button>
               </div>
             </div>
@@ -856,23 +869,19 @@ const CarWashServicesPage: React.FC = () => {
               {upsellStep === 1 ? (
                 <>
                   <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
-                    {lang === 'it' ? 'Completa il tuo lavaggio' : 'Complete your wash'}
+                    {cw('upsell_step1_title_it', 'upsell_step1_title_en', 'Completa il tuo lavaggio')}
                   </h2>
                   <p className="text-gray-400 text-base max-w-md mx-auto">
-                    {lang === 'it'
-                      ? 'Aggiungi un servizio Extra Care per ottenere il massimo dal tuo lavaggio.'
-                      : 'Add an Extra Care service to get the most out of your wash.'}
+                    {cw('upsell_step1_text_it', 'upsell_step1_text_en', 'Aggiungi un servizio Extra Care.')}
                   </p>
                 </>
               ) : (
                 <>
                   <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
-                    {lang === 'it' ? 'Vivi l\'attesa in grande stile' : 'Experience the wait in style'}
+                    {cw('upsell_step2_title_it', 'upsell_step2_title_en', "Vivi l'attesa in grande stile")}
                   </h2>
                   <p className="text-gray-400 text-base max-w-md mx-auto">
-                    {lang === 'it'
-                      ? 'Guida un\'auto di cortesia o una supercar mentre il tuo veicolo viene trattato.'
-                      : 'Drive a courtesy car or supercar while your vehicle is being treated.'}
+                    {cw('upsell_step2_text_it', 'upsell_step2_text_en', "Guida un'auto di cortesia mentre il tuo veicolo viene trattato.")}
                   </p>
                 </>
               )}
@@ -920,8 +929,8 @@ const CarWashServicesPage: React.FC = () => {
                               }`}
                             >
                               {isAdded
-                                ? (lang === 'it' ? 'Aggiunto ✓' : 'Added ✓')
-                                : (lang === 'it' ? 'Aggiungi' : 'Add')
+                                ? cw('upsell_added_it', 'upsell_added_en', 'Aggiunto ✓')
+                                : cw('upsell_add_it', 'upsell_add_en', 'Aggiungi')
                               }
                             </button>
                           </div>

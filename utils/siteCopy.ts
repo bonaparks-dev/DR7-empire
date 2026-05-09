@@ -47,6 +47,7 @@ interface SiteCopySnapshot {
   press?: PressCopy;
   contact?: ContactCopy;
   mechanical?: MechanicalCopy;
+  carwash?: CarWashCopy;
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -226,6 +227,39 @@ export interface MechanicalCopy {
   hours_heading_it: string; hours_heading_en: string;
   hours_main_it: string; hours_main_en: string;
   hours_sub_it: string; hours_sub_en: string;
+}
+
+// ─── Car Wash chrome (catalog stays in car_wash_services table) ────────────
+//
+// Same rule as Mechanical: the actual SERVICE catalog lives in
+// `car_wash_services` (managed from admin > Catalogo Prime Wash, filter
+// LAVAGGIO). siteCopy.carwash holds only the page CHROME — UI labels for
+// plate entry, cart drawer, upsell overlay, etc.
+export interface CarWashCopy {
+  // Plate entry section
+  plate_label_it: string; plate_label_en: string;
+  plate_helper_it: string; plate_helper_en: string;
+  plate_placeholder_it: string; plate_placeholder_en: string;
+  plate_search_it: string; plate_search_en: string;
+  plate_searching_it: string; plate_searching_en: string;
+  plate_manual_prompt_it: string; plate_manual_prompt_en: string;
+  plate_change_it: string; plate_change_en: string;
+  // Service card
+  add_to_cart_it: string; add_to_cart_en: string;
+  // Cart drawer
+  cart_title_it: string; cart_title_en: string;
+  cart_empty_it: string; cart_empty_en: string;
+  cart_remove_it: string; cart_remove_en: string;
+  cart_total_it: string; cart_total_en: string;
+  cart_checkout_it: string; cart_checkout_en: string;
+  // Upsell overlay
+  upsell_review_cart_it: string; upsell_review_cart_en: string;
+  upsell_step1_title_it: string; upsell_step1_title_en: string;
+  upsell_step1_text_it: string; upsell_step1_text_en: string;
+  upsell_step2_title_it: string; upsell_step2_title_en: string;
+  upsell_step2_text_it: string; upsell_step2_text_en: string;
+  upsell_added_it: string; upsell_added_en: string;
+  upsell_add_it: string; upsell_add_en: string;
 }
 
 // ─── Careers ────────────────────────────────────────────────────────────────
@@ -570,6 +604,13 @@ export async function getLegalPage(id: LegalPageId): Promise<LegalPageCopy | nul
   return found;
 }
 
+/** Car wash page chrome (UI labels — catalog stays in car_wash_services). */
+export async function getCarWashCopy(): Promise<CarWashCopy> {
+  const snap = await loadOnce();
+  if (snap.carwash && snap.carwash.cart_title_it) return snap.carwash;
+  return DEFAULT_CARWASH;
+}
+
 /** Mechanical services page chrome (hero / steps / hours / button labels). */
 export async function getMechanicalCopy(): Promise<MechanicalCopy> {
   const snap = await loadOnce();
@@ -644,6 +685,36 @@ export function invalidateSiteCopyCache(): void {
   CACHE = null;
   pending = null;
 }
+
+// ─── Default Car Wash chrome ───────────────────────────────────────────────
+const DEFAULT_CARWASH: CarWashCopy = {
+  plate_label_it: 'Inserisci la targa del tuo veicolo',
+  plate_label_en: 'Enter your vehicle plate',
+  plate_helper_it: 'Per continuare, inserisci la targa per scoprire i servizi disponibili e il prezzo.',
+  plate_helper_en: 'To continue, enter your plate to see available services and pricing.',
+  plate_placeholder_it: 'es. EX117YA',
+  plate_placeholder_en: 'e.g. EX117YA',
+  plate_search_it: 'Cerca', plate_search_en: 'Search',
+  plate_searching_it: 'Cercando...', plate_searching_en: 'Searching...',
+  plate_manual_prompt_it: 'Seleziona manualmente la categoria del tuo veicolo:',
+  plate_manual_prompt_en: 'Manually select your vehicle category:',
+  plate_change_it: 'Cambia veicolo', plate_change_en: 'Change vehicle',
+  add_to_cart_it: 'AGGIUNGI AL CARRELLO', add_to_cart_en: 'ADD TO CART',
+  cart_title_it: 'Il tuo carrello', cart_title_en: 'Your cart',
+  cart_empty_it: 'Il carrello è vuoto', cart_empty_en: 'Your cart is empty',
+  cart_remove_it: 'Rimuovi', cart_remove_en: 'Remove',
+  cart_total_it: 'Totale', cart_total_en: 'Total',
+  cart_checkout_it: 'PROCEDI', cart_checkout_en: 'CHECKOUT',
+  upsell_review_cart_it: 'Rivedi carrello', upsell_review_cart_en: 'Review Cart',
+  upsell_step1_title_it: 'Completa il tuo lavaggio', upsell_step1_title_en: 'Complete your wash',
+  upsell_step1_text_it: 'Aggiungi un servizio Extra Care per ottenere il massimo dal tuo lavaggio.',
+  upsell_step1_text_en: 'Add an Extra Care service to get the most out of your wash.',
+  upsell_step2_title_it: "Vivi l'attesa in grande stile", upsell_step2_title_en: 'Experience the wait in style',
+  upsell_step2_text_it: "Guida un'auto di cortesia o una supercar mentre il tuo veicolo viene trattato.",
+  upsell_step2_text_en: 'Drive a courtesy car or supercar while your vehicle is being treated.',
+  upsell_added_it: 'Aggiunto ✓', upsell_added_en: 'Added ✓',
+  upsell_add_it: 'Aggiungi', upsell_add_en: 'Add',
+};
 
 // ─── Default Mechanical Services chrome ────────────────────────────────────
 // Catalog source of truth: `car_wash_services` Supabase table (managed from
