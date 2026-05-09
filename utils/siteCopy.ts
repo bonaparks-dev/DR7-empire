@@ -196,12 +196,18 @@ export interface AboutCopy {
 }
 
 // ─── Mechanical Services ────────────────────────────────────────────────────
+//
+// IMPORTANT: the actual service catalog (prices, names, categories) lives
+// in the `car_wash_services` Supabase table — managed from admin > Catalogo
+// Prime Wash with the LAVAGGIO/MECCANICA filter. siteCopy.mechanical only
+// holds the page CHROME (hero band, "Come Funziona" steps, opening hours,
+// button labels). DO NOT recreate the catalog here.
 export interface MechanicalServiceItem {
   id: string;
   name_it: string; name_en: string;
-  category_it: string; category_en: string;
+  category: string;
   description_it: string; description_en: string;
-  duration_it: string; duration_en: string;
+  duration: string;
   price: number;
 }
 
@@ -214,7 +220,6 @@ export interface MechanicalCopy {
   hero_title: string;
   hero_subtitle_it: string; hero_subtitle_en: string;
   hero_intro_it: string; hero_intro_en: string;
-  services: MechanicalServiceItem[];
   book_now_label_it: string; book_now_label_en: string;
   how_heading_it: string; how_heading_en: string;
   how_steps: MechanicalHowStep[];
@@ -565,18 +570,52 @@ export async function getLegalPage(id: LegalPageId): Promise<LegalPageCopy | nul
   return found;
 }
 
-/** Mechanical services page copy + service catalog. */
+/** Mechanical services page chrome (hero / steps / hours / button labels). */
 export async function getMechanicalCopy(): Promise<MechanicalCopy> {
   const snap = await loadOnce();
-  if (snap.mechanical && Array.isArray(snap.mechanical.services) && snap.mechanical.services.length > 0) {
+  if (snap.mechanical && snap.mechanical.hero_title) {
     return snap.mechanical;
   }
   return DEFAULT_MECHANICAL;
 }
 
-/** Just the catalog (used by MechanicalBookingPage to look up by serviceId). */
+/**
+ * Mechanical service catalog. Reads from the `car_wash_services` Supabase
+ * table — the SAME source the admin > Catalogo Prime Wash tab manages.
+ * Filters main_tab='meccanica', is_active=true, ordered by display_order.
+ */
 export async function getMechanicalServices(): Promise<MechanicalServiceItem[]> {
-  return (await getMechanicalCopy()).services;
+  try {
+    const { data, error } = await supabase
+      .from('car_wash_services')
+      .select('id, name, name_en, category, description, description_en, duration, price, display_order, is_active, main_tab')
+      .eq('main_tab', 'meccanica')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true });
+    if (error || !data) return [];
+    type Row = {
+      id: string;
+      name: string;
+      name_en: string | null;
+      category: string;
+      description: string | null;
+      description_en: string | null;
+      duration: string | null;
+      price: number;
+    };
+    return (data as Row[]).map((r) => ({
+      id: r.id,
+      name_it: r.name || '',
+      name_en: r.name_en || r.name || '',
+      category: r.category || '',
+      description_it: r.description || '',
+      description_en: r.description_en || r.description || '',
+      duration: r.duration || '',
+      price: Number(r.price) || 0,
+    }));
+  } catch {
+    return [];
+  }
 }
 
 /** Careers page copy. */
@@ -606,41 +645,15 @@ export function invalidateSiteCopyCache(): void {
   pending = null;
 }
 
-// ─── Default Mechanical Services seed ──────────────────────────────────────
-const DEFAULT_MECHANICAL_SERVICES: MechanicalServiceItem[] = [
-  // Freni
-  { id: 'brake-pads-front', name_it: 'Cambio Pastiglie Freni - Anteriori', name_en: 'Brake Pads Replacement - Front', category_it: 'Freni', category_en: 'Brakes', description_it: 'Sostituzione pastiglie freni anteriori', description_en: 'Front brake pads replacement', duration_it: '30 minuti', duration_en: '30 minutes', price: 29 },
-  { id: 'brake-pads-rear', name_it: 'Cambio Pastiglie Freni - Posteriori', name_en: 'Brake Pads Replacement - Rear', category_it: 'Freni', category_en: 'Brakes', description_it: 'Sostituzione pastiglie freni posteriori', description_en: 'Rear brake pads replacement', duration_it: '30 minuti', duration_en: '30 minutes', price: 29 },
-  { id: 'brake-pads-all', name_it: 'Cambio Pastiglie Freni - Anteriori + Posteriori', name_en: 'Brake Pads Replacement - Front + Rear', category_it: 'Freni', category_en: 'Brakes', description_it: 'Sostituzione completa pastiglie freni', description_en: 'Complete brake pads replacement', duration_it: '1 ora', duration_en: '1 hour', price: 49 },
-  // Tagliando
-  { id: 'service-city', name_it: 'Tagliando Rapido (Olio + Filtri) - City Car/Utilitarie', name_en: 'Quick Service (Oil + Filters) - City Car/Small Cars', category_it: 'Tagliando', category_en: 'Service', description_it: 'Cambio olio e filtri per city car', description_en: 'Oil and filter change for city cars', duration_it: '30 minuti', duration_en: '30 minutes', price: 39 },
-  { id: 'service-sedan', name_it: 'Tagliando Rapido (Olio + Filtri) - Berlina/SUV', name_en: 'Quick Service (Oil + Filters) - Sedan/SUV', category_it: 'Tagliando', category_en: 'Service', description_it: 'Cambio olio e filtri per berlina/SUV', description_en: 'Oil and filter change for sedan/SUV', duration_it: '45 minuti', duration_en: '45 minutes', price: 49 },
-  { id: 'service-luxury', name_it: 'Tagliando Rapido (Olio + Filtri) - Luxury/Sportive', name_en: 'Quick Service (Oil + Filters) - Luxury/Sports', category_it: 'Tagliando', category_en: 'Service', description_it: 'Cambio olio e filtri per auto luxury/sportive', description_en: 'Oil and filter change for luxury/sports cars', duration_it: '1 ora', duration_en: '1 hour', price: 59 },
-  // Tergicristalli
-  { id: 'wipers', name_it: 'Cambio Spazzole Tergicristalli (coppia)', name_en: 'Wiper Blades Replacement (pair)', category_it: 'Tergicristalli', category_en: 'Wipers', description_it: 'Sostituzione coppia spazzole tergicristalli', description_en: 'Pair of wiper blades replacement', duration_it: '15 minuti', duration_en: '15 minutes', price: 19 },
-  // Batteria
-  { id: 'battery-check', name_it: 'Controllo Batteria', name_en: 'Battery Check', category_it: 'Batteria', category_en: 'Battery', description_it: 'Test completo batteria', description_en: 'Complete battery test', duration_it: '10 minuti', duration_en: '10 minutes', price: 9 },
-  { id: 'battery-small', name_it: 'Cambio Batteria - Auto Piccole/City Car', name_en: 'Battery Replacement - Small/City Cars', category_it: 'Batteria', category_en: 'Battery', description_it: 'Sostituzione batteria per city car', description_en: 'Battery replacement for city cars', duration_it: '20 minuti', duration_en: '20 minutes', price: 49 },
-  { id: 'battery-medium', name_it: 'Cambio Batteria - Berline/SUV Medi', name_en: 'Battery Replacement - Sedan/Medium SUV', category_it: 'Batteria', category_en: 'Battery', description_it: 'Sostituzione batteria per berlina/SUV', description_en: 'Battery replacement for sedan/SUV', duration_it: '30 minuti', duration_en: '30 minutes', price: 79 },
-  { id: 'battery-large', name_it: 'Cambio Batteria - SUV Grandi/Luxury', name_en: 'Battery Replacement - Large SUV/Luxury', category_it: 'Batteria', category_en: 'Battery', description_it: 'Sostituzione batteria per SUV grandi/luxury', description_en: 'Battery replacement for large SUV/luxury', duration_it: '40 minuti', duration_en: '40 minutes', price: 99 },
-  // Lampadine
-  { id: 'bulb-single', name_it: 'Cambio Lampadina (singola)', name_en: 'Bulb Replacement (single)', category_it: 'Lampadine', category_en: 'Bulbs', description_it: 'Sostituzione singola lampadina', description_en: 'Single bulb replacement', duration_it: '15 minuti', duration_en: '15 minutes', price: 15 },
-  { id: 'bulb-kit', name_it: 'Kit Luci Completo (tutte le lampadine)', name_en: 'Complete Light Kit (all bulbs)', category_it: 'Lampadine', category_en: 'Bulbs', description_it: 'Sostituzione completa tutte lampadine', description_en: 'Complete bulb replacement', duration_it: '1 ora', duration_en: '1 hour', price: 59 },
-  // Fari
-  { id: 'headlight-polish-single', name_it: 'Lucidatura Fari Opachi - Singolo', name_en: 'Headlight Polish - Single', category_it: 'Fari', category_en: 'Headlights', description_it: 'Lucidatura singolo faro opacizzato', description_en: 'Single headlight polishing', duration_it: '30 minuti', duration_en: '30 minutes', price: 29 },
-  { id: 'headlight-polish-pair', name_it: 'Lucidatura Fari Opachi - Coppia', name_en: 'Headlight Polish - Pair', category_it: 'Fari', category_en: 'Headlights', description_it: 'Lucidatura coppia fari opacizzati', description_en: 'Pair of headlights polishing', duration_it: '1 ora', duration_en: '1 hour', price: 49 },
-  // Carrozzeria
-  { id: 'body-polish-small', name_it: 'Lucidatura Carrozzeria - Piccola (Graffi Leggeri)', name_en: 'Body Polish - Small (Light Scratches)', category_it: 'Carrozzeria', category_en: 'Bodywork', description_it: 'Lucidatura graffi leggeri area piccola', description_en: 'Light scratch polishing small area', duration_it: '1 ora', duration_en: '1 hour', price: 39 },
-  { id: 'body-polish-medium', name_it: 'Lucidatura Carrozzeria - Media (1 Pannello)', name_en: 'Body Polish - Medium (1 Panel)', category_it: 'Carrozzeria', category_en: 'Bodywork', description_it: 'Lucidatura completa 1 pannello', description_en: 'Complete 1 panel polishing', duration_it: '2 ore', duration_en: '2 hours', price: 79 },
-];
-
+// ─── Default Mechanical Services chrome ────────────────────────────────────
+// Catalog source of truth: `car_wash_services` Supabase table (managed from
+// admin > Catalogo Prime Wash). NO services list lives here.
 const DEFAULT_MECHANICAL: MechanicalCopy = {
   hero_title: 'DR7 RAPID SERVICE',
   hero_subtitle_it: 'Meccanica rapida senza appuntamenti lunghi',
   hero_subtitle_en: 'Fast mechanical service without long appointments',
   hero_intro_it: 'Solo lavori rapidi — Prenota online e vieni quando vuoi',
   hero_intro_en: 'Quick jobs only — Book online and come when you want',
-  services: DEFAULT_MECHANICAL_SERVICES,
   book_now_label_it: 'PRENOTA ORA',
   book_now_label_en: 'BOOK NOW',
   how_heading_it: 'Come Funziona',

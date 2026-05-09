@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { useNavigate } from 'react-router-dom';
-import { getMechanicalCopy, type MechanicalCopy, type MechanicalServiceItem } from '../utils/siteCopy';
+import { getMechanicalCopy, getMechanicalServices, type MechanicalCopy, type MechanicalServiceItem } from '../utils/siteCopy';
 
 // Re-exported for back-compat with MechanicalBookingPage.
 export type MechanicalService = MechanicalServiceItem;
@@ -11,10 +11,15 @@ const MechanicalServicesPage: React.FC = () => {
   const { lang } = useTranslation();
   const navigate = useNavigate();
   const [copy, setCopy] = useState<MechanicalCopy | null>(null);
+  const [services, setServices] = useState<MechanicalServiceItem[] | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    getMechanicalCopy().then((c) => { if (!cancelled) setCopy(c); });
+    Promise.all([getMechanicalCopy(), getMechanicalServices()]).then(([c, s]) => {
+      if (cancelled) return;
+      setCopy(c);
+      setServices(s);
+    });
     return () => { cancelled = true; };
   }, []);
 
@@ -22,18 +27,19 @@ const MechanicalServicesPage: React.FC = () => {
     navigate('/mechanical-booking', { state: { serviceId } });
   };
 
-  // Group services by category in current language.
+  // Group services by category. Catalog stores a single `category` field
+  // (Italian) — same key for both langs since admin doesn't translate it.
   const servicesByCategory = useMemo(() => {
-    if (!copy) return {} as Record<string, MechanicalServiceItem[]>;
-    return copy.services.reduce((acc, service) => {
-      const category = lang === 'it' ? service.category_it : service.category_en;
+    if (!services) return {} as Record<string, MechanicalServiceItem[]>;
+    return services.reduce((acc, service) => {
+      const category = service.category || '';
       if (!acc[category]) acc[category] = [];
       acc[category].push(service);
       return acc;
     }, {} as Record<string, MechanicalServiceItem[]>);
-  }, [copy, lang]);
+  }, [services]);
 
-  if (!copy) {
+  if (!copy || !services) {
     return (
       <div className="min-h-screen bg-black pt-32 pb-16 px-6 text-center">
         <p className="text-gray-500 text-sm">{lang === 'it' ? 'Caricamento…' : 'Loading…'}</p>
@@ -94,7 +100,7 @@ const MechanicalServicesPage: React.FC = () => {
                   </p>
                   <div className="flex justify-between items-center mb-3 md:mb-4">
                     <div className="text-gray-500 text-xs sm:text-sm">
-                      {tx(service.duration_it, service.duration_en)}
+                      {service.duration}
                     </div>
                     <div className="text-2xl md:text-3xl font-bold text-white">
                       €{service.price}
