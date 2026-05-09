@@ -982,10 +982,14 @@ const CarWashBookingPage: React.FC = () => {
       return;
     }
 
-    // Supercar / Icon Experience guard: refuse to submit until the
-    // customer picks a vehicle. The chosen car is what the shadow
-    // rental row will block — without it the experience can't be sold.
-    if (experienceTier && experienceItem && !chosenSupercar) {
+    // Supercar / Icon Experience guard: only enforce the pick when at
+    // least one car is actually available in the fleet. If the fleet is
+    // empty (DB has no vehicles in the right category yet, or all are
+    // booked for the chosen window), payment proceeds and admin will
+    // manually assign the car after — no shadow row in that case. The
+    // customer is never blocked from paying.
+    const hasAvailableCar = supercarFleet.some(v => v.available);
+    if (experienceTier && experienceItem && hasAvailableCar && !chosenSupercar) {
       setErrors(prev => ({
         ...prev,
         chosenSupercar: lang === 'it'
@@ -1786,10 +1790,30 @@ const CarWashBookingPage: React.FC = () => {
                 ) : fleetLoading ? (
                   <div className="text-sm text-gray-400">{lang === 'it' ? 'Caricamento flotta...' : 'Loading fleet...'}</div>
                 ) : supercarFleet.length === 0 ? (
-                  <div className="p-4 rounded-lg border border-amber-500/30 bg-amber-500/10 text-sm text-amber-300">
-                    {lang === 'it'
-                      ? `Nessun veicolo della flotta ${experienceTier === 'hypercar' ? 'hypercar' : 'supercar'} disponibile in questo momento.`
-                      : `No ${experienceTier === 'hypercar' ? 'hypercar' : 'supercar'} fleet vehicles available right now.`}
+                  <div className="p-4 rounded-lg border border-amber-500/30 bg-amber-500/10 text-sm text-amber-300 space-y-1">
+                    <p>
+                      {lang === 'it'
+                        ? `Nessuna ${experienceTier === 'hypercar' ? 'hypercar' : 'supercar'} configurata in flotta al momento.`
+                        : `No ${experienceTier === 'hypercar' ? 'hypercar' : 'supercar'} configured in the fleet right now.`}
+                    </p>
+                    <p className="text-xs text-amber-300/80">
+                      {lang === 'it'
+                        ? 'Puoi comunque prenotare l\'esperienza: il nostro team ti contatterà per assegnarti il veicolo.'
+                        : 'You can still book the experience: our team will contact you to assign the vehicle.'}
+                    </p>
+                  </div>
+                ) : !supercarFleet.some(v => v.available) ? (
+                  <div className="p-4 rounded-lg border border-amber-500/30 bg-amber-500/10 text-sm text-amber-300 space-y-1">
+                    <p>
+                      {lang === 'it'
+                        ? 'Tutti i veicoli sono occupati nella finestra scelta.'
+                        : 'All vehicles are busy in the chosen window.'}
+                    </p>
+                    <p className="text-xs text-amber-300/80">
+                      {lang === 'it'
+                        ? 'Prova a cambiare orario, oppure prenota comunque: il nostro team ti contatterà per riassegnarti l\'orario.'
+                        : 'Try a different time, or book anyway: our team will reach out to reschedule.'}
+                    </p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
