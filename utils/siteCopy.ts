@@ -25,7 +25,8 @@ interface SiteCopySnapshot {
   membership?: MembershipCopy;
   home?: HomeCopy;
   about?: AboutCopy;
-  // Future: footer, legali
+  footer?: FooterCopy;
+  // Future: legali
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -174,6 +175,55 @@ export interface AboutCopy {
   story_signature: string;    // "— Valerio & Ilenia"
 }
 
+// ─── Footer ─────────────────────────────────────────────────────────────────
+export type FooterSocialIcon = 'instagram' | 'tiktok' | 'facebook' | 'linkedin' | 'youtube' | 'x';
+
+export interface FooterSocialLink {
+  id: string;
+  label: string;     // aria-label
+  href: string;
+  icon: FooterSocialIcon;
+}
+
+export interface FooterLink {
+  id: string;
+  label_it: string;
+  label_en: string;
+  to: string;        // internal route ("/about") OR full URL
+  external?: boolean;
+}
+
+export interface FooterCopy {
+  // Network band
+  network_title: string;
+  network_text_it: string;
+  network_text_en: string;
+  social_links: FooterSocialLink[];
+  // Reviews band header
+  reviews_title: string;
+  reviews_text_it: string;
+  reviews_text_en: string;
+  // Contact band
+  contact_title: string;
+  contact_whatsapp_number: string;     // displayed text, e.g. "+39 345 790 5205"
+  contact_whatsapp_url: string;        // wa.me URL
+  contact_company_name: string;
+  contact_legal_address_it: string;
+  contact_legal_address_en: string;
+  contact_capitale_sociale_it: string;
+  contact_capitale_sociale_en: string;
+  contact_piva: string;
+  contact_disclaimer_it: string;       // "Società soggetta a..."
+  contact_disclaimer_en: string;
+  // Link rows (Division + Corporate + Legal)
+  division_links: FooterLink[];
+  corporate_links: FooterLink[];
+  legal_links: FooterLink[];
+  // Bottom band
+  bottom_brand_line: string;           // "DR7 Cagliari – Global Mobility..."
+  bottom_copyright: string;            // "© 2024 - 2026 DR7 Cagliari. All Rights Reserved."
+}
+
 // ─── Defaults ────────────────────────────────────────────────────────────────
 const DEFAULT_FAQ: FaqEntry[] = [
   {
@@ -311,11 +361,66 @@ export async function getAboutCopy(): Promise<AboutCopy> {
   return DEFAULT_ABOUT;
 }
 
+/**
+ * Footer copy — falls back to legacy hardcoded text when admin hasn't
+ * customized.
+ */
+export async function getFooterCopy(): Promise<FooterCopy> {
+  const snap = await loadOnce();
+  if (snap.footer && Array.isArray(snap.footer.social_links) && Array.isArray(snap.footer.division_links)) {
+    return snap.footer;
+  }
+  return DEFAULT_FOOTER;
+}
+
 /** Force a re-fetch (useful after admin edits in dev). */
 export function invalidateSiteCopyCache(): void {
   CACHE = null;
   pending = null;
 }
+
+// ─── Default Footer seed ────────────────────────────────────────────────────
+const DEFAULT_FOOTER: FooterCopy = {
+  network_title: 'Join the DR7 Network',
+  network_text_it: 'Entra nel nostro ecosistema globale e segui i nostri canali social per contenuti esclusivi e aggiornamenti dal mondo DR7 Cagliari.',
+  network_text_en: 'Join our global ecosystem and follow our social channels for exclusive content and updates from the DR7 Cagliari world.',
+  social_links: [
+    { id: 'ig', label: 'Instagram', href: 'https://www.instagram.com/dubai_rent_7.0_s_p_a_', icon: 'instagram' },
+    { id: 'tt', label: 'Tiktok',    href: 'https://www.tiktok.com/@dr7luxuryempire',           icon: 'tiktok' },
+  ],
+  reviews_title: 'A Global Standard of Excellence',
+  reviews_text_it: 'DR7 Cagliari mantiene un rating impeccabile di 5.0/5.0 su quasi 300 recensioni verificate, confermandosi un punto di riferimento nel settore della luxury mobility.',
+  reviews_text_en: 'DR7 Cagliari maintains a flawless 5.0/5.0 rating across nearly 300 verified reviews, confirming itself as a benchmark in the luxury mobility sector.',
+  contact_title: 'Contact',
+  contact_whatsapp_number: '+39 345 790 5205',
+  contact_whatsapp_url: 'https://wa.me/393457905205',
+  contact_company_name: 'Dubai Rent 7.0 S.p.A.',
+  contact_legal_address_it: 'Sede Legale: Via del Fangario 25, 09122 Cagliari (CA) – Italia',
+  contact_legal_address_en: 'Registered Office: Via del Fangario 25, 09122 Cagliari (CA) – Italy',
+  contact_capitale_sociale_it: 'Capitale Sociale: € 50.000 i.v. (in aumento)',
+  contact_capitale_sociale_en: 'Share Capital: € 50,000 fully paid (increasing)',
+  contact_piva: 'P.IVA / C.F.: 04104640927',
+  contact_disclaimer_it: 'Società soggetta a direzione e coordinamento della\nDR7 Group S.p.A.',
+  contact_disclaimer_en: 'Company subject to the management and coordination of\nDR7 Group S.p.A.',
+  division_links: [
+    { id: 'div-1', label_it: 'Supercar & Luxury Division', label_en: 'Supercar & Luxury Division', to: '/supercar-luxury' },
+    { id: 'div-2', label_it: 'Prime Wash',                  label_en: 'Prime Wash',                  to: '/prime-wash' },
+    { id: 'div-3', label_it: 'Contattaci',                  label_en: 'Contact us',                  to: '/contact' },
+  ],
+  corporate_links: [
+    { id: 'corp-1', label_it: 'Corporate Overview',         label_en: 'Corporate Overview',         to: '/about' },
+    { id: 'corp-2', label_it: 'Press & Media',              label_en: 'Press & Media',              to: '/press' },
+    { id: 'corp-3', label_it: 'Careers & Opportunities',    label_en: 'Careers & Opportunities',    to: '/careers' },
+  ],
+  legal_links: [
+    { id: 'leg-1', label_it: 'Termini di Servizio',         label_en: 'Terms of Service',           to: '/terms' },
+    { id: 'leg-2', label_it: 'Cookie Policy',               label_en: 'Cookie Policy',              to: '/cookie-policy' },
+    { id: 'leg-3', label_it: 'Privacy Policy',              label_en: 'Privacy Policy',             to: '/privacy' },
+    { id: 'leg-4', label_it: 'Cancellation Policy',         label_en: 'Cancellation Policy',        to: '/cancellation-policy' },
+  ],
+  bottom_brand_line: 'DR7 Cagliari – Global Mobility & Luxury Lifestyle Group',
+  bottom_copyright: '© 2024 - 2026 DR7 Cagliari. All Rights Reserved.',
+};
 
 // ─── Default About seed ─────────────────────────────────────────────────────
 const DEFAULT_ABOUT: AboutCopy = {
