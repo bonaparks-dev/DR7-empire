@@ -5,6 +5,7 @@ import { supabase } from '../../supabaseClient';
 import { Link } from 'react-router-dom';
 import { getMembershipTierName } from '../../utils/membershipDiscounts';
 import { useCentralinaProOverlay } from '../../hooks/useCentralinaProConfig';
+import { useCancellationRules, pickRule } from '../../hooks/useCancellationPolicy';
 import { addCredits, deductCredits, getUserCreditBalance } from '../../utils/creditWallet';
 import { PICKUP_LOCATIONS, RETURN_LOCATIONS } from '../../constants';
 
@@ -37,6 +38,7 @@ const MyBookings = () => {
   const { t, lang } = useTranslation();
   // DR7 Flex rules (refund %, price, tier) come from Centralina Pro.
   const { overlay: proOverlay } = useCentralinaProOverlay();
+  const cancelRules = useCancellationRules();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -179,13 +181,29 @@ const MyBookings = () => {
         message: `Con ${label}: rimborso del ${flexRefundPercent}% come credito DR7 Wallet.`,
       };
     }
-    if (daysUntilPickup >= 5) {
-      // Standard policy (no Flex): >= 5 days out → 90% wallet credit, 10% penalty
-      return { canCancel: true, hasFlex: false, refundPercent: 90, penaltyPercent: 10, message: 'Cancellazione con penale del 10% — rimborso del 90% come credito DR7 Wallet.' };
-    }
     if (daysUntilPickup > 0) {
-      // < 5 days: cannot cancel unless Flex (handled above)
-      return { canCancel: false, hasFlex: false, refundPercent: 0, penaltyPercent: 0, message: 'Meno di 5 giorni dal servizio: cancellazione non disponibile senza DR7 Flex.' };
+      // Pick the matching cancellation rule from Centralina Pro
+      const rule = pickRule(cancelRules, daysUntilPickup);
+      if (rule) {
+        const penalty = Math.max(0, 100 - rule.refundPercent);
+        return {
+          canCancel: true,
+          hasFlex: false,
+          refundPercent: rule.refundPercent,
+          penaltyPercent: penalty,
+          message: `${rule.label}: rimborso del ${rule.refundPercent}% come credito DR7 Wallet${penalty > 0 ? ` (penale ${penalty}%)` : ''}.`,
+        };
+      }
+      // No active rule matches → blocked unless Flex (handled above)
+      const lowestActive = cancelRules.filter(r => r.isActive).sort((a, b) => a.minDaysNotice - b.minDaysNotice)[0];
+      const minNotice = lowestActive?.minDaysNotice ?? 0;
+      return {
+        canCancel: false,
+        hasFlex: false,
+        refundPercent: 0,
+        penaltyPercent: 0,
+        message: `Meno di ${minNotice} giorni dal servizio: cancellazione non disponibile senza DR7 Flex.`,
+      };
     }
     return { canCancel: false, hasFlex: false, refundPercent: 0, penaltyPercent: 0, message: 'Non è più possibile cancellare questa prenotazione.' };
   };

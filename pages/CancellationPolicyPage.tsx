@@ -2,9 +2,17 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import BackButton from '../components/ui/BackButton';
+import { useCancellationPolicy } from '../hooks/useCancellationPolicy';
 
 const CancellationPolicyPage = () => {
   const { lang } = useTranslation();
+  // Pull the "main" rule (highest threshold) from Centralina Pro to drive
+  // the displayed numbers. Operators edit the rules in admin > Centralina
+  // Pro > Automazioni > "Regole di cancellazione".
+  const { thresholdDays, refundPercent, penaltyPercent } = useCancellationPolicy();
+  const daysWord = lang === 'it'
+    ? `${thresholdDays} (${thresholdDays === 1 ? 'un' : thresholdDays}) giorn${thresholdDays === 1 ? 'o' : 'i'}`
+    : `${thresholdDays} (${thresholdDays === 1 ? 'one' : thresholdDays}) day${thresholdDays === 1 ? '' : 's'}`;
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -74,17 +82,17 @@ const CancellationPolicyPage = () => {
             {/* 2. Cancellazione entro 5 giorni */}
             <motion.section className="bg-gray-900/50 border border-gray-800 rounded-lg p-8" variants={itemVariants}>
               <h2 className="text-2xl font-bold text-white mb-4 border-b border-gray-700 pb-3">
-                {lang === 'it' ? '2. Cancellazione entro 5 giorni dalla data del servizio' : '2. Cancellation up to 5 days before service date'}
+                {lang === 'it' ? `2. Cancellazione entro ${thresholdDays} giorni dalla data del servizio` : `2. Cancellation up to ${thresholdDays} days before service date`}
               </h2>
               <p className="text-gray-300 leading-relaxed mb-4">
                 {lang === 'it'
-                  ? 'Il Cliente pu\u00f2 cancellare la prenotazione fino a 5 (cinque) giorni prima della data e ora previste per l\u2019erogazione del servizio.'
-                  : 'The Customer may cancel the booking up to 5 (five) days before the scheduled service date and time.'}
+                  ? `Il Cliente pu\u00f2 cancellare la prenotazione fino a ${daysWord} prima della data e ora previste per l\u2019erogazione del servizio.`
+                  : `The Customer may cancel the booking up to ${daysWord} before the scheduled service date and time.`}
               </p>
               <p className="text-gray-300 mb-3">{lang === 'it' ? 'In tal caso:' : 'In such case:'}</p>
               <ul className="space-y-1.5 text-gray-300 ml-4 mb-4">
-                <li className="flex items-start gap-2"><span className="text-white mt-0.5">•</span> {lang === 'it' ? 'DR7 tratterr\u00e0 una quota pari al 10% dell\u2019importo complessivo, a copertura dei costi organizzativi e gestionali' : 'DR7 will retain 10% of the total amount to cover organizational and management costs'}</li>
-                <li className="flex items-start gap-2"><span className="text-white mt-0.5">•</span> {lang === 'it' ? 'il restante 90% sar\u00e0 riconosciuto esclusivamente sotto forma di credit wallet DR7' : 'the remaining 90% will be credited exclusively as DR7 credit wallet'}</li>
+                <li className="flex items-start gap-2"><span className="text-white mt-0.5">•</span> {lang === 'it' ? `DR7 tratterrà una quota pari al ${penaltyPercent}% dell\u2019importo complessivo, a copertura dei costi organizzativi e gestionali` : `DR7 will retain ${penaltyPercent}% of the total amount to cover organizational and management costs`}</li>
+                <li className="flex items-start gap-2"><span className="text-white mt-0.5">•</span> {lang === 'it' ? `il restante ${refundPercent}% sarà riconosciuto esclusivamente sotto forma di credit wallet DR7` : `the remaining ${refundPercent}% will be credited exclusively as DR7 credit wallet`}</li>
               </ul>
               <p className="text-gray-400 font-semibold mb-2">{lang === 'it' ? 'Caratteristiche del credit wallet:' : 'Credit wallet features:'}</p>
               <ul className="space-y-1.5 text-gray-300 ml-4">
@@ -95,15 +103,15 @@ const CancellationPolicyPage = () => {
               </ul>
             </motion.section>
 
-            {/* 3. Cancellazione oltre i 5 giorni */}
+            {/* 3. Cancellazione oltre la soglia */}
             <motion.section className="bg-gray-900/50 border border-gray-800 rounded-lg p-8" variants={itemVariants}>
               <h2 className="text-2xl font-bold text-white mb-4 border-b border-gray-700 pb-3">
-                {lang === 'it' ? '3. Cancellazione oltre i 5 giorni dalla data del servizio' : '3. Cancellation within 5 days of service date'}
+                {lang === 'it' ? `3. Cancellazione oltre i ${thresholdDays} giorni dalla data del servizio` : `3. Cancellation within ${thresholdDays} days of service date`}
               </h2>
               <p className="text-gray-300 leading-relaxed mb-3">
                 {lang === 'it'
-                  ? 'In caso di cancellazione comunicata oltre il termine di 5 (cinque) giorni dalla data prevista per il servizio:'
-                  : 'In case of cancellation communicated within 5 (five) days of the scheduled service date:'}
+                  ? `In caso di cancellazione comunicata oltre il termine di ${daysWord} dalla data prevista per il servizio:`
+                  : `In case of cancellation communicated within ${daysWord} of the scheduled service date:`}
               </p>
               <ul className="space-y-1.5 text-gray-300 ml-4 mb-4">
                 <li className="flex items-start gap-2"><span className="text-white mt-0.5">•</span> {lang === 'it' ? 'non \u00e8 previsto alcun rimborso' : 'no refund will be granted'}</li>
