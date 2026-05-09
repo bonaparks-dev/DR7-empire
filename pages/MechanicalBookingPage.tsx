@@ -4,7 +4,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
-import { MECHANICAL_SERVICES } from './MechanicalServicesPage';
+import { getMechanicalServices, type MechanicalServiceItem } from '../utils/siteCopy';
 import { getUserCreditBalance, deductCredits, addCredits, hasSufficientBalance } from '../utils/creditWallet';
 
 
@@ -15,7 +15,13 @@ const MechanicalBookingPage: React.FC = () => {
   const { user, loading } = useAuth();
 
   const serviceId = (location.state as any)?.serviceId;
-  const selectedService = MECHANICAL_SERVICES.find(s => s.id === serviceId);
+  const [catalog, setCatalog] = useState<MechanicalServiceItem[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    getMechanicalServices().then((s) => { if (!cancelled) setCatalog(s); });
+    return () => { cancelled = true; };
+  }, []);
+  const selectedService = catalog.find(s => s.id === serviceId);
 
   // Get today's date in YYYY-MM-DD format
   const getTodayDate = () => {
@@ -320,7 +326,7 @@ const MechanicalBookingPage: React.FC = () => {
       vehicle_type: 'service',
       vehicle_name: vehicleInfo,
       service_type: 'mechanical_service',
-      service_name: lang === 'it' ? selectedService.name : selectedService.nameEn,
+      service_name: lang === 'it' ? selectedService.name_it : selectedService.name_en,
       service_id: selectedService.id,
       price_total: Math.round(discountedPrice * 100), // in cents (after 5% online discount)
       currency: 'EUR',
@@ -711,7 +717,7 @@ const MechanicalBookingPage: React.FC = () => {
             {lang === 'it' ? 'Prenota il Servizio' : 'Book Service'}
           </h1>
           <p className="text-gray-400 mb-8">
-            {lang === 'it' ? selectedService.name : selectedService.nameEn} - €{discountedPrice}
+            {lang === 'it' ? selectedService.name_it : selectedService.name_en} - €{discountedPrice}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-8">
