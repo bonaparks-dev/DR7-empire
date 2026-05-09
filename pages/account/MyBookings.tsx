@@ -150,9 +150,6 @@ const MyBookings = () => {
     const hasDr7Flex = bd.dr7Flex === true || bd.dr7Flex === 'true' || bd.dr7_flex === true || bd.dr7_flex === 'true' || bd.extras?.dr7_flex === true || bd.extras?.dr7_flex === 'true';
     const hasPrimeFlex = booking.booking_details?.prime_flex === true || booking.booking_details?.prime_flex === 'true';
     const isElite = !!getMembershipTierName(user);
-    // Elite members get the same cancellation rights as DR7 Flex — same condition
-    // applied to both modify and cancel flows.
-    const hasFlex = hasDr7Flex || hasPrimeFlex || isElite;
     const dateStr = booking.service_type === 'car_wash'
       ? (booking.appointment_date || booking.pickup_date || '')
       : (booking.pickup_date || booking.appointment_date || '');
@@ -160,58 +157,52 @@ const MyBookings = () => {
     const now = new Date();
     const daysUntilPickup = (pickup.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
 
-    // DR7 Flex conditions from Centralina Pro (servizi.dr7_flex.refund_percent).
-    // If Pro hasn't set it, fall back to the baseline 90 that matches the documented policy.
-    const flexRefundPercent = proOverlay?.dr7Flex?.refundPercent ?? 90;
+    if (daysUntilPickup <= 0) {
+      return { canCancel: false, hasFlex: false, refundPercent: 0, penaltyPercent: 0, refundMethod: 'wallet', message: 'Non è più possibile cancellare questa prenotazione.' };
+    }
 
-    if (hasFlex) {
-      // DR7 Flex / Prime Flex / Elite: refund as DR7 Wallet credit, ANY time before pickup/appointment
-      // (waives the 5-day cutoff that applies to regular bookings).
-      const penalty = Math.max(0, 100 - flexRefundPercent);
-      const label = hasPrimeFlex
-        ? 'Prime Flex'
-        : hasDr7Flex
-          ? 'DR7 Flex'
-          : 'DR7 Club';
+    // Unified rule pick from Centralina Pro Automazioni (incl. Standard / DR7 Flex / Prime Flex / Elite).
+    const rule = pickRule(cancelRules, {
+      daysUntilPickup,
+      serviceType: booking.service_type === 'car_wash' ? 'carwash' : 'rental',
+      hasDr7Flex,
+      hasPrimeFlex,
+      isElite,
+    });
+
+    if (rule) {
+      const penalty = Math.max(0, 100 - rule.refundPercent);
+      const dest = rule.refundMethod === 'card'
+        ? 'rimborsato sulla carta originale (gestito manualmente da DR7 entro 7 giorni)'
+        : 'come credito DR7 Wallet';
+      // hasFlex flag is preserved for downstream UI/messages that special-case Flex copy.
+      const isFlexRule = rule.requiresService === 'dr7_flex' || rule.requiresService === 'prime_flex' || rule.requiresService === 'elite';
       return {
         canCancel: true,
-        hasFlex: true,
-        refundPercent: flexRefundPercent,
+        hasFlex: isFlexRule,
+        refundPercent: rule.refundPercent,
         penaltyPercent: penalty,
-        refundMethod: 'wallet',
-        message: `Con ${label}: rimborso del ${flexRefundPercent}% come credito DR7 Wallet.`,
+        refundMethod: rule.refundMethod,
+        message: `${rule.label}: rimborso del ${rule.refundPercent}% ${dest}${penalty > 0 ? ` (penale ${penalty}%)` : ''}.`,
       };
     }
-    if (daysUntilPickup > 0) {
-      // Pick the matching cancellation rule from Centralina Pro
-      const rule = pickRule(cancelRules, daysUntilPickup);
-      if (rule) {
-        const penalty = Math.max(0, 100 - rule.refundPercent);
-        const dest = rule.refundMethod === 'card'
-          ? 'rimborsato sulla carta originale (gestito manualmente da DR7 entro 7 giorni)'
-          : 'come credito DR7 Wallet';
-        return {
-          canCancel: true,
-          hasFlex: false,
-          refundPercent: rule.refundPercent,
-          penaltyPercent: penalty,
-          refundMethod: rule.refundMethod,
-          message: `${rule.label}: rimborso del ${rule.refundPercent}% ${dest}${penalty > 0 ? ` (penale ${penalty}%)` : ''}.`,
-        };
-      }
-      // No active rule matches → blocked unless Flex (handled above)
-      const lowestActive = cancelRules.filter(r => r.isActive).sort((a, b) => a.minDaysNotice - b.minDaysNotice)[0];
-      const minNotice = lowestActive?.minDaysNotice ?? 0;
-      return {
-        canCancel: false,
-        hasFlex: false,
-        refundPercent: 0,
-        penaltyPercent: 0,
-        refundMethod: 'wallet',
-        message: `Meno di ${minNotice} giorni dal servizio: cancellazione non disponibile senza DR7 Flex.`,
-      };
-    }
-    return { canCancel: false, hasFlex: false, refundPercent: 0, penaltyPercent: 0, refundMethod: 'wallet', message: 'Non è più possibile cancellare questa prenotazione.' };
+
+    // No applicable rule → cancellation blocked. Surface the lowest-threshold
+    // standard rule's notice as the message hint.
+    const standardRules = cancelRules.filter(r => r.isActive && r.requiresService === 'none');
+    const minNotice = standardRules.length > 0
+      ? Math.min(...standardRules.map(r => r.minDaysNotice))
+      : 0;
+    return {
+      canCancel: false,
+      hasFlex: false,
+      refundPercent: 0,
+      penaltyPercent: 0,
+      refundMethod: 'wallet',
+      message: minNotice > 0
+        ? `Meno di ${minNotice} giorni dal servizio: cancellazione non disponibile salvo DR7 Flex / Elite.`
+        : 'Cancellazione non disponibile per questa prenotazione.',
+    };
   };
 
   // Recalc rental total whenever the user changes pickup/dropoff while the modal is open
