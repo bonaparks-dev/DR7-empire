@@ -267,23 +267,23 @@ export default function RegistrazioneClientePage() {
     }
 
     // ─── Render gates ────────────────────────────────────────────────────
-    if (invite.valid === null) return <Centered><p className="text-zinc-300">Verifica link…</p></Centered>
+    if (invite.valid === null) return <Centered><p className="text-white/80">Verifica link…</p></Centered>
     if (!invite.valid) {
         const reason = invite.expired ? 'Il link è scaduto.' :
             invite.used ? 'Questo link è già stato utilizzato.' :
             invite.revoked ? 'Il link è stato revocato.' :
             invite.error || 'Link non valido.'
         return <Centered>
-            <h1 className="text-2xl font-bold text-red-400 mb-2">Link non utilizzabile</h1>
-            <p className="text-zinc-300">{reason}</p>
-            <p className="text-sm text-zinc-500 mt-4">Contatta DR7 Empire per un nuovo link di registrazione.</p>
+            <h1 className="text-2xl font-bold text-white mb-2">Link non utilizzabile</h1>
+            <p className="text-white/80">{reason}</p>
+            <p className="text-sm text-white/50 mt-4">Contatta DR7 Empire per un nuovo link di registrazione.</p>
         </Centered>
     }
 
     if (step === 'done') {
         return <Centered>
-            <h1 className="text-3xl font-bold text-emerald-400 mb-2">Registrazione completata</h1>
-            <p className="text-zinc-300">Grazie. Il team DR7 Empire verificherà i documenti caricati al più presto.</p>
+            <h1 className="text-3xl font-bold text-white mb-2">Registrazione completata</h1>
+            <p className="text-white/80">Grazie. Il team DR7 Empire verificherà i documenti caricati al più presto.</p>
         </Centered>
     }
 
@@ -293,7 +293,7 @@ export default function RegistrazioneClientePage() {
                 <PageIntro />
 
                 {step === 'form' && (
-                    <form onSubmit={handleSubmit} className="bg-zinc-900/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-amber-400/20 p-6 sm:p-8 space-y-7">
+                    <form onSubmit={handleSubmit} className="bg-black rounded-2xl shadow-2xl border border-white/30 p-6 sm:p-8 space-y-7">
                         {/* 1. Tipo Cliente */}
                         <section>
                             <SectionTitle index="1" title="Tipo Cliente" />
@@ -307,8 +307,8 @@ export default function RegistrazioneClientePage() {
                                             onClick={() => update('tipo_cliente', t)}
                                             className={`px-4 py-3 rounded-xl border text-sm font-semibold transition-all ${
                                                 active
-                                                    ? 'border-amber-400 bg-amber-400/10 text-amber-300 shadow-[0_0_0_1px_rgba(251,191,36,0.6)]'
-                                                    : 'border-zinc-700 bg-zinc-800/40 text-zinc-300 hover:border-zinc-500 hover:bg-zinc-800'
+                                                    ? 'border-white bg-white text-black'
+                                                    : 'border-white/30 bg-black text-white/80 hover:border-white hover:bg-white/5'
                                             }`}
                                         >
                                             {TIPO_LABELS[t]}
@@ -327,7 +327,7 @@ export default function RegistrazioneClientePage() {
                                     <Field label="Cognome" value={form.cognome} onChange={v => update('cognome', v)} required />
                                     <div className="md:col-span-2">
                                         <label className="block">
-                                            <span className="text-xs font-semibold text-zinc-300 tracking-wide">CODICE FISCALE *</span>
+                                            <span className="text-xs font-semibold text-white/80 tracking-wide">CODICE FISCALE *</span>
                                             <div className="mt-2 flex flex-col sm:flex-row gap-2">
                                                 <input
                                                     value={form.codice_fiscale}
@@ -340,11 +340,11 @@ export default function RegistrazioneClientePage() {
                                                 />
                                                 <CalcolaCFButton
                                                     config={cfConfig}
-                                                    className="px-4 py-2.5 rounded-xl bg-amber-400 text-zinc-900 text-sm font-bold hover:bg-amber-300 active:scale-[0.98] transition-all disabled:opacity-50 whitespace-nowrap shadow-lg shadow-amber-400/20"
+                                                    className="px-4 py-2.5 rounded-xl bg-white text-black text-sm font-bold hover:bg-white/90 active:scale-[0.98] transition-all disabled:opacity-50 whitespace-nowrap"
                                                 />
                                             </div>
                                             {cfMsg && (
-                                                <p className={`mt-2 text-xs ${cfMsg.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>{cfMsg.text}</p>
+                                                <p className={`mt-2 text-xs ${cfMsg.type === 'success' ? 'text-white' : 'text-white/70'}`}>{cfMsg.text}</p>
                                             )}
                                         </label>
                                     </div>
@@ -410,17 +410,17 @@ export default function RegistrazioneClientePage() {
                             </div>
                         </section>
 
-                        <p className="text-xs text-zinc-500 pt-1">I campi contrassegnati con * sono obbligatori.</p>
+                        <p className="text-xs text-white/50 pt-1">I campi contrassegnati con * sono obbligatori.</p>
 
                         {submitErr && (
-                            <p className="text-sm text-red-300 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">{submitErr}</p>
+                            <p className="text-sm text-white bg-white/5 border border-white/40 rounded-xl px-4 py-3">{submitErr}</p>
                         )}
 
-                        <div className="pt-5 border-t border-zinc-800 flex flex-col sm:flex-row sm:justify-end gap-2">
+                        <div className="pt-5 border-t border-white/20 flex flex-col sm:flex-row sm:justify-end gap-2">
                             <button
                                 type="submit"
                                 disabled={submitting}
-                                className="px-8 py-3 bg-amber-400 text-zinc-900 font-bold rounded-xl hover:bg-amber-300 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg shadow-amber-400/20"
+                                className="px-8 py-3 bg-white text-black font-bold rounded-xl hover:bg-white/90 active:scale-[0.98] transition-all disabled:opacity-50"
                             >
                                 {submitting ? 'Invio…' : 'Continua →'}
                             </button>
@@ -429,10 +429,10 @@ export default function RegistrazioneClientePage() {
                 )}
 
                 {step === 'documents' && customerId && (
-                    <div className="bg-zinc-900/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-amber-400/20 p-6 sm:p-8 space-y-5">
+                    <div className="bg-black rounded-2xl shadow-2xl border border-white/30 p-6 sm:p-8 space-y-5">
                         <div>
                             <SectionTitle index="✓" title="Documenti" />
-                            <p className="text-sm text-zinc-400">
+                            <p className="text-sm text-white/70">
                                 Carica i tuoi documenti. Saranno verificati dal team DR7 prima di confermare la registrazione.
                                 Formati: JPG, PNG, PDF (max 10 MB ciascuno).
                             </p>
@@ -445,32 +445,32 @@ export default function RegistrazioneClientePage() {
                         </div>
 
                         {docs.length > 0 && (
-                            <ul className="border border-zinc-800 rounded-xl divide-y divide-zinc-800 overflow-hidden">
+                            <ul className="border border-white/30 rounded-xl divide-y divide-white/20 overflow-hidden">
                                 {docs.map((d, i) => (
-                                    <li key={i} className="px-4 py-3 flex items-center gap-3 text-sm bg-zinc-950/50">
-                                        <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-300">{d.kind.replace('_', ' ')}</span>
-                                        <span className="flex-1 truncate text-zinc-200">{d.file.name}</span>
-                                        {d.uploaded ? <span className="text-emerald-400 text-xs font-semibold">✓ caricato</span>
-                                            : d.uploading ? <span className="text-amber-300 text-xs">caricamento…</span>
-                                                : d.error ? <span className="text-red-400 text-xs">{d.error}</span>
-                                                    : <button type="button" onClick={() => removeDoc(i)} className="text-red-400 text-xs hover:text-red-300">rimuovi</button>}
+                                    <li key={i} className="px-4 py-3 flex items-center gap-3 text-sm bg-black">
+                                        <span className="font-mono text-[10px] px-2 py-0.5 rounded border border-white/30 text-white/80">{d.kind.replace('_', ' ')}</span>
+                                        <span className="flex-1 truncate text-white">{d.file.name}</span>
+                                        {d.uploaded ? <span className="text-white text-xs font-semibold">✓ caricato</span>
+                                            : d.uploading ? <span className="text-white/70 text-xs">caricamento…</span>
+                                                : d.error ? <span className="text-white text-xs">{d.error}</span>
+                                                    : <button type="button" onClick={() => removeDoc(i)} className="text-white/70 text-xs hover:text-white underline">rimuovi</button>}
                                     </li>
                                 ))}
                             </ul>
                         )}
 
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 pt-5 border-t border-zinc-800">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 pt-5 border-t border-white/20">
                             <button type="button" onClick={() => setStep('done')}
-                                className="text-sm text-zinc-400 underline self-start hover:text-zinc-200">Salta i documenti per ora</button>
+                                className="text-sm text-white/70 underline self-start hover:text-white">Salta i documenti per ora</button>
                             <div className="flex flex-col sm:flex-row gap-2">
                                 <button type="button" onClick={uploadDocs}
                                     disabled={docs.length === 0 || docs.every(d => d.uploaded)}
-                                    className="px-5 py-2.5 bg-zinc-800 text-zinc-100 font-semibold rounded-xl hover:bg-zinc-700 active:scale-[0.98] transition-all disabled:opacity-40">
+                                    className="px-5 py-2.5 bg-black text-white border border-white/40 font-semibold rounded-xl hover:bg-white/5 hover:border-white active:scale-[0.98] transition-all disabled:opacity-40">
                                     Carica selezionati
                                 </button>
                                 <button type="button" onClick={() => setStep('done')}
                                     disabled={docs.some(d => !d.uploaded && !d.error)}
-                                    className="px-5 py-2.5 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-400 active:scale-[0.98] transition-all disabled:opacity-40 shadow-lg shadow-emerald-500/20">
+                                    className="px-5 py-2.5 bg-white text-black font-bold rounded-xl hover:bg-white/90 active:scale-[0.98] transition-all disabled:opacity-40">
                                     Concludi
                                 </button>
                             </div>
@@ -486,16 +486,16 @@ export default function RegistrazioneClientePage() {
 // Centralizzate qui cosi' tutti gli input hanno la STESSA visibilita' su
 // dark theme (placeholder leggibile, bordo sempre presente, focus chiaro).
 const INPUT_CLASS =
-    'w-full px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-700 text-zinc-100 ' +
-    'placeholder:text-zinc-500 placeholder:font-normal ' +
-    'focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30 ' +
+    'w-full px-4 py-2.5 rounded-xl bg-black border border-white/40 text-white ' +
+    'placeholder:text-white/40 placeholder:font-normal ' +
+    'focus:outline-none focus:border-white focus:ring-2 focus:ring-white/40 ' +
     'transition-colors'
 
 function PageIntro() {
     return (
         <div className="text-center mb-8">
             <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Registrazione Cliente</h1>
-            <p className="text-sm text-zinc-400 mt-2">Compila i tuoi dati per completare la registrazione DR7 Empire</p>
+            <p className="text-sm text-white/70 mt-2">Compila i tuoi dati per completare la registrazione DR7 Empire</p>
         </div>
     )
 }
@@ -503,7 +503,7 @@ function PageIntro() {
 function Centered({ children }: { children: React.ReactNode }) {
     return (
         <div className="min-h-[60vh] flex items-center justify-center px-4 py-10">
-            <div className="bg-zinc-900/80 backdrop-blur-sm border border-amber-400/20 rounded-2xl shadow-2xl p-8 max-w-md text-center">
+            <div className="bg-black border border-white/30 rounded-2xl shadow-2xl p-8 max-w-md text-center">
                 {children}
             </div>
         </div>
@@ -512,8 +512,8 @@ function Centered({ children }: { children: React.ReactNode }) {
 
 function SectionTitle({ index, title }: { index: string; title: string }) {
     return (
-        <h3 className="flex items-center gap-2 text-sm font-bold text-amber-300 uppercase tracking-wider mb-4">
-            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-400/15 border border-amber-400/40 text-[11px] text-amber-300">{index}</span>
+        <h3 className="flex items-center gap-2 text-sm font-bold text-white uppercase tracking-wider mb-4">
+            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white text-black text-[11px] font-bold">{index}</span>
             {title}
         </h3>
     )
@@ -531,7 +531,7 @@ function Field({ label, value, onChange, type = 'text', required, maxLength, min
 }) {
     return (
         <label className="block">
-            <span className="text-xs font-semibold text-zinc-300 tracking-wide uppercase">{label}{required ? ' *' : ''}</span>
+            <span className="text-xs font-semibold text-white/80 tracking-wide uppercase">{label}{required ? ' *' : ''}</span>
             <input
                 type={type}
                 value={value}
@@ -554,14 +554,14 @@ function SelectField({ label, value, onChange, options }: {
 }) {
     return (
         <label className="block">
-            <span className="text-xs font-semibold text-zinc-300 tracking-wide uppercase">{label}</span>
+            <span className="text-xs font-semibold text-white/80 tracking-wide uppercase">{label}</span>
             <select
                 value={value}
                 onChange={e => onChange(e.target.value)}
                 className={`mt-2 ${INPUT_CLASS} appearance-none pr-8 bg-no-repeat bg-right`}
                 style={{ backgroundImage: 'url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%23a1a1aa\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundSize: '18px', backgroundPosition: 'right 12px center' }}
             >
-                {options.map(o => <option key={o.value} value={o.value} className="bg-zinc-900 text-zinc-100">{o.label}</option>)}
+                {options.map(o => <option key={o.value} value={o.value} className="bg-black text-white">{o.label}</option>)}
             </select>
         </label>
     )
@@ -573,8 +573,8 @@ function DocPicker({ label, kind, onAdd }: {
     onAdd: (kind: DocKind, f: File) => void
 }) {
     return (
-        <label className="border border-zinc-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 cursor-pointer bg-zinc-950/40 hover:border-amber-400/40 hover:bg-zinc-950 transition-colors">
-            <span className="text-sm font-medium text-zinc-200 flex-1">{label}</span>
+        <label className="border border-white/30 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 cursor-pointer bg-black hover:border-white transition-colors">
+            <span className="text-sm font-medium text-white flex-1">{label}</span>
             <input
                 type="file"
                 accept="image/*,application/pdf"
@@ -583,7 +583,7 @@ function DocPicker({ label, kind, onAdd }: {
                     if (f) onAdd(kind, f)
                     e.currentTarget.value = ''
                 }}
-                className="text-xs text-zinc-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-zinc-700 file:bg-zinc-800 file:text-zinc-100 file:font-semibold file:text-xs hover:file:bg-zinc-700 file:cursor-pointer"
+                className="text-xs text-white/70 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-white/40 file:bg-black file:text-white file:font-semibold file:text-xs hover:file:bg-white/10 file:cursor-pointer"
             />
         </label>
     )
