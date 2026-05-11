@@ -4,15 +4,26 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import { PICKUP_LOCATIONS as DEFAULT_PICKUP_LOCATIONS } from '../../constants';
 import { getPickupLocations } from '../../utils/getLocations';
+import { getContactCopy } from '../../utils/siteCopy';
 
 const CarBookingConfirmationPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { getTranslated } = useTranslation();
+  const { getTranslated, lang } = useTranslation();
   const { currency } = useCurrency();
   const { booking } = (location.state || {}) as { booking?: any };
   const [pickupLocs, setPickupLocs] = useState(DEFAULT_PICKUP_LOCATIONS);
-  useEffect(() => { let c = false; getPickupLocations().then(l => { if (!c) setPickupLocs(l); }); return () => { c = true; }; }, []);
+  const [officeAddress, setOfficeAddress] = useState('Viale Marconi 229, Cagliari 09131');
+  useEffect(() => {
+    let c = false;
+    getPickupLocations().then(l => { if (!c) setPickupLocs(l); });
+    getContactCopy().then(cp => {
+      if (c) return;
+      const next = lang === 'it' ? cp.office_address_it : cp.office_address_en;
+      if (next) setOfficeAddress(next);
+    });
+    return () => { c = true; };
+  }, [lang]);
 
   if (!booking) {
     return <Navigate to="/" replace />;
@@ -41,9 +52,7 @@ const CarBookingConfirmationPage: React.FC = () => {
       ? `Cauzione: €${depositAmount.toLocaleString('it-IT')} (al ritiro)`
       : 'Cauzione';
 
-  const getPickupAddress = () => {
-    return 'Viale Marconi 229, Cagliari 09131';
-  };
+  const getPickupAddress = () => officeAddress;
 
   return (
     <div className="min-h-screen bg-black pt-32 pb-24 px-4">

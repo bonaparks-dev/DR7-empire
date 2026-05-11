@@ -473,8 +473,6 @@ export const RETURN_LOCATIONS = [
   { id: 'home_delivery', label: { en: 'Home Pickup', it: 'Ritiro/riconsegna a domicilio' } },
 ];
 
-export const DR7_OFFICE_ADDRESS = 'Viale Marconi 229, 09131 Cagliari CA, Italy';
-
 export const LICENSE_OBTENTION_YEAR_OPTIONS = Array.from({ length: 70 }, (_, i) => new Date().getFullYear() - i);
 
 export const YACHT_PICKUP_MARINAS = [
