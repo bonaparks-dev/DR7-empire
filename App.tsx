@@ -221,6 +221,16 @@ const ConsentPopupManager: React.FC = () => {
 const AnimatedRoutes = () => {
   const location = useLocation();
 
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') {
+      (window as any).gtag('event', 'page_view', {
+        page_path: location.pathname + location.search,
+        page_location: window.location.href,
+        page_title: document.title,
+      });
+    }
+  }, [location.pathname, location.search]);
+
   // Carica le categorie dalle Centralina Pro (admin-editabili).
   // Ogni categoria genera automaticamente una route /<id> che apre la
   // RentalPage filtrata per quella categoria → veicoli sempre visibili

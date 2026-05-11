@@ -5,6 +5,7 @@ import { useCurrency } from '../../contexts/CurrencyContext';
 import { PICKUP_LOCATIONS as DEFAULT_PICKUP_LOCATIONS } from '../../constants';
 import { getPickupLocations } from '../../utils/getLocations';
 import { getContactCopy } from '../../utils/siteCopy';
+import { trackBookingCompleted } from '../../utils/analytics';
 
 const CarBookingConfirmationPage: React.FC = () => {
   const navigate = useNavigate();
@@ -24,6 +25,10 @@ const CarBookingConfirmationPage: React.FC = () => {
     });
     return () => { c = true; };
   }, [lang]);
+
+  useEffect(() => {
+    if (booking) trackBookingCompleted(booking);
+  }, [booking]);
 
   if (!booking) {
     return <Navigate to="/" replace />;
