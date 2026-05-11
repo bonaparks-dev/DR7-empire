@@ -382,15 +382,28 @@
     }
     </script>
 
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=%VITE_GA_MEASUREMENT_ID%"></script>
+    <!-- Google Consent Mode v2 — set BEFORE gtag.js loads -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       window.gtag = gtag;
+      var __dr7Consent = null;
+      try { __dr7Consent = localStorage.getItem('dr7-cookie-consent'); } catch (e) {}
+      var __dr7Granted = __dr7Consent === 'true';
+      gtag('consent', 'default', {
+        ad_storage: __dr7Granted ? 'granted' : 'denied',
+        ad_user_data: __dr7Granted ? 'granted' : 'denied',
+        ad_personalization: __dr7Granted ? 'granted' : 'denied',
+        analytics_storage: __dr7Granted ? 'granted' : 'denied',
+        functionality_storage: 'granted',
+        security_storage: 'granted',
+        wait_for_update: 500
+      });
       gtag('js', new Date());
       gtag('config', '%VITE_GA_MEASUREMENT_ID%');
     </script>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=%VITE_GA_MEASUREMENT_ID%"></script>
   </head>
 
   <body class="bg-black text-gray-200" translate="no">

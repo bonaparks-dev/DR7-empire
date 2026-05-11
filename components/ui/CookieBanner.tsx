@@ -18,6 +18,15 @@ const CookieBanner: React.FC = () => {
 
   const handleConsent = (consent: boolean) => {
     localStorage.setItem('dr7-cookie-consent', String(consent));
+    const status = consent ? 'granted' : 'denied';
+    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+      window.gtag('consent', 'update', {
+        ad_storage: status,
+        ad_user_data: status,
+        ad_personalization: status,
+        analytics_storage: status,
+      });
+    }
     setIsVisible(false);
   };
 
@@ -32,7 +41,6 @@ const CookieBanner: React.FC = () => {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-            onClick={() => handleConsent(true)}
           />
 
           {/* Centered cookie popup */}
