@@ -61,6 +61,7 @@ interface SiteCopySnapshot {
   booking?: BookingCopy;
   creditWallet?: CreditWalletCopy;
   token?: TokenCopy;
+  firma?: FirmaCopy;
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -248,6 +249,66 @@ export interface MechanicalCopy {
 // Wash, Supercar & Luxury Division, etc.) stay hardcoded in Header.tsx —
 // they are brand names, not localized chrome. Only the section headings,
 // drawer/header CTAs, and aria labels move to CMS.
+// ─── Firma page (contract e-signature OTP flow) ──────────────────────────
+// Token substitution at render time:
+//   {email} {name} {num} {contractNumber} {date} {i} {n} {attempts}
+// Trustera360 is the e-signing backend (per memory rule); never confuse
+// with yousign-*.ts dead code.
+export interface FirmaCopy {
+  // Chrome
+  header_pill_it: string; header_pill_en: string;
+  expired_title_it: string; expired_title_en: string;
+  expired_body_it: string; expired_body_en: string;
+  error_title_it: string; error_title_en: string;
+  // PDF viewer
+  pdf_section_title_it: string; pdf_section_title_en: string;
+  pdf_pages_suffix_it: string; pdf_pages_suffix_en: string;     // "pagine"
+  pdf_page_overlay_template_it: string; pdf_page_overlay_template_en: string; // "Pagina {i} di {n}"
+  pdf_page_alt_template_it: string; pdf_page_alt_template_en: string;         // "Pagina {i}"
+  pdf_iframe_title_it: string; pdf_iframe_title_en: string;
+  pdf_loading_it: string; pdf_loading_en: string;
+  contract_loading_it: string; contract_loading_en: string;
+  // Contract info card
+  contract_number_prefix_it: string; contract_number_prefix_en: string;       // "Contratto"
+  label_cliente_it: string; label_cliente_en: string;
+  label_veicolo_it: string; label_veicolo_en: string;
+  label_ritiro_it: string; label_ritiro_en: string;
+  label_riconsegna_it: string; label_riconsegna_en: string;
+  na_fallback_it: string; na_fallback_en: string;
+  // OTP step 1 — send code
+  otp_step1_title_it: string; otp_step1_title_en: string;
+  otp_step1_body_template_it: string; otp_step1_body_template_en: string;     // "...{email}"
+  otp_step1_cta_it: string; otp_step1_cta_en: string;
+  otp_sending_it: string; otp_sending_en: string;
+  // OTP step 2 — enter code
+  otp_step2_title_it: string; otp_step2_title_en: string;
+  otp_step2_body_template_it: string; otp_step2_body_template_en: string;     // "...{email}"
+  otp_attempts_template_it: string; otp_attempts_template_en: string;          // "...{attempts}"
+  otp_verify_cta_it: string; otp_verify_cta_en: string;
+  otp_verifying_it: string; otp_verifying_en: string;
+  otp_resend_it: string; otp_resend_en: string;
+  // Signing step 3 — confirm
+  signing_step_title_it: string; signing_step_title_en: string;
+  signing_identity_verified_it: string; signing_identity_verified_en: string;
+  signing_ack_template_1_it: string; signing_ack_template_1_en: string;        // "{name} {num}"
+  signing_ack_template_2_it: string; signing_ack_template_2_en: string;        // "{email}"
+  signing_terms_checkbox_it: string; signing_terms_checkbox_en: string;
+  signing_submit_cta_it: string; signing_submit_cta_en: string;
+  // Signed success
+  signed_title_it: string; signed_title_en: string;
+  signed_body_template_it: string; signed_body_template_en: string;            // "{date}"
+  signed_email_note_it: string; signed_email_note_en: string;
+  signed_download_cta_it: string; signed_download_cta_en: string;
+  // Errors
+  err_load_fallback_it: string; err_load_fallback_en: string;
+  err_load_contract_it: string; err_load_contract_en: string;
+  err_send_otp_it: string; err_send_otp_en: string;
+  err_incomplete_code_it: string; err_incomplete_code_en: string;
+  err_verify_otp_it: string; err_verify_otp_en: string;
+  err_terms_required_it: string; err_terms_required_en: string;
+  err_signing_it: string; err_signing_en: string;
+}
+
 // ─── Token page (DR7 Token / Coin / Up / APP manifesto) ──────────────────
 // Chrome-only first pass: hero, three section titles + leading paragraphs,
 // "In Lavorazione" eyebrow, "Pagamento in cripto" pill, final CTA. Detailed
@@ -1192,6 +1253,13 @@ export async function getTokenCopy(): Promise<TokenCopy> {
   return DEFAULT_TOKEN;
 }
 
+/** Firma page (contract e-signature OTP flow) — full chrome + errors. */
+export async function getFirmaCopy(): Promise<FirmaCopy> {
+  const snap = await loadOnce();
+  if (snap.firma && snap.firma.otp_step1_title_it) return snap.firma;
+  return DEFAULT_FIRMA;
+}
+
 /** Confirmation Success page (booking summary + email fallback). */
 export async function getConfirmationSuccessCopy(): Promise<ConfirmationSuccessCopy> {
   const snap = await loadOnce();
@@ -1333,6 +1401,71 @@ const DEFAULT_HEADER: HeaderCopy = {
   contact_cta_it: 'Contattaci', contact_cta_en: 'Contact us',
   popup_title_it: 'Prenota Ora', popup_title_en: 'Book Now',
   popup_subtitle_it: 'Seleziona date e orari', popup_subtitle_en: 'Select dates and times',
+};
+
+// ─── Default Firma seed (contract e-signature OTP flow) ─────────────────
+const DEFAULT_FIRMA: FirmaCopy = {
+  header_pill_it: 'Firma Elettronica', header_pill_en: 'Electronic Signature',
+  expired_title_it: 'Link Scaduto', expired_title_en: 'Link Expired',
+  expired_body_it: 'Il link di firma è scaduto. Contatta DR7 Empire per ricevere un nuovo link.',
+  expired_body_en: 'The signature link has expired. Contact DR7 Empire to receive a new link.',
+  error_title_it: 'Errore', error_title_en: 'Error',
+  pdf_section_title_it: 'Documento da firmare', pdf_section_title_en: 'Document to sign',
+  pdf_pages_suffix_it: 'pagine', pdf_pages_suffix_en: 'pages',
+  pdf_page_overlay_template_it: 'Pagina {i} di {n}', pdf_page_overlay_template_en: 'Page {i} of {n}',
+  pdf_page_alt_template_it: 'Pagina {i}', pdf_page_alt_template_en: 'Page {i}',
+  pdf_iframe_title_it: 'Contratto PDF', pdf_iframe_title_en: 'Contract PDF',
+  pdf_loading_it: 'Caricamento documento...', pdf_loading_en: 'Loading document...',
+  contract_loading_it: 'Caricamento contratto...', contract_loading_en: 'Loading contract...',
+  contract_number_prefix_it: 'Contratto', contract_number_prefix_en: 'Contract',
+  label_cliente_it: 'Cliente', label_cliente_en: 'Customer',
+  label_veicolo_it: 'Veicolo', label_veicolo_en: 'Vehicle',
+  label_ritiro_it: 'Ritiro', label_ritiro_en: 'Pickup',
+  label_riconsegna_it: 'Riconsegna', label_riconsegna_en: 'Return',
+  na_fallback_it: 'N/A', na_fallback_en: 'N/A',
+  otp_step1_title_it: 'Firma il Contratto', otp_step1_title_en: 'Sign the Contract',
+  otp_step1_body_template_it: 'Per procedere con la firma, invieremo un codice di verifica a {email}',
+  otp_step1_body_template_en: 'To proceed with signing, we will send a verification code to {email}',
+  otp_step1_cta_it: 'Invia Codice di Verifica', otp_step1_cta_en: 'Send Verification Code',
+  otp_sending_it: 'Invio codice di verifica...', otp_sending_en: 'Sending verification code...',
+  otp_step2_title_it: 'Inserisci Codice OTP', otp_step2_title_en: 'Enter OTP Code',
+  otp_step2_body_template_it: 'Abbiamo inviato un codice a 6 cifre a {email}',
+  otp_step2_body_template_en: 'We sent a 6-digit code to {email}',
+  otp_attempts_template_it: 'Tentativi rimanenti: {attempts}',
+  otp_attempts_template_en: 'Attempts remaining: {attempts}',
+  otp_verify_cta_it: 'Verifica Codice', otp_verify_cta_en: 'Verify Code',
+  otp_verifying_it: 'Verifica in corso...', otp_verifying_en: 'Verifying...',
+  otp_resend_it: 'Non hai ricevuto il codice? Invia di nuovo',
+  otp_resend_en: 'Didn\'t receive the code? Resend',
+  signing_step_title_it: 'Conferma Firma', signing_step_title_en: 'Confirm Signature',
+  signing_identity_verified_it: 'Identità verificata con successo',
+  signing_identity_verified_en: 'Identity successfully verified',
+  signing_ack_template_1_it: 'Io, {name}, dichiaro di aver preso visione del contratto n. {num} e di approvarne integralmente il contenuto.',
+  signing_ack_template_1_en: 'I, {name}, declare that I have reviewed contract no. {num} and fully approve its content.',
+  signing_ack_template_2_it: 'Confermo che la firma viene apposta volontariamente tramite verifica OTP all\'indirizzo email {email}.',
+  signing_ack_template_2_en: 'I confirm the signature is applied voluntarily via OTP verification at the email address {email}.',
+  signing_terms_checkbox_it: 'Accetto i termini e le condizioni del contratto e confermo la mia volontà di firmare elettronicamente questo documento.',
+  signing_terms_checkbox_en: 'I accept the terms and conditions of the contract and confirm my willingness to electronically sign this document.',
+  signing_submit_cta_it: 'Firma il Documento', signing_submit_cta_en: 'Sign the Document',
+  signed_title_it: 'Documento Firmato', signed_title_en: 'Document Signed',
+  signed_body_template_it: 'Il contratto è stato firmato con successo il {date}.',
+  signed_body_template_en: 'The contract was successfully signed on {date}.',
+  signed_email_note_it: 'Riceverai una copia del contratto firmato via email.',
+  signed_email_note_en: 'You will receive a copy of the signed contract via email.',
+  signed_download_cta_it: 'Scarica Contratto Firmato', signed_download_cta_en: 'Download Signed Contract',
+  err_load_fallback_it: 'Errore nel caricamento', err_load_fallback_en: 'Loading error',
+  err_load_contract_it: 'Impossibile caricare i dati del contratto',
+  err_load_contract_en: 'Unable to load contract data',
+  err_send_otp_it: 'Errore nell\'invio del codice OTP',
+  err_send_otp_en: 'Error sending OTP code',
+  err_incomplete_code_it: 'Inserisci il codice completo a 6 cifre',
+  err_incomplete_code_en: 'Enter the complete 6-digit code',
+  err_verify_otp_it: 'Errore nella verifica del codice',
+  err_verify_otp_en: 'Error verifying the code',
+  err_terms_required_it: 'Devi accettare i termini per procedere',
+  err_terms_required_en: 'You must accept the terms to proceed',
+  err_signing_it: 'Errore durante la firma del documento',
+  err_signing_en: 'Error while signing the document',
 };
 
 // ─── Default Token seed (DR7 Coin / Up / APP) ────────────────────────────
