@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import CalcolaCFButton from '../components/ui/CalcolaCFButton'
+import { useTranslation } from '../hooks/useTranslation'
+import { getRegistrazioneClienteCopy, type RegistrazioneClienteCopy } from '../utils/siteCopy'
 
 // Mirror del NewClientModal admin (Persona Fisica / Azienda / Pubblica Amm.)
 // reso pubblico: il cliente arriva qui da un link inviato dall'operatore,
@@ -68,14 +70,26 @@ interface DocItem {
     error?: string
 }
 
-const TIPO_LABELS: Record<ClientType, string> = {
-    persona_fisica: 'Persona Fisica',
-    azienda: 'Azienda',
-    pubblica_amministrazione: 'Pubblica Amm.',
-}
-
 export default function RegistrazioneClientePage() {
     const { token } = useParams<{ token: string }>()
+    const { lang } = useTranslation()
+    const [copy, setCopy] = useState<RegistrazioneClienteCopy | null>(null)
+    const copyRef = useRef<RegistrazioneClienteCopy | null>(null)
+    useEffect(() => {
+      let cancelled = false
+      getRegistrazioneClienteCopy().then(c => { if (cancelled) return; copyRef.current = c; setCopy(c) })
+      return () => { cancelled = true }
+    }, [])
+    const r = (it: keyof RegistrazioneClienteCopy, en: keyof RegistrazioneClienteCopy): string => {
+      const cur = copyRef.current
+      if (!cur) return ''
+      return cur[lang === 'it' ? it : en] as string
+    }
+    const TIPO_LABELS: Record<ClientType, string> = {
+      persona_fisica: r('tipo_persona_fisica_it', 'tipo_persona_fisica_en'),
+      azienda: r('tipo_azienda_it', 'tipo_azienda_en'),
+      pubblica_amministrazione: r('tipo_pa_it', 'tipo_pa_en'),
+    }
     const [invite, setInvite] = useState<InviteState>({ valid: null })
     const [step, setStep] = useState<'form' | 'documents' | 'done'>('form')
     const [form, setForm] = useState<FormState>(initialForm)
@@ -87,7 +101,7 @@ export default function RegistrazioneClientePage() {
 
     useEffect(() => {
         if (!token) {
-            setInvite({ valid: false, error: 'Link incompleto' })
+            setInvite({ valid: false, error: r('invalid_reason_incomplete_it', 'invalid_reason_incomplete_en') })
             return
         }
         ;(async () => {
@@ -96,7 +110,7 @@ export default function RegistrazioneClientePage() {
                 const json = await res.json()
                 setInvite(json)
             } catch (e) {
-                setInvite({ valid: false, error: e instanceof Error ? e.message : 'Errore validazione' })
+                setInvite({ valid: false, error: e instanceof Error ? e.message : r('invalid_reason_validation_it', 'invalid_reason_validation_en') })
             }
         })()
     }, [token])
@@ -155,15 +169,15 @@ export default function RegistrazioneClientePage() {
             if (!form.luogo_nascita.trim()) missing.push('Luogo di nascita')
         }
 
-        if (missing.length > 0) return setSubmitErr(`Campi mancanti: ${missing.join(', ')}`)
+        if (missing.length > 0) return setSubmitErr(r('err_missing_prefix_it', 'err_missing_prefix_en').split('{list}').join(missing.join(', ')))
 
-        if (form.telefono.replace(/\D/g, '').length < 8) return setSubmitErr('Numero di telefono non valido')
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return setSubmitErr('Email non valida')
+        if (form.telefono.replace(/\D/g, '').length < 8) return setSubmitErr(r('err_phone_invalid_it', 'err_phone_invalid_en'))
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return setSubmitErr(r('err_email_invalid_it', 'err_email_invalid_en'))
         if (form.tipo_cliente === 'persona_fisica' && form.codice_fiscale.length !== 16) {
-            return setSubmitErr('Codice Fiscale deve essere di 16 caratteri')
+            return setSubmitErr(r('err_cf_length_it', 'err_cf_length_en'))
         }
         if (form.tipo_cliente === 'azienda' && !/^\d{11}$/.test(form.partita_iva)) {
-            return setSubmitErr('P.IVA deve essere di 11 cifre')
+            return setSubmitErr(r('err_piva_length_it', 'err_piva_length_en'))
         }
 
         setSubmitting(true)
@@ -270,36 +284,39 @@ export default function RegistrazioneClientePage() {
     }
 
     // ─── Render gates ────────────────────────────────────────────────────
-    if (invite.valid === null) return <Centered><p className="text-white/80">Verifica link…</p></Centered>
+    if (invite.valid === null) return <Centered><p className="text-white/80">{r('verifica_link_it', 'verifica_link_en')}</p></Centered>
     if (!invite.valid) {
-        const reason = invite.expired ? 'Il link è scaduto.' :
-            invite.used ? 'Questo link è già stato utilizzato.' :
-            invite.revoked ? 'Il link è stato revocato.' :
-            invite.error || 'Link non valido.'
+        const reason = invite.expired ? r('invalid_reason_expired_it', 'invalid_reason_expired_en') :
+            invite.used ? r('invalid_reason_used_it', 'invalid_reason_used_en') :
+            invite.revoked ? r('invalid_reason_revoked_it', 'invalid_reason_revoked_en') :
+            invite.error || r('invalid_reason_fallback_it', 'invalid_reason_fallback_en')
         return <Centered>
-            <h1 className="text-2xl font-bold text-white mb-2">Link non utilizzabile</h1>
+            <h1 className="text-2xl font-bold text-white mb-2">{r('invalid_title_it', 'invalid_title_en')}</h1>
             <p className="text-white/80">{reason}</p>
-            <p className="text-sm text-white/50 mt-4">Contatta DR7 Empire per un nuovo link di registrazione.</p>
+            <p className="text-sm text-white/50 mt-4">{r('invalid_help_it', 'invalid_help_en')}</p>
         </Centered>
     }
 
     if (step === 'done') {
         return <Centered>
-            <h1 className="text-3xl font-bold text-white mb-2">Registrazione completata</h1>
-            <p className="text-white/80">Grazie. Il team DR7 Empire verificherà i documenti caricati al più presto.</p>
+            <h1 className="text-3xl font-bold text-white mb-2">{r('done_title_it', 'done_title_en')}</h1>
+            <p className="text-white/80">{r('done_body_it', 'done_body_en')}</p>
         </Centered>
     }
 
     return (
         <div className="py-10 px-4 sm:px-6">
             <div className="max-w-3xl mx-auto">
-                <PageIntro />
+                <PageIntro
+                    title={r('intro_title_it', 'intro_title_en')}
+                    subtitle={r('intro_subtitle_it', 'intro_subtitle_en')}
+                />
 
                 {step === 'form' && (
                     <form onSubmit={handleSubmit} className="bg-black rounded-2xl shadow-2xl border border-white/30 p-6 sm:p-8 space-y-7">
                         {/* 1. Tipo Cliente */}
                         <section>
-                            <SectionTitle index="1" title="Tipo Cliente" />
+                            <SectionTitle index="1" title={r('section_1_tipo_it', 'section_1_tipo_en').replace(/^1\.\s*/, '')} />
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                 {(['persona_fisica', 'azienda', 'pubblica_amministrazione'] as const).map(t => {
                                     const active = form.tipo_cliente === t
@@ -324,7 +341,7 @@ export default function RegistrazioneClientePage() {
                         {/* 2. Dati anagrafici / azienda / PA */}
                         {form.tipo_cliente === 'persona_fisica' && (
                             <section>
-                                <SectionTitle index="2" title="Dati Anagrafici" />
+                                <SectionTitle index="2" title={r('section_2_anagrafica_it', 'section_2_anagrafica_en').replace(/^2\.\s*/, '')} />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <Field label="Nome" value={form.nome} onChange={v => update('nome', v)} required />
                                     <Field label="Cognome" value={form.cognome} onChange={v => update('cognome', v)} required />
@@ -365,7 +382,7 @@ export default function RegistrazioneClientePage() {
 
                         {form.tipo_cliente === 'azienda' && (
                             <section>
-                                <SectionTitle index="2" title="Dati Azienda" />
+                                <SectionTitle index="2" title={r('section_2_azienda_it', 'section_2_azienda_en').replace(/^2\.\s*/, '')} />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <Field label="Ragione Sociale" value={form.ragione_sociale} onChange={v => update('ragione_sociale', v)} required />
                                     <Field label="P.IVA" value={form.partita_iva} onChange={v => update('partita_iva', v.replace(/\D/g, ''))} required maxLength={11} minLength={11} placeholder="11 cifre" />
@@ -378,7 +395,7 @@ export default function RegistrazioneClientePage() {
 
                         {form.tipo_cliente === 'pubblica_amministrazione' && (
                             <section>
-                                <SectionTitle index="2" title="Pubblica Amministrazione" />
+                                <SectionTitle index="2" title={r('section_2_pa_it', 'section_2_pa_en').replace(/^2\.\s*/, '')} />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <Field label="Ente / Ufficio" value={form.ente_ufficio} onChange={v => update('ente_ufficio', v)} required />
                                     <Field label="Codice Univoco IPA" value={form.codice_univoco} onChange={v => update('codice_univoco', v.toUpperCase())} required maxLength={6} placeholder="6 caratteri" />
@@ -391,7 +408,9 @@ export default function RegistrazioneClientePage() {
 
                         {/* 3. Residenza / Sede */}
                         <section>
-                            <SectionTitle index="3" title={form.tipo_cliente === 'persona_fisica' ? 'Residenza' : 'Sede'} />
+                            <SectionTitle index="3" title={(form.tipo_cliente === 'persona_fisica'
+                                ? r('section_3_residenza_it', 'section_3_residenza_en')
+                                : r('section_3_sede_it', 'section_3_sede_en')).replace(/^3\.\s*/, '')} />
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="md:col-span-2">
                                     <Field label="Indirizzo" value={form.indirizzo} onChange={v => update('indirizzo', v)} required placeholder="Via / Viale / Corso…" />
@@ -406,14 +425,14 @@ export default function RegistrazioneClientePage() {
 
                         {/* 4. Contatti */}
                         <section>
-                            <SectionTitle index="4" title="Contatti" />
+                            <SectionTitle index="4" title={r('section_4_contatti_it', 'section_4_contatti_en').replace(/^4\.\s*/, '')} />
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <Field label="Telefono" type="tel" value={form.telefono} onChange={v => update('telefono', v)} required placeholder="+39 333 1234567" />
                                 <Field label="Email" type="email" value={form.email} onChange={v => update('email', v)} required placeholder="nome@esempio.com" />
                             </div>
                         </section>
 
-                        <p className="text-xs text-white/50 pt-1">I campi contrassegnati con * sono obbligatori.</p>
+                        <p className="text-xs text-white/50 pt-1">{r('required_hint_it', 'required_hint_en')}</p>
 
                         {submitErr && (
                             <p className="text-sm text-white bg-white/5 border border-white/40 rounded-xl px-4 py-3">{submitErr}</p>
@@ -425,7 +444,7 @@ export default function RegistrazioneClientePage() {
                                 disabled={submitting}
                                 className="px-8 py-3 bg-white text-black font-bold rounded-xl hover:bg-white/90 active:scale-[0.98] transition-all disabled:opacity-50"
                             >
-                                {submitting ? 'Invio…' : 'Continua →'}
+                                {submitting ? r('cta_submitting_it', 'cta_submitting_en') : r('cta_submit_it', 'cta_submit_en')}
                             </button>
                         </div>
                     </form>
@@ -434,17 +453,16 @@ export default function RegistrazioneClientePage() {
                 {step === 'documents' && customerId && (
                     <div className="bg-black rounded-2xl shadow-2xl border border-white/30 p-6 sm:p-8 space-y-5">
                         <div>
-                            <SectionTitle index="✓" title="Documenti" />
+                            <SectionTitle index="✓" title={r('section_docs_it', 'section_docs_en').replace(/^✓\s*/, '')} />
                             <p className="text-sm text-white/70">
-                                Carica i tuoi documenti. Saranno verificati dal team DR7 prima di confermare la registrazione.
-                                Formati: JPG, PNG, PDF (max 10 MB ciascuno).
+                                {r('docs_intro_it', 'docs_intro_en')}
                             </p>
                         </div>
 
                         <div className="space-y-3">
-                            <DocPicker label="Carta d'identità o Passaporto" kind="identity_document" onAdd={addDoc} />
-                            <DocPicker label="Patente di guida" kind="drivers_license" onAdd={addDoc} />
-                            <DocPicker label="Codice Fiscale / Tessera Sanitaria" kind="codice_fiscale" onAdd={addDoc} />
+                            <DocPicker label={r('docs_label_identity_it', 'docs_label_identity_en')} kind="identity_document" onAdd={addDoc} />
+                            <DocPicker label={r('docs_label_license_it', 'docs_label_license_en')} kind="drivers_license" onAdd={addDoc} />
+                            <DocPicker label={r('docs_label_codice_fiscale_it', 'docs_label_codice_fiscale_en')} kind="codice_fiscale" onAdd={addDoc} />
                         </div>
 
                         {docs.length > 0 && (
@@ -453,10 +471,10 @@ export default function RegistrazioneClientePage() {
                                     <li key={i} className="px-4 py-3 flex items-center gap-3 text-sm bg-black">
                                         <span className="font-mono text-[10px] px-2 py-0.5 rounded border border-white/30 text-white/80">{d.kind.replace('_', ' ')}</span>
                                         <span className="flex-1 truncate text-white">{d.file.name}</span>
-                                        {d.uploaded ? <span className="text-white text-xs font-semibold">✓ caricato</span>
-                                            : d.uploading ? <span className="text-white/70 text-xs">caricamento…</span>
+                                        {d.uploaded ? <span className="text-white text-xs font-semibold">{r('docs_chip_uploaded_it', 'docs_chip_uploaded_en')}</span>
+                                            : d.uploading ? <span className="text-white/70 text-xs">{r('docs_chip_uploading_it', 'docs_chip_uploading_en')}</span>
                                                 : d.error ? <span className="text-white text-xs">{d.error}</span>
-                                                    : <button type="button" onClick={() => removeDoc(i)} className="text-white/70 text-xs hover:text-white underline">rimuovi</button>}
+                                                    : <button type="button" onClick={() => removeDoc(i)} className="text-white/70 text-xs hover:text-white underline">{r('docs_chip_remove_it', 'docs_chip_remove_en')}</button>}
                                     </li>
                                 ))}
                             </ul>
@@ -464,17 +482,17 @@ export default function RegistrazioneClientePage() {
 
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 pt-5 border-t border-white/20">
                             <button type="button" onClick={() => setStep('done')}
-                                className="text-sm text-white/70 underline self-start hover:text-white">Salta i documenti per ora</button>
+                                className="text-sm text-white/70 underline self-start hover:text-white">{r('cta_skip_docs_it', 'cta_skip_docs_en')}</button>
                             <div className="flex flex-col sm:flex-row gap-2">
                                 <button type="button" onClick={uploadDocs}
                                     disabled={docs.length === 0 || docs.every(d => d.uploaded)}
                                     className="px-5 py-2.5 bg-black text-white border border-white/40 font-semibold rounded-xl hover:bg-white/5 hover:border-white active:scale-[0.98] transition-all disabled:opacity-40">
-                                    Carica selezionati
+                                    {r('cta_upload_selected_it', 'cta_upload_selected_en')}
                                 </button>
                                 <button type="button" onClick={() => setStep('done')}
                                     disabled={docs.some(d => !d.uploaded && !d.error)}
                                     className="px-5 py-2.5 bg-white text-black font-bold rounded-xl hover:bg-white/90 active:scale-[0.98] transition-all disabled:opacity-40">
-                                    Concludi
+                                    {r('cta_finish_it', 'cta_finish_en')}
                                 </button>
                             </div>
                         </div>
@@ -494,11 +512,11 @@ const INPUT_CLASS =
     'focus:outline-none focus:border-white focus:ring-2 focus:ring-white/40 ' +
     'transition-colors'
 
-function PageIntro() {
+function PageIntro({ title, subtitle }: { title: string; subtitle: string }) {
     return (
         <div className="text-center mb-8">
-            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Registrazione Cliente</h1>
-            <p className="text-sm text-white/70 mt-2">Compila i tuoi dati per completare la registrazione DR7 Empire</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">{title}</h1>
+            <p className="text-sm text-white/70 mt-2">{subtitle}</p>
         </div>
     )
 }

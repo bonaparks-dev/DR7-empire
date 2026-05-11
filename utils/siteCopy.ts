@@ -62,6 +62,7 @@ interface SiteCopySnapshot {
   creditWallet?: CreditWalletCopy;
   token?: TokenCopy;
   firma?: FirmaCopy;
+  registrazioneCliente?: RegistrazioneClienteCopy;
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -249,6 +250,65 @@ export interface MechanicalCopy {
 // Wash, Supercar & Luxury Division, etc.) stay hardcoded in Header.tsx —
 // they are brand names, not localized chrome. Only the section headings,
 // drawer/header CTAs, and aria labels move to CMS.
+// ─── Registrazione Cliente page (token-gated customer data form) ─────────
+// Distinct from SignUpPage: this flow is for an operator-sent invite link
+// where the customer fills anagrafica + uploads ID docs. Phase-1 migration
+// covers chrome + gates + section titles + CTAs + status copy + 4 fixed
+// validation errors + "Campi mancanti:" prefix. Per-field labels and
+// placeholders are deferred (follow-up pass).
+export interface RegistrazioneClienteCopy {
+  // Page intro
+  intro_title_it: string; intro_title_en: string;
+  intro_subtitle_it: string; intro_subtitle_en: string;
+  // Tipo cliente buttons
+  tipo_persona_fisica_it: string; tipo_persona_fisica_en: string;
+  tipo_azienda_it: string; tipo_azienda_en: string;
+  tipo_pa_it: string; tipo_pa_en: string;
+  // Section titles (numbered)
+  section_1_tipo_it: string; section_1_tipo_en: string;
+  section_2_anagrafica_it: string; section_2_anagrafica_en: string;
+  section_2_azienda_it: string; section_2_azienda_en: string;
+  section_2_pa_it: string; section_2_pa_en: string;
+  section_3_residenza_it: string; section_3_residenza_en: string;
+  section_3_sede_it: string; section_3_sede_en: string;
+  section_4_contatti_it: string; section_4_contatti_en: string;
+  section_docs_it: string; section_docs_en: string;
+  // Required hint
+  required_hint_it: string; required_hint_en: string;
+  // Gates
+  verifica_link_it: string; verifica_link_en: string;
+  invalid_title_it: string; invalid_title_en: string;
+  invalid_reason_expired_it: string; invalid_reason_expired_en: string;
+  invalid_reason_used_it: string; invalid_reason_used_en: string;
+  invalid_reason_revoked_it: string; invalid_reason_revoked_en: string;
+  invalid_reason_fallback_it: string; invalid_reason_fallback_en: string;
+  invalid_reason_incomplete_it: string; invalid_reason_incomplete_en: string;
+  invalid_reason_validation_it: string; invalid_reason_validation_en: string;
+  invalid_help_it: string; invalid_help_en: string;
+  done_title_it: string; done_title_en: string;
+  done_body_it: string; done_body_en: string;
+  // Documents step
+  docs_intro_it: string; docs_intro_en: string;
+  docs_label_identity_it: string; docs_label_identity_en: string;
+  docs_label_license_it: string; docs_label_license_en: string;
+  docs_label_codice_fiscale_it: string; docs_label_codice_fiscale_en: string;
+  docs_chip_uploaded_it: string; docs_chip_uploaded_en: string;
+  docs_chip_uploading_it: string; docs_chip_uploading_en: string;
+  docs_chip_remove_it: string; docs_chip_remove_en: string;
+  // CTAs
+  cta_submit_it: string; cta_submit_en: string;
+  cta_submitting_it: string; cta_submitting_en: string;
+  cta_skip_docs_it: string; cta_skip_docs_en: string;
+  cta_upload_selected_it: string; cta_upload_selected_en: string;
+  cta_finish_it: string; cta_finish_en: string;
+  // Validation
+  err_missing_prefix_it: string; err_missing_prefix_en: string;     // "Campi mancanti: {list}"
+  err_phone_invalid_it: string; err_phone_invalid_en: string;
+  err_email_invalid_it: string; err_email_invalid_en: string;
+  err_cf_length_it: string; err_cf_length_en: string;
+  err_piva_length_it: string; err_piva_length_en: string;
+}
+
 // ─── Firma page (contract e-signature OTP flow) ──────────────────────────
 // Token substitution at render time:
 //   {email} {name} {num} {contractNumber} {date} {i} {n} {attempts}
@@ -1260,6 +1320,13 @@ export async function getFirmaCopy(): Promise<FirmaCopy> {
   return DEFAULT_FIRMA;
 }
 
+/** Registrazione Cliente page (token-gated customer data completion form). */
+export async function getRegistrazioneClienteCopy(): Promise<RegistrazioneClienteCopy> {
+  const snap = await loadOnce();
+  if (snap.registrazioneCliente && snap.registrazioneCliente.intro_title_it) return snap.registrazioneCliente;
+  return DEFAULT_REGISTRAZIONE_CLIENTE;
+}
+
 /** Confirmation Success page (booking summary + email fallback). */
 export async function getConfirmationSuccessCopy(): Promise<ConfirmationSuccessCopy> {
   const snap = await loadOnce();
@@ -1401,6 +1468,63 @@ const DEFAULT_HEADER: HeaderCopy = {
   contact_cta_it: 'Contattaci', contact_cta_en: 'Contact us',
   popup_title_it: 'Prenota Ora', popup_title_en: 'Book Now',
   popup_subtitle_it: 'Seleziona date e orari', popup_subtitle_en: 'Select dates and times',
+};
+
+// ─── Default Registrazione Cliente seed ─────────────────────────────────
+const DEFAULT_REGISTRAZIONE_CLIENTE: RegistrazioneClienteCopy = {
+  intro_title_it: 'Registrazione Cliente',
+  intro_title_en: 'Customer Registration',
+  intro_subtitle_it: 'Compila i tuoi dati per completare la registrazione DR7 Empire',
+  intro_subtitle_en: 'Fill in your details to complete your DR7 Empire registration',
+  tipo_persona_fisica_it: 'Persona Fisica', tipo_persona_fisica_en: 'Individual',
+  tipo_azienda_it: 'Azienda', tipo_azienda_en: 'Company',
+  tipo_pa_it: 'Pubblica Amm.', tipo_pa_en: 'Public Admin.',
+  section_1_tipo_it: '1. Tipo Cliente', section_1_tipo_en: '1. Client Type',
+  section_2_anagrafica_it: '2. Dati Anagrafici', section_2_anagrafica_en: '2. Personal Data',
+  section_2_azienda_it: '2. Dati Azienda', section_2_azienda_en: '2. Company Data',
+  section_2_pa_it: '2. Pubblica Amministrazione', section_2_pa_en: '2. Public Administration',
+  section_3_residenza_it: '3. Residenza', section_3_residenza_en: '3. Residence',
+  section_3_sede_it: '3. Sede', section_3_sede_en: '3. Address',
+  section_4_contatti_it: '4. Contatti', section_4_contatti_en: '4. Contacts',
+  section_docs_it: '✓ Documenti', section_docs_en: '✓ Documents',
+  required_hint_it: 'I campi contrassegnati con * sono obbligatori.',
+  required_hint_en: 'Fields marked with * are required.',
+  verifica_link_it: 'Verifica link…', verifica_link_en: 'Verifying link…',
+  invalid_title_it: 'Link non utilizzabile', invalid_title_en: 'Link not usable',
+  invalid_reason_expired_it: 'Il link è scaduto.', invalid_reason_expired_en: 'The link has expired.',
+  invalid_reason_used_it: 'Questo link è già stato utilizzato.',
+  invalid_reason_used_en: 'This link has already been used.',
+  invalid_reason_revoked_it: 'Il link è stato revocato.', invalid_reason_revoked_en: 'The link has been revoked.',
+  invalid_reason_fallback_it: 'Link non valido.', invalid_reason_fallback_en: 'Invalid link.',
+  invalid_reason_incomplete_it: 'Link incompleto', invalid_reason_incomplete_en: 'Incomplete link',
+  invalid_reason_validation_it: 'Errore validazione', invalid_reason_validation_en: 'Validation error',
+  invalid_help_it: 'Contatta DR7 Empire per un nuovo link di registrazione.',
+  invalid_help_en: 'Contact DR7 Empire for a new registration link.',
+  done_title_it: 'Registrazione completata', done_title_en: 'Registration complete',
+  done_body_it: 'Grazie. Il team DR7 Empire verificherà i documenti caricati al più presto.',
+  done_body_en: 'Thank you. The DR7 Empire team will verify the uploaded documents as soon as possible.',
+  docs_intro_it: 'Carica i tuoi documenti. Saranno verificati dal team DR7 prima di confermare la registrazione. Formati: JPG, PNG, PDF (max 10 MB ciascuno).',
+  docs_intro_en: 'Upload your documents. They will be verified by the DR7 team before confirming the registration. Formats: JPG, PNG, PDF (max 10 MB each).',
+  docs_label_identity_it: "Carta d'identità o Passaporto",
+  docs_label_identity_en: 'ID Card or Passport',
+  docs_label_license_it: 'Patente di guida', docs_label_license_en: 'Driving licence',
+  docs_label_codice_fiscale_it: 'Codice Fiscale / Tessera Sanitaria',
+  docs_label_codice_fiscale_en: 'Tax Code / Health Card',
+  docs_chip_uploaded_it: '✓ caricato', docs_chip_uploaded_en: '✓ uploaded',
+  docs_chip_uploading_it: 'caricamento…', docs_chip_uploading_en: 'uploading…',
+  docs_chip_remove_it: 'rimuovi', docs_chip_remove_en: 'remove',
+  cta_submit_it: 'Continua →', cta_submit_en: 'Continue →',
+  cta_submitting_it: 'Invio…', cta_submitting_en: 'Submitting…',
+  cta_skip_docs_it: 'Salta i documenti per ora', cta_skip_docs_en: 'Skip documents for now',
+  cta_upload_selected_it: 'Carica selezionati', cta_upload_selected_en: 'Upload selected',
+  cta_finish_it: 'Concludi', cta_finish_en: 'Finish',
+  err_missing_prefix_it: 'Campi mancanti: {list}', err_missing_prefix_en: 'Missing fields: {list}',
+  err_phone_invalid_it: 'Numero di telefono non valido', err_phone_invalid_en: 'Invalid phone number',
+  err_email_invalid_it: 'Email non valida', err_email_invalid_en: 'Invalid email',
+  err_cf_length_it: 'Codice Fiscale deve essere di 16 caratteri',
+  err_cf_length_en: 'Tax code must be 16 characters',
+  err_piva_length_it: 'P.IVA deve essere di 11 cifre',
+  err_piva_length_en: 'VAT number must be 11 digits',
 };
 
 // ─── Default Firma seed (contract e-signature OTP flow) ─────────────────
