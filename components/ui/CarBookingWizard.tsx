@@ -9,7 +9,8 @@ import { addCredits } from '../../utils/creditWallet';
 import { useAuth } from '../../hooks/useAuth';
 import { useBooking } from '../../hooks/useBooking';
 import { supabase } from '../../supabaseClient';
-import { PICKUP_LOCATIONS, RETURN_LOCATIONS, RENTAL_EXTRAS, DEPOSIT_RULES } from '../../constants';
+import { PICKUP_LOCATIONS as DEFAULT_PICKUP_LOCATIONS, RETURN_LOCATIONS as DEFAULT_RETURN_LOCATIONS, RENTAL_EXTRAS, DEPOSIT_RULES } from '../../constants';
+import { getPickupLocations, getReturnLocations } from '../../utils/getLocations';
 import type { Booking, RentalItem, DriverTier, TierClassification, PaymentMode } from '../../types';
 import { classifyDriverTier } from '../../utils/tierClassification';
 import DocumentUploader from './DocumentUploader';
@@ -212,6 +213,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const { currency } = useCurrency();
   const { user, loading: authLoading } = useAuth();
   const { initialSearchDates } = useBooking();
+  const [pickupLocs, setPickupLocs] = useState(DEFAULT_PICKUP_LOCATIONS);
+  const [returnLocs, setReturnLocs] = useState(DEFAULT_RETURN_LOCATIONS);
+  useEffect(() => {
+    let c = false;
+    Promise.all([getPickupLocations(), getReturnLocations()]).then(([p, r]) => {
+      if (c) return;
+      setPickupLocs(p);
+      setReturnLocs(r);
+    });
+    return () => { c = true; };
+  }, []);
 
   // Determine vehicle type
   const vehicleType = useMemo(() => getVehicleType(item, categoryContext), [item, categoryContext]);
@@ -270,8 +282,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     })();
     const prefillPickupTime = urlParams.get('pickupTime') || '10:30';
     const prefillReturnTime = urlParams.get('returnTime') || '09:00';
-    const prefillPickupLoc = urlParams.get('pickupLoc') || PICKUP_LOCATIONS[0].id;
-    const prefillReturnLoc = urlParams.get('returnLoc') || PICKUP_LOCATIONS[0].id;
+    const prefillPickupLoc = urlParams.get('pickupLoc') || DEFAULT_PICKUP_LOCATIONS[0].id;
+    const prefillReturnLoc = urlParams.get('returnLoc') || DEFAULT_PICKUP_LOCATIONS[0].id;
     const prefillPickupLocLabel = urlParams.get('pickupLocLabel') || '';
     const prefillReturnLocLabel = urlParams.get('returnLocLabel') || '';
 
@@ -4088,7 +4100,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   <div className="col-span-2">
                     <span className="text-gray-500 block text-xs">Luogo</span>
                     <span className="text-white">{
-                      PICKUP_LOCATIONS.find(l => l.id === formData.pickupLocation)?.label?.it
+                      pickupLocs.find(l => l.id === formData.pickupLocation)?.label?.it
                       || (formData.pickupLocation === 'dr7-cagliari' ? 'DR7 Cagliari — Viale Marconi 229, 09131' : null)
                       || new URLSearchParams(window.location.search).get('pickupLocLabel')
                       || formData.pickupLocation
@@ -4103,7 +4115,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm text-gray-400 font-semibold mb-2 block">Luogo di ritiro *</label>
-                  {PICKUP_LOCATIONS.map(loc => (
+                  {pickupLocs.map(loc => (
                     <div key={loc.id} className="flex items-start mt-2 p-2 rounded hover:bg-gray-800/30 transition-colors">
                       <input type="radio" id={`pickup-${loc.id}`} name="pickupLocation" value={loc.id} checked={formData.pickupLocation === loc.id} onChange={handleChange} className="w-4 h-4 mt-1 text-white bg-gray-700 border-gray-600 focus:ring-white" />
                       <label htmlFor={`pickup-${loc.id}`} className="ml-2 text-white flex-1">
@@ -4114,7 +4126,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 </div>
                 <div>
                   <label className="text-sm text-gray-400 font-semibold mb-2 block">Luogo di riconsegna *</label>
-                  {RETURN_LOCATIONS.map(loc => (
+                  {returnLocs.map(loc => (
                     <div key={loc.id} className="flex items-start mt-2 p-2 rounded hover:bg-gray-800/30 transition-colors">
                       <input type="radio" id={`return-${loc.id}`} name="returnLocation" value={loc.id} checked={formData.returnLocation === loc.id} onChange={handleChange} className="w-4 h-4 mt-1 text-white bg-gray-700 border-gray-600 focus:ring-white" />
                       <label htmlFor={`return-${loc.id}`} className="ml-2 text-white flex-1">
@@ -5806,8 +5818,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 <div>
                   <p className="font-bold text-base text-white mb-2">DATE E LOCALITÀ</p>
                   <hr className="border-gray-600 mb-2" />
-                  <p>Ritiro: {formData.pickupDate ? new Date(formData.pickupDate).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Europe/Rome' }) : '—'} alle {formData.pickupTime || '—'} - {PICKUP_LOCATIONS.find(l => l.id === formData.pickupLocation)?.label?.it || formData.pickupLocation}</p>
-                  <p>Riconsegna: {formData.returnDate ? new Date(formData.returnDate).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Europe/Rome' }) : '—'} alle {formData.returnTime || '—'} - {RETURN_LOCATIONS.find(l => l.id === formData.returnLocation)?.label?.it || formData.returnLocation}</p>
+                  <p>Ritiro: {formData.pickupDate ? new Date(formData.pickupDate).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Europe/Rome' }) : '—'} alle {formData.pickupTime || '—'} - {pickupLocs.find(l => l.id === formData.pickupLocation)?.label?.it || formData.pickupLocation}</p>
+                  <p>Riconsegna: {formData.returnDate ? new Date(formData.returnDate).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Europe/Rome' }) : '—'} alle {formData.returnTime || '—'} - {returnLocs.find(l => l.id === formData.returnLocation)?.label?.it || formData.returnLocation}</p>
                   <p>Durata: {Math.max(1, duration.days)} {Math.max(1, duration.days) === 1 ? 'giorno' : 'giorni'}</p>
                   {extraDayApplied && (
                     <div className="mt-1 p-2 bg-amber-900/30 border border-amber-500/50 rounded">

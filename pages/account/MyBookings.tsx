@@ -7,7 +7,8 @@ import { getMembershipTierName } from '../../utils/membershipDiscounts';
 import { useCentralinaProOverlay } from '../../hooks/useCentralinaProConfig';
 import { useCancellationRules, pickRule } from '../../hooks/useCancellationPolicy';
 import { addCredits, deductCredits, getUserCreditBalance } from '../../utils/creditWallet';
-import { PICKUP_LOCATIONS, RETURN_LOCATIONS } from '../../constants';
+import { PICKUP_LOCATIONS as DEFAULT_PICKUP_LOCATIONS, RETURN_LOCATIONS as DEFAULT_RETURN_LOCATIONS } from '../../constants';
+import { getPickupLocations, getReturnLocations } from '../../utils/getLocations';
 
 interface Booking {
   id: string;
@@ -63,6 +64,15 @@ const MyBookings = () => {
   const [rentalRecalcing, setRentalRecalcing] = useState(false);
   const [rentalWalletBalance, setRentalWalletBalance] = useState<number>(0);
   const [rentalAvailabilityOk, setRentalAvailabilityOk] = useState<boolean | null>(null);
+  const [pickupLocs, setPickupLocs] = useState(DEFAULT_PICKUP_LOCATIONS);
+  const [returnLocs, setReturnLocs] = useState(DEFAULT_RETURN_LOCATIONS);
+  useEffect(() => {
+    let c = false;
+    Promise.all([getPickupLocations(), getReturnLocations()]).then(([p, r]) => {
+      if (!c) { setPickupLocs(p); setReturnLocs(r); }
+    });
+    return () => { c = true; };
+  }, []);
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -534,7 +544,7 @@ const MyBookings = () => {
         const dropoff = new Date(newDropoffIso);
         const dateOnly = (d: Date) => d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Rome' });
         const timeOnly = (d: Date) => d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
-        const locLabel = (id: string) => PICKUP_LOCATIONS.find(l => l.id === id)?.label?.it || id;
+        const locLabel = (id: string) => pickupLocs.find(l => l.id === id)?.label?.it || id;
 
         // Derived fields for the template
         const bd = modifyingBooking.booking_details || {};
@@ -1123,7 +1133,7 @@ const MyBookings = () => {
                   <div>
                     <label className="text-sm text-gray-400 mb-1 block">Luogo di ritiro</label>
                     <select value={rentalPickupLocation} onChange={e => setRentalPickupLocation(e.target.value)} className="w-full px-3 py-2.5 bg-gray-800 border border-gray-600 rounded-lg text-white">
-                      {PICKUP_LOCATIONS.map(l => <option key={l.id} value={l.id}>{l.label.it}</option>)}
+                      {pickupLocs.map(l => <option key={l.id} value={l.id}>{l.label.it}</option>)}
                     </select>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -1139,7 +1149,7 @@ const MyBookings = () => {
                   <div>
                     <label className="text-sm text-gray-400 mb-1 block">Luogo di riconsegna</label>
                     <select value={rentalDropoffLocation} onChange={e => setRentalDropoffLocation(e.target.value)} className="w-full px-3 py-2.5 bg-gray-800 border border-gray-600 rounded-lg text-white">
-                      {RETURN_LOCATIONS.map(l => <option key={l.id} value={l.id}>{l.label.it}</option>)}
+                      {returnLocs.map(l => <option key={l.id} value={l.id}>{l.label.it}</option>)}
                     </select>
                   </div>
                 </div>

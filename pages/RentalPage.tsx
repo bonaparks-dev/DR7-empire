@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { RENTAL_CATEGORIES, AIRPORTS, PICKUP_LOCATIONS } from '../constants';
+import { RENTAL_CATEGORIES, AIRPORTS as DEFAULT_AIRPORTS, PICKUP_LOCATIONS as DEFAULT_PICKUP_LOCATIONS } from '../constants';
+import { getAirports, getPickupLocations } from '../utils/getLocations';
 import type { RentalItem } from '../types';
 import RentalCard from '../components/ui/RentalCard';
 import { useTranslation } from '../hooks/useTranslation';
@@ -32,6 +33,8 @@ const JetSearchPage: React.FC = () => {
   const [passengers, setPassengers] = useState(1);
   const [petsAllowed, setPetsAllowed] = useState(false);
   const [smokingAllowed, setSmokingAllowed] = useState(false);
+  const [airports, setAirports] = useState(DEFAULT_AIRPORTS);
+  useEffect(() => { let c = false; getAirports().then(a => { if (!c) setAirports(a); }); return () => { c = true; }; }, []);
 
   const handleSearch = () => {
     if (!departure || !arrival) return;
@@ -57,7 +60,7 @@ const JetSearchPage: React.FC = () => {
     placeholder: string;
   }> = ({ value, onSelect, placeholder }) => {
     const [query, setQuery] = useState('');
-    const [suggestions, setSuggestions] = useState<typeof AIRPORTS>([]);
+    const [suggestions, setSuggestions] = useState<typeof airports>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const suggestionsRef = useRef<HTMLUListElement>(null);
@@ -86,7 +89,7 @@ const JetSearchPage: React.FC = () => {
       const newQuery = e.target.value;
       setQuery(newQuery);
       if (newQuery.length > 1) {
-        const filtered = AIRPORTS.filter(airport =>
+        const filtered = airports.filter(airport =>
           airport.name.toLowerCase().includes(newQuery.toLowerCase()) ||
           airport.city.toLowerCase().includes(newQuery.toLowerCase()) ||
           airport.iata.toLowerCase().includes(newQuery.toLowerCase())
@@ -98,7 +101,7 @@ const JetSearchPage: React.FC = () => {
       }
     };
 
-    const handleSelectSuggestion = (airport: typeof AIRPORTS[0]) => {
+    const handleSelectSuggestion = (airport: typeof airports[0]) => {
       onSelect(airport);
       setShowSuggestions(false);
     };
@@ -360,11 +363,11 @@ function formatItalianDateTime(date: string, time: string): string {
   return `${day} ${monthLabel} ${year}, ${time}`;
 }
 
-/** Map a URL location param to a wizard-compatible PICKUP_LOCATIONS id */
+/** Map a URL location param to a wizard-compatible DEFAULT_PICKUP_LOCATIONS id */
 function resolveLocationId(param: string | null): string {
-  if (!param) return PICKUP_LOCATIONS[0].id;
-  const match = PICKUP_LOCATIONS.find(l => l.id === param);
-  return match ? match.id : PICKUP_LOCATIONS[0].id;
+  if (!param) return DEFAULT_PICKUP_LOCATIONS[0].id;
+  const match = DEFAULT_PICKUP_LOCATIONS.find(l => l.id === param);
+  return match ? match.id : DEFAULT_PICKUP_LOCATIONS[0].id;
 }
 
 const AVAILABLE_TIMES = [
@@ -394,6 +397,8 @@ interface ModificaBarProps {
 const ModificaBar: React.FC<ModificaBarProps> = ({ initial, onUpdate }) => {
   const [expanded, setExpanded] = useState(false);
   const [draft, setDraft] = useState<SearchBarState>(initial);
+  const [pickupLocs, setPickupLocs] = useState(DEFAULT_PICKUP_LOCATIONS);
+  useEffect(() => { let c = false; getPickupLocations().then(l => { if (!c) setPickupLocs(l); }); return () => { c = true; }; }, []);
 
   // Keep draft in sync when initial changes (e.g. URL navigation)
   useEffect(() => {
@@ -507,19 +512,19 @@ const ModificaBar: React.FC<ModificaBarProps> = ({ initial, onUpdate }) => {
             </div>
 
             {/* Location selects — only show if there are multiple pickup locations */}
-            {PICKUP_LOCATIONS.length > 1 && (
+            {pickupLocs.length > 1 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className={labelClass}>Luogo Ritiro</label>
                   <select value={draft.pickupLoc} onChange={e => {
-                    const loc = PICKUP_LOCATIONS.find(l => l.id === e.target.value);
+                    const loc = pickupLocs.find(l => l.id === e.target.value);
                     setDraft(prev => ({
                       ...prev,
                       pickupLoc: e.target.value,
                       pickupLocLabel: loc?.label?.it ?? loc?.label?.en ?? e.target.value,
                     }));
                   }} className={inputClass}>
-                    {PICKUP_LOCATIONS.map(l => (
+                    {pickupLocs.map(l => (
                       <option key={l.id} value={l.id}>{l.label?.it ?? l.label?.en}</option>
                     ))}
                   </select>
@@ -527,14 +532,14 @@ const ModificaBar: React.FC<ModificaBarProps> = ({ initial, onUpdate }) => {
                 <div>
                   <label className={labelClass}>Luogo Riconsegna</label>
                   <select value={draft.returnLoc} onChange={e => {
-                    const loc = PICKUP_LOCATIONS.find(l => l.id === e.target.value);
+                    const loc = pickupLocs.find(l => l.id === e.target.value);
                     setDraft(prev => ({
                       ...prev,
                       returnLoc: e.target.value,
                       returnLocLabel: loc?.label?.it ?? loc?.label?.en ?? e.target.value,
                     }));
                   }} className={inputClass}>
-                    {PICKUP_LOCATIONS.map(l => (
+                    {pickupLocs.map(l => (
                       <option key={l.id} value={l.id}>{l.label?.it ?? l.label?.en}</option>
                     ))}
                   </select>
@@ -566,6 +571,10 @@ const ModificaBar: React.FC<ModificaBarProps> = ({ initial, onUpdate }) => {
 // ─── RentalPage ──────────────────────────────────────────────────────────────
 
 const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
+  // Live pickup locations from Sito CMS — fall back to constants until loaded.
+  const [pickupLocs, setPickupLocs] = useState(DEFAULT_PICKUP_LOCATIONS);
+  useEffect(() => { let c = false; getPickupLocations().then(l => { if (!c) setPickupLocs(l); }); return () => { c = true; }; }, []);
+
   const { t, getTranslated } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -640,9 +649,9 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
     pickupTime: urlPickupTime || '10:00',
     returnDate: urlReturnDate,
     returnTime: urlReturnTime || '10:00',
-    pickupLoc: urlPickupLoc || PICKUP_LOCATIONS[0].id,
+    pickupLoc: urlPickupLoc || pickupLocs[0].id,
     pickupLocLabel: urlPickupLocLabel,
-    returnLoc: urlReturnLoc || PICKUP_LOCATIONS[0].id,
+    returnLoc: urlReturnLoc || pickupLocs[0].id,
     returnLocLabel: urlReturnLocLabel,
   }));
 

@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useCurrency } from '../../contexts/CurrencyContext';
-import { PICKUP_LOCATIONS } from '../../constants';
+import { PICKUP_LOCATIONS as DEFAULT_PICKUP_LOCATIONS } from '../../constants';
+import { getPickupLocations } from '../../utils/getLocations';
 
 const CarBookingConfirmationPage: React.FC = () => {
   const navigate = useNavigate();
@@ -10,6 +11,8 @@ const CarBookingConfirmationPage: React.FC = () => {
   const { getTranslated } = useTranslation();
   const { currency } = useCurrency();
   const { booking } = (location.state || {}) as { booking?: any };
+  const [pickupLocs, setPickupLocs] = useState(DEFAULT_PICKUP_LOCATIONS);
+  useEffect(() => { let c = false; getPickupLocations().then(l => { if (!c) setPickupLocs(l); }); return () => { c = true; }; }, []);
 
   if (!booking) {
     return <Navigate to="/" replace />;
@@ -24,7 +27,7 @@ const CarBookingConfirmationPage: React.FC = () => {
 
   const pickupDate = new Date(booking.pickup_date);
   const dropoffDate = new Date(booking.dropoff_date);
-  const pickupLocationDetails = PICKUP_LOCATIONS.find(loc => loc.id === booking.pickup_location);
+  const pickupLocationDetails = pickupLocs.find(loc => loc.id === booking.pickup_location);
   const customerEmail = booking.booking_details?.customer?.email || 'N/A';
 
   // Cauzione: prefer the explicit booking column, fall back to the snapshot

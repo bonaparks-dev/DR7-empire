@@ -5,12 +5,13 @@ import { useTranslation } from '../hooks/useTranslation';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
-import { RENTAL_CATEGORIES, YACHT_PICKUP_MARINAS, AIRPORTS, HELI_DEPARTURE_POINTS, HELI_ARRIVAL_POINTS } from '../constants';
+import { RENTAL_CATEGORIES, YACHT_PICKUP_MARINAS as DEFAULT_YACHT_PICKUP_MARINAS, AIRPORTS as DEFAULT_AIRPORTS, HELI_DEPARTURE_POINTS as DEFAULT_HELI_DEPARTURE_POINTS, HELI_ARRIVAL_POINTS as DEFAULT_HELI_ARRIVAL_POINTS } from '../constants';
 import type { Booking, Inquiry, RentalItem } from '../types';
 import CarBookingWizard from '../components/ui/CarBookingWizard';
 import BookingErrorBoundary from '../components/ui/BookingErrorBoundary';
 import HelicopterBookingForm from '../components/ui/HelicopterBookingForm';
 import { getBookingCopy, type BookingCopy, getMessageTemplateBody } from '../utils/siteCopy';
+import { getAirports, getYachtMarinas, getHeliDeparturePoints, getHeliArrivalPoints } from '../utils/getLocations';
 
 // Token substitution for WhatsApp templates loaded from system_messages.
 function applyTokens(tpl: string, tokens: Record<string, string>): string {
@@ -51,6 +52,23 @@ const BookingPage: React.FC = () => {
     return cur[lang === 'it' ? it : en] as string;
   };
 
+  // Live location lists from Sito CMS — fall back to constants until loaded.
+  const [airports, setAirports] = useState(DEFAULT_AIRPORTS);
+  const [yachtMarinas, setYachtMarinas] = useState(DEFAULT_YACHT_PICKUP_MARINAS);
+  const [heliDeparturePoints, setHeliDeparturePoints] = useState(DEFAULT_HELI_DEPARTURE_POINTS);
+  const [heliArrivalPoints, setHeliArrivalPoints] = useState(DEFAULT_HELI_ARRIVAL_POINTS);
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([getAirports(), getYachtMarinas(), getHeliDeparturePoints(), getHeliArrivalPoints()]).then(([ap, ym, hd, ha]) => {
+      if (cancelled) return;
+      setAirports(ap);
+      setYachtMarinas(ym);
+      setHeliDeparturePoints(hd);
+      setHeliArrivalPoints(ha);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   const [formData, setFormData] = useState({
     fullName: '', email: '', phone: '',
     checkinDate: location.state?.checkinDate || today,
@@ -67,7 +85,7 @@ const BookingPage: React.FC = () => {
     passengers: location.state?.passengers || 1,
     petsAllowed: location.state?.petsAllowed || false,
     smokingAllowed: location.state?.smokingAllowed || false,
-    pickupMarina: YACHT_PICKUP_MARINAS[0].id,
+    pickupMarina: DEFAULT_YACHT_PICKUP_MARINAS[0].id,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -199,18 +217,18 @@ const BookingPage: React.FC = () => {
       // Operators edit the template; we substitute tokens at send time.
       if (isHelicopter || isJet) {
         const isHeli = isHelicopter;
-        const points = isHeli ? HELI_DEPARTURE_POINTS : AIRPORTS;
-        const arrivals = isHeli ? HELI_ARRIVAL_POINTS : AIRPORTS;
+        const points = isHeli ? heliDeparturePoints : airports;
+        const arrivals = isHeli ? heliArrivalPoints : airports;
         const departureName = isHeli
-          ? (points as typeof HELI_DEPARTURE_POINTS).find(p => p.id === formData.departurePoint)?.name || formData.departurePoint
+          ? (points as typeof heliDeparturePoints).find(p => p.id === formData.departurePoint)?.name || formData.departurePoint
           : (() => {
-              const a = (points as typeof AIRPORTS).find(p => p.iata === formData.departurePoint);
+              const a = (points as typeof airports).find(p => p.iata === formData.departurePoint);
               return a ? `${a.name} (${a.iata})` : formData.departurePoint;
             })();
         const arrivalName = isHeli
-          ? (arrivals as typeof HELI_ARRIVAL_POINTS).find(p => p.id === formData.arrivalPoint)?.name || formData.arrivalPoint
+          ? (arrivals as typeof heliArrivalPoints).find(p => p.id === formData.arrivalPoint)?.name || formData.arrivalPoint
           : (() => {
-              const a = (arrivals as typeof AIRPORTS).find(p => p.iata === formData.arrivalPoint);
+              const a = (arrivals as typeof airports).find(p => p.iata === formData.arrivalPoint);
               return a ? `${a.name} (${a.iata})` : formData.arrivalPoint;
             })();
 
@@ -275,7 +293,7 @@ const BookingPage: React.FC = () => {
 
       // WhatsApp template lives in system_messages: pro_booking_yacht_confirm
       if (isYacht) {
-        const marinaName = YACHT_PICKUP_MARINAS.find(m => m.id === formData.pickupMarina);
+        const marinaName = yachtMarinas.find(m => m.id === formData.pickupMarina);
         const marinaLabel = marinaName ? getTranslated(marinaName.label) : formData.pickupMarina;
         const template = await getMessageTemplateBody('pro_booking_yacht_confirm');
         if (template) {
@@ -400,8 +418,8 @@ const BookingPage: React.FC = () => {
       );
 
       if (isQuoteRequest) {
-        const departurePoints = isJet ? AIRPORTS : HELI_DEPARTURE_POINTS;
-        const arrivalPoints = isJet ? AIRPORTS : HELI_ARRIVAL_POINTS;
+        const departurePoints = isJet ? airports : heliDeparturePoints;
+        const arrivalPoints = isJet ? airports : heliArrivalPoints;
         switch (step) {
           // FIX: Correctly handle union type for airport/heliport locations by checking for 'iata' or 'id' property.
           case 1: return <div className="space-y-6"><div><label className="text-sm text-gray-400 block mb-2">{t('Trip_Type')}</label><div className="flex border border-gray-700 rounded-full p-1"><button type="button" onClick={() => setFormData(p => ({ ...p, tripType: 'one-way' }))} className={`flex-1 py-1 text-sm rounded-full transition-colors ${formData.tripType === 'one-way' ? 'bg-white text-black' : 'text-gray-300'}`}>{t('One_Way')}</button><button type="button" onClick={() => setFormData(p => ({ ...p, tripType: 'round-trip' }))} className={`flex-1 py-1 text-sm rounded-full transition-colors ${formData.tripType === 'round-trip' ? 'bg-white text-black' : 'text-gray-300'}`}>{t('Round_Trip')}</button></div></div><div className="grid grid-cols-2 gap-4"><div><label className="text-sm text-gray-400">{isJet ? t('Departure_Airport') : t('Departure_Point')}</label><select name="departurePoint" value={formData.departurePoint} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"><option value="">{b('select_option_default_it', 'select_option_default_en')}</option>{departurePoints.map(p => { const val = 'iata' in p ? p.iata : p.id; return <option key={val} value={val}>{p.name}</option>; })}</select></div><div><label className="text-sm text-gray-400">{isJet ? t('Arrival_Airport') : t('Arrival_Point')}</label><select name="arrivalPoint" value={formData.arrivalPoint} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"><option value="">{b('select_option_default_it', 'select_option_default_en')}</option>{arrivalPoints.map(p => { const val = 'iata' in p ? p.iata : p.id; return <option key={val} value={val}>{p.name}</option>; })}</select></div><div><label className="text-sm text-gray-400">{t('Departure_Date')}</label><input type="date" name="departureDate" value={formData.departureDate} onChange={handleChange} min={today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white" /></div><div><label className="text-sm text-gray-400">{t('Departure_Time')}</label><input type="time" name="departureTime" value={formData.departureTime} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white" /></div></div><AnimatePresence>{formData.tripType === 'round-trip' && <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="grid grid-cols-2 gap-4"><div><label className="text-sm text-gray-400">{t('Return_Date')}</label><input type="date" name="returnDateQuote" value={formData.returnDateQuote} onChange={handleChange} min={formData.departureDate || today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white" /></div><div><label className="text-sm text-gray-400">{t('Return_Time')}</label><input type="time" name="returnTimeQuote" value={formData.returnTimeQuote} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white" /></div></motion.div>}</AnimatePresence><div><label className="text-sm text-gray-400">{t('Number_of_Passengers')}</label><input type="number" name="passengers" value={formData.passengers} onChange={handleChange} min="1" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white" /></div></div>;
@@ -425,7 +443,7 @@ const BookingPage: React.FC = () => {
                     <div>
                       <label className="text-sm text-gray-400">{t('Pickup_Marina')}</label>
                       <select name="pickupMarina" value={formData.pickupMarina} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white">
-                        {YACHT_PICKUP_MARINAS.map(loc => (<option key={loc.id} value={loc.id}>{getTranslated(loc.label)}</option>))}
+                        {yachtMarinas.map(loc => (<option key={loc.id} value={loc.id}>{getTranslated(loc.label)}</option>))}
                       </select>
                     </div>
                     <div>

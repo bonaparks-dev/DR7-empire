@@ -3,7 +3,8 @@
  * Shows pickup/return location, date, time with auto return time (-1h30)
  */
 import { useState, useMemo, useCallback, useEffect } from 'react'
-import { PICKUP_LOCATIONS } from '../../constants'
+import { PICKUP_LOCATIONS as DEFAULT_PICKUP_LOCATIONS } from '../../constants'
+import { getPickupLocations } from '../../utils/getLocations'
 
 export interface SearchParams {
   pickupLocation: string
@@ -67,6 +68,8 @@ function autoReturnTime(pickupTime: string, returnDate: string): string {
 }
 
 export default function RentalSearchBar({ onSearch, isSearching }: Props) {
+  const [pickupLocs, setPickupLocs] = useState(DEFAULT_PICKUP_LOCATIONS)
+  useEffect(() => { let c = false; getPickupLocations().then(l => { if (!c) setPickupLocs(l) }); return () => { c = true } }, [])
   const today = new Date()
   const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
   const dayAfter = new Date(today); dayAfter.setDate(dayAfter.getDate() + 2)
@@ -151,7 +154,7 @@ export default function RentalSearchBar({ onSearch, isSearching }: Props) {
             onChange={e => { setPickupLocation(e.target.value); if (sameLocation) setReturnLocation(e.target.value) }}
             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm focus:ring-1 focus:ring-white focus:border-white"
           >
-            {PICKUP_LOCATIONS.map(loc => (
+            {pickupLocs.map(loc => (
               <option key={loc.id} value={loc.id}>{typeof loc.label === 'string' ? loc.label : loc.label.it}</option>
             ))}
           </select>
@@ -167,7 +170,7 @@ export default function RentalSearchBar({ onSearch, isSearching }: Props) {
                 onChange={e => setReturnLocation(e.target.value)}
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm focus:ring-1 focus:ring-white focus:border-white"
               >
-                {PICKUP_LOCATIONS.map(loc => (
+                {pickupLocs.map(loc => (
                   <option key={loc.id} value={loc.id}>{typeof loc.label === 'string' ? loc.label : loc.label.it}</option>
                 ))}
               </select>

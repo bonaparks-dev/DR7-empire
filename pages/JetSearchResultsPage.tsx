@@ -1,13 +1,14 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { RENTAL_CATEGORIES, AIRPORTS } from '../constants';
+import { RENTAL_CATEGORIES, AIRPORTS as DEFAULT_AIRPORTS } from '../constants';
 import type { RentalItem } from '../types';
 import RentalCard from '../components/ui/RentalCard';
 import { useTranslation } from '../hooks/useTranslation';
 import { motion } from 'framer-motion';
 import { useVerification } from '../hooks/useVerification';
 import { getJetSearchResultsCopy, type JetSearchResultsCopy } from '../utils/siteCopy';
+import { getAirports } from '../utils/getLocations';
 
 const JetSearchResultsPage: React.FC = () => {
     const [searchParams] = useSearchParams();
@@ -15,9 +16,11 @@ const JetSearchResultsPage: React.FC = () => {
     const { lang } = useTranslation();
     const { checkVerificationAndProceed } = useVerification();
     const [copy, setCopy] = useState<JetSearchResultsCopy | null>(null);
+    const [airports, setAirports] = useState(DEFAULT_AIRPORTS);
     useEffect(() => {
         let cancelled = false;
         getJetSearchResultsCopy().then((c) => { if (!cancelled) setCopy(c); });
+        getAirports().then((a) => { if (!cancelled) setAirports(a); });
         return () => { cancelled = true; };
     }, []);
     const tx = (it: keyof JetSearchResultsCopy, en: keyof JetSearchResultsCopy, fallback = ''): string => {
@@ -74,7 +77,7 @@ const JetSearchResultsPage: React.FC = () => {
     
     const getAirportName = (iata: string | null) => {
         if (!iata) return copy?.airport_fallback || 'N/A';
-        const airport = AIRPORTS.find(a => a.iata === iata);
+        const airport = airports.find(a => a.iata === iata);
         return airport ? `${airport.city} (${airport.iata})` : iata;
     };
 
