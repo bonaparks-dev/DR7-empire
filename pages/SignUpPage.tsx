@@ -10,6 +10,7 @@ import { countries } from '../utils/countries';
 import { AppleStyleSelect } from '../components/ui/AppleStyleSelect';
 import CalcolaCFButton from '../components/ui/CalcolaCFButton';
 import PhoneInput from '../components/ui/PhoneInput';
+import { getSignUpCopy, type SignUpCopy } from '../utils/siteCopy';
 
 const PasswordStrengthMeter: React.FC<{ password?: string }> = ({ password = '' }) => {
   const { t } = useTranslation();
@@ -38,10 +39,19 @@ const PasswordStrengthMeter: React.FC<{ password?: string }> = ({ password = '' 
 };
 
 const SignUpPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const { signup, user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  const [copy, setCopy] = useState<SignUpCopy | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    getSignUpCopy().then(c => { if (!cancelled) setCopy(c); });
+    return () => { cancelled = true; };
+  }, []);
+  const s = <K extends keyof SignUpCopy>(it: K, en: K): string =>
+    copy ? (copy[lang === 'it' ? it : en] as string) : '';
 
   const [referralCode, setReferralCode] = useState<string>('');
 
@@ -151,66 +161,66 @@ const SignUpPage: React.FC = () => {
 
     // Validate based on client type
     if (!tipoCliente) {
-      newErrors.tipoCliente = 'Seleziona un tipo di cliente';
+      newErrors.tipoCliente = s('err_select_client_type_it', 'err_select_client_type_en');
     } else {
       // Common validations
-      if (!formData.nazione) newErrors.nazione = 'Nazione è obbligatorio';
+      if (!formData.nazione) newErrors.nazione = s('err_country_required_it', 'err_country_required_en');
       if (!formData.email) {
-        newErrors.email = 'Email è obbligatorio';
+        newErrors.email = s('err_email_required_it', 'err_email_required_en');
       } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
         newErrors.email = t('Please_enter_a_valid_email_address');
       }
 
       // Azienda specific
       if (tipoCliente === 'azienda') {
-        if (!formData.denominazione) newErrors.denominazione = 'Denominazione è obbligatorio';
+        if (!formData.denominazione) newErrors.denominazione = s('err_denominazione_required_it', 'err_denominazione_required_en');
         if (!formData.partitaIVA) {
-          newErrors.partitaIVA = 'Partita IVA è obbligatorio';
+          newErrors.partitaIVA = s('err_piva_required_it', 'err_piva_required_en');
         } else if (!validatePartitaIVA(formData.partitaIVA)) {
-          newErrors.partitaIVA = 'Partita IVA non valida (11 cifre)';
+          newErrors.partitaIVA = s('err_piva_invalid_it', 'err_piva_invalid_en');
         }
-        if (!formData.indirizzo) newErrors.indirizzo = 'Indirizzo è obbligatorio';
+        if (!formData.indirizzo) newErrors.indirizzo = s('err_address_required_it', 'err_address_required_en');
         if (!formData.telefono) {
-          newErrors.telefono = 'Telefono è obbligatorio';
+          newErrors.telefono = s('err_phone_required_it', 'err_phone_required_en');
         } else if (!validatePhone(formData.telefono)) {
-          newErrors.telefono = 'Formato telefono non valido';
+          newErrors.telefono = s('err_phone_invalid_it', 'err_phone_invalid_en');
         }
 
         // Legal Representative Validations
-        if (!formData.rappresentanteNome) newErrors.rappresentanteNome = 'Nome rappresentante è obbligatorio';
-        if (!formData.rappresentanteCognome) newErrors.rappresentanteCognome = 'Cognome rappresentante è obbligatorio';
-        if (!formData.rappresentanteCF) newErrors.rappresentanteCF = 'CF rappresentante è obbligatorio';
-        if (!formData.rappresentanteRuolo) newErrors.rappresentanteRuolo = 'Ruolo rappresentante è obbligatorio';
+        if (!formData.rappresentanteNome) newErrors.rappresentanteNome = s('err_rep_nome_it', 'err_rep_nome_en');
+        if (!formData.rappresentanteCognome) newErrors.rappresentanteCognome = s('err_rep_cognome_it', 'err_rep_cognome_en');
+        if (!formData.rappresentanteCF) newErrors.rappresentanteCF = s('err_rep_cf_it', 'err_rep_cf_en');
+        if (!formData.rappresentanteRuolo) newErrors.rappresentanteRuolo = s('err_rep_ruolo_it', 'err_rep_ruolo_en');
 
         // Document Validations
-        if (!formData.documentoTipo) newErrors.documentoTipo = 'Tipo documento è obbligatorio';
-        if (!formData.documentoNumero) newErrors.documentoNumero = 'Numero documento è obbligatorio';
-        if (!formData.documentoDataRilascio) newErrors.documentoDataRilascio = 'Data rilascio documento è obbligatoria';
-        if (!formData.documentoLuogoRilascio) newErrors.documentoLuogoRilascio = 'Luogo rilascio documento è obbligatorio';
+        if (!formData.documentoTipo) newErrors.documentoTipo = s('err_doc_type_it', 'err_doc_type_en');
+        if (!formData.documentoNumero) newErrors.documentoNumero = s('err_doc_numero_it', 'err_doc_numero_en');
+        if (!formData.documentoDataRilascio) newErrors.documentoDataRilascio = s('err_doc_data_it', 'err_doc_data_en');
+        if (!formData.documentoLuogoRilascio) newErrors.documentoLuogoRilascio = s('err_doc_luogo_it', 'err_doc_luogo_en');
       }
 
       // Persona Fisica specific
       if (tipoCliente === 'persona_fisica') {
-        if (!formData.nome) newErrors.nome = 'Nome è obbligatorio';
-        if (!formData.cognome) newErrors.cognome = 'Cognome è obbligatorio';
+        if (!formData.nome) newErrors.nome = s('err_nome_required_it', 'err_nome_required_en');
+        if (!formData.cognome) newErrors.cognome = s('err_cognome_required_it', 'err_cognome_required_en');
         if (!formData.telefono) {
-          newErrors.telefono = 'Telefono è obbligatorio';
+          newErrors.telefono = s('err_phone_required_it', 'err_phone_required_en');
         } else if (!validatePhone(formData.telefono)) {
-          newErrors.telefono = 'Formato telefono non valido';
+          newErrors.telefono = s('err_phone_invalid_it', 'err_phone_invalid_en');
         }
         if (formData.codiceFiscale && !validateCodiceFiscale(formData.codiceFiscale)) {
-          newErrors.codiceFiscale = 'Codice Fiscale non valido (16 caratteri alfanumerici)';
+          newErrors.codiceFiscale = s('err_cf_invalid_it', 'err_cf_invalid_en');
         }
-        if (!formData.indirizzo) newErrors.indirizzo = 'Residenza è obbligatoria';
+        if (!formData.indirizzo) newErrors.indirizzo = s('err_residenza_required_it', 'err_residenza_required_en');
         // Email is already validated in common validations above
       }
 
       // Pubblica Amministrazione specific
       if (tipoCliente === 'pubblica_amministrazione') {
-        if (!formData.codiceUnivoco) newErrors.codiceUnivoco = 'Codice Univoco è obbligatorio';
-        if (!formData.enteUfficio) newErrors.enteUfficio = 'Ente o Ufficio è obbligatorio';
-        if (!formData.citta) newErrors.citta = 'Città è obbligatorio';
-        if (!formData.indirizzo) newErrors.indirizzo = 'Indirizzo è obbligatorio';
+        if (!formData.codiceUnivoco) newErrors.codiceUnivoco = s('err_codice_univoco_required_it', 'err_codice_univoco_required_en');
+        if (!formData.enteUfficio) newErrors.enteUfficio = s('err_ente_required_it', 'err_ente_required_en');
+        if (!formData.citta) newErrors.citta = s('err_city_required_it', 'err_city_required_en');
+        if (!formData.indirizzo) newErrors.indirizzo = s('err_pa_address_required_it', 'err_pa_address_required_en');
       }
     }
 
@@ -371,7 +381,7 @@ const SignUpPage: React.FC = () => {
           >
             <div className="text-center">
               <h2 className="text-3xl font-bold text-white">{t('Create_Your_Account')}</h2>
-              <p className="mt-2 text-sm text-gray-400">Registrazione Cliente - DR7 Empire</p>
+              <p className="mt-2 text-sm text-gray-400">{s('subtitle_it', 'subtitle_en')}</p>
             </div>
 
             {generalError && (
@@ -383,24 +393,28 @@ const SignUpPage: React.FC = () => {
             <form className="space-y-6" onSubmit={handleSignUp} noValidate>
               {/* Client Type Selection */}
               <AppleStyleSelect
-                label="Tipo Cliente"
+                label={s('client_type_label_it', 'client_type_label_en')}
                 name="tipoCliente"
                 value={
-                  tipoCliente === 'azienda' ? 'Azienda' :
-                    tipoCliente === 'persona_fisica' ? 'Persona Fisica' :
-                      tipoCliente === 'pubblica_amministrazione' ? 'Pubblica Amministrazione' :
+                  tipoCliente === 'azienda' ? s('client_type_azienda_it', 'client_type_azienda_en') :
+                    tipoCliente === 'persona_fisica' ? s('client_type_persona_it', 'client_type_persona_en') :
+                      tipoCliente === 'pubblica_amministrazione' ? s('client_type_pa_it', 'client_type_pa_en') :
                         ''
                 }
                 onChange={(e) => {
                   const displayValue = e.target.value;
                   const dbValue =
-                    displayValue === 'Azienda' ? 'azienda' :
-                      displayValue === 'Persona Fisica' ? 'persona_fisica' :
-                        displayValue === 'Pubblica Amministrazione' ? 'pubblica_amministrazione' :
+                    displayValue === s('client_type_azienda_it', 'client_type_azienda_en') ? 'azienda' :
+                      displayValue === s('client_type_persona_it', 'client_type_persona_en') ? 'persona_fisica' :
+                        displayValue === s('client_type_pa_it', 'client_type_pa_en') ? 'pubblica_amministrazione' :
                           '';
                   setTipoCliente(dbValue as any);
                 }}
-                options={['Azienda', 'Persona Fisica', 'Pubblica Amministrazione']}
+                options={[
+                  s('client_type_azienda_it', 'client_type_azienda_en'),
+                  s('client_type_persona_it', 'client_type_persona_en'),
+                  s('client_type_pa_it', 'client_type_pa_en'),
+                ]}
                 required
                 error={errors.tipoCliente}
               />
@@ -412,7 +426,7 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Nazione <span className="text-red-500">*</span>
+                      {s('field_country_it', 'field_country_en')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -427,14 +441,14 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Denominazione <span className="text-red-500">*</span>
+                      {s('field_denominazione_it', 'field_denominazione_en')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       name="denominazione"
                       value={formData.denominazione}
                       onChange={handleChange}
-                      placeholder="Nome azienda"
+                      placeholder={s('field_denominazione_placeholder_it', 'field_denominazione_placeholder_en')}
                       className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
                       required
                     />
@@ -443,14 +457,14 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Partita IVA <span className="text-red-500">*</span>
+                      {s('field_piva_it', 'field_piva_en')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       name="partitaIVA"
                       value={formData.partitaIVA}
                       onChange={handleChange}
-                      placeholder="IT12345678901"
+                      placeholder={copy?.field_piva_placeholder || ''}
                       className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
                       required
                     />
@@ -459,14 +473,14 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Codice Fiscale
+                      {s('field_codice_fiscale_it', 'field_codice_fiscale_en')}
                     </label>
                     <input
                       type="text"
                       name="codiceFiscale"
                       value={formData.codiceFiscale}
                       onChange={handleChange}
-                      placeholder="00000000000"
+                      placeholder={copy?.field_cf_placeholder || ''}
                       className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
                       required
                     />
@@ -475,14 +489,14 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Sede Legale <span className="text-red-500">*</span>
+                      {s('field_sede_legale_it', 'field_sede_legale_en')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       name="indirizzo"
                       value={formData.indirizzo}
                       onChange={handleChange}
-                      placeholder="Via, Numero Civico, CAP, Città"
+                      placeholder={s('field_sede_legale_placeholder_it', 'field_sede_legale_placeholder_en')}
                       className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
                       required
                     />
@@ -491,28 +505,28 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Sede Operativa (se diversa)
+                      {s('field_sede_operativa_it', 'field_sede_operativa_en')}
                     </label>
                     <input
                       type="text"
                       name="sedeOperativa"
                       value={formData.sedeOperativa}
                       onChange={handleChange}
-                      placeholder="Via, Numero Civico, CAP, Città"
+                      placeholder={s('field_sede_operativa_placeholder_it', 'field_sede_operativa_placeholder_en')}
                       className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Codice SDI / Destinatario
+                      {s('field_sdi_it', 'field_sdi_en')}
                     </label>
                     <input
                       type="text"
                       name="codiceSDI"
                       value={formData.codiceSDI}
                       onChange={handleChange}
-                      placeholder="XXXXXXX"
+                      placeholder={copy?.field_sdi_placeholder || ''}
                       maxLength={7}
                       className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
                     />
@@ -520,14 +534,14 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Email Aziendale <span className="text-red-500">*</span>
+                      {s('field_email_aziendale_it', 'field_email_aziendale_en')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="email"
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      placeholder="email@azienda.it"
+                      placeholder={copy?.field_email_aziendale_placeholder || ''}
                       className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
                       required
                     />
@@ -536,7 +550,7 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Telefono Aziendale <span className="text-red-500">*</span>
+                      {s('field_phone_aziendale_it', 'field_phone_aziendale_en')} <span className="text-red-500">*</span>
                     </label>
                     <PhoneInput
                       value={formData.telefono}
@@ -548,15 +562,15 @@ const SignUpPage: React.FC = () => {
 
                   {/* Rappresentante Legale */}
                   <div className="border-t border-gray-700 pt-4 mt-4">
-                    <h3 className="text-lg font-semibold text-white mb-3">Rappresentante Legale</h3>
+                    <h3 className="text-lg font-semibold text-white mb-3">{s('section_legal_rep_it', 'section_legal_rep_en')}</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Nome <span className="text-red-500">*</span></label>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">{s('field_nome_it', 'field_nome_en')} <span className="text-red-500">*</span></label>
                         <input type="text" name="rappresentanteNome" value={formData.rappresentanteNome} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" required />
                         {errors.rappresentanteNome && <p className="text-xs text-red-400 mt-1">{errors.rappresentanteNome}</p>}
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Cognome <span className="text-red-500">*</span></label>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">{s('field_cognome_it', 'field_cognome_en')} <span className="text-red-500">*</span></label>
                         <input type="text" name="rappresentanteCognome" value={formData.rappresentanteCognome} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" required />
                         {errors.rappresentanteCognome && <p className="text-xs text-red-400 mt-1">{errors.rappresentanteCognome}</p>}
                       </div>
@@ -564,43 +578,47 @@ const SignUpPage: React.FC = () => {
 
                     <div className="grid grid-cols-2 gap-4 mt-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Codice Fiscale</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">{s('field_codice_fiscale_it', 'field_codice_fiscale_en')}</label>
                         <input type="text" name="rappresentanteCF" value={formData.rappresentanteCF} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase" maxLength={16} required />
                         {errors.rappresentanteCF && <p className="text-xs text-red-400 mt-1">{errors.rappresentanteCF}</p>}
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Ruolo <span className="text-red-500">*</span></label>
-                        <input type="text" name="rappresentanteRuolo" value={formData.rappresentanteRuolo} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" placeholder="Es. Amministratore" required />
+                        <label className="block text-sm font-medium text-gray-300 mb-2">{s('field_ruolo_it', 'field_ruolo_en')} <span className="text-red-500">*</span></label>
+                        <input type="text" name="rappresentanteRuolo" value={formData.rappresentanteRuolo} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" placeholder={s('field_ruolo_placeholder_it', 'field_ruolo_placeholder_en')} required />
                         {errors.rappresentanteRuolo && <p className="text-xs text-red-400 mt-1">{errors.rappresentanteRuolo}</p>}
                       </div>
                     </div>
 
                     {/* Documento Rappresentante */}
-                    <h4 className="text-md font-medium text-gray-300 mt-4 mb-2">Documento di Identità</h4>
+                    <h4 className="text-md font-medium text-gray-300 mt-4 mb-2">{s('section_id_doc_it', 'section_id_doc_en')}</h4>
                     <div className="grid grid-cols-2 gap-4">
                       <AppleStyleSelect
-                        label="Tipo"
+                        label={s('field_doc_type_it', 'field_doc_type_en')}
                         name="documentoTipo"
                         value={formData.documentoTipo}
                         onChange={handleChange}
-                        options={["Carta d'Identità", "Passaporto", "Patente"]}
+                        options={[
+                          s('field_doc_type_carta_it', 'field_doc_type_carta_en'),
+                          s('field_doc_type_passaporto_it', 'field_doc_type_passaporto_en'),
+                          s('field_doc_type_patente_it', 'field_doc_type_patente_en'),
+                        ]}
                         required
                         error={errors.documentoTipo}
                       />
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Numero <span className="text-red-500">*</span></label>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">{s('field_doc_numero_it', 'field_doc_numero_en')} <span className="text-red-500">*</span></label>
                         <input type="text" name="documentoNumero" value={formData.documentoNumero} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" required />
                         {errors.documentoNumero && <p className="text-xs text-red-400 mt-1">{errors.documentoNumero}</p>}
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4 mt-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Data Rilascio <span className="text-red-500">*</span></label>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">{s('field_doc_data_it', 'field_doc_data_en')} <span className="text-red-500">*</span></label>
                         <input type="date" name="documentoDataRilascio" value={formData.documentoDataRilascio} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" required />
                         {errors.documentoDataRilascio && <p className="text-xs text-red-400 mt-1">{errors.documentoDataRilascio}</p>}
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Luogo Rilascio <span className="text-red-500">*</span></label>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">{s('field_doc_luogo_it', 'field_doc_luogo_en')} <span className="text-red-500">*</span></label>
                         <input type="text" name="documentoLuogoRilascio" value={formData.documentoLuogoRilascio} onChange={handleChange} className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white" required />
                         {errors.documentoLuogoRilascio && <p className="text-xs text-red-400 mt-1">{errors.documentoLuogoRilascio}</p>}
                       </div>
@@ -616,7 +634,7 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <AppleStyleSelect
-                      label="Paese"
+                      label={s('field_country_it', 'field_country_en')}
                       name="nazione"
                       value={formData.nazione}
                       onChange={handleChange}
@@ -630,14 +648,14 @@ const SignUpPage: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Nome <span className="text-red-500">*</span>
+                        {s('field_nome_it', 'field_nome_en')} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         name="nome"
                         value={formData.nome}
                         onChange={handleChange}
-                        placeholder="Mario"
+                        placeholder={s('field_nome_placeholder_it', 'field_nome_placeholder_en')}
                         className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
                         required
                       />
@@ -646,14 +664,14 @@ const SignUpPage: React.FC = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Cognome <span className="text-red-500">*</span>
+                        {s('field_cognome_it', 'field_cognome_en')} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         name="cognome"
                         value={formData.cognome}
                         onChange={handleChange}
-                        placeholder="Rossi"
+                        placeholder={s('field_cognome_placeholder_it', 'field_cognome_placeholder_en')}
                         className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
                         required
                       />
@@ -665,7 +683,7 @@ const SignUpPage: React.FC = () => {
                   {formData.nazione === 'Italia' && (
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Codice Fiscale
+                        {s('field_codice_fiscale_it', 'field_codice_fiscale_en')}
                       </label>
                       <div className="flex gap-2">
                         <input
@@ -673,7 +691,7 @@ const SignUpPage: React.FC = () => {
                           name="codiceFiscale"
                           value={formData.codiceFiscale}
                           onChange={handleChange}
-                          placeholder="RSSMRA80A01H501U"
+                          placeholder={copy?.field_cf_pf_placeholder || ''}
                           maxLength={16}
                           required
                           className="flex-1 bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
@@ -701,20 +719,20 @@ const SignUpPage: React.FC = () => {
 
                   <div className="grid grid-cols-2 gap-4">
                     <AppleStyleSelect
-                      label="Sesso"
+                      label={s('field_sesso_it', 'field_sesso_en')}
                       name="sesso"
-                      value={formData.sesso === 'M' ? 'Maschio' : formData.sesso === 'F' ? 'Femmina' : ''}
+                      value={formData.sesso === 'M' ? s('field_sesso_m_it', 'field_sesso_m_en') : formData.sesso === 'F' ? s('field_sesso_f_it', 'field_sesso_f_en') : ''}
                       onChange={(e) => {
                         const displayValue = e.target.value;
-                        const dbValue = displayValue === 'Maschio' ? 'M' : displayValue === 'Femmina' ? 'F' : '';
+                        const dbValue = displayValue === s('field_sesso_m_it', 'field_sesso_m_en') ? 'M' : displayValue === s('field_sesso_f_it', 'field_sesso_f_en') ? 'F' : '';
                         handleChange({ target: { name: 'sesso', value: dbValue } } as any);
                       }}
-                      options={['Maschio', 'Femmina']}
+                      options={[s('field_sesso_m_it', 'field_sesso_m_en'), s('field_sesso_f_it', 'field_sesso_f_en')]}
                       error={errors.sesso}
                     />
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Data di Nascita
+                        {s('field_birth_date_it', 'field_birth_date_en')}
                       </label>
                       <input
                         type="date"
@@ -730,7 +748,7 @@ const SignUpPage: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Città di Nascita
+                        {s('field_birth_city_it', 'field_birth_city_en')}
                       </label>
                       <input
                         type="text"
@@ -743,7 +761,7 @@ const SignUpPage: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Provincia di Nascita
+                        {s('field_birth_province_it', 'field_birth_province_en')}
                       </label>
                       <input
                         type="text"
@@ -762,14 +780,14 @@ const SignUpPage: React.FC = () => {
                   <div className="grid grid-cols-3 gap-4">
                     <div className="col-span-2">
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Indirizzo (Residenza) <span className="text-red-500">*</span>
+                        {s('field_address_it', 'field_address_en')} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         name="indirizzo"
                         value={formData.indirizzo}
                         onChange={handleChange}
-                        placeholder="Via Roma"
+                        placeholder={s('field_address_placeholder_it', 'field_address_placeholder_en')}
                         required
                         className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
                       />
@@ -778,14 +796,14 @@ const SignUpPage: React.FC = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Numero Civico
+                        {s('field_civico_it', 'field_civico_en')}
                       </label>
                       <input
                         type="text"
                         name="numeroCivico"
                         value={formData.numeroCivico}
                         onChange={handleChange}
-                        placeholder="123"
+                        placeholder={copy?.field_civico_placeholder || ''}
                         className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
                       />
                       {errors.numeroCivico && <p className="text-xs text-red-400 mt-1">{errors.numeroCivico}</p>}
@@ -795,14 +813,14 @@ const SignUpPage: React.FC = () => {
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Città di Residenza
+                        {s('field_city_it', 'field_city_en')}
                       </label>
                       <input
                         type="text"
                         name="cittaResidenza"
                         value={formData.cittaResidenza}
                         onChange={handleChange}
-                        placeholder="Milano"
+                        placeholder={s('field_city_placeholder_it', 'field_city_placeholder_en')}
                         className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
                       />
                       {errors.cittaResidenza && <p className="text-xs text-red-400 mt-1">{errors.cittaResidenza}</p>}
@@ -810,14 +828,14 @@ const SignUpPage: React.FC = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        CAP
+                        {s('field_cap_it', 'field_cap_en')}
                       </label>
                       <input
                         type="text"
                         name="codicePostale"
                         value={formData.codicePostale}
                         onChange={handleChange}
-                        placeholder="20100"
+                        placeholder={copy?.field_cap_placeholder || ''}
                         maxLength={5}
                         className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
                       />
@@ -826,14 +844,14 @@ const SignUpPage: React.FC = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Provincia
+                        {s('field_province_it', 'field_province_en')}
                       </label>
                         <input
                           type="text"
                           name="provinciaResidenza"
                           value={formData.provinciaResidenza}
                           onChange={handleChange}
-                          placeholder="MI"
+                          placeholder={copy?.field_province_placeholder || ''}
                           maxLength={2}
                           className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white uppercase"
                           required
@@ -847,14 +865,14 @@ const SignUpPage: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4 mt-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Email <span className="text-red-500">*</span>
+                        {s('field_email_it', 'field_email_en')} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="email"
                         name="email"
                         value={formData.email}
                         onChange={handleChange}
-                        placeholder="email@esempio.it"
+                        placeholder={copy?.field_email_placeholder || ''}
                         className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
                         required
                       />
@@ -863,7 +881,7 @@ const SignUpPage: React.FC = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Telefono <span className="text-red-500">*</span>
+                        {s('field_phone_it', 'field_phone_en')} <span className="text-red-500">*</span>
                       </label>
                       <PhoneInput
                         value={formData.telefono}
@@ -876,14 +894,14 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      PEC
+                      {s('field_pec_it', 'field_pec_en')}
                     </label>
                     <input
                       type="email"
                       name="pec"
                       value={formData.pec}
                       onChange={handleChange}
-                      placeholder="pec@pec.it"
+                      placeholder={copy?.field_pec_placeholder || ''}
                       className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
                     />
                   </div>
@@ -897,14 +915,14 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Codice Univoco <span className="text-red-500">*</span>
+                      {s('field_codice_univoco_it', 'field_codice_univoco_en')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       name="codiceUnivoco"
                       value={formData.codiceUnivoco}
                       onChange={handleChange}
-                      placeholder="XXXXXX"
+                      placeholder={copy?.field_codice_univoco_placeholder || ''}
                       className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
                       required
                     />
@@ -913,14 +931,14 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Codice Fiscale
+                      {s('field_codice_fiscale_it', 'field_codice_fiscale_en')}
                     </label>
                     <input
                       type="text"
                       name="codiceFiscale"
                       value={formData.codiceFiscale}
                       onChange={handleChange}
-                      placeholder="00000000000"
+                      placeholder={copy?.field_cf_placeholder || ''}
                       className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
                       required
                     />
@@ -929,14 +947,14 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Ente o Ufficio <span className="text-red-500">*</span>
+                      {s('field_ente_it', 'field_ente_en')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       name="enteUfficio"
                       value={formData.enteUfficio}
                       onChange={handleChange}
-                      placeholder="Nome dell'ente o ufficio"
+                      placeholder={s('field_ente_placeholder_it', 'field_ente_placeholder_en')}
                       className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
                       required
                     />
@@ -945,14 +963,14 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Città <span className="text-red-500">*</span>
+                      {s('field_city_it', 'field_city_en')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       name="citta"
                       value={formData.citta}
                       onChange={handleChange}
-                      placeholder="Cagliari"
+                      placeholder={s('field_pa_city_placeholder_it', 'field_pa_city_placeholder_en')}
                       className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
                       required
                     />
@@ -961,14 +979,14 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Indirizzo <span className="text-red-500">*</span>
+                      {s('field_address_it', 'field_address_en')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       name="indirizzo"
                       value={formData.indirizzo}
                       onChange={handleChange}
-                      placeholder="Via, Numero Civico, CAP, Città"
+                      placeholder={s('field_sede_legale_placeholder_it', 'field_sede_legale_placeholder_en')}
                       className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
                       required
                     />
@@ -977,14 +995,14 @@ const SignUpPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Email <span className="text-red-500">*</span>
+                      {s('field_email_it', 'field_email_en')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="email"
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      placeholder="email@ente.it"
+                      placeholder={copy?.field_pa_email_placeholder || ''}
                       className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white"
                       required
                     />
@@ -997,11 +1015,11 @@ const SignUpPage: React.FC = () => {
               {tipoCliente && (
                 <div className="space-y-4 animate-fadeIn">
                   <div className="border-t border-gray-700 pt-4"></div>
-                  <h3 className="text-lg font-semibold text-white">Crea le tue credenziali</h3>
+                  <h3 className="text-lg font-semibold text-white">{s('section_credentials_it', 'section_credentials_en')}</h3>
 
                   <div className="relative">
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Password <span className="text-red-500">*</span>
+                      {s('field_password_it', 'field_password_en')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type={showPassword ? 'text' : 'password'}
@@ -1033,7 +1051,7 @@ const SignUpPage: React.FC = () => {
 
                   <div className="relative">
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Conferma Password <span className="text-red-500">*</span>
+                      {s('field_confirm_password_it', 'field_confirm_password_en')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type={showPassword ? 'text' : 'password'}
@@ -1069,9 +1087,9 @@ const SignUpPage: React.FC = () => {
                       className="h-4 w-4 mt-0.5 text-white bg-gray-700 border-gray-600 rounded focus:ring-white"
                     />
                     <label htmlFor="terms" className="ml-2 block text-sm text-gray-400">
-                      Accetto di ricevere aggiornamenti e novità da DR7 e dai suoi partner.{' '}
+                      {s('marketing_consent_it', 'marketing_consent_en')}{' '}
                       <Link to="/privacy-policy" className="font-medium text-white hover:underline">
-                        Privacy Policy
+                        {s('privacy_policy_link_it', 'privacy_policy_link_en')}
                       </Link>
                     </label>
                   </div>

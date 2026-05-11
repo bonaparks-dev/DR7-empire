@@ -55,6 +55,7 @@ interface SiteCopySnapshot {
   jetSearchResults?: JetSearchResultsCopy;
   confirmationSuccess?: ConfirmationSuccessCopy;
   header?: HeaderCopy;
+  signUp?: SignUpCopy;
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -242,6 +243,124 @@ export interface MechanicalCopy {
 // Wash, Supercar & Luxury Division, etc.) stay hardcoded in Header.tsx —
 // they are brand names, not localized chrome. Only the section headings,
 // drawer/header CTAs, and aria labels move to CMS.
+// ─── SignUp page (registrazione cliente) ───────────────────────────────────
+// Three client-type branches share a single schema. Section headers + form
+// labels + placeholders + validation strings all live here. Global keys
+// already covered by useTranslation() (Password, Sign_In, Create_Account,
+// etc.) stay in i18n and are NOT duplicated. Validation messages are
+// hardcoded IT-only in the legacy page — migrating with bilingual variants
+// so future English signup flows work out of the box.
+export interface SignUpCopy {
+  // Page chrome
+  subtitle_it: string; subtitle_en: string;
+  // Client type selector
+  client_type_label_it: string; client_type_label_en: string;
+  client_type_default_it: string; client_type_default_en: string;
+  client_type_azienda_it: string; client_type_azienda_en: string;
+  client_type_persona_it: string; client_type_persona_en: string;
+  client_type_pa_it: string; client_type_pa_en: string;
+  // Section headers (Azienda branch)
+  section_legal_rep_it: string; section_legal_rep_en: string;
+  section_id_doc_it: string; section_id_doc_en: string;
+  // Shared password section header
+  section_credentials_it: string; section_credentials_en: string;
+  // Common labels (Nazione/Paese, Email, Telefono, Codice Fiscale)
+  field_country_it: string; field_country_en: string;
+  field_email_it: string; field_email_en: string;
+  field_phone_it: string; field_phone_en: string;
+  field_codice_fiscale_it: string; field_codice_fiscale_en: string;
+  // Azienda fields
+  field_denominazione_it: string; field_denominazione_en: string;
+  field_denominazione_placeholder_it: string; field_denominazione_placeholder_en: string;
+  field_piva_it: string; field_piva_en: string;
+  field_piva_placeholder: string;                                // "IT12345678901"
+  field_cf_placeholder: string;                                  // "00000000000"
+  field_sede_legale_it: string; field_sede_legale_en: string;
+  field_sede_legale_placeholder_it: string; field_sede_legale_placeholder_en: string;
+  field_sede_operativa_it: string; field_sede_operativa_en: string;
+  field_sede_operativa_placeholder_it: string; field_sede_operativa_placeholder_en: string;
+  field_sdi_it: string; field_sdi_en: string;
+  field_sdi_placeholder: string;                                 // "XXXXXXX"
+  field_email_aziendale_it: string; field_email_aziendale_en: string;
+  field_email_aziendale_placeholder: string;                     // "email@azienda.it"
+  field_phone_aziendale_it: string; field_phone_aziendale_en: string;
+  field_nome_it: string; field_nome_en: string;
+  field_cognome_it: string; field_cognome_en: string;
+  field_ruolo_it: string; field_ruolo_en: string;
+  field_ruolo_placeholder_it: string; field_ruolo_placeholder_en: string;
+  field_doc_type_it: string; field_doc_type_en: string;
+  field_doc_type_default_it: string; field_doc_type_default_en: string;
+  field_doc_type_carta_it: string; field_doc_type_carta_en: string;
+  field_doc_type_passaporto_it: string; field_doc_type_passaporto_en: string;
+  field_doc_type_patente_it: string; field_doc_type_patente_en: string;
+  field_doc_numero_it: string; field_doc_numero_en: string;
+  field_doc_data_it: string; field_doc_data_en: string;
+  field_doc_luogo_it: string; field_doc_luogo_en: string;
+  // Persona Fisica fields
+  field_nome_placeholder_it: string; field_nome_placeholder_en: string;
+  field_cognome_placeholder_it: string; field_cognome_placeholder_en: string;
+  field_cf_pf_placeholder: string;                               // "RSSMRA80A01H501U"
+  field_sesso_it: string; field_sesso_en: string;
+  field_sesso_default_it: string; field_sesso_default_en: string;
+  field_sesso_m_it: string; field_sesso_m_en: string;
+  field_sesso_f_it: string; field_sesso_f_en: string;
+  field_birth_date_it: string; field_birth_date_en: string;
+  field_birth_city_it: string; field_birth_city_en: string;
+  field_birth_province_it: string; field_birth_province_en: string;
+  field_address_it: string; field_address_en: string;
+  field_address_placeholder_it: string; field_address_placeholder_en: string;
+  field_civico_it: string; field_civico_en: string;
+  field_civico_placeholder: string;                              // "123"
+  field_city_it: string; field_city_en: string;
+  field_city_placeholder_it: string; field_city_placeholder_en: string;
+  field_cap_it: string; field_cap_en: string;
+  field_cap_placeholder: string;                                 // "20100"
+  field_province_it: string; field_province_en: string;
+  field_province_placeholder: string;                            // "MI"
+  field_email_placeholder: string;                               // "email@esempio.it"
+  field_pec_it: string; field_pec_en: string;
+  field_pec_placeholder: string;                                 // "pec@pec.it"
+  // PA fields
+  field_codice_univoco_it: string; field_codice_univoco_en: string;
+  field_codice_univoco_placeholder: string;                      // "XXXXXX"
+  field_ente_it: string; field_ente_en: string;
+  field_ente_placeholder_it: string; field_ente_placeholder_en: string;
+  field_pa_city_placeholder_it: string; field_pa_city_placeholder_en: string;
+  field_pa_email_placeholder: string;                            // "email@ente.it"
+  // Password labels (placeholders use t() keys — handled by i18n)
+  field_password_it: string; field_password_en: string;
+  field_confirm_password_it: string; field_confirm_password_en: string;
+  // Legal consent
+  marketing_consent_it: string; marketing_consent_en: string;
+  privacy_policy_link_it: string; privacy_policy_link_en: string;
+  // Validation errors
+  err_select_client_type_it: string; err_select_client_type_en: string;
+  err_country_required_it: string; err_country_required_en: string;
+  err_email_required_it: string; err_email_required_en: string;
+  err_denominazione_required_it: string; err_denominazione_required_en: string;
+  err_piva_required_it: string; err_piva_required_en: string;
+  err_piva_invalid_it: string; err_piva_invalid_en: string;
+  err_address_required_it: string; err_address_required_en: string;
+  err_phone_required_it: string; err_phone_required_en: string;
+  err_phone_invalid_it: string; err_phone_invalid_en: string;
+  err_rep_nome_it: string; err_rep_nome_en: string;
+  err_rep_cognome_it: string; err_rep_cognome_en: string;
+  err_rep_cf_it: string; err_rep_cf_en: string;
+  err_rep_ruolo_it: string; err_rep_ruolo_en: string;
+  err_doc_type_it: string; err_doc_type_en: string;
+  err_doc_numero_it: string; err_doc_numero_en: string;
+  err_doc_data_it: string; err_doc_data_en: string;
+  err_doc_luogo_it: string; err_doc_luogo_en: string;
+  err_nome_required_it: string; err_nome_required_en: string;
+  err_cognome_required_it: string; err_cognome_required_en: string;
+  err_cf_invalid_it: string; err_cf_invalid_en: string;
+  err_residenza_required_it: string; err_residenza_required_en: string;
+  err_codice_univoco_required_it: string; err_codice_univoco_required_en: string;
+  err_ente_required_it: string; err_ente_required_en: string;
+  err_city_required_it: string; err_city_required_en: string;
+  err_pa_address_required_it: string; err_pa_address_required_en: string;
+}
+
 export interface HeaderCopy {
   // Logo + aria
   logo_alt: string;
@@ -829,6 +948,13 @@ export async function getHeaderCopy(): Promise<HeaderCopy> {
   return DEFAULT_HEADER;
 }
 
+/** SignUp page chrome + form labels + validation messages. */
+export async function getSignUpCopy(): Promise<SignUpCopy> {
+  const snap = await loadOnce();
+  if (snap.signUp && snap.signUp.client_type_label_it) return snap.signUp;
+  return DEFAULT_SIGNUP;
+}
+
 /** Confirmation Success page (booking summary + email fallback). */
 export async function getConfirmationSuccessCopy(): Promise<ConfirmationSuccessCopy> {
   const snap = await loadOnce();
@@ -970,6 +1096,108 @@ const DEFAULT_HEADER: HeaderCopy = {
   contact_cta_it: 'Contattaci', contact_cta_en: 'Contact us',
   popup_title_it: 'Prenota Ora', popup_title_en: 'Book Now',
   popup_subtitle_it: 'Seleziona date e orari', popup_subtitle_en: 'Select dates and times',
+};
+
+// ─── Default SignUp seed (registrazione cliente) ──────────────────────────
+const DEFAULT_SIGNUP: SignUpCopy = {
+  subtitle_it: 'Registrazione Cliente - DR7 Empire', subtitle_en: 'Client Registration - DR7 Empire',
+  client_type_label_it: 'Tipo Cliente', client_type_label_en: 'Client Type',
+  client_type_default_it: 'Seleziona...', client_type_default_en: 'Select...',
+  client_type_azienda_it: 'Azienda', client_type_azienda_en: 'Company',
+  client_type_persona_it: 'Persona Fisica', client_type_persona_en: 'Individual',
+  client_type_pa_it: 'Pubblica Amministrazione', client_type_pa_en: 'Public Administration',
+  section_legal_rep_it: 'Rappresentante Legale', section_legal_rep_en: 'Legal Representative',
+  section_id_doc_it: 'Documento di Identità', section_id_doc_en: 'ID Document',
+  section_credentials_it: 'Crea le tue credenziali', section_credentials_en: 'Create your credentials',
+  field_country_it: 'Nazione', field_country_en: 'Country',
+  field_email_it: 'Email', field_email_en: 'Email',
+  field_phone_it: 'Telefono', field_phone_en: 'Phone',
+  field_codice_fiscale_it: 'Codice Fiscale', field_codice_fiscale_en: 'Tax Code',
+  field_denominazione_it: 'Denominazione', field_denominazione_en: 'Company Name',
+  field_denominazione_placeholder_it: 'Nome azienda', field_denominazione_placeholder_en: 'Company name',
+  field_piva_it: 'Partita IVA', field_piva_en: 'VAT Number',
+  field_piva_placeholder: 'IT12345678901',
+  field_cf_placeholder: '00000000000',
+  field_sede_legale_it: 'Sede Legale', field_sede_legale_en: 'Registered Office',
+  field_sede_legale_placeholder_it: 'Via, Numero Civico, CAP, Città', field_sede_legale_placeholder_en: 'Street, Number, ZIP, City',
+  field_sede_operativa_it: 'Sede Operativa (se diversa)', field_sede_operativa_en: 'Operating Office (if different)',
+  field_sede_operativa_placeholder_it: 'Via, Numero Civico, CAP, Città', field_sede_operativa_placeholder_en: 'Street, Number, ZIP, City',
+  field_sdi_it: 'Codice SDI / Destinatario', field_sdi_en: 'SDI / Recipient Code',
+  field_sdi_placeholder: 'XXXXXXX',
+  field_email_aziendale_it: 'Email Aziendale', field_email_aziendale_en: 'Business Email',
+  field_email_aziendale_placeholder: 'email@azienda.it',
+  field_phone_aziendale_it: 'Telefono Aziendale', field_phone_aziendale_en: 'Business Phone',
+  field_nome_it: 'Nome', field_nome_en: 'First Name',
+  field_cognome_it: 'Cognome', field_cognome_en: 'Last Name',
+  field_ruolo_it: 'Ruolo', field_ruolo_en: 'Role',
+  field_ruolo_placeholder_it: 'Es. Amministratore', field_ruolo_placeholder_en: 'E.g. Administrator',
+  field_doc_type_it: 'Tipo', field_doc_type_en: 'Type',
+  field_doc_type_default_it: 'Seleziona...', field_doc_type_default_en: 'Select...',
+  field_doc_type_carta_it: "Carta d'Identità", field_doc_type_carta_en: 'ID Card',
+  field_doc_type_passaporto_it: 'Passaporto', field_doc_type_passaporto_en: 'Passport',
+  field_doc_type_patente_it: 'Patente', field_doc_type_patente_en: 'Driving Licence',
+  field_doc_numero_it: 'Numero', field_doc_numero_en: 'Number',
+  field_doc_data_it: 'Data Rilascio', field_doc_data_en: 'Issue Date',
+  field_doc_luogo_it: 'Luogo Rilascio', field_doc_luogo_en: 'Issue Place',
+  field_nome_placeholder_it: 'Mario', field_nome_placeholder_en: 'Mario',
+  field_cognome_placeholder_it: 'Rossi', field_cognome_placeholder_en: 'Rossi',
+  field_cf_pf_placeholder: 'RSSMRA80A01H501U',
+  field_sesso_it: 'Sesso', field_sesso_en: 'Gender',
+  field_sesso_default_it: 'Seleziona...', field_sesso_default_en: 'Select...',
+  field_sesso_m_it: 'Maschio', field_sesso_m_en: 'Male',
+  field_sesso_f_it: 'Femmina', field_sesso_f_en: 'Female',
+  field_birth_date_it: 'Data di Nascita', field_birth_date_en: 'Date of Birth',
+  field_birth_city_it: 'Città di Nascita', field_birth_city_en: 'Place of Birth',
+  field_birth_province_it: 'Provincia di Nascita', field_birth_province_en: 'Province of Birth',
+  field_address_it: 'Indirizzo (Residenza)', field_address_en: 'Address (Residence)',
+  field_address_placeholder_it: 'Via Roma', field_address_placeholder_en: 'Via Roma',
+  field_civico_it: 'Numero Civico', field_civico_en: 'Street Number',
+  field_civico_placeholder: '123',
+  field_city_it: 'Città di Residenza', field_city_en: 'City of Residence',
+  field_city_placeholder_it: 'Milano', field_city_placeholder_en: 'Milan',
+  field_cap_it: 'CAP', field_cap_en: 'ZIP',
+  field_cap_placeholder: '20100',
+  field_province_it: 'Provincia', field_province_en: 'Province',
+  field_province_placeholder: 'MI',
+  field_email_placeholder: 'email@esempio.it',
+  field_pec_it: 'PEC', field_pec_en: 'Certified Email (PEC)',
+  field_pec_placeholder: 'pec@pec.it',
+  field_codice_univoco_it: 'Codice Univoco', field_codice_univoco_en: 'Unique Code',
+  field_codice_univoco_placeholder: 'XXXXXX',
+  field_ente_it: 'Ente o Ufficio', field_ente_en: 'Agency or Office',
+  field_ente_placeholder_it: "Nome dell'ente o ufficio", field_ente_placeholder_en: 'Name of agency or office',
+  field_pa_city_placeholder_it: 'Cagliari', field_pa_city_placeholder_en: 'Cagliari',
+  field_pa_email_placeholder: 'email@ente.it',
+  field_password_it: 'Password', field_password_en: 'Password',
+  field_confirm_password_it: 'Conferma Password', field_confirm_password_en: 'Confirm Password',
+  marketing_consent_it: 'Accetto di ricevere aggiornamenti e novità da DR7 e dai suoi partner.',
+  marketing_consent_en: 'I agree to receive updates and news from DR7 and its partners.',
+  privacy_policy_link_it: 'Privacy Policy', privacy_policy_link_en: 'Privacy Policy',
+  err_select_client_type_it: 'Seleziona un tipo di cliente', err_select_client_type_en: 'Select a client type',
+  err_country_required_it: 'Nazione è obbligatorio', err_country_required_en: 'Country is required',
+  err_email_required_it: 'Email è obbligatorio', err_email_required_en: 'Email is required',
+  err_denominazione_required_it: 'Denominazione è obbligatorio', err_denominazione_required_en: 'Company name is required',
+  err_piva_required_it: 'Partita IVA è obbligatorio', err_piva_required_en: 'VAT number is required',
+  err_piva_invalid_it: 'Partita IVA non valida (11 cifre)', err_piva_invalid_en: 'Invalid VAT number (11 digits)',
+  err_address_required_it: 'Indirizzo è obbligatorio', err_address_required_en: 'Address is required',
+  err_phone_required_it: 'Telefono è obbligatorio', err_phone_required_en: 'Phone is required',
+  err_phone_invalid_it: 'Formato telefono non valido', err_phone_invalid_en: 'Invalid phone format',
+  err_rep_nome_it: 'Nome rappresentante è obbligatorio', err_rep_nome_en: 'Representative first name is required',
+  err_rep_cognome_it: 'Cognome rappresentante è obbligatorio', err_rep_cognome_en: 'Representative last name is required',
+  err_rep_cf_it: 'CF rappresentante è obbligatorio', err_rep_cf_en: 'Representative tax code is required',
+  err_rep_ruolo_it: 'Ruolo rappresentante è obbligatorio', err_rep_ruolo_en: 'Representative role is required',
+  err_doc_type_it: 'Tipo documento è obbligatorio', err_doc_type_en: 'Document type is required',
+  err_doc_numero_it: 'Numero documento è obbligatorio', err_doc_numero_en: 'Document number is required',
+  err_doc_data_it: 'Data rilascio documento è obbligatoria', err_doc_data_en: 'Document issue date is required',
+  err_doc_luogo_it: 'Luogo rilascio documento è obbligatorio', err_doc_luogo_en: 'Document issue place is required',
+  err_nome_required_it: 'Nome è obbligatorio', err_nome_required_en: 'First name is required',
+  err_cognome_required_it: 'Cognome è obbligatorio', err_cognome_required_en: 'Last name is required',
+  err_cf_invalid_it: 'Codice Fiscale non valido (16 caratteri alfanumerici)', err_cf_invalid_en: 'Invalid tax code (16 alphanumeric characters)',
+  err_residenza_required_it: 'Residenza è obbligatoria', err_residenza_required_en: 'Residence is required',
+  err_codice_univoco_required_it: 'Codice Univoco è obbligatorio', err_codice_univoco_required_en: 'Unique code is required',
+  err_ente_required_it: 'Ente o Ufficio è obbligatorio', err_ente_required_en: 'Agency or office is required',
+  err_city_required_it: 'Città è obbligatorio', err_city_required_en: 'City is required',
+  err_pa_address_required_it: 'Indirizzo è obbligatorio', err_pa_address_required_en: 'Address is required',
 };
 
 // ─── Default Confirmation Success seed ────────────────────────────────────
