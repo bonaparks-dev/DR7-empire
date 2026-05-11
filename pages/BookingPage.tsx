@@ -10,6 +10,7 @@ import type { Booking, Inquiry, RentalItem } from '../types';
 import CarBookingWizard from '../components/ui/CarBookingWizard';
 import BookingErrorBoundary from '../components/ui/BookingErrorBoundary';
 import HelicopterBookingForm from '../components/ui/HelicopterBookingForm';
+import { getBookingCopy, type BookingCopy } from '../utils/siteCopy';
 
 
 
@@ -28,6 +29,18 @@ const BookingPage: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [completedBooking, setCompletedBooking] = useState<Booking | Inquiry | null>(null);
   const today = new Date().toISOString().split('T')[0];
+  const [copy, setCopy] = useState<BookingCopy | null>(null);
+  const copyRef = useRef<BookingCopy | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    getBookingCopy().then(c => { if (cancelled) return; copyRef.current = c; setCopy(c); });
+    return () => { cancelled = true; };
+  }, []);
+  const b = (it: keyof BookingCopy, en: keyof BookingCopy): string => {
+    const cur = copyRef.current;
+    if (!cur) return '';
+    return cur[lang === 'it' ? it : en] as string;
+  };
 
   const [formData, setFormData] = useState({
     fullName: '', email: '', phone: '',
@@ -72,7 +85,7 @@ const BookingPage: React.FC = () => {
     if ((window as any).Stripe) {
       if (!STRIPE_PUBLISHABLE_KEY || STRIPE_PUBLISHABLE_KEY.startsWith('YOUR_')) {
         console.error("Stripe.js has loaded, but the publishable key is not set. Please replace 'YOUR_STRIPE_PUBLISHABLE_KEY' with your actual key.");
-        setStripeError("Payment service is not configured correctly. Please contact support.");
+        setStripeError(b('err_payment_not_configured_it', 'err_payment_not_configured_en'));
         return;
       }
       setStripe((window as any).Stripe(STRIPE_PUBLISHABLE_KEY));
@@ -117,7 +130,7 @@ const BookingPage: React.FC = () => {
       setIsClientSecretLoading(true); setClientSecret(null); setStripeError(null);
       fetch('/.netlify/functions/create-payment-intent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: total, currency }) })
         .then(res => res.json()).then(data => { if (data.error) { setStripeError(data.error); } else { setClientSecret(data.clientSecret); } })
-        .catch(error => { console.error('Failed to fetch client secret:', error); setStripeError('Could not connect to payment server.'); })
+        .catch(error => { console.error('Failed to fetch client secret:', error); setStripeError(b('err_payment_server_down_it', 'err_payment_server_down_en')); })
         .finally(() => { setIsClientSecretLoading(false); });
     }
   }, [step, isQuoteRequest, total, currency, isCar]);
@@ -250,7 +263,7 @@ const BookingPage: React.FC = () => {
 
       if (!newBookingData) {
         console.error("Unsupported category for booking.");
-        setErrors(prev => ({ ...prev, form: "This category cannot be booked." }));
+        setErrors(prev => ({ ...prev, form: b('err_category_unsupported_it', 'err_category_unsupported_en') }));
         setIsProcessing(false);
         return;
       }
@@ -263,7 +276,7 @@ const BookingPage: React.FC = () => {
 
       if (error) {
         console.error('Error creating booking:', error);
-        setErrors(prev => ({ ...prev, form: "Could not save your booking. Please try again." }));
+        setErrors(prev => ({ ...prev, form: b('err_save_failed_it', 'err_save_failed_en') }));
         setIsProcessing(false);
         return;
       }
@@ -306,9 +319,9 @@ const BookingPage: React.FC = () => {
     setIsProcessing(true);
     if (isQuoteRequest) { await finalizeBooking(); isSubmittingRef.current = false; return; }
     if (formData.paymentMethod === 'stripe') {
-      setStripeError(null); if (!stripe || !cardElement || !clientSecret) { setStripeError("Payment system is not ready."); setIsProcessing(false); isSubmittingRef.current = false; return; }
+      setStripeError(null); if (!stripe || !cardElement || !clientSecret) { setStripeError(b('err_payment_not_ready_it', 'err_payment_not_ready_en')); setIsProcessing(false); isSubmittingRef.current = false; return; }
       const { error } = await stripe.confirmCardPayment(clientSecret, { payment_method: { card: cardElement, billing_details: { name: formData.fullName, email: formData.email, phone: formData.phone } }, });
-      if (error) { setStripeError(error.message || "An unexpected error occurred."); setIsProcessing(false); isSubmittingRef.current = false; } else { await finalizeBooking(); isSubmittingRef.current = false; }
+      if (error) { setStripeError(error.message || b('err_unexpected_it', 'err_unexpected_en')); setIsProcessing(false); isSubmittingRef.current = false; } else { await finalizeBooking(); isSubmittingRef.current = false; }
     } else { await finalizeBooking(); isSubmittingRef.current = false; }
   };
 
@@ -323,7 +336,7 @@ const BookingPage: React.FC = () => {
     setStep(99); // A step number that indicates completion
   };
 
-  if (!item) return <div className="pt-32 text-center text-white">Item not found.</div>;
+  if (!item) return <div className="pt-32 text-center text-white">{b('item_not_found_it', 'item_not_found_en')}</div>;
 
   const renderContent = () => {
     if (completedBooking) {
@@ -337,9 +350,9 @@ const BookingPage: React.FC = () => {
       );
       return (
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-white mb-2">Booking Confirmed!</h2>
-          <p className="text-gray-300 max-w-md mx-auto">Your booking has been confirmed.</p>
-          <button type="button" onClick={() => navigate('/account')} className="mt-8 bg-white text-black px-6 py-2 rounded-full font-semibold text-sm hover:bg-gray-200 transition-colors">View My Bookings</button>
+          <h2 className="text-3xl font-bold text-white mb-2">{b('booking_confirmed_title_it', 'booking_confirmed_title_en')}</h2>
+          <p className="text-gray-300 max-w-md mx-auto">{b('booking_confirmed_body_it', 'booking_confirmed_body_en')}</p>
+          <button type="button" onClick={() => navigate('/account')} className="mt-8 bg-white text-black px-6 py-2 rounded-full font-semibold text-sm hover:bg-gray-200 transition-colors">{b('booking_confirmed_cta_bookings_it', 'booking_confirmed_cta_bookings_en')}</button>
         </div>
       );
     }
@@ -367,7 +380,7 @@ const BookingPage: React.FC = () => {
             <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }} className="w-16 h-16 bg-gray-500/20 text-gray-300 rounded-full flex items-center justify-center mx-auto mb-4"><svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg></motion.div>
             <h2 className="text-3xl font-bold text-white mb-2">{t('Inquiry_Sent')}</h2>
             <p className="text-gray-300 max-w-md mx-auto">{t('Our_team_will_contact_you_shortly_with_a_quote')}</p>
-            <button type="button" onClick={() => navigate('/')} className="mt-8 bg-white text-black px-6 py-2 rounded-full font-semibold text-sm hover:bg-gray-200 transition-colors">Go to Home</button>
+            <button type="button" onClick={() => navigate('/')} className="mt-8 bg-white text-black px-6 py-2 rounded-full font-semibold text-sm hover:bg-gray-200 transition-colors">{b('inquiry_sent_cta_home_it', 'inquiry_sent_cta_home_en')}</button>
           </div>
         );
         return (
@@ -375,7 +388,7 @@ const BookingPage: React.FC = () => {
             <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }} className="w-16 h-16 bg-gray-500/20 text-gray-300 rounded-full flex items-center justify-center mx-auto mb-4"><svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg></motion.div>
             <h2 className="text-3xl font-bold text-white mb-2">{t('Booking_Request_Sent')}</h2>
             <p className="text-gray-300 max-w-md mx-auto">{t('We_will_confirm_your_booking_shortly')}</p>
-            <button type="button" onClick={() => navigate('/')} className="mt-8 bg-white text-black px-6 py-2 rounded-full font-semibold text-sm hover:bg-gray-200 transition-colors">Go to Home</button>
+            <button type="button" onClick={() => navigate('/')} className="mt-8 bg-white text-black px-6 py-2 rounded-full font-semibold text-sm hover:bg-gray-200 transition-colors">{b('inquiry_sent_cta_home_it', 'inquiry_sent_cta_home_en')}</button>
           </div>
         );
       }
@@ -389,7 +402,7 @@ const BookingPage: React.FC = () => {
             <div className="space-y-4">
               <label className="text-sm font-medium text-gray-300 block">{t('Credit_Card')}</label>
               <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 min-h-[56px] flex items-center">
-                {isClientSecretLoading ? <div className="flex items-center text-gray-400 text-sm"><motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-4 h-4 border-2 border-t-white border-gray-600 rounded-full mr-2" /><span>Initializing Payment...</span></div> : <div ref={cardElementRef} className="w-full" />}
+                {isClientSecretLoading ? <div className="flex items-center text-gray-400 text-sm"><motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-4 h-4 border-2 border-t-white border-gray-600 rounded-full mr-2" /><span>{b('payment_initializing_it', 'payment_initializing_en')}</span></div> : <div ref={cardElementRef} className="w-full" />}
               </div>
               {stripeError && <p className="text-xs text-red-400 mt-1">{stripeError}</p>}
             </div>
@@ -402,9 +415,9 @@ const BookingPage: React.FC = () => {
         const arrivalPoints = isJet ? AIRPORTS : HELI_ARRIVAL_POINTS;
         switch (step) {
           // FIX: Correctly handle union type for airport/heliport locations by checking for 'iata' or 'id' property.
-          case 1: return <div className="space-y-6"><div><label className="text-sm text-gray-400 block mb-2">{t('Trip_Type')}</label><div className="flex border border-gray-700 rounded-full p-1"><button type="button" onClick={() => setFormData(p => ({ ...p, tripType: 'one-way' }))} className={`flex-1 py-1 text-sm rounded-full transition-colors ${formData.tripType === 'one-way' ? 'bg-white text-black' : 'text-gray-300'}`}>{t('One_Way')}</button><button type="button" onClick={() => setFormData(p => ({ ...p, tripType: 'round-trip' }))} className={`flex-1 py-1 text-sm rounded-full transition-colors ${formData.tripType === 'round-trip' ? 'bg-white text-black' : 'text-gray-300'}`}>{t('Round_Trip')}</button></div></div><div className="grid grid-cols-2 gap-4"><div><label className="text-sm text-gray-400">{isJet ? t('Departure_Airport') : t('Departure_Point')}</label><select name="departurePoint" value={formData.departurePoint} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"><option value="">Select</option>{departurePoints.map(p => { const val = 'iata' in p ? p.iata : p.id; return <option key={val} value={val}>{p.name}</option>; })}</select></div><div><label className="text-sm text-gray-400">{isJet ? t('Arrival_Airport') : t('Arrival_Point')}</label><select name="arrivalPoint" value={formData.arrivalPoint} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"><option value="">Select</option>{arrivalPoints.map(p => { const val = 'iata' in p ? p.iata : p.id; return <option key={val} value={val}>{p.name}</option>; })}</select></div><div><label className="text-sm text-gray-400">{t('Departure_Date')}</label><input type="date" name="departureDate" value={formData.departureDate} onChange={handleChange} min={today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white" /></div><div><label className="text-sm text-gray-400">{t('Departure_Time')}</label><input type="time" name="departureTime" value={formData.departureTime} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white" /></div></div><AnimatePresence>{formData.tripType === 'round-trip' && <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="grid grid-cols-2 gap-4"><div><label className="text-sm text-gray-400">{t('Return_Date')}</label><input type="date" name="returnDateQuote" value={formData.returnDateQuote} onChange={handleChange} min={formData.departureDate || today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white" /></div><div><label className="text-sm text-gray-400">{t('Return_Time')}</label><input type="time" name="returnTimeQuote" value={formData.returnTimeQuote} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white" /></div></motion.div>}</AnimatePresence><div><label className="text-sm text-gray-400">{t('Number_of_Passengers')}</label><input type="number" name="passengers" value={formData.passengers} onChange={handleChange} min="1" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white" /></div></div>;
+          case 1: return <div className="space-y-6"><div><label className="text-sm text-gray-400 block mb-2">{t('Trip_Type')}</label><div className="flex border border-gray-700 rounded-full p-1"><button type="button" onClick={() => setFormData(p => ({ ...p, tripType: 'one-way' }))} className={`flex-1 py-1 text-sm rounded-full transition-colors ${formData.tripType === 'one-way' ? 'bg-white text-black' : 'text-gray-300'}`}>{t('One_Way')}</button><button type="button" onClick={() => setFormData(p => ({ ...p, tripType: 'round-trip' }))} className={`flex-1 py-1 text-sm rounded-full transition-colors ${formData.tripType === 'round-trip' ? 'bg-white text-black' : 'text-gray-300'}`}>{t('Round_Trip')}</button></div></div><div className="grid grid-cols-2 gap-4"><div><label className="text-sm text-gray-400">{isJet ? t('Departure_Airport') : t('Departure_Point')}</label><select name="departurePoint" value={formData.departurePoint} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"><option value="">{b('select_option_default_it', 'select_option_default_en')}</option>{departurePoints.map(p => { const val = 'iata' in p ? p.iata : p.id; return <option key={val} value={val}>{p.name}</option>; })}</select></div><div><label className="text-sm text-gray-400">{isJet ? t('Arrival_Airport') : t('Arrival_Point')}</label><select name="arrivalPoint" value={formData.arrivalPoint} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white"><option value="">{b('select_option_default_it', 'select_option_default_en')}</option>{arrivalPoints.map(p => { const val = 'iata' in p ? p.iata : p.id; return <option key={val} value={val}>{p.name}</option>; })}</select></div><div><label className="text-sm text-gray-400">{t('Departure_Date')}</label><input type="date" name="departureDate" value={formData.departureDate} onChange={handleChange} min={today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white" /></div><div><label className="text-sm text-gray-400">{t('Departure_Time')}</label><input type="time" name="departureTime" value={formData.departureTime} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white" /></div></div><AnimatePresence>{formData.tripType === 'round-trip' && <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="grid grid-cols-2 gap-4"><div><label className="text-sm text-gray-400">{t('Return_Date')}</label><input type="date" name="returnDateQuote" value={formData.returnDateQuote} onChange={handleChange} min={formData.departureDate || today} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white" /></div><div><label className="text-sm text-gray-400">{t('Return_Time')}</label><input type="time" name="returnTimeQuote" value={formData.returnTimeQuote} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white" /></div></motion.div>}</AnimatePresence><div><label className="text-sm text-gray-400">{t('Number_of_Passengers')}</label><input type="number" name="passengers" value={formData.passengers} onChange={handleChange} min="1" className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white" /></div></div>;
           case 2: return <div className="space-y-4"><div className="grid grid-cols-2 gap-4"><div><label className="text-sm text-gray-400">{t('Full_Name')}</label><input type="text" name="fullName" value={formData.fullName} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white" /></div><div><label className="text-sm text-gray-400">{t('Email_Address')}</label><input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white" /></div></div><div><label className="text-sm text-gray-400">{t('Phone_Number')}</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-gray-800 border-gray-700 rounded-md p-2 mt-1 text-white" /></div></div>
-          case 3: return <div className="text-center"><h3 className="text-2xl font-bold text-white mb-4">Review Your Inquiry</h3><p className="text-gray-400">Please review the details below before submitting your quote request. Our team will contact you shortly with pricing and availability.</p></div>;
+          case 3: return <div className="text-center"><h3 className="text-2xl font-bold text-white mb-4">{b('quote_review_title_it', 'quote_review_title_en')}</h3><p className="text-gray-400">{b('quote_review_body_it', 'quote_review_body_en')}</p></div>;
         }
       }
 
@@ -458,7 +471,7 @@ const BookingPage: React.FC = () => {
         <div className="container mx-auto px-6 flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-dr7-gold mx-auto mb-4"></div>
-            <p className="text-white text-lg">{lang === 'it' ? 'Caricamento...' : 'Loading...'}</p>
+            <p className="text-white text-lg">{b('loading_it', 'loading_en')}</p>
           </div>
         </div>
       </motion.div>
@@ -477,25 +490,23 @@ const BookingPage: React.FC = () => {
               </svg>
             </div>
             <h2 className="text-3xl font-bold text-white mb-4">
-              {lang === 'it' ? 'Accesso Richiesto' : 'Login Required'}
+              {b('auth_required_title_it', 'auth_required_title_en')}
             </h2>
             <p className="text-gray-400 mb-8">
-              {lang === 'it'
-                ? 'Devi essere registrato e aver effettuato l\'accesso per prenotare questo servizio.'
-                : 'You must be registered and logged in to book this service.'}
+              {b('auth_required_body_it', 'auth_required_body_en')}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
                 onClick={() => navigate('/signin', { state: { from: location.pathname } })}
                 className="px-8 py-3 bg-dr7-gold text-black font-bold rounded hover:bg-dr7-gold/90 transition-colors"
               >
-                {lang === 'it' ? 'Accedi' : 'Login'}
+                {b('auth_required_login_cta_it', 'auth_required_login_cta_en')}
               </button>
               <button
                 onClick={() => navigate('/signup', { state: { from: location.pathname } })}
                 className="px-8 py-3 bg-gray-700 text-white font-bold rounded hover:bg-gray-600 transition-colors"
               >
-                {lang === 'it' ? 'Registrati' : 'Sign Up'}
+                {b('auth_required_signup_cta_it', 'auth_required_signup_cta_en')}
               </button>
             </div>
           </div>

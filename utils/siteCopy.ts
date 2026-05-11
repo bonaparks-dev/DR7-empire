@@ -58,6 +58,7 @@ interface SiteCopySnapshot {
   signUp?: SignUpCopy;
   payment?: PaymentCopy;
   paymentSuccess?: PaymentSuccessCopy;
+  booking?: BookingCopy;
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -245,6 +246,44 @@ export interface MechanicalCopy {
 // Wash, Supercar & Luxury Division, etc.) stay hardcoded in Header.tsx —
 // they are brand names, not localized chrome. Only the section headings,
 // drawer/header CTAs, and aria labels move to CMS.
+// ─── Booking page (yacht/jet/heli forms — auth gate + errors + chrome) ────
+// Most form labels stay in the global i18n dictionary (t() lookups). This
+// schema covers only the chrome the i18n keys don't address: the auth gate
+// shown to non-logged-in users, post-submit confirmation screens, the
+// quote-review summary block, payment-related error literals, and the
+// generic "Select" option default. WhatsApp inquiry templates (helicopter
+// / jet / yacht) live in system_messages under proposed keys
+// `pro_booking_helicopter_inquiry_whatsapp` /
+// `pro_booking_jet_inquiry_whatsapp` / `pro_booking_yacht_confirm_whatsapp`.
+export interface BookingCopy {
+  loading_it: string; loading_en: string;
+  // Auth gate
+  auth_required_title_it: string; auth_required_title_en: string;
+  auth_required_body_it: string; auth_required_body_en: string;
+  auth_required_login_cta_it: string; auth_required_login_cta_en: string;
+  auth_required_signup_cta_it: string; auth_required_signup_cta_en: string;
+  // Confirmation screen (yacht-style, after booking)
+  booking_confirmed_title_it: string; booking_confirmed_title_en: string;
+  booking_confirmed_body_it: string; booking_confirmed_body_en: string;
+  booking_confirmed_cta_bookings_it: string; booking_confirmed_cta_bookings_en: string;
+  // Inquiry-sent screen (jet/heli quote)
+  inquiry_sent_cta_home_it: string; inquiry_sent_cta_home_en: string;
+  // Quote review (pre-submit summary)
+  quote_review_title_it: string; quote_review_title_en: string;
+  quote_review_body_it: string; quote_review_body_en: string;
+  // Generic
+  select_option_default_it: string; select_option_default_en: string;
+  payment_initializing_it: string; payment_initializing_en: string;
+  item_not_found_it: string; item_not_found_en: string;
+  // Errors
+  err_payment_not_configured_it: string; err_payment_not_configured_en: string;
+  err_payment_server_down_it: string; err_payment_server_down_en: string;
+  err_payment_not_ready_it: string; err_payment_not_ready_en: string;
+  err_category_unsupported_it: string; err_category_unsupported_en: string;
+  err_save_failed_it: string; err_save_failed_en: string;
+  err_unexpected_it: string; err_unexpected_en: string;
+}
+
 // ─── Payment Success page (post-payment landing) ──────────────────────────
 //
 // Templated bodies use {tierName} / {cycle} / {packageName} / {amount}
@@ -1035,6 +1074,13 @@ export async function getPaymentSuccessCopy(): Promise<PaymentSuccessCopy> {
   return DEFAULT_PAYMENT_SUCCESS;
 }
 
+/** Booking page (yacht/jet/heli forms) chrome + auth gate + error literals. */
+export async function getBookingCopy(): Promise<BookingCopy> {
+  const snap = await loadOnce();
+  if (snap.booking && snap.booking.auth_required_title_it) return snap.booking;
+  return DEFAULT_BOOKING;
+}
+
 /** Confirmation Success page (booking summary + email fallback). */
 export async function getConfirmationSuccessCopy(): Promise<ConfirmationSuccessCopy> {
   const snap = await loadOnce();
@@ -1176,6 +1222,43 @@ const DEFAULT_HEADER: HeaderCopy = {
   contact_cta_it: 'Contattaci', contact_cta_en: 'Contact us',
   popup_title_it: 'Prenota Ora', popup_title_en: 'Book Now',
   popup_subtitle_it: 'Seleziona date e orari', popup_subtitle_en: 'Select dates and times',
+};
+
+// ─── Default Booking seed (yacht/jet/heli auth gate + chrome + errors) ───
+const DEFAULT_BOOKING: BookingCopy = {
+  loading_it: 'Caricamento...', loading_en: 'Loading...',
+  auth_required_title_it: 'Accesso Richiesto', auth_required_title_en: 'Login Required',
+  auth_required_body_it: 'Devi essere registrato e aver effettuato l\'accesso per prenotare questo servizio.',
+  auth_required_body_en: 'You must be registered and logged in to book this service.',
+  auth_required_login_cta_it: 'Accedi', auth_required_login_cta_en: 'Login',
+  auth_required_signup_cta_it: 'Registrati', auth_required_signup_cta_en: 'Sign Up',
+  booking_confirmed_title_it: 'Prenotazione Confermata!',
+  booking_confirmed_title_en: 'Booking Confirmed!',
+  booking_confirmed_body_it: 'La tua prenotazione è stata confermata.',
+  booking_confirmed_body_en: 'Your booking has been confirmed.',
+  booking_confirmed_cta_bookings_it: 'Vedi le Mie Prenotazioni',
+  booking_confirmed_cta_bookings_en: 'View My Bookings',
+  inquiry_sent_cta_home_it: 'Torna alla Home', inquiry_sent_cta_home_en: 'Go to Home',
+  quote_review_title_it: 'Riepilogo Richiesta',
+  quote_review_title_en: 'Review Your Inquiry',
+  quote_review_body_it: 'Verifica i dettagli prima di inviare la richiesta di preventivo. Il nostro team ti contatterà a breve con prezzi e disponibilità.',
+  quote_review_body_en: 'Please review the details below before submitting your quote request. Our team will contact you shortly with pricing and availability.',
+  select_option_default_it: 'Seleziona', select_option_default_en: 'Select',
+  payment_initializing_it: 'Inizializzazione Pagamento...',
+  payment_initializing_en: 'Initializing Payment...',
+  item_not_found_it: 'Articolo non trovato.', item_not_found_en: 'Item not found.',
+  err_payment_not_configured_it: 'Il servizio di pagamento non è configurato correttamente. Contatta il supporto.',
+  err_payment_not_configured_en: 'Payment service is not configured correctly. Please contact support.',
+  err_payment_server_down_it: 'Impossibile connettersi al server di pagamento.',
+  err_payment_server_down_en: 'Could not connect to payment server.',
+  err_payment_not_ready_it: 'Il sistema di pagamento non è pronto.',
+  err_payment_not_ready_en: 'Payment system is not ready.',
+  err_category_unsupported_it: 'Questa categoria non può essere prenotata.',
+  err_category_unsupported_en: 'This category cannot be booked.',
+  err_save_failed_it: 'Impossibile salvare la prenotazione. Riprova.',
+  err_save_failed_en: 'Could not save your booking. Please try again.',
+  err_unexpected_it: 'Si è verificato un errore imprevisto.',
+  err_unexpected_en: 'An unexpected error occurred.',
 };
 
 // ─── Default Payment Success seed (post-payment landing) ─────────────────
