@@ -66,6 +66,7 @@ interface SiteCopySnapshot {
   bookingSearchBox?: BookingSearchBoxCopy;
   paymentCancel?: PaymentCancelCopy;
   locations?: LocationsCopy;
+  aviationMarine?: AviationMarineCopy;
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -282,6 +283,36 @@ export interface LocationsCopy {
   yacht_marinas: BilingualLocationItem[];
   heli_departure_points: SimpleLocationItem[];
   heli_arrival_points: SimpleLocationItem[];
+}
+
+// ─── Yacht / Jet / Heli catalog (admin-editable fleet items) ────────────
+// Spec keys map to fixed labels + icons in utils/getAviationFleet.ts. Admin
+// only edits the value strings; static labels and icons live in code.
+export type AviationMarineSpecKey =
+  | 'passengers' | 'year' | 'type'
+  | 'range' | 'speed'
+  | 'guests' | 'length' | 'cabins';
+
+export interface AviationMarineSpec {
+  key: AviationMarineSpecKey;
+  value: string;
+}
+
+export interface AviationMarineItem {
+  id: string;
+  name: string;
+  image: string;
+  images?: string[];
+  price_per_day_eur?: number;
+  pets_allowed?: boolean;
+  smoking_allowed?: boolean;
+  specs: AviationMarineSpec[];
+}
+
+export interface AviationMarineCopy {
+  yachts: AviationMarineItem[];
+  jets: AviationMarineItem[];
+  helis: AviationMarineItem[];
 }
 
 // ─── Payment Cancel page (post-Nexi cancel landing) ─────────────────────
@@ -1453,6 +1484,15 @@ export async function getLocationsCopy(): Promise<LocationsCopy> {
   return DEFAULT_LOCATIONS;
 }
 
+/** Yacht / Jet / Heli catalog (admin-editable). */
+export async function getAviationMarineCopy(): Promise<AviationMarineCopy> {
+  const snap = await loadOnce();
+  if (snap.aviationMarine && (snap.aviationMarine.yachts?.length || snap.aviationMarine.jets?.length || snap.aviationMarine.helis?.length)) {
+    return snap.aviationMarine;
+  }
+  return DEFAULT_AVIATION_MARINE;
+}
+
 /** Confirmation Success page (booking summary + email fallback). */
 export async function getConfirmationSuccessCopy(): Promise<ConfirmationSuccessCopy> {
   const snap = await loadOnce();
@@ -1632,6 +1672,74 @@ const DEFAULT_LOCATIONS: LocationsCopy = {
     { id: 'forte_village', name: 'Forte Village Resort' },
     { id: 'cala_di_volpe', name: 'Hotel Cala di Volpe' },
     { id: 'villasimius', name: 'Villasimius Private Pad' },
+  ],
+};
+
+// ─── Default Yacht/Jet/Heli seed (mirrors current constants.ts arrays) ──
+const DEFAULT_AVIATION_MARINE: AviationMarineCopy = {
+  yachts: [
+    {
+      id: 'yacht-1',
+      name: 'Luxury Yacht',
+      image: '/yacht1.jpeg',
+      images: ['/yacht1.jpeg'],
+      price_per_day_eur: 11000,
+      specs: [
+        { key: 'guests', value: '12' },
+        { key: 'length', value: '70m' },
+        { key: 'cabins', value: '6' },
+      ],
+    },
+  ],
+  jets: [
+    {
+      id: 'jet-1',
+      name: 'Cessna Citation Mustang',
+      image: '/jet1.jpeg',
+      images: ['/jet1.jpeg', '/jet2.jpeg'],
+      pets_allowed: false,
+      smoking_allowed: false,
+      specs: [
+        { key: 'passengers', value: '4' },
+        { key: 'year', value: '2008' },
+        { key: 'type', value: 'Entry Level Jet' },
+      ],
+    },
+    {
+      id: 'jet-2',
+      name: 'Cessna Citation CJ2',
+      image: '/jet3.jpeg',
+      images: ['/jet3.jpeg', '/jet4.jpeg'],
+      pets_allowed: false,
+      smoking_allowed: false,
+      specs: [
+        { key: 'passengers', value: '6' },
+        { key: 'year', value: '2004' },
+        { key: 'type', value: 'Light Jet' },
+      ],
+    },
+  ],
+  helis: [
+    {
+      id: 'heli-1',
+      name: 'Airbus H125',
+      image: '/heli1.jpeg',
+      specs: [
+        { key: 'passengers', value: '5' },
+        { key: 'range', value: '300 nm' },
+        { key: 'speed', value: '150 kt' },
+      ],
+    },
+    {
+      id: 'heli-2',
+      name: 'Bell 505 Jet Ranger X',
+      image: '/heli2.jpeg',
+      specs: [
+        { key: 'passengers', value: '5' },
+        { key: 'range', value: '300 nm' },
+        { key: 'speed', value: '150 kt' },
+      ],
+    },
   ],
 };
 

@@ -1,7 +1,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { RENTAL_CATEGORIES, AIRPORTS as DEFAULT_AIRPORTS } from '../constants';
+import { AIRPORTS as DEFAULT_AIRPORTS } from '../constants';
 import type { RentalItem } from '../types';
 import RentalCard from '../components/ui/RentalCard';
 import { useTranslation } from '../hooks/useTranslation';
@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import { useVerification } from '../hooks/useVerification';
 import { getJetSearchResultsCopy, type JetSearchResultsCopy } from '../utils/siteCopy';
 import { getAirports } from '../utils/getLocations';
+import { getJetFleet } from '../utils/getAviationFleet';
 
 const JetSearchResultsPage: React.FC = () => {
     const [searchParams] = useSearchParams();
@@ -17,10 +18,12 @@ const JetSearchResultsPage: React.FC = () => {
     const { checkVerificationAndProceed } = useVerification();
     const [copy, setCopy] = useState<JetSearchResultsCopy | null>(null);
     const [airports, setAirports] = useState(DEFAULT_AIRPORTS);
+    const [jetFleet, setJetFleet] = useState<RentalItem[]>([]);
     useEffect(() => {
         let cancelled = false;
         getJetSearchResultsCopy().then((c) => { if (!cancelled) setCopy(c); });
         getAirports().then((a) => { if (!cancelled) setAirports(a); });
+        getJetFleet().then((f) => { if (!cancelled) setJetFleet(f); });
         return () => { cancelled = true; };
     }, []);
     const tx = (it: keyof JetSearchResultsCopy, en: keyof JetSearchResultsCopy, fallback = ''): string => {
@@ -40,10 +43,8 @@ const JetSearchResultsPage: React.FC = () => {
     }), [searchParams]);
 
     const searchResults = useMemo(() => {
-        const jetsCategory = RENTAL_CATEGORIES.find(c => c.id === 'jets');
-        if (!jetsCategory) return [];
-
-        return jetsCategory.data.filter(jet => {
+        if (!jetFleet.length) return [];
+        return jetFleet.filter(jet => {
             const passengerSpec = jet.specs.find(s => s.label.en.toLowerCase() === 'passengers');
             if (!passengerSpec || parseInt(passengerSpec.value, 10) < searchCriteria.passengers) {
                 return false;
@@ -56,7 +57,7 @@ const JetSearchResultsPage: React.FC = () => {
             }
             return true;
         });
-    }, [searchCriteria]);
+    }, [searchCriteria, jetFleet]);
 
     const handleBook = (item: RentalItem) => {
         checkVerificationAndProceed(() => {

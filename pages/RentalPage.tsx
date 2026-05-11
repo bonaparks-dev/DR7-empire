@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { RENTAL_CATEGORIES, AIRPORTS as DEFAULT_AIRPORTS, PICKUP_LOCATIONS as DEFAULT_PICKUP_LOCATIONS } from '../constants';
+import { getYachtFleet, getJetFleet } from '../utils/getAviationFleet';
 import { getAirports, getPickupLocations } from '../utils/getLocations';
 import type { RentalItem } from '../types';
 import RentalCard from '../components/ui/RentalCard';
@@ -898,11 +899,27 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   }, [vehiclesError]);
 
 
-  // Get the category from static data
+  // Get the category metadata (id/label/icon) from static data
   const category = RENTAL_CATEGORIES.find(cat => cat.id === categoryId);
 
-  // Use fetched vehicles for car categories, otherwise use static data
-  const categoryData = vehicleCategory ? fetchedVehicles : (category?.data || []);
+  // Aviation/marine items come from Sito CMS (centralina_pro_config.site_copy.aviationMarine).
+  const [yachtFleet, setYachtFleet] = useState<RentalItem[]>([]);
+  const [jetFleet, setJetFleet] = useState<RentalItem[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    if (categoryId === 'yachts') getYachtFleet().then(f => { if (!cancelled) setYachtFleet(f); });
+    if (categoryId === 'jets' || categoryId === 'helicopters') getJetFleet().then(f => { if (!cancelled) setJetFleet(f); });
+    return () => { cancelled = true; };
+  }, [categoryId]);
+
+  // Use fetched vehicles for car categories, admin fleet for aviation/marine, otherwise static.
+  const categoryData = vehicleCategory
+    ? fetchedVehicles
+    : categoryId === 'yachts'
+      ? yachtFleet
+      : (categoryId === 'jets' || categoryId === 'helicopters')
+        ? jetFleet
+        : (category?.data || []);
 
   const handleBook = (item: RentalItem) => {
     console.log('RentalPage handleBook called:', { item, categoryId });

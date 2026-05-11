@@ -6,6 +6,8 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
 import { RENTAL_CATEGORIES, YACHT_PICKUP_MARINAS as DEFAULT_YACHT_PICKUP_MARINAS, AIRPORTS as DEFAULT_AIRPORTS, HELI_DEPARTURE_POINTS as DEFAULT_HELI_DEPARTURE_POINTS, HELI_ARRIVAL_POINTS as DEFAULT_HELI_ARRIVAL_POINTS } from '../constants';
+import { getYachtFleet, getJetFleet } from '../utils/getAviationFleet';
+import type { RentalItem } from '../types';
 import type { Booking, Inquiry, RentalItem } from '../types';
 import CarBookingWizard from '../components/ui/CarBookingWizard';
 import BookingErrorBoundary from '../components/ui/BookingErrorBoundary';
@@ -97,16 +99,30 @@ const BookingPage: React.FC = () => {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [isClientSecretLoading, setIsClientSecretLoading] = useState(false);
 
+  const [yachtFleet, setYachtFleet] = useState<RentalItem[]>([]);
+  const [jetFleet, setJetFleet] = useState<RentalItem[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    getYachtFleet().then((f) => { if (!cancelled) setYachtFleet(f); });
+    getJetFleet().then((f) => { if (!cancelled) setJetFleet(f); });
+    return () => { cancelled = true; };
+  }, []);
+
   const { category, item, isCar, isJet, isHelicopter, isYacht, isQuoteRequest } = useMemo(() => {
     const cat = RENTAL_CATEGORIES.find(c => c.id === categoryId);
-    const itm = cat?.data.find(i => i.id === itemId);
+    // Aviation/marine items come from the admin catalog (centralina_pro_config.site_copy.aviationMarine).
+    // Static RENTAL_CATEGORIES still provides id/label/icon for navigation.
+    const adminItems = cat?.id === 'yachts' ? yachtFleet
+      : cat?.id === 'jets' ? jetFleet
+      : cat?.data || [];
+    const itm = adminItems.find(i => i.id === itemId);
     const car = cat?.id === 'cars';
     const jet = cat?.id === 'jets';
     const helicopter = cat?.id === 'helicopters';
     const yacht = cat?.id === 'yachts';
     const quote = jet;
     return { category: cat, item: itm, isCar: car, isJet: jet, isHelicopter: helicopter, isYacht: yacht, isQuoteRequest: quote };
-  }, [categoryId, itemId]);
+  }, [categoryId, itemId, yachtFleet, jetFleet]);
 
   useEffect(() => {
     if ((window as any).Stripe) {
