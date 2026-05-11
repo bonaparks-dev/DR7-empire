@@ -475,32 +475,6 @@ export const RETURN_LOCATIONS = [
 
 export const DR7_OFFICE_ADDRESS = 'Viale Marconi 229, 09131 Cagliari CA, Italy';
 
-export const DEPOSIT_RULES = {
-  UTILITARIA: {
-    LOYAL_CUSTOMER: 0,        // 3+ rentals
-    FULL_DEPOSIT: 1000,       // Full cauzione — base tariff
-    LICENSE_UNDER_5: 500,     // Micro cauzione < 5 years
-    LICENSE_5_OR_MORE: 250,   // Micro cauzione ≥ 5 years
-  },
-  // Supercar (veicolo dal 2020 in poi) — Residenti in Sardegna
-  SUPERCAR: {
-    LOYAL_CUSTOMER: 0,
-    // Carta di credito
-    CARD_YOUNG: 2000,         // 21-25 anni o patente 2-4 anni
-    CARD_STANDARD: 1000,      // 26-69 anni, patente 5+ anni
-    // Contanti o carta prepagata
-    CASH_PREPAID: 4999,       // Qualsiasi età/patente
-  },
-  LOYAL_CUSTOMER_THRESHOLD: 3, // Minimum rentals for loyalty
-};
-
-
-
-export const VALIDATION_MESSAGES = {
-  en: { base: 'Based on your age and license history, only Basic Cover is available.' },
-  it: { base: 'In base alla tua età e anzianità di patente, è disponibile solo la Copertura Base.' }
-};
-
 export const LICENSE_OBTENTION_YEAR_OPTIONS = Array.from({ length: 70 }, (_, i) => new Date().getFullYear() - i);
 
 export const YACHT_PICKUP_MARINAS = [
@@ -530,31 +504,6 @@ export const HELI_ARRIVAL_POINTS = [
   ...HELI_DEPARTURE_POINTS,
   { id: 'cala_di_volpe', name: 'Hotel Cala di Volpe' },
   { id: 'villasimius', name: 'Villasimius Private Pad' },
-];
-
-export const CRYPTO_ADDRESSES: Record<string, string> = {
-  btc: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
-  eth: '0x1234567890123456789012345678901234567890',
-  usdt: '0xabcdef1234567890abcdef1234567890abcdef12',
-};
-
-export const RENTAL_EXTRAS = [
-  {
-    id: 'young_driver_fee',
-    label: { en: 'Young Driver Fee', it: 'Supplemento Giovane Conducente' },
-    description: { en: 'Required for drivers under 25', it: 'Richiesto per conducenti sotto i 25 anni' },
-    pricePerDay: { usd: 11, eur: 10, crypto: 10 },
-    autoApply: true,
-    oneTime: false
-  },
-  {
-    id: 'additional_driver',
-    label: { en: 'Additional Driver', it: 'Guidatore Aggiuntivo' },
-    description: { en: 'Add a second driver', it: 'Aggiungi un secondo guidatore' },
-    pricePerDay: { usd: 11, eur: 10, crypto: 10 },
-    autoApply: false,
-    oneTime: false
-  }
 ];
 
 

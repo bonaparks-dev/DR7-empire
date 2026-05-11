@@ -9,7 +9,9 @@ import { addCredits } from '../../utils/creditWallet';
 import { useAuth } from '../../hooks/useAuth';
 import { useBooking } from '../../hooks/useBooking';
 import { supabase } from '../../supabaseClient';
-import { PICKUP_LOCATIONS as DEFAULT_PICKUP_LOCATIONS, RETURN_LOCATIONS as DEFAULT_RETURN_LOCATIONS, RENTAL_EXTRAS, DEPOSIT_RULES } from '../../constants';
+import { PICKUP_LOCATIONS as DEFAULT_PICKUP_LOCATIONS, RETURN_LOCATIONS as DEFAULT_RETURN_LOCATIONS } from '../../constants';
+
+const LOYAL_CUSTOMER_THRESHOLD = 3;
 import { getPickupLocations, getReturnLocations } from '../../utils/getLocations';
 import type { Booking, RentalItem, DriverTier, TierClassification, PaymentMode } from '../../types';
 import { classifyDriverTier } from '../../utils/tierClassification';
@@ -526,6 +528,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const ACTIVE_DELIVERY_PRICE_PER_KM = configOverlay?.deliveryPricePerKm ?? 0;
   // ACTIVE_DR7_FLEX rimosso — DR7 Flex ora è in EXPERIENCE_SERVICES.
   const ACTIVE_EXPERIENCE_SERVICES = configOverlay?.experienceServices ?? [];
+  // Utilitaria/Aziendali deposit displayed in riepilogo — first real (non-zero)
+  // amount from Pro's urban deposit options. Falls back to 0 if Pro empty.
+  const ACTIVE_UTILITARIA_DEPOSIT = (() => {
+    const activeTier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2';
+    const depKey = `${activeTier}_RESIDENT` as 'TIER_1_RESIDENT' | 'TIER_2_RESIDENT';
+    const opts = pickDepositOptions(configOverlay, 'UTILITARIA', depKey) as Array<{ amount?: number }>;
+    const real = opts.find(o => typeof o.amount === 'number' && o.amount > 0);
+    return real?.amount ?? 0;
+  })();
 
   // Live Prime Wash catalog from admin (car_wash_services). Replaces the
   // old hardcoded URBAN_SERVICES/MAXI_SERVICES/EXTRA_CARE_SERVICES/
@@ -975,7 +986,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
         if (!error && count !== null) {
           setCustomerRentalCount(count);
-          setIsLoyalCustomer(count >= DEPOSIT_RULES.LOYAL_CUSTOMER_THRESHOLD);
+          setIsLoyalCustomer(count >= LOYAL_CUSTOMER_THRESHOLD);
         }
 
         // Also check admin-set status from customers_extended
@@ -1704,13 +1715,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const insuranceDailyPrice = selectedInsOpt?.dailyPrice || 0;
     let calculatedInsuranceCost = roundToTwoDecimals(insuranceDailyPrice * billingDaysCalc);
 
-    // --- EXTRAS COST ---
-    const calculatedExtrasCost = formData.extras.reduce((acc, extraId) => {
-      const extra = RENTAL_EXTRAS.find(e => e.id === extraId);
-      if (!extra) return acc;
-      if (extra.oneTime) return acc + (extra.pricePerDay[currency] || 0);
-      return acc + (extra.pricePerDay[currency] || 0) * billingDays;
-    }, 0);
+    // Extras list (formData.extras) only carries DR7 Club subscription ids today,
+    // which are billed separately. No per-day extras to sum here.
+    const calculatedExtrasCost = 0;
 
     const calculatedDriverAge = calculateAgeFromDDMMYYYY(formData.birthDate);
     const calculatedLicenseYears = calculateYearsSince(formData.licenseIssueDate);
@@ -2039,9 +2046,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       return selectedDep.amount; // The fixed deposit amount (€0 for no_deposit/vehicle, €1000/€2000 for card, €4999 for cash)
     }
 
-    // Fallback: if no deposit option selected yet, show default card amount
-    const isYoung = (driverAge >= 21 && driverAge <= 25) || (licenseYears >= 3 && licenseYears <= 4);
-    return isYoung ? DEPOSIT_RULES.SUPERCAR.CARD_YOUNG : DEPOSIT_RULES.SUPERCAR.CARD_STANDARD;
+    // Fallback: if no deposit option selected yet, show Pro's first option for this tier.
+    return depOptions[0]?.amount ?? 0;
   };
 
   // Handlers
@@ -6792,7 +6798,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         <div className="mt-2 pt-2 border-t border-gray-700">
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-400">Cauzione al ritiro</span>
-                            <span className="text-white font-medium">€{DEPOSIT_RULES.UTILITARIA.FULL_DEPOSIT.toLocaleString()}</span>
+                            <span className="text-white font-medium">€{ACTIVE_UTILITARIA_DEPOSIT.toLocaleString()}</span>
                           </div>
                           <p className="text-xs text-gray-500 mt-1">Restituita dopo la riconsegna</p>
                         </div>
