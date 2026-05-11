@@ -59,6 +59,7 @@ interface SiteCopySnapshot {
   payment?: PaymentCopy;
   paymentSuccess?: PaymentSuccessCopy;
   booking?: BookingCopy;
+  creditWallet?: CreditWalletCopy;
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -246,6 +247,78 @@ export interface MechanicalCopy {
 // Wash, Supercar & Luxury Division, etc.) stay hardcoded in Header.tsx —
 // they are brand names, not localized chrome. Only the section headings,
 // drawer/header CTAs, and aria labels move to CMS.
+// ─── Credit Wallet page (recharge funnel + benefits + checkout modal) ────
+// CREDIT_PACKAGES array (amounts/bonuses) stays in code as product config —
+// only the marketing copy + checkout chrome is editable here. Brand vocab
+// "DR7", "DR7 Credit Wallet", "Nexi" stays hardcoded in the page template.
+// `{amount}` token in modal pay CTA resolved at render.
+export interface CreditWalletCopy {
+  // Hero
+  hero_title_eyebrow_it: string; hero_title_eyebrow_en: string;
+  hero_subtitle_it: string; hero_subtitle_en: string;
+  hero_intro_it: string; hero_intro_en: string;
+  // Top benefits row (3 cards)
+  benefit_extra_title_it: string; benefit_extra_title_en: string;
+  benefit_extra_body_it: string; benefit_extra_body_en: string;
+  benefit_no_expiry_title_it: string; benefit_no_expiry_title_en: string;
+  benefit_no_expiry_body_it: string; benefit_no_expiry_body_en: string;
+  benefit_secure_title_it: string; benefit_secure_title_en: string;
+  benefit_secure_body_it: string; benefit_secure_body_en: string;
+  // Services info
+  services_heading_it: string; services_heading_en: string;
+  services_body_it: string; services_body_en: string;
+  services_no_expiry_it: string; services_no_expiry_en: string;
+  // Package selection
+  packages_section_label_it: string; packages_section_label_en: string;
+  packages_filter_all_it: string; packages_filter_all_en: string;
+  // Promo footer slogans
+  promo_line1_it: string; promo_line1_en: string;
+  promo_line2_it: string; promo_line2_en: string;
+  // Advantages (4 cards — section header + 4× title/body)
+  advantages_heading_it: string; advantages_heading_en: string;
+  advantage_1_title_it: string; advantage_1_title_en: string;
+  advantage_1_body_it: string; advantage_1_body_en: string;
+  advantage_2_title_it: string; advantage_2_title_en: string;
+  advantage_2_body_it: string; advantage_2_body_en: string;
+  advantage_3_title_it: string; advantage_3_title_en: string;
+  advantage_3_body_it: string; advantage_3_body_en: string;
+  advantage_4_title_it: string; advantage_4_title_en: string;
+  advantage_4_body_it: string; advantage_4_body_en: string;
+  // Transparency (title + 3 bullets)
+  transparency_heading_it: string; transparency_heading_en: string;
+  transparency_bullet_1_it: string; transparency_bullet_1_en: string;
+  transparency_bullet_2_it: string; transparency_bullet_2_en: string;
+  transparency_bullet_3_it: string; transparency_bullet_3_en: string;
+  // Bottom CTA block
+  cta_title_it: string; cta_title_en: string;
+  cta_subtitle_it: string; cta_subtitle_en: string;
+  cta_button_it: string; cta_button_en: string;
+  // Package card
+  card_popular_badge_it: string; card_popular_badge_en: string;
+  card_recharge_label_it: string; card_recharge_label_en: string;
+  card_receive_label_it: string; card_receive_label_en: string;
+  card_bonus_suffix_it: string; card_bonus_suffix_en: string;     // "Bonus"
+  card_cta_it: string; card_cta_en: string;
+  // Checkout modal
+  modal_title_it: string; modal_title_en: string;
+  modal_recharge_label_it: string; modal_recharge_label_en: string;
+  modal_bonus_label_it: string; modal_bonus_label_en: string;
+  modal_receive_label_it: string; modal_receive_label_en: string;
+  modal_payment_heading_it: string; modal_payment_heading_en: string;
+  modal_payment_info_it: string; modal_payment_info_en: string;
+  modal_payment_secure_it: string; modal_payment_secure_en: string;
+  modal_cancel_it: string; modal_cancel_en: string;
+  modal_pay_template_it: string; modal_pay_template_en: string;   // "Paga €{amount}"
+  modal_processing_it: string; modal_processing_en: string;
+  // Validation / errors
+  err_name_required_it: string; err_name_required_en: string;
+  err_email_required_it: string; err_email_required_en: string;
+  err_phone_invalid_it: string; err_phone_invalid_en: string;
+  err_cf_invalid_it: string; err_cf_invalid_en: string;
+  err_payment_not_ready_it: string; err_payment_not_ready_en: string;
+  err_payment_failed_it: string; err_payment_failed_en: string;
+}
+
 // ─── Booking page (yacht/jet/heli forms — auth gate + errors + chrome) ────
 // Most form labels stay in the global i18n dictionary (t() lookups). This
 // schema covers only the chrome the i18n keys don't address: the auth gate
@@ -1081,6 +1154,14 @@ export async function getBookingCopy(): Promise<BookingCopy> {
   return DEFAULT_BOOKING;
 }
 
+/** Credit Wallet page (marketing copy + checkout modal). Package data
+ * stays in CREDIT_PACKAGES (product config), not edited here. */
+export async function getCreditWalletCopy(): Promise<CreditWalletCopy> {
+  const snap = await loadOnce();
+  if (snap.creditWallet && snap.creditWallet.hero_intro_it) return snap.creditWallet;
+  return DEFAULT_CREDIT_WALLET;
+}
+
 /** Confirmation Success page (booking summary + email fallback). */
 export async function getConfirmationSuccessCopy(): Promise<ConfirmationSuccessCopy> {
   const snap = await loadOnce();
@@ -1222,6 +1303,90 @@ const DEFAULT_HEADER: HeaderCopy = {
   contact_cta_it: 'Contattaci', contact_cta_en: 'Contact us',
   popup_title_it: 'Prenota Ora', popup_title_en: 'Book Now',
   popup_subtitle_it: 'Seleziona date e orari', popup_subtitle_en: 'Select dates and times',
+};
+
+// ─── Default Credit Wallet seed ──────────────────────────────────────────
+const DEFAULT_CREDIT_WALLET: CreditWalletCopy = {
+  hero_title_eyebrow_it: 'DR7 CREDIT WALLET', hero_title_eyebrow_en: 'DR7 CREDIT WALLET',
+  hero_subtitle_it: 'Ricarica. Guadagna. Vivi l\'esperienza DR7.',
+  hero_subtitle_en: 'Top up. Earn. Live the DR7 experience.',
+  hero_intro_it: 'Il sistema di credito flessibile che premia la tua fiducia. Acquista crediti DR7 e ricevi bonus fino all\'80%.',
+  hero_intro_en: 'The flexible credit system that rewards your trust. Buy DR7 credits and receive bonuses up to 80%.',
+  benefit_extra_title_it: 'Fino all\'80% Extra', benefit_extra_title_en: 'Up to 80% Extra',
+  benefit_extra_body_it: 'Credito bonus a seconda del pacchetto scelto',
+  benefit_extra_body_en: 'Bonus credit depending on the package you choose',
+  benefit_no_expiry_title_it: 'Nessuna Scadenza', benefit_no_expiry_title_en: 'No Expiration',
+  benefit_no_expiry_body_it: 'Il credito rimane sempre disponibile nel tuo profilo',
+  benefit_no_expiry_body_en: 'The credit stays available in your profile, forever',
+  benefit_secure_title_it: '100% Sicuro', benefit_secure_title_en: '100% Secure',
+  benefit_secure_body_it: 'Pagamenti certificati e controllati',
+  benefit_secure_body_en: 'Certified and verified payments',
+  services_heading_it: 'Il credito può essere utilizzato per:',
+  services_heading_en: 'The credit can be used for:',
+  services_body_it: 'Noleggi di auto e veicoli di lusso, lavaggi premium, servizi meccanici, esperienze esclusive — tutta l\'offerta DR7.',
+  services_body_en: 'Luxury car and vehicle rentals, premium washes, mechanical services, exclusive experiences — the entire DR7 offering.',
+  services_no_expiry_it: 'Il credito non ha scadenza',
+  services_no_expiry_en: 'The credit never expires',
+  packages_section_label_it: 'SCEGLI IL TUO PACCHETTO:',
+  packages_section_label_en: 'CHOOSE YOUR PACKAGE:',
+  packages_filter_all_it: 'Tutti i Pacchetti', packages_filter_all_en: 'All Packages',
+  promo_line1_it: 'CREDITO IMMEDIATO. NESSUNA SCADENZA.',
+  promo_line1_en: 'INSTANT CREDIT. NO EXPIRATION.',
+  promo_line2_it: 'SOLO VANTAGGI. SOLO DR7.',
+  promo_line2_en: 'ONLY ADVANTAGES. ONLY DR7.',
+  advantages_heading_it: 'VANTAGGI DEL DR7 CREDIT WALLET',
+  advantages_heading_en: 'DR7 CREDIT WALLET BENEFITS',
+  advantage_1_title_it: 'Risparmio Immediato', advantage_1_title_en: 'Instant Savings',
+  advantage_1_body_it: 'Bonus credit aggiuntivo applicato istantaneamente al momento della ricarica.',
+  advantage_1_body_en: 'Bonus credit applied instantly when you top up.',
+  advantage_2_title_it: 'Massima Flessibilità', advantage_2_title_en: 'Total Flexibility',
+  advantage_2_body_it: 'Utilizza il credito per qualunque servizio DR7, in qualunque momento.',
+  advantage_2_body_en: 'Use the credit on any DR7 service, whenever you want.',
+  advantage_3_title_it: 'Pagamento Veloce', advantage_3_title_en: 'Fast Checkout',
+  advantage_3_body_it: 'Salda le prenotazioni con un click usando il tuo wallet DR7.',
+  advantage_3_body_en: 'Settle bookings in one click using your DR7 wallet.',
+  advantage_4_title_it: 'Storico Completo', advantage_4_title_en: 'Full History',
+  advantage_4_body_it: 'Ogni ricarica e ogni utilizzo sono tracciati e consultabili dall\'account.',
+  advantage_4_body_en: 'Every top-up and every charge is tracked and visible from your account.',
+  transparency_heading_it: 'TRASPARENZA E SICUREZZA',
+  transparency_heading_en: 'TRANSPARENCY & SECURITY',
+  transparency_bullet_1_it: 'Pagamenti gestiti tramite gateway certificato Nexi.',
+  transparency_bullet_1_en: 'Payments handled via the certified Nexi gateway.',
+  transparency_bullet_2_it: 'Crediti garantiti, sempre disponibili sul tuo profilo.',
+  transparency_bullet_2_en: 'Credits guaranteed, always available on your profile.',
+  transparency_bullet_3_it: 'Fatturazione automatica conforme alla normativa fiscale italiana.',
+  transparency_bullet_3_en: 'Automated invoicing compliant with Italian tax law.',
+  cta_title_it: 'ATTIVA ORA IL TUO WALLET DR7',
+  cta_title_en: 'ACTIVATE YOUR DR7 WALLET NOW',
+  cta_subtitle_it: 'Scegli il pacchetto più adatto a te e inizia subito a risparmiare sui servizi DR7.',
+  cta_subtitle_en: 'Choose the package that fits you best and start saving on DR7 services right away.',
+  cta_button_it: 'Scegli il Tuo Pacchetto', cta_button_en: 'Choose Your Package',
+  card_popular_badge_it: 'PIÙ SCELTO', card_popular_badge_en: 'MOST POPULAR',
+  card_recharge_label_it: 'Ricarichi', card_recharge_label_en: 'You recharge',
+  card_receive_label_it: 'Ricevi', card_receive_label_en: 'You receive',
+  card_bonus_suffix_it: 'Bonus', card_bonus_suffix_en: 'Bonus',
+  card_cta_it: 'Ricarica Ora', card_cta_en: 'Top up now',
+  modal_title_it: 'Completa la Ricarica', modal_title_en: 'Complete the Top-up',
+  modal_recharge_label_it: 'Ricarichi', modal_recharge_label_en: 'You recharge',
+  modal_bonus_label_it: 'Bonus', modal_bonus_label_en: 'Bonus',
+  modal_receive_label_it: 'Ricevi', modal_receive_label_en: 'You receive',
+  modal_payment_heading_it: 'Informazioni di Pagamento', modal_payment_heading_en: 'Payment Information',
+  modal_payment_info_it: 'Verrai reindirizzato alla pagina di pagamento sicura Nexi',
+  modal_payment_info_en: 'You\'ll be redirected to the secure Nexi payment page',
+  modal_payment_secure_it: 'Pagamento protetto e certificato',
+  modal_payment_secure_en: 'Secure and certified payment',
+  modal_cancel_it: 'Annulla', modal_cancel_en: 'Cancel',
+  modal_pay_template_it: 'Paga €{amount}', modal_pay_template_en: 'Pay €{amount}',
+  modal_processing_it: 'Elaborazione...', modal_processing_en: 'Processing...',
+  err_name_required_it: 'Il nome è obbligatorio', err_name_required_en: 'Name is required',
+  err_email_required_it: 'L\'email è obbligatoria', err_email_required_en: 'Email is required',
+  err_phone_invalid_it: 'Formato telefono non valido', err_phone_invalid_en: 'Invalid phone format',
+  err_cf_invalid_it: 'Codice Fiscale non valido (16 caratteri)',
+  err_cf_invalid_en: 'Invalid Tax Code (16 characters)',
+  err_payment_not_ready_it: 'Il sistema di pagamento non è pronto.',
+  err_payment_not_ready_en: 'Payment system is not ready.',
+  err_payment_failed_it: 'Elaborazione del pagamento fallita.',
+  err_payment_failed_en: 'Payment processing failed.',
 };
 
 // ─── Default Booking seed (yacht/jet/heli auth gate + chrome + errors) ───

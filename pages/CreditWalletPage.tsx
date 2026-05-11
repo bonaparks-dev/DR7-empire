@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
 import { addCredits } from '../utils/creditWallet';
+import { useTranslation } from '../hooks/useTranslation';
+import { getCreditWalletCopy, type CreditWalletCopy } from '../utils/siteCopy';
 
 interface CreditPackage {
   id: string;
@@ -106,7 +108,9 @@ const CREDIT_PACKAGES: CreditPackage[] = [
   }
 ];
 
-const PackageCard: React.FC<{ pkg: CreditPackage; onSelect: () => void }> = ({ pkg, onSelect }) => {
+const PackageCard: React.FC<{ pkg: CreditPackage; onSelect: () => void; copy: CreditWalletCopy; lang: 'it' | 'en' }> = ({ pkg, onSelect, copy, lang }) => {
+  const c = (it: keyof CreditWalletCopy, en: keyof CreditWalletCopy): string =>
+    (copy as Record<string, string>)[(lang === 'it' ? it : en) as string];
   const cardVariants: Variants = {
     hidden: { opacity: 0, y: 50 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
@@ -120,7 +124,7 @@ const PackageCard: React.FC<{ pkg: CreditPackage; onSelect: () => void }> = ({ p
     >
       {pkg.popular && (
         <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-white text-black px-4 py-1 rounded-full text-sm font-semibold">
-          PIÙ SCELTO
+          {c('card_popular_badge_it', 'card_popular_badge_en')}
         </div>
       )}
 
@@ -128,7 +132,7 @@ const PackageCard: React.FC<{ pkg: CreditPackage; onSelect: () => void }> = ({ p
       <h3 className="text-2xl font-bold text-white mb-4">{pkg.name}</h3>
 
       <div className="mb-4">
-        <div className="text-xs text-gray-500 mb-1">Ricarichi</div>
+        <div className="text-xs text-gray-500 mb-1">{c('card_recharge_label_it', 'card_recharge_label_en')}</div>
         <div className="text-xl font-semibold text-gray-300">{pkg.rechargeAmount.toLocaleString()}</div>
       </div>
 
@@ -139,10 +143,10 @@ const PackageCard: React.FC<{ pkg: CreditPackage; onSelect: () => void }> = ({ p
       </div>
 
       <div className="mb-4 pb-4 border-b border-gray-700">
-        <div className="text-sm text-gray-400 mb-1">Ricevi</div>
+        <div className="text-sm text-gray-400 mb-1">{c('card_receive_label_it', 'card_receive_label_en')}</div>
         <div className="text-5xl font-extrabold text-white">{pkg.receivedAmount.toLocaleString()}</div>
         <div className="text-lg text-white mt-3 font-bold">
-          +{pkg.bonusPercentage}% Bonus ({pkg.bonus})
+          +{pkg.bonusPercentage}% {c('card_bonus_suffix_it', 'card_bonus_suffix_en')} ({pkg.bonus})
         </div>
       </div>
 
@@ -153,7 +157,7 @@ const PackageCard: React.FC<{ pkg: CreditPackage; onSelect: () => void }> = ({ p
           : 'bg-gray-700 text-white hover:bg-gray-600'
           }`}
       >
-        Ricarica Ora
+        {c('card_cta_it', 'card_cta_en')}
       </button>
     </motion.div>
   );
@@ -163,9 +167,22 @@ const PackageCard: React.FC<{ pkg: CreditPackage; onSelect: () => void }> = ({ p
 const CreditWalletPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { lang } = useTranslation();
   const [selectedSeries, setSelectedSeries] = useState<string>('all');
   const [selectedPackage, setSelectedPackage] = useState<CreditPackage | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [copy, setCopy] = useState<CreditWalletCopy | null>(null);
+  const copyRef = useRef<CreditWalletCopy | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    getCreditWalletCopy().then(c => { if (cancelled) return; copyRef.current = c; setCopy(c); });
+    return () => { cancelled = true; };
+  }, []);
+  const w = (it: keyof CreditWalletCopy, en: keyof CreditWalletCopy): string => {
+    const cur = copyRef.current;
+    if (!cur) return '';
+    return cur[lang === 'it' ? it : en] as string;
+  };
   // Nexi payment - no stripe needed
   // Nexi payment - no elements needed
   // Nexi payment - no card element needed
@@ -287,17 +304,17 @@ const CreditWalletPage: React.FC = () => {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.fullName) newErrors.fullName = 'Il nome è obbligatorio';
-    if (!formData.email) newErrors.email = 'L\'email è obbligatoria';
+    if (!formData.fullName) newErrors.fullName = w('err_name_required_it', 'err_name_required_en');
+    if (!formData.email) newErrors.email = w('err_email_required_it', 'err_email_required_en');
 
     // Phone validation (optional but validated if present)
     if (formData.phone && !validateItalianPhone(formData.phone)) {
-      newErrors.phone = 'Formato telefono non valido';
+      newErrors.phone = w('err_phone_invalid_it', 'err_phone_invalid_en');
     }
 
     // Codice Fiscale (Optional for quickcheckout, validated if present)
     if (formData.codiceFiscale && !validateCodiceFiscale(formData.codiceFiscale)) {
-      newErrors.codiceFiscale = 'Codice Fiscale non valido (16 caratteri)';
+      newErrors.codiceFiscale = w('err_cf_invalid_it', 'err_cf_invalid_en');
     }
 
     // Address fields are now optional for credit wallet easy-checkout
@@ -324,7 +341,7 @@ const CreditWalletPage: React.FC = () => {
 
     if (!validate()) return;
     if (!selectedPackage || !user?.id) {
-      setPaymentError("Payment system is not ready.");
+      setPaymentError(w('err_payment_not_ready_it', 'err_payment_not_ready_en'));
       return;
     }
 
@@ -404,7 +421,7 @@ const CreditWalletPage: React.FC = () => {
 
     } catch (error: any) {
       console.error('Payment error:', error);
-      setPaymentError(error.message || 'Payment processing failed');
+      setPaymentError(error.message || w('err_payment_failed_it', 'err_payment_failed_en'));
       setIsProcessing(false);
     }
   };
@@ -441,14 +458,13 @@ const CreditWalletPage: React.FC = () => {
             className="text-center mb-16"
           >
             <h1 className="text-6xl md:text-7xl font-extrabold text-white mb-4">
-              DR7 CREDIT WALLET
+              {w('hero_title_eyebrow_it', 'hero_title_eyebrow_en')}
             </h1>
             <p className="text-2xl text-white font-semibold mb-6">
-              Ricarica. Guadagna. Vivi l'esperienza DR7.
+              {w('hero_subtitle_it', 'hero_subtitle_en')}
             </p>
-            <p className="text-gray-300 text-lg max-w-4xl mx-auto leading-relaxed">
-              Il DR7 Credit Wallet è il sistema esclusivo che permette ai nostri clienti di ricaricare il proprio credito e ottenere immediatamente un valore aggiuntivo significativo.
-              Una soluzione innovativa, sicura e trasparente, pensata per offrire vantaggi concreti a chi utilizza con frequenza i servizi DR7.
+            <p className="text-gray-300 text-lg max-w-4xl mx-auto leading-relaxed whitespace-pre-line">
+              {w('hero_intro_it', 'hero_intro_en')}
             </p>
           </motion.div>
 
@@ -460,16 +476,16 @@ const CreditWalletPage: React.FC = () => {
             className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16"
           >
             <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg p-6 text-center">
-              <h3 className="text-xl font-bold text-white mb-2">Fino all'80% Extra</h3>
-              <p className="text-gray-400">Credito bonus a seconda del pacchetto scelto</p>
+              <h3 className="text-xl font-bold text-white mb-2">{w('benefit_extra_title_it', 'benefit_extra_title_en')}</h3>
+              <p className="text-gray-400">{w('benefit_extra_body_it', 'benefit_extra_body_en')}</p>
             </div>
             <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg p-6 text-center">
-              <h3 className="text-xl font-bold text-white mb-2">Nessuna Scadenza</h3>
-              <p className="text-gray-400">Il credito rimane sempre disponibile nel tuo profilo</p>
+              <h3 className="text-xl font-bold text-white mb-2">{w('benefit_no_expiry_title_it', 'benefit_no_expiry_title_en')}</h3>
+              <p className="text-gray-400">{w('benefit_no_expiry_body_it', 'benefit_no_expiry_body_en')}</p>
             </div>
             <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg p-6 text-center">
-              <h3 className="text-xl font-bold text-white mb-2">100% Sicuro</h3>
-              <p className="text-gray-400">Pagamenti certificati e controllati</p>
+              <h3 className="text-xl font-bold text-white mb-2">{w('benefit_secure_title_it', 'benefit_secure_title_en')}</h3>
+              <p className="text-gray-400">{w('benefit_secure_body_it', 'benefit_secure_body_en')}</p>
             </div>
           </motion.div>
 
@@ -481,12 +497,12 @@ const CreditWalletPage: React.FC = () => {
             className="bg-gradient-to-r from-white/10 to-transparent border border-white/30 rounded-lg p-8 mb-16"
           >
             <h2 className="text-2xl font-bold text-white mb-4">
-              Il credito può essere utilizzato per:
+              {w('services_heading_it', 'services_heading_en')}
             </h2>
             <p className="text-gray-300 text-lg leading-relaxed">
-              Noleggio auto, lavaggi, meccanica, carrozzeria, diagnostica, ricambi e tutti i nostri servizi premium.
+              {w('services_body_it', 'services_body_en')}
               <br />
-              <span className="text-white font-semibold">Il credito non ha scadenza</span> e rimane sempre disponibile nel proprio profilo personale.
+              <span className="text-white font-semibold">{w('services_no_expiry_it', 'services_no_expiry_en')}</span>
             </p>
           </motion.div>
 
@@ -498,7 +514,7 @@ const CreditWalletPage: React.FC = () => {
             className="mb-12"
           >
             <h2 className="text-3xl font-bold text-white text-center mb-6">
-              SCEGLI IL TUO PACCHETTO:
+              {w('packages_section_label_it', 'packages_section_label_en')}
             </h2>
             <div className="flex flex-wrap justify-center gap-3">
               {series.map((s) => (
@@ -510,7 +526,7 @@ const CreditWalletPage: React.FC = () => {
                     : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                     }`}
                 >
-                  {s === 'all' ? 'Tutti i Pacchetti' : s}
+                  {s === 'all' ? w('packages_filter_all_it', 'packages_filter_all_en') : s}
                 </button>
               ))}
             </div>
@@ -523,11 +539,13 @@ const CreditWalletPage: React.FC = () => {
             animate="visible"
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16"
           >
-            {filteredPackages.map((pkg) => (
+            {copy && filteredPackages.map((pkg) => (
               <PackageCard
                 key={pkg.id}
                 pkg={pkg}
                 onSelect={() => handleSelectPackage(pkg.id)}
+                copy={copy}
+                lang={lang}
               />
             ))}
           </motion.div>
@@ -540,10 +558,10 @@ const CreditWalletPage: React.FC = () => {
             className="text-center mb-16"
           >
             <p className="text-2xl md:text-3xl font-extrabold text-white mb-3">
-              CREDITO IMMEDIATO. NESSUNA SCADENZA.
+              {w('promo_line1_it', 'promo_line1_en')}
             </p>
             <p className="text-2xl md:text-3xl font-extrabold text-white">
-              SOLO VANTAGGI. SOLO DR7.
+              {w('promo_line2_it', 'promo_line2_en')}
             </p>
           </motion.div>
 
@@ -555,24 +573,24 @@ const CreditWalletPage: React.FC = () => {
             className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-lg p-8 mb-16"
           >
             <h2 className="text-3xl font-bold text-white mb-8 text-center">
-              VANTAGGI DEL DR7 CREDIT WALLET
+              {w('advantages_heading_it', 'advantages_heading_en')}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h3 className="text-lg font-bold text-white mb-2">Fino all'80% di credito extra</h3>
-                <p className="text-gray-400">A seconda del pacchetto scelto</p>
+                <h3 className="text-lg font-bold text-white mb-2">{w('advantage_1_title_it', 'advantage_1_title_en')}</h3>
+                <p className="text-gray-400">{w('advantage_1_body_it', 'advantage_1_body_en')}</p>
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white mb-2">Pagamenti più rapidi</h3>
-                <p className="text-gray-400">Senza pensieri e completamente automatici</p>
+                <h3 className="text-lg font-bold text-white mb-2">{w('advantage_2_title_it', 'advantage_2_title_en')}</h3>
+                <p className="text-gray-400">{w('advantage_2_body_it', 'advantage_2_body_en')}</p>
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white mb-2">Nessuna scadenza del credito</h3>
-                <p className="text-gray-400">Usa il credito quando vuoi</p>
+                <h3 className="text-lg font-bold text-white mb-2">{w('advantage_3_title_it', 'advantage_3_title_en')}</h3>
+                <p className="text-gray-400">{w('advantage_3_body_it', 'advantage_3_body_en')}</p>
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white mb-2">Maggior convenienza</h3>
-                <p className="text-gray-400">Per chi utilizza spesso i nostri servizi</p>
+                <h3 className="text-lg font-bold text-white mb-2">{w('advantage_4_title_it', 'advantage_4_title_en')}</h3>
+                <p className="text-gray-400">{w('advantage_4_body_it', 'advantage_4_body_en')}</p>
               </div>
             </div>
           </motion.div>
@@ -585,12 +603,12 @@ const CreditWalletPage: React.FC = () => {
             className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-lg p-8 mb-12"
           >
             <h2 className="text-3xl font-bold text-white mb-6 text-center">
-              TRASPARENZA E SICUREZZA
+              {w('transparency_heading_it', 'transparency_heading_en')}
             </h2>
             <div className="space-y-4 text-gray-300 max-w-3xl mx-auto">
-              <p>• Tutti i pagamenti vengono gestiti tramite sistemi certificati e controllati.</p>
-              <p>• Ogni ricarica viene registrata, accreditata in tempo reale e visibile nel proprio profilo cliente.</p>
-              <p>• Il credito non scade e può essere utilizzato in qualsiasi momento presso tutte le sedi DR7 S.p.A.</p>
+              <p>• {w('transparency_bullet_1_it', 'transparency_bullet_1_en')}</p>
+              <p>• {w('transparency_bullet_2_it', 'transparency_bullet_2_en')}</p>
+              <p>• {w('transparency_bullet_3_it', 'transparency_bullet_3_en')}</p>
             </div>
           </motion.div>
 
@@ -602,10 +620,10 @@ const CreditWalletPage: React.FC = () => {
             className="text-center"
           >
             <h2 className="text-4xl font-extrabold text-white mb-6">
-              ATTIVA ORA IL TUO WALLET DR7
+              {w('cta_title_it', 'cta_title_en')}
             </h2>
             <p className="text-xl text-gray-300 mb-8">
-              Scegli il pacchetto più adatto a te e inizia subito a risparmiare sui servizi DR7.
+              {w('cta_subtitle_it', 'cta_subtitle_en')}
             </p>
             <button
               onClick={() => {
@@ -613,7 +631,7 @@ const CreditWalletPage: React.FC = () => {
               }}
               className="bg-white text-black px-12 py-4 rounded-full text-xl font-bold hover:bg-gray-200 transition-all duration-300 transform hover:scale-105 shadow-lg shadow-white/50"
             >
-              Scegli il Tuo Pacchetto
+              {w('cta_button_it', 'cta_button_en')}
             </button>
           </motion.div>
         </div>
@@ -639,7 +657,7 @@ const CreditWalletPage: React.FC = () => {
                 <div className="flex justify-between items-start">
                   <div>
                     <h2 className="text-2xl font-bold text-white mb-2">
-                      Completa la Ricarica
+                      {w('modal_title_it', 'modal_title_en')}
                     </h2>
                     <p className="text-gray-400">
                       {selectedPackage.name} - {selectedPackage.series}
@@ -661,26 +679,26 @@ const CreditWalletPage: React.FC = () => {
                 {/* Package Summary */}
                 <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-400 text-xs">Ricarichi</span>
+                    <span className="text-gray-400 text-xs">{w('modal_recharge_label_it', 'modal_recharge_label_en')}</span>
                     <span className="text-gray-300 font-semibold">{selectedPackage.rechargeAmount}</span>
                   </div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-400">Bonus (+{selectedPackage.bonusPercentage}%)</span>
+                    <span className="text-gray-400">{w('modal_bonus_label_it', 'modal_bonus_label_en')} (+{selectedPackage.bonusPercentage}%)</span>
                     <span className="text-white font-bold text-xl">{selectedPackage.bonus}</span>
                   </div>
                   <div className="border-t border-gray-700 my-2"></div>
                   <div className="flex justify-between items-center">
-                    <span className="text-white font-semibold text-lg">Ricevi</span>
+                    <span className="text-white font-semibold text-lg">{w('modal_receive_label_it', 'modal_receive_label_en')}</span>
                     <span className="text-white font-bold text-3xl">{selectedPackage.receivedAmount}</span>
                   </div>
                 </div>
 
                 {/* Payment Information */}
                 <div>
-                  <h3 className="text-lg font-bold text-white mb-4">Informazioni di Pagamento</h3>
+                  <h3 className="text-lg font-bold text-white mb-4">{w('modal_payment_heading_it', 'modal_payment_heading_en')}</h3>
                   <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
-                    <p className="text-gray-300 mb-2">Verrai reindirizzato alla pagina di pagamento sicura Nexi</p>
-                    <p className="text-gray-400 text-sm">Pagamento protetto e certificato</p>
+                    <p className="text-gray-300 mb-2">{w('modal_payment_info_it', 'modal_payment_info_en')}</p>
+                    <p className="text-gray-400 text-sm">{w('modal_payment_secure_it', 'modal_payment_secure_en')}</p>
                     {paymentError && <p className="text-xs text-red-400 mt-2">{paymentError}</p>}
                   </div>
                 </div>
@@ -692,14 +710,16 @@ const CreditWalletPage: React.FC = () => {
                     onClick={() => setShowPaymentModal(false)}
                     className="flex-1 px-6 py-3 bg-gray-800 text-white rounded-full font-bold hover:bg-gray-700 transition-colors"
                   >
-                    Annulla
+                    {w('modal_cancel_it', 'modal_cancel_en')}
                   </button>
                   <button
                     type="submit"
                     disabled={isProcessing}
                     className="flex-1 px-6 py-3 bg-white text-black rounded-full font-bold hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isProcessing ? 'Elaborazione...' : `Paga €${selectedPackage.rechargeAmount}`}
+                    {isProcessing
+                      ? w('modal_processing_it', 'modal_processing_en')
+                      : w('modal_pay_template_it', 'modal_pay_template_en').split('{amount}').join(String(selectedPackage.rechargeAmount))}
                   </button>
                 </div>
               </form>
