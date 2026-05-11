@@ -56,6 +56,7 @@ interface SiteCopySnapshot {
   confirmationSuccess?: ConfirmationSuccessCopy;
   header?: HeaderCopy;
   signUp?: SignUpCopy;
+  payment?: PaymentCopy;
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -243,6 +244,36 @@ export interface MechanicalCopy {
 // Wash, Supercar & Luxury Division, etc.) stay hardcoded in Header.tsx —
 // they are brand names, not localized chrome. Only the section headings,
 // drawer/header CTAs, and aria labels move to CMS.
+// ─── Payment page (Nexi XPay iframe wrapper) ──────────────────────────────
+// Note: the Nexi XPay SDK itself is locked to `language: 'ita'` — only the
+// surrounding DR7 chrome is bilingual.
+export interface PaymentCopy {
+  subtitle_it: string; subtitle_en: string;
+  loading_it: string; loading_en: string;
+  ready_title_it: string; ready_title_en: string;
+  ready_subtitle_it: string; ready_subtitle_en: string;
+  ready_prepaid_warning_it: string; ready_prepaid_warning_en: string;
+  checking_title_it: string; checking_title_en: string;
+  checking_subtitle_it: string; checking_subtitle_en: string;
+  blocked_title_it: string; blocked_title_en: string;
+  blocked_default_message_it: string; blocked_default_message_en: string;
+  blocked_help_it: string; blocked_help_en: string;
+  blocked_retry_cta_it: string; blocked_retry_cta_en: string;
+  success_title_it: string; success_title_en: string;
+  success_redirect_it: string; success_redirect_en: string;
+  cancelled_title_it: string; cancelled_title_en: string;
+  cancelled_subtitle_it: string; cancelled_subtitle_en: string;
+  cancelled_retry_cta_it: string; cancelled_retry_cta_en: string;
+  error_title_it: string; error_title_en: string;
+  error_invalid_link_it: string; error_invalid_link_en: string;
+  error_sdk_load_it: string; error_sdk_load_en: string;
+  error_sdk_unavailable_it: string; error_sdk_unavailable_en: string;
+  error_sdk_init_it: string; error_sdk_init_en: string;
+  error_check_card_it: string; error_check_card_en: string;
+  error_payment_failed_it: string; error_payment_failed_en: string;
+  footer_secure_note_it: string; footer_secure_note_en: string;
+}
+
 // ─── SignUp page (registrazione cliente) ───────────────────────────────────
 // Three client-type branches share a single schema. Section headers + form
 // labels + placeholders + validation strings all live here. Global keys
@@ -955,6 +986,13 @@ export async function getSignUpCopy(): Promise<SignUpCopy> {
   return DEFAULT_SIGNUP;
 }
 
+/** Payment page chrome (Nexi XPay iframe wrapper — SDK locked to ita). */
+export async function getPaymentCopy(): Promise<PaymentCopy> {
+  const snap = await loadOnce();
+  if (snap.payment && snap.payment.ready_title_it) return snap.payment;
+  return DEFAULT_PAYMENT;
+}
+
 /** Confirmation Success page (booking summary + email fallback). */
 export async function getConfirmationSuccessCopy(): Promise<ConfirmationSuccessCopy> {
   const snap = await loadOnce();
@@ -1096,6 +1134,45 @@ const DEFAULT_HEADER: HeaderCopy = {
   contact_cta_it: 'Contattaci', contact_cta_en: 'Contact us',
   popup_title_it: 'Prenota Ora', popup_title_en: 'Book Now',
   popup_subtitle_it: 'Seleziona date e orari', popup_subtitle_en: 'Select dates and times',
+};
+
+// ─── Default Payment seed ─────────────────────────────────────────────────
+const DEFAULT_PAYMENT: PaymentCopy = {
+  subtitle_it: 'Pagamento Sicuro', subtitle_en: 'Secure Payment',
+  loading_it: 'Caricamento sistema di pagamento...', loading_en: 'Loading payment system...',
+  ready_title_it: 'Completa il Pagamento', ready_title_en: 'Complete the Payment',
+  ready_subtitle_it: 'Inserisci i dati della tua carta di credito o debito.',
+  ready_subtitle_en: 'Enter your credit or debit card details.',
+  ready_prepaid_warning_it: 'Le carte prepagate non sono accettate.',
+  ready_prepaid_warning_en: 'Prepaid cards are not accepted.',
+  checking_title_it: 'Verifica in corso...', checking_title_en: 'Verifying...',
+  checking_subtitle_it: 'Stiamo verificando il metodo di pagamento.',
+  checking_subtitle_en: 'We are verifying the payment method.',
+  blocked_title_it: 'Metodo non accettato', blocked_title_en: 'Method not accepted',
+  blocked_default_message_it: 'Le carte prepagate non sono accettate.',
+  blocked_default_message_en: 'Prepaid cards are not accepted.',
+  blocked_help_it: 'Utilizza una carta di credito o debito per completare il pagamento.',
+  blocked_help_en: 'Use a credit or debit card to complete the payment.',
+  blocked_retry_cta_it: 'Riprova con altra carta', blocked_retry_cta_en: 'Retry with another card',
+  success_title_it: 'Pagamento Confermato', success_title_en: 'Payment Confirmed',
+  success_redirect_it: 'Reindirizzamento in corso...', success_redirect_en: 'Redirecting...',
+  cancelled_title_it: 'Pagamento Annullato', cancelled_title_en: 'Payment Cancelled',
+  cancelled_subtitle_it: 'Il pagamento è stato annullato.', cancelled_subtitle_en: 'The payment was cancelled.',
+  cancelled_retry_cta_it: 'Riprova', cancelled_retry_cta_en: 'Retry',
+  error_title_it: 'Errore', error_title_en: 'Error',
+  error_invalid_link_it: 'Link di pagamento non valido.', error_invalid_link_en: 'Invalid payment link.',
+  error_sdk_load_it: 'Errore caricamento sistema di pagamento. Riprova.',
+  error_sdk_load_en: 'Error loading payment system. Please retry.',
+  error_sdk_unavailable_it: 'Sistema di pagamento non disponibile.',
+  error_sdk_unavailable_en: 'Payment system unavailable.',
+  error_sdk_init_it: 'Errore inizializzazione pagamento.',
+  error_sdk_init_en: 'Payment initialization error.',
+  error_check_card_it: 'Errore verifica pagamento. Contatta il supporto.',
+  error_check_card_en: 'Payment verification error. Please contact support.',
+  error_payment_failed_it: 'Errore durante il pagamento. Riprova.',
+  error_payment_failed_en: 'Payment error. Please retry.',
+  footer_secure_note_it: 'Pagamento sicuro tramite Nexi XPay · DR7 Empire',
+  footer_secure_note_en: 'Secure payment via Nexi XPay · DR7 Empire',
 };
 
 // ─── Default SignUp seed (registrazione cliente) ──────────────────────────
