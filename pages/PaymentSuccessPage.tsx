@@ -1,16 +1,39 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { addCredits } from '../utils/creditWallet';
+import { useTranslation } from '../hooks/useTranslation';
+import { getPaymentSuccessCopy, type PaymentSuccessCopy } from '../utils/siteCopy';
 
 const PaymentSuccessPage: React.FC = () => {
     const navigate = useNavigate();
+    const { lang } = useTranslation();
     const [searchParams] = useSearchParams();
     const [updating, setUpdating] = useState(true);
     const [updateError, setUpdateError] = useState<string | null>(null);
     const [purchaseType, setPurchaseType] = useState<'booking' | 'wallet' | 'membership' | 'dr7_club' | null>(null);
     const [walletInfo, setWalletInfo] = useState<{ packageName: string; receivedAmount: number } | null>(null);
     const [membershipInfo, setMembershipInfo] = useState<{ tierName: string; billingCycle: string } | null>(null);
+    const [copy, setCopy] = useState<PaymentSuccessCopy | null>(null);
+    const copyRef = useRef<PaymentSuccessCopy | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        getPaymentSuccessCopy().then(c => {
+            if (cancelled) return;
+            copyRef.current = c;
+            setCopy(c);
+        });
+        return () => { cancelled = true; };
+    }, []);
+
+    const s = (it: keyof PaymentSuccessCopy, en: keyof PaymentSuccessCopy): string => {
+        const cur = copyRef.current;
+        if (!cur) return '';
+        return cur[lang === 'it' ? it : en] as string;
+    };
+    const applyTokens = (template: string, tokens: Record<string, string>): string =>
+        Object.entries(tokens).reduce((acc, [k, v]) => acc.split(`{${k}}`).join(v), template);
 
     const orderId = searchParams.get('codTrans') || searchParams.get('orderId') || searchParams.get('paymentid') || sessionStorage.getItem('dr7_pending_order');
     const pendingType = sessionStorage.getItem('dr7_pending_type');
@@ -315,7 +338,7 @@ const PaymentSuccessPage: React.FC = () => {
                             return;
                         }
 
-                        setUpdateError('Errore nella creazione della prenotazione. Contatta il supporto.');
+                        setUpdateError(s('err_booking_create_it', 'err_booking_create_en'));
                         setUpdating(false);
                         return;
                     }
@@ -416,7 +439,7 @@ const PaymentSuccessPage: React.FC = () => {
                     const { data: { user: authUser } } = await supabase.auth.getUser();
                     if (!authUser || authUser.id !== purchase.user_id) {
                         console.error('Auth mismatch: logged-in user does not match purchase owner');
-                        setUpdateError('Errore di autenticazione. Contatta il supporto.');
+                        setUpdateError(s('err_auth_it', 'err_auth_en'));
                         setUpdating(false);
                         return;
                     }
@@ -449,7 +472,7 @@ const PaymentSuccessPage: React.FC = () => {
 
                     if (upErr) {
                         console.error('Error updating purchase:', upErr);
-                        setUpdateError('Could not update purchase status');
+                        setUpdateError(s('err_purchase_update_it', 'err_purchase_update_en'));
                     } else {
                         // Add credits to wallet via atomic RPC
                         const result = await addCredits(
@@ -464,7 +487,7 @@ const PaymentSuccessPage: React.FC = () => {
                             console.log(`Credits added: €${purchase.received_amount} (new balance: €${result.newBalance})`);
                         } else {
                             console.error('Error adding credits:', result.error);
-                            setUpdateError('Payment received but error adding credits. Contact support.');
+                            setUpdateError(s('err_credit_add_it', 'err_credit_add_en'));
                         }
                     }
                     setUpdating(false);
@@ -521,10 +544,10 @@ const PaymentSuccessPage: React.FC = () => {
 
                 // Nothing found
                 console.error('No order found for orderId:', orderId);
-                setUpdateError('Order not found');
+                setUpdateError(s('err_order_not_found_it', 'err_order_not_found_en'));
             } catch (error) {
                 console.error('Unexpected error:', error);
-                setUpdateError('An error occurred');
+                setUpdateError(s('err_generic_it', 'err_generic_en'));
             } finally {
                 setUpdating(false);
             }
@@ -542,10 +565,10 @@ const PaymentSuccessPage: React.FC = () => {
                             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
                         </div>
                         <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                            Completamento Pagamento...
+                            {s('loading_title_it', 'loading_title_en')}
                         </h1>
                         <p className="text-gray-600">
-                            Stiamo confermando il tuo pagamento
+                            {s('loading_subtitle_it', 'loading_subtitle_en')}
                         </p>
                     </div>
                 </div>
@@ -564,36 +587,44 @@ const PaymentSuccessPage: React.FC = () => {
                     </div>
 
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                        Pagamento Riuscito!
+                        {s('success_title_it', 'success_title_en')}
                     </h1>
 
                     <p className="text-gray-600 mb-8">
                         {purchaseType === 'dr7_club'
-                            ? 'La tua iscrizione al DR7 Club è stata attivata con successo! Benvenuto nel club.'
+                            ? s('body_dr7_club_it', 'body_dr7_club_en')
                             : purchaseType === 'membership'
-                            ? `La tua membership ${membershipInfo?.tierName || ''} (${membershipInfo?.billingCycle === 'monthly' ? 'Mensile' : 'Annuale'}) è stata attivata con successo!`
+                            ? applyTokens(s('body_membership_template_it', 'body_membership_template_en'), {
+                                tierName: membershipInfo?.tierName || '',
+                                cycle: membershipInfo?.billingCycle === 'monthly'
+                                    ? s('billing_cycle_monthly_it', 'billing_cycle_monthly_en')
+                                    : s('billing_cycle_annual_it', 'billing_cycle_annual_en'),
+                            })
                             : purchaseType === 'wallet'
-                            ? `La tua ricarica ${walletInfo?.packageName || ''} è stata completata! €${walletInfo?.receivedAmount?.toFixed(2) || ''} sono stati aggiunti al tuo wallet.`
-                            : 'Il tuo pagamento è stato elaborato con successo.'}
+                            ? applyTokens(s('body_wallet_template_it', 'body_wallet_template_en'), {
+                                packageName: walletInfo?.packageName || '',
+                                amount: walletInfo?.receivedAmount?.toFixed(2) || '',
+                            })
+                            : s('body_generic_it', 'body_generic_en')}
                     </p>
 
                     {orderId && (
                         <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
-                            <h3 className="font-semibold text-gray-700 mb-3">Dettagli Transazione</h3>
+                            <h3 className="font-semibold text-gray-700 mb-3">{s('transaction_heading_it', 'transaction_heading_en')}</h3>
                             <div className="space-y-2 text-sm">
                                 <div className="flex justify-between">
-                                    <span className="text-gray-600">ID Ordine:</span>
+                                    <span className="text-gray-600">{s('transaction_order_id_label_it', 'transaction_order_id_label_en')}</span>
                                     <span className="font-mono text-gray-900">{orderId}</span>
                                 </div>
                                 {amount && (
                                     <div className="flex justify-between">
-                                        <span className="text-gray-600">Importo:</span>
+                                        <span className="text-gray-600">{s('transaction_amount_label_it', 'transaction_amount_label_en')}</span>
                                         <span className="font-semibold text-gray-900">€{(parseInt(amount) / 100).toFixed(2)}</span>
                                     </div>
                                 )}
                                 {authCode && (
                                     <div className="flex justify-between">
-                                        <span className="text-gray-600">Codice Autorizzazione:</span>
+                                        <span className="text-gray-600">{s('transaction_auth_code_label_it', 'transaction_auth_code_label_en')}</span>
                                         <span className="font-mono text-gray-900">{authCode}</span>
                                     </div>
                                 )}
@@ -606,7 +637,7 @@ const PaymentSuccessPage: React.FC = () => {
                             onClick={() => navigate('/')}
                             className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 transition-all"
                         >
-                            Torna alla Home
+                            {s('cta_home_it', 'cta_home_en')}
                         </button>
 
                         {whatsappUrl && (
@@ -619,7 +650,7 @@ const PaymentSuccessPage: React.FC = () => {
                                 <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
                                     <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.592 2.654-.698c1.09.587 2.107.89 3.037.89h.007c3.181 0 5.768-2.587 5.768-5.776 0-1.545-.6-2.994-1.692-4.085-1.096-1.09-2.55-1.693-4.316-1.693l.002.015zm6.814 10.373c-1.045 1.049-2.227 1.58-3.567 1.458-1.5-.138-3.037-1.127-4.436-2.527-1.4-1.4-2.39-2.936-2.527-4.436-.122-1.341.408-2.523 1.458-3.567l.156-.155c.319-.317.76-.325 1.082-.016l1.373 1.346c.321.319.311.751.01.996l-.974.795c-.295.241-.482.72.064 1.266.545.546 1.023.36 1.265.064l.795-.974c.245-.301.677-.311.996.01l1.347 1.373c.31.322.302.763-.017 1.082l-.155.156z" />
                                 </svg>
-                                Conferma su WhatsApp
+                                {s('cta_whatsapp_it', 'cta_whatsapp_en')}
                             </a>
                         )}
 
@@ -628,21 +659,21 @@ const PaymentSuccessPage: React.FC = () => {
                                 onClick={() => navigate('/account/membership')}
                                 className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-200 transition-all"
                             >
-                                Vai alla Membership
+                                {s('cta_membership_it', 'cta_membership_en')}
                             </button>
                         ) : purchaseType === 'wallet' ? (
                             <button
                                 onClick={() => navigate('/credit-wallet')}
                                 className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-200 transition-all"
                             >
-                                Vai al Wallet
+                                {s('cta_wallet_it', 'cta_wallet_en')}
                             </button>
                         ) : (
                             <button
                                 onClick={() => navigate('/account/bookings')}
                                 className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-200 transition-all"
                             >
-                                Vedi le Mie Prenotazioni
+                                {s('cta_bookings_it', 'cta_bookings_en')}
                             </button>
                         )}
                     </div>

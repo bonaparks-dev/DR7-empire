@@ -57,6 +57,7 @@ interface SiteCopySnapshot {
   header?: HeaderCopy;
   signUp?: SignUpCopy;
   payment?: PaymentCopy;
+  paymentSuccess?: PaymentSuccessCopy;
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -244,6 +245,40 @@ export interface MechanicalCopy {
 // Wash, Supercar & Luxury Division, etc.) stay hardcoded in Header.tsx —
 // they are brand names, not localized chrome. Only the section headings,
 // drawer/header CTAs, and aria labels move to CMS.
+// ─── Payment Success page (post-payment landing) ──────────────────────────
+//
+// Templated bodies use {tierName} / {cycle} / {packageName} / {amount}
+// substitutions, resolved at render time. The on-page chrome (this schema)
+// is separate from the 3 WhatsApp message blocks the page builds — those
+// live in system_messages under keys `pro_payment_success_whatsapp_rental`
+// and `pro_payment_success_whatsapp_appointment`.
+export interface PaymentSuccessCopy {
+  loading_title_it: string; loading_title_en: string;
+  loading_subtitle_it: string; loading_subtitle_en: string;
+  success_title_it: string; success_title_en: string;
+  body_generic_it: string; body_generic_en: string;
+  body_dr7_club_it: string; body_dr7_club_en: string;
+  body_membership_template_it: string; body_membership_template_en: string;   // {tierName} {cycle}
+  body_wallet_template_it: string; body_wallet_template_en: string;           // {packageName} {amount}
+  billing_cycle_monthly_it: string; billing_cycle_monthly_en: string;
+  billing_cycle_annual_it: string; billing_cycle_annual_en: string;
+  transaction_heading_it: string; transaction_heading_en: string;
+  transaction_order_id_label_it: string; transaction_order_id_label_en: string;
+  transaction_amount_label_it: string; transaction_amount_label_en: string;
+  transaction_auth_code_label_it: string; transaction_auth_code_label_en: string;
+  cta_home_it: string; cta_home_en: string;
+  cta_whatsapp_it: string; cta_whatsapp_en: string;
+  cta_membership_it: string; cta_membership_en: string;
+  cta_wallet_it: string; cta_wallet_en: string;
+  cta_bookings_it: string; cta_bookings_en: string;
+  err_booking_create_it: string; err_booking_create_en: string;
+  err_auth_it: string; err_auth_en: string;
+  err_purchase_update_it: string; err_purchase_update_en: string;
+  err_credit_add_it: string; err_credit_add_en: string;
+  err_order_not_found_it: string; err_order_not_found_en: string;
+  err_generic_it: string; err_generic_en: string;
+}
+
 // ─── Payment page (Nexi XPay iframe wrapper) ──────────────────────────────
 // Note: the Nexi XPay SDK itself is locked to `language: 'ita'` — only the
 // surrounding DR7 chrome is bilingual.
@@ -993,6 +1028,13 @@ export async function getPaymentCopy(): Promise<PaymentCopy> {
   return DEFAULT_PAYMENT;
 }
 
+/** Payment Success page (post-payment landing) chrome + branched body. */
+export async function getPaymentSuccessCopy(): Promise<PaymentSuccessCopy> {
+  const snap = await loadOnce();
+  if (snap.paymentSuccess && snap.paymentSuccess.success_title_it) return snap.paymentSuccess;
+  return DEFAULT_PAYMENT_SUCCESS;
+}
+
 /** Confirmation Success page (booking summary + email fallback). */
 export async function getConfirmationSuccessCopy(): Promise<ConfirmationSuccessCopy> {
   const snap = await loadOnce();
@@ -1134,6 +1176,43 @@ const DEFAULT_HEADER: HeaderCopy = {
   contact_cta_it: 'Contattaci', contact_cta_en: 'Contact us',
   popup_title_it: 'Prenota Ora', popup_title_en: 'Book Now',
   popup_subtitle_it: 'Seleziona date e orari', popup_subtitle_en: 'Select dates and times',
+};
+
+// ─── Default Payment Success seed (post-payment landing) ─────────────────
+const DEFAULT_PAYMENT_SUCCESS: PaymentSuccessCopy = {
+  loading_title_it: 'Completamento Pagamento...', loading_title_en: 'Completing Payment...',
+  loading_subtitle_it: 'Stiamo confermando il tuo pagamento',
+  loading_subtitle_en: 'We are confirming your payment',
+  success_title_it: 'Pagamento Riuscito!', success_title_en: 'Payment Successful!',
+  body_generic_it: 'Il tuo pagamento è stato elaborato con successo.',
+  body_generic_en: 'Your payment has been processed successfully.',
+  body_dr7_club_it: 'La tua iscrizione al DR7 Club è stata attivata con successo! Benvenuto nel club.',
+  body_dr7_club_en: 'Your DR7 Club membership has been activated successfully! Welcome to the club.',
+  body_membership_template_it: 'La tua membership {tierName} ({cycle}) è stata attivata con successo!',
+  body_membership_template_en: 'Your {tierName} membership ({cycle}) has been activated successfully!',
+  body_wallet_template_it: 'La tua ricarica {packageName} è stata completata! €{amount} sono stati aggiunti al tuo wallet.',
+  body_wallet_template_en: 'Your {packageName} top-up is complete! €{amount} has been added to your wallet.',
+  billing_cycle_monthly_it: 'Mensile', billing_cycle_monthly_en: 'Monthly',
+  billing_cycle_annual_it: 'Annuale', billing_cycle_annual_en: 'Annual',
+  transaction_heading_it: 'Dettagli Transazione', transaction_heading_en: 'Transaction Details',
+  transaction_order_id_label_it: 'ID Ordine:', transaction_order_id_label_en: 'Order ID:',
+  transaction_amount_label_it: 'Importo:', transaction_amount_label_en: 'Amount:',
+  transaction_auth_code_label_it: 'Codice Autorizzazione:', transaction_auth_code_label_en: 'Authorization Code:',
+  cta_home_it: 'Torna alla Home', cta_home_en: 'Back to Home',
+  cta_whatsapp_it: 'Conferma su WhatsApp', cta_whatsapp_en: 'Confirm on WhatsApp',
+  cta_membership_it: 'Vai alla Membership', cta_membership_en: 'Go to Membership',
+  cta_wallet_it: 'Vai al Wallet', cta_wallet_en: 'Go to Wallet',
+  cta_bookings_it: 'Vedi le Mie Prenotazioni', cta_bookings_en: 'See My Bookings',
+  err_booking_create_it: 'Errore nella creazione della prenotazione. Contatta il supporto.',
+  err_booking_create_en: 'Error creating booking. Please contact support.',
+  err_auth_it: 'Errore di autenticazione. Contatta il supporto.',
+  err_auth_en: 'Authentication error. Please contact support.',
+  err_purchase_update_it: 'Impossibile aggiornare lo stato dell\'acquisto.',
+  err_purchase_update_en: 'Could not update purchase status.',
+  err_credit_add_it: 'Pagamento ricevuto ma errore nell\'aggiunta dei crediti. Contatta il supporto.',
+  err_credit_add_en: 'Payment received but error adding credits. Please contact support.',
+  err_order_not_found_it: 'Ordine non trovato.', err_order_not_found_en: 'Order not found.',
+  err_generic_it: 'Si è verificato un errore.', err_generic_en: 'An error occurred.',
 };
 
 // ─── Default Payment seed ─────────────────────────────────────────────────
