@@ -63,6 +63,7 @@ interface SiteCopySnapshot {
   token?: TokenCopy;
   firma?: FirmaCopy;
   registrazioneCliente?: RegistrazioneClienteCopy;
+  bookingSearchBox?: BookingSearchBoxCopy;
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -250,6 +251,33 @@ export interface MechanicalCopy {
 // Wash, Supercar & Luxury Division, etc.) stay hardcoded in Header.tsx —
 // they are brand names, not localized chrome. Only the section headings,
 // drawer/header CTAs, and aria labels move to CMS.
+// ─── BookingSearchBox component (Header drawer popup + Hero variant) ─────
+export interface BookingSearchBoxCopy {
+  title_it: string; title_en: string;                                          // "Prenota il tuo veicolo"
+  pickup_location_label_it: string; pickup_location_label_en: string;
+  pickup_location_placeholder_it: string; pickup_location_placeholder_en: string;
+  same_return_note_it: string; same_return_note_en: string;                    // "Riconsegna nella sede principale..."
+  return_location_label_it: string; return_location_label_en: string;
+  return_location_placeholder_it: string; return_location_placeholder_en: string;
+  pickup_section_label_it: string; pickup_section_label_en: string;            // "Ritiro"
+  return_section_label_it: string; return_section_label_en: string;            // "Restituzione"
+  date_placeholder_it: string; date_placeholder_en: string;                    // "Seleziona data"
+  closed_message_it: string; closed_message_en: string;                        // "Chiusi (domenica o festivo)"
+  rate_warning_title_it: string; rate_warning_title_en: string;
+  rate_warning_body_it: string; rate_warning_body_en: string;
+  delivery_calc_loading_it: string; delivery_calc_loading_en: string;
+  delivery_label_it: string; delivery_label_en: string;                        // "Consegna a domicilio"
+  delivery_breakdown_consegna_it: string; delivery_breakdown_consegna_en: string;
+  delivery_breakdown_riconsegna_it: string; delivery_breakdown_riconsegna_en: string;
+  search_cta_it: string; search_cta_en: string;
+  err_pickup_date_required_it: string; err_pickup_date_required_en: string;
+  err_return_date_required_it: string; err_return_date_required_en: string;
+  err_blocked_pickup_it: string; err_blocked_pickup_en: string;
+  err_blocked_return_it: string; err_blocked_return_en: string;
+  err_return_before_pickup_it: string; err_return_before_pickup_en: string;
+  err_return_time_before_pickup_it: string; err_return_time_before_pickup_en: string;
+}
+
 // ─── Registrazione Cliente page (token-gated customer data form) ─────────
 // Distinct from SignUpPage: this flow is for an operator-sent invite link
 // where the customer fills anagrafica + uploads ID docs. Phase-1 migration
@@ -1327,6 +1355,13 @@ export async function getRegistrazioneClienteCopy(): Promise<RegistrazioneClient
   return DEFAULT_REGISTRAZIONE_CLIENTE;
 }
 
+/** BookingSearchBox component (Header drawer popup + Hero variant). */
+export async function getBookingSearchBoxCopy(): Promise<BookingSearchBoxCopy> {
+  const snap = await loadOnce();
+  if (snap.bookingSearchBox && snap.bookingSearchBox.title_it) return snap.bookingSearchBox;
+  return DEFAULT_BOOKING_SEARCH_BOX;
+}
+
 /** Confirmation Success page (booking summary + email fallback). */
 export async function getConfirmationSuccessCopy(): Promise<ConfirmationSuccessCopy> {
   const snap = await loadOnce();
@@ -1468,6 +1503,44 @@ const DEFAULT_HEADER: HeaderCopy = {
   contact_cta_it: 'Contattaci', contact_cta_en: 'Contact us',
   popup_title_it: 'Prenota Ora', popup_title_en: 'Book Now',
   popup_subtitle_it: 'Seleziona date e orari', popup_subtitle_en: 'Select dates and times',
+};
+
+// ─── Default BookingSearchBox seed ──────────────────────────────────────
+const DEFAULT_BOOKING_SEARCH_BOX: BookingSearchBoxCopy = {
+  title_it: 'Prenota il tuo veicolo', title_en: 'Book your vehicle',
+  pickup_location_label_it: 'Luogo di ritiro', pickup_location_label_en: 'Pickup location',
+  pickup_location_placeholder_it: 'Aeroporto, città, indirizzo...',
+  pickup_location_placeholder_en: 'Airport, city, address...',
+  same_return_note_it: 'Riconsegna nella sede principale Viale Marconi 229, Cagliari 09131',
+  same_return_note_en: 'Return to the main office Viale Marconi 229, Cagliari 09131',
+  return_location_label_it: 'Luogo di riconsegna', return_location_label_en: 'Return location',
+  return_location_placeholder_it: 'Aeroporto, città, indirizzo...',
+  return_location_placeholder_en: 'Airport, city, address...',
+  pickup_section_label_it: 'Ritiro', pickup_section_label_en: 'Pickup',
+  return_section_label_it: 'Restituzione', return_section_label_en: 'Return',
+  date_placeholder_it: 'Seleziona data', date_placeholder_en: 'Select date',
+  closed_message_it: 'Chiusi (domenica o festivo)', closed_message_en: 'Closed (Sunday or holiday)',
+  rate_warning_title_it: 'La tariffa può subire variazioni',
+  rate_warning_title_en: 'The rate may vary',
+  rate_warning_body_it: 'La restituzione del veicolo è prevista entro 1 ora e 30 minuti prima dell\'orario di uscita, al fine di evitare eventuali variazioni.',
+  rate_warning_body_en: 'Vehicle return is expected within 1 hour and 30 minutes before pickup time to avoid any changes.',
+  delivery_calc_loading_it: 'Calcolo costo consegna...', delivery_calc_loading_en: 'Calculating delivery cost...',
+  delivery_label_it: 'Consegna a domicilio', delivery_label_en: 'Home delivery',
+  delivery_breakdown_consegna_it: 'Consegna', delivery_breakdown_consegna_en: 'Delivery',
+  delivery_breakdown_riconsegna_it: 'Riconsegna', delivery_breakdown_riconsegna_en: 'Return',
+  search_cta_it: 'Cerca Auto Disponibili', search_cta_en: 'Search Available Cars',
+  err_pickup_date_required_it: 'Seleziona la data di ritiro',
+  err_pickup_date_required_en: 'Select the pickup date',
+  err_return_date_required_it: 'Seleziona la data di restituzione',
+  err_return_date_required_en: 'Select the return date',
+  err_blocked_pickup_it: 'Data ritiro non disponibile (domenica o festivo)',
+  err_blocked_pickup_en: 'Pickup date unavailable (Sunday or holiday)',
+  err_blocked_return_it: 'Data restituzione non disponibile (domenica o festivo)',
+  err_blocked_return_en: 'Return date unavailable (Sunday or holiday)',
+  err_return_before_pickup_it: 'Data restituzione deve essere dopo il ritiro',
+  err_return_before_pickup_en: 'Return date must be after pickup',
+  err_return_time_before_pickup_it: 'Orario restituzione deve essere dopo il ritiro',
+  err_return_time_before_pickup_en: 'Return time must be after pickup',
 };
 
 // ─── Default Registrazione Cliente seed ─────────────────────────────────

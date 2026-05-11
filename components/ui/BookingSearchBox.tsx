@@ -9,6 +9,8 @@ import {
   getPickupTimesForDateString as getPickupTimes,
   getReturnTimesForDateString as getReturnTimes,
 } from '../../utils/noleggioHours';
+import { useTranslation } from '../../hooks/useTranslation';
+import { getBookingSearchBoxCopy, type BookingSearchBoxCopy } from '../../utils/siteCopy';
 
 // Pickup/return office hours come from Centralina Pro > Orari Noleggio.
 
@@ -58,6 +60,19 @@ interface BookingSearchBoxProps {
 
 const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', onClose }) => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
+  const [copy, setCopy] = useState<BookingSearchBoxCopy | null>(null);
+  const copyRef = useRef<BookingSearchBoxCopy | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    getBookingSearchBoxCopy().then(c => { if (cancelled) return; copyRef.current = c; setCopy(c); });
+    return () => { cancelled = true; };
+  }, []);
+  const b = (it: keyof BookingSearchBoxCopy, en: keyof BookingSearchBoxCopy): string => {
+    const cur = copyRef.current;
+    if (!cur) return '';
+    return cur[lang === 'it' ? it : en] as string;
+  };
   const [pickupLocation, setPickupLocation] = useState<SardegnaLocation>(DR7_OFFICE_LOCATION);
   const [returnLocation, setReturnLocation] = useState<SardegnaLocation>(DR7_OFFICE_LOCATION);
   const [sameReturn, setSameReturn] = useState(true);
@@ -176,13 +191,13 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
 
   const handleSearch = () => {
     setError('');
-    if (!pickupDate) { setError('Seleziona la data di ritiro'); return; }
-    if (!returnDate) { setError('Seleziona la data di restituzione'); return; }
-    if (isBlocked(pickupDate)) { setError('Data ritiro non disponibile (domenica o festivo)'); return; }
-    if (isBlocked(returnDate)) { setError('Data restituzione non disponibile (domenica o festivo)'); return; }
-    if (returnDate < pickupDate) { setError('Data restituzione deve essere dopo il ritiro'); return; }
+    if (!pickupDate) { setError(b('err_pickup_date_required_it', 'err_pickup_date_required_en')); return; }
+    if (!returnDate) { setError(b('err_return_date_required_it', 'err_return_date_required_en')); return; }
+    if (isBlocked(pickupDate)) { setError(b('err_blocked_pickup_it', 'err_blocked_pickup_en')); return; }
+    if (isBlocked(returnDate)) { setError(b('err_blocked_return_it', 'err_blocked_return_en')); return; }
+    if (returnDate < pickupDate) { setError(b('err_return_before_pickup_it', 'err_return_before_pickup_en')); return; }
     if (returnDate === pickupDate && returnTime <= pickupTime) {
-      setError('Orario restituzione deve essere dopo il ritiro');
+      setError(b('err_return_time_before_pickup_it', 'err_return_time_before_pickup_en'));
       return;
     }
 
@@ -203,7 +218,7 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
   return (
     <div className={isPopup ? '' : 'bg-[#1c1c1e]/80 backdrop-blur-2xl border border-white/[0.06] rounded-[20px] p-6 max-w-[420px] w-full'}>
       {!isPopup && (
-        <h3 className="text-[17px] font-semibold text-white text-center mb-5">Prenota il tuo veicolo</h3>
+        <h3 className="text-[17px] font-semibold text-white text-center mb-5">{b('title_it', 'title_en')}</h3>
       )}
 
       <div className="space-y-4">
@@ -211,8 +226,8 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
         <LocationAutocomplete
           value={pickupLocation.label}
           onChange={(loc) => { setPickupLocation(loc); if (sameReturn) setReturnLocation(loc); }}
-          label="Luogo di ritiro"
-          placeholder="Aeroporto, citta, indirizzo..."
+          label={b('pickup_location_label_it', 'pickup_location_label_en')}
+          placeholder={b('pickup_location_placeholder_it', 'pickup_location_placeholder_en')}
         />
 
         <label className="flex items-center gap-2.5 cursor-pointer select-none">
@@ -220,16 +235,16 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
             {sameReturn && <svg className="w-3 h-3 text-black" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
           </div>
           <input type="checkbox" checked={sameReturn} onChange={(e) => { setSameReturn(e.target.checked); if (e.target.checked) setReturnLocation(pickupLocation); }} className="sr-only" />
-          <span className="text-[13px] text-white/50">Riconsegna nella sede principale Viale Marconi 229, Cagliari 09131</span>
+          <span className="text-[13px] text-white/50">{b('same_return_note_it', 'same_return_note_en')}</span>
         </label>
 
         {!sameReturn && (
-          <LocationAutocomplete value={returnLocation.label} onChange={setReturnLocation} label="Luogo di riconsegna" placeholder="Aeroporto, citta, indirizzo..." />
+          <LocationAutocomplete value={returnLocation.label} onChange={setReturnLocation} label={b('return_location_label_it', 'return_location_label_en')} placeholder={b('return_location_placeholder_it', 'return_location_placeholder_en')} />
         )}
 
         {/* ── PICKUP ── */}
         <div>
-          <p className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-2">Ritiro</p>
+          <p className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-2">{b('pickup_section_label_it', 'pickup_section_label_en')}</p>
           <div className="flex gap-2">
             <DatePicker
               selected={pickupDate ? new Date(pickupDate + 'T12:00:00') : null}
@@ -252,7 +267,7 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
               filterDate={(date: Date) => !isBlockedDate(date)}
               minDate={new Date()}
               dateFormat="dd/MM/yyyy"
-              placeholderText="Seleziona data"
+              placeholderText={b('date_placeholder_it', 'date_placeholder_en')}
               className="flex-1 bg-white/[0.06] text-white text-[15px] font-medium rounded-xl px-4 py-3.5 min-h-[50px] border-0 outline-none cursor-pointer w-full"
             />
             <select
@@ -266,13 +281,13 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
                 : <option value={pickupTime} className="bg-[#2c2c2e] text-white">{pickupTime}</option>}
             </select>
           </div>
-          {isBlocked(pickupDate) && <p className="text-xs text-red-400 mt-1.5">Chiusi (domenica o festivo)</p>}
+          {isBlocked(pickupDate) && <p className="text-xs text-red-400 mt-1.5">{b('closed_message_it', 'closed_message_en')}</p>}
         </div>
 
         {/* ── RETURN ── */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold text-white/40 uppercase tracking-widest">Restituzione</p>
+            <p className="text-xs font-semibold text-white/40 uppercase tracking-widest">{b('return_section_label_it', 'return_section_label_en')}</p>
             {days > 0 && (
               <span className="text-xs font-bold text-white bg-white/10 px-3 py-1 rounded-full">
                 {days} {days === 1 ? 'giorno' : 'giorni'}
@@ -298,7 +313,7 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
               filterDate={(date: Date) => !isBlockedDate(date)}
               minDate={pickupDate ? new Date(pickupDate + 'T12:00:00') : new Date()}
               dateFormat="dd/MM/yyyy"
-              placeholderText="Seleziona data"
+              placeholderText={b('date_placeholder_it', 'date_placeholder_en')}
               style={{ colorScheme: 'dark' }}
               className="flex-1 bg-white/[0.06] text-white text-[15px] font-medium rounded-xl px-4 py-3.5 min-h-[50px] border-0 outline-none cursor-pointer"
             />
@@ -313,7 +328,7 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
                 : <option value={returnTime} className="bg-[#2c2c2e] text-white">{returnTime}</option>}
             </select>
           </div>
-          {isBlocked(returnDate) && <p className="text-xs text-red-400 mt-1.5">Chiusi (domenica o festivo)</p>}
+          {isBlocked(returnDate) && <p className="text-xs text-red-400 mt-1.5">{b('closed_message_it', 'closed_message_en')}</p>}
         </div>
 
         {error && <p className="text-xs text-red-400 text-center font-medium">{error}</p>}
@@ -332,27 +347,27 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
           if (returnMin < defaultReturnMin + 30) return null;
           return (
             <div className="text-center space-y-0.5">
-              <p className="text-[12px] text-red-400 font-semibold">La tariffa può subire variazioni</p>
-              <p className="text-[10px] text-red-400/60">La restituzione del veicolo è prevista entro 1 ora e 30 minuti prima dell'orario di uscita, al fine di evitare eventuali variazioni.</p>
+              <p className="text-[12px] text-red-400 font-semibold">{b('rate_warning_title_it', 'rate_warning_title_en')}</p>
+              <p className="text-[10px] text-red-400/60">{b('rate_warning_body_it', 'rate_warning_body_en')}</p>
             </div>
           );
         })()}
 
         {/* Delivery fee display */}
         {isCalculatingDelivery && (
-          <p className="text-[12px] text-white/40 text-center">Calcolo costo consegna...</p>
+          <p className="text-[12px] text-white/40 text-center">{b('delivery_calc_loading_it', 'delivery_calc_loading_en')}</p>
         )}
         {!isCalculatingDelivery && totalDeliveryFee > 0 && (
           <div className="p-3 bg-white/[0.04] border border-white/10 rounded-xl">
             <div className="flex justify-between items-center text-sm">
-              <span className="text-white/60">Consegna a domicilio</span>
+              <span className="text-white/60">{b('delivery_label_it', 'delivery_label_en')}</span>
               <span className="text-white font-semibold">+€{totalDeliveryFee.toFixed(0)}</span>
             </div>
             {deliveryFee && (
               <p className="text-[11px] text-white/30 mt-1">
-                {deliveryFee.pickupKm > 0 && `Consegna: ${deliveryFee.pickupKm} km × €${deliveryFee.pricePerKm}/km`}
+                {deliveryFee.pickupKm > 0 && `${b('delivery_breakdown_consegna_it', 'delivery_breakdown_consegna_en')}: ${deliveryFee.pickupKm} km × €${deliveryFee.pricePerKm}/km`}
                 {deliveryFee.returnKm > 0 && deliveryFee.pickupKm > 0 && ' + '}
-                {deliveryFee.returnKm > 0 && `Riconsegna: ${deliveryFee.returnKm} km × €${deliveryFee.pricePerKm}/km`}
+                {deliveryFee.returnKm > 0 && `${b('delivery_breakdown_riconsegna_it', 'delivery_breakdown_riconsegna_en')}: ${deliveryFee.returnKm} km × €${deliveryFee.pricePerKm}/km`}
               </p>
             )}
           </div>
@@ -367,7 +382,7 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
               : 'bg-white/[0.06] text-white/20 cursor-not-allowed'
           }`}
         >
-          Cerca Auto Disponibili
+          {b('search_cta_it', 'search_cta_en')}
         </button>
       </div>
     </div>
