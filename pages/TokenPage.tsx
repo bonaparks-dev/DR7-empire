@@ -1,8 +1,35 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useTranslation } from '../hooks/useTranslation';
+import { getTokenCopy, type TokenCopy } from '../utils/siteCopy';
+
+// Tiny inline markdown parser for **bold** spans inside copy. Re-used from
+// legal pages — keeps the schema readable while preserving accent styling.
+function parseInline(text: string): React.ReactNode[] {
+  if (!text) return [];
+  const out: React.ReactNode[] = [];
+  const re = /\*\*([^*]+)\*\*/g;
+  let last = 0; let key = 0; let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) out.push(text.slice(last, m.index));
+    out.push(<strong key={key++} className="text-white">{m[1]}</strong>);
+    last = re.lastIndex;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+}
 
 const TokenPage: React.FC = () => {
+  const { lang } = useTranslation();
+  const [copy, setCopy] = useState<TokenCopy | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    getTokenCopy().then(c => { if (!cancelled) setCopy(c); });
+    return () => { cancelled = true; };
+  }, []);
+  const tk = (it: keyof TokenCopy, en: keyof TokenCopy): string =>
+    copy ? (copy[lang === 'it' ? it : en] as string) : '';
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Hero Section */}
@@ -18,10 +45,10 @@ const TokenPage: React.FC = () => {
             DR7 TOKEN
           </h1>
           <p className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto mb-4">
-            L'Ecosistema Digitale del Lusso Reale
+            {tk('hero_subtitle_it', 'hero_subtitle_en')}
           </p>
           <p className="text-sm text-gray-500 uppercase tracking-widest">
-            In Lavorazione
+            {tk('hero_eyebrow_it', 'hero_eyebrow_en')}
           </p>
         </motion.div>
       </section>
@@ -37,24 +64,20 @@ const TokenPage: React.FC = () => {
           >
             <div className="mb-12">
               <h2 className="text-4xl md:text-5xl font-bold mb-4">
-                DR7 Coin – La Moneta del Lusso Reale
+                {tk('coin_section_title_it', 'coin_section_title_en')}
               </h2>
               <p className="text-xl text-gray-400 leading-relaxed">
-                Dubai Rent 7.0 S.p.A. annuncia la nascita di <strong className="text-white">DR7 Coin</strong>,
-                la prima moneta digitale al mondo sostenuta da un'economia reale e alimentata dal valore collettivo.
+                {parseInline(tk('coin_lead_it', 'coin_lead_en'))}
               </p>
             </div>
 
             <div className="prose prose-invert max-w-none space-y-8">
               <p className="text-lg text-gray-300 leading-relaxed">
-                Un progetto visionario, nato per riscrivere le regole della finanza moderna e per dare al lusso una valuta propria:
-                <strong className="text-white"> stabile, concreta e in continua espansione</strong>.
+                {parseInline(tk('coin_intro_1_it', 'coin_intro_1_en'))}
               </p>
 
               <p className="text-lg text-gray-300 leading-relaxed">
-                In un'epoca in cui le criptovalute tradizionali oscillano tra speculazione e volatilità, DR7 Coin introduce un
-                modello completamente nuovo — fondato non sulla promessa, ma sulla <strong className="text-white">realtà economica</strong>
-                di una società per azioni in piena crescita, Dubai Rent 7.0 S.p.A., e sull'energia di una community che ne sostiene la visione.
+                {parseInline(tk('coin_intro_2_it', 'coin_intro_2_en'))}
               </p>
 
               {/* Un nuovo paradigma economico */}
@@ -274,11 +297,10 @@ const TokenPage: React.FC = () => {
           >
             <div className="mb-12">
               <h2 className="text-4xl md:text-5xl font-bold mb-4">
-                DR7 Up – Il primo "Uber delle Supercar" al mondo
+                {tk('up_section_title_it', 'up_section_title_en')}
               </h2>
               <p className="text-xl text-gray-400 leading-relaxed">
-                Dubai Rent 7.0 S.p.A. presenta <strong className="text-white">DR7 Up</strong>, un progetto esclusivo e rivoluzionario
-                che ridefinisce il concetto stesso di mobilità di lusso.
+                {parseInline(tk('up_lead_it', 'up_lead_en'))}
               </p>
             </div>
 
@@ -378,7 +400,7 @@ const TokenPage: React.FC = () => {
                   e firmato Dubai Rent 7.0 S.p.A.
                 </p>
                 <div className="mt-8 inline-block bg-white text-black px-8 py-3 rounded-full font-bold text-lg">
-                  Pagamento in cripto disponibile
+                  {tk('up_cta_badge_it', 'up_cta_badge_en')}
                 </div>
               </div>
             </div>
@@ -397,11 +419,10 @@ const TokenPage: React.FC = () => {
           >
             <div className="mb-12">
               <h2 className="text-4xl md:text-5xl font-bold mb-4">
-                DR7 APP – La Prima Piattaforma Globale del Lusso Reale
+                {tk('app_section_title_it', 'app_section_title_en')}
               </h2>
               <p className="text-xl text-gray-400 leading-relaxed">
-                Dubai Rent 7.0 S.p.A. presenta <strong className="text-white">DR7 APP</strong>, la prima piattaforma digitale
-                al mondo in grado di unire in un unico ecosistema tutto il mondo del lusso
+                {parseInline(tk('app_lead_it', 'app_lead_en'))}
               </p>
             </div>
 
@@ -620,16 +641,16 @@ const TokenPage: React.FC = () => {
             transition={{ duration: 0.8 }}
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Il futuro del lusso inizia qui
+              {tk('cta_title_it', 'cta_title_en')}
             </h2>
             <p className="text-xl text-gray-400 mb-8">
-              DR7 Token, DR7 Up e DR7 APP rappresentano la prossima evoluzione dell'ecosistema DR7 Empire
+              {tk('cta_subtitle_it', 'cta_subtitle_en')}
             </p>
             <Link
               to="/"
               className="inline-block bg-white text-black px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-200 transition-all"
             >
-              Torna alla Home
+              {tk('cta_button_it', 'cta_button_en')}
             </Link>
           </motion.div>
         </div>

@@ -60,6 +60,7 @@ interface SiteCopySnapshot {
   paymentSuccess?: PaymentSuccessCopy;
   booking?: BookingCopy;
   creditWallet?: CreditWalletCopy;
+  token?: TokenCopy;
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -247,6 +248,28 @@ export interface MechanicalCopy {
 // Wash, Supercar & Luxury Division, etc.) stay hardcoded in Header.tsx —
 // they are brand names, not localized chrome. Only the section headings,
 // drawer/header CTAs, and aria labels move to CMS.
+// ─── Token page (DR7 Token / Coin / Up / APP manifesto) ──────────────────
+// Chrome-only first pass: hero, three section titles + leading paragraphs,
+// "In Lavorazione" eyebrow, "Pagamento in cripto" pill, final CTA. Detailed
+// card bodies stay hardcoded — they'll move to a structured block schema
+// later when the page goes live.
+export interface TokenCopy {
+  hero_subtitle_it: string; hero_subtitle_en: string;
+  hero_eyebrow_it: string; hero_eyebrow_en: string;
+  coin_section_title_it: string; coin_section_title_en: string;
+  coin_lead_it: string; coin_lead_en: string;
+  coin_intro_1_it: string; coin_intro_1_en: string;
+  coin_intro_2_it: string; coin_intro_2_en: string;
+  up_section_title_it: string; up_section_title_en: string;
+  up_lead_it: string; up_lead_en: string;
+  up_cta_badge_it: string; up_cta_badge_en: string;
+  app_section_title_it: string; app_section_title_en: string;
+  app_lead_it: string; app_lead_en: string;
+  cta_title_it: string; cta_title_en: string;
+  cta_subtitle_it: string; cta_subtitle_en: string;
+  cta_button_it: string; cta_button_en: string;
+}
+
 // ─── Credit Wallet page (recharge funnel + benefits + checkout modal) ────
 // CREDIT_PACKAGES array (amounts/bonuses) stays in code as product config —
 // only the marketing copy + checkout chrome is editable here. Brand vocab
@@ -1162,6 +1185,13 @@ export async function getCreditWalletCopy(): Promise<CreditWalletCopy> {
   return DEFAULT_CREDIT_WALLET;
 }
 
+/** Token page (DR7 Coin / Up / APP manifesto) — chrome only. */
+export async function getTokenCopy(): Promise<TokenCopy> {
+  const snap = await loadOnce();
+  if (snap.token && snap.token.coin_section_title_it) return snap.token;
+  return DEFAULT_TOKEN;
+}
+
 /** Confirmation Success page (booking summary + email fallback). */
 export async function getConfirmationSuccessCopy(): Promise<ConfirmationSuccessCopy> {
   const snap = await loadOnce();
@@ -1303,6 +1333,35 @@ const DEFAULT_HEADER: HeaderCopy = {
   contact_cta_it: 'Contattaci', contact_cta_en: 'Contact us',
   popup_title_it: 'Prenota Ora', popup_title_en: 'Book Now',
   popup_subtitle_it: 'Seleziona date e orari', popup_subtitle_en: 'Select dates and times',
+};
+
+// ─── Default Token seed (DR7 Coin / Up / APP) ────────────────────────────
+const DEFAULT_TOKEN: TokenCopy = {
+  hero_subtitle_it: 'L\'Ecosistema Digitale del Lusso Reale',
+  hero_subtitle_en: 'The Digital Ecosystem of Real Luxury',
+  hero_eyebrow_it: 'In Lavorazione', hero_eyebrow_en: 'In Development',
+  coin_section_title_it: 'DR7 Coin – La Moneta del Lusso Reale',
+  coin_section_title_en: 'DR7 Coin – The Currency of Real Luxury',
+  coin_lead_it: 'Dubai Rent 7.0 S.p.A. annuncia la nascita di **DR7 Coin**, la prima moneta digitale al mondo sostenuta da un\'economia reale e alimentata dal valore collettivo.',
+  coin_lead_en: 'Dubai Rent 7.0 S.p.A. announces the birth of **DR7 Coin**, the world\'s first digital currency backed by a real economy and powered by collective value.',
+  coin_intro_1_it: 'Un progetto visionario, nato per riscrivere le regole della finanza moderna e per dare al lusso una valuta propria: **stabile, concreta e in continua espansione**.',
+  coin_intro_1_en: 'A visionary project, designed to rewrite the rules of modern finance and give luxury its own currency: **stable, concrete and constantly growing**.',
+  coin_intro_2_it: 'In un\'epoca in cui le criptovalute tradizionali oscillano tra speculazione e volatilità, DR7 Coin introduce un modello completamente nuovo — fondato non sulla promessa, ma sulla **realtà economica** di una società per azioni in piena crescita, Dubai Rent 7.0 S.p.A., e sull\'energia di una community che ne sostiene la visione.',
+  coin_intro_2_en: 'At a time when traditional cryptocurrencies swing between speculation and volatility, DR7 Coin introduces a completely new model — grounded not in promise but in the **economic reality** of a growing joint-stock company, Dubai Rent 7.0 S.p.A., and the energy of a community that supports its vision.',
+  up_section_title_it: 'DR7 Up – Il primo "Uber delle Supercar" al mondo',
+  up_section_title_en: 'DR7 Up – The world\'s first "Uber of Supercars"',
+  up_lead_it: 'La rivoluzione dell\'autista privato di lusso, on demand. Disponibile in tutta Italia ed Europa.',
+  up_lead_en: 'The revolution of the on-demand private luxury driver. Available all across Italy and Europe.',
+  up_cta_badge_it: 'Pagamento in cripto disponibile', up_cta_badge_en: 'Crypto payment available',
+  app_section_title_it: 'DR7 APP – La Prima Piattaforma Globale del Lusso Reale',
+  app_section_title_en: 'DR7 APP – The First Global Platform for Real Luxury',
+  app_lead_it: 'Un\'unica app per accedere a tutto l\'ecosistema DR7: noleggio, lavaggi, meccanica, aviation, esperienze esclusive, club e wallet.',
+  app_lead_en: 'A single app to access the entire DR7 ecosystem: rentals, washes, mechanics, aviation, exclusive experiences, club and wallet.',
+  cta_title_it: 'Il futuro del lusso inizia qui',
+  cta_title_en: 'The future of luxury starts here',
+  cta_subtitle_it: 'DR7 Coin, DR7 Up, DR7 APP — un solo ecosistema, un\'unica rivoluzione.',
+  cta_subtitle_en: 'DR7 Coin, DR7 Up, DR7 APP — one ecosystem, one revolution.',
+  cta_button_it: 'Torna alla Home', cta_button_en: 'Back to Home',
 };
 
 // ─── Default Credit Wallet seed ──────────────────────────────────────────
