@@ -10,7 +10,16 @@ import type { Booking, Inquiry, RentalItem } from '../types';
 import CarBookingWizard from '../components/ui/CarBookingWizard';
 import BookingErrorBoundary from '../components/ui/BookingErrorBoundary';
 import HelicopterBookingForm from '../components/ui/HelicopterBookingForm';
-import { getBookingCopy, type BookingCopy } from '../utils/siteCopy';
+import { getBookingCopy, type BookingCopy, getMessageTemplateBody } from '../utils/siteCopy';
+
+// Token substitution for WhatsApp templates loaded from system_messages.
+function applyTokens(tpl: string, tokens: Record<string, string>): string {
+  let out = tpl;
+  for (const [k, v] of Object.entries(tokens)) out = out.split(`{${k}}`).join(v);
+  return out;
+}
+
+const WHATSAPP_RECIPIENT = '393457905205';
 
 
 
@@ -185,67 +194,48 @@ const BookingPage: React.FC = () => {
       localStorage.setItem('inquiries', JSON.stringify([...existing, newInquiry]));
       setCompletedBooking(newInquiry);
 
-      // Generate WhatsApp message for helicopter and jet bookings (Italy only)
-      if (isHelicopter) {
-        const departurePoints = HELI_DEPARTURE_POINTS;
-        const arrivalPoints = HELI_ARRIVAL_POINTS;
-        const departureName = departurePoints.find(p => p.id === formData.departurePoint)?.name || formData.departurePoint;
-        const arrivalName = arrivalPoints.find(p => p.id === formData.arrivalPoint)?.name || formData.arrivalPoint;
+      // WhatsApp messages now live in system_messages (Messaggi di Sistema Pro):
+      //   pro_booking_helicopter_inquiry / pro_booking_jet_inquiry
+      // Operators edit the template; we substitute tokens at send time.
+      if (isHelicopter || isJet) {
+        const isHeli = isHelicopter;
+        const points = isHeli ? HELI_DEPARTURE_POINTS : AIRPORTS;
+        const arrivals = isHeli ? HELI_ARRIVAL_POINTS : AIRPORTS;
+        const departureName = isHeli
+          ? (points as typeof HELI_DEPARTURE_POINTS).find(p => p.id === formData.departurePoint)?.name || formData.departurePoint
+          : (() => {
+              const a = (points as typeof AIRPORTS).find(p => p.iata === formData.departurePoint);
+              return a ? `${a.name} (${a.iata})` : formData.departurePoint;
+            })();
+        const arrivalName = isHeli
+          ? (arrivals as typeof HELI_ARRIVAL_POINTS).find(p => p.id === formData.arrivalPoint)?.name || formData.arrivalPoint
+          : (() => {
+              const a = (arrivals as typeof AIRPORTS).find(p => p.iata === formData.arrivalPoint);
+              return a ? `${a.name} (${a.iata})` : formData.arrivalPoint;
+            })();
 
-        let message = `Ciao! Vorrei prenotare un elicottero.\n\n`;
-        message += `Elicottero: ${item.name}\n`;
-        message += `Tipo viaggio: ${formData.tripType === 'one-way' ? 'Solo andata' : 'Andata e ritorno'}\n`;
-        message += `Partenza da: ${departureName}\n`;
-        message += `Arrivo a: ${arrivalName}\n`;
-        message += `Data partenza: ${formatDate(formData.departureDate)}\n`;
-        message += `Ora partenza: ${formData.departureTime}\n`;
-        if (formData.tripType === 'round-trip' && formData.returnDateQuote) {
-          message += `Data ritorno: ${formatDate(formData.returnDateQuote)}\n`;
-          message += `Ora ritorno: ${formData.returnTimeQuote}\n`;
+        const templateKey = isHeli ? 'pro_booking_helicopter_inquiry' : 'pro_booking_jet_inquiry';
+        const template = await getMessageTemplateBody(templateKey);
+        if (template) {
+          const message = applyTokens(template, {
+            nome: formData.fullName,
+            email: formData.email,
+            telefono: formData.phone,
+            partenza: departureName,
+            arrivo: arrivalName,
+            data_partenza: formatDate(formData.departureDate),
+            ora_partenza: formData.departureTime,
+            data_ritorno: formData.tripType === 'round-trip' && formData.returnDateQuote ? formatDate(formData.returnDateQuote) : '',
+            ora_ritorno: formData.tripType === 'round-trip' && formData.returnTimeQuote ? formData.returnTimeQuote : '',
+            passeggeri: String(formData.passengers),
+            veicolo: item.name,
+            tipo_viaggio: formData.tripType === 'one-way' ? 'Solo andata' : 'Andata e ritorno',
+            animali: formData.petsAllowed ? 'Sì' : 'No',
+            fumo: formData.smokingAllowed ? 'Sì' : 'No',
+          });
+          const whatsappUrl = `https://wa.me/${WHATSAPP_RECIPIENT}?text=${encodeURIComponent(message)}`;
+          window.open(whatsappUrl, '_blank');
         }
-        message += `Numero passeggeri: ${formData.passengers}\n\n`;
-        message += `Nome: ${formData.fullName}\n`;
-        message += `Email: ${formData.email}\n`;
-        message += `Telefono: ${formData.phone}\n\n`;
-        message += `Potreste fornirmi un preventivo? Grazie!`;
-
-        const whatsappUrl = `https://wa.me/393457905205?text=${encodeURIComponent(message)}`;
-        window.open(whatsappUrl, '_blank');
-      }
-
-      // Generate WhatsApp message for jet bookings
-      if (isJet) {
-        const airports = AIRPORTS;
-        const departureAirport = airports.find(p => p.iata === formData.departurePoint);
-        const arrivalAirport = airports.find(p => p.iata === formData.arrivalPoint);
-        const departureName = departureAirport ? `${departureAirport.name} (${departureAirport.iata})` : formData.departurePoint;
-        const arrivalName = arrivalAirport ? `${arrivalAirport.name} (${arrivalAirport.iata})` : formData.arrivalPoint;
-
-        let message = `Ciao! Vorrei prenotare un jet privato.\n\n`;
-        message += `Jet: ${item.name}\n`;
-        message += `Tipo viaggio: ${formData.tripType === 'one-way' ? 'Solo andata' : 'Andata e ritorno'}\n`;
-        message += `Partenza da: ${departureName}\n`;
-        message += `Arrivo a: ${arrivalName}\n`;
-        message += `Data partenza: ${formatDate(formData.departureDate)}\n`;
-        message += `Ora partenza: ${formData.departureTime}\n`;
-        if (formData.tripType === 'round-trip' && formData.returnDateQuote) {
-          message += `Data ritorno: ${formatDate(formData.returnDateQuote)}\n`;
-          message += `Ora ritorno: ${formData.returnTimeQuote}\n`;
-        }
-        message += `Numero passeggeri: ${formData.passengers}\n`;
-        if (formData.petsAllowed) {
-          message += `Animali domestici: Sì\n`;
-        }
-        if (formData.smokingAllowed) {
-          message += `Fumo: Sì\n`;
-        }
-        message += `\nNome: ${formData.fullName}\n`;
-        message += `Email: ${formData.email}\n`;
-        message += `Telefono: ${formData.phone}\n\n`;
-        message += `Potreste fornirmi un preventivo? Grazie!`;
-
-        const whatsappUrl = `https://wa.me/393457905205?text=${encodeURIComponent(message)}`;
-        window.open(whatsappUrl, '_blank');
       }
     } else {
       const commonData = {
@@ -283,28 +273,27 @@ const BookingPage: React.FC = () => {
 
       setCompletedBooking(data);
 
-      // Generate WhatsApp message for yacht bookings
+      // WhatsApp template lives in system_messages: pro_booking_yacht_confirm
       if (isYacht) {
         const marinaName = YACHT_PICKUP_MARINAS.find(m => m.id === formData.pickupMarina);
         const marinaLabel = marinaName ? getTranslated(marinaName.label) : formData.pickupMarina;
-
-        let message = `Ciao! Ho prenotato uno yacht.\n\n`;
-        message += `Yacht: ${item.name}\n`;
-        message += `Check-in: ${formatDate(formData.checkinDate)} alle 15:00\n`;
-        message += `Check-out: ${formatDate(formData.checkoutDate)} alle 11:00\n`;
-        message += `Durata: ${nights} ${nights === 1 ? 'notte' : 'notti'}\n`;
-        message += `Marina: ${marinaLabel}\n`;
-        message += `Passeggeri: ${formData.guests}\n`;
-        message += `Totale: ${formatPrice(total)}\n\n`;
-        message += `Nome: ${formData.fullName}\n`;
-        message += `Email: ${formData.email}\n`;
-        message += `Telefono: ${formData.phone}\n\n`;
-        message += `Grazie!`;
-
-        const whatsappUrl = `https://wa.me/393457905205?text=${encodeURIComponent(message)}`;
-        setTimeout(() => {
-          window.open(whatsappUrl, '_blank');
-        }, 1000);
+        const template = await getMessageTemplateBody('pro_booking_yacht_confirm');
+        if (template) {
+          const message = applyTokens(template, {
+            nome: formData.fullName,
+            email: formData.email,
+            telefono: formData.phone,
+            yacht_name: item.name,
+            marina: marinaLabel,
+            check_in: formatDate(formData.checkinDate),
+            check_out: formatDate(formData.checkoutDate),
+            nights: String(nights),
+            passeggeri: String(formData.guests),
+            totale: formatPrice(total),
+          });
+          const whatsappUrl = `https://wa.me/${WHATSAPP_RECIPIENT}?text=${encodeURIComponent(message)}`;
+          setTimeout(() => { window.open(whatsappUrl, '_blank'); }, 1000);
+        }
       }
     }
     setStep(steps.length + 1);
