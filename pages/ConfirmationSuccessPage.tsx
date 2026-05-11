@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import type { Booking } from '../types';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { getConfirmationSuccessCopy, type ConfirmationSuccessCopy } from '../utils/siteCopy';
+import { trackBookingCompleted } from '../utils/analytics';
 
 const BookingConfirmationDetails: React.FC<{ booking: any; copy: ConfirmationSuccessCopy }> = ({ booking, copy }) => {
   const { lang } = useTranslation();
@@ -136,6 +137,10 @@ const ConfirmationSuccessPage: React.FC = () => {
     getConfirmationSuccessCopy().then((c) => { if (!cancelled) setCopy(c); });
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    if (booking) trackBookingCompleted(booking as any);
+  }, [booking]);
 
   if (loading || !copy) return null;
 

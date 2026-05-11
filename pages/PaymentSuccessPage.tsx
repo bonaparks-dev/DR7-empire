@@ -4,6 +4,7 @@ import { supabase } from '../supabaseClient';
 import { addCredits } from '../utils/creditWallet';
 import { useTranslation } from '../hooks/useTranslation';
 import { getPaymentSuccessCopy, type PaymentSuccessCopy, getMessageTemplateBody } from '../utils/siteCopy';
+import { trackBookingCompleted } from '../utils/analytics';
 
 // Token substitution for WhatsApp templates loaded from system_messages.
 function applyTokens(tpl: string, tokens: Record<string, string>): string {
@@ -171,6 +172,7 @@ const PaymentSuccessPage: React.FC = () => {
                     const booking = bookings[0];
                     console.log('Found booking:', booking.id);
                     setPurchaseType('booking');
+                    trackBookingCompleted(booking);
 
                     // Update if not already confirmed (backward compat + idempotency)
                     if (booking.payment_status !== 'succeeded' && booking.payment_status !== 'completed' && booking.payment_status !== 'paid') {

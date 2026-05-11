@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import SEOHead from '../components/seo/SEOHead';
 import { useTranslation } from '../hooks/useTranslation';
 import { getContactCopy, type ContactCopy } from '../utils/siteCopy';
+import { trackPhoneCall } from '../utils/analytics';
 
 const ContactPage: React.FC = () => {
   const { lang } = useTranslation();
@@ -100,7 +101,11 @@ const ContactPage: React.FC = () => {
                   </svg>
                 </div>
                 <h2 className="text-xl font-bold text-white mb-2">{lang === 'it' ? copy.phone_label_it : copy.phone_label_en}</h2>
-                <a href={copy.phone_tel_url} className="text-2xl font-semibold text-gray-300 hover:text-white transition-colors">
+                <a
+                  href={copy.phone_tel_url}
+                  onClick={() => trackPhoneCall('contact_page')}
+                  className="text-2xl font-semibold text-gray-300 hover:text-white transition-colors"
+                >
                   {copy.phone_display}
                 </a>
               </div>
