@@ -343,11 +343,11 @@ export default function RegistrazioneClientePage() {
                             <section>
                                 <SectionTitle index="2" title={r('section_2_anagrafica_it', 'section_2_anagrafica_en').replace(/^2\.\s*/, '')} />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <Field label="Nome" value={form.nome} onChange={v => update('nome', v)} required />
-                                    <Field label="Cognome" value={form.cognome} onChange={v => update('cognome', v)} required />
+                                    <Field label={r('field_nome_it', 'field_nome_en')} value={form.nome} onChange={v => update('nome', v)} required />
+                                    <Field label={r('field_cognome_it', 'field_cognome_en')} value={form.cognome} onChange={v => update('cognome', v)} required />
                                     <div className="md:col-span-2">
                                         <label className="block">
-                                            <span className="text-xs font-semibold text-white/80 tracking-wide">CODICE FISCALE *</span>
+                                            <span className="text-xs font-semibold text-white/80 tracking-wide">{r('field_cf_label_it', 'field_cf_label_en')}</span>
                                             <div className="mt-2 flex flex-col sm:flex-row gap-2">
                                                 <input
                                                     value={form.codice_fiscale}
@@ -355,7 +355,7 @@ export default function RegistrazioneClientePage() {
                                                     required
                                                     maxLength={16}
                                                     minLength={16}
-                                                    placeholder="ABCDEF12G34H567I"
+                                                    placeholder={copy?.field_cf_placeholder || ''}
                                                     className={INPUT_CLASS + ' uppercase tracking-wider'}
                                                 />
                                                 <CalcolaCFButton
@@ -368,14 +368,14 @@ export default function RegistrazioneClientePage() {
                                             )}
                                         </label>
                                     </div>
-                                    <SelectField label="Sesso" value={form.sesso} onChange={v => update('sesso', v)} options={[
-                                        { value: '', label: 'Seleziona…' },
-                                        { value: 'M', label: 'Maschio' },
-                                        { value: 'F', label: 'Femmina' },
+                                    <SelectField label={r('field_sesso_label_it', 'field_sesso_label_en')} value={form.sesso} onChange={v => update('sesso', v)} options={[
+                                        { value: '', label: r('field_sesso_default_it', 'field_sesso_default_en') },
+                                        { value: 'M', label: r('field_sesso_m_it', 'field_sesso_m_en') },
+                                        { value: 'F', label: r('field_sesso_f_it', 'field_sesso_f_en') },
                                     ]} />
-                                    <Field label="Data di Nascita" type="date" value={form.data_nascita} onChange={v => update('data_nascita', v)} required />
-                                    <Field label="Luogo di Nascita" value={form.luogo_nascita} onChange={v => update('luogo_nascita', v)} required placeholder="es. Cagliari, Torino…" />
-                                    <Field label="Provincia di Nascita" value={form.provincia_nascita} onChange={v => update('provincia_nascita', v.toUpperCase())} maxLength={2} placeholder="es. CA, TO, MI…" />
+                                    <Field label={r('field_birth_date_it', 'field_birth_date_en')} type="date" value={form.data_nascita} onChange={v => update('data_nascita', v)} required />
+                                    <Field label={r('field_birth_city_it', 'field_birth_city_en')} value={form.luogo_nascita} onChange={v => update('luogo_nascita', v)} required placeholder={r('field_birth_city_placeholder_it', 'field_birth_city_placeholder_en')} />
+                                    <Field label={r('field_birth_province_it', 'field_birth_province_en')} value={form.provincia_nascita} onChange={v => update('provincia_nascita', v.toUpperCase())} maxLength={2} placeholder={r('field_birth_province_placeholder_it', 'field_birth_province_placeholder_en')} />
                                 </div>
                             </section>
                         )}
@@ -384,11 +384,11 @@ export default function RegistrazioneClientePage() {
                             <section>
                                 <SectionTitle index="2" title={r('section_2_azienda_it', 'section_2_azienda_en').replace(/^2\.\s*/, '')} />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <Field label="Ragione Sociale" value={form.ragione_sociale} onChange={v => update('ragione_sociale', v)} required />
-                                    <Field label="P.IVA" value={form.partita_iva} onChange={v => update('partita_iva', v.replace(/\D/g, ''))} required maxLength={11} minLength={11} placeholder="11 cifre" />
-                                    <Field label="PEC (se nessun Codice SDI)" type="email" value={form.pec} onChange={v => update('pec', v)} placeholder="azienda@pec.it" />
-                                    <Field label="Codice Destinatario SDI (se nessuna PEC)" value={form.codice_destinatario} onChange={v => update('codice_destinatario', v.toUpperCase())} maxLength={7} placeholder="7 caratteri" />
-                                    <Field label="Codice Fiscale Rappresentante" value={form.codice_fiscale} onChange={v => update('codice_fiscale', v.toUpperCase())} maxLength={16} />
+                                    <Field label={r('field_ragione_sociale_it', 'field_ragione_sociale_en')} value={form.ragione_sociale} onChange={v => update('ragione_sociale', v)} required />
+                                    <Field label={r('field_piva_it', 'field_piva_en')} value={form.partita_iva} onChange={v => update('partita_iva', v.replace(/\D/g, ''))} required maxLength={11} minLength={11} placeholder={r('field_piva_placeholder_it', 'field_piva_placeholder_en')} />
+                                    <Field label={r('field_pec_no_sdi_it', 'field_pec_no_sdi_en')} type="email" value={form.pec} onChange={v => update('pec', v)} placeholder={copy?.field_pec_placeholder || ''} />
+                                    <Field label={r('field_sdi_no_pec_it', 'field_sdi_no_pec_en')} value={form.codice_destinatario} onChange={v => update('codice_destinatario', v.toUpperCase())} maxLength={7} placeholder={r('field_sdi_placeholder_it', 'field_sdi_placeholder_en')} />
+                                    <Field label={r('field_cf_rappresentante_it', 'field_cf_rappresentante_en')} value={form.codice_fiscale} onChange={v => update('codice_fiscale', v.toUpperCase())} maxLength={16} />
                                 </div>
                             </section>
                         )}
@@ -397,11 +397,11 @@ export default function RegistrazioneClientePage() {
                             <section>
                                 <SectionTitle index="2" title={r('section_2_pa_it', 'section_2_pa_en').replace(/^2\.\s*/, '')} />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <Field label="Ente / Ufficio" value={form.ente_ufficio} onChange={v => update('ente_ufficio', v)} required />
-                                    <Field label="Codice Univoco IPA" value={form.codice_univoco} onChange={v => update('codice_univoco', v.toUpperCase())} required maxLength={6} placeholder="6 caratteri" />
-                                    <Field label="P.IVA" value={form.partita_iva} onChange={v => update('partita_iva', v.replace(/\D/g, ''))} maxLength={11} />
-                                    <Field label="Codice Fiscale Ente" value={form.codice_fiscale} onChange={v => update('codice_fiscale', v.toUpperCase())} maxLength={16} />
-                                    <Field label="PEC" type="email" value={form.pec} onChange={v => update('pec', v)} />
+                                    <Field label={r('field_ente_ufficio_it', 'field_ente_ufficio_en')} value={form.ente_ufficio} onChange={v => update('ente_ufficio', v)} required />
+                                    <Field label={r('field_codice_univoco_it', 'field_codice_univoco_en')} value={form.codice_univoco} onChange={v => update('codice_univoco', v.toUpperCase())} required maxLength={6} placeholder={r('field_codice_univoco_placeholder_it', 'field_codice_univoco_placeholder_en')} />
+                                    <Field label={r('field_piva_it', 'field_piva_en')} value={form.partita_iva} onChange={v => update('partita_iva', v.replace(/\D/g, ''))} maxLength={11} />
+                                    <Field label={r('field_cf_ente_it', 'field_cf_ente_en')} value={form.codice_fiscale} onChange={v => update('codice_fiscale', v.toUpperCase())} maxLength={16} />
+                                    <Field label={r('field_pec_simple_it', 'field_pec_simple_en')} type="email" value={form.pec} onChange={v => update('pec', v)} />
                                 </div>
                             </section>
                         )}
@@ -413,13 +413,13 @@ export default function RegistrazioneClientePage() {
                                 : r('section_3_sede_it', 'section_3_sede_en')).replace(/^3\.\s*/, '')} />
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="md:col-span-2">
-                                    <Field label="Indirizzo" value={form.indirizzo} onChange={v => update('indirizzo', v)} required placeholder="Via / Viale / Corso…" />
+                                    <Field label={r('field_indirizzo_it', 'field_indirizzo_en')} value={form.indirizzo} onChange={v => update('indirizzo', v)} required placeholder={r('field_indirizzo_placeholder_it', 'field_indirizzo_placeholder_en')} />
                                 </div>
-                                <Field label="Civico" value={form.numero_civico} onChange={v => update('numero_civico', v)} maxLength={10} placeholder="es. 12/A" />
-                                <Field label="Città" value={form.citta} onChange={v => update('citta', v)} required placeholder="es. Cagliari" />
-                                <Field label="Provincia" value={form.provincia} onChange={v => update('provincia', v.toUpperCase())} maxLength={2} minLength={2} required placeholder="es. CA" />
-                                <Field label="CAP" value={form.cap} onChange={v => update('cap', v.replace(/\D/g, ''))} maxLength={5} minLength={5} required placeholder="5 cifre" />
-                                <Field label="Nazione" value={form.nazione} onChange={v => update('nazione', v.toUpperCase())} maxLength={2} placeholder="IT" />
+                                <Field label={r('field_civico_it', 'field_civico_en')} value={form.numero_civico} onChange={v => update('numero_civico', v)} maxLength={10} placeholder={r('field_civico_placeholder_it', 'field_civico_placeholder_en')} />
+                                <Field label={r('field_citta_it', 'field_citta_en')} value={form.citta} onChange={v => update('citta', v)} required placeholder={r('field_citta_placeholder_it', 'field_citta_placeholder_en')} />
+                                <Field label={r('field_provincia_it', 'field_provincia_en')} value={form.provincia} onChange={v => update('provincia', v.toUpperCase())} maxLength={2} minLength={2} required placeholder={r('field_provincia_placeholder_it', 'field_provincia_placeholder_en')} />
+                                <Field label={r('field_cap_it', 'field_cap_en')} value={form.cap} onChange={v => update('cap', v.replace(/\D/g, ''))} maxLength={5} minLength={5} required placeholder={r('field_cap_placeholder_it', 'field_cap_placeholder_en')} />
+                                <Field label={r('field_nazione_it', 'field_nazione_en')} value={form.nazione} onChange={v => update('nazione', v.toUpperCase())} maxLength={2} placeholder={copy?.field_nazione_placeholder || ''} />
                             </div>
                         </section>
 
@@ -427,8 +427,8 @@ export default function RegistrazioneClientePage() {
                         <section>
                             <SectionTitle index="4" title={r('section_4_contatti_it', 'section_4_contatti_en').replace(/^4\.\s*/, '')} />
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Field label="Telefono" type="tel" value={form.telefono} onChange={v => update('telefono', v)} required placeholder="+39 333 1234567" />
-                                <Field label="Email" type="email" value={form.email} onChange={v => update('email', v)} required placeholder="nome@esempio.com" />
+                                <Field label={r('field_telefono_it', 'field_telefono_en')} type="tel" value={form.telefono} onChange={v => update('telefono', v)} required placeholder={copy?.field_telefono_placeholder || ''} />
+                                <Field label={r('field_email_it', 'field_email_en')} type="email" value={form.email} onChange={v => update('email', v)} required placeholder={copy?.field_email_placeholder || ''} />
                             </div>
                         </section>
 

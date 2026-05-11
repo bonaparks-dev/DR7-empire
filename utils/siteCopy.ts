@@ -335,6 +335,53 @@ export interface RegistrazioneClienteCopy {
   err_email_invalid_it: string; err_email_invalid_en: string;
   err_cf_length_it: string; err_cf_length_en: string;
   err_piva_length_it: string; err_piva_length_en: string;
+  // Persona Fisica fields
+  field_nome_it: string; field_nome_en: string;
+  field_cognome_it: string; field_cognome_en: string;
+  field_cf_label_it: string; field_cf_label_en: string;
+  field_cf_placeholder: string;
+  field_sesso_label_it: string; field_sesso_label_en: string;
+  field_sesso_default_it: string; field_sesso_default_en: string;
+  field_sesso_m_it: string; field_sesso_m_en: string;
+  field_sesso_f_it: string; field_sesso_f_en: string;
+  field_birth_date_it: string; field_birth_date_en: string;
+  field_birth_city_it: string; field_birth_city_en: string;
+  field_birth_city_placeholder_it: string; field_birth_city_placeholder_en: string;
+  field_birth_province_it: string; field_birth_province_en: string;
+  field_birth_province_placeholder_it: string; field_birth_province_placeholder_en: string;
+  // Azienda fields
+  field_ragione_sociale_it: string; field_ragione_sociale_en: string;
+  field_piva_it: string; field_piva_en: string;
+  field_piva_placeholder_it: string; field_piva_placeholder_en: string;
+  field_pec_no_sdi_it: string; field_pec_no_sdi_en: string;
+  field_pec_placeholder: string;
+  field_sdi_no_pec_it: string; field_sdi_no_pec_en: string;
+  field_sdi_placeholder_it: string; field_sdi_placeholder_en: string;
+  field_cf_rappresentante_it: string; field_cf_rappresentante_en: string;
+  // Pubblica Amministrazione fields
+  field_ente_ufficio_it: string; field_ente_ufficio_en: string;
+  field_codice_univoco_it: string; field_codice_univoco_en: string;
+  field_codice_univoco_placeholder_it: string; field_codice_univoco_placeholder_en: string;
+  field_cf_ente_it: string; field_cf_ente_en: string;
+  field_pec_simple_it: string; field_pec_simple_en: string;
+  // Residenza/Sede fields
+  field_indirizzo_it: string; field_indirizzo_en: string;
+  field_indirizzo_placeholder_it: string; field_indirizzo_placeholder_en: string;
+  field_civico_it: string; field_civico_en: string;
+  field_civico_placeholder_it: string; field_civico_placeholder_en: string;
+  field_citta_it: string; field_citta_en: string;
+  field_citta_placeholder_it: string; field_citta_placeholder_en: string;
+  field_provincia_it: string; field_provincia_en: string;
+  field_provincia_placeholder_it: string; field_provincia_placeholder_en: string;
+  field_cap_it: string; field_cap_en: string;
+  field_cap_placeholder_it: string; field_cap_placeholder_en: string;
+  field_nazione_it: string; field_nazione_en: string;
+  field_nazione_placeholder: string;
+  // Contatti fields
+  field_telefono_it: string; field_telefono_en: string;
+  field_telefono_placeholder: string;
+  field_email_it: string; field_email_en: string;
+  field_email_placeholder: string;
 }
 
 // ─── Firma page (contract e-signature OTP flow) ──────────────────────────
@@ -1598,6 +1645,55 @@ const DEFAULT_REGISTRAZIONE_CLIENTE: RegistrazioneClienteCopy = {
   err_cf_length_en: 'Tax code must be 16 characters',
   err_piva_length_it: 'P.IVA deve essere di 11 cifre',
   err_piva_length_en: 'VAT number must be 11 digits',
+  // Persona Fisica fields
+  field_nome_it: 'Nome', field_nome_en: 'First Name',
+  field_cognome_it: 'Cognome', field_cognome_en: 'Last Name',
+  field_cf_label_it: 'CODICE FISCALE *', field_cf_label_en: 'TAX CODE *',
+  field_cf_placeholder: 'ABCDEF12G34H567I',
+  field_sesso_label_it: 'Sesso', field_sesso_label_en: 'Gender',
+  field_sesso_default_it: 'Seleziona…', field_sesso_default_en: 'Select…',
+  field_sesso_m_it: 'Maschio', field_sesso_m_en: 'Male',
+  field_sesso_f_it: 'Femmina', field_sesso_f_en: 'Female',
+  field_birth_date_it: 'Data di Nascita', field_birth_date_en: 'Date of Birth',
+  field_birth_city_it: 'Luogo di Nascita', field_birth_city_en: 'Place of Birth',
+  field_birth_city_placeholder_it: 'es. Cagliari, Torino…', field_birth_city_placeholder_en: 'e.g. Cagliari, Turin…',
+  field_birth_province_it: 'Provincia di Nascita', field_birth_province_en: 'Province of Birth',
+  field_birth_province_placeholder_it: 'es. CA, TO, MI…', field_birth_province_placeholder_en: 'e.g. CA, TO, MI…',
+  // Azienda
+  field_ragione_sociale_it: 'Ragione Sociale', field_ragione_sociale_en: 'Company Name',
+  field_piva_it: 'P.IVA', field_piva_en: 'VAT Number',
+  field_piva_placeholder_it: '11 cifre', field_piva_placeholder_en: '11 digits',
+  field_pec_no_sdi_it: 'PEC (se nessun Codice SDI)', field_pec_no_sdi_en: 'PEC (if no SDI code)',
+  field_pec_placeholder: 'azienda@pec.it',
+  field_sdi_no_pec_it: 'Codice Destinatario SDI (se nessuna PEC)',
+  field_sdi_no_pec_en: 'SDI Recipient Code (if no PEC)',
+  field_sdi_placeholder_it: '7 caratteri', field_sdi_placeholder_en: '7 characters',
+  field_cf_rappresentante_it: 'Codice Fiscale Rappresentante',
+  field_cf_rappresentante_en: 'Representative Tax Code',
+  // PA
+  field_ente_ufficio_it: 'Ente / Ufficio', field_ente_ufficio_en: 'Agency / Office',
+  field_codice_univoco_it: 'Codice Univoco IPA', field_codice_univoco_en: 'IPA Unique Code',
+  field_codice_univoco_placeholder_it: '6 caratteri', field_codice_univoco_placeholder_en: '6 characters',
+  field_cf_ente_it: 'Codice Fiscale Ente', field_cf_ente_en: 'Agency Tax Code',
+  field_pec_simple_it: 'PEC', field_pec_simple_en: 'PEC',
+  // Residenza/Sede
+  field_indirizzo_it: 'Indirizzo', field_indirizzo_en: 'Address',
+  field_indirizzo_placeholder_it: 'Via / Viale / Corso…', field_indirizzo_placeholder_en: 'Street / Avenue…',
+  field_civico_it: 'Civico', field_civico_en: 'Street Number',
+  field_civico_placeholder_it: 'es. 12/A', field_civico_placeholder_en: 'e.g. 12/A',
+  field_citta_it: 'Città', field_citta_en: 'City',
+  field_citta_placeholder_it: 'es. Cagliari', field_citta_placeholder_en: 'e.g. Cagliari',
+  field_provincia_it: 'Provincia', field_provincia_en: 'Province',
+  field_provincia_placeholder_it: 'es. CA', field_provincia_placeholder_en: 'e.g. CA',
+  field_cap_it: 'CAP', field_cap_en: 'ZIP',
+  field_cap_placeholder_it: '5 cifre', field_cap_placeholder_en: '5 digits',
+  field_nazione_it: 'Nazione', field_nazione_en: 'Country',
+  field_nazione_placeholder: 'IT',
+  // Contatti
+  field_telefono_it: 'Telefono', field_telefono_en: 'Phone',
+  field_telefono_placeholder: '+39 333 1234567',
+  field_email_it: 'Email', field_email_en: 'Email',
+  field_email_placeholder: 'nome@esempio.com',
 };
 
 // ─── Default Firma seed (contract e-signature OTP flow) ─────────────────
