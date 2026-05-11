@@ -67,6 +67,7 @@ interface SiteCopySnapshot {
   paymentCancel?: PaymentCancelCopy;
   locations?: LocationsCopy;
   aviationMarine?: AviationMarineCopy;
+  dr7ClubPlan?: Dr7ClubPlanCopy;
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -313,6 +314,20 @@ export interface AviationMarineCopy {
   yachts: AviationMarineItem[];
   jets: AviationMarineItem[];
   helis: AviationMarineItem[];
+}
+
+// ─── DR7 Club plan (admin-editable price + features) ─────────────────────
+// Marketing-side data for /membership and enrollment. Cashback rules and
+// loyalty tier thresholds live in centralina_pro_config.tier_pricing — this
+// block is only what the public membership page displays.
+export interface Dr7ClubPlanCopy {
+  id: string;
+  name_it: string;
+  name_en: string;
+  monthly_eur: number;
+  annually_eur: number;
+  features_it: string[];
+  features_en: string[];
 }
 
 // ─── Payment Cancel page (post-Nexi cancel landing) ─────────────────────
@@ -1493,6 +1508,13 @@ export async function getAviationMarineCopy(): Promise<AviationMarineCopy> {
   return DEFAULT_AVIATION_MARINE;
 }
 
+/** DR7 Club plan (price + features) — admin-editable marketing data. */
+export async function getDr7ClubPlanCopy(): Promise<Dr7ClubPlanCopy> {
+  const snap = await loadOnce();
+  if (snap.dr7ClubPlan && snap.dr7ClubPlan.id) return snap.dr7ClubPlan;
+  return DEFAULT_DR7_CLUB_PLAN;
+}
+
 /** Confirmation Success page (booking summary + email fallback). */
 export async function getConfirmationSuccessCopy(): Promise<ConfirmationSuccessCopy> {
   const snap = await loadOnce();
@@ -1740,6 +1762,34 @@ const DEFAULT_AVIATION_MARINE: AviationMarineCopy = {
         { key: 'speed', value: '150 kt' },
       ],
     },
+  ],
+};
+
+// ─── Default DR7 Club plan seed (mirrors current constants.ts MEMBERSHIP_TIERS) ──
+const DEFAULT_DR7_CLUB_PLAN: Dr7ClubPlanCopy = {
+  id: 'dr7club',
+  name_it: 'DR7 Club',
+  name_en: 'DR7 Club',
+  monthly_eur: 4.90,
+  annually_eur: 39,
+  features_it: [
+    'Sistema wallet reward attivo su ogni prenotazione',
+    '2% di cashback su prenotazioni con pagamento anticipato (fino al 4%)',
+    '1% di cashback su prenotazioni con acconto (30%)',
+    '2% di cashback su servizi extra',
+    '3% di cashback su servizi Prime Wash',
+    'Accesso prioritario alle prenotazioni',
+    'Inviti a eventi esclusivi DR7 e serate partner',
+  ],
+  features_en: [
+    'Wallet reward system activated on every booking',
+    '2% cashback on full prepayment bookings (up to 4%)',
+    '1% cashback on deposit bookings (30% advance)',
+    '2% cashback on extra services',
+    '3% cashback on Prime Wash services',
+    'Priority booking access',
+    'Access to "DR7 Members" WhatsApp group for flash offers',
+    'Invitations to exclusive DR7 events and partner evenings',
   ],
 };
 

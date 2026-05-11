@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../hooks/useTranslation';
-import { MEMBERSHIP_TIERS } from '../../constants';
+import { MEMBERSHIP_TIERS as DEFAULT_MEMBERSHIP_TIERS } from '../../constants';
+import { getMembershipTiers } from '../../utils/getMembershipTiers';
+import type { MembershipTier } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 
@@ -10,8 +12,14 @@ const MembershipStatus = () => {
     const { t, lang } = useTranslation();
     const navigate = useNavigate();
     const [membershipPurchase, setMembershipPurchase] = useState<any>(null);
+    const [tiers, setTiers] = useState<MembershipTier[]>(DEFAULT_MEMBERSHIP_TIERS);
+    useEffect(() => {
+        let cancelled = false;
+        getMembershipTiers().then(t => { if (!cancelled && t.length > 0) setTiers(t); });
+        return () => { cancelled = true; };
+    }, []);
 
-    const currentTier = user?.membership ? MEMBERSHIP_TIERS.find(t => t.id === user.membership?.tierId) : null;
+    const currentTier = user?.membership ? tiers.find(t => t.id === user.membership?.tierId) : null;
 
     // Fetch the actual membership purchase record
     useEffect(() => {

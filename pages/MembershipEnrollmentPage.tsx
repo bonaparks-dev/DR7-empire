@@ -1,9 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { useAuth } from '../hooks/useAuth';
-import { MEMBERSHIP_TIERS } from '../constants';
+import { MEMBERSHIP_TIERS as DEFAULT_MEMBERSHIP_TIERS } from '../constants';
+import { getMembershipTiers } from '../utils/getMembershipTiers';
+import type { MembershipTier } from '../types';
 import { supabase } from '../supabaseClient';
 
 const MembershipEnrollmentPage: React.FC = () => {
@@ -20,7 +22,14 @@ const MembershipEnrollmentPage: React.FC = () => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [paymentError, setPaymentError] = useState<string | null>(null);
 
-    const tier = useMemo(() => MEMBERSHIP_TIERS.find(t => t.id === tierId), [tierId]);
+    const [tiers, setTiers] = useState<MembershipTier[]>(DEFAULT_MEMBERSHIP_TIERS);
+    useEffect(() => {
+        let cancelled = false;
+        getMembershipTiers().then(t => { if (!cancelled && t.length > 0) setTiers(t); });
+        return () => { cancelled = true; };
+    }, []);
+
+    const tier = useMemo(() => tiers.find(t => t.id === tierId), [tierId, tiers]);
     const price = useMemo(() => tier?.price[billingCycle].eur || 0, [tier, billingCycle]);
 
     const formatPrice = (p: number) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(p);

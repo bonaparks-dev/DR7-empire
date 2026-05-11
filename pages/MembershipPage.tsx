@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { MEMBERSHIP_TIERS } from '../constants';
+import { MEMBERSHIP_TIERS as DEFAULT_MEMBERSHIP_TIERS } from '../constants';
 import { useTranslation } from '../hooks/useTranslation';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +12,8 @@ import {
     type CancellazioneSection,
     type CancellazioneBlock,
 } from '../utils/siteCopy';
+import { getMembershipTiers } from '../utils/getMembershipTiers';
+import type { MembershipTier } from '../types';
 
 const MembershipPage: React.FC = () => {
     const { lang } = useTranslation();
@@ -19,14 +21,16 @@ const MembershipPage: React.FC = () => {
     const { user } = useAuth();
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('monthly');
     const [copy, setCopy] = useState<MembershipCopy | null>(null);
+    const [tiers, setTiers] = useState<MembershipTier[]>(DEFAULT_MEMBERSHIP_TIERS);
 
     useEffect(() => {
         let cancelled = false;
         getMembershipCopy().then((c) => { if (!cancelled) setCopy(c); });
+        getMembershipTiers().then((t) => { if (!cancelled && t.length > 0) setTiers(t); });
         return () => { cancelled = true; };
     }, []);
 
-    const club = MEMBERSHIP_TIERS[0];
+    const club = tiers[0];
     const monthlyPrice = club.price.monthly.eur;
     const annualPrice = club.price.annually.eur;
     const annualMonthly = +(annualPrice / 12).toFixed(2);
