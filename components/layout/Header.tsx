@@ -1,20 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
-import { RENTAL_CATEGORIES, PICKUP_LOCATIONS } from '../../constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
 import { UserCircleIcon, SignOutIcon } from '../icons/Icons';
 import { getUserCreditBalance } from '../../utils/creditWallet';
 import BookingSearchBox from '../ui/BookingSearchBox';
+import { getHeaderCopy, type HeaderCopy } from '../../utils/siteCopy';
 
-const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
-  const { t } = useTranslation();
+const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void; copy: HeaderCopy }> = ({ isOpen, onClose, copy }) => {
+  const { t, lang } = useTranslation();
   const { user, logout } = useAuth();
   const nav = useNavigate();
   const [creditBalance, setCreditBalance] = useState<number>(0);
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
   const [showBookingPopup, setShowBookingPopup] = useState(false);
+  const h = (it: keyof HeaderCopy, en: keyof HeaderCopy): string =>
+    (copy as Record<string, string>)[(lang === 'it' ? it : en) as string];
 
   useEffect(() => {
     if (isOpen) {
@@ -95,11 +97,11 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
             {/* Logo centered at top */}
             <div className="flex flex-col items-center mb-8">
               <NavLink to="/" onClick={onClose} className="mb-6">
-                <img src="/DR7logo1.png" alt="DR7 Logo" className="h-14 md:h-16 w-auto" />
+                <img src="/DR7logo1.png" alt={copy.logo_alt} className="h-14 md:h-16 w-auto" />
               </NavLink>
               <button
                 onClick={onClose}
-                aria-label="Close menu"
+                aria-label={h('close_menu_aria_it', 'close_menu_aria_en')}
                 className="absolute top-6 right-6 text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-800"
               >
 
@@ -128,20 +130,20 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                 onClick={() => setShowBookingPopup(true)}
                 className="w-full py-3 border border-white text-white font-semibold text-sm tracking-wider rounded-full hover:bg-white hover:text-black active:scale-[0.98] transition-all duration-300"
               >
-                Prenota Ora
+                {h('drawer_book_cta_it', 'drawer_book_cta_en')}
               </button>
 
               {/* LA NOSTRA FLOTTA */}
               <div className="flex flex-col items-center space-y-2 pb-5 border-b border-white/[0.06]">
                 <NavLink to="/supercar-luxury" onClick={onClose} className="text-[13px] font-medium text-gray-400 hover:text-white tracking-widest uppercase transition-all duration-200">
-                  La Nostra Flotta
+                  {h('flotta_label_it', 'flotta_label_en')}
                 </NavLink>
               </div>
 
               {/* SERVIZI & MOBILITÀ DI LUSSO */}
               <div className="border-b border-white/[0.06] pb-5">
                 <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-[0.2em] mb-2 pl-3">
-                  Servizi & Mobilità di Lusso
+                  {h('servizi_heading_it', 'servizi_heading_en')}
                 </h3>
                 <div className="space-y-1">
                   <NavLink to="/supercar-luxury" onClick={onClose} className={navLinkClasses}>
@@ -162,7 +164,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               {/* ESPERIENZE & ACCESSO ESCLUSIVO */}
               <div className="border-b border-white/[0.06] pb-5">
                 <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-[0.2em] mb-2 pl-3">
-                  Esperienze & Accesso Esclusivo
+                  {h('esperienze_heading_it', 'esperienze_heading_en')}
                 </h3>
                 <div className="space-y-1">
                   <NavLink to="/membership" onClick={onClose} className={navLinkClasses}>
@@ -192,7 +194,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               {/* PRIME WASH */}
               <div className="border-b border-white/[0.06] pb-5">
                 <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-[0.2em] mb-2 pl-3">
-                  Prime Wash
+                  {h('prime_wash_heading_it', 'prime_wash_heading_en')}
                 </h3>
                 <div className="space-y-1">
                   <NavLink to="/prime-wash" onClick={onClose} className={navLinkClasses}>
@@ -210,7 +212,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               {/* BUSINESS & CORPORATE */}
               <div className="border-b border-white/[0.06] pb-5">
                 <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-[0.2em] mb-2 pl-3">
-                  Business & Corporate
+                  {h('business_heading_it', 'business_heading_en')}
                 </h3>
                 <div className="space-y-1">
                   <NavLink to="/franchising" onClick={onClose} className={navLinkClasses}>
@@ -225,7 +227,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               {/* DIGITAL INNOVATION */}
               <div className="border-b border-white/[0.06] pb-5">
                 <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-[0.2em] mb-2 pl-3">
-                  Digital Innovation
+                  {h('digital_heading_it', 'digital_heading_en')}
                 </h3>
                 <div className="space-y-1">
                   <NavLink to="/token" onClick={onClose} className={navLinkClasses}>
@@ -237,181 +239,12 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               {/* CONTATTACI */}
               <div className="pt-2">
                 <NavLink to="/contact" onClick={onClose} className="block py-3 text-center text-[13px] font-medium text-gray-400 hover:text-white tracking-widest uppercase rounded-lg hover:bg-white/5 transition-all duration-200">
-                  Contattaci
+                  {h('contact_cta_it', 'contact_cta_en')}
                 </NavLink>
               </div>
             </nav>
 
             {/* Dead code removed — popup uses BookingSearchBox now */}
-            <AnimatePresence>
-              {false && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-xl flex items-center justify-center p-4"
-                  onClick={() => setShowBookingPopup(false)}
-                >
-                  <motion.div
-                    initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                    animate={{ scale: 1, opacity: 1, y: 0 }}
-                    exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                    className="bg-[#1c1c1e] border border-white/10 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <button
-                      onClick={() => setShowBookingPopup(false)}
-                      className="absolute top-4 right-4 text-gray-400 hover:text-white p-2"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-
-                    <h3 className="text-xl font-semibold text-white text-center mb-1">Prenota Ora</h3>
-                    <p className="text-gray-500 text-sm text-center mb-6">Seleziona luogo, date e orari</p>
-
-                    <div className="space-y-4">
-                      {/* Pickup location */}
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Luogo di ritiro</label>
-                        <select
-                          value={bookingPickupLocation}
-                          onChange={(e) => {
-                            setBookingPickupLocation(e.target.value);
-                            if (bookingSameReturn) setBookingReturnLocation(e.target.value);
-                          }}
-                          className="w-full bg-[#2c2c2e] border border-white/10 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
-                        >
-                          {PICKUP_LOCATIONS.map(loc => (
-                            <option key={loc.id} value={loc.id}>{loc.label.it}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Same return location toggle */}
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={bookingSameReturn}
-                          onChange={(e) => {
-                            setBookingSameReturn(e.target.checked);
-                            if (e.target.checked) setBookingReturnLocation(bookingPickupLocation);
-                          }}
-                          className="w-4 h-4 rounded bg-[#2c2c2e] border-white/20"
-                        />
-                        <span className="text-sm text-gray-400">Riconsegna nello stesso luogo</span>
-                      </label>
-
-                      {/* Return location (if different) */}
-                      {!bookingSameReturn && (
-                        <div>
-                          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Luogo di riconsegna</label>
-                          <select
-                            value={bookingReturnLocation}
-                            onChange={(e) => setBookingReturnLocation(e.target.value)}
-                            className="w-full bg-[#2c2c2e] border border-white/10 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
-                          >
-                            {PICKUP_LOCATIONS.map(loc => (
-                              <option key={loc.id} value={loc.id}>{loc.label.it}</option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-
-                      {/* Pickup date + time */}
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Ritiro</label>
-                        <div className="flex gap-2">
-                          <input
-                            type="date"
-                            value={bookingPickupDate}
-                            min={new Date().toISOString().split('T')[0]}
-                            onChange={(e) => {
-                              setBookingPickupDate(e.target.value);
-                              if (!bookingReturnDate || e.target.value > bookingReturnDate) {
-                                const next = new Date(e.target.value);
-                                next.setDate(next.getDate() + 1);
-                                setBookingReturnDate(next.toISOString().split('T')[0]);
-                              }
-                            }}
-                            className="flex-1 bg-[#2c2c2e] border border-white/10 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
-                          />
-                          <select
-                            value={bookingPickupTime}
-                            onChange={(e) => setBookingPickupTime(e.target.value)}
-                            className="w-24 bg-[#2c2c2e] border border-white/10 rounded-xl px-2 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
-                          >
-                            {Array.from({ length: 24 }, (_, h) => [`${String(h).padStart(2,'0')}:00`, `${String(h).padStart(2,'0')}:30`]).flat().map(t => (
-                              <option key={`p-${t}`} value={t}>{t}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* Return date + time */}
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Restituzione</label>
-                        <div className="flex gap-2">
-                          <input
-                            type="date"
-                            value={bookingReturnDate}
-                            min={bookingPickupDate || new Date().toISOString().split('T')[0]}
-                            onChange={(e) => setBookingReturnDate(e.target.value)}
-                            className="flex-1 bg-[#2c2c2e] border border-white/10 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
-                          />
-                          <select
-                            value={bookingReturnTime}
-                            onChange={(e) => setBookingReturnTime(e.target.value)}
-                            className="w-24 bg-[#2c2c2e] border border-white/10 rounded-xl px-2 py-2.5 text-white focus:outline-none focus:border-white transition-colors"
-                          >
-                            {Array.from({ length: 24 }, (_, h) => [`${String(h).padStart(2,'0')}:00`, `${String(h).padStart(2,'0')}:30`]).flat().map(t => (
-                              <option key={`r-${t}`} value={t}>{t}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* Days count badge */}
-                      {bookingPickupDate && bookingReturnDate && (
-                        <div className="text-center">
-                          <span className="inline-block px-3 py-1 bg-[#2c2c2e] border border-white/10 rounded-full text-sm text-gray-300">
-                            {Math.max(1, Math.ceil((new Date(bookingReturnDate).getTime() - new Date(bookingPickupDate).getTime()) / (1000 * 60 * 60 * 24)))} giorni
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Search button */}
-                      <button
-                        onClick={() => {
-                          if (bookingPickupDate && bookingReturnDate) {
-                            setShowBookingPopup(false);
-                            onClose();
-                            const params = new URLSearchParams({
-                              pickup: bookingPickupDate,
-                              pickupTime: bookingPickupTime,
-                              return: bookingReturnDate,
-                              returnTime: bookingReturnTime,
-                              pickupLoc: bookingPickupLocation,
-                              returnLoc: bookingReturnLocation,
-                            });
-                            nav(`/supercar-luxury?${params.toString()}`);
-                          }
-                        }}
-                        disabled={!bookingPickupDate || !bookingReturnDate}
-                        className={`w-full py-3.5 rounded-xl font-semibold text-base transition-all duration-200 ${
-                          bookingPickupDate && bookingReturnDate
-                            ? 'bg-white text-black hover:bg-gray-100 active:scale-[0.98]'
-                            : 'bg-[#2c2c2e] text-gray-500 cursor-not-allowed'
-                        }`}
-                      >
-                        Cerca Auto Disponibili
-                      </button>
-                    </div>
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             <div className="mt-auto pt-8 border-t border-gray-800">
               {user && (
@@ -471,8 +304,8 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
-                  <h3 className="text-[20px] font-semibold text-white text-center mb-1 tracking-tight">Prenota Ora</h3>
-                  <p className="text-[13px] text-white/30 text-center mb-6">Seleziona date e orari</p>
+                  <h3 className="text-[20px] font-semibold text-white text-center mb-1 tracking-tight">{h('popup_title_it', 'popup_title_en')}</h3>
+                  <p className="text-[13px] text-white/30 text-center mb-6">{h('popup_subtitle_it', 'popup_subtitle_en')}</p>
                   <BookingSearchBox variant="popup" onClose={() => { setShowBookingPopup(false); onClose(); }} />
                 </motion.div>
               </motion.div>
@@ -485,12 +318,22 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 };
 
 const Header: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const { user, logout } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [creditBalance, setCreditBalance] = useState<number>(0);
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
+  const [copy, setCopy] = useState<HeaderCopy | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getHeaderCopy().then((c) => { if (!cancelled) setCopy(c); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const h = (it: keyof HeaderCopy, en: keyof HeaderCopy): string =>
+    copy ? (copy as Record<string, string>)[(lang === 'it' ? it : en) as string] : '';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -549,18 +392,18 @@ const Header: React.FC = () => {
           <div className="flex items-center">
             <button
               onClick={() => setIsMenuOpen(true)}
-              aria-label="Open menu"
+              aria-label={h('open_menu_aria_it', 'open_menu_aria_en') || 'Open menu'}
               aria-expanded={isMenuOpen}
               className="text-white hover:text-gray-300 font-normal text-sm tracking-wider transition-colors"
             >
-              EXPLORE
+              {h('explore_label_it', 'explore_label_en') || 'EXPLORE'}
             </button>
           </div>
 
           {/* Logo centered */}
           <div className="absolute left-1/2 transform -translate-x-1/2">
             <NavLink to="/" className="flex items-center">
-              <img src="/DR7logo1.png" alt="DR7 Logo" className="h-14 md:h-16 w-auto" />
+              <img src="/DR7logo1.png" alt={h('logo_alt_it', 'logo_alt_en') || 'DR7 Logo'} className="h-14 md:h-16 w-auto" />
             </NavLink>
           </div>
 
@@ -579,7 +422,7 @@ const Header: React.FC = () => {
                     to="/credit-wallet"
                     className="flex items-center gap-2 bg-black text-white px-3 md:px-4 py-2 rounded-full font-bold text-xs hover:bg-gray-900 transition-colors border border-gray-700"
                   >
-                    <span className="hidden md:inline">Credit Wallet</span>
+                    <span className="hidden md:inline">{h('credit_wallet_pill_it', 'credit_wallet_pill_en') || 'Credit Wallet'}</span>
                     <span className="bg-black text-white px-2 py-0.5 rounded-full text-xs">
                       {isLoadingBalance ? '...' : `€${creditBalance.toFixed(2)}`}
                     </span>
@@ -614,7 +457,7 @@ const Header: React.FC = () => {
         </div>
       </motion.header>
 
-      <NavigationMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+      {copy && <NavigationMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} copy={copy} />}
     </>
   );
 };

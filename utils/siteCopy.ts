@@ -54,6 +54,7 @@ interface SiteCopySnapshot {
   checkEmail?: CheckEmailCopy;
   jetSearchResults?: JetSearchResultsCopy;
   confirmationSuccess?: ConfirmationSuccessCopy;
+  header?: HeaderCopy;
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -233,6 +234,34 @@ export interface MechanicalCopy {
   hours_heading_it: string; hours_heading_en: string;
   hours_main_it: string; hours_main_en: string;
   hours_sub_it: string; hours_sub_en: string;
+}
+
+// ─── Header (every page) ──────────────────────────────────────────────────
+//
+// IMPORTANT: brand-vocabulary strings (DR7 Club, Aviation Division, Prime
+// Wash, Supercar & Luxury Division, etc.) stay hardcoded in Header.tsx —
+// they are brand names, not localized chrome. Only the section headings,
+// drawer/header CTAs, and aria labels move to CMS.
+export interface HeaderCopy {
+  // Logo + aria
+  logo_alt: string;
+  open_menu_aria_it: string; open_menu_aria_en: string;
+  close_menu_aria_it: string; close_menu_aria_en: string;
+  // Top-bar
+  explore_label_it: string; explore_label_en: string;     // "EXPLORE"
+  credit_wallet_label_it: string; credit_wallet_label_en: string;
+  // Drawer
+  drawer_book_cta_it: string; drawer_book_cta_en: string;       // "Prenota Ora"
+  flotta_label_it: string; flotta_label_en: string;             // "La Nostra Flotta"
+  servizi_heading_it: string; servizi_heading_en: string;
+  esperienze_heading_it: string; esperienze_heading_en: string;
+  prime_wash_heading_it: string; prime_wash_heading_en: string;
+  business_heading_it: string; business_heading_en: string;
+  digital_heading_it: string; digital_heading_en: string;
+  contact_cta_it: string; contact_cta_en: string;               // "Contattaci"
+  // Booking popup chrome (form itself = BookingSearchBox)
+  popup_title_it: string; popup_title_en: string;               // "Prenota Ora"
+  popup_subtitle_it: string; popup_subtitle_en: string;         // "Seleziona date e orari"
 }
 
 // ─── Confirmation Success page (booking + email fallback) ─────────────────
@@ -793,6 +822,13 @@ export async function getLegalPage(id: LegalPageId): Promise<LegalPageCopy | nul
   return found;
 }
 
+/** Header chrome (drawer headings, top-bar labels, popup intro). */
+export async function getHeaderCopy(): Promise<HeaderCopy> {
+  const snap = await loadOnce();
+  if (snap.header && snap.header.explore_label_it) return snap.header;
+  return DEFAULT_HEADER;
+}
+
 /** Confirmation Success page (booking summary + email fallback). */
 export async function getConfirmationSuccessCopy(): Promise<ConfirmationSuccessCopy> {
   const snap = await loadOnce();
@@ -916,6 +952,25 @@ export function invalidateSiteCopyCache(): void {
   CACHE = null;
   pending = null;
 }
+
+// ─── Default Header seed ──────────────────────────────────────────────────
+const DEFAULT_HEADER: HeaderCopy = {
+  logo_alt: 'DR7 Logo',
+  open_menu_aria_it: 'Apri menu', open_menu_aria_en: 'Open menu',
+  close_menu_aria_it: 'Chiudi menu', close_menu_aria_en: 'Close menu',
+  explore_label_it: 'EXPLORE', explore_label_en: 'EXPLORE',
+  credit_wallet_label_it: 'Credit Wallet', credit_wallet_label_en: 'Credit Wallet',
+  drawer_book_cta_it: 'Prenota Ora', drawer_book_cta_en: 'Book Now',
+  flotta_label_it: 'La Nostra Flotta', flotta_label_en: 'Our Fleet',
+  servizi_heading_it: 'Servizi & Mobilità di Lusso', servizi_heading_en: 'Services & Luxury Mobility',
+  esperienze_heading_it: 'Esperienze & Accesso Esclusivo', esperienze_heading_en: 'Experiences & Exclusive Access',
+  prime_wash_heading_it: 'Prime Wash', prime_wash_heading_en: 'Prime Wash',
+  business_heading_it: 'Business & Corporate', business_heading_en: 'Business & Corporate',
+  digital_heading_it: 'Digital Innovation', digital_heading_en: 'Digital Innovation',
+  contact_cta_it: 'Contattaci', contact_cta_en: 'Contact us',
+  popup_title_it: 'Prenota Ora', popup_title_en: 'Book Now',
+  popup_subtitle_it: 'Seleziona date e orari', popup_subtitle_en: 'Select dates and times',
+};
 
 // ─── Default Confirmation Success seed ────────────────────────────────────
 const DEFAULT_CONFIRMATION_SUCCESS: ConfirmationSuccessCopy = {
