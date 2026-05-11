@@ -1,8 +1,19 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '../hooks/useTranslation';
+import { getPaymentCancelCopy, type PaymentCancelCopy } from '../utils/siteCopy';
 
 const PaymentCancelPage: React.FC = () => {
     const navigate = useNavigate();
+    const { lang } = useTranslation();
+    const [copy, setCopy] = useState<PaymentCancelCopy | null>(null);
+    useEffect(() => {
+        let cancelled = false;
+        getPaymentCancelCopy().then(c => { if (!cancelled) setCopy(c); });
+        return () => { cancelled = true; };
+    }, []);
+    const c = (it: keyof PaymentCancelCopy, en: keyof PaymentCancelCopy): string =>
+        copy ? (copy[lang === 'it' ? it : en] as string) : '';
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-100 flex items-center justify-center p-4">
@@ -15,11 +26,11 @@ const PaymentCancelPage: React.FC = () => {
                     </div>
 
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                        Pagamento Annullato
+                        {c('title_it', 'title_en')}
                     </h1>
 
                     <p className="text-gray-600 mb-8">
-                        Il pagamento è stato annullato. Nessun addebito è stato effettuato.
+                        {c('body_it', 'body_en')}
                     </p>
 
                     <div className="space-y-3">
@@ -27,14 +38,14 @@ const PaymentCancelPage: React.FC = () => {
                             onClick={() => navigate('/')}
                             className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 transition-all"
                         >
-                            Torna alla Home
+                            {c('cta_home_it', 'cta_home_en')}
                         </button>
 
                         <button
                             onClick={() => window.history.back()}
                             className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-200 transition-all"
                         >
-                            Riprova il Pagamento
+                            {c('cta_retry_it', 'cta_retry_en')}
                         </button>
                     </div>
                 </div>

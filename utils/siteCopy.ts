@@ -64,6 +64,7 @@ interface SiteCopySnapshot {
   firma?: FirmaCopy;
   registrazioneCliente?: RegistrazioneClienteCopy;
   bookingSearchBox?: BookingSearchBoxCopy;
+  paymentCancel?: PaymentCancelCopy;
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -251,6 +252,14 @@ export interface MechanicalCopy {
 // Wash, Supercar & Luxury Division, etc.) stay hardcoded in Header.tsx —
 // they are brand names, not localized chrome. Only the section headings,
 // drawer/header CTAs, and aria labels move to CMS.
+// ─── Payment Cancel page (post-Nexi cancel landing) ─────────────────────
+export interface PaymentCancelCopy {
+  title_it: string; title_en: string;
+  body_it: string; body_en: string;
+  cta_home_it: string; cta_home_en: string;
+  cta_retry_it: string; cta_retry_en: string;
+}
+
 // ─── BookingSearchBox component (Header drawer popup + Hero variant) ─────
 export interface BookingSearchBoxCopy {
   title_it: string; title_en: string;                                          // "Prenota il tuo veicolo"
@@ -1409,6 +1418,13 @@ export async function getBookingSearchBoxCopy(): Promise<BookingSearchBoxCopy> {
   return DEFAULT_BOOKING_SEARCH_BOX;
 }
 
+/** Payment Cancel page (post-Nexi cancel landing). */
+export async function getPaymentCancelCopy(): Promise<PaymentCancelCopy> {
+  const snap = await loadOnce();
+  if (snap.paymentCancel && snap.paymentCancel.title_it) return snap.paymentCancel;
+  return DEFAULT_PAYMENT_CANCEL;
+}
+
 /** Confirmation Success page (booking summary + email fallback). */
 export async function getConfirmationSuccessCopy(): Promise<ConfirmationSuccessCopy> {
   const snap = await loadOnce();
@@ -1550,6 +1566,15 @@ const DEFAULT_HEADER: HeaderCopy = {
   contact_cta_it: 'Contattaci', contact_cta_en: 'Contact us',
   popup_title_it: 'Prenota Ora', popup_title_en: 'Book Now',
   popup_subtitle_it: 'Seleziona date e orari', popup_subtitle_en: 'Select dates and times',
+};
+
+// ─── Default Payment Cancel seed ────────────────────────────────────────
+const DEFAULT_PAYMENT_CANCEL: PaymentCancelCopy = {
+  title_it: 'Pagamento Annullato', title_en: 'Payment Cancelled',
+  body_it: 'Il pagamento è stato annullato. Nessun addebito è stato effettuato.',
+  body_en: 'The payment was cancelled. No charge was made.',
+  cta_home_it: 'Torna alla Home', cta_home_en: 'Back to Home',
+  cta_retry_it: 'Riprova il Pagamento', cta_retry_en: 'Retry Payment',
 };
 
 // ─── Default BookingSearchBox seed ──────────────────────────────────────
