@@ -65,6 +65,7 @@ interface SiteCopySnapshot {
   registrazioneCliente?: RegistrazioneClienteCopy;
   bookingSearchBox?: BookingSearchBoxCopy;
   paymentCancel?: PaymentCancelCopy;
+  locations?: LocationsCopy;
 }
 
 // ─── Cancellazione ──────────────────────────────────────────────────────────
@@ -252,6 +253,37 @@ export interface MechanicalCopy {
 // Wash, Supercar & Luxury Division, etc.) stay hardcoded in Header.tsx —
 // they are brand names, not localized chrome. Only the section headings,
 // drawer/header CTAs, and aria labels move to CMS.
+// ─── Locations catalog (airports / pickup / marinas / heli points) ──────
+// Drop-in replacement for the hardcoded arrays previously in constants.ts.
+// Each item is admin-editable: add / remove / reorder / rename. Pages
+// continue to use the constants for synchronous default but populate
+// their state from this config on mount.
+export interface AirportItem {
+  iata: string;
+  name: string;
+  city: string;
+}
+
+export interface BilingualLocationItem {
+  id: string;
+  label_it: string;
+  label_en: string;
+}
+
+export interface SimpleLocationItem {
+  id: string;
+  name: string;
+}
+
+export interface LocationsCopy {
+  airports: AirportItem[];
+  pickup_locations: BilingualLocationItem[];
+  return_locations: BilingualLocationItem[];
+  yacht_marinas: BilingualLocationItem[];
+  heli_departure_points: SimpleLocationItem[];
+  heli_arrival_points: SimpleLocationItem[];
+}
+
 // ─── Payment Cancel page (post-Nexi cancel landing) ─────────────────────
 export interface PaymentCancelCopy {
   title_it: string; title_en: string;
@@ -1414,6 +1446,13 @@ export async function getPaymentCancelCopy(): Promise<PaymentCancelCopy> {
   return DEFAULT_PAYMENT_CANCEL;
 }
 
+/** Locations catalog (airports / pickup / marinas / heli routes). */
+export async function getLocationsCopy(): Promise<LocationsCopy> {
+  const snap = await loadOnce();
+  if (snap.locations && snap.locations.airports && snap.locations.airports.length > 0) return snap.locations;
+  return DEFAULT_LOCATIONS;
+}
+
 /** Confirmation Success page (booking summary + email fallback). */
 export async function getConfirmationSuccessCopy(): Promise<ConfirmationSuccessCopy> {
   const snap = await loadOnce();
@@ -1555,6 +1594,45 @@ const DEFAULT_HEADER: HeaderCopy = {
   contact_cta_it: 'Contattaci', contact_cta_en: 'Contact us',
   popup_title_it: 'Prenota Ora', popup_title_en: 'Book Now',
   popup_subtitle_it: 'Seleziona date e orari', popup_subtitle_en: 'Select dates and times',
+};
+
+// ─── Default Locations seed (mirrors current constants.ts arrays) ──────
+const DEFAULT_LOCATIONS: LocationsCopy = {
+  airports: [
+    { iata: 'CAG', name: 'Cagliari Elmas Airport', city: 'Cagliari' },
+    { iata: 'OLB', name: 'Olbia Costa Smeralda Airport', city: 'Olbia' },
+    { iata: 'AHO', name: 'Alghero-Fertilia Airport', city: 'Alghero' },
+    { iata: 'FCO', name: 'Leonardo da Vinci-Fiumicino Airport', city: 'Rome' },
+    { iata: 'LIN', name: 'Linate Airport', city: 'Milan' },
+    { iata: 'NCE', name: 'Nice Côte d\'Azur Airport', city: 'Nice' },
+    { iata: 'LBG', name: 'Paris-Le Bourget Airport', city: 'Paris' },
+    { iata: 'LTN', name: 'London Luton Airport', city: 'London' },
+    { iata: 'IBZ', name: 'Ibiza Airport', city: 'Ibiza' },
+  ],
+  pickup_locations: [
+    { id: 'dr7_cagliari', label_it: 'DR7 Cagliari — Viale Marconi 229, 09131', label_en: 'DR7 Cagliari — Viale Marconi 229, 09131' },
+    { id: 'home_delivery', label_it: 'Consegna a domicilio', label_en: 'Home Delivery' },
+  ],
+  return_locations: [
+    { id: 'dr7_cagliari', label_it: 'DR7 Cagliari — Viale Marconi 229, 09131', label_en: 'DR7 Cagliari — Viale Marconi 229, 09131' },
+    { id: 'home_delivery', label_it: 'Ritiro/riconsegna a domicilio', label_en: 'Home Pickup' },
+  ],
+  yacht_marinas: [
+    { id: 'marina_di_cagliari', label_it: 'Marina di Cagliari', label_en: 'Marina di Cagliari' },
+    { id: 'porto_cervo', label_it: 'Marina di Porto Cervo', label_en: 'Marina di Porto Cervo' },
+  ],
+  heli_departure_points: [
+    { id: 'cagliari', name: 'Cagliari Heliport' },
+    { id: 'porto_cervo', name: 'Porto Cervo Heliport' },
+    { id: 'forte_village', name: 'Forte Village Resort' },
+  ],
+  heli_arrival_points: [
+    { id: 'cagliari', name: 'Cagliari Heliport' },
+    { id: 'porto_cervo', name: 'Porto Cervo Heliport' },
+    { id: 'forte_village', name: 'Forte Village Resort' },
+    { id: 'cala_di_volpe', name: 'Hotel Cala di Volpe' },
+    { id: 'villasimius', name: 'Villasimius Private Pad' },
+  ],
 };
 
 // ─── Default Payment Cancel seed ────────────────────────────────────────
