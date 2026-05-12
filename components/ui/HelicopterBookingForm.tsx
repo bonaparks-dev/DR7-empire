@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useContactInfo } from "../../hooks/useContactInfo";
 
 const HelicopterBookingForm: React.FC = () => {
   const navigate = useNavigate();
-  const WHATSAPP_NUMBER = "393457905205";
+  const contact = useContactInfo();
 
   const [formData, setFormData] = useState({
     // Customer info
@@ -210,7 +211,7 @@ const HelicopterBookingForm: React.FC = () => {
     msg += `\nPotete confermare disponibilità e prezzo? Grazie`;
 
     const encoded = encodeURIComponent(msg);
-    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`;
+    const url = `${contact.whatsapp_url}?text=${encoded}`;
     window.open(url, "_blank");
   };
 

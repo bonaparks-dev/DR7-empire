@@ -2,6 +2,7 @@ import React from 'react';
 import type { RentalItem } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useCurrency } from '../../contexts/CurrencyContext';
+import { useContactInfo } from '../../hooks/useContactInfo';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
@@ -29,6 +30,7 @@ interface RentalCardProps {
 const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, marketingTooltip, categoryId, totalPrice, totalDays, hidePrice, hideBookButton, jetSearchData, availableFrom }) => {
   const { t, getTranslated } = useTranslation();
   const { currency } = useCurrency();
+  const contact = useContactInfo();
 
   const isVilla = item.id.startsWith('villa');
   const isJet = item.id.startsWith('jet');
@@ -69,7 +71,7 @@ const RentalCard: React.FC<RentalCardProps> = ({ item, onBook, marketingPrice, m
 
     message += `Potrebbe fornirmi un preventivo? Grazie!`;
 
-    const whatsappUrl = `https://wa.me/393457905205?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = `${contact.whatsapp_url}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 

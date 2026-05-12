@@ -5,6 +5,7 @@ import { useCurrency } from '../../contexts/CurrencyContext';
 import { PICKUP_LOCATIONS as DEFAULT_PICKUP_LOCATIONS } from '../../constants';
 import { getPickupLocations } from '../../utils/getLocations';
 import { getContactCopy } from '../../utils/siteCopy';
+import { useContactInfo } from '../../hooks/useContactInfo';
 import { trackBookingCompleted } from '../../utils/analytics';
 
 const CarBookingConfirmationPage: React.FC = () => {
@@ -15,6 +16,7 @@ const CarBookingConfirmationPage: React.FC = () => {
   const { booking } = (location.state || {}) as { booking?: any };
   const [pickupLocs, setPickupLocs] = useState(DEFAULT_PICKUP_LOCATIONS);
   const [officeAddress, setOfficeAddress] = useState('Viale Marconi 229, Cagliari 09131');
+  const contact = useContactInfo();
   useEffect(() => {
     let c = false;
     getPickupLocations().then(l => { if (!c) setPickupLocs(l); });
@@ -122,10 +124,10 @@ const CarBookingConfirmationPage: React.FC = () => {
             <p className="text-gray-300">{getPickupAddress()}</p>
             <h3 className="text-xl font-bold mt-6 mb-4">CONTATTI:</h3>
             <div className="flex items-center space-x-4">
-              <span>Tel: 3457905205</span>
+              <span>Tel: {contact.phone_display}</span>
             </div>
             <div className="flex items-center space-x-4 mt-2">
-              <span>Email: info@dr7.app</span>
+              <span>Email: {contact.email_address}</span>
             </div>
           </div>
         </div>

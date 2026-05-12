@@ -5,6 +5,7 @@ import { addCredits } from '../utils/creditWallet';
 import { useTranslation } from '../hooks/useTranslation';
 import { getPaymentSuccessCopy, type PaymentSuccessCopy, getMessageTemplateBody } from '../utils/siteCopy';
 import { trackBookingCompleted } from '../utils/analytics';
+import { useContactInfo } from '../hooks/useContactInfo';
 
 // Token substitution for WhatsApp templates loaded from system_messages.
 function applyTokens(tpl: string, tokens: Record<string, string>): string {
@@ -15,7 +16,8 @@ function applyTokens(tpl: string, tokens: Record<string, string>): string {
 
 // Build a WhatsApp URL from a booking using the appropriate system_messages
 // template (rental vs appointment). Returns null if template is missing.
-async function buildBookingWhatsAppUrl(booking: any): Promise<string | null> {
+// `whatsappBase` should be ContactCopy.whatsapp_url (admin-editable).
+async function buildBookingWhatsAppUrl(booking: any, whatsappBase: string): Promise<string | null> {
   if (!booking?.booking_details?.customer) return null;
   const bId = String(booking.id).substring(0, 8).toUpperCase();
   const customer = booking.booking_details.customer;
@@ -62,13 +64,14 @@ async function buildBookingWhatsAppUrl(booking: any): Promise<string | null> {
     };
   }
   const msg = applyTokens(template, tokens);
-  return `https://wa.me/393457905205?text=${encodeURIComponent(msg)}`;
+  return `${whatsappBase}?text=${encodeURIComponent(msg)}`;
 }
 
 const PaymentSuccessPage: React.FC = () => {
     const navigate = useNavigate();
     const { lang } = useTranslation();
     const [searchParams] = useSearchParams();
+    const contact = useContactInfo();
     const [updating, setUpdating] = useState(true);
     const [updateError, setUpdateError] = useState<string | null>(null);
     const [purchaseType, setPurchaseType] = useState<'booking' | 'wallet' | 'membership' | 'dr7_club' | null>(null);
@@ -213,7 +216,7 @@ const PaymentSuccessPage: React.FC = () => {
                         }
                     }
 
-                    const url = await buildBookingWhatsAppUrl(booking);
+                    const url = await buildBookingWhatsAppUrl(booking, contact.whatsapp_url);
                     if (url) setWhatsappUrl(url);
                     setUpdating(false);
                     return;
@@ -288,7 +291,7 @@ const PaymentSuccessPage: React.FC = () => {
                                 }).catch(e => console.error('Customer WhatsApp error', e));
                             }
 
-                            const url = await buildBookingWhatsAppUrl(newBooking);
+                            const url = await buildBookingWhatsAppUrl(newBooking, contact.whatsapp_url);
                             if (url) setWhatsappUrl(url);
 
                             setUpdating(false);
@@ -324,7 +327,7 @@ const PaymentSuccessPage: React.FC = () => {
                         if (existingBookings && existingBookings.length > 0) {
                             console.log('Callback already created booking, showing success');
                             const b = existingBookings[0];
-                            const url = await buildBookingWhatsAppUrl(b);
+                            const url = await buildBookingWhatsAppUrl(b, contact.whatsapp_url);
                             if (url) setWhatsappUrl(url);
                             setUpdating(false);
                             return;
@@ -369,7 +372,7 @@ const PaymentSuccessPage: React.FC = () => {
                         }
                     }
 
-                    const url = await buildBookingWhatsAppUrl(newBooking);
+                    const url = await buildBookingWhatsAppUrl(newBooking, contact.whatsapp_url);
                     if (url) setWhatsappUrl(url);
                     setUpdating(false);
                     return;

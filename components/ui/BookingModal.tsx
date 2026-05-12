@@ -10,9 +10,11 @@ import { supabase } from '../../supabaseClient';
 import type { Booking } from '../../types';
 import NewClientModal from '../NewClientModal';
 import { isBlockedDate } from '../../utils/blockedDates';
+import { useContactInfo } from '../../hooks/useContactInfo';
 
 const BookingModal: React.FC = () => {
   const { isBookingOpen, closeBooking, bookingItem, bookingCategory } = useBooking();
+  const contact = useContactInfo();
   const { t, lang } = useTranslation();
   const { currency } = useCurrency();
   const { user } = useAuth();
@@ -179,7 +181,7 @@ const BookingModal: React.FC = () => {
     const formattedReturn = formatDate(returnDate);
 
     const message = `Ciao! Sono interessato a noleggiare ${bookingItem.name}.\n\nDettagli:\n• Data inizio: ${formattedPickup}\n• Data fine: ${formattedReturn}\n• Nome: ${fullName}\n• Email: ${email}\n• Telefono: ${phone}\n\nPotreste fornirmi un preventivo? Grazie!`;
-    const whatsappUrl = `https://wa.me/393457905205?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = `${contact.whatsapp_url}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 

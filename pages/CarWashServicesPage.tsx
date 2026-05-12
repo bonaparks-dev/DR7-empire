@@ -7,6 +7,7 @@ import { lookupTarga, isValidItalianPlate, normalizePlate, type TargaResult } fr
 import { useCarWashServices } from '../hooks/useCarWashServices';
 import SEOHead from '../components/seo/SEOHead';
 import { getCarWashCopy, type CarWashCopy } from '../utils/siteCopy';
+import { useContactInfo } from '../hooks/useContactInfo';
 
 export interface WashService {
   id: string;
@@ -71,6 +72,7 @@ const MECCANICA_CATEGORIES = [
 const CarWashServicesPage: React.FC = () => {
   const { lang } = useTranslation();
   const navigate = useNavigate();
+  const contact = useContactInfo();
   const [copy, setCopy] = useState<CarWashCopy | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -637,7 +639,7 @@ const CarWashServicesPage: React.FC = () => {
                 <div className="p-4">
                   {targaResult && detectedCategory ? (
                     <a
-                      href={`https://wa.me/393457905205?text=${encodeURIComponent(
+                      href={`${contact.whatsapp_url}?text=${encodeURIComponent(
                         `Ciao, vorrei richiedere un preventivo per il servizio PRIME ABSOLUTE DETAIL.\nVeicolo: ${targaResult.carMake} ${targaResult.carModel} (${targaResult.plate}) – ${detectedCategory.toUpperCase()}`
                       )}`}
                       target="_blank"
