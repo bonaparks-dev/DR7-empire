@@ -1,4 +1,5 @@
 import React from 'react';
+import { getContactCopy } from '../../utils/siteCopy';
 
 interface Props {
   children: React.ReactNode;
@@ -7,7 +8,19 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+  whatsappUrl: string;
 }
+
+// Module-level cache so the boundary (a class component) can pick up the
+// admin-edited WhatsApp URL without needing hooks. Loaded once on first
+// import; the fallback is the historical hardcoded URL.
+let cachedWhatsappUrl = 'https://wa.me/393457905205';
+void (async () => {
+  try {
+    const cp = await getContactCopy();
+    if (cp.whatsapp_url) cachedWhatsappUrl = cp.whatsapp_url;
+  } catch { /* keep fallback */ }
+})();
 
 /**
  * BookingErrorBoundary — local error boundary for the CarBookingWizard.
@@ -17,15 +30,19 @@ interface State {
 class BookingErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, whatsappUrl: cachedWhatsappUrl };
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error('[BookingErrorBoundary] Errore nel wizard di prenotazione:', error, info.componentStack);
+    // Refresh from cache in case it loaded after construction.
+    if (cachedWhatsappUrl !== this.state.whatsappUrl) {
+      this.setState({ whatsappUrl: cachedWhatsappUrl });
+    }
   }
 
   handleReload = () => {
@@ -54,7 +71,7 @@ class BookingErrorBoundary extends React.Component<Props, State> {
                 Riprova
               </button>
               <a
-                href="https://wa.me/393457905205"
+                href={this.state.whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-3 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition-colors text-sm"
