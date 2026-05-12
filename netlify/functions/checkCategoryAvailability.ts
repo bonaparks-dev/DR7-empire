@@ -104,8 +104,12 @@ export const handler: Handler = async (event) => {
         const allVehicleIds = vehicles.map((v: any) => v.id);
         const allPlates = vehicles.map((v: any) => v.plate).filter(Boolean);
 
-        // 2. Fetch bookings overlapping the requested period
-        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,service_type,customer_name&vehicle_id=in.(${allVehicleIds.join(',')})&vehicle_plate=not.in.(TEST000,TEST002)&status=not.in.(cancelled,annullata,completed,completata,expired)&dropoff_date=gte.${pickup.toISOString()}&pickup_date=lte.${dropoff.toISOString()}`;
+        // 2. Fetch bookings overlapping the requested period.
+        // Lavaggio Rientro is excluded at the SQL level (it's an internal
+        // post-rental cleaning slot auto-created by a DB trigger — never a
+        // real customer reservation) so it can't show up as "Slot non
+        // disponibile" on the booking form.
+        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,service_type,customer_name&vehicle_id=in.(${allVehicleIds.join(',')})&vehicle_plate=not.in.(TEST000,TEST002)&status=not.in.(cancelled,annullata,completed,completata,expired)&customer_name=neq.${encodeURIComponent('Lavaggio Rientro')}&dropoff_date=gte.${pickup.toISOString()}&pickup_date=lte.${dropoff.toISOString()}`;
         const bookingsResponse = await fetch(bookingsUrl, {
             headers: {
                 'apikey': SUPABASE_SERVICE_ROLE_KEY!,
@@ -118,7 +122,11 @@ export const handler: Handler = async (event) => {
         // Also fetch by plate
         if (allPlates.length > 0) {
             const realPlates = allPlates.filter((p: string) => p !== 'TEST000' && p !== 'TEST002');
-            const plateBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,service_type&vehicle_plate=in.(${realPlates.join(',')})&status=not.in.(cancelled,annullata,completed,completata,expired)&dropoff_date=gte.${pickup.toISOString()}&pickup_date=lte.${dropoff.toISOString()}`;
+            // Same Lavaggio Rientro exclusion on the plate-fallback query:
+            // without this AND without selecting customer_name, the post-loop
+            // filter (b.customer_name === 'Lavaggio Rientro') silently failed
+            // and the cleaning slot ended up blocking the booking form.
+            const plateBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,service_type,customer_name&vehicle_plate=in.(${realPlates.join(',')})&status=not.in.(cancelled,annullata,completed,completata,expired)&customer_name=neq.${encodeURIComponent('Lavaggio Rientro')}&dropoff_date=gte.${pickup.toISOString()}&pickup_date=lte.${dropoff.toISOString()}`;
             const plateResponse = await fetch(plateBookingsUrl, {
                 headers: {
                     'apikey': SUPABASE_SERVICE_ROLE_KEY!,
