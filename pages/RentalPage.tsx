@@ -899,7 +899,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   }, [vehiclesError]);
 
 
-  // Get the category metadata (id/label/icon) from static data
+  // Get the category metadata (id/label/icon) from static data.
   const category = RENTAL_CATEGORIES.find(cat => cat.id === categoryId);
 
   // Aviation/marine items come from Sito CMS (centralina_pro_config.site_copy.aviationMarine).
@@ -1048,7 +1048,12 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
     );
   }
 
-  if (!category) {
+  // Niente metadata statici? OK se siamo su una nuova categoria veicolare
+  // creata in Centralina Pro: in quel caso ci affidiamo a fetchedVehicles
+  // (filtrato dalla useVehicles hook) e mostriamo la lista senza la card
+  // hero hardcoded. Mostriamo "Category not found" solo se la rotta non e'
+  // veicolare e non c'e' nemmeno metadata statici.
+  if (!category && !isVehicleCategory) {
     return <div className="pt-32 text-center text-white">Category not found.</div>;
   }
 
