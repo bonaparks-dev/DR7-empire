@@ -1,62 +1,69 @@
 /**
  * FlottaIndexPage — landing pubblica "La Nostra Flotta".
  *
- * Mostra una card cliccabile per ciascuna categoria selezionata in
- * admin > Sito > Flotta. La label viene da Centralina Pro
- * (categories[].label) e l'immagine, se presente, dall'override
- * salvato nella sezione Home (site_copy.home.categories[id].image_src).
+ * Mostra TUTTI i veicoli delle categorie selezionate in admin >
+ * Sito > Flotta, raggruppati per categoria. Ogni veicolo e' una
+ * card con foto, nome e prezzo giornaliero — tap per andare al
+ * dettaglio/booking.
  *
- * Tappando una card si va alla rispettiva route /<categoryId>, che
- * renderizza la lista veicoli filtrata da useVehicles(categoryId).
+ * Sorgenti:
+ *   - useFlottaCategories: lista categorie ticked in admin
+ *   - useVehicles(undefined): TUTTI i veicoli, filtrati lato client
+ *     per categoria selezionata.
  */
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useFlottaCategories } from '../hooks/useFlottaCategories';
+import { useVehicles } from '../hooks/useVehicles';
 import { useTranslation } from '../hooks/useTranslation';
-import { RENTAL_CATEGORIES } from '../constants';
-import { getHomeCopy, type HomeCopy } from '../utils/siteCopy';
+import { useBooking } from '../contexts/BookingContext';
+import { useAuth } from '../hooks/useAuth';
+
+// Alias storici categoria DB ↔ id slug usato in URL/Centralina Pro.
+// Stessa logica di useVehicles per coerenza.
+const CATEGORY_ALIASES: Record<string, string[]> = {
+  exotic: ['exotic', 'supercars'],
+  supercars: ['exotic', 'supercars'],
+};
 
 const FlottaIndexPage: React.FC = () => {
-  const { lang, getTranslated } = useTranslation();
-  const { categories: flottaCats, loading } = useFlottaCategories();
-  const [homeCopy, setHomeCopy] = useState<HomeCopy | null>(null);
+  const { lang } = useTranslation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { openCarWizard } = useBooking();
+  const { categories: flottaCats, loading: catsLoading } = useFlottaCategories();
+  const { vehicles: allVehicles, loading: vehLoading } = useVehicles(undefined);
 
-  useEffect(() => {
-    let cancelled = false;
-    getHomeCopy().then((c) => { if (!cancelled) setHomeCopy(c); });
-    return () => { cancelled = true; };
-  }, []);
-
-  const overridesById = React.useMemo(() => {
-    const map = new Map<string, { title_it: string; title_en: string; image: string }>();
-    if (!homeCopy) return map;
-    for (const c of homeCopy.categories) {
-      map.set(c.id, { title_it: c.display_title_it, title_en: c.display_title_en, image: c.image_src });
+  // Veicoli filtrati per categoria selezionata, raggruppati.
+  const groups = useMemo(() => {
+    const out: Array<{ id: string; label: string; path: string; vehicles: typeof allVehicles }> = [];
+    for (const cat of flottaCats) {
+      const aliases = CATEGORY_ALIASES[cat.id] || [cat.id];
+      const aliasSet = new Set(aliases.map(a => a.toLowerCase()));
+      const list = allVehicles.filter(v => {
+        const c = (v.category || '').toLowerCase();
+        return aliasSet.has(c);
+      });
+      out.push({ id: cat.id, label: cat.label, path: cat.path, vehicles: list });
     }
-    return map;
-  }, [homeCopy]);
+    return out;
+  }, [flottaCats, allVehicles]);
 
-  type Card = { id: string; label: string; image: string; path: string };
+  const totalCount = useMemo(() => groups.reduce((s, g) => s + g.vehicles.length, 0), [groups]);
 
-  const cards: Card[] = React.useMemo(() => {
-    return flottaCats.map(c => {
-      const legacy = RENTAL_CATEGORIES.find(r => r.id === c.id);
-      const override = overridesById.get(c.id);
-      return {
-        id: c.id,
-        label: override
-          ? (lang === 'it' ? override.title_it : override.title_en)
-          : legacy
-            ? getTranslated(legacy.label)
-            : c.label,
-        image: override?.image
-          || legacy?.data?.[0]?.image
-          || '/placeholder.jpeg',
-        path: c.path,
-      };
-    });
-  }, [flottaCats, overridesById, lang, getTranslated]);
+  const handleBook = (item: typeof allVehicles[number], categoryId: string) => {
+    if (!user) {
+      navigate('/signin', { state: { from: { pathname: '/flotta' } } });
+      return;
+    }
+    // openCarWizard espects a RentalItem shape (id/name/image/...). I
+    // veicoli da useVehicles hanno gia' lo shape giusto.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    openCarWizard(item as any, categoryId === 'urban' ? 'urban-cars' : 'cars');
+  };
+
+  const isLoading = catsLoading || vehLoading;
 
   return (
     <motion.div
@@ -73,47 +80,77 @@ const FlottaIndexPage: React.FC = () => {
           </h1>
           <p className="text-gray-400 mt-4 text-lg max-w-2xl mx-auto">
             {lang === 'it'
-              ? 'Scegli la categoria che fa per te.'
-              : 'Choose the category that fits you.'}
+              ? 'Scegli il tuo veicolo dalla nostra flotta esclusiva.'
+              : 'Pick your vehicle from our exclusive fleet.'}
           </p>
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <p className="text-center text-gray-400">…</p>
-        ) : cards.length === 0 ? (
+        ) : totalCount === 0 ? (
           <p className="text-center text-gray-400">
             {lang === 'it'
-              ? 'Nessuna categoria pubblicata al momento.'
-              : 'No categories published right now.'}
+              ? 'Nessun veicolo disponibile al momento.'
+              : 'No vehicles available right now.'}
           </p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {cards.map((card, index) => (
-              <motion.div
-                key={card.id}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.4, delay: index * 0.05 }}
-              >
-                <Link
-                  to={card.path}
-                  className="block group relative rounded-xl overflow-hidden h-80"
-                >
-                  <img
-                    src={card.image}
-                    alt={card.label}
-                    className="w-full h-full object-cover brightness-75 group-hover:brightness-100 transition-all duration-500 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-                  <div className="absolute bottom-0 left-0 p-6 w-full">
-                    <h3 className="text-2xl font-bold text-white">{card.label}</h3>
-                    <p className="text-gray-300 text-sm mt-1">
-                      {lang === 'it' ? 'Scopri →' : 'Discover →'}
-                    </p>
+          <div className="space-y-16">
+            {groups.map((group) => (
+              <section key={group.id}>
+                <div className="flex items-baseline justify-between mb-6 border-b border-white/10 pb-3">
+                  <h2 className="text-2xl md:text-3xl font-bold text-white">{group.label}</h2>
+                  <Link to={group.path} className="text-sm text-gray-300 hover:text-white transition-colors">
+                    {lang === 'it' ? 'Vedi tutti →' : 'See all →'}
+                  </Link>
+                </div>
+
+                {group.vehicles.length === 0 ? (
+                  <p className="text-gray-500 text-sm italic">
+                    {lang === 'it'
+                      ? 'Nessun veicolo in questa categoria al momento.'
+                      : 'No vehicles in this category yet.'}
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {group.vehicles.map((v, index) => (
+                      <motion.div
+                        key={v.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, amount: 0.2 }}
+                        transition={{ duration: 0.4, delay: index * 0.04 }}
+                        className="bg-gray-900 rounded-xl overflow-hidden border border-white/10 hover:border-white/30 transition-colors"
+                      >
+                        <div className="relative h-56 bg-black overflow-hidden">
+                          <img
+                            src={v.image || '/placeholder.jpeg'}
+                            alt={v.name}
+                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                          />
+                        </div>
+                        <div className="p-5">
+                          <h3 className="text-lg font-semibold text-white truncate" title={v.name}>{v.name}</h3>
+                          <div className="mt-3 flex items-center justify-between">
+                            <div>
+                              <span className="text-2xl font-bold text-white">
+                                {v.price > 0 ? `€${v.price}` : '—'}
+                              </span>
+                              {v.price > 0 && <span className="text-gray-400 text-xs ml-1">/{lang === 'it' ? 'giorno' : 'day'}</span>}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleBook(v, group.id)}
+                              className="bg-white text-black px-4 py-2 rounded-full text-sm font-bold hover:bg-gray-200 transition-colors"
+                            >
+                              {lang === 'it' ? 'Prenota' : 'Book'}
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
                   </div>
-                </Link>
-              </motion.div>
+                )}
+              </section>
             ))}
           </div>
         )}

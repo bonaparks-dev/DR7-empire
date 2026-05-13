@@ -1639,6 +1639,34 @@ export function invalidateSiteCopyCache(): void {
   pending = null;
 }
 
+/**
+ * Restituisce gli id delle categorie selezionate in admin > Sito >
+ * Flotta (site_copy.flotta.visible_category_ids). Array vuoto = "tutte"
+ * (default coerente con il testo del FlottaEditor admin).
+ *
+ * Letto direttamente da centralina_pro_config — no cache locale qui,
+ * un giro su Supabase ad ogni chiamata: bisogno limitato (1-2 call per
+ * pagina rental) e cosi' un cambio in admin si riflette al prossimo
+ * render senza dover invalidare cache.
+ */
+export async function getFlottaVisibleCategoryIds(): Promise<string[]> {
+  try {
+    const { data } = await supabase
+      .from('centralina_pro_config')
+      .select('config')
+      .eq('id', 'main')
+      .maybeSingle();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cfg = (data?.config as any) || {};
+    const raw = cfg?.site_copy?.flotta?.visible_category_ids;
+    if (!Array.isArray(raw)) return [];
+    return raw.filter((x: unknown): x is string => typeof x === 'string' && !!x);
+  } catch (err) {
+    console.error('[siteCopy.getFlottaVisibleCategoryIds] error:', err);
+    return [];
+  }
+}
+
 // ─── Default Header seed ──────────────────────────────────────────────────
 const DEFAULT_HEADER: HeaderCopy = {
   logo_alt: 'DR7 Logo',
