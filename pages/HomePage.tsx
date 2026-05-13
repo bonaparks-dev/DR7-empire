@@ -4,6 +4,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { RENTAL_CATEGORIES } from '../constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getHomeCopy, type HomeCopy, type HomeSlide } from '../utils/siteCopy';
+import { useFlottaCategories } from '../hooks/useFlottaCategories';
 
 interface HeroSectionProps {
   slides: HomeSlide[];
@@ -128,6 +129,48 @@ const HomePage: React.FC = () => {
     return map;
   }, [copy]);
 
+  // Categorie da mostrare in homepage = selezionate in admin > Sito >
+  // Flotta. Per ciascuna, riusiamo metadata (immagine/label) se esiste
+  // una voce RENTAL_CATEGORIES con lo stesso id; altrimenti fallback su
+  // l'override admin (categoryOverrides) o placeholder.
+  const { categories: flottaCats } = useFlottaCategories();
+  type HomeCard = {
+    id: string;
+    label: string;
+    image: string;
+    path: string;
+  };
+  const homeCards: HomeCard[] = React.useMemo(() => {
+    // Se Flotta non e' ancora caricato, ripieghiamo su RENTAL_CATEGORIES
+    // (comportamento legacy) per non mostrare una pagina vuota.
+    if (flottaCats.length === 0) {
+      return RENTAL_CATEGORIES.map(c => ({
+        id: c.id,
+        label: getTranslated(c.label),
+        image: categoryOverrides.get(c.id)?.image
+          || c.data?.[0]?.image
+          || '/placeholder.jpeg',
+        path: `/${c.id}`,
+      }));
+    }
+    return flottaCats.map(c => {
+      const legacy = RENTAL_CATEGORIES.find(r => r.id === c.id);
+      const override = categoryOverrides.get(c.id);
+      return {
+        id: c.id,
+        label: override
+          ? (lang === 'it' ? override.title_it : override.title_en)
+          : legacy
+            ? getTranslated(legacy.label)
+            : c.label,
+        image: override?.image
+          || legacy?.data?.[0]?.image
+          || '/placeholder.jpeg',
+        path: c.path,
+      };
+    });
+  }, [flottaCats, categoryOverrides, lang, getTranslated]);
+
   const seoH1 = copy ? (lang === 'it' ? copy.seo_h1_it : copy.seo_h1_en) : 'DR7 Empire';
 
   return (
@@ -143,22 +186,18 @@ const HomePage: React.FC = () => {
       {copy && <HeroSection slides={copy.hero_slides} autoplaySeconds={copy.hero_autoplay_seconds} />}
 
       {/* ===== Categories Section ===== */}
+      {/* Cards alimentate dalle categorie selezionate in admin > Sito >
+          Flotta. Niente piu' lista hardcoded — aggiungere una nuova
+          categoria (Hypercar, Suv Luxury, ecc.) la fa comparire sulla
+          home senza modifiche al codice. */}
       <section className="py-24 bg-black">
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {RENTAL_CATEGORIES.map((category, index) => {
-              const override = categoryOverrides.get(category.id);
-              const imageSrc = override?.image
-                || category.data?.[0]?.image
-                || '/placeholder.jpeg';
-              const displayTitle = override
-                ? (lang === 'it' ? override.title_it : override.title_en)
-                : getTranslated(category.label);
+            {homeCards.map((card, index) => {
               const isFeatured = index === 0;
-
               return (
                 <motion.div
-                  key={category.id}
+                  key={card.id}
                   className={isFeatured ? 'md:col-span-2' : ''}
                   initial={{ opacity: 0, y: 50 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -166,18 +205,18 @@ const HomePage: React.FC = () => {
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                 >
                   <Link
-                    to={`/${category.id}`}
+                    to={card.path}
                     className="block group relative rounded-lg overflow-hidden"
                   >
                     <img
-                      src={imageSrc}
-                      alt={displayTitle}
+                      src={card.image}
+                      alt={card.label}
                       className={`w-full ${isFeatured ? 'h-[40rem]' : 'h-96'} object-cover brightness-75 group-hover:brightness-100 transition-all duration-500 group-hover:scale-110`}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                     <div className="absolute bottom-0 left-0 p-8">
                       <h3 className="text-xl md:text-3xl font-bold text-white">
-                        {displayTitle}
+                        {card.label}
                       </h3>
                     </div>
                   </Link>
