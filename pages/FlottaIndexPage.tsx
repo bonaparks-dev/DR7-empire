@@ -12,13 +12,11 @@
  *     per categoria selezionata.
  */
 import React, { useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useFlottaCategories } from '../hooks/useFlottaCategories';
 import { useVehicles } from '../hooks/useVehicles';
 import { useTranslation } from '../hooks/useTranslation';
-import { useBooking } from '../contexts/BookingContext';
-import { useAuth } from '../hooks/useAuth';
 
 // Alias storici categoria DB ↔ id slug usato in URL/Centralina Pro.
 // Stessa logica di useVehicles per coerenza.
@@ -29,9 +27,6 @@ const CATEGORY_ALIASES: Record<string, string[]> = {
 
 const FlottaIndexPage: React.FC = () => {
   const { lang } = useTranslation();
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const { openCarWizard } = useBooking();
   const { categories: flottaCats, loading: catsLoading } = useFlottaCategories();
   const { vehicles: allVehicles, loading: vehLoading } = useVehicles(undefined);
 
@@ -51,17 +46,6 @@ const FlottaIndexPage: React.FC = () => {
   }, [flottaCats, allVehicles]);
 
   const totalCount = useMemo(() => groups.reduce((s, g) => s + g.vehicles.length, 0), [groups]);
-
-  const handleBook = (item: typeof allVehicles[number], categoryId: string) => {
-    if (!user) {
-      navigate('/signin', { state: { from: { pathname: '/flotta' } } });
-      return;
-    }
-    // openCarWizard espects a RentalItem shape (id/name/image/...). I
-    // veicoli da useVehicles hanno gia' lo shape giusto.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    openCarWizard(item as any, categoryId === 'urban' ? 'urban-cars' : 'cars');
-  };
 
   const isLoading = catsLoading || vehLoading;
 
@@ -119,33 +103,28 @@ const FlottaIndexPage: React.FC = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, amount: 0.2 }}
                         transition={{ duration: 0.4, delay: index * 0.04 }}
-                        className="bg-gray-900 rounded-xl overflow-hidden border border-white/10 hover:border-white/30 transition-colors"
                       >
-                        <div className="relative h-56 bg-black overflow-hidden">
-                          <img
-                            src={v.image || '/placeholder.jpeg'}
-                            alt={v.name}
-                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                          />
-                        </div>
-                        <div className="p-5">
-                          <h3 className="text-lg font-semibold text-white truncate" title={v.name}>{v.name}</h3>
-                          <div className="mt-3 flex items-center justify-between">
-                            <div>
-                              <span className="text-2xl font-bold text-white">
-                                {v.price > 0 ? `€${v.price}` : '—'}
-                              </span>
-                              {v.price > 0 && <span className="text-gray-400 text-xs ml-1">/{lang === 'it' ? 'giorno' : 'day'}</span>}
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleBook(v, group.id)}
-                              className="bg-white text-black px-4 py-2 rounded-full text-sm font-bold hover:bg-gray-200 transition-colors"
-                            >
-                              {lang === 'it' ? 'Prenota' : 'Book'}
-                            </button>
+                        <Link
+                          to={group.path}
+                          className="block bg-gray-900 rounded-xl overflow-hidden border border-white/10 hover:border-white/30 transition-colors group"
+                        >
+                          <div className="relative h-56 bg-black overflow-hidden">
+                            <img
+                              src={v.image || '/placeholder.jpeg'}
+                              alt={v.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
                           </div>
-                        </div>
+                          <div className="p-5">
+                            <h3 className="text-lg font-semibold text-white truncate" title={v.name}>{v.name}</h3>
+                            {v.price > 0 && (
+                              <div className="mt-3">
+                                <span className="text-2xl font-bold text-white">€{v.price}</span>
+                                <span className="text-gray-400 text-xs ml-1">/{lang === 'it' ? 'giorno' : 'day'}</span>
+                              </div>
+                            )}
+                          </div>
+                        </Link>
                       </motion.div>
                     ))}
                   </div>
