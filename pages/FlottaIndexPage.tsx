@@ -12,7 +12,6 @@ import { useFlottaCategories } from '../hooks/useFlottaCategories';
 import { useVehicles } from '../hooks/useVehicles';
 import { useTranslation } from '../hooks/useTranslation';
 import { useBooking } from '../hooks/useBooking';
-import { useAuth } from '../hooks/useAuth';
 import RentalCard from '../components/ui/RentalCard';
 import type { RentalItem } from '../types';
 
@@ -25,7 +24,6 @@ const CATEGORY_ALIASES: Record<string, string[]> = {
 
 const FlottaIndexPage: React.FC = () => {
   const { lang } = useTranslation();
-  const { user } = useAuth();
   const { openCarWizard } = useBooking();
   const { categories: flottaCats, loading: catsLoading } = useFlottaCategories();
   const { vehicles: allVehicles, loading: vehLoading } = useVehicles(undefined);
@@ -109,11 +107,6 @@ const FlottaIndexPage: React.FC = () => {
                         item={v as RentalItem}
                         onBook={(item) => handleBook(item, group.id)}
                         categoryId={categoryContextFor(group.id)}
-                        // Stessa regola della pagina rental: niente prezzo/bottone
-                        // se l'utente non e' loggato (per non spaventarlo prima
-                        // del flusso di sign-in).
-                        hidePrice={!user}
-                        hideBookButton={!user}
                       />
                     ))}
                   </div>
