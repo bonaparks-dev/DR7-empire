@@ -16,6 +16,7 @@ import SEOHead from '../components/seo/SEOHead';
 import RentalSearchBar, { type SearchParams } from '../components/ui/RentalSearchBar';
 import RentalFilters from '../components/ui/RentalFilters';
 import { useSearchAvailability } from '../hooks/useSearchAvailability';
+import { getFlottaVisibleCategoryIds } from '../utils/siteCopy';
 
 interface RentalPageProps {
   categoryId: 'cars' | 'urban-cars' | 'corporate-fleet' | 'yachts' | 'villas' | 'jets' | 'helicopters';
@@ -241,8 +242,34 @@ const VehicleResults: React.FC<{
 }> = ({ categoryData, categoryId, hasSearched, availabilityResults, selectedCategories, maxBudget, sortBy, preDays, handleBook, setSortBy, setMaxBudget, setSelectedCategories, categoryLabels }) => {
   const { user } = useAuth();
 
+  // Categorie configurate visibili in Sito > Flotta. null = mostra tutto
+  // (comportamento di default). Array = whitelist di category id che
+  // l'admin ha selezionato come visibili nella landing pubblica.
+  const [flottaVisible, setFlottaVisible] = React.useState<string[] | null>(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ids = await getFlottaVisibleCategoryIds();
+      if (!cancelled) setFlottaVisible(ids);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const displayData = useMemo(() => {
     let data = [...categoryData];
+
+    // Filtro Sito > Flotta: se l'admin ha definito una whitelist di
+    // categorie visibili, nascondo i veicoli che non vi appartengono.
+    if (flottaVisible && flottaVisible.length > 0) {
+      const allowed = new Set(flottaVisible);
+      data = data.filter(item => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const itemCat = (item as any).category;
+        const r = availabilityResults.get(item.id);
+        const cat = r?.categoryId || itemCat;
+        return cat ? allowed.has(cat) : true;
+      });
+    }
 
     if (hasSearched && availabilityResults.size > 0) {
       data = data.filter(item => {
@@ -275,7 +302,7 @@ const VehicleResults: React.FC<{
     }
 
     return data;
-  }, [categoryData, hasSearched, availabilityResults, selectedCategories, maxBudget, sortBy]);
+  }, [categoryData, hasSearched, availabilityResults, selectedCategories, maxBudget, sortBy, flottaVisible]);
 
   const availableCategories = useMemo(() => {
     if (!hasSearched || availabilityResults.size === 0) return [];
@@ -288,8 +315,14 @@ const VehicleResults: React.FC<{
     // Chip filter usa categoryId (categoria DB Centralina Pro) cosi' le
     // nuove categorie create dall'admin compaiono come chip senza
     // modifiche al codice.
-    return [...new Set(allAvailable.map(item => availabilityResults.get(item.id)?.categoryId).filter(Boolean) as string[])];
-  }, [categoryData, hasSearched, availabilityResults]);
+    const cats = [...new Set(allAvailable.map(item => availabilityResults.get(item.id)?.categoryId).filter(Boolean) as string[])];
+    // Sito > Flotta: applico whitelist anche ai chip categoria.
+    if (flottaVisible && flottaVisible.length > 0) {
+      const allowed = new Set(flottaVisible);
+      return cats.filter(c => allowed.has(c));
+    }
+    return cats;
+  }, [categoryData, hasSearched, availabilityResults, flottaVisible]);
 
   return (
     <>
@@ -912,14 +945,43 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
     return () => { cancelled = true; };
   }, [categoryId]);
 
+  // Multi-categoria per la landing "La Nostra Flotta" (/supercar-luxury):
+  // l'admin in Sito > Flotta seleziona piu' categorie da mostrare insieme
+  // (es. supercars + hypercar + elite). useVehicles(vehicleCategory) fetcha
+  // SOLO la categoria di route ('exotic'), quindi qui usiamo allVehicles
+  // (tutte le categorie) filtrato sui visible_category_ids del flotta config.
+  // Quando la lista flotta e' vuota o contiene 1 sola categoria (uguale a
+  // quella di route), comportamento legacy: fetchedVehicles.
+  const [flottaIdsForFetch, setFlottaIdsForFetch] = useState<string[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ids = await getFlottaVisibleCategoryIds();
+      if (!cancelled) setFlottaIdsForFetch(ids);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const useFlottaMultiCategory = (
+    categoryId === 'cars'
+    && Array.isArray(flottaIdsForFetch)
+    && flottaIdsForFetch.length > 0
+  );
+
   // Use fetched vehicles for car categories, admin fleet for aviation/marine, otherwise static.
-  const categoryData = vehicleCategory
-    ? fetchedVehicles
-    : categoryId === 'yachts'
-      ? yachtFleet
-      : (categoryId === 'jets' || categoryId === 'helicopters')
-        ? jetFleet
-        : (category?.data || []);
+  const categoryData = useFlottaMultiCategory
+    ? allVehicles.filter(v => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const cat = (v as any).category || (v as any).categoryId;
+        return cat ? flottaIdsForFetch!.includes(cat) : false;
+      })
+    : vehicleCategory
+      ? fetchedVehicles
+      : categoryId === 'yachts'
+        ? yachtFleet
+        : (categoryId === 'jets' || categoryId === 'helicopters')
+          ? jetFleet
+          : (category?.data || []);
 
   const handleBook = (item: RentalItem) => {
     console.log('RentalPage handleBook called:', { item, categoryId });
