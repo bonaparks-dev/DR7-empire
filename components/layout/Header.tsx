@@ -21,7 +21,10 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void; copy: Hea
   // Categorie veicolo visibili in menu = quelle selezionate in admin
   // > Sito > Flotta (con default = tutte se nulla selezionato).
   const { categories: flottaCats } = useFlottaCategories();
-  const flottaLanding = flottaCats[0]?.path || '/supercar-luxury';
+  // "La Nostra Flotta" punta SEMPRE alla landing /flotta (index con
+  // tutte le categorie come cards). Non saltare direttamente alla
+  // prima categoria — l'utente deve vedere il menu di scelta.
+  const flottaLanding = '/flotta';
 
   useEffect(() => {
     if (isOpen) {

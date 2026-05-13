@@ -34,18 +34,24 @@ export function useFlottaCategories(): { categories: FlottaCategoryLink[]; loadi
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('centralina_pro_config')
           .select('config')
           .eq('id', 'main')
           .maybeSingle();
         if (cancelled) return;
+        if (error) {
+          console.error('[useFlottaCategories] supabase error:', error);
+        }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const cfg = (data?.config as any) || {};
         const allCats: Array<{ id?: string; label?: string }> = Array.isArray(cfg.categories) ? cfg.categories : [];
         const visibleIds: string[] = Array.isArray(cfg?.site_copy?.flotta?.visible_category_ids)
           ? cfg.site_copy.flotta.visible_category_ids.filter((x: unknown) => typeof x === 'string')
           : [];
+        console.log('[useFlottaCategories] cfg keys:', Object.keys(cfg));
+        console.log('[useFlottaCategories] allCats:', allCats);
+        console.log('[useFlottaCategories] visibleIds (site_copy.flotta):', visibleIds);
 
         const valid = allCats.filter(c => typeof c?.id === 'string' && c.id);
         const filtered = visibleIds.length === 0
@@ -57,6 +63,7 @@ export function useFlottaCategories(): { categories: FlottaCategoryLink[]; loadi
           label: (c.label as string) || (c.id as string),
           path: `/${c.id}`,
         }));
+        console.log('[useFlottaCategories] OUTPUT:', out);
         setCategories(out);
       } finally {
         if (!cancelled) setLoading(false);

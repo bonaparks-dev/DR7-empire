@@ -9,6 +9,7 @@ import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import HomePage from './pages/HomePage';
 import RentalPage from './pages/RentalPage';
+import FlottaIndexPage from './pages/FlottaIndexPage';
 import MembershipPage from './pages/MembershipPage';
 import { RENTAL_CATEGORIES } from './constants';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -265,7 +266,7 @@ const AnimatedRoutes = () => {
     'car-wash-services', 'prime-wash', 'mechanical-services',
     'membership', 'credit-wallet',
     'yachts', 'villas', 'jets', 'helicopters',
-    'aviation-quote', 'contact',
+    'aviation-quote', 'contact', 'flotta',
   ]);
 
   return (
@@ -277,6 +278,7 @@ const AnimatedRoutes = () => {
         <Route path="/helicopters/quote" element={<AviationQuoteRequestPage />} />
         <Route path="/aviation-quote" element={<AviationQuoteRequestPage />} />
         {/* Canonical SEO-friendly routes */}
+        <Route path="/flotta" element={<FlottaIndexPage />} />
         <Route path="/supercar-luxury" element={<RentalPage categoryId="cars" />} />
         <Route path="/urban" element={<Navigate to="/supercar-luxury" replace />} />
         <Route path="/prime-wash" element={<CarWashServicesPage />} />
