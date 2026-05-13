@@ -7,6 +7,7 @@ import { UserCircleIcon, SignOutIcon } from '../icons/Icons';
 import { getUserCreditBalance } from '../../utils/creditWallet';
 import BookingSearchBox from '../ui/BookingSearchBox';
 import { getHeaderCopy, type HeaderCopy } from '../../utils/siteCopy';
+import { useFlottaCategories } from '../../hooks/useFlottaCategories';
 
 const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void; copy: HeaderCopy }> = ({ isOpen, onClose, copy }) => {
   const { t, lang } = useTranslation();
@@ -17,6 +18,10 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void; copy: Hea
   const [showBookingPopup, setShowBookingPopup] = useState(false);
   const h = (it: keyof HeaderCopy, en: keyof HeaderCopy): string =>
     (copy as Record<string, string>)[(lang === 'it' ? it : en) as string];
+  // Categorie veicolo visibili in menu = quelle selezionate in admin
+  // > Sito > Flotta (con default = tutte se nulla selezionato).
+  const { categories: flottaCats } = useFlottaCategories();
+  const flottaLanding = flottaCats[0]?.path || '/supercar-luxury';
 
   useEffect(() => {
     if (isOpen) {
@@ -133,25 +138,28 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void; copy: Hea
                 {h('drawer_book_cta_it', 'drawer_book_cta_en')}
               </button>
 
-              {/* LA NOSTRA FLOTTA */}
+              {/* LA NOSTRA FLOTTA — link al primo categoria selezionata in
+                  Sito > Flotta (fallback a /supercar-luxury se nulla
+                  selezionato). */}
               <div className="flex flex-col items-center space-y-2 pb-5 border-b border-white/[0.06]">
-                <NavLink to="/supercar-luxury" onClick={onClose} className="text-[13px] font-medium text-gray-400 hover:text-white tracking-widest uppercase transition-all duration-200">
+                <NavLink to={flottaLanding} onClick={onClose} className="text-[13px] font-medium text-gray-400 hover:text-white tracking-widest uppercase transition-all duration-200">
                   {h('flotta_label_it', 'flotta_label_en')}
                 </NavLink>
               </div>
 
-              {/* SERVIZI & MOBILITÀ DI LUSSO */}
+              {/* SERVIZI & MOBILITÀ DI LUSSO — lista dinamica delle
+                  categorie veicolo da admin > Sito > Flotta, piu'
+                  Yachting/Aviation fissi (non sono categorie veicolari). */}
               <div className="border-b border-white/[0.06] pb-5">
                 <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-[0.2em] mb-2 pl-3">
                   {h('servizi_heading_it', 'servizi_heading_en')}
                 </h3>
                 <div className="space-y-1">
-                  <NavLink to="/supercar-luxury" onClick={onClose} className={navLinkClasses}>
-                    <span>Supercar & Luxury Division</span>
-                  </NavLink>
-                  <NavLink to="/corporate-fleet" onClick={onClose} className={navLinkClasses}>
-                    <span>Corporate & Utility Fleet</span>
-                  </NavLink>
+                  {flottaCats.map(c => (
+                    <NavLink key={c.id} to={c.path} onClick={onClose} className={navLinkClasses}>
+                      <span>{c.label}</span>
+                    </NavLink>
+                  ))}
                   <NavLink to="/yachts" onClick={onClose} className={navLinkClasses}>
                     <span>Yachting Division</span>
                   </NavLink>
