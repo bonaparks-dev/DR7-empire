@@ -373,6 +373,19 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
   const furgoneInsurance = pickInsuranceForFascia(furgoneIns, FASCIA_A_ID)
     .concat(pickInsuranceForFascia(furgoneIns, FASCIA_B_ID).filter(o => !pickInsuranceForFascia(furgoneIns, FASCIA_A_ID).some(a => a.id === o.id)))
 
+  // Per-category insurance map — keyed da raw category id (Hypercar Elitè,
+  // Supercar Pro, Suv Luxury, supercars, ecc.). Cattura OGNI categoria
+  // configurata in Centralina Pro > Assicurazioni. Il wizard la legge per
+  // PRIMA via configOverlay.insuranceByCategory[item.category].
+  const insuranceByCategory: Record<string, { TIER_1: InsuranceTierOption[]; TIER_2: InsuranceTierOption[]; _all_tiers: InsuranceTierOption[] }> = {}
+  for (const cat of snapshot.insurance || []) {
+    insuranceByCategory[cat.id] = {
+      TIER_1: pickInsuranceForFascia(cat, FASCIA_B_ID), // Fascia B = TIER_1
+      TIER_2: pickInsuranceForFascia(cat, FASCIA_A_ID), // Fascia A = TIER_2
+      _all_tiers: cat.mode === 'all_tiers' ? toInsuranceOpts(cat.all) : [],
+    }
+  }
+
   // km per category
   const kmSupercars = snapshot.km?.find(k => k.id === 'supercars' || k.id === 'exotic')
   const kmUrban = snapshot.km?.find(k => k.id === 'urban' || k.id === 'utilitaria')
@@ -456,11 +469,19 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
       TIER_2_NON_RESIDENT: toDepositOpts(f.A.non_residente),
     }
   }
-  const depositByCategory = isLegacyDepositShape ? undefined : {
-    supercars: buildCatSet('supercars'),
-    urban: buildCatSet('urban'),
-    aziendali: buildCatSet('aziendali'),
-  }
+  // Per-category deposits: emit per OGNI category id presente in raw
+  // deposits (non solo i 3 legacy). Le categorie nuove di Centralina
+  // Pro (Hypercar Elitè, Supercar Pro, Suv Luxury, ecc.) erano
+  // silenziosamente droppate, e il wizard cadeva sulle cauzioni
+  // Supercar di default.
+  const depositByCategory = (() => {
+    if (isLegacyDepositShape) return undefined
+    const out: Record<string, ReturnType<typeof buildCatSet>> = {}
+    for (const catId of Object.keys(rawDeposits)) {
+      out[catId] = buildCatSet(catId)
+    }
+    return out
+  })()
 
   const experienceServices: ExperienceService[] = (snapshot.servizi?.experience || [])
     .filter(s => s.is_active !== false)
@@ -501,6 +522,21 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
         extra_per_day: num(kmAziendaliEntry.extraPerDay, 0),
       }
     : null
+
+  // Per-category km + sforo. Cattura OGNI categoria in Centralina Pro.
+  const kmIncludedByCategory: Record<string, KmIncludedConfig | { unlimited: true }> = {}
+  const sforoByCategory: Record<string, number> = {}
+  for (const k of snapshot.km || []) {
+    const table = cleanNumMap(k.table)
+    const hasLimits = Object.values(table).some(v => v > 0)
+    if (!hasLimits && num(k.extraPerDay, 0) === 0) {
+      kmIncludedByCategory[k.id] = { unlimited: true }
+    } else {
+      kmIncludedByCategory[k.id] = { table, extra_per_day: num(k.extraPerDay, 0) }
+    }
+    const s = num(k.sforo, 0)
+    if (s > 0) sforoByCategory[k.id] = s
+  }
 
   // NCC (V_CLASS) reads from the Aziendali category, same as Furgone (Ducato).
   const kmPackagePrices: KmPackagePrices = {
@@ -554,11 +590,16 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
       TIER_2_NON_RESIDENT: toDepositOpts(depFasciaA.non_residente),
       ...(depositByCategory ? { byCategory: depositByCategory } : {}),
     },
+    insuranceByCategory,
     rentalDayRates,
     kmIncluded,
+    kmIncludedSupercars: kmIncluded,
+    kmIncludedUrban: null,
     kmIncludedAziendali,
+    kmIncludedByCategory,
     kmPackagePrices,
     sforoPerKm: sforoSupercar,
+    sforoByCategory,
   }
 }
 
