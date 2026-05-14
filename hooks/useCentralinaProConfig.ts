@@ -47,6 +47,10 @@ export interface WebsiteConfigOverlay {
   urbanInsurance: InsuranceTierOption[]
   utilitaireInsurance: InsuranceTierOption[]
   furgoneInsurance: InsuranceTierOption[]
+  /** Per-category insurance keyed da raw category id (supercars / urban /
+   *  aziendali / hypercar_elit / suv_luxury / qualsiasi categoria
+   *  configurata in Centralina Pro). Wizard la legge per PRIMA. */
+  insuranceByCategory?: Record<string, { TIER_1: InsuranceTierOption[]; TIER_2: InsuranceTierOption[]; _all_tiers: InsuranceTierOption[] }>
   tierPricing: {
     TIER_1: { unlimitedKmPerDay: number; secondDriverPerDay: number; lavaggio: number }
     TIER_2: { unlimitedKmPerDay: number; secondDriverPerDay: number; lavaggio: number }
@@ -60,20 +64,24 @@ export interface WebsiteConfigOverlay {
     TIER_2_RESIDENT: DepositOption[]
     TIER_1_NON_RESIDENT: DepositOption[]
     TIER_2_NON_RESIDENT: DepositOption[]
-    /** Per-vehicle-category overrides (supercars/urban/aziendali). When the
-     *  category-specific list exists, the wizard prefers it over the flat
-     *  TIER_*_RESIDENT/NON_RESIDENT keys above. */
-    byCategory?: {
-      supercars?: { TIER_1_RESIDENT: DepositOption[]; TIER_2_RESIDENT: DepositOption[]; TIER_1_NON_RESIDENT: DepositOption[]; TIER_2_NON_RESIDENT: DepositOption[] }
-      urban?: { TIER_1_RESIDENT: DepositOption[]; TIER_2_RESIDENT: DepositOption[]; TIER_1_NON_RESIDENT: DepositOption[]; TIER_2_NON_RESIDENT: DepositOption[] }
-      aziendali?: { TIER_1_RESIDENT: DepositOption[]; TIER_2_RESIDENT: DepositOption[]; TIER_1_NON_RESIDENT: DepositOption[]; TIER_2_NON_RESIDENT: DepositOption[] }
-    }
+    /** Per-vehicle-category overrides. Key = raw category id; preserves
+     *  ogni categoria configurata in Centralina Pro (legacy + nuove). */
+    byCategory?: Record<string, { TIER_1_RESIDENT: DepositOption[]; TIER_2_RESIDENT: DepositOption[]; TIER_1_NON_RESIDENT: DepositOption[]; TIER_2_NON_RESIDENT: DepositOption[] }>
   }
   rentalDayRates: RentalDayRates | null
   kmIncluded: KmIncludedConfig | null
+  kmIncludedSupercars?: KmIncludedConfig | null
+  kmIncludedUrban?: KmIncludedConfig | null
   kmIncludedAziendali: KmIncludedConfig | null
+  /** Per-category km map. Key = raw category id. Wizard la legge per
+   *  PRIMA per scegliere la tabella km inclusi per il veicolo. */
+  kmIncludedByCategory?: Record<string, KmIncludedConfig | { unlimited: true }>
   kmPackagePrices: KmPackagePrices
   sforoPerKm: number
+  /** Per-category sforo €/km. Key = raw category id. */
+  sforoByCategory?: Record<string, number>
+  /** Per-category km illimitati €/giorno per fascia. */
+  unlimitedKmByCategory?: Record<string, { TIER_1: number; TIER_2: number }>
 }
 
 // ── Pro snapshot types (match CentralinaProTab PersistedSnapshot) ──
@@ -140,6 +148,10 @@ export interface ProExperienceService {
   price: number | ''
   unit: 'per_day' | 'per_hour' | 'per_item' | 'flat'
   is_active?: boolean
+  /** Quando true il servizio è disponibile SOLO in admin (utile per voci
+   *  che l'operatore aggiunge a mano alle prenotazioni e che non devono
+   *  comparire nel wizard del sito — es. Pacchetto KM Extra). */
+  admin_only?: boolean
   tier_only?: string // fascia id
   description?: string
 }
@@ -485,6 +497,9 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
 
   const experienceServices: ExperienceService[] = (snapshot.servizi?.experience || [])
     .filter(s => s.is_active !== false)
+    // admin_only: il servizio è destinato SOLO all'operatore admin, non
+    // deve comparire nel wizard del sito (es. Pacchetto KM Extra).
+    .filter(s => !s.admin_only)
     .map(s => ({
       id: s.id || s.name,
       name: s.name,
@@ -523,9 +538,11 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
       }
     : null
 
-  // Per-category km + sforo. Cattura OGNI categoria in Centralina Pro.
+  // Per-category km + sforo + km illimitati. Cattura OGNI categoria in
+  // Centralina Pro (Hypercar Elite, Supercar Pro, Suv Luxury, ecc.).
   const kmIncludedByCategory: Record<string, KmIncludedConfig | { unlimited: true }> = {}
   const sforoByCategory: Record<string, number> = {}
+  const unlimitedKmByCategory: Record<string, { TIER_1: number; TIER_2: number }> = {}
   for (const k of snapshot.km || []) {
     const table = cleanNumMap(k.table)
     const hasLimits = Object.values(table).some(v => v > 0)
@@ -536,6 +553,10 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
     }
     const s = num(k.sforo, 0)
     if (s > 0) sforoByCategory[k.id] = s
+    unlimitedKmByCategory[k.id] = {
+      TIER_1: unlimitedFor(k, 'TIER_1'),
+      TIER_2: unlimitedFor(k, 'TIER_2'),
+    }
   }
 
   // NCC (V_CLASS) reads from the Aziendali category, same as Furgone (Ducato).
@@ -600,6 +621,7 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
     kmPackagePrices,
     sforoPerKm: sforoSupercar,
     sforoByCategory,
+    unlimitedKmByCategory,
   }
 }
 

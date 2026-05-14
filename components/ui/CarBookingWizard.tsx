@@ -1828,8 +1828,27 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     let calculatedIncludedKm: number;
     if (formData.kmPackageType === 'unlimited') {
       calculatedIncludedKm = 9999;
-      if (vType === 'SUPERCAR') {
-        // Tier-conditional unlimited price from Centralina Pro
+      // PRIORITY: prezzo km illimitati per categoria raw (Hypercar Elite,
+      // Suv Luxury, ecc.) da Centralina Pro. Cade su bucket legacy
+      // (SUPERCAR/FURGONE/URBAN) solo se mancante.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
+      const byCatPrice = (() => {
+        const byCat = configOverlay?.unlimitedKmByCategory
+        if (!rawCat || !byCat) return 0
+        const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
+                      : rawCat === 'exotic' ? ['exotic', 'supercars']
+                      : [rawCat]
+        const tier = activeTierForCalc
+        for (const k of aliases) {
+          const v = byCat[k]?.[tier]
+          if (typeof v === 'number' && v > 0) return v
+        }
+        return 0
+      })()
+      if (byCatPrice > 0) {
+        calculatedKmPackageCost = roundToTwoDecimals(byCatPrice * billingDaysCalc);
+      } else if (vType === 'SUPERCAR') {
         calculatedKmPackageCost = roundToTwoDecimals(tierPricingForCalc.unlimitedKmPerDay * billingDaysCalc);
       } else if (isUrbanVehicle(item.name)) {
         const urbanPrice = configOverlay?.kmPackagePrices?.unlimitedUrbanPerDay ?? 0;
@@ -5107,7 +5126,25 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         <span className="font-bold text-white">Km illimitati</span>
                         <p className="text-sm text-gray-400">Senza limiti di percorrenza</p>
                       </div>
-                      <span className="font-bold text-white">+€{tierPricing.unlimitedKmPerDay}/giorno</span>
+                      <span className="font-bold text-white">+€{(() => {
+                        // Leggi km illimitati per categoria raw (Hypercar
+                        // Elite, Suv Luxury, ecc.); cade su tierPricing
+                        // legacy (supercars) solo se mancante.
+                        const tier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
+                        const byCat = configOverlay?.unlimitedKmByCategory
+                        if (rawCat && byCat) {
+                          const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
+                                        : rawCat === 'exotic' ? ['exotic', 'supercars']
+                                        : [rawCat]
+                          for (const k of aliases) {
+                            const v = byCat[k]?.[tier]
+                            if (typeof v === 'number' && v > 0) return v
+                          }
+                        }
+                        return tierPricing.unlimitedKmPerDay
+                      })()}/giorno</span>
                     </div>
                   </div>
                 </div>
@@ -5143,19 +5180,33 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       </div>
                       <span className="font-bold text-white">
                         {(() => {
-                          // ALWAYS read from Centralina Pro. No hardcoded fallback.
-                          // Aziendali (Ducato/V_Class) → unlimitedFurgonePerDay
-                          // Urban → unlimitedUrbanPerDay
-                          // Supercars → tierPricing[tier].unlimitedKmPerDay
                           const days = duration.days || 1;
+                          const tier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2';
+                          // PRIORITY: leggi km illimitati per categoria
+                          // raw da Centralina Pro (Hypercar Elite, Suv
+                          // Luxury, ecc.). Cade su bucket legacy solo se
+                          // mancante.
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
+                          const byCat = configOverlay?.unlimitedKmByCategory
                           let perDay = 0;
-                          if (vehicleType === 'FURGONE' || vehicleType === 'V_CLASS') {
-                            perDay = configOverlay?.kmPackagePrices?.unlimitedFurgonePerDay ?? 0;
-                          } else if (isUrbanVehicle(item.name)) {
-                            perDay = configOverlay?.kmPackagePrices?.unlimitedUrbanPerDay ?? 0;
-                          } else if (vehicleType === 'SUPERCAR') {
-                            const tier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2';
-                            perDay = configOverlay?.tierPricing?.[tier]?.unlimitedKmPerDay ?? 0;
+                          if (rawCat && byCat) {
+                            const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
+                                          : rawCat === 'exotic' ? ['exotic', 'supercars']
+                                          : [rawCat]
+                            for (const k of aliases) {
+                              const v = byCat[k]?.[tier]
+                              if (typeof v === 'number' && v > 0) { perDay = v; break }
+                            }
+                          }
+                          if (perDay === 0) {
+                            if (vehicleType === 'FURGONE' || vehicleType === 'V_CLASS') {
+                              perDay = configOverlay?.kmPackagePrices?.unlimitedFurgonePerDay ?? 0;
+                            } else if (isUrbanVehicle(item.name)) {
+                              perDay = configOverlay?.kmPackagePrices?.unlimitedUrbanPerDay ?? 0;
+                            } else if (vehicleType === 'SUPERCAR') {
+                              perDay = configOverlay?.tierPricing?.[tier]?.unlimitedKmPerDay ?? 0;
+                            }
                           }
                           if (perDay === 0) return 'Gratis';
                           return formatPrice(perDay * days);
