@@ -1294,18 +1294,8 @@ async function loadOnce(): Promise<SiteCopySnapshot> {
 void loadOnce();
 
 // ─── Getters ─────────────────────────────────────────────────────────────────
-/**
- * Restituisce le categorie veicolo che devono apparire sulla pagina pubblica
- * "La Nostra Flotta". Configurato dall'admin in Sito > Flotta. Se l'array
- * e\' vuoto o non valorizzato, ritorna null -> il consumatore mostra tutte
- * le categorie disponibili (comportamento di default).
- */
-export async function getFlottaVisibleCategoryIds(): Promise<string[] | null> {
-  const snap = await loadOnce();
-  const ids = snap.flotta?.visible_category_ids;
-  if (!Array.isArray(ids) || ids.length === 0) return null;
-  return ids.filter(x => typeof x === 'string' && x.trim().length > 0);
-}
+// getFlottaVisibleCategoryIds e\' definita piu\' avanti nel file (linea ~1670).
+// Quella implementazione legge direttamente da Supabase ogni chiamata.
 
 /**
  * Normalize whatever's stored in `snap.faq` (legacy raw array or new

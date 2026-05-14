@@ -242,10 +242,9 @@ const VehicleResults: React.FC<{
 }> = ({ categoryData, categoryId, hasSearched, availabilityResults, selectedCategories, maxBudget, sortBy, preDays, handleBook, setSortBy, setMaxBudget, setSelectedCategories, categoryLabels }) => {
   const { user } = useAuth();
 
-  // Categorie configurate visibili in Sito > Flotta. null = mostra tutto
-  // (comportamento di default). Array = whitelist di category id che
-  // l'admin ha selezionato come visibili nella landing pubblica.
-  const [flottaVisible, setFlottaVisible] = React.useState<string[] | null>(null);
+  // Categorie configurate visibili in Sito > Flotta. Array vuoto = mostra
+  // tutto (default). Array popolato = whitelist di category id.
+  const [flottaVisible, setFlottaVisible] = React.useState<string[]>([]);
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
