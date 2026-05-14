@@ -36,6 +36,13 @@ export interface WebsiteConfigOverlay {
   urbanInsurance: InsuranceTierOption[]
   utilitaireInsurance: InsuranceTierOption[]
   furgoneInsurance: InsuranceTierOption[]
+  /** Per-category insurance options, keyed by category id from
+   *  centralina_pro_config.config.insurance.{categoryId}. Captures ANY
+   *  category admin adds in Centralina Pro (Supercar / Urban / Aziendali
+   *  / Hypercar / Suv Luxury / nuove categorie...). The wizard reads
+   *  this FIRST, falls back to legacy bucket fields above. */
+  insuranceByCategory: Record<string, { TIER_1: InsuranceTierOption[]; TIER_2: InsuranceTierOption[]; _all_tiers: InsuranceTierOption[] }>
+
   tierPricing: {
     TIER_1: { unlimitedKmPerDay: number; secondDriverPerDay: number; lavaggio: number }
     TIER_2: { unlimitedKmPerDay: number; secondDriverPerDay: number; lavaggio: number }
@@ -190,12 +197,27 @@ export function buildWebsiteConfigOverlay(config: RentalConfig | null): WebsiteC
     unlimitedUrbanPerDay: config.unlimited_km?.urban?._all_tiers?.per_day ?? findKmPrice('unlimited_km_urban', 0),
   }
 
+  // Build per-category insurance map. Capture EVERY category that admin
+  // configured in Centralina Pro > Assicurazioni, including new ones
+  // (Hypercar Elite, Supercar Pro, Suv Luxury, etc.). Per-category data
+  // shape: { TIER_1?: [...], TIER_2?: [...], _all_tiers?: [...] }.
+  const insuranceByCategory: Record<string, { TIER_1: InsuranceTierOption[]; TIER_2: InsuranceTierOption[]; _all_tiers: InsuranceTierOption[] }> = {}
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const [catKey, raw] of Object.entries((config.insurance || {}) as Record<string, any>)) {
+    if (!raw || typeof raw !== 'object') continue
+    insuranceByCategory[catKey] = {
+      TIER_1: toInsOpts(raw.TIER_1) || [],
+      TIER_2: toInsOpts(raw.TIER_2) || [],
+      _all_tiers: toInsOpts(raw._all_tiers) || [],
+    }
+  }
   return {
     insuranceTier1: toInsOpts(exoticT1) || [],
     insuranceTier2: toInsOpts(exoticT2) || [],
     urbanInsurance: toInsOpts(urbanIns) || [],
     utilitaireInsurance: toInsOpts(utilitaireIns) || [],
     furgoneInsurance: toInsOpts(furgoneIns) || [],
+    insuranceByCategory,
     tierPricing: {
       TIER_1: {
         unlimitedKmPerDay: kmPackagePrices.unlimitedSupercarT1PerDay,

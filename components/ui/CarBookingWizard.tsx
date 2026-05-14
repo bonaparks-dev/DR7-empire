@@ -520,13 +520,32 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
   const getInsuranceForVehicle = useMemo(() => {
     return (vType: string, _tier: string) => {
+      // PRIORITY 1: per-category insurance from admin Centralina Pro.
+      // Catches ogni categoria nuova creata dall'admin (Hypercar Elite,
+      // Suv Luxury, ecc.) — il bucket nuovo viene caricato in
+      // configOverlay.insuranceByCategory[catId].
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
+      if (rawCat && configOverlay?.insuranceByCategory) {
+        const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
+                      : rawCat === 'exotic' ? ['exotic', 'supercars']
+                      : [rawCat]
+        for (const k of aliases) {
+          const bucket = configOverlay.insuranceByCategory[k]
+          if (!bucket) continue
+          const tierOpts = bucket[_tier as 'TIER_1' | 'TIER_2']
+          if (Array.isArray(tierOpts) && tierOpts.length > 0) return tierOpts
+          if (Array.isArray(bucket._all_tiers) && bucket._all_tiers.length > 0) return bucket._all_tiers
+        }
+      }
+      // PRIORITY 2: legacy bucketed lookup
       const urbanOpts = configOverlay?.urbanInsurance ?? [];
       const furgoneOpts = configOverlay?.furgoneInsurance ?? [];
       if (vType === 'UTILITARIA') return urbanOpts;
       if (vType === 'FURGONE' || vType === 'V_CLASS') return furgoneOpts;
       return ACTIVE_INSURANCE_BY_TIER[_tier as 'TIER_1' | 'TIER_2'] || [];
     };
-  }, [configOverlay, ACTIVE_INSURANCE_BY_TIER]);
+  }, [configOverlay, ACTIVE_INSURANCE_BY_TIER, item]);
 
   const ACTIVE_TIER_PRICING = useMemo(() => {
     return configOverlay?.tierPricing ?? {
