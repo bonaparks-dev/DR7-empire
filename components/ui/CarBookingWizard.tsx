@@ -608,7 +608,48 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   const ACTIVE_RENTAL_DAY_RATES = configOverlay?.rentalDayRates ?? null;
   const ACTIVE_KM_INCLUDED = configOverlay?.kmIncluded ?? null;
   const ACTIVE_KM_INCLUDED_AZIENDALI = configOverlay?.kmIncludedAziendali ?? null;
-  const ACTIVE_SFORO_PER_KM = configOverlay?.sforoPerKm ?? 0;
+  // Per-category lookup helpers. Read by raw vehicle.category id from
+  // Centralina Pro (Hypercar / Suv Luxury / new categories included);
+  // fall back to bucketed legacy maps and finally the _global default.
+  const getKmIncludedForVehicle = (rawCategory: string | null | undefined, vType: 'UTILITARIA' | 'FURGONE' | 'V_CLASS' | 'SUPERCAR' | undefined) => {
+    const byCat = configOverlay?.kmIncludedByCategory
+    if (rawCategory && byCat) {
+      const id = String(rawCategory).toLowerCase().trim()
+      if (id) {
+        const aliases = id === 'supercars' ? ['supercars', 'exotic']
+                      : id === 'exotic' ? ['exotic', 'supercars']
+                      : [id]
+        for (const k of aliases) {
+          const hit = byCat[k]
+          if (!hit) continue
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if ((hit as any).unlimited === true) return null
+          return hit as { table: Record<string, number>; extra_per_day: number }
+        }
+      }
+    }
+    if (vType === 'FURGONE' || vType === 'V_CLASS') {
+      return ACTIVE_KM_INCLUDED_AZIENDALI || ACTIVE_KM_INCLUDED
+    }
+    return ACTIVE_KM_INCLUDED
+  }
+  const getSforoForVehicle = (rawCategory: string | null | undefined): number => {
+    const byCat = configOverlay?.sforoByCategory
+    if (rawCategory && byCat) {
+      const id = String(rawCategory).toLowerCase().trim()
+      if (id) {
+        const aliases = id === 'supercars' ? ['supercars', 'exotic']
+                      : id === 'exotic' ? ['exotic', 'supercars']
+                      : [id]
+        for (const k of aliases) {
+          const v = byCat[k]
+          if (typeof v === 'number' && v > 0) return v
+        }
+      }
+    }
+    return configOverlay?.sforoPerKm ?? 0
+  }
+  const ACTIVE_SFORO_PER_KM = getSforoForVehicle((item as any).category);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedInsurance, setExpandedInsurance] = useState<string | null>(null);
@@ -1803,11 +1844,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         calculatedKmPackageCost = roundToTwoDecimals(aziendaliPrice * billingDaysCalc);
       }
     } else {
-      // Default "km inclusi": read from Centralina Pro per vehicle category.
-      // Covers SUPERCAR (previously missing branch) and all other types.
-      const kmTable = (vType === 'FURGONE' || vType === 'V_CLASS')
-        ? (ACTIVE_KM_INCLUDED_AZIENDALI || ACTIVE_KM_INCLUDED)
-        : ACTIVE_KM_INCLUDED;
+      // Default "km inclusi": legge da Centralina Pro per categoria raw
+      // (Hypercar / Suv Luxury / nuove categorie incluse). Cade su
+      // bucket legacy (Aziendali / Supercars) e poi _global.
+      const kmTable = getKmIncludedForVehicle((item as any).category, vType);
       calculatedIncludedKm = calculateIncludedKm(billingDaysCalc, kmTable);
     }
 
@@ -1964,7 +2004,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     formData.selectedExperiences, formData.dr7Flex, formData.pickupLocation, formData.returnLocation,
     formData.deliveryPickupKm, formData.deliveryReturnKm,
     item, currency, user, isUrbanOrCorporate, categoryContext, driverTier, dynamicPricing,
-    ACTIVE_RENTAL_DAY_RATES, ACTIVE_KM_INCLUDED
+    ACTIVE_RENTAL_DAY_RATES, ACTIVE_KM_INCLUDED, ACTIVE_KM_INCLUDED_AZIENDALI, configOverlay
   ]);
 
   // Online booking discount REMOVED — no automatic discount
@@ -5083,7 +5123,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   >
                     <div className="flex justify-between items-center">
                       <div>
-                        <span className="font-bold text-white">{calculateIncludedKm(duration.days || 1, (vehicleType === 'FURGONE' || vehicleType === 'V_CLASS') ? (ACTIVE_KM_INCLUDED_AZIENDALI || ACTIVE_KM_INCLUDED) : ACTIVE_KM_INCLUDED) || 0} km inclusi</span>
+                        <span className="font-bold text-white">{calculateIncludedKm(duration.days || 1, getKmIncludedForVehicle((item as any).category, vehicleType)) || 0} km inclusi</span>
                         <p className="text-sm text-gray-400">Calcolati sulla durata del noleggio ({duration.days || 1} {(duration.days || 1) === 1 ? 'giorno' : 'giorni'})</p>
                       </div>
                       <span className="font-bold text-green-400">Incluso</span>

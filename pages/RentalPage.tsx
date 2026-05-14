@@ -983,17 +983,18 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
           : (category?.data || []);
 
   const handleBook = (item: RentalItem) => {
-    console.log('RentalPage handleBook called:', { item, categoryId });
-    if (categoryId === 'cars' || categoryId === 'urban-cars' || categoryId === 'corporate-fleet') {
-      console.log('Opening car wizard for:', item.name);
-      openCarWizard(item, categoryId);
-    } else if (['jets', 'helicopters'].includes(categoryId)) {
-      console.log('Navigating to booking page for jet/helicopter');
+    if (['jets', 'helicopters'].includes(categoryId)) {
       navigate(`/book/${categoryId}/${item.id}`);
-    } else {
-      console.log('Opening booking modal for yacht/villa');
-      openBooking(item, categoryId as 'yachts' | 'villas');
+      return;
     }
+    if (categoryId === 'yachts' || categoryId === 'villas') {
+      openBooking(item, categoryId as 'yachts' | 'villas');
+      return;
+    }
+    // Tutte le altre categorie noleggio (cars / urban-cars / corporate-fleet
+    // + categorie dinamiche da Centralina Pro: Hypercar / Suv Luxury / ecc.)
+    // passano per il CarBookingWizard. Niente vecchio BookingModal.
+    openCarWizard(item, categoryId);
   };
 
   if (categoryId === 'jets' || categoryId === 'helicopters') {

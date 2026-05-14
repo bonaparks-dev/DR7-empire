@@ -77,10 +77,21 @@ export interface WebsiteConfigOverlay {
   kmIncludedSupercars: KmIncludedConfig | null
   kmIncludedUrban: KmIncludedConfig | null
   kmIncludedAziendali: KmIncludedConfig | null
+  /** Per-category km tables. Key = raw category id (from
+   *  centralina_pro_config.config.km_included.{categoryId}). Captures
+   *  every category admin added (legacy + Hypercar Elite / Supercar Pro
+   *  / Suv Luxury / new ones). Wizard reads this FIRST, falls back to
+   *  kmIncludedSupercars/Urban/Aziendali (legacy) then kmIncluded
+   *  (_global). Value may be { unlimited: true } for unlimited cats. */
+  kmIncludedByCategory: Record<string, KmIncludedConfig | { unlimited: true }>
   // KM package prices from admin Revenue management
   kmPackagePrices: KmPackagePrices
-  // Sforo (overage) per km — from Centralina Pro km[supercars].sforo
+  // Sforo (overage) per km — from Centralina Pro km[supercars].sforo (legacy default)
   sforoPerKm: number
+  /** Per-category sforo €/km. Key = raw category id (from
+   *  centralina_pro_config.config.sforo_km.category.{categoryId}).
+   *  Wizard reads this FIRST, falls back to sforoPerKm (_global). */
+  sforoByCategory: Record<string, number>
 }
 
 /** Build overlay from Centralina config. Returns null if config is not loaded yet. */
@@ -164,6 +175,36 @@ export function buildWebsiteConfigOverlay(config: RentalConfig | null): WebsiteC
   const kmIncludedSupercars = buildPerCat('exotic')
   const kmIncludedUrban = buildPerCat('urban')
   const kmIncludedAziendali = buildPerCat('aziendali')
+
+  // Per-category km map: keyed by raw category id (`exotic`, `urban`,
+  // `aziendali`, `kwtcdhvs`, `suv_luxury`, ecc.). Captures EVERY
+  // category admin configured. Wizard reads by raw vehicle.category id.
+  const kmIncludedByCategory: Record<string, KmIncludedConfig | { unlimited: true }> = {}
+  if (kmRoot) {
+    for (const [catKey, raw] of Object.entries(kmRoot)) {
+      if (catKey === '_global' || !raw || typeof raw !== 'object') continue
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const r = raw as any
+      if (r.unlimited === true) {
+        kmIncludedByCategory[catKey] = { unlimited: true }
+      } else if (r.table && typeof r.extra_per_day === 'number') {
+        kmIncludedByCategory[catKey] = { table: r.table, extra_per_day: r.extra_per_day }
+      }
+    }
+  }
+
+  // Per-category sforo €/km. Centralina saves under
+  // `sforo_km.category.{categoryId}` (see admin convertProConfig.ts).
+  const sforoByCategory: Record<string, number> = {}
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sforoRaw = (config as any).sforo_km
+  if (sforoRaw?.category && typeof sforoRaw.category === 'object') {
+    for (const [catKey, val] of Object.entries(sforoRaw.category as Record<string, unknown>)) {
+      if (typeof val === 'number' && val > 0) sforoByCategory[catKey] = val
+    }
+  }
+  // Global sforo default (also exposed via sforoPerKm for legacy callers).
+  const sforoGlobal = typeof sforoRaw?._global === 'number' ? sforoRaw._global : 0
 
   // Build km package prices — reads from BOTH sources:
   // 1. km_packages array (RevenuePricingTab) — flat list with ids
@@ -273,7 +314,9 @@ export function buildWebsiteConfigOverlay(config: RentalConfig | null): WebsiteC
     kmIncludedSupercars,
     kmIncludedUrban,
     kmIncludedAziendali,
+    kmIncludedByCategory,
     kmPackagePrices,
-    sforoPerKm: 0,
+    sforoPerKm: sforoGlobal,
+    sforoByCategory,
   }
 }
