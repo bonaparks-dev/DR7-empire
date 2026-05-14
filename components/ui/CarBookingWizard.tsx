@@ -78,20 +78,47 @@ function vTypeToDepositCategory(vType: 'UTILITARIA' | 'FURGONE' | 'V_CLASS' | 'S
 // Pick deposit options for a vehicle: prefer the per-category set from
 // admin Centralina, fall back to the legacy flat tier keys when the
 // category override isn't configured.
+//
+// 2026-05-14: aggiunto rawCategory come PRIMA priorita\'. Senza, le
+// categorie nuove create dall'admin in Centralina Pro (es. "Hypercar
+// Elite", "Suv Luxury", ecc.) fallivano lookup perche\' getVehicleType
+// le bucketizza in 4 tipi fissi -> sempre SUPERCAR/cauzione esotic.
+// Ora si controlla direttamente l'id categoria DB; se non c'e\' override
+// specifico, fallback al vType legacy.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function pickDepositOptions(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   configOverlay: any,
   vType: 'UTILITARIA' | 'FURGONE' | 'V_CLASS' | 'SUPERCAR' | undefined,
-  depKey: 'TIER_1_RESIDENT' | 'TIER_2_RESIDENT' | 'TIER_1_NON_RESIDENT' | 'TIER_2_NON_RESIDENT'
+  depKey: 'TIER_1_RESIDENT' | 'TIER_2_RESIDENT' | 'TIER_1_NON_RESIDENT' | 'TIER_2_NON_RESIDENT',
+  rawCategory?: string | null,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any[] {
   const dOpts = configOverlay?.depositOptions
   if (!dOpts) return []
+
+  // PRIORITY 1: raw category id from the vehicle's DB row. Catches
+  // categorie create dall'admin in Centralina Pro che non sono nei
+  // 4 bucket legacy.
+  if (rawCategory && typeof rawCategory === 'string') {
+    const id = rawCategory.toLowerCase().trim()
+    if (id) {
+      // Alias supercars<->exotic per coerenza con configLookup.
+      const aliases = id === 'supercars' ? ['supercars', 'exotic']
+                    : id === 'exotic' ? ['exotic', 'supercars']
+                    : [id]
+      for (const k of aliases) {
+        const byCat = dOpts.byCategory?.[k]
+        const fromCat = byCat?.[depKey]
+        if (Array.isArray(fromCat) && fromCat.length > 0) return fromCat
+      }
+    }
+  }
+
+  // PRIORITY 2: bucketed vType (legacy 4-way mapping). Mantiene il
+  // comportamento storico per veicoli senza categoria DB.
   if (vType) {
     const cat = vTypeToDepositCategory(vType)
-    // Try Pro name first ('supercars'/'urban'/'aziendali'), then legacy DB name
-    // ('exotic') for back-compat.
     const candidates = [cat]
     if (cat === 'supercars') candidates.push('exotic')
     if (cat === 'aziendali') candidates.push('furgone')
@@ -101,6 +128,8 @@ function pickDepositOptions(
       if (Array.isArray(fromCat) && fromCat.length > 0) return fromCat
     }
   }
+
+  // PRIORITY 3: flat tier key (legacy default)
   return dOpts[depKey] || []
 }
 
@@ -515,9 +544,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const activeTier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2';
     const depKey = `${activeTier}_RESIDENT` as 'TIER_1_RESIDENT' | 'TIER_2_RESIDENT';
     const pools = [
-      pickDepositOptions(configOverlay, vehicleType, depKey),
-      pickDepositOptions(configOverlay, vehicleType, 'TIER_2_RESIDENT'),
-      pickDepositOptions(configOverlay, vehicleType, 'TIER_1_RESIDENT'),
+      pickDepositOptions(configOverlay, vehicleType, depKey, (item as any).category),
+      pickDepositOptions(configOverlay, vehicleType, 'TIER_2_RESIDENT', (item as any).category),
+      pickDepositOptions(configOverlay, vehicleType, 'TIER_1_RESIDENT', (item as any).category),
     ].filter(arr => Array.isArray(arr) && arr.length > 0) as Array<Array<{ id?: string; surchargePerDay?: number }>>;
     for (const pool of pools) {
       const hit = pool.find(o => o?.id === 'no_deposit');
@@ -1814,7 +1843,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     let supercarDepositSurcharge = 0;
     if (formData.depositOption) {
       const depositCfgKey = `${activeTierForCalc}_RESIDENT` as 'TIER_1_RESIDENT' | 'TIER_2_RESIDENT';
-      const depOpts = pickDepositOptions(configOverlay, getVehicleType(item, categoryContext), depositCfgKey);
+      const depOpts = pickDepositOptions(configOverlay, getVehicleType(item, categoryContext), depositCfgKey, (item as any).category);
       const selectedDep = depOpts.find((d: { id: string }) => d.id === formData.depositOption);
       if (selectedDep?.surchargePerDay) {
         supercarDepositSurcharge = roundToTwoDecimals(selectedDep.surchargePerDay * billingDaysCalc);
@@ -2039,7 +2068,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // before being shown in the riepilogo or written to the booking.
     const activeTier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2';
     const depositKey = `${activeTier}_RESIDENT`;
-    const depOptions = pickDepositOptions(configOverlay, getVehicleType(item, categoryContext), depositKey as 'TIER_1_RESIDENT' | 'TIER_2_RESIDENT');
+    const depOptions = pickDepositOptions(configOverlay, getVehicleType(item, categoryContext), depositKey as 'TIER_1_RESIDENT' | 'TIER_2_RESIDENT', (item as any).category);
     const selectedDep = depOptions.find(d => d.id === formData.depositOption);
 
     if (selectedDep) {
@@ -4781,7 +4810,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const insuranceOptions = getInsuranceForVehicle(displayVehicleType, activeTier);
         // Deposit options from Centralina Pro (per-category, RESIDENT by default)
         const depositKey = `${activeTier}_RESIDENT` as 'TIER_1_RESIDENT' | 'TIER_2_RESIDENT';
-        const rawDepositOptions = pickDepositOptions(configOverlay, displayVehicleType, depositKey);
+        const rawDepositOptions = pickDepositOptions(configOverlay, displayVehicleType, depositKey, (item as any).category);
         // Ensure "Nessuna cauzione" is always offered as a request for Fascia B as well —
         // Centralina Pro only lists no_deposit for Fascia A, but Fascia B must still be
         // able to submit a request. Borrow the Fascia A config when missing.
@@ -4792,7 +4821,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           // Fascia B (so Fascia B can also request it). NO hardcoded fallback — if Pro
           // hasn't configured it anywhere, the option simply isn't offered and the admin
           // must add it via Centralina Pro > Cauzioni.
-          const fasciaA = pickDepositOptions(configOverlay, displayVehicleType, 'TIER_2_RESIDENT');
+          const fasciaA = pickDepositOptions(configOverlay, displayVehicleType, 'TIER_2_RESIDENT', (item as any).category);
           const fasciaAnoDep = fasciaA.find((o: { id: string }) => o.id === 'no_deposit');
           if (!fasciaAnoDep) return rawDepositOptions;
           return [fasciaAnoDep, ...rawDepositOptions];
@@ -5938,7 +5967,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <span>{`Supplemento cauzione (${(() => {
                         const days = Math.max(1, duration.days);
                         const depositKey = `${(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'}_RESIDENT` as 'TIER_1_RESIDENT' | 'TIER_2_RESIDENT';
-                        const depOpts = pickDepositOptions(configOverlay, vehicleType, depositKey);
+                        const depOpts = pickDepositOptions(configOverlay, vehicleType, depositKey, (item as any).category);
                         const selectedDep = depOpts.find((d: { id: string }) => d.id === formData.depositOption);
                         const perDay = selectedDep?.surchargePerDay || 0;
                         return perDay > 0 ? `${days} gg × €${perDay}` : `${days} gg`;
@@ -6091,7 +6120,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     // €4999) and expects to see what they chose.
                     if (formData.depositOption) {
                       const depKey = `${(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'}_RESIDENT` as 'TIER_1_RESIDENT' | 'TIER_2_RESIDENT';
-                      const opts = pickDepositOptions(configOverlay, vehicleType, depKey);
+                      const opts = pickDepositOptions(configOverlay, vehicleType, depKey, (item as any).category);
                       const opt = opts.find((d: { id: string }) => d.id === formData.depositOption);
                       const optAmount = Number(opt?.amount || 0);
                       const optLabel = opt?.label || formData.depositOption;
