@@ -203,7 +203,22 @@ function getProDayPrice(proConfig: any, category: string | null): number | null 
 
 // Transform database vehicle to expected format
 const transformVehicle = (vehicle: Vehicle, proConfig?: any): TransformedVehicle => {
-  const isAvailable = vehicle.status === 'available';
+  // Status check + auto-reset: se il veicolo e\' 'unavailable' ma
+  // l'admin ha impostato `unavailable_until` nel passato (finestra di
+  // manutenzione gia\' chiusa), lo trattiamo come disponibile. Cosi\'
+  // i veicoli tornano automaticamente prenotabili senza intervento admin.
+  let isAvailable = vehicle.status === 'available';
+  if (!isAvailable && vehicle.status === 'unavailable') {
+    const until = vehicle.metadata?.unavailable_until;
+    if (until) {
+      try {
+        const untilDate = new Date(until);
+        if (!isNaN(untilDate.getTime()) && untilDate < new Date()) {
+          isAvailable = true;
+        }
+      } catch { /* parse failed: lascio non disponibile */ }
+    }
+  }
   // Use metadata.specs if available, otherwise use getVehicleSpecs
   const specs = vehicle.metadata?.specs || getVehicleSpecs(vehicle.display_name);
 

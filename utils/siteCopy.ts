@@ -33,7 +33,12 @@ export interface FaqCopy {
   entries: FaqEntry[];
 }
 
+interface FlottaCopy {
+  visible_category_ids: string[];
+}
+
 interface SiteCopySnapshot {
+  flotta?: FlottaCopy;
   // Stored as either the new FaqCopy object or — for back-compat with the
   // first migration — a raw FaqEntry[]. The getter normalizes both shapes.
   faq?: FaqCopy | FaqEntry[];
@@ -1289,6 +1294,19 @@ async function loadOnce(): Promise<SiteCopySnapshot> {
 void loadOnce();
 
 // ─── Getters ─────────────────────────────────────────────────────────────────
+/**
+ * Restituisce le categorie veicolo che devono apparire sulla pagina pubblica
+ * "La Nostra Flotta". Configurato dall'admin in Sito > Flotta. Se l'array
+ * e\' vuoto o non valorizzato, ritorna null -> il consumatore mostra tutte
+ * le categorie disponibili (comportamento di default).
+ */
+export async function getFlottaVisibleCategoryIds(): Promise<string[] | null> {
+  const snap = await loadOnce();
+  const ids = snap.flotta?.visible_category_ids;
+  if (!Array.isArray(ids) || ids.length === 0) return null;
+  return ids.filter(x => typeof x === 'string' && x.trim().length > 0);
+}
+
 /**
  * Normalize whatever's stored in `snap.faq` (legacy raw array or new
  * FaqCopy object) into the canonical FaqCopy shape. Falls back to the
