@@ -417,6 +417,10 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
   // Fascia A ↔ TIER_2, Fascia B ↔ TIER_1 (convenzione DR7).
   const unlimitedFor = (cat: any, tier: 'TIER_1' | 'TIER_2'): number => {
     if (!cat) return 0
+    // 2026-05-15: rispetta toggle ON/OFF (unlimitedKm_enabled) della
+    // Centralina Pro. Se false → Km Illimitati non disponibili → ritorna 0.
+    // Default true per backwards compat.
+    if (cat.unlimitedKm_enabled === false) return 0
     const mode = cat.unlimitedMode || 'all_tiers'
     if (mode === 'per_fascia' && cat.unlimitedByFascia) {
       const key = tier === 'TIER_2' ? 'A' : 'B'
