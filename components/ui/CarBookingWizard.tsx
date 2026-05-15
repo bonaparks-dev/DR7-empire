@@ -1951,19 +1951,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     let clampHit: 'min' | 'max' | null = null;
     let clampLimitDaily: number | null = null;
 
-    // Clamp the clamp-eligible portion (rental + standard extras) against
-    // BUG FIX 2026-05-15: clamp subtotale RIMOSSA. Il dynamic-pricing
-    // engine (calculate-dynamic-price.ts) gia' applica min/max sulla
-    // daily rate del veicolo, quindi il rate-base che arriva qui e' gia'
-    // dentro [min, max]. La clamp duplicata al livello subtotale creava
-    // due bug:
-    //   1. Quando min > max nella configurazione, max riduceva sotto min
-    //      e min poi rialzava — clampHit finiva 'min' con messaggio
-    //      "Min raggiunto" anche con prezzi sopra il min.
-    //   2. Abbassava preventivi al floor quando il coefficient × subtotale
-    //      cadeva sotto min × days, anche se il subtotale visibile era
-    //      gia' sopra il minimo per la sola componente noleggio.
-    // L'engine fa il giusto: clamp daily rate, extras a listino.
+    // Applica il coefficient combinato al subtotale clamp-eligible.
+    // BUG FIX 2026-05-15: clamp min/max al livello subtotale RIMOSSA.
+    // Il dynamic-pricing engine gia' applica min/max sulla daily rate del
+    // veicolo prima che il base rate arrivi qui — la clamp duplicata qui
+    // creava banner "Min Raggiunto" anche con prezzi sopra il min (es.
+    // 946,99 EUR sopra min 900, ma maxTotal abbassava sotto min, e min
+    // poi rialzava). Adesso applichiamo solo il coefficient, niente clamp.
+    if (hasDynamicDiscount) {
+      const afterCoeffNoExp = subtotalNoExperience * combinedCoeff;
+      calculatedSubtotal = roundToTwoDecimals(afterCoeffNoExp + calculatedExperienceCost + locationFees);
+    }
 
     const calculatedTaxes = 0;
     const calculatedTotal = calculatedSubtotal;
