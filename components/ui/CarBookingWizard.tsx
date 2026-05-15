@@ -1952,25 +1952,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     let clampLimitDaily: number | null = null;
 
     // Clamp the clamp-eligible portion (rental + standard extras) against
-    // the per-vehicle daily min/max from Centralina Pro. Experience and
-    // location fees stay at LIST PRICE — no coefficient, no clamp.
-    //
-    // IMPORTANT: il clamp deve scattare anche in modalita' "suggestion"
-    // (default) o quando i coefficienti dinamici risultano 1.0. Min/Max
-    // sono un pavimento/tetto per veicolo configurato da direzione e devono
-    // SEMPRE valere se settati — altrimenti BMW M8 con Min €350 puo'
-    // produrre preventivi da €315 (bug 2026-05-15).
-    const minDaily = typeof dynamicPricing?.minPrice === 'number' ? dynamicPricing.minPrice : null;
-    const maxDaily = typeof dynamicPricing?.maxPrice === 'number' ? dynamicPricing.maxPrice : null;
-    if (minDaily != null || maxDaily != null) {
-      const daysForClamp = Math.max(1, billingDaysCalc);
-      const maxTotal = maxDaily != null ? maxDaily * daysForClamp : null;
-      const minTotal = minDaily != null ? minDaily * daysForClamp : null;
-      let afterCoeffNoExp = subtotalNoExperience * combinedCoeff;
-      if (maxTotal != null && afterCoeffNoExp > maxTotal) { afterCoeffNoExp = maxTotal; clampHit = 'max'; clampLimitDaily = maxDaily; }
-      if (minTotal != null && afterCoeffNoExp < minTotal) { afterCoeffNoExp = minTotal; clampHit = 'min'; clampLimitDaily = minDaily; }
-      calculatedSubtotal = roundToTwoDecimals(afterCoeffNoExp + calculatedExperienceCost + locationFees);
-    }
+    // BUG FIX 2026-05-15: clamp subtotale RIMOSSA. Il dynamic-pricing
+    // engine (calculate-dynamic-price.ts) gia' applica min/max sulla
+    // daily rate del veicolo, quindi il rate-base che arriva qui e' gia'
+    // dentro [min, max]. La clamp duplicata al livello subtotale creava
+    // due bug:
+    //   1. Quando min > max nella configurazione, max riduceva sotto min
+    //      e min poi rialzava — clampHit finiva 'min' con messaggio
+    //      "Min raggiunto" anche con prezzi sopra il min.
+    //   2. Abbassava preventivi al floor quando il coefficient × subtotale
+    //      cadeva sotto min × days, anche se il subtotale visibile era
+    //      gia' sopra il minimo per la sola componente noleggio.
+    // L'engine fa il giusto: clamp daily rate, extras a listino.
 
     const calculatedTaxes = 0;
     const calculatedTotal = calculatedSubtotal;
