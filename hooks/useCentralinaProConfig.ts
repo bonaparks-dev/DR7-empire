@@ -262,7 +262,9 @@ const DEFAULT_COVERAGE = 'RCA - Furto (solo in caso di restituzione chiave, altr
 
 function toInsuranceOpts(arr: ProInsuranceOption[] | undefined): InsuranceTierOption[] {
   if (!arr) return []
-  return arr.map(o => {
+  // 2026-05-15: filtra opzioni con is_active === false (toggle ON/OFF
+  // Centralina Pro). Default true per backwards compat.
+  return arr.filter(o => (o as { is_active?: boolean }).is_active !== false).map(o => {
     const fixed = num(o.deductible_fixed, 0)
     const percent = num(o.deductible_percent, 0)
     const deductibleParts: string[] = []
@@ -289,12 +291,16 @@ function pickInsuranceForFascia(cat: ProInsuranceCategory | undefined, fasciaId:
 
 function toDepositOpts(arr: ProDepositOption[] | undefined): DepositOption[] {
   if (!arr) return []
-  return arr.map(o => ({
-    id: o.id || o.label,
-    label: o.label,
-    amount: num(o.amount, 0),
-    surchargePerDay: num(o.surcharge_per_day, 0) || undefined,
-  }))
+  // 2026-05-15: filtra opzioni con is_active === false (toggle ON/OFF
+  // in Centralina Pro). Default true per backwards compat.
+  return arr
+    .filter(o => (o as { is_active?: boolean }).is_active !== false)
+    .map(o => ({
+      id: o.id || o.label,
+      label: o.label,
+      amount: num(o.amount, 0),
+      surchargePerDay: num(o.surcharge_per_day, 0) || undefined,
+    }))
 }
 
 // ── Adapters ───────────────────────────────────────────────────────
