@@ -604,21 +604,26 @@ export const handler: Handler = async (event) => {
     // Formula
     let rawDailyRate = selectedBaseRateEur * occCoeff * advCoeff * durCoeff * seasonCoeff * gapCoeff * dayTypeCoeff * vehOccCoeff * promoCoeff
 
-    // Min/Max clamp — per-vehicle UUID → category:X (Pro) → X bare (legacy)
-    // Permette al fallback per-categoria di funzionare anche se la chiave
-    // salvata non ha il prefisso "category:".
+    // Min/Max clamp — leggiamo SOLO i prezzi visibili nell'UI Centralina Pro:
+    // (1) per-veicolo (UUID) e (2) category:<id> (formato Pro). NON cadiamo
+    // piu' sui bare key 'supercars'/'urban'/'aziendali' (legacy) — quelli
+    // erano dati stale invisibili nell'UI e clampavano i veicoli con MAX
+    // vuoto al loro insaputa. Empty string trattato come "non settato".
     const cat = String(vehicleCategory || '').toLowerCase()
     const aliases = cat === 'supercars' ? ['supercars', 'exotic']
       : cat === 'exotic' ? ['exotic', 'supercars']
       : cat ? [cat] : []
+    const isValidPrice = (v: unknown): v is number => {
+      if (v == null || v === '') return false
+      const n = Number(v)
+      return Number.isFinite(n) && n > 0
+    }
     const pickPrice = (table: Record<string, number>): number | null => {
       const v = table[vehicle.id]
-      if (v != null) return v
+      if (isValidPrice(v)) return Number(v)
       for (const a of aliases) {
         const fromPrefixed = table[`category:${a}`]
-        if (fromPrefixed != null) return fromPrefixed
-        const fromBare = table[a]
-        if (fromBare != null) return fromBare
+        if (isValidPrice(fromPrefixed)) return Number(fromPrefixed)
       }
       return null
     }
