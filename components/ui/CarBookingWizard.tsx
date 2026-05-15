@@ -1951,12 +1951,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     let clampHit: 'min' | 'max' | null = null;
     let clampLimitDaily: number | null = null;
 
-    if (hasDynamicCoeffs) {
-      // Clamp the clamp-eligible portion (rental + standard extras) against
-      // the per-vehicle daily min/max from Centralina Pro. Experience and
-      // location fees stay at LIST PRICE — no coefficient, no clamp.
-      const minDaily = typeof dynamicPricing?.minPrice === 'number' ? dynamicPricing.minPrice : null;
-      const maxDaily = typeof dynamicPricing?.maxPrice === 'number' ? dynamicPricing.maxPrice : null;
+    // Clamp the clamp-eligible portion (rental + standard extras) against
+    // the per-vehicle daily min/max from Centralina Pro. Experience and
+    // location fees stay at LIST PRICE — no coefficient, no clamp.
+    //
+    // IMPORTANT: il clamp deve scattare anche in modalita' "suggestion"
+    // (default) o quando i coefficienti dinamici risultano 1.0. Min/Max
+    // sono un pavimento/tetto per veicolo configurato da direzione e devono
+    // SEMPRE valere se settati — altrimenti BMW M8 con Min €350 puo'
+    // produrre preventivi da €315 (bug 2026-05-15).
+    const minDaily = typeof dynamicPricing?.minPrice === 'number' ? dynamicPricing.minPrice : null;
+    const maxDaily = typeof dynamicPricing?.maxPrice === 'number' ? dynamicPricing.maxPrice : null;
+    if (minDaily != null || maxDaily != null) {
       const daysForClamp = Math.max(1, billingDaysCalc);
       const maxTotal = maxDaily != null ? maxDaily * daysForClamp : null;
       const minTotal = minDaily != null ? minDaily * daysForClamp : null;
