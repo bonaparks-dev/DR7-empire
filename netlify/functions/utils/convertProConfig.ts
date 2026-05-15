@@ -63,6 +63,9 @@ export function convertProToLegacy(pro: any): any {
 
   // Insurance
   if (pro.insurance) {
+    // 2026-05-15: filtra opzioni con is_active === false (toggle ON/OFF
+    // in Centralina Pro). Default true per backwards compat.
+    const isActive = (o: any) => o.is_active !== false
     for (const catIns of pro.insurance) {
       const dbCat = PRO_TO_DB[catIns.id] || catIns.id
       const conv: any = {}
@@ -70,10 +73,10 @@ export function convertProToLegacy(pro: any): any {
 
       if (catIns.mode === 'per_fascia' && catIns.byFascia) {
         for (const [fId, opts] of Object.entries(catIns.byFascia)) {
-          conv[PRO_TO_TIER[fId] || fId] = (opts as any[]).map(mapOpt)
+          conv[PRO_TO_TIER[fId] || fId] = (opts as any[]).filter(isActive).map(mapOpt)
         }
       } else if (catIns.all) {
-        conv._all_tiers = catIns.all.map(mapOpt)
+        conv._all_tiers = catIns.all.filter(isActive).map(mapOpt)
       }
       config.insurance[dbCat] = conv
     }
@@ -94,9 +97,13 @@ export function convertProToLegacy(pro: any): any {
 
       if (num(kmCfg.sforo) > 0) config.sforo_km.category[dbCat] = num(kmCfg.sforo)
 
+      // 2026-05-15: toggle ON/OFF per categoria. Quando unlimitedKm_enabled
+      // === false l'opzione "Km illimitati" non viene esposta al website.
+      // Default true per backwards compat.
+      const unlimitedEnabled = (kmCfg as { unlimitedKm_enabled?: boolean }).unlimitedKm_enabled !== false
       // Km illimitati: per_fascia (A→TIER_2, B→TIER_1) or all_tiers fallback.
       const unlMode = kmCfg.unlimitedMode || 'all_tiers'
-      if (unlMode === 'per_fascia' && kmCfg.unlimitedByFascia) {
+      if (unlimitedEnabled && unlMode === 'per_fascia' && kmCfg.unlimitedByFascia) {
         const faA = num(kmCfg.unlimitedByFascia.A)
         const faB = num(kmCfg.unlimitedByFascia.B)
         const entry: Record<string, { per_day: number }> = {}
@@ -105,7 +112,7 @@ export function convertProToLegacy(pro: any): any {
         if (Object.keys(entry).length > 0) {
           config.unlimited_km[dbCat] = entry
         }
-      } else if (num(kmCfg.unlimitedPerDay) > 0) {
+      } else if (unlimitedEnabled && num(kmCfg.unlimitedPerDay) > 0) {
         config.unlimited_km[dbCat] = { _all_tiers: { per_day: num(kmCfg.unlimitedPerDay) } }
       }
     }
@@ -120,13 +127,16 @@ export function convertProToLegacy(pro: any): any {
   // Detection: outermost values that look like { residente, non_residente }
   // mean OLD shape; otherwise it's the NEW per-category shape.
   if (pro.deposits) {
+    // 2026-05-15: filtra opzioni con is_active === false (toggle ON/OFF
+    // Centralina Pro). Default true per backwards compat.
+    const isActive = (o: any) => o.is_active !== false
     const mapDep = (o: any) => ({ id: o.id, label: o.label, amount: num(o.amount), surcharge_per_day: num(o.surcharge_per_day) })
     const fillTierKeys = (out: any, byFascia: any) => {
       for (const [fId, fd] of Object.entries((byFascia || {}) as Record<string, any>)) {
         const tier = PRO_TO_TIER[fId]
         if (!tier) continue
-        out[`${tier}_RESIDENT`] = (fd.residente || []).map(mapDep)
-        out[`${tier}_NON_RESIDENT`] = (fd.non_residente || []).map(mapDep)
+        out[`${tier}_RESIDENT`] = (fd.residente || []).filter(isActive).map(mapDep)
+        out[`${tier}_NON_RESIDENT`] = (fd.non_residente || []).filter(isActive).map(mapDep)
       }
     }
     const firstVal = Object.values(pro.deposits as Record<string, any>)[0]
