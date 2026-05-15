@@ -1951,17 +1951,28 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     let clampHit: 'min' | 'max' | null = null;
     let clampLimitDaily: number | null = null;
 
-    // Applica il coefficient combinato al subtotale clamp-eligible.
-    // BUG FIX 2026-05-15: clamp min/max al livello subtotale RIMOSSA.
-    // Il dynamic-pricing engine gia' applica min/max sulla daily rate del
-    // veicolo prima che il base rate arrivi qui — la clamp duplicata qui
-    // creava banner "Min Raggiunto" anche con prezzi sopra il min (es.
-    // 946,99 EUR sopra min 900, ma maxTotal abbassava sotto min, e min
-    // poi rialzava). Adesso applichiamo solo il coefficient, niente clamp.
-    if (hasDynamicDiscount) {
-      const afterCoeffNoExp = subtotalNoExperience * combinedCoeff;
-      calculatedSubtotal = roundToTwoDecimals(afterCoeffNoExp + calculatedExperienceCost + locationFees);
+    // Applica il coefficient + clamp min/max al subtotale clamp-eligible.
+    // BUG FIX 2026-05-15: usa ELSE IF cosi' UNA SOLA clamp fa fire per render.
+    // Prima entrambe giravano in sequenza: max abbassava sotto min, poi min
+    // rialzava → clampHit finiva 'min' (LABEL SBAGLIATA: messaggio "Min
+    // Raggiunto" mentre in realta' era max ad aver tagliato il prezzo).
+    // Adesso: solo una clamp/banner, label corretta.
+    const minDaily = typeof dynamicPricing?.minPrice === 'number' ? dynamicPricing.minPrice : null;
+    const maxDaily = typeof dynamicPricing?.maxPrice === 'number' ? dynamicPricing.maxPrice : null;
+    const daysForClamp = Math.max(1, billingDaysCalc);
+    const maxTotal = maxDaily != null ? maxDaily * daysForClamp : null;
+    const minTotal = minDaily != null ? minDaily * daysForClamp : null;
+    let afterCoeffNoExp = subtotalNoExperience * combinedCoeff;
+    if (maxTotal != null && afterCoeffNoExp > maxTotal + 0.5) {
+      afterCoeffNoExp = maxTotal;
+      clampHit = 'max';
+      clampLimitDaily = maxDaily;
+    } else if (minTotal != null && afterCoeffNoExp < minTotal - 0.5) {
+      afterCoeffNoExp = minTotal;
+      clampHit = 'min';
+      clampLimitDaily = minDaily;
     }
+    calculatedSubtotal = roundToTwoDecimals(afterCoeffNoExp + calculatedExperienceCost + locationFees);
 
     const calculatedTaxes = 0;
     const calculatedTotal = calculatedSubtotal;
