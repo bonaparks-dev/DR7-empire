@@ -3199,6 +3199,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   // ── SAVE PREVENTIVO (quote) instead of booking ──
   const handleSavePreventivo = async () => {
     if (!user || !item || isSavingPreventivo) return;
+    // Guard: bloccare il save se nessuna assicurazione e' selezionata
+    // (cosi' non finisce nessun preventivo con "N/A" salvato). Il wizard
+    // ha gia' un default 'KASKO_BASE' su mount, quindi questo guard
+    // scatta solo se qualcosa azzera lo stato.
+    if (!formData.insuranceOption) {
+      alert('Seleziona un\'assicurazione prima di salvare il preventivo.');
+      return;
+    }
     setIsSavingPreventivo(true);
     try {
       const pickupISO = `${formData.pickupDate}T${formData.pickupTime || '10:30'}:00`;
@@ -3208,9 +3216,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // Risolvi label assicurazione al salvataggio cosi' MyPreventivi
       // non deve piu' indovinarla via overlay (e funziona anche per categorie
       // custom).
-      const insOptId = formData.insuranceOption || ''
+      const insOptId = formData.insuranceOption
       const insLabel = (() => {
-        if (!insOptId) return ''
         const vType = getVehicleType(item, categoryContext)
         const activeTier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'
         const opts = getInsuranceForVehicle(vType, activeTier)

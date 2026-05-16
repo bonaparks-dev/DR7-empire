@@ -48,34 +48,35 @@ const handler: Handler = async (event) => {
     // Maggio 2026: regressione copy-paste fra payload booking e
     // payload preventivo. Da quel momento questa validazione e' la
     // rete di sicurezza.
-    // Validazione critica (rifiuta solo se mancano campi indispensabili).
-    const hardRequired: Array<{ key: string; label: string }> = [
-      { key: 'vehicle_id',      label: 'vehicle_id' },
-      { key: 'vehicle_name',    label: 'vehicle_name' },
-      { key: 'pickup_date',     label: 'pickup_date' },
-      { key: 'dropoff_date',    label: 'dropoff_date' },
+    // Validazione: tutti i campi indispensabili devono arrivare. Nessun
+    // soft fallback su insurance_option — salvare un default sbagliato
+    // sarebbe peggio che bloccare il save (rischio: cliente ha scelto
+    // Kasko Black ma in preventivo appare Kasko Base). Se la validazione
+    // morde, e' perche' il browser ha JS cache stale: hard refresh basta.
+    const required: Array<{ key: string; label: string }> = [
+      { key: 'vehicle_id',       label: 'vehicle_id' },
+      { key: 'vehicle_name',     label: 'vehicle_name' },
+      { key: 'pickup_date',      label: 'pickup_date' },
+      { key: 'dropoff_date',     label: 'dropoff_date' },
+      { key: 'insurance_option', label: 'insurance_option' },
     ]
-    const hardMissing = hardRequired.filter(f => {
+    const missing = required.filter(f => {
       const v = (body as Record<string, unknown>)[f.key]
       return v === undefined || v === null || v === ''
     })
-    if (hardMissing.length > 0) {
-      console.error('[create-website-preventivo] payload missing fields:', hardMissing.map(f => f.label).join(', '), 'body=', JSON.stringify(body).slice(0, 800))
+    if (missing.length > 0) {
+      console.error('[create-website-preventivo] payload missing fields:', missing.map(f => f.label).join(', '), 'body=', JSON.stringify(body).slice(0, 800))
+      const msg = missing.some(f => f.label === 'insurance_option')
+        ? 'Aggiornamento richiesto: ricarica la pagina (Cmd+Shift+R) e riprova. Se persiste, verifica di aver selezionato un\'assicurazione.'
+        : `Preventivo incompleto: campi mancanti [${missing.map(f => f.label).join(', ')}]`
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({
-          error: `Preventivo incompleto: campi mancanti [${hardMissing.map(f => f.label).join(', ')}]`,
-          missing: hardMissing.map(f => f.label),
+          error: msg,
+          missing: missing.map(f => f.label),
         }),
       }
-    }
-    // Soft fallback: se insurance_option manca, defaulta a KASKO_BASE
-    // (default del wizard) e logga un warning per indagare la causa nel
-    // front-end senza bloccare il salvataggio del cliente.
-    if (!body.insurance_option) {
-      console.warn('[create-website-preventivo] insurance_option vuoto — default a KASKO_BASE. Body=', JSON.stringify(body).slice(0, 800))
-      body.insurance_option = 'KASKO_BASE'
     }
 
     // Look up customer in customers_extended by auth user_id
