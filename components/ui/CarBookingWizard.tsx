@@ -6076,7 +6076,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {/* KM package */}
                   {kmPackageCost > 0 && (
                     <div className="flex justify-between">
-                      <span>Km illimitati ({Math.max(1, duration.days)} gg × €{(driverTier === 'TIER_1' || driverTier === 'TIER_2') ? ACTIVE_TIER_PRICING[driverTier].unlimitedKmPerDay : ACTIVE_TIER_PRICING.TIER_2.unlimitedKmPerDay})</span>
+                      {/* Per-day label DERIVATO dal costo totale (kmPackageCost / giorni).
+                          Prima leggeva ACTIVE_TIER_PRICING[driverTier].unlimitedKmPerDay
+                          (hardcoded fascia A/B) e mostrava un prezzo unitario
+                          incoerente con il totale: es. "1 gg × €2500 = €1000".
+                          Il totale vero viene da Centralina Pro; la label ora
+                          riflette quella stessa fonte dividendo per i giorni. */}
+                      <span>Km illimitati ({Math.max(1, duration.days)} gg × €{(kmPackageCost / Math.max(1, duration.days)).toFixed(2)})</span>
                       <span>{formatPrice(kmPackageCost)}</span>
                     </div>
                   )}
