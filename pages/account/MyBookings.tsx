@@ -10,6 +10,51 @@ import { addCredits, deductCredits, getUserCreditBalance } from '../../utils/cre
 import { PICKUP_LOCATIONS as DEFAULT_PICKUP_LOCATIONS, RETURN_LOCATIONS as DEFAULT_RETURN_LOCATIONS } from '../../constants';
 import { getPickupLocations, getReturnLocations } from '../../utils/getLocations';
 
+/**
+ * Detect DR7 Flex on a booking — supports BOTH the legacy boolean shape
+ * (booking_details.dr7_flex / dr7Flex / extras.dr7_flex) AND the new
+ * Experience Services shape (booking_details.experience_services as a
+ * map of {serviceId: quantity}). When DR7 Flex was migrated into the
+ * extras catalog (May 2026), the legacy boolean stopped being set;
+ * customers who added DR7 Flex via "Aggiungi" weren't recognized as
+ * Flex by canCancel(), so they couldn't cancel within the standard
+ * 5-day window even though they had paid for the premium policy.
+ *
+ * Matches any service id containing both "dr7" and "flex", or any id
+ * matching exactly common variants. Case-insensitive.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function detectDr7Flex(bd: any): boolean {
+  if (!bd) return false;
+  // Legacy boolean shapes
+  if (bd.dr7Flex === true || bd.dr7Flex === 'true') return true;
+  if (bd.dr7_flex === true || bd.dr7_flex === 'true') return true;
+  if (bd.extras?.dr7_flex === true || bd.extras?.dr7_flex === 'true') return true;
+  // New experience services map
+  const isDr7FlexId = (id: string): boolean => {
+    const k = String(id || '').toLowerCase().trim();
+    if (!k) return false;
+    if (k === 'dr7_flex' || k === 'dr7-flex' || k === 'dr7flex') return true;
+    return k.includes('dr7') && k.includes('flex');
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const checkMap = (m: any): boolean => {
+    if (!m || typeof m !== 'object') return false;
+    for (const [id, qty] of Object.entries(m)) {
+      if (!isDr7FlexId(id)) continue;
+      // qty stored as number (quantity) or boolean; either > 0 / truthy counts as active.
+      if (typeof qty === 'number' && qty > 0) return true;
+      if (qty === true) return true;
+      if (typeof qty === 'string' && qty !== '0' && qty !== '' && qty !== 'false') return true;
+    }
+    return false;
+  };
+  if (checkMap(bd.experience_services)) return true;
+  if (checkMap(bd.selectedExperiences)) return true;
+  if (checkMap(bd.experiences)) return true;
+  return false;
+}
+
 interface Booking {
   id: string;
   service_type: 'car_rental' | 'car_wash';
@@ -157,7 +202,7 @@ const MyBookings = () => {
 
   const getCancelPolicy = (booking: Booking): { canCancel: boolean; hasFlex: boolean; refundPercent: number; penaltyPercent: number; refundMethod: 'wallet' | 'card'; message: string } => {
     const bd = booking.booking_details || {};
-    const hasDr7Flex = bd.dr7Flex === true || bd.dr7Flex === 'true' || bd.dr7_flex === true || bd.dr7_flex === 'true' || bd.extras?.dr7_flex === true || bd.extras?.dr7_flex === 'true';
+    const hasDr7Flex = detectDr7Flex(bd);
     const hasPrimeFlex = booking.booking_details?.prime_flex === true || booking.booking_details?.prime_flex === 'true';
     const isElite = !!getMembershipTierName(user);
     const dateStr = booking.service_type === 'car_wash'
@@ -249,7 +294,7 @@ const MyBookings = () => {
     //   - customer has an active DR7 Club membership (Argento/Oro/Platino/DR7 Club — treated as "Elite" here)
     const bd = booking.booking_details || {};
     const hasPrimeFlex = bd.prime_flex === true || bd.prime_flex === 'true';
-    const hasDr7Flex = bd.dr7Flex === true || bd.dr7Flex === 'true' || bd.dr7_flex === true || bd.dr7_flex === 'true' || bd.extras?.dr7_flex === true || bd.extras?.dr7_flex === 'true';
+    const hasDr7Flex = detectDr7Flex(bd);
     const isElite = !!getMembershipTierName(user);
     if (!hasPrimeFlex && !hasDr7Flex && !isElite) return false;
 

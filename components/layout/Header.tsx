@@ -306,6 +306,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void; copy: Hea
                 className="fixed inset-0 z-[300] bg-black/90 flex items-center justify-center p-4"
                 onMouseDown={(e) => { if (e.target === e.currentTarget) setShowBookingPopup(false); }}
                 data-prenota-ora-manual="true"
+              >
                 <motion.div
                   initial={{ scale: 0.96, opacity: 0, y: 10 }}
                   animate={{ scale: 1, opacity: 1, y: 0 }}
