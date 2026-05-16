@@ -897,6 +897,12 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
           dr7Flex: preventivo.extras_detail?.flex || preventivo.extras_detail?.include_dr7_flex || false,
           secondDriver: preventivo.extras_detail?.include_second_driver || false,
           experienceServices: preventivo.extras_detail?.experience_services || {},
+          // Pacchetti KM (es. "Pacchetto 300 km"): ripristinati esattamente
+          // come scelti al momento del preventivo. Senza questi due campi il
+          // cliente che torna sul wizard cliccando "Prenota Ora" vede solo
+          // 100 km o Illimitati e perde la scelta originale.
+          kmPackageType: preventivo.extras_detail?.kmPackageType || undefined,
+          kmPackages: preventivo.extras_detail?.kmPackages || undefined,
           preventivoId: preventivo.id,
           preventivoTotal: preventivo.total_final,
           discountCode: preventivoCodeParam || undefined,

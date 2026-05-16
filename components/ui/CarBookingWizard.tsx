@@ -433,6 +433,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       ...(initialSearchDates.insuranceOption ? { insuranceOption: initialSearchDates.insuranceOption } : {}),
       ...(initialSearchDates.depositOption ? { depositOption: initialSearchDates.depositOption } : {}),
       ...(initialSearchDates.unlimitedKm ? { kmPackageType: 'unlimited' as const } : {}),
+      // Pacchetti KM ripristinati dal preventivo. Se kmPackages e' un oggetto
+      // con almeno una qty > 0, il wizard pre-seleziona quei pacchetti (es.
+      // Pacchetto 300 km). kmPackageType viene allineato a 'none' quando ci
+      // sono pacchetti specifici (mutuamente esclusivo con 'unlimited').
+      ...(initialSearchDates.kmPackages && Object.values(initialSearchDates.kmPackages).some(q => (q || 0) > 0)
+        ? { kmPackages: initialSearchDates.kmPackages, kmPackageType: 'none' as const }
+        : {}),
+      ...(initialSearchDates.kmPackageType && !initialSearchDates.unlimitedKm
+        ? { kmPackageType: initialSearchDates.kmPackageType }
+        : {}),
       ...(initialSearchDates.dr7Flex ? { dr7Flex: true } : {}),
       ...(initialSearchDates.secondDriver ? { addSecondDriver: true } : {}),
       ...(initialSearchDates.experienceServices ? { selectedExperiences: initialSearchDates.experienceServices } : {}),
@@ -3367,6 +3377,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           experience_services: formData.experienceServices,
           flex: formData.dr7Flex,
           wash_upsell: formData.washUpsellAccepted,
+          // Salviamo la scelta esatta dei pacchetti km (es. Pacchetto 300 km)
+          // cosi' su Prenota Ora il wizard la ripristina. Senza questi due
+          // campi il cliente vedeva solo "100 km" o "Illimitati" al ritorno
+          // sul wizard (bug 2026-05-16, preventivo Porsche 911 cabrio).
+          kmPackageType: formData.kmPackageType,
+          kmPackages: formData.kmPackages,
         },
         notes: noCauzioneRequested ? 'Richiesta formula senza cauzione' : '',
         no_cauzione_request: noCauzioneRequested && formData.depositOption === 'no_deposit',

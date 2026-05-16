@@ -33,6 +33,11 @@ export interface SearchDates {
   dr7Flex?: boolean;
   secondDriver?: boolean;
   experienceServices?: Record<string, number>;
+  // Pacchetti KM ripristinati dal preventivo (es. Pacchetto 300 km).
+  // kmPackageType e' la modalita' selezionata ('none' | 'unlimited' | '50km' | <pkgId>);
+  // kmPackages e' la mappa { [pkgId]: qty } per i pacchetti acquistabili.
+  kmPackageType?: string;
+  kmPackages?: Record<string, number>;
   preventivoId?: string;
   preventivoTotal?: number;
 }
