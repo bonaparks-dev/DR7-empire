@@ -604,11 +604,11 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
         const sconto = num(p.sconto_pct, 0)
         const price = Math.round((km * s * (1 - sconto / 100)) * 100) / 100
         const label = String(p.label || '').trim() || `Pacchetto ${km} km`
-        // 2026-05-16: default is_quantity_buyable=true per pacchetti >=300 km
-        // (richiesta utente: 300 km deve avere il + per arrivare a 2 senza che
-        // l'admin debba spuntare ogni volta la checkbox). 100/200 restano si/no.
-        const isQty = p.is_quantity_buyable === true || (p.is_quantity_buyable === undefined && km >= 300)
-        const maxQ = isQty ? Math.max(1, num(p.max_quantity, 2) || 2) : 1
+        // 2026-05-16: pacchetti >=300 km SEMPRE quantity-buyable (richiesta
+        // utente: 300 km deve avere il + per arrivare a 2 sul wizard).
+        // 100/200 restano si/no di default (toggle admin opzionale).
+        const isQty = km >= 300 || p.is_quantity_buyable === true
+        const maxQ = isQty ? Math.max(2, num(p.max_quantity, 2) || 2) : 1
         return { id: String(p.id), km, sconto_pct: sconto, price, label, is_quantity_buyable: isQty, max_quantity: maxQ }
       })
       .filter(p => p.km > 0)
