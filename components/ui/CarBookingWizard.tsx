@@ -5933,15 +5933,22 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                                   : rawCat === 'exotic' ? ['exotic', 'supercars']
                                   : [rawCat]
                     let label = 'Pacchetto KM'
+                    let pkgKm = 0
                     if (byCat) {
                       for (const k of aliases) {
                         const found = (byCat[k] || []).find((p: any) => p.id === pkgId)
-                        if (found) { label = `${found.label} (${found.km} km)`; break }
+                        if (found) { label = `${found.label} (${found.km} km)`; pkgKm = found.km; break }
                       }
                     }
+                    // includedKm = base + pkgKm (sum), so subtract pkgKm
+                    // to recover base for the display ("80 km inclusi").
+                    const baseIncludedKm = Math.max(0, includedKm - pkgKm)
                     return (
                       <>
-                        {includedLine}
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Chilometri</span>
+                          <span className="text-white">{baseIncludedKm} km inclusi</span>
+                        </div>
                         <div className="flex justify-between"><span className="text-gray-400">{label}</span><span className="text-white">{formatPrice(kmPackageCost)}</span></div>
                       </>
                     )
@@ -6257,15 +6264,20 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                                     : rawCat === 'exotic' ? ['exotic', 'supercars']
                                     : [rawCat]
                       let label = 'Pacchetto KM'
+                      let pkgKm = 0
                       if (byCat) {
                         for (const k of aliases) {
                           const found = (byCat[k] || []).find((p: any) => p.id === pkgId)
-                          if (found) { label = `${found.label} (${found.km} km)`; break }
+                          if (found) { label = `${found.label} (${found.km} km)`; pkgKm = found.km; break }
                         }
                       }
+                      const baseIncludedKm = Math.max(0, includedKm - pkgKm)
                       return (
                         <>
-                          {includedLine}
+                          <div className="flex justify-between">
+                            <span>Km inclusi nel noleggio</span>
+                            <span>{baseIncludedKm} km</span>
+                          </div>
                           <div className="flex justify-between">
                             <span>{label}</span>
                             <span>{formatPrice(kmPackageCost)}</span>
