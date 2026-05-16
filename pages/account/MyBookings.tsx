@@ -962,10 +962,23 @@ const MyBookings = () => {
                                 if (!raw) return 'N/A';
                                 // 2) Look up the name in Centralina Pro insurance pools
                                 if (proOverlay) {
-                                  const pools = [
+                                  const pools: Array<Array<{ id?: string; name?: string }>> = [
                                     proOverlay.insuranceTier1, proOverlay.insuranceTier2,
                                     proOverlay.urbanInsurance, proOverlay.utilitaireInsurance, proOverlay.furgoneInsurance,
                                   ].filter(Array.isArray) as Array<Array<{ id?: string; name?: string }>>;
+                                  // ALSO iterate the per-category map (Hypercar Elitè / Suv Luxury
+                                  // / Supercar Pro / qualsiasi categoria custom da Centralina Pro).
+                                  // Prima della fix, le prenotazioni di queste categorie nuove
+                                  // mostravano "N/A" perche' i loro id assicurazione non erano
+                                  // nei 4 bucket legacy.
+                                  if (proOverlay.insuranceByCategory) {
+                                    for (const bucket of Object.values(proOverlay.insuranceByCategory)) {
+                                      if (!bucket) continue;
+                                      if (Array.isArray(bucket.TIER_1)) pools.push(bucket.TIER_1);
+                                      if (Array.isArray(bucket.TIER_2)) pools.push(bucket.TIER_2);
+                                      if (Array.isArray(bucket._all_tiers)) pools.push(bucket._all_tiers);
+                                    }
+                                  }
                                   for (const pool of pools) {
                                     const hit = pool.find(o => o?.id === raw);
                                     if (hit?.name) return hit.name;
@@ -991,12 +1004,22 @@ const MyBookings = () => {
                                 // Label from Centralina Pro (single source of truth for labels)
                                 let label: string | undefined;
                                 if (dep && proOverlay?.depositOptions) {
-                                  const pools = [
+                                  const pools: Array<Array<{ id?: string; label?: string }>> = [
                                     proOverlay.depositOptions.TIER_1_RESIDENT,
                                     proOverlay.depositOptions.TIER_2_RESIDENT,
                                     proOverlay.depositOptions.TIER_1_NON_RESIDENT,
                                     proOverlay.depositOptions.TIER_2_NON_RESIDENT,
                                   ].filter(Array.isArray) as Array<Array<{ id?: string; label?: string }>>;
+                                  // Per-category deposits (Hypercar Elitè / Suv Luxury / ecc.)
+                                  if (proOverlay.depositOptions.byCategory) {
+                                    for (const bucket of Object.values(proOverlay.depositOptions.byCategory)) {
+                                      if (!bucket) continue;
+                                      if (Array.isArray(bucket.TIER_1_RESIDENT)) pools.push(bucket.TIER_1_RESIDENT);
+                                      if (Array.isArray(bucket.TIER_2_RESIDENT)) pools.push(bucket.TIER_2_RESIDENT);
+                                      if (Array.isArray(bucket.TIER_1_NON_RESIDENT)) pools.push(bucket.TIER_1_NON_RESIDENT);
+                                      if (Array.isArray(bucket.TIER_2_NON_RESIDENT)) pools.push(bucket.TIER_2_NON_RESIDENT);
+                                    }
+                                  }
                                   for (const pool of pools) {
                                     const hit = pool.find(o => o?.id === dep);
                                     if (hit?.label) { label = hit.label; break; }
