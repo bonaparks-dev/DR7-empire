@@ -3378,9 +3378,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           flex: formData.dr7Flex,
           wash_upsell: formData.washUpsellAccepted,
           // Salviamo la scelta esatta dei pacchetti km (es. Pacchetto 300 km)
-          // cosi' su Prenota Ora il wizard la ripristina. Senza questi due
-          // campi il cliente vedeva solo "100 km" o "Illimitati" al ritorno
-          // sul wizard (bug 2026-05-16, preventivo Porsche 911 cabrio).
+          // cosi' su Prenota Ora il wizard la ripristina E l'admin la vede
+          // nella legenda del preventivo. Snake_case per essere consistenti
+          // con il resto dello schema admin (extras.km_packages e' la chiave
+          // letta da PreventiviTab + dai template Pro {km_package}).
+          km_package_type: formData.kmPackageType,
+          km_packages: formData.kmPackages,
+          // Alias camelCase per backwards compat — i preventivi vecchi salvati
+          // con questi nomi continuano a essere letti.
           kmPackageType: formData.kmPackageType,
           kmPackages: formData.kmPackages,
         },
