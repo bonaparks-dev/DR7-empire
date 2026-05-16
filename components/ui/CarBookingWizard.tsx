@@ -365,7 +365,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       insuranceOption: 'KASKO_BASE', // Default to Kasko Base
       depositOption: '' as string, // deposit option id from configOverlay.depositOptions
       extras: [] as string[],
-      kmPackageType: 'none' as 'none' | 'unlimited' | '50km',
+      // 2026-05-16: aggiunto valore dinamico `pacchetto:${id}` per i
+      // pacchetti KM extra acquistabili (configurati in Centralina Pro
+      // per categoria). String dinamica → tipo widened a `string` per
+      // accettare l'id del pacchetto runtime.
+      kmPackageType: 'none' as 'none' | 'unlimited' | '50km' | string,
       kmPackageDistance: 100,
       expectedKm: 0,
       usageZone: '' as 'CAGLIARI_SUD' | 'FUORI_ZONA' | '',
@@ -1862,6 +1866,27 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const aziendaliPrice = configOverlay?.kmPackagePrices?.unlimitedFurgonePerDay ?? 0;
         calculatedKmPackageCost = roundToTwoDecimals(aziendaliPrice * billingDaysCalc);
       }
+    } else if (typeof formData.kmPackageType === 'string' && (formData.kmPackageType as string).startsWith('pacchetto:')) {
+      // 2026-05-16: Pacchetto KM extra acquistato (categoria-specifico).
+      // Aggiunge il prezzo del pacchetto al totale ma mantiene il KM
+      // incluso standard (i KM del pacchetto si SOMMANO agli inclusi).
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
+      const pkgId = (formData.kmPackageType as string).slice('pacchetto:'.length)
+      const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
+                    : rawCat === 'exotic' ? ['exotic', 'supercars']
+                    : [rawCat]
+      let selected: { id: string; km: number; price: number; sconto_pct: number; label: string } | null = null
+      const byCat = configOverlay?.pacchettiByCategory
+      if (byCat) {
+        for (const k of aliases) {
+          const found = (byCat[k] || []).find(p => p.id === pkgId)
+          if (found) { selected = found; break }
+        }
+      }
+      const kmTable = getKmIncludedForVehicle((item as any).category, vType);
+      calculatedIncludedKm = calculateIncludedKm(billingDaysCalc, kmTable) + (selected?.km || 0);
+      calculatedKmPackageCost = selected ? roundToTwoDecimals(selected.price) : 0;
     } else {
       // Default "km inclusi": legge da Centralina Pro per categoria raw
       // (Hypercar / Suv Luxury / nuove categorie incluse). Cade su
@@ -3243,6 +3268,26 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         km_overage_fee: ACTIVE_SFORO_PER_KM,
         unlimited_km_daily: formData.kmPackageType === 'unlimited' ? (kmPackageCost / Math.max(duration.days, 1)) : 0,
         unlimited_km_total: formData.kmPackageType === 'unlimited' ? kmPackageCost : 0,
+        // 2026-05-16: Pacchetto KM extra acquistato (se applicabile).
+        // Persistito su booking_details così contratto + fattura + email
+        // possono mostrarlo. {km_package} è il placeholder nei template.
+        km_package: (() => {
+          const t = String(formData.kmPackageType || '')
+          if (!t.startsWith('pacchetto:')) return null
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
+          const pkgId = t.slice('pacchetto:'.length)
+          const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
+                        : rawCat === 'exotic' ? ['exotic', 'supercars']
+                        : [rawCat]
+          const byCat = configOverlay?.pacchettiByCategory
+          if (!byCat) return null
+          for (const k of aliases) {
+            const found = (byCat[k] || []).find(p => p.id === pkgId)
+            if (found) return { id: found.id, label: found.label, km: found.km, sconto_pct: found.sconto_pct, price: found.price }
+          }
+          return null
+        })(),
         second_driver_daily: secondDriverFee / Math.max(duration.days, 1),
         second_driver_total: secondDriverFee,
         no_cauzione_daily: noDepositSurcharge,
@@ -5141,6 +5186,47 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <span className="font-bold text-green-400">Inclusi</span>
                     </div>
                   </div>
+                  {/* === PACCHETTI KM (2026-05-16) ===
+                      Pacchetti KM extra acquistabili (es. Pacchetto 100 km a
+                      sconto). Letti da Centralina Pro per categoria.
+                      Mostrati fra "Km inclusi" e "Km illimitati". */}
+                  {(() => {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
+                    const byCat = configOverlay?.pacchettiByCategory
+                    if (!rawCat || !byCat) return null
+                    const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
+                                  : rawCat === 'exotic' ? ['exotic', 'supercars']
+                                  : [rawCat]
+                    let pkgs: Array<{ id: string; km: number; sconto_pct: number; price: number; label: string }> = []
+                    for (const k of aliases) {
+                      const v = byCat[k]
+                      if (Array.isArray(v) && v.length > 0) { pkgs = v; break }
+                    }
+                    if (pkgs.length === 0) return null
+                    return pkgs.map(pkg => {
+                      const selKey = `pacchetto:${pkg.id}`
+                      const isSelected = (formData.kmPackageType as string) === selKey
+                      return (
+                        <div key={pkg.id}
+                          className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${isSelected ? 'border-dr7-gold bg-dr7-gold/10' : 'border-gray-600 hover:border-gray-500'}`}
+                          onClick={() => setFormData(prev => ({ ...prev, kmPackageType: selKey as any }))}
+                        >
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <span className="font-bold text-white">{pkg.label} ({pkg.km} km)</span>
+                              <p className="text-sm text-gray-400">
+                                {pkg.sconto_pct > 0
+                                  ? `Sconto ${pkg.sconto_pct}% sul sforo (${pkg.km} km a prezzo agevolato)`
+                                  : `${pkg.km} km extra inclusi nel pacchetto`}
+                              </p>
+                            </div>
+                            <span className="font-bold text-dr7-gold">+{formatPrice(pkg.price)}</span>
+                          </div>
+                        </div>
+                      )
+                    })
+                  })()}
                   {/* KM illimitati (supplemento) — SOLO se prezzo > 0
                       (l'opzione viene nascosta dall'admin via toggle OFF
                       o se semplicemente il prezzo non e' configurato).
@@ -5200,6 +5286,45 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <span className="font-bold text-green-400">Incluso</span>
                     </div>
                   </div>
+                  {/* === PACCHETTI KM (2026-05-16) === stesso meccanismo
+                      del branch supercar — mostrati fra Inclusi e Illimitati. */}
+                  {(() => {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
+                    const byCat = configOverlay?.pacchettiByCategory
+                    if (!rawCat || !byCat) return null
+                    const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
+                                  : rawCat === 'exotic' ? ['exotic', 'supercars']
+                                  : [rawCat]
+                    let pkgs: Array<{ id: string; km: number; sconto_pct: number; price: number; label: string }> = []
+                    for (const k of aliases) {
+                      const v = byCat[k]
+                      if (Array.isArray(v) && v.length > 0) { pkgs = v; break }
+                    }
+                    if (pkgs.length === 0) return null
+                    return pkgs.map(pkg => {
+                      const selKey = `pacchetto:${pkg.id}`
+                      const isSelected = (formData.kmPackageType as string) === selKey
+                      return (
+                        <div key={pkg.id}
+                          className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${isSelected ? 'border-dr7-gold bg-dr7-gold/10' : 'border-gray-600 hover:border-gray-500'}`}
+                          onClick={() => setFormData(prev => ({ ...prev, kmPackageType: selKey as any }))}
+                        >
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <span className="font-bold text-white">{pkg.label} ({pkg.km} km)</span>
+                              <p className="text-sm text-gray-400">
+                                {pkg.sconto_pct > 0
+                                  ? `Sconto ${pkg.sconto_pct}% sul sforo`
+                                  : `${pkg.km} km extra inclusi`}
+                              </p>
+                            </div>
+                            <span className="font-bold text-dr7-gold">+{formatPrice(pkg.price)}</span>
+                          </div>
+                        </div>
+                      )
+                    })
+                  })()}
                   {/* Unlimited km option — solo se prezzo > 0.
                       BUG FIX 2026-05-16: nascondi l'opzione quando l'admin
                       ha disattivato Km Illimitati (unlimitedKm_enabled=false)

@@ -104,6 +104,25 @@ export interface ProKmEntry {
   extraPerDay?: number | ''
   sforo?: number | ''
   unlimitedPerDay?: number | ''
+  unlimitedKm_enabled?: boolean
+  unlimitedByFascia?: Record<string, number | ''>
+  unlimitedMode?: 'per_fascia' | 'all_tiers'
+  // 2026-05-16: Pacchetti KM acquistabili dal cliente come opzione
+  // additiva. Ciascun pacchetto = km extra inclusi a sforo scontato.
+  pacchetti?: ProPacchettoKm[]
+}
+
+/**
+ * Pacchetto KM extra acquistabile dal cliente. Prezzo finale calcolato:
+ *   price = km × sforo_categoria × (1 - sconto_pct/100)
+ * con sforo_categoria letto da snapshot.km[id_categoria].sforo.
+ */
+export interface ProPacchettoKm {
+  id: string
+  km: number | ''
+  sconto_pct: number | ''
+  is_active: boolean
+  label?: string
 }
 
 export interface ProInsuranceOption {
@@ -553,6 +572,11 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
   const kmIncludedByCategory: Record<string, KmIncludedConfig | { unlimited: true }> = {}
   const sforoByCategory: Record<string, number> = {}
   const unlimitedKmByCategory: Record<string, { TIER_1: number; TIER_2: number }> = {}
+  // 2026-05-16: pacchetti KM per categoria. Solo quelli con is_active=true
+  // e km>0 finiscono nell'output (il wizard non deve mostrare placeholder).
+  // price = km × sforo × (1 - sconto_pct/100); fallback sforo=0 se non
+  // configurato → il pacchetto risulta gratis (admin bug, ma non blocca).
+  const pacchettiByCategory: Record<string, Array<{ id: string; km: number; sconto_pct: number; price: number; label: string }>> = {}
   for (const k of snapshot.km || []) {
     const table = cleanNumMap(k.table)
     const hasLimits = Object.values(table).some(v => v > 0)
@@ -567,6 +591,17 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
       TIER_1: unlimitedFor(k, 'TIER_1'),
       TIER_2: unlimitedFor(k, 'TIER_2'),
     }
+    const pkgs = (k.pacchetti || [])
+      .filter(p => p && p.is_active === true)
+      .map(p => {
+        const km = num(p.km, 0)
+        const sconto = num(p.sconto_pct, 0)
+        const price = Math.round((km * s * (1 - sconto / 100)) * 100) / 100
+        const label = String(p.label || '').trim() || `Pacchetto ${km} km`
+        return { id: String(p.id), km, sconto_pct: sconto, price, label }
+      })
+      .filter(p => p.km > 0)
+    if (pkgs.length > 0) pacchettiByCategory[k.id] = pkgs
   }
 
   // NCC (V_CLASS) reads from the Aziendali category, same as Furgone (Ducato).
@@ -632,6 +667,7 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
     sforoPerKm: sforoSupercar,
     sforoByCategory,
     unlimitedKmByCategory,
+    pacchettiByCategory,
   }
 }
 

@@ -92,6 +92,21 @@ export interface WebsiteConfigOverlay {
    *  centralina_pro_config.config.sforo_km.category.{categoryId}).
    *  Wizard reads this FIRST, falls back to sforoPerKm (_global). */
   sforoByCategory: Record<string, number>
+  /** Per-category km illimitati €/giorno per tier. Wizard wants to know
+   *  the price upfront so the "Km illimitati" card shows +€X/giorno. */
+  unlimitedKmByCategory?: Record<string, { TIER_1: number; TIER_2: number }>
+  /** Per-category PACCHETTI KM extra (2026-05-16). Lista di pacchetti
+   *  attivati dall'admin in CentralinaProTab per ciascuna categoria
+   *  (Supercars, Aziendali, Urban, custom). Ognuno = X km extra a
+   *  prezzo scontato (km × sforo × (1 - sconto%/100)). Quando presente
+   *  il wizard li mostra fra "Km inclusi" e "Km illimitati". */
+  pacchettiByCategory?: Record<string, Array<{
+    id: string
+    km: number
+    sconto_pct: number
+    price: number
+    label: string
+  }>>
 }
 
 /** Build overlay from Centralina config. Returns null if config is not loaded yet. */
