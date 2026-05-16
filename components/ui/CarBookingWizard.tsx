@@ -5122,39 +5122,46 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <span className="font-bold text-green-400">Inclusi</span>
                     </div>
                   </div>
-                  {/* KM illimitati (supplemento) */}
-                  <div
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType === 'unlimited'
-                      ? 'border-white/40 bg-white/10'
-                      : 'border-gray-600 hover:border-gray-500'}`}
-                    onClick={() => setFormData(prev => ({ ...prev, kmPackageType: 'unlimited' as any }))}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <span className="font-bold text-white">Km illimitati</span>
-                        <p className="text-sm text-gray-400">Senza limiti di percorrenza</p>
+                  {/* KM illimitati (supplemento) — SOLO se prezzo > 0
+                      (l'opzione viene nascosta dall'admin via toggle OFF
+                      o se semplicemente il prezzo non e' configurato).
+                      BUG FIX 2026-05-16: prima l'opzione veniva sempre mostrata
+                      anche con prezzo 0 → cliente prenotava km illimitati a €0
+                      (revenue loss). */}
+                  {(() => {
+                    const tier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
+                    const byCat = configOverlay?.unlimitedKmByCategory
+                    let unlimitedPrice = 0
+                    if (rawCat && byCat) {
+                      const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
+                                    : rawCat === 'exotic' ? ['exotic', 'supercars']
+                                    : [rawCat]
+                      for (const k of aliases) {
+                        const v = byCat[k]?.[tier]
+                        if (typeof v === 'number' && v > 0) { unlimitedPrice = v; break }
+                      }
+                    }
+                    if (!unlimitedPrice) unlimitedPrice = tierPricing.unlimitedKmPerDay || 0
+                    if (unlimitedPrice <= 0) return null
+                    return (
+                      <div
+                        className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType === 'unlimited'
+                          ? 'border-white/40 bg-white/10'
+                          : 'border-gray-600 hover:border-gray-500'}`}
+                        onClick={() => setFormData(prev => ({ ...prev, kmPackageType: 'unlimited' as any }))}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <span className="font-bold text-white">Km illimitati</span>
+                            <p className="text-sm text-gray-400">Senza limiti di percorrenza</p>
+                          </div>
+                          <span className="font-bold text-white">+€{unlimitedPrice}/giorno</span>
+                        </div>
                       </div>
-                      <span className="font-bold text-white">+€{(() => {
-                        // Leggi km illimitati per categoria raw (Hypercar
-                        // Elite, Suv Luxury, ecc.); cade su tierPricing
-                        // legacy (supercars) solo se mancante.
-                        const tier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
-                        const byCat = configOverlay?.unlimitedKmByCategory
-                        if (rawCat && byCat) {
-                          const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
-                                        : rawCat === 'exotic' ? ['exotic', 'supercars']
-                                        : [rawCat]
-                          for (const k of aliases) {
-                            const v = byCat[k]?.[tier]
-                            if (typeof v === 'number' && v > 0) return v
-                          }
-                        }
-                        return tierPricing.unlimitedKmPerDay
-                      })()}/giorno</span>
-                    </div>
-                  </div>
+                    )
+                  })()}
                 </div>
               ) : (
                 // Non-supercar km selection
@@ -5174,54 +5181,56 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <span className="font-bold text-green-400">Incluso</span>
                     </div>
                   </div>
-                  {/* Unlimited km option */}
-                  <div
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType === 'unlimited'
-                      ? 'border-green-500 bg-green-500/10'
-                      : 'border-gray-600 hover:border-gray-500'}`}
-                    onClick={() => setFormData(prev => ({ ...prev, kmPackageType: 'unlimited' as any }))}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <span className="font-bold text-white">Km illimitati</span>
-                        <p className="text-sm text-gray-400">Senza limiti di percorrenza</p>
+                  {/* Unlimited km option — solo se prezzo > 0.
+                      BUG FIX 2026-05-16: nascondi l'opzione quando l'admin
+                      ha disattivato Km Illimitati (unlimitedKm_enabled=false)
+                      o quando il prezzo non e' configurato. Prima si vedeva
+                      "Gratis" e il cliente prenotava km illimitati a €0. */}
+                  {(() => {
+                    const days = duration.days || 1;
+                    const tier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2';
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
+                    const byCat = configOverlay?.unlimitedKmByCategory
+                    let perDay = 0;
+                    if (rawCat && byCat) {
+                      const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
+                                    : rawCat === 'exotic' ? ['exotic', 'supercars']
+                                    : [rawCat]
+                      for (const k of aliases) {
+                        const v = byCat[k]?.[tier]
+                        if (typeof v === 'number' && v > 0) { perDay = v; break }
+                      }
+                    }
+                    if (perDay === 0) {
+                      if (vehicleType === 'FURGONE' || vehicleType === 'V_CLASS') {
+                        perDay = configOverlay?.kmPackagePrices?.unlimitedFurgonePerDay ?? 0;
+                      } else if (isUrbanVehicle(item.name)) {
+                        perDay = configOverlay?.kmPackagePrices?.unlimitedUrbanPerDay ?? 0;
+                      } else if (vehicleType === 'SUPERCAR') {
+                        perDay = configOverlay?.tierPricing?.[tier]?.unlimitedKmPerDay ?? 0;
+                      }
+                    }
+                    if (perDay <= 0) return null
+                    return (
+                      <div
+                        className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType === 'unlimited'
+                          ? 'border-green-500 bg-green-500/10'
+                          : 'border-gray-600 hover:border-gray-500'}`}
+                        onClick={() => setFormData(prev => ({ ...prev, kmPackageType: 'unlimited' as any }))}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <span className="font-bold text-white">Km illimitati</span>
+                            <p className="text-sm text-gray-400">Senza limiti di percorrenza</p>
+                          </div>
+                          <span className="font-bold text-white">
+                            {formatPrice(perDay * days)}
+                          </span>
+                        </div>
                       </div>
-                      <span className="font-bold text-white">
-                        {(() => {
-                          const days = duration.days || 1;
-                          const tier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2';
-                          // PRIORITY: leggi km illimitati per categoria
-                          // raw da Centralina Pro (Hypercar Elite, Suv
-                          // Luxury, ecc.). Cade su bucket legacy solo se
-                          // mancante.
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
-                          const byCat = configOverlay?.unlimitedKmByCategory
-                          let perDay = 0;
-                          if (rawCat && byCat) {
-                            const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
-                                          : rawCat === 'exotic' ? ['exotic', 'supercars']
-                                          : [rawCat]
-                            for (const k of aliases) {
-                              const v = byCat[k]?.[tier]
-                              if (typeof v === 'number' && v > 0) { perDay = v; break }
-                            }
-                          }
-                          if (perDay === 0) {
-                            if (vehicleType === 'FURGONE' || vehicleType === 'V_CLASS') {
-                              perDay = configOverlay?.kmPackagePrices?.unlimitedFurgonePerDay ?? 0;
-                            } else if (isUrbanVehicle(item.name)) {
-                              perDay = configOverlay?.kmPackagePrices?.unlimitedUrbanPerDay ?? 0;
-                            } else if (vehicleType === 'SUPERCAR') {
-                              perDay = configOverlay?.tierPricing?.[tier]?.unlimitedKmPerDay ?? 0;
-                            }
-                          }
-                          if (perDay === 0) return 'Gratis';
-                          return formatPrice(perDay * days);
-                        })()}
-                      </span>
-                    </div>
-                  </div>
+                    )
+                  })()}
                 </div>
               )}
             </section>
