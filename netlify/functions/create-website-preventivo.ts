@@ -40,6 +40,38 @@ const handler: Handler = async (event) => {
   try {
     const body = JSON.parse(event.body || '{}')
 
+    // ── Required-field validation ────────────────────────────────────────
+    // Preventivo deve sempre arrivare con id assicurazione: il wizard
+    // costringe il cliente a selezionarne una. Se manca = bug front-end
+    // (es. campo non incluso nel payload). Rifiuto esplicitamente con
+    // 400 cosi' il bug non sopravvive silenziosamente in DB come "N/A".
+    // Maggio 2026: regressione copy-paste fra payload booking e
+    // payload preventivo. Da quel momento questa validazione e' la
+    // rete di sicurezza.
+    const required: Array<{ key: string; label: string }> = [
+      { key: 'vehicle_id',         label: 'vehicle_id' },
+      { key: 'vehicle_name',       label: 'vehicle_name' },
+      { key: 'pickup_date',        label: 'pickup_date' },
+      { key: 'dropoff_date',       label: 'dropoff_date' },
+      { key: 'insurance_option',   label: 'insurance_option' },
+      { key: 'base_daily_rate',    label: 'base_daily_rate' },
+    ]
+    const missing = required.filter(f => {
+      const v = (body as Record<string, unknown>)[f.key]
+      return v === undefined || v === null || v === ''
+    })
+    if (missing.length > 0) {
+      console.error('[create-website-preventivo] payload missing fields:', missing.map(f => f.label).join(', '), 'body=', JSON.stringify(body).slice(0, 800))
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          error: `Preventivo incompleto: campi mancanti [${missing.map(f => f.label).join(', ')}]`,
+          missing: missing.map(f => f.label),
+        }),
+      }
+    }
+
     // Look up customer in customers_extended by auth user_id
     const { data: customer } = await supabase
       .from('customers_extended')
