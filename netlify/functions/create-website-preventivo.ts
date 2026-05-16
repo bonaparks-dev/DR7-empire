@@ -48,28 +48,34 @@ const handler: Handler = async (event) => {
     // Maggio 2026: regressione copy-paste fra payload booking e
     // payload preventivo. Da quel momento questa validazione e' la
     // rete di sicurezza.
-    const required: Array<{ key: string; label: string }> = [
-      { key: 'vehicle_id',         label: 'vehicle_id' },
-      { key: 'vehicle_name',       label: 'vehicle_name' },
-      { key: 'pickup_date',        label: 'pickup_date' },
-      { key: 'dropoff_date',       label: 'dropoff_date' },
-      { key: 'insurance_option',   label: 'insurance_option' },
-      { key: 'base_daily_rate',    label: 'base_daily_rate' },
+    // Validazione critica (rifiuta solo se mancano campi indispensabili).
+    const hardRequired: Array<{ key: string; label: string }> = [
+      { key: 'vehicle_id',      label: 'vehicle_id' },
+      { key: 'vehicle_name',    label: 'vehicle_name' },
+      { key: 'pickup_date',     label: 'pickup_date' },
+      { key: 'dropoff_date',    label: 'dropoff_date' },
     ]
-    const missing = required.filter(f => {
+    const hardMissing = hardRequired.filter(f => {
       const v = (body as Record<string, unknown>)[f.key]
       return v === undefined || v === null || v === ''
     })
-    if (missing.length > 0) {
-      console.error('[create-website-preventivo] payload missing fields:', missing.map(f => f.label).join(', '), 'body=', JSON.stringify(body).slice(0, 800))
+    if (hardMissing.length > 0) {
+      console.error('[create-website-preventivo] payload missing fields:', hardMissing.map(f => f.label).join(', '), 'body=', JSON.stringify(body).slice(0, 800))
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({
-          error: `Preventivo incompleto: campi mancanti [${missing.map(f => f.label).join(', ')}]`,
-          missing: missing.map(f => f.label),
+          error: `Preventivo incompleto: campi mancanti [${hardMissing.map(f => f.label).join(', ')}]`,
+          missing: hardMissing.map(f => f.label),
         }),
       }
+    }
+    // Soft fallback: se insurance_option manca, defaulta a KASKO_BASE
+    // (default del wizard) e logga un warning per indagare la causa nel
+    // front-end senza bloccare il salvataggio del cliente.
+    if (!body.insurance_option) {
+      console.warn('[create-website-preventivo] insurance_option vuoto — default a KASKO_BASE. Body=', JSON.stringify(body).slice(0, 800))
+      body.insurance_option = 'KASKO_BASE'
     }
 
     // Look up customer in customers_extended by auth user_id
