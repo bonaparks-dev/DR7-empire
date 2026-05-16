@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../supabaseClient';
+import { useCentralinaProOverlay } from '../../hooks/useCentralinaProConfig';
 
 interface Preventivo {
   id: string;
@@ -42,8 +43,45 @@ function formatDate(dateStr: string): string {
   });
 }
 
+/**
+ * Resolve un id assicurazione (es. "KASKO_BASE") nella sua label umana
+ * ("Kasko Base", "Kasko DR7", ecc.) iterando TUTTI i pool di Centralina
+ * Pro — sia i 4 bucket legacy sia ogni categoria custom
+ * (Hypercar Elitè, Suv Luxury, ecc.). Senza questa iterazione completa
+ * i preventivi delle categorie nuove mostravano l'id raw o "N/A".
+ */
+function resolveInsuranceLabel(
+  rawId: string | null | undefined,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  proOverlay: any,
+): string {
+  const raw = String(rawId || '').trim();
+  if (!raw) return 'N/A';
+  if (!proOverlay) return raw.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const pools: Array<Array<{ id?: string; name?: string }>> = [
+    proOverlay.insuranceTier1, proOverlay.insuranceTier2,
+    proOverlay.urbanInsurance, proOverlay.utilitaireInsurance, proOverlay.furgoneInsurance,
+  ].filter(Array.isArray) as Array<Array<{ id?: string; name?: string }>>;
+  if (proOverlay.insuranceByCategory) {
+    for (const bucket of Object.values(proOverlay.insuranceByCategory)) {
+      if (!bucket) continue;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const b = bucket as any;
+      if (Array.isArray(b.TIER_1)) pools.push(b.TIER_1);
+      if (Array.isArray(b.TIER_2)) pools.push(b.TIER_2);
+      if (Array.isArray(b._all_tiers)) pools.push(b._all_tiers);
+    }
+  }
+  for (const pool of pools) {
+    const hit = pool.find(o => o?.id === raw);
+    if (hit?.name) return hit.name;
+  }
+  return raw.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
 const MyPreventivi: React.FC = () => {
   const { user } = useAuth();
+  const { overlay: proOverlay } = useCentralinaProOverlay();
   const [preventivi, setPreventivi] = useState<Preventivo[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -146,7 +184,7 @@ const MyPreventivi: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-gray-500 text-xs">Assicurazione</p>
-                    <p className="text-white font-medium">{p.insurance_option || 'N/A'}</p>
+                    <p className="text-white font-medium">{resolveInsuranceLabel(p.insurance_option, proOverlay)}</p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-xs">KM</p>
