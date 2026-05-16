@@ -1868,15 +1868,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
     } else if (typeof formData.kmPackageType === 'string' && (formData.kmPackageType as string).startsWith('pacchetto:')) {
       // 2026-05-16: Pacchetto KM extra acquistato (categoria-specifico).
-      // Aggiunge il prezzo del pacchetto al totale ma mantiene il KM
-      // incluso standard (i KM del pacchetto si SOMMANO agli inclusi).
+      // Formato kmPackageType: 'pacchetto:{id}' (qty=1 implicita) oppure
+      // 'pacchetto:{id}:{qty}' per pacchetti is_quantity_buyable=true.
+      // Aggiunge km × qty al limite incluso e price × qty al costo extra.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
-      const pkgId = (formData.kmPackageType as string).slice('pacchetto:'.length)
+      const parts = (formData.kmPackageType as string).split(':')
+      const pkgId = parts[1] || ''
+      const qtyFromKey = parts[2] ? Math.max(1, parseInt(parts[2], 10) || 1) : 1
       const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
                     : rawCat === 'exotic' ? ['exotic', 'supercars']
                     : [rawCat]
-      let selected: { id: string; km: number; price: number; sconto_pct: number; label: string } | null = null
+      let selected: { id: string; km: number; price: number; sconto_pct: number; label: string; is_quantity_buyable?: boolean; max_quantity?: number } | null = null
       const byCat = configOverlay?.pacchettiByCategory
       if (byCat) {
         for (const k of aliases) {
@@ -1884,9 +1887,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           if (found) { selected = found; break }
         }
       }
+      const effectiveQty = selected?.is_quantity_buyable
+        ? Math.max(1, Math.min(Number(selected.max_quantity) || 2, qtyFromKey))
+        : 1
       const kmTable = getKmIncludedForVehicle((item as any).category, vType);
-      calculatedIncludedKm = calculateIncludedKm(billingDaysCalc, kmTable) + (selected?.km || 0);
-      calculatedKmPackageCost = selected ? roundToTwoDecimals(selected.price) : 0;
+      calculatedIncludedKm = calculateIncludedKm(billingDaysCalc, kmTable) + ((selected?.km || 0) * effectiveQty);
+      calculatedKmPackageCost = selected ? roundToTwoDecimals(selected.price * effectiveQty) : 0;
     } else {
       // Default "km inclusi": legge da Centralina Pro per categoria raw
       // (Hypercar / Suv Luxury / nuove categorie incluse). Cade su
@@ -3271,12 +3277,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         // 2026-05-16: Pacchetto KM extra acquistato (se applicabile).
         // Persistito su booking_details così contratto + fattura + email
         // possono mostrarlo. {km_package} è il placeholder nei template.
+        // Per is_quantity_buyable=true salviamo anche quantity + totale km/€.
         km_package: (() => {
           const t = String(formData.kmPackageType || '')
           if (!t.startsWith('pacchetto:')) return null
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
-          const pkgId = t.slice('pacchetto:'.length)
+          const parts = t.split(':')
+          const pkgId = parts[1] || ''
+          const qtyFromKey = parts[2] ? Math.max(1, parseInt(parts[2], 10) || 1) : 1
           const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
                         : rawCat === 'exotic' ? ['exotic', 'supercars']
                         : [rawCat]
@@ -3284,7 +3293,21 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           if (!byCat) return null
           for (const k of aliases) {
             const found = (byCat[k] || []).find(p => p.id === pkgId)
-            if (found) return { id: found.id, label: found.label, km: found.km, sconto_pct: found.sconto_pct, price: found.price }
+            if (found) {
+              const qty = found.is_quantity_buyable
+                ? Math.max(1, Math.min(Number(found.max_quantity) || 2, qtyFromKey))
+                : 1
+              return {
+                id: found.id,
+                label: found.label,
+                km: found.km,
+                sconto_pct: found.sconto_pct,
+                price: found.price,
+                quantity: qty,
+                total_km: found.km * qty,
+                total_price: Math.round(found.price * qty * 100) / 100,
+              }
+            }
           }
           return null
         })(),
@@ -5204,24 +5227,59 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       if (Array.isArray(v) && v.length > 0) { pkgs = v; break }
                     }
                     if (pkgs.length === 0) return null
-                    return pkgs.map(pkg => {
-                      const selKey = `pacchetto:${pkg.id}`
-                      const isSelected = (formData.kmPackageType as string) === selKey
+                    return pkgs.map((pkg: any) => {
+                      // 2026-05-16: pacchetti is_quantity_buyable hanno chiave
+                      // dinamica `pacchetto:{id}:{qty}` (qty 1..max_quantity).
+                      // Pacchetti normali → `pacchetto:{id}` (qty implicita 1).
+                      const isQtyBuyable = !!pkg.is_quantity_buyable
+                      const maxQty = Math.max(1, Number(pkg.max_quantity) || 2)
+                      const curType = String(formData.kmPackageType || '')
+                      const matches = curType.startsWith(`pacchetto:${pkg.id}`)
+                      const qty = matches
+                        ? (isQtyBuyable
+                            ? Math.max(1, parseInt(curType.split(':')[2] || '1', 10) || 1)
+                            : 1)
+                        : 0
+                      const isSelected = matches
+                      const setQty = (q: number) => {
+                        const clamped = Math.max(0, Math.min(maxQty, q))
+                        if (clamped === 0) {
+                          setFormData(prev => ({ ...prev, kmPackageType: 'none' as any }))
+                        } else if (isQtyBuyable) {
+                          setFormData(prev => ({ ...prev, kmPackageType: `pacchetto:${pkg.id}:${clamped}` as any }))
+                        } else {
+                          setFormData(prev => ({ ...prev, kmPackageType: `pacchetto:${pkg.id}` as any }))
+                        }
+                      }
                       return (
                         <div key={pkg.id}
-                          className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${isSelected ? 'border-dr7-gold bg-dr7-gold/10' : 'border-gray-600 hover:border-gray-500'}`}
-                          onClick={() => setFormData(prev => ({ ...prev, kmPackageType: selKey as any }))}
+                          className={`p-4 rounded-lg border-2 transition-colors ${isSelected ? 'border-dr7-gold bg-dr7-gold/10' : 'border-gray-600 hover:border-gray-500 cursor-pointer'}`}
+                          onClick={() => { if (!isSelected) setQty(1) }}
                         >
-                          <div className="flex justify-between items-center">
-                            <div>
+                          <div className="flex justify-between items-center gap-3">
+                            <div className="flex-1 min-w-0">
                               <span className="font-bold text-white">{pkg.label} ({pkg.km} km)</span>
                               <p className="text-sm text-gray-400">
                                 {pkg.sconto_pct > 0
                                   ? `Sconto ${pkg.sconto_pct}% sul sforo (${pkg.km} km a prezzo agevolato)`
                                   : `${pkg.km} km extra inclusi nel pacchetto`}
                               </p>
+                              {isSelected && qty > 1 && (
+                                <p className="text-xs text-dr7-gold font-semibold mt-1">Totale: {qty * pkg.km} km · {formatPrice(pkg.price * qty)}</p>
+                              )}
                             </div>
-                            <span className="font-bold text-dr7-gold">+{formatPrice(pkg.price)}</span>
+                            {isQtyBuyable && isSelected ? (
+                              <div className="flex items-center gap-2">
+                                <button type="button" onClick={(e) => { e.stopPropagation(); setQty(qty - 1) }}
+                                  className="w-8 h-8 rounded-full bg-gray-700 text-white font-bold hover:bg-gray-600">−</button>
+                                <span className="text-white font-bold min-w-[1.5rem] text-center">{qty}</span>
+                                <button type="button" disabled={qty >= maxQty} onClick={(e) => { e.stopPropagation(); setQty(qty + 1) }}
+                                  className="w-8 h-8 rounded-full bg-dr7-gold text-black font-bold hover:opacity-90 disabled:opacity-50">+</button>
+                                <span className="font-bold text-dr7-gold ml-2">+{formatPrice(pkg.price * qty)}</span>
+                              </div>
+                            ) : (
+                              <span className="font-bold text-dr7-gold">+{formatPrice(pkg.price)}</span>
+                            )}
                           </div>
                         </div>
                       )
@@ -5927,17 +5985,27 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   )
                   if (isPacchetto && kmPackageCost > 0) {
                     const rawCat = String((item as any).category ?? '').toLowerCase().trim()
-                    const pkgId = t.slice('pacchetto:'.length)
+                    const parts = t.split(':')
+                    const pkgId = parts[1] || ''
+                    const qtyFromKey = parts[2] ? Math.max(1, parseInt(parts[2], 10) || 1) : 1
                     const byCat = configOverlay?.pacchettiByCategory
                     const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
                                   : rawCat === 'exotic' ? ['exotic', 'supercars']
                                   : [rawCat]
                     let label = 'Pacchetto KM'
                     let pkgKm = 0
+                    let effectiveQty = 1
                     if (byCat) {
                       for (const k of aliases) {
                         const found = (byCat[k] || []).find((p: any) => p.id === pkgId)
-                        if (found) { label = `${found.label} (${found.km} km)`; pkgKm = found.km; break }
+                        if (found) {
+                          effectiveQty = found.is_quantity_buyable ? Math.max(1, Math.min(Number(found.max_quantity) || 2, qtyFromKey)) : 1
+                          label = effectiveQty > 1
+                            ? `${found.label} × ${effectiveQty} (${found.km * effectiveQty} km)`
+                            : `${found.label} (${found.km} km)`
+                          pkgKm = found.km * effectiveQty
+                          break
+                        }
                       }
                     }
                     // includedKm = base + pkgKm (sum), so subtract pkgKm

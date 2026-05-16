@@ -106,6 +106,8 @@ export interface WebsiteConfigOverlay {
     sconto_pct: number
     price: number
     label: string
+    is_quantity_buyable?: boolean
+    max_quantity?: number
   }>>
 }
 

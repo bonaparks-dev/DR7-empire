@@ -123,6 +123,12 @@ export interface ProPacchettoKm {
   sconto_pct: number | ''
   is_active: boolean
   label?: string
+  /** 2026-05-16: se true il pacchetto e' acquistabile piu' volte (qty
+   *  selector con + sul wizard). Se false → toggle si/no. */
+  is_quantity_buyable?: boolean
+  /** 2026-05-16: limite max quantita' acquistabile quando
+   *  is_quantity_buyable=true. Default 2 quando non specificato. */
+  max_quantity?: number | ''
 }
 
 export interface ProInsuranceOption {
@@ -576,7 +582,7 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
   // e km>0 finiscono nell'output (il wizard non deve mostrare placeholder).
   // price = km × sforo × (1 - sconto_pct/100); fallback sforo=0 se non
   // configurato → il pacchetto risulta gratis (admin bug, ma non blocca).
-  const pacchettiByCategory: Record<string, Array<{ id: string; km: number; sconto_pct: number; price: number; label: string }>> = {}
+  const pacchettiByCategory: Record<string, Array<{ id: string; km: number; sconto_pct: number; price: number; label: string; is_quantity_buyable: boolean; max_quantity: number }>> = {}
   for (const k of snapshot.km || []) {
     const table = cleanNumMap(k.table)
     const hasLimits = Object.values(table).some(v => v > 0)
@@ -598,7 +604,9 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
         const sconto = num(p.sconto_pct, 0)
         const price = Math.round((km * s * (1 - sconto / 100)) * 100) / 100
         const label = String(p.label || '').trim() || `Pacchetto ${km} km`
-        return { id: String(p.id), km, sconto_pct: sconto, price, label }
+        const isQty = p.is_quantity_buyable === true
+        const maxQ = isQty ? Math.max(1, num(p.max_quantity, 2) || 2) : 1
+        return { id: String(p.id), km, sconto_pct: sconto, price, label, is_quantity_buyable: isQty, max_quantity: maxQ }
       })
       .filter(p => p.km > 0)
     if (pkgs.length > 0) pacchettiByCategory[k.id] = pkgs
