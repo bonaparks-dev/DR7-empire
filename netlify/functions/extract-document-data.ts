@@ -89,7 +89,11 @@ export const handler: Handler = async (event) => {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        // Modello aggiornato 2026-05-16: claude-sonnet-4-20250514 era uno
+        // snapshot beta che ha smesso di rispondere. Usiamo l'alias stabile
+        // claude-sonnet-4-5 cosi' Anthropic punta sempre all'ultimo snapshot
+        // pubblico della famiglia Sonnet 4.5 (vision compatible).
+        model: 'claude-sonnet-4-5',
         max_tokens: 4000,
         messages: [{
           role: 'user',
