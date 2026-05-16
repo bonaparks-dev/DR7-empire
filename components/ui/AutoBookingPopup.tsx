@@ -37,8 +37,33 @@ const AutoBookingPopup: React.FC = () => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('pickup') || params.get('return') || params.get('pickupDate')) return;
 
-    const t = setTimeout(() => setOpen(true), DELAY_MS);
-    return () => clearTimeout(t);
+    // Suppress this nag if the customer has manually opened "Prenota Ora"
+    // from the header / side menu — both during the 8s wait and at fire time.
+    // Without this, the customer types dates in the manual popup and the
+    // auto-popup pops over on top at the 8s mark.
+    let cancelled = false;
+    const handleManualOpen = () => {
+      cancelled = true;
+      try { sessionStorage.setItem(SESSION_KEY, '1'); } catch { /* ignore */ }
+    };
+    window.addEventListener('dr7:prenota-ora:manual-opened', handleManualOpen);
+
+    const t = setTimeout(() => {
+      // Final check — if a manual popup mounted right before the timer fired
+      // but didn't dispatch (older code path), DOM presence is the source of
+      // truth.
+      const manualOpen = document.querySelector('[data-prenota-ora-manual="true"]');
+      if (cancelled || manualOpen) {
+        try { sessionStorage.setItem(SESSION_KEY, '1'); } catch { /* ignore */ }
+        return;
+      }
+      setOpen(true);
+    }, DELAY_MS);
+
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('dr7:prenota-ora:manual-opened', handleManualOpen);
+    };
   }, [location.pathname]);
 
   const close = () => {

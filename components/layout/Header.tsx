@@ -135,7 +135,14 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void; copy: Hea
             <nav className="flex-grow flex flex-col space-y-5">
               {/* PRENOTA ORA */}
               <button
-                onClick={() => setShowBookingPopup(true)}
+                onClick={() => {
+                  setShowBookingPopup(true);
+                  // Tell the AutoBookingPopup not to fire its 8s nag on top of
+                  // this manual popup. The listener also marks the session
+                  // dismissed so the auto-popup stays quiet for the rest of
+                  // the visit.
+                  try { window.dispatchEvent(new CustomEvent('dr7:prenota-ora:manual-opened')); } catch { /* ignore */ }
+                }}
                 className="w-full py-3 border border-white text-white font-semibold text-sm tracking-wider rounded-full hover:bg-white hover:text-black active:scale-[0.98] transition-all duration-300"
               >
                 {h('drawer_book_cta_it', 'drawer_book_cta_en')}
@@ -298,7 +305,7 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void; copy: Hea
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-[300] bg-black/90 flex items-center justify-center p-4"
                 onMouseDown={(e) => { if (e.target === e.currentTarget) setShowBookingPopup(false); }}
-              >
+                data-prenota-ora-manual="true"
                 <motion.div
                   initial={{ scale: 0.96, opacity: 0, y: 10 }}
                   animate={{ scale: 1, opacity: 1, y: 0 }}
