@@ -5235,11 +5235,18 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               )}
             </section>
 
-            {/* === C. SERVIZI AGGIUNTIVI (tier-conditional prices) === */}
+            {/* === C. SERVIZI AGGIUNTIVI (tier-conditional prices) ===
+                BUG FIX 2026-05-16: nascondi opzioni con prezzo <= 0. Stesso
+                rischio di Km Illimitati: admin disattiva un servizio in
+                Centralina Pro (o non lo configura), il cliente lo selezione
+                a €0 e prenota gratis. Adesso se prezzo non valido → opzione
+                non appare. */}
+            {(tierPricing.lavaggio > 0 || tierPricing.secondDriverPerDay > 0) && (
             <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-4">C. SERVIZI AGGIUNTIVI</h3>
               <div className="space-y-3">
-                {/* Lavaggio finale */}
+                {/* Lavaggio finale — solo se prezzo > 0 */}
+                {tierPricing.lavaggio > 0 && (
                 <div className={`flex items-center p-3 rounded-md border ${'bg-gray-800/50 border-gray-700'}`}>
                   <input type="checkbox" checked disabled className="h-4 w-4" />
                   <span className="ml-3 text-white">Pulizia finale</span>
@@ -5247,9 +5254,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     {`€${tierPricing.lavaggio.toFixed(2)}`}
                   </span>
                 </div>
+                )}
 
-                {/* Second driver with tier price — hidden for VIP */}
-                {(
+                {/* Second driver with tier price — solo se prezzo > 0 */}
+                {tierPricing.secondDriverPerDay > 0 && (
                 <div
                   className={`p-3 rounded-md border cursor-pointer transition-all ${formData.addSecondDriver
                     ? 'border-white bg-white/5' : 'border-gray-700 hover:border-gray-500'}`}
@@ -5264,6 +5272,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 )}
               </div>
             </section>
+            )}
 
             {/* === D. CAUZIONE — from Centralina for ALL vehicles === */}
             {getMembershipTierName(user) !== 'gold' && getMembershipTierName(user) !== 'platinum' ? (
