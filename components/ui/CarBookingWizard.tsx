@@ -104,9 +104,9 @@ function pickDepositOptions(
     const id = rawCategory.toLowerCase().trim()
     if (id) {
       // Alias supercars<->exotic per coerenza con configLookup.
-      const aliases = id === 'supercars' ? ['supercars', 'exotic']
-                    : id === 'exotic' ? ['exotic', 'supercars']
-                    : [id]
+      const aliases = (id === 'supercars' || id === 'supercar') ? ['supercars', 'exotic', 'supercar']
+                    : id === 'exotic' ? ['exotic', 'supercars', 'supercar']
+                    : (id === 'supercar' ? ['supercar', 'supercars', 'exotic'] : [id])
       for (const k of aliases) {
         const byCat = dOpts.byCategory?.[k]
         const fromCat = byCat?.[depKey]
@@ -546,9 +546,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
       if (rawCat && configOverlay?.insuranceByCategory) {
-        const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
-                      : rawCat === 'exotic' ? ['exotic', 'supercars']
-                      : [rawCat]
+        const aliases = (rawCat === 'supercars' || rawCat === 'supercar') ? ['supercars', 'exotic', 'supercar']
+                      : rawCat === 'exotic' ? ['exotic', 'supercars', 'supercar']
+                      : (rawCat === 'supercar' ? ['supercar', 'supercars', 'exotic'] : [rawCat])
         for (const k of aliases) {
           const bucket = configOverlay.insuranceByCategory[k]
           if (!bucket) continue
@@ -635,9 +635,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (rawCategory && byCat) {
       const id = String(rawCategory).toLowerCase().trim()
       if (id) {
-        const aliases = id === 'supercars' ? ['supercars', 'exotic']
-                      : id === 'exotic' ? ['exotic', 'supercars']
-                      : [id]
+        const aliases = (id === 'supercars' || id === 'supercar') ? ['supercars', 'exotic', 'supercar']
+                      : id === 'exotic' ? ['exotic', 'supercars', 'supercar']
+                      : (id === 'supercar' ? ['supercar', 'supercars', 'exotic'] : [id])
         for (const k of aliases) {
           const hit = byCat[k]
           if (!hit) continue
@@ -657,9 +657,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (rawCategory && byCat) {
       const id = String(rawCategory).toLowerCase().trim()
       if (id) {
-        const aliases = id === 'supercars' ? ['supercars', 'exotic']
-                      : id === 'exotic' ? ['exotic', 'supercars']
-                      : [id]
+        const aliases = (id === 'supercars' || id === 'supercar') ? ['supercars', 'exotic', 'supercar']
+                      : id === 'exotic' ? ['exotic', 'supercars', 'supercar']
+                      : (id === 'supercar' ? ['supercar', 'supercars', 'exotic'] : [id])
         for (const k of aliases) {
           const v = byCat[k]
           if (typeof v === 'number' && v > 0) return v
@@ -1855,9 +1855,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       const byCatPrice = (() => {
         const byCat = configOverlay?.unlimitedKmByCategory
         if (!rawCat || !byCat) return 0
-        const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
-                      : rawCat === 'exotic' ? ['exotic', 'supercars']
-                      : [rawCat]
+        const aliases = (rawCat === 'supercars' || rawCat === 'supercar') ? ['supercars', 'exotic', 'supercar']
+                      : rawCat === 'exotic' ? ['exotic', 'supercars', 'supercar']
+                      : (rawCat === 'supercar' ? ['supercar', 'supercars', 'exotic'] : [rawCat])
         const tier = activeTierForCalc
         for (const k of aliases) {
           const v = byCat[k]?.[tier]
@@ -1887,8 +1887,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       // Lookup categoria con alias supercars<->exotic.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
-      const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
-                    : rawCat === 'exotic' ? ['exotic', 'supercars']
+      const aliases = (rawCat === 'supercars' || rawCat === 'supercar') ? ['supercars', 'exotic', 'supercar']
+                    : rawCat === 'exotic' ? ['exotic', 'supercars', 'supercar']
                     : [rawCat]
       const byCat = configOverlay?.pacchettiByCategory
       let pkgs: any[] = []
@@ -3301,9 +3301,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           if (!formData.kmPackages || Object.keys(formData.kmPackages).length === 0) return []
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
-          const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
-                        : rawCat === 'exotic' ? ['exotic', 'supercars']
-                        : [rawCat]
+          const aliases = (rawCat === 'supercars' || rawCat === 'supercar') ? ['supercars', 'exotic', 'supercar']
+                        : rawCat === 'exotic' ? ['exotic', 'supercars', 'supercar']
+                        : (rawCat === 'supercar' ? ['supercar', 'supercars', 'exotic'] : [rawCat])
           const byCat = configOverlay?.pacchettiByCategory
           if (!byCat) return []
           let pkgs: any[] = []
@@ -3341,9 +3341,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           if (ids.length !== 1) return null
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
-          const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
-                        : rawCat === 'exotic' ? ['exotic', 'supercars']
-                        : [rawCat]
+          const aliases = (rawCat === 'supercars' || rawCat === 'supercar') ? ['supercars', 'exotic', 'supercar']
+                        : rawCat === 'exotic' ? ['exotic', 'supercars', 'supercar']
+                        : (rawCat === 'supercar' ? ['supercar', 'supercars', 'exotic'] : [rawCat])
           const byCat = configOverlay?.pacchettiByCategory
           if (!byCat) return null
           for (const k of aliases) {
@@ -5271,9 +5271,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
                     const byCat = configOverlay?.pacchettiByCategory
                     if (!rawCat || !byCat) return null
-                    const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
-                                  : rawCat === 'exotic' ? ['exotic', 'supercars']
-                                  : [rawCat]
+                    const aliases = (rawCat === 'supercars' || rawCat === 'supercar') ? ['supercars', 'exotic', 'supercar']
+                                  : rawCat === 'exotic' ? ['exotic', 'supercars', 'supercar']
+                                  : (rawCat === 'supercar' ? ['supercar', 'supercars', 'exotic'] : [rawCat])
                     let pkgs: Array<{ id: string; km: number; sconto_pct: number; price: number; label: string }> = []
                     for (const k of aliases) {
                       const v = byCat[k]
@@ -5361,9 +5361,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     const byCat = configOverlay?.unlimitedKmByCategory
                     let unlimitedPrice = 0
                     if (rawCat && byCat) {
-                      const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
-                                    : rawCat === 'exotic' ? ['exotic', 'supercars']
-                                    : [rawCat]
+                      const aliases = (rawCat === 'supercars' || rawCat === 'supercar') ? ['supercars', 'exotic', 'supercar']
+                                    : rawCat === 'exotic' ? ['exotic', 'supercars', 'supercar']
+                                    : (rawCat === 'supercar' ? ['supercar', 'supercars', 'exotic'] : [rawCat])
                       for (const k of aliases) {
                         const v = byCat[k]?.[tier]
                         if (typeof v === 'number' && v > 0) { unlimitedPrice = v; break }
@@ -5414,9 +5414,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
                     const byCat = configOverlay?.pacchettiByCategory
                     if (!rawCat || !byCat) return null
-                    const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
-                                  : rawCat === 'exotic' ? ['exotic', 'supercars']
-                                  : [rawCat]
+                    const aliases = (rawCat === 'supercars' || rawCat === 'supercar') ? ['supercars', 'exotic', 'supercar']
+                                  : rawCat === 'exotic' ? ['exotic', 'supercars', 'supercar']
+                                  : (rawCat === 'supercar' ? ['supercar', 'supercars', 'exotic'] : [rawCat])
                     let pkgs: Array<{ id: string; km: number; sconto_pct: number; price: number; label: string }> = []
                     for (const k of aliases) {
                       const v = byCat[k]
@@ -5459,9 +5459,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     const byCat = configOverlay?.unlimitedKmByCategory
                     let perDay = 0;
                     if (rawCat && byCat) {
-                      const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
-                                    : rawCat === 'exotic' ? ['exotic', 'supercars']
-                                    : [rawCat]
+                      const aliases = (rawCat === 'supercars' || rawCat === 'supercar') ? ['supercars', 'exotic', 'supercar']
+                                    : rawCat === 'exotic' ? ['exotic', 'supercars', 'supercar']
+                                    : (rawCat === 'supercar' ? ['supercar', 'supercars', 'exotic'] : [rawCat])
                       for (const k of aliases) {
                         const v = byCat[k]?.[tier]
                         if (typeof v === 'number' && v > 0) { perDay = v; break }
@@ -6045,9 +6045,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     return <div className="flex justify-between"><span className="text-gray-400">Km illimitati</span><span className="text-white">{formatPrice(kmPackageCost)}</span></div>
                   }
                   const rawCat = String((item as any).category ?? '').toLowerCase().trim()
-                  const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
-                                : rawCat === 'exotic' ? ['exotic', 'supercars']
-                                : [rawCat]
+                  const aliases = (rawCat === 'supercars' || rawCat === 'supercar') ? ['supercars', 'exotic', 'supercar']
+                                : rawCat === 'exotic' ? ['exotic', 'supercars', 'supercar']
+                                : (rawCat === 'supercar' ? ['supercar', 'supercars', 'exotic'] : [rawCat])
                   const byCat = configOverlay?.pacchettiByCategory
                   let pkgsList: any[] = []
                   if (byCat) {
@@ -6379,9 +6379,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     }
                     // Pacchetti cumulativi
                     const rawCat = String((item as any).category ?? '').toLowerCase().trim()
-                    const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
-                                  : rawCat === 'exotic' ? ['exotic', 'supercars']
-                                  : [rawCat]
+                    const aliases = (rawCat === 'supercars' || rawCat === 'supercar') ? ['supercars', 'exotic', 'supercar']
+                                  : rawCat === 'exotic' ? ['exotic', 'supercars', 'supercar']
+                                  : (rawCat === 'supercar' ? ['supercar', 'supercars', 'exotic'] : [rawCat])
                     const byCat = configOverlay?.pacchettiByCategory
                     let pkgsList: any[] = []
                     if (byCat) {
