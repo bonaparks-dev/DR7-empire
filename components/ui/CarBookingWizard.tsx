@@ -5233,10 +5233,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 <div className="space-y-3">
                   {/* KM inclusi (auto-calcolati da Centralina) */}
                   <div
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType === 'none'
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${(formData.kmPackageType === 'none' && Object.values(formData.kmPackages || {}).every(q => !q))
                       ? 'border-green-500 bg-green-500/10'
                       : 'border-gray-600 hover:border-gray-500'}`}
-                    onClick={() => setFormData(prev => ({ ...prev, kmPackageType: 'none' as any }))}
+                    onClick={() => setFormData(prev => ({ ...prev, kmPackageType: 'none' as any, kmPackages: {} }))}
                   >
                     <div className="flex justify-between items-center">
                       <div>
@@ -5378,10 +5378,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 <div className="space-y-3">
                   {/* Standard auto-calculated km option */}
                   <div
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType === 'none'
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${(formData.kmPackageType === 'none' && Object.values(formData.kmPackages || {}).every(q => !q))
                       ? 'border-green-500 bg-green-500/10'
                       : 'border-gray-600 hover:border-gray-500'}`}
-                    onClick={() => setFormData(prev => ({ ...prev, kmPackageType: 'none' as any }))}
+                    onClick={() => setFormData(prev => ({ ...prev, kmPackageType: 'none' as any, kmPackages: {} }))}
                   >
                     <div className="flex justify-between items-center">
                       <div>
