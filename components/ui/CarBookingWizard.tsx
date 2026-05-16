@@ -6387,10 +6387,16 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         </div>
                         {selectedPkgs.map(({ pkg, qty }) => (
                           <div key={pkg.id} className="flex justify-between">
-                            <span>{qty > 1 ? `${pkg.label} × ${qty} (${pkg.km * qty} km)` : `${pkg.label} (${pkg.km} km)`}</span>
+                            <span>{qty > 1 ? `${pkg.label} × ${qty}` : pkg.label}{qty > 1 ? <span className="text-gray-400"> (+{pkg.km * qty} km)</span> : <span className="text-gray-400"> (+{pkg.km} km)</span>}</span>
                             <span>{formatPrice(pkg.price * qty)}</span>
                           </div>
                         ))}
+                        {selectedPkgs.length > 0 && (
+                          <div className="flex justify-between pt-1 mt-1 border-t border-gray-700/60 font-semibold">
+                            <span className="text-dr7-gold">Totale km disponibili</span>
+                            <span className="text-dr7-gold">{baseKm + pkgKmSum} km</span>
+                          </div>
+                        )}
                       </>
                     )
                   })()}
