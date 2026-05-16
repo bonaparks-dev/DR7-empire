@@ -18,6 +18,10 @@ interface Preventivo {
   insurance_total: number;
   km_limit: number;
   unlimited_km: boolean;
+  unlimited_km_total?: number;
+  lavaggio_fee?: number;
+  no_cauzione_total?: number;
+  second_driver_total?: number;
   total_final: number;
   deposit_amount: number;
   driver_tier: string;
@@ -26,6 +30,8 @@ interface Preventivo {
   created_at: string;
   booking_id?: string;
   source?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  extras_detail?: Record<string, any> | null;
   events?: { event: string; ts: string; detail?: string }[];
 }
 
@@ -176,7 +182,7 @@ const MyPreventivi: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Details grid */}
+                {/* Details grid: i 4 campi standard sempre visibili. */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm mb-4">
                   <div>
                     <p className="text-gray-500 text-xs">Tariffa/giorno</p>
@@ -195,6 +201,38 @@ const MyPreventivi: React.FC = () => {
                     <p className="text-white font-medium">€{Number(p.deposit_amount).toFixed(0)}</p>
                   </div>
                 </div>
+
+                {/* Extras presi dal cliente: ogni voce non-zero appare come riga
+                    dedicata cosi' "I Miei Preventivi" rispecchia esattamente le
+                    opzioni scelte sul wizard (DR7 Flex, Secondo Guidatore,
+                    Lavaggio, Cauzione Veicolo, Experience, Consegna/Ritiro). */}
+                {(() => {
+                  const extras = (p.extras_detail || {}) as Record<string, unknown>
+                  const rows: { label: string; value: string }[] = []
+                  const num = (v: unknown): number => {
+                    const n = Number(v); return Number.isFinite(n) ? n : 0
+                  }
+                  if (num(p.unlimited_km_total) > 0) rows.push({ label: 'Km Illimitati', value: `€${num(p.unlimited_km_total).toFixed(2)}` })
+                  if (num(p.lavaggio_fee) > 0) rows.push({ label: 'Lavaggio finale', value: `€${num(p.lavaggio_fee).toFixed(2)}` })
+                  if (num(p.no_cauzione_total) > 0) rows.push({ label: 'No Cauzione', value: `€${num(p.no_cauzione_total).toFixed(2)}` })
+                  if (num(p.second_driver_total) > 0) rows.push({ label: 'Secondo Guidatore', value: `€${num(p.second_driver_total).toFixed(2)}` })
+                  if (num(extras.dr7_flex_total) > 0) rows.push({ label: 'DR7 FLEX', value: `€${num(extras.dr7_flex_total).toFixed(2)}` })
+                  if (num(extras.cauzione_veicoli_total) > 0) rows.push({ label: 'Cauzione Veicolo', value: `€${num(extras.cauzione_veicoli_total).toFixed(2)}` })
+                  if (num(extras.experience_cost) > 0) rows.push({ label: 'Experience', value: `€${num(extras.experience_cost).toFixed(2)}` })
+                  if (num(extras.delivery_fee) > 0) rows.push({ label: 'Consegna', value: `€${num(extras.delivery_fee).toFixed(2)}` })
+                  if (num(extras.pickup_fee) > 0) rows.push({ label: 'Ritiro', value: `€${num(extras.pickup_fee).toFixed(2)}` })
+                  if (rows.length === 0) return null
+                  return (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm mb-4 pt-3 border-t border-gray-800/70">
+                      {rows.map(r => (
+                        <div key={r.label}>
+                          <p className="text-gray-500 text-xs">{r.label}</p>
+                          <p className="text-white font-medium">{r.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                })()}
 
                 {/* Total + actions */}
                 <div className="flex items-center justify-between pt-4 border-t border-gray-800">
