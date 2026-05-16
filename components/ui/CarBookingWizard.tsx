@@ -5245,7 +5245,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             {/* === B. CHILOMETRI === */}
             <section className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-bold text-white mb-4">B. CHILOMETRI</h3>
-              {displayVehicleType === 'SUPERCAR' ? (
+              {/* 2026-05-16: rendering unificato del blocco Km per TUTTI i veicoli.
+                  Prima esisteva un branch separato "non-SUPERCAR" che mostrava
+                  pacchetti come selezione singola (no + buttons, no qty),
+                  perdendo i pacchetti cumulativi per Porsche 911 / categorie
+                  custom (Hypercar, Suv Luxury). Forziamo sempre il branch nuovo
+                  cosi' la stessa UI vale per ogni categoria con pacchetti
+                  configurati in Centralina Pro. */}
+              {true ? (
                 <div className="space-y-3">
                   {/* KM inclusi (auto-calcolati da Centralina) */}
                   <div
