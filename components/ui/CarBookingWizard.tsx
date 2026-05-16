@@ -5909,7 +5909,29 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 <div className="flex justify-between"><span className="text-gray-400">Noleggio {item.name}</span><span className="text-white">{formatPrice(rentalCost)}</span></div>
                 {insuranceCost > 0 && <div className="flex justify-between"><span className="text-gray-400">Assicurazione {(() => { const opts = getInsuranceForVehicle(vehicleType, (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'); return opts.find(o => o.id === formData.insuranceOption)?.name || formData.insuranceOption?.replace(/_/g, ' '); })()}</span><span className="text-white">{formatPrice(insuranceCost)}</span></div>}
                 {lavaggioFee > 0 && <div className="flex justify-between"><span className="text-gray-400">Lavaggio</span><span className="text-white">{formatPrice(lavaggioFee)}</span></div>}
-                {kmPackageCost > 0 && <div className="flex justify-between"><span className="text-gray-400">Km illimitati</span><span className="text-white">{formatPrice(kmPackageCost)}</span></div>}
+                {kmPackageCost > 0 && (() => {
+                  // 2026-05-16: label dinamica — "Km illimitati" SOLO se davvero
+                  // illimitati; altrimenti nome del pacchetto KM extra
+                  // selezionato (es. "Pacchetto 100 km").
+                  const t = String(formData.kmPackageType || '')
+                  if (t.startsWith('pacchetto:')) {
+                    const rawCat = String((item as any).category ?? '').toLowerCase().trim()
+                    const pkgId = t.slice('pacchetto:'.length)
+                    const byCat = configOverlay?.pacchettiByCategory
+                    const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
+                                  : rawCat === 'exotic' ? ['exotic', 'supercars']
+                                  : [rawCat]
+                    let label = 'Pacchetto KM'
+                    if (byCat) {
+                      for (const k of aliases) {
+                        const found = (byCat[k] || []).find((p: any) => p.id === pkgId)
+                        if (found) { label = `${found.label} (${found.km} km)`; break }
+                      }
+                    }
+                    return <div className="flex justify-between"><span className="text-gray-400">{label}</span><span className="text-white">{formatPrice(kmPackageCost)}</span></div>
+                  }
+                  return <div className="flex justify-between"><span className="text-gray-400">Km illimitati</span><span className="text-white">{formatPrice(kmPackageCost)}</span></div>
+                })()}
                 {kmPackageCost === 0 && <div className="flex justify-between"><span className="text-gray-400">Chilometri</span><span className="text-white">{includedKm >= 9999 ? 'Illimitati inclusi' : `${includedKm} km inclusi`}</span></div>}
                 <div className="flex justify-between"><span className="text-green-400">Supplemento No Cauzione</span><span className="text-green-400">{formatPrice(noDepositSurcharge)}</span></div>
                 {hasDynamicDiscount && <div className="flex justify-between text-blue-400"><span>Sconto Revenue ({dynamicDiscountPct}%)</span><span>-{formatPrice(listSubtotal - subtotal)}</span></div>}
@@ -6198,19 +6220,37 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     </div>
                   )}
 
-                  {/* KM package */}
-                  {kmPackageCost > 0 && (
-                    <div className="flex justify-between">
-                      {/* Per-day label DERIVATO dal costo totale (kmPackageCost / giorni).
-                          Prima leggeva ACTIVE_TIER_PRICING[driverTier].unlimitedKmPerDay
-                          (hardcoded fascia A/B) e mostrava un prezzo unitario
-                          incoerente con il totale: es. "1 gg × €2500 = €1000".
-                          Il totale vero viene da Centralina Pro; la label ora
-                          riflette quella stessa fonte dividendo per i giorni. */}
-                      <span>Km illimitati ({Math.max(1, duration.days)} gg × €{(kmPackageCost / Math.max(1, duration.days)).toFixed(2)})</span>
-                      <span>{formatPrice(kmPackageCost)}</span>
-                    </div>
-                  )}
+                  {/* KM package — label dinamica per pacchetto vs illimitati */}
+                  {kmPackageCost > 0 && (() => {
+                    const t = String(formData.kmPackageType || '')
+                    if (t.startsWith('pacchetto:')) {
+                      const rawCat = String((item as any).category ?? '').toLowerCase().trim()
+                      const pkgId = t.slice('pacchetto:'.length)
+                      const byCat = configOverlay?.pacchettiByCategory
+                      const aliases = rawCat === 'supercars' ? ['supercars', 'exotic']
+                                    : rawCat === 'exotic' ? ['exotic', 'supercars']
+                                    : [rawCat]
+                      let label = 'Pacchetto KM'
+                      if (byCat) {
+                        for (const k of aliases) {
+                          const found = (byCat[k] || []).find((p: any) => p.id === pkgId)
+                          if (found) { label = `${found.label} (${found.km} km)`; break }
+                        }
+                      }
+                      return (
+                        <div className="flex justify-between">
+                          <span>{label}</span>
+                          <span>{formatPrice(kmPackageCost)}</span>
+                        </div>
+                      )
+                    }
+                    return (
+                      <div className="flex justify-between">
+                        <span>Km illimitati ({Math.max(1, duration.days)} gg × €{(kmPackageCost / Math.max(1, duration.days)).toFixed(2)})</span>
+                        <span>{formatPrice(kmPackageCost)}</span>
+                      </div>
+                    )
+                  })()}
                   {formData.kmPackageType === '50km' && (
                     <div className="flex justify-between text-gray-400"><span>Pacchetto km (50 km/giorno)</span> <span>Incluso nel noleggio</span></div>
                   )}
