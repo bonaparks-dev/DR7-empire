@@ -3205,6 +3205,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       const dropoffISO = `${formData.returnDate}T${formData.returnTime || '09:00'}:00`;
 
       const resolvedVehicleId = formData.selectedVehicleId || item.vehicleIds?.[0] || item.id.replace('car-', '');
+      // Risolvi label assicurazione al salvataggio cosi' MyPreventivi
+      // non deve piu' indovinarla via overlay (e funziona anche per categorie
+      // custom).
+      const insOptId = formData.insuranceOption || ''
+      const insLabel = (() => {
+        if (!insOptId) return ''
+        const vType = getVehicleType(item, categoryContext)
+        const activeTier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2'
+        const opts = getInsuranceForVehicle(vType, activeTier)
+        return opts.find((o: { id?: string; name?: string }) => o.id === insOptId)?.name || ''
+      })()
       const payload = {
         vehicle_id: resolvedVehicleId,
         vehicle_name: item.name,
@@ -3216,7 +3227,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         pickup_location: formData.pickupLocation || 'dr7_office',
         dropoff_location: formData.returnLocation || formData.pickupLocation || 'dr7_office',
         base_daily_rate: effectivePricePerDay,
-        // insurance_option stored in booking_details.insuranceOption (not a top-level column)
+        insurance_option: insOptId,
+        insurance_label: insLabel,
         insurance_daily_price: insuranceCost / Math.max(duration.days, 1),
         insurance_total: insuranceCost,
         km_limit: formData.kmLimit || includedKm || 0,
@@ -7087,9 +7099,19 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         )}
                         {/* Hide CONFERMA/RICHIEDI when No Cauzione flow (SALVA PREVENTIVO is in step 4 content) */}
                         {noCauzioneRequested && formData.depositOption === 'no_deposit' ? null : preventivoSaved ? (
-                          <div className="w-full text-center py-4 bg-green-500/10 border border-green-500/30 rounded-2xl">
-                            <p className="text-green-400 font-bold text-base">Preventivo salvato!</p>
-                            <p className="text-gray-400 text-sm mt-1">Puoi trovarlo nel tuo account in "I Miei Preventivi"</p>
+                          <div className="w-full flex flex-col gap-3">
+                            <div className="text-center py-4 bg-green-500/10 border border-green-500/30 rounded-2xl">
+                              <p className="text-green-400 font-bold text-base">Preventivo salvato!</p>
+                              <p className="text-gray-400 text-sm mt-1">Puoi trovarlo nel tuo account in "I Miei Preventivi"</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={onClose}
+                              className="w-full px-6 py-3 bg-white text-black text-sm sm:text-base font-bold rounded-full hover:bg-gray-200 transition-colors"
+                              style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+                            >
+                              Chiudi
+                            </button>
                           </div>
                         ) : (
                           <div className="flex flex-col sm:flex-row gap-3 w-full">
