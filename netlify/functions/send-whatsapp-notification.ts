@@ -24,6 +24,131 @@ function formatKmInfo(booking: { booking_details?: Record<string, unknown> }): s
 }
 
 /**
+ * Build the standard placeholder variables from a booking. Used by BOTH:
+ *   1. The legacy "booking-only" branch (no templateKey → picks
+ *      rental_new_customer / carwash_new_customer / ecc.)
+ *   2. The "templateKey + booking" branch used by
+ *      process-scheduled-system-messages-cron, which fires a specific
+ *      system_messages template against a real booking.
+ *
+ * Before this helper, the templateKey branch built vars only from
+ * `templateVars` — when the cron sent { booking, messageKey } the body
+ * inherited zero placeholders and customers received raw {vehicle_name}
+ * / {pickup_date} / {booking_id} text. See May 2026 bug report.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function buildVarsFromBooking(booking: any, isCustomerMessage: boolean): Promise<Record<string, string>> {
+  void isCustomerMessage;
+  const customerName: string = booking.customer_name || booking.booking_details?.customer?.fullName || 'Cliente';
+  const customerEmail: string = booking.customer_email || booking.booking_details?.customer?.email || '';
+  const customerPhone: string = booking.customer_phone || booking.booking_details?.customer?.phone || '';
+  const bookingId: string = (booking.id || '').substring(0, 8).toUpperCase();
+  const totalPrice: string = booking.price_total != null ? (Number(booking.price_total) / 100).toFixed(2) : '';
+  const notes: string = booking.booking_details?.notes || '';
+  const paymentLabel: string =
+    booking.payment_method === 'credit_wallet' || booking.payment_method === 'credit' ? 'Credit Wallet' :
+    booking.payment_method === 'nexi' || booking.payment_method === 'Nexi Pay by Link' ? 'Carta' :
+    (booking.payment_status === 'paid' || booking.payment_status === 'succeeded' || booking.payment_status === 'completed') ? 'Pagato' : 'Da saldare';
+
+  const vars: Record<string, string> = {
+    nome: customerName.split(' ')[0] || customerName,
+    customer_name: customerName,
+    cliente: customerName,
+    customer_email: customerEmail,
+    customer_phone: customerPhone,
+    booking_id: bookingId,
+    total: totalPrice,
+    totale: totalPrice,
+    importo: totalPrice,
+    amount: totalPrice,
+    notes,
+    note: notes,
+    nota: notes,
+    payment_status: paymentLabel,
+    payment_method: booking.payment_method || '',
+    payment_info: paymentLabel,
+    pagamento: paymentLabel,
+  };
+
+  const serviceType = booking.service_type as string | undefined;
+  if (serviceType === 'car_wash') {
+    const appt = booking.appointment_date ? new Date(booking.appointment_date) : null;
+    const plateValue: string = booking.vehicle_plate || booking.booking_details?.customerVehicle?.plate || booking.booking_details?.plate || booking.booking_details?.targa || '';
+    const flexInfo: string = booking.booking_details?.prime_flex ? 'Prime Flex' : booking.booking_details?.dr7_flex ? 'DR7 Flex' : '';
+    const baseService: string = booking.service_name || '';
+    const composedService = flexInfo ? `${baseService} + ${flexInfo}` : baseService;
+    const apptDateShort = appt ? appt.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Rome' }) : '';
+    const apptDateLong = appt ? appt.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Europe/Rome' }) : '';
+    const apptTime = appt ? appt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '';
+    Object.assign(vars, {
+      service_name: composedService,
+      servizio: composedService,
+      plate: plateValue,
+      targa: plateValue,
+      date: apptDateShort,
+      data: apptDateShort,
+      data_lunga: apptDateLong,
+      time: apptTime,
+      ora: apptTime,
+      appointment_date: apptDateShort,
+      appointment_time: apptTime,
+      pickup_date: apptDateShort,
+      pickup_time: apptTime,
+      extras: booking.booking_details?.additionalService || '',
+      flex: flexInfo,
+    });
+  } else if (serviceType === 'mechanical' || serviceType === 'mechanical_service') {
+    const appt = booking.appointment_date ? new Date(booking.appointment_date) : null;
+    Object.assign(vars, {
+      service_name: booking.service_name || '',
+      pickup_date: appt ? appt.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Rome' }) : '',
+      pickup_time: appt ? appt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '',
+    });
+  } else {
+    const pickup = booking.pickup_date ? new Date(booking.pickup_date) : null;
+    const dropoff = booking.dropoff_date ? new Date(booking.dropoff_date) : null;
+    const depositAmount = Number(booking.deposit_amount || booking.booking_details?.deposit || 0);
+    const depositOption = booking.booking_details?.depositOption;
+    let depositStr = '';
+    if (depositOption === 'no_deposit') {
+      const sur = Number(booking.booking_details?.noDepositSurcharge || 0);
+      depositStr = `Senza cauzione (+€${sur.toFixed(2)})`;
+    } else if (depositAmount > 0) {
+      depositStr = `€${depositAmount}`;
+    }
+    const insuranceName = await getInsuranceNameById(booking.insurance_option || booking.booking_details?.insuranceOption || '');
+    Object.assign(vars, {
+      vehicle_name: booking.vehicle_name || '',
+      veicolo: booking.vehicle_name || '',
+      plate: booking.vehicle_plate || '',
+      targa: booking.vehicle_plate || '',
+      pickup_date: pickup ? pickup.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' }) : '',
+      pickup_time: pickup ? pickup.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '',
+      ritiro_data: pickup ? pickup.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' }) : '',
+      ritiro_ora: pickup ? pickup.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '',
+      dropoff_date: dropoff ? dropoff.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' }) : '',
+      dropoff_time: dropoff ? dropoff.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '',
+      riconsegna_data: dropoff ? dropoff.toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' }) : '',
+      riconsegna_ora: dropoff ? dropoff.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) : '',
+      pickup_location: formatLocation(booking.pickup_location),
+      dropoff_location: formatLocation(booking.dropoff_location),
+      luogo_ritiro: formatLocation(booking.pickup_location),
+      luogo_riconsegna: formatLocation(booking.dropoff_location),
+      insurance: insuranceName,
+      assicurazione: insuranceName,
+      deposit: depositStr,
+      cauzione: depositStr,
+      caution: depositStr,
+      km_info: formatKmInfo(booking),
+      km: formatKmInfo(booking),
+      chilometraggio: formatKmInfo(booking),
+      flex: booking.booking_details?.dr7_flex || booking.booking_details?.dr7Flex ? 'DR7 Flex' : '',
+    });
+  }
+  return vars;
+}
+
+/**
  * Sends a WhatsApp notification via Green API.
  *
  * ZERO HARDCODED MESSAGE BODIES.
@@ -46,7 +171,15 @@ const handler: Handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ message: 'Green API not configured' }) };
   }
 
-  const { booking, customMessage, customPhone, skipHeader, templateKey, templateVars } = JSON.parse(event.body || '{}');
+  const body = JSON.parse(event.body || '{}');
+  const { booking, customMessage, customPhone, skipHeader, templateVars } = body;
+  // Accept both templateKey (this function's documented param) and
+  // messageKey (used by process-scheduled-system-messages-cron). Without
+  // this alias the cron's explicit template was IGNORED, the function
+  // fell into the booking-default branch and sent rental_new_customer
+  // again — causing duplicate confirmations + the targeted template
+  // (e.g. DR7 Privilege) never reaching the customer.
+  const templateKey: string | undefined = body.templateKey || body.messageKey;
 
   // ── Target phone ──
   let targetPhone: string = String(customPhone || NOTIFICATION_PHONE).replace(/[\s\-+]/g, '');
@@ -62,7 +195,7 @@ const handler: Handler = async (event) => {
     // Admin-authored free text — already composed upstream.
     message = customMessage;
   } else if (templateKey) {
-    // Explicit legacy key → resolved to Pro → rendered with templateVars.
+    // Explicit template key → resolved to Pro → rendered with templateVars.
     // Caller passes keys like '{nome}' (with braces) OR bare 'nome'.
     const resolvedKey = await resolveKeyForContext(String(templateKey));
     if (resolvedKey === null) {
@@ -79,7 +212,16 @@ const handler: Handler = async (event) => {
         vars[cleanKey] = v == null ? '' : String(v);
       }
     }
-    message = await renderTemplate(resolvedKey, vars);
+    // If a booking is ALSO provided, enrich vars with the standard
+    // booking-derived placeholders (vehicle_name, pickup_date, booking_id,
+    // ecc.). Without this enrichment, automatic crons that pass
+    // { booking, messageKey } received a body with empty vars and the
+    // raw {vehicle_name}/{booking_id}/{pickup_date} placeholders leaked
+    // into the customer's WhatsApp (visible bug, May 2026).
+    if (booking) {
+      Object.assign(vars, await buildVarsFromBooking(booking, !!customPhone));
+    }
+    message = await renderTemplate(resolvedKey, vars, undefined, booking ? { vehiclePlate: booking.vehicle_plate } : undefined);
   } else if (booking) {
     const serviceType = booking.service_type as string | undefined;
     const legacyKey =
