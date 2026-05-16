@@ -107,6 +107,11 @@ const FlottaIndexPage: React.FC = () => {
                         item={v as RentalItem}
                         onBook={(item) => handleBook(item, group.id)}
                         categoryId={categoryContextFor(group.id)}
+                        // Su "La Nostra Flotta" rimuoviamo il "Prenota Ora"
+                        // dal card. Il cliente clicca il veicolo e usa il
+                        // wizard centralizzato (Prenota Ora popup / pagina
+                        // categoria) — niente CTA duplicato per ogni macchina.
+                        hideBookButton
                       />
                     ))}
                   </div>
