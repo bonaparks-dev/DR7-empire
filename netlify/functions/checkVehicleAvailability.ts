@@ -137,87 +137,60 @@ export const handler: Handler = async (event) => {
             .map((v: any) => v.plate)
             .filter(Boolean);
 
-        // Fetch bookings by vehicle_id (exclude Lavaggio Rientro — covered by buffer)
-        const bookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name&status=not.in.(cancelled,annullata,completed,completata,expired)&customer_name=neq.${encodeURIComponent('Lavaggio Rientro')}&vehicle_plate=not.in.(TEST000,TEST002)&vehicle_id=in.(${vehicleIds.join(',')})&order=pickup_date.asc`;
-        console.log('[checkVehicleAvailability] bookingsUrl:', bookingsUrl);
+        // 2026-05-17 BULLETPROOF REWRITE: una sola query AMPIA (date window
+        // ± 90 giorni intorno al requested), poi filtriamo client-side.
+        // Cosi' eliminiamo ogni rischio di PostgREST `in.()` o `ilike.*`
+        // che falliva silenziosamente quando:
+        //   - service_type valeva "rental" invece di "car_rental"
+        //   - vehicle_id era NULL su bookings creati da admin
+        //   - vehicle_plate aveva spazi/caratteri non-ASCII
+        //   - vehicle_name aveva caratteri da URL-encode
+        // Match client-side: vehicle_id IN ids OR vehicle_plate IN plates
+        // OR vehicle_name = name (case-insensitive trim).
+        const windowStart = new Date(Math.min(requestedPickup.getTime(), requestedDropoff.getTime()) - 90 * 24 * 60 * 60 * 1000).toISOString();
+        const windowEnd = new Date(Math.max(requestedPickup.getTime(), requestedDropoff.getTime()) + 90 * 24 * 60 * 60 * 1000).toISOString();
+        const wideUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name,status,service_type&status=not.in.(cancelled,annullata,completed,completata,expired)&pickup_date=gte.${windowStart}&pickup_date=lte.${windowEnd}&order=pickup_date.asc`;
+        console.log('[checkVehicleAvailability] wideUrl:', wideUrl);
 
-        const bookingsResponse = await fetch(bookingsUrl, {
+        const wideResp = await fetch(wideUrl, {
             headers: {
                 'apikey': SUPABASE_SERVICE_ROLE_KEY!,
                 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
                 'Content-Type': 'application/json',
             },
         });
+        const allBookingsInWindow = await wideResp.json();
+        console.log('[checkVehicleAvailability] wide query returned', Array.isArray(allBookingsInWindow) ? allBookingsInWindow.length : 'NOT ARRAY', 'rows');
 
-        let bookings = await bookingsResponse.json();
+        // Client-side filter — match if vehicle_id, plate, OR name matches.
+        // Skip Lavaggio Rientro (covered by buffer) and TEST plates.
+        const targetVehicleIdSet = new Set(vehicleIds.map((id: string) => String(id).toLowerCase()));
+        const targetPlateSet = new Set(targetPlates.map((p: string) => String(p).trim().toUpperCase()));
+        const targetNameNorm = String(vehicleName || '').trim().toLowerCase();
+        const TEST_PLATES_SET = new Set(['TEST000', 'TEST002']);
 
-        // Also fetch bookings by plate (targa) to catch mismatched vehicle_id
-        if (targetPlates.length > 0) {
-            const plateBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name&status=not.in.(cancelled,annullata,completed,completata,expired)&customer_name=neq.${encodeURIComponent('Lavaggio Rientro')}&vehicle_plate=in.(${targetPlates.filter(p => p !== 'TEST000' && p !== 'TEST002').join(',')})&order=pickup_date.asc`;
-            const plateResponse = await fetch(plateBookingsUrl, {
-                headers: {
-                    'apikey': SUPABASE_SERVICE_ROLE_KEY!,
-                    'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-            const plateBookings = await plateResponse.json();
-
-            // Merge and deduplicate
-            if (Array.isArray(plateBookings)) {
-                const seenKeys = new Set((bookings || []).map((b: any) => `${b.pickup_date}_${b.dropoff_date}_${b.vehicle_id}`));
-                for (const pb of plateBookings) {
-                    const key = `${pb.pickup_date}_${pb.dropoff_date}_${pb.vehicle_id}`;
-                    if (!seenKeys.has(key)) {
-                        // Map plate booking to the correct vehicle_id
-                        const plateVehicle = vehicles.find((v: any) => v.plate === pb.vehicle_plate);
-                        if (plateVehicle) {
-                            pb.vehicle_id = plateVehicle.id;
-                        }
-                        bookings.push(pb);
-                        seenKeys.add(key);
+        let bookings: any[] = [];
+        if (Array.isArray(allBookingsInWindow)) {
+            for (const b of allBookingsInWindow) {
+                if (b.customer_name === 'Lavaggio Rientro') continue;
+                const plateNorm = String(b.vehicle_plate || '').trim().toUpperCase();
+                if (TEST_PLATES_SET.has(plateNorm)) continue;
+                const bookingIdNorm = String(b.vehicle_id || '').toLowerCase();
+                const bookingNameNorm = String(b.vehicle_name || '').trim().toLowerCase();
+                const matchById = !!bookingIdNorm && targetVehicleIdSet.has(bookingIdNorm);
+                const matchByPlate = !!plateNorm && targetPlateSet.has(plateNorm);
+                const matchByName = !!targetNameNorm && bookingNameNorm === targetNameNorm;
+                if (matchById || matchByPlate || matchByName) {
+                    // Forza la booking sul primo vehicle_id del pool cosi'
+                    // entra nel busyByVehicle map anche se aveva vehicle_id null.
+                    if (!b.vehicle_id && vehicleIds[0]) {
+                        b.vehicle_id = vehicleIds[0];
                     }
+                    bookings.push(b);
                 }
             }
         }
-
-        // 2026-05-17 BIG BUG FIX: terza query per vehicle_name. Bookings creati
-        // da admin a volte hanno vehicle_id NULL o un id che non matcha le
-        // righe vehicles correnti (es. veicolo ricreato dopo che la booking
-        // era gia' stata fatta). La ricerca per plate aiuta solo se il plate
-        // matcha — ma se admin ha messo plate diverso, manca anche quella.
-        // Fallback finale: cerchiamo le bookings con vehicle_name ILIKE name
-        // e le mappiamo alla vehicle_id di prima riga del nostro pool.
-        try {
-            const targetVehicleIdForName = vehicleIds[0]
-            const nameBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name&status=not.in.(cancelled,annullata,completed,completata,expired)&customer_name=neq.${encodeURIComponent('Lavaggio Rientro')}&vehicle_name=ilike.${encodeURIComponent(vehicleName.trim())}*&vehicle_plate=not.in.(TEST000,TEST002)&order=pickup_date.asc`;
-            const nameResp = await fetch(nameBookingsUrl, {
-                headers: {
-                    'apikey': SUPABASE_SERVICE_ROLE_KEY!,
-                    'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-            const nameBookings = await nameResp.json();
-            if (Array.isArray(nameBookings) && nameBookings.length > 0) {
-                const seenKeys = new Set((bookings || []).map((b: any) => `${b.pickup_date}_${b.dropoff_date}_${b.vehicle_id || b.vehicle_plate || b.vehicle_name}`));
-                for (const nb of nameBookings) {
-                    const key = `${nb.pickup_date}_${nb.dropoff_date}_${nb.vehicle_id || nb.vehicle_plate || nb.vehicle_name}`;
-                    if (!seenKeys.has(key)) {
-                        // Forza la booking sul primo vehicle del pool cosi'
-                        // entra nel busyByVehicle map e blocca il booking.
-                        if (!nb.vehicle_id && targetVehicleIdForName) {
-                            nb.vehicle_id = targetVehicleIdForName;
-                        }
-                        bookings.push(nb);
-                        seenKeys.add(key);
-                    }
-                }
-                console.log('[checkVehicleAvailability] name-match fallback added', nameBookings.length, 'bookings');
-            }
-        } catch (e) {
-            console.warn('[checkVehicleAvailability] name fallback failed:', e);
-        }
+        console.log('[checkVehicleAvailability] after client-side filter:', bookings.length, 'matching bookings');
 
         // Fetch reservations for ALL these vehicles
         const reservationsUrl = `${SUPABASE_URL}/rest/v1/reservations?select=start_at,end_at,vehicle_id&vehicle_id=in.(${vehicleIds.join(',')})&status=not.in.(cancelled,annullata,completed,completata,expired)&order=start_at.asc`;
