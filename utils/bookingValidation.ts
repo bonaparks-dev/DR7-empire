@@ -278,8 +278,25 @@ export async function checkVehicleAvailability(
         status: response.status,
         statusText: response.statusText,
       });
-      // Return empty conflicts on error to not block user
-      return [];
+      // 2026-05-17 BUG FIX: failed-open era pericoloso — la function
+      // poteva tornare 500/timeout e il cliente prenotava una macchina
+      // gia' occupata. Failed-closed: ritorniamo un "conflict sentinel"
+      // cosi' il wizard mostra errore di disponibilita' e il booking
+      // viene bloccato finche' la verifica non riesce davvero.
+      const sentinel = [{
+        id: 'SENTINEL_CHECK_FAILED',
+        vehicle_id: null,
+        vehicle_name: vehicleName,
+        plate: null,
+        pickup_date: pickupDate,
+        dropoff_date: dropoffDate,
+        status: 'unknown',
+        _availableFrom: null,
+        _checkFailed: true,
+        _checkError: `availability check returned ${response.status}`,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any];
+      return sentinel;
     }
 
     const data = await response.json();
@@ -293,8 +310,24 @@ export async function checkVehicleAvailability(
     return conflicts;
   } catch (error) {
     console.error('Error in checkVehicleAvailability:', error);
-    // Return empty conflicts on error to not block user
-    return [];
+    // 2026-05-17 BUG FIX: stesso failed-closed del ramo response.ok (vedi
+    // commento sopra). Errori di rete / parsing JSON / function down
+    // bloccavano la verifica ma non il booking — risultato: prenotazioni
+    // doppie sulle stesse date.
+    const sentinel = [{
+      id: 'SENTINEL_CHECK_FAILED',
+      vehicle_id: null,
+      vehicle_name: vehicleName,
+      plate: null,
+      pickup_date: pickupDate,
+      dropoff_date: dropoffDate,
+      status: 'unknown',
+      _availableFrom: null,
+      _checkFailed: true,
+      _checkError: error instanceof Error ? error.message : 'unknown error',
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any];
+    return sentinel;
   }
 }
 

@@ -2703,14 +2703,24 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
 
     // FIX 4: Re-check availability immediately before insert to close the race window
+    // 2026-05-17 BUG FIX: failed-closed. Se checkVehicleAvailability ritorna
+    // un sentinel _checkFailed=true (function 500 / timeout / network)
+    // BLOCCHIAMO il booking invece di proseguire — altrimenti il cliente
+    // poteva prenotare un'auto gia' occupata quando la verifica falliva.
     try {
       const pickupDT = createItalyDateTime(formData.pickupDate, formData.pickupTime).toISOString();
       const dropoffDT = createItalyDateTime(formData.returnDate, formData.returnTime).toISOString();
       const specificId = formData.selectedVehicleId || item.id.replace('car-', '');
       const preInsertConflicts = await checkVehicleAvailability(item.name, pickupDT, dropoffDT, specificId);
       if (preInsertConflicts.length > 0) {
+        const first = preInsertConflicts[0] as { _checkFailed?: boolean; availableFrom?: string; _availableFrom?: string }
+        if (first?._checkFailed) {
+          setErrors(prev => ({ ...prev, form: 'Impossibile verificare la disponibilità in questo momento. Riprova fra qualche secondo.' }));
+          setIsProcessing(false);
+          return;
+        }
         // Check if there's an availableFrom time we can suggest
-        const availFrom = preInsertConflicts[0]?.availableFrom || preInsertConflicts[0]?._availableFrom;
+        const availFrom = first?.availableFrom || first?._availableFrom;
         if (availFrom) {
           const availTime = new Date(availFrom).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Rome' });
           setErrors(prev => ({ ...prev, form: `Il veicolo non è disponibile a quest\'orario. Disponibile dalle ${availTime}.` }));
@@ -2721,8 +2731,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         return;
       }
     } catch (e) {
-      // Non-blocking: if the re-check fails, proceed (availability check errors should not block booking)
-      console.warn('[finalizeBooking] Pre-insert availability re-check failed (non-blocking):', e);
+      // Anche un'eccezione qui blocca il booking: meglio errore inviato al
+      // cliente che booking-fantasma su auto gia' occupata.
+      console.warn('[finalizeBooking] Pre-insert availability re-check failed:', e);
+      setErrors(prev => ({ ...prev, form: 'Impossibile verificare la disponibilità. Riprova fra qualche secondo.' }));
+      setIsProcessing(false);
+      return;
     }
 
     try {
