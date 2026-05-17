@@ -1795,7 +1795,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // --- RENTAL COST ---
     let calculatedRentalCost = billingDays * pricePerDay;
 
-    if (dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.selectedBaseRateEur) {
+    // 2026-05-17: il sito applica il base price dinamico ogniqualvolta il
+    // revenue engine e' enabled (no piu' requirement su mode='auto_apply').
+    // Mode 'suggestion' era pensato per dare al PREVENTIVI ADMIN una vista
+    // suggerita senza auto-applicare, ma sul sito coefficienti vanno sempre
+    // applicati altrimenti i prezzi mostrati al cliente sono fuori sync con
+    // la Centralina Pro.
+    if (dynamicPricing?.enabled && dynamicPricing.selectedBaseRateEur) {
       // Dynamic pricing: use base rate here, coefficient applied to FULL TOTAL later
       calculatedRentalCost = dynamicPricing.selectedBaseRateEur * billingDaysCalc;
     } else {
@@ -1990,7 +1996,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const listSubtotal = calculatedSubtotal; // total before coefficients
     const locationFees = calculatedDeliveryFee + calculatedPickupFee + calculatedDropoffFee;
     const subtotalNoExperience = calculatedSubtotal - calculatedExperienceCost - locationFees;
-    const hasDynamicCoeffs = dynamicPricing?.enabled && dynamicPricing.mode === 'auto_apply' && dynamicPricing.breakdown && dynamicPricing.breakdown.length > 0;
+    // 2026-05-17: applica coefficienti dinamici quando l'engine e' enabled,
+    // indipendentemente da mode. La mode 'suggestion' resta per la Preventivi
+    // Admin (mostra il suggerimento senza forzarlo) ma sul sito coefficienti
+    // si applicano sempre — altrimenti il cliente vede il listino raw e
+    // direzione lamenta che "i coefficienti non funzionano".
+    const hasDynamicCoeffs = dynamicPricing?.enabled && dynamicPricing.breakdown && dynamicPricing.breakdown.length > 0;
     const combinedCoeff = hasDynamicCoeffs
       ? (dynamicPricing!.breakdown!.reduce((acc, b) => acc * b.coeff, 1))
       : 1;
