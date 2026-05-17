@@ -335,66 +335,24 @@ export const handler: Handler = async (event) => {
             }
         }
 
-        // CROSS-VEHICLE HANDOVER GAP (15 min) — staff can only handle one pickup/return
-        // at a time. Mirrors admin's vehicleAvailability.ts CROSS_VEHICLE_GAP_MINUTES rule.
-        // Test plates (TEST000/TEST002) are excluded so test bookings never block real ones.
-        const CROSS_VEHICLE_GAP_MS = 15 * 60 * 1000;
-        const TEST_PLATES = new Set(['TEST000', 'TEST002']);
-        const isTestPlate = (plate: string | null | undefined): boolean =>
-            !!plate && TEST_PLATES.has(plate.replace(/\s+/g, '').toUpperCase());
-
-        // Fetch any active car_rental booking whose pickup OR dropoff sits within ±1h of
-        // our requested pickup or dropoff (1h margin around the 15-min check window).
-        const crossWindowStart = new Date(Math.min(requestedPickup.getTime(), requestedDropoff.getTime()) - 60 * 60 * 1000).toISOString();
-        const crossWindowEnd = new Date(Math.max(requestedPickup.getTime(), requestedDropoff.getTime()) + 60 * 60 * 1000).toISOString();
-        const crossUrl = `${SUPABASE_URL}/rest/v1/bookings?select=id,pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name,service_type,status,payment_status&status=not.in.(cancelled,annullata,completed,completata,expired)&service_type=eq.car_rental&or=(and(pickup_date.gte.${crossWindowStart},pickup_date.lte.${crossWindowEnd}),and(dropoff_date.gte.${crossWindowStart},dropoff_date.lte.${crossWindowEnd}))`;
-
-        try {
-            const crossResp = await fetch(crossUrl, {
-                headers: {
-                    'apikey': SUPABASE_SERVICE_ROLE_KEY!,
-                    'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-            const crossBookings = await crossResp.json();
-
-            if (Array.isArray(crossBookings)) {
-                const myPickup = requestedPickup.getTime();
-                const myDropoff = requestedDropoff.getTime();
-
-                for (const b of crossBookings) {
-                    // Same-vehicle conflicts already handled by the per-vehicle buffer above
-                    if (b.vehicle_id && vehicleIds.includes(b.vehicle_id)) continue;
-                    if (isTestPlate(b.vehicle_plate)) continue;
-                    if (b.status === 'pending_payment' && b.payment_status === 'expired') continue;
-
-                    const otherPickup = new Date(b.pickup_date).getTime();
-                    const otherDropoff = new Date(b.dropoff_date).getTime();
-
-                    const pairs: Array<[number, number]> = [
-                        [myPickup, otherPickup],
-                        [myPickup, otherDropoff],
-                        [myDropoff, otherPickup],
-                        [myDropoff, otherDropoff],
-                    ];
-
-                    const tooClose = pairs.some(([a, c]) => Math.abs(a - c) < CROSS_VEHICLE_GAP_MS);
-                    if (tooClose) {
-                        conflicts.push({
-                            pickup_date: b.pickup_date,
-                            dropoff_date: b.dropoff_date,
-                            vehicle_name: b.vehicle_name || b.vehicle_plate || 'altro veicolo',
-                            cross_vehicle_gap: true,
-                        });
-                        break;
-                    }
-                }
-            }
-        } catch (crossErr) {
-            console.error('[checkVehicleAvailability] cross-vehicle gap check failed:', crossErr);
-            // Soft-fail — don't block bookings if the cross-gap query errors out
-        }
+        // 2026-05-17 BUG FIX: cross-vehicle handover gap DISATTIVATO.
+        //
+        // La regola precedente bloccava un veicolo se un'altra booking aveva
+        // pickup o dropoff entro 15 minuti dalla finestra richiesta. Era
+        // pensata come capacita\' staff (un solo handover alla volta) ma
+        // applicata cosi\' veniva fired per OGNI veicolo cercato (la stessa
+        // booking conflittuale appariva 22 volte → 22 macchine nascoste).
+        //
+        // Risultato visto in produzione 17/05/2026: ricerca 20→21 →
+        // 21 auto su 22 nascoste con "conflict (1 conflicts)".
+        //
+        // Disabilitiamo finche\' non viene reimplementata come check
+        // GLOBALE di capacita\' staff (1 risposta unica per la finestra,
+        // non un conflict per veicolo). Per ora il cliente vede correttamente
+        // le auto fisicamente libere; la gestione della tempistica degli
+        // handover passa allo staff in fase di conferma.
+        // TODO: ridisegnare come "max N handover per slot di 15 min" lato
+        // calendario admin, non come filtro client-facing.
 
         // Check if any conflict ends same day as requested pickup → availableFrom
         // Use Rome timezone for date comparison (Italy = UTC+1 or UTC+2)
