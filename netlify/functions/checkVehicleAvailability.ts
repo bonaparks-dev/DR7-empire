@@ -185,7 +185,12 @@ export const handler: Handler = async (event) => {
                 if (b.service_type === 'car_wash') continue;
                 const custLower = String(b.customer_name || '').toLowerCase().trim();
                 if (custLower.includes('lavaggio rientro')) continue;
-                if (custLower === 'admin dr7' || custLower.startsWith('admin.') || custLower === 'admin') continue;
+                // 2026-05-17: filtra QUALSIASI customer_name che inizia con
+                // "admin" (admin dr7, admin.m7, admin.m7 *, admin manuale,
+                // admin test, ecc.). Sono tutte riservazioni interne fatte
+                // da direzione per bloccare l'auto manualmente in calendario
+                // — non sono noleggi reali e non devono bloccare i clienti.
+                if (/^admin\b/.test(custLower)) continue;
                 const plateNorm = String(b.vehicle_plate || '').trim().toUpperCase();
                 if (TEST_PLATES_SET.has(plateNorm)) continue;
                 const bookingIdNorm = String(b.vehicle_id || '').toLowerCase();
