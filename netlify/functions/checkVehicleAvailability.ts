@@ -249,16 +249,21 @@ export const handler: Handler = async (event) => {
         for (const vehicle of vehicleLookup) {
             if (!vehicle.metadata) continue;
             const { unavailable_from, unavailable_until, unavailable_from_time, unavailable_until_time } = vehicle.metadata;
-            if (!unavailable_from) continue;
+            // 2026-05-17 BUG FIX: blocco metadata ora richiede ENTRAMBI
+            // unavailable_from E unavailable_until. Prima se solo from era
+            // settato, blockEnd diventava 2099-12-31 e l'auto era bloccata
+            // PER SEMPRE. Direzione poteva aver settato from per una
+            // manutenzione e dimenticato di settare until — risultato:
+            // auto invisibili sul sito a tempo indeterminato.
+            if (!unavailable_from || !unavailable_until) continue;
             const fromTime = unavailable_from_time || '00:00';
             const untilTime = unavailable_until_time || '23:59';
             const blockStart = new Date(`${unavailable_from}T${fromTime}:00`);
-            const blockEnd = unavailable_until
-                ? new Date(`${unavailable_until}T${untilTime}:00`)
-                : new Date('2099-12-31T23:59:00');
+            const blockEnd = new Date(`${unavailable_until}T${untilTime}:00`);
             const vehicleBusy = busyByVehicle.get(vehicle.id) || [];
             vehicleBusy.push({ start: blockStart, end: blockEnd });
             busyByVehicle.set(vehicle.id, vehicleBusy);
+            console.log(`[checkVehicleAvailability] vehicle ${vehicle.id} maintenance block: ${unavailable_from}-${unavailable_until}`);
         }
 
         // Add bookings to respective vehicles
@@ -275,18 +280,16 @@ export const handler: Handler = async (event) => {
             }
         }
 
-        // Add reservations to respective vehicles
-        if (reservations && Array.isArray(reservations)) {
-            for (const reservation of reservations) {
-                if (!reservation.vehicle_id) continue;
-
-                const vehicleBusy = busyByVehicle.get(reservation.vehicle_id) || [];
-                vehicleBusy.push({
-                    start: new Date(reservation.start_at),
-                    end: new Date(new Date(reservation.end_at).getTime() + BUFFER_TIME_MS)
-                });
-                busyByVehicle.set(reservation.vehicle_id, vehicleBusy);
-            }
+        // 2026-05-17 BUG FIX: la tabella `reservations` NON ha customer_name
+        // quindi non possiamo filtrare le "admin reservations" interne. Le
+        // reservations possono essere create da admin come holds temporanei
+        // di test e bloccano le auto sul sito. Per ora le ESCLUDIAMO dal
+        // calcolo availability sito: real bookings (tabella bookings) sono
+        // l'unica fonte di verita' per "auto occupata".
+        // Se in futuro serve riattivarle, aggiungere un campo `source` /
+        // `customer_name` alla tabella reservations e filtrare admin.
+        if (reservations && Array.isArray(reservations) && reservations.length > 0) {
+            console.log('[checkVehicleAvailability] IGNORANDO', reservations.length, 'reservations (tabella admin-only, no customer_name filter possibile)');
         }
 
         // Merge intervals for each vehicle
