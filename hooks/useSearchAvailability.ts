@@ -78,16 +78,18 @@ export function useSearchAvailability(categoryContext?: string) {
       const vehicleIds = (item as any).vehicleIds || (item.id ? [item.id.replace('car-', '')] : [])
       const vehicleName = item.name
 
-      // 2026-05-17 BUG FIX: failed-CLOSED. Prima `available = true` per
-      // default e il catch block lasciava `available = true` su errore.
-      // Risultato: function 500 / timeout / network → auto disponibili
-      // tutte. Ora: failed-CLOSED. Se la check non e' riuscita o ha
-      // restituito errore, l'auto NON e' mostrata.
+      // 2026-05-17 BUG FIX: failed-CLOSED, MA tolerante a AbortError client-side.
+      // Se l'utente naviga via o React fa unmount, fetch viene aborted e
+      // non vogliamo nascondere tutte le auto per quello — quello e' un
+      // problema di rendering, non un denial del server. Failed-CLOSED
+      // resta per veri errori HTTP / network / function-down.
       let available = false
       let checkFailed = false
 
       try {
-        // Use checkVehicleAvailability Netlify function
+        // Use checkVehicleAvailability Netlify function. Timeout 20s — la
+        // wide query (±14 giorni) puo' richiedere fino a 15s su Supabase
+        // sotto carico; meglio aspettare che fail-CLOSED tutte le auto.
         const res = await fetchWithTimeout('/.netlify/functions/checkVehicleAvailability', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -97,18 +99,12 @@ export function useSearchAvailability(categoryContext?: string) {
             dropoffDate: returnISO,
             vehicleIds,
           }),
-        }, 8000)
+        }, 20000)
 
         if (res.ok) {
           const data = await res.json()
           // If conflicts array is non-empty, vehicle is NOT available
           available = !data.conflicts || data.conflicts.length === 0
-          // 2026-05-17: NON facciamo piu' available=true quando arriva
-          // availableFrom. Se c'e' un conflict, l'auto e' OCCUPATA per la
-          // finestra che il cliente sta cercando — il fatto che diventi
-          // libera lo stesso giorno alle 15:00 non significa che sia
-          // bookabile per 14:00-11:00-del-giorno-dopo. Conservavamo solo
-          // availableFrom come metadato per il wizard, NON per riabilitare.
           if (!available && data.availableFrom) {
             ;(item as any)._availableFrom = data.availableFrom
             console.log(`[availability] ${vehicleName}: conflict (availableFrom=${data.availableFrom}, ${data.conflicts?.length} conflicts) — HIDDEN`)
@@ -122,8 +118,18 @@ export function useSearchAvailability(categoryContext?: string) {
           checkFailed = true
         }
       } catch (e) {
-        console.warn(`[availability] ${vehicleName}: fetch failed — failed-CLOSED, HIDDEN`, e)
-        checkFailed = true
+        // AbortError = il fetch e' stato cancellato (timeout o unmount component).
+        // NON failed-CLOSED in questo caso: assumiamo disponibile cosi'
+        // il rendering non sparisce. Il pre-insert check del wizard
+        // riprende la verifica al momento della prenotazione effettiva.
+        const isAbort = e instanceof Error && (e.name === 'AbortError' || /abort/i.test(e.message))
+        if (isAbort) {
+          console.warn(`[availability] ${vehicleName}: fetch aborted (client-side, transient) — mostrato comunque, riverifica al checkout`)
+          available = true
+        } else {
+          console.warn(`[availability] ${vehicleName}: fetch failed — failed-CLOSED, HIDDEN`, e)
+          checkFailed = true
+        }
       }
 
       // Card shows BASE price only (per-vehicle Centralina Pro × days).

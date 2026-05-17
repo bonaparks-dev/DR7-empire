@@ -147,8 +147,13 @@ export const handler: Handler = async (event) => {
         //   - vehicle_name aveva caratteri da URL-encode
         // Match client-side: vehicle_id IN ids OR vehicle_plate IN plates
         // OR vehicle_name = name (case-insensitive trim).
-        const windowStart = new Date(Math.min(requestedPickup.getTime(), requestedDropoff.getTime()) - 90 * 24 * 60 * 60 * 1000).toISOString();
-        const windowEnd = new Date(Math.max(requestedPickup.getTime(), requestedDropoff.getTime()) + 90 * 24 * 60 * 60 * 1000).toISOString();
+        // 2026-05-17: ridotto da ±90 a ±14 giorni perche' con 22 macchine
+        // in parallelo il fetch andava in AbortError (timeout 8s). Una
+        // booking rilevante per la finestra richiesta sara' sempre dentro
+        // a ±14 giorni dal pickup/dropoff (le rental DR7 sono al massimo
+        // poche settimane).
+        const windowStart = new Date(Math.min(requestedPickup.getTime(), requestedDropoff.getTime()) - 14 * 24 * 60 * 60 * 1000).toISOString();
+        const windowEnd = new Date(Math.max(requestedPickup.getTime(), requestedDropoff.getTime()) + 14 * 24 * 60 * 60 * 1000).toISOString();
         const wideUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name,status,service_type&status=not.in.(cancelled,annullata,completed,completata,expired)&pickup_date=gte.${windowStart}&pickup_date=lte.${windowEnd}&order=pickup_date.asc`;
         console.log('[checkVehicleAvailability] wideUrl:', wideUrl);
 
