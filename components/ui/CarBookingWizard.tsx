@@ -3884,6 +3884,41 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         const pickupDateTime = createItalyDateTime(formData.pickupDate, formData.pickupTime);
         const dropoffDateTime = createItalyDateTime(formData.returnDate, formData.returnTime);
 
+        // 2026-05-17 BIG BUG FIX: prima il ramo Nexi NON faceva il re-check
+        // di disponibilita' immediatamente prima dell'insert (a differenza
+        // del ramo Credit Wallet / finalizeBooking). Risultato: il cliente
+        // che pagava con carta poteva prenotare un'auto gia' presa, anche
+        // se la check del wizard l'aveva marcata non disponibile.
+        // Replichiamo qui lo stesso gate failed-CLOSED del finalizeBooking.
+        try {
+          const pickupDT = pickupDateTime.toISOString();
+          const dropoffDT = dropoffDateTime.toISOString();
+          const specificId = formData.selectedVehicleId || item.id.replace('car-', '');
+          const preNexiConflicts = await checkVehicleAvailability(item.name, pickupDT, dropoffDT, specificId);
+          if (preNexiConflicts.length > 0) {
+            const first = preNexiConflicts[0] as { _checkFailed?: boolean; availableFrom?: string; _availableFrom?: string }
+            if (first?._checkFailed) {
+              setPaymentError('Impossibile verificare la disponibilità in questo momento. Riprova fra qualche secondo.')
+              setIsProcessing(false)
+              return
+            }
+            const availFrom = first?.availableFrom || first?._availableFrom
+            if (availFrom) {
+              const availTime = new Date(availFrom).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Rome' })
+              setPaymentError(`Il veicolo non è disponibile a quest'orario. Disponibile dalle ${availTime}.`)
+            } else {
+              setPaymentError('Il veicolo è stato appena prenotato da un altro utente. Seleziona date diverse.')
+            }
+            setIsProcessing(false)
+            return
+          }
+        } catch (e) {
+          console.warn('[Nexi flow] Pre-insert availability re-check failed:', e)
+          setPaymentError('Impossibile verificare la disponibilità. Riprova fra qualche secondo.')
+          setIsProcessing(false)
+          return
+        }
+
         // Upload documents if needed (reusing logic from standard flow if separated, 
         // but here we might need to duplicate or extract upload logic. 
         // For safety, let's assume images are already uploaded or we call a helper.
