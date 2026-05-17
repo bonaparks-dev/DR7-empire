@@ -7429,21 +7429,32 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       transition={{ duration: 0.3 }}
                       className="bg-gray-900/50 p-3 sm:p-6 md:p-8 rounded-lg border border-gray-800 relative"
                     >
-                      <button
-                        type="button"
-                        onClick={step > 1 ? handleBack : onClose}
-                        className="absolute top-2 right-2 sm:top-4 sm:right-4 text-gray-400 hover:text-white transition-colors z-10 p-2"
-                        aria-label={step > 1 ? "Indietro" : "Chiudi"}
-                      >
-                        {step > 1 ? (
+                      {/* 2026-05-17: X chiudi SEMPRE visibile in top-right.
+                          Prima a Step 2+ il pulsante mostrava la freccia
+                          back (←) e cliente non aveva modo di chiudere il
+                          wizard senza terminare il flusso. Ora due bottoni:
+                          freccia back (solo se step > 1) + X chiudi. */}
+                      {step > 1 && (
+                        <button
+                          type="button"
+                          onClick={handleBack}
+                          className="absolute top-2 right-12 sm:top-4 sm:right-14 text-gray-400 hover:text-white transition-colors z-10 p-2"
+                          aria-label="Indietro"
+                        >
                           <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                           </svg>
-                        ) : (
-                          <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        )}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={onClose}
+                        className="absolute top-2 right-2 sm:top-4 sm:right-4 text-gray-400 hover:text-white transition-colors z-10 p-2"
+                        aria-label="Chiudi"
+                      >
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                       </button>
                       {renderStepContent()}
                     </motion.div>

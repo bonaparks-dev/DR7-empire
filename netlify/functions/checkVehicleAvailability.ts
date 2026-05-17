@@ -177,7 +177,14 @@ export const handler: Handler = async (event) => {
         let bookings: any[] = [];
         if (Array.isArray(allBookingsInWindow)) {
             for (const b of allBookingsInWindow) {
-                if (b.customer_name === 'Lavaggio Rientro') continue;
+                // 2026-05-17 BUG FIX: skippa anche car_wash. Una booking di
+                // car_wash (45 min) NON deve bloccare il rental di un'auto
+                // (pre-pickup buffer e' gestito separatamente dalla cross-
+                // vehicle gap query sotto). Senza questo skip, qualunque
+                // auto con un lavaggio nel range ±14 giorni veniva marcata
+                // non disponibile a livello globale.
+                if (b.service_type === 'car_wash') continue;
+                if (String(b.customer_name || '').toLowerCase().includes('lavaggio rientro')) continue;
                 const plateNorm = String(b.vehicle_plate || '').trim().toUpperCase();
                 if (TEST_PLATES_SET.has(plateNorm)) continue;
                 const bookingIdNorm = String(b.vehicle_id || '').toLowerCase();
