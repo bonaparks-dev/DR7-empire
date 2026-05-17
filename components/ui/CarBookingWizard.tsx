@@ -1564,12 +1564,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
   // Check vehicle availability when dates change
   useEffect(() => {
     const checkAvailability = async () => {
-      // Skip availability check if coming from search — already verified
-      if (isFromSearch) {
-        setAvailabilityError(null);
-        setIsCheckingAvailability(false);
-        return;
-      }
+      // 2026-05-17 BUG FIX: prima saltavamo la check quando isFromSearch=true
+      // assumendo che la homepage avesse gia' verificato. MA: la homepage
+      // poteva avere dati stale (admin crea booking fra la search e il
+      // click "Prenota Ora") e SOPRATTUTTO la homepage non sempre catch
+      // bookings admin (vehicle_id null / plate diverso). Risultato:
+      // wizard mostrava Step 1 vuoto, cliente cliccava Continua, finiva
+      // a Step 4 e poteva prenotare auto gia' occupata. Ora ricontrolliamo
+      // SEMPRE qui — failed-CLOSED garantito.
       // FIX 6: Anti-race — each invocation gets a unique ID; only the latest updates state
       const requestId = ++availabilityRequestIdRef.current;
       const isStale = () => requestId !== availabilityRequestIdRef.current;
