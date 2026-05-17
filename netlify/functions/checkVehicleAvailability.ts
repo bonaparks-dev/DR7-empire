@@ -280,16 +280,11 @@ export const handler: Handler = async (event) => {
             }
         }
 
-        // 2026-05-17 BUG FIX: la tabella `reservations` NON ha customer_name
-        // quindi non possiamo filtrare le "admin reservations" interne. Le
-        // reservations possono essere create da admin come holds temporanei
-        // di test e bloccano le auto sul sito. Per ora le ESCLUDIAMO dal
-        // calcolo availability sito: real bookings (tabella bookings) sono
-        // l'unica fonte di verita' per "auto occupata".
-        // Se in futuro serve riattivarle, aggiungere un campo `source` /
-        // `customer_name` alla tabella reservations e filtrare admin.
+        // 2026-05-17 BUG FIX: reservations escluse dal calcolo sito.
+        // VERSION MARKER nei log per verificare quale deploy sta girando.
+        console.log('[checkVehicleAvailability] CODE_VERSION=BB18C91-NO-RESERVATIONS-ADMIN-FILTER');
         if (reservations && Array.isArray(reservations) && reservations.length > 0) {
-            console.log('[checkVehicleAvailability] IGNORANDO', reservations.length, 'reservations (tabella admin-only, no customer_name filter possibile)');
+            console.log('[checkVehicleAvailability] IGNORANDO', reservations.length, 'reservations (tabella admin-only)');
         }
 
         // Merge intervals for each vehicle
