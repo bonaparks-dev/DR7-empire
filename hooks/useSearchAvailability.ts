@@ -78,7 +78,13 @@ export function useSearchAvailability(categoryContext?: string) {
       const vehicleIds = (item as any).vehicleIds || (item.id ? [item.id.replace('car-', '')] : [])
       const vehicleName = item.name
 
-      let available = true
+      // 2026-05-17 BUG FIX: failed-CLOSED. Prima `available = true` per
+      // default e il catch block lasciava `available = true` su errore.
+      // Risultato: function 500 / timeout / network → auto disponibili
+      // tutte. Ora: failed-CLOSED. Se la check non e' riuscita o ha
+      // restituito errore, l'auto NON e' mostrata.
+      let available = false
+      let checkFailed = false
 
       try {
         // Use checkVehicleAvailability Netlify function
@@ -97,18 +103,27 @@ export function useSearchAvailability(categoryContext?: string) {
           const data = await res.json()
           // If conflicts array is non-empty, vehicle is NOT available
           available = !data.conflicts || data.conflicts.length === 0
-          // But if availableFrom exists, vehicle returns same day — show it
+          // 2026-05-17: NON facciamo piu' available=true quando arriva
+          // availableFrom. Se c'e' un conflict, l'auto e' OCCUPATA per la
+          // finestra che il cliente sta cercando — il fatto che diventi
+          // libera lo stesso giorno alle 15:00 non significa che sia
+          // bookabile per 14:00-11:00-del-giorno-dopo. Conservavamo solo
+          // availableFrom come metadato per il wizard, NON per riabilitare.
           if (!available && data.availableFrom) {
             ;(item as any)._availableFrom = data.availableFrom
-            console.log(`[availability] ${vehicleName}: conflict but availableFrom=${data.availableFrom}`)
+            console.log(`[availability] ${vehicleName}: conflict (availableFrom=${data.availableFrom}, ${data.conflicts?.length} conflicts) — HIDDEN`)
+          } else if (!available) {
+            console.log(`[availability] ${vehicleName}: conflict (${data.conflicts?.length} conflicts) — HIDDEN`)
+          } else {
+            console.log(`[availability] ${vehicleName}: OK`)
           }
-          if (data.availableFrom) {
-            console.log(`[availability] ${vehicleName}: available=${available}, availableFrom=${data.availableFrom}, conflicts=${data.conflicts?.length}`)
-          }
+        } else {
+          console.warn(`[availability] ${vehicleName}: HTTP ${res.status} — failed-CLOSED, HIDDEN`)
+          checkFailed = true
         }
-      } catch {
-        // If availability check fails, assume available (don't block)
-        available = true
+      } catch (e) {
+        console.warn(`[availability] ${vehicleName}: fetch failed — failed-CLOSED, HIDDEN`, e)
+        checkFailed = true
       }
 
       // Card shows BASE price only (per-vehicle Centralina Pro × days).
@@ -121,7 +136,9 @@ export function useSearchAvailability(categoryContext?: string) {
       const categoryId = (item.category as string | null | undefined) || vehicleType
       newResults.set(item.id, {
         vehicleId: item.id,
-        available: available || !!availableFrom,
+        // Failed-CLOSED: se la check e' fallita, ritorniamo false. Altrimenti
+        // solo true se il server ha confermato available=true E senza conflicts.
+        available: !checkFailed && available,
         availableFrom,
         totalPrice: Math.round(totalPrice * 100) / 100,
         dailyRate: Math.round((totalPrice / days) * 100) / 100,
