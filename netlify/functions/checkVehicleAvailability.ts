@@ -326,6 +326,7 @@ export const handler: Handler = async (event) => {
                 (requestedPickup <= busyPeriod.start && requestedDropoff >= busyPeriod.end);
 
             if (hasConflict) {
+                console.log(`[checkVehicleAvailability] ${vehicleName} CONFLICT WITH busy=[${busyPeriod.start.toISOString()} → ${busyPeriod.end.toISOString()}] REQUEST=[${requestedPickup.toISOString()} → ${requestedDropoff.toISOString()}]`);
                 conflicts.push({
                     pickup_date: busyPeriod.start.toISOString(),
                     dropoff_date: busyPeriod.end.toISOString(),
@@ -335,7 +336,7 @@ export const handler: Handler = async (event) => {
             }
         }
 
-        // 2026-05-17 BUG FIX: cross-vehicle handover gap DISATTIVATO.
+        // 2026-05-17 BUG FIX (rev 2): cross-vehicle handover gap DISATTIVATO.
         //
         // La regola precedente bloccava un veicolo se un'altra booking aveva
         // pickup o dropoff entro 15 minuti dalla finestra richiesta. Era
