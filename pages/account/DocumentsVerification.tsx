@@ -226,6 +226,32 @@ const DocumentsVerification = () => {
                                             >
                                                 Visualizza
                                             </button>
+                                            <button
+                                                onClick={async () => {
+                                                    if (!confirm(`Elimina ${getDocumentLabel(doc.document_type)}? L'operazione e' definitiva.`)) return
+                                                    try {
+                                                        const { error } = await supabase.storage.from(doc.bucket).remove([doc.file_path])
+                                                        if (error) {
+                                                            alert(`Errore: ${error.message}`)
+                                                            return
+                                                        }
+                                                        // Rimuovi dalla lista locale e ricalcola gli step caricati
+                                                        const next = uploadedDocuments.filter(d => d.id !== doc.id)
+                                                        setUploadedDocuments(next)
+                                                        const newSteps = new Set<number>()
+                                                        next.forEach(d => {
+                                                            const idx = uploadSteps.findIndex(s => d.file_path.includes(s.key) || d.document_type === s.key)
+                                                            if (idx !== -1) newSteps.add(idx)
+                                                        })
+                                                        setUploadedSteps(newSteps)
+                                                    } catch (e) {
+                                                        alert(`Errore eliminazione: ${e instanceof Error ? e.message : 'sconosciuto'}`)
+                                                    }
+                                                }}
+                                                className="px-3 py-1 bg-red-600/80 hover:bg-red-600 text-white text-xs rounded transition-colors"
+                                            >
+                                                Elimina
+                                            </button>
                                         </div>
                                     </div>
                                 ))}
