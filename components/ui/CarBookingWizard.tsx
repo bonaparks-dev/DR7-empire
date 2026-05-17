@@ -85,6 +85,39 @@ function vTypeToDepositCategory(vType: 'UTILITARIA' | 'FURGONE' | 'V_CLASS' | 'S
 // le bucketizza in 4 tipi fissi -> sempre SUPERCAR/cauzione esotic.
 // Ora si controlla direttamente l'id categoria DB; se non c'e\' override
 // specifico, fallback al vType legacy.
+/**
+ * 2026-05-17: Centralized pacchetti KM lookup. Resolves the pacchetti list
+ * for a vehicle category with full fallback chain:
+ *   1) raw vehicle category id
+ *   2) supercars <-> exotic alias (legacy DB mapping)
+ *   3) any non-empty pacchetti list (universal fallback so a single
+ *      Centralina Pro setup applies to ALL premium cars without per-category
+ *      duplication — Porsche 911 etc. were silently missing pacchetti when
+ *      their category id didn't match the Pro key).
+ *
+ * Returns [] when no pacchetti are configured anywhere in Centralina Pro.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function resolvePacchetti(rawCat: string | undefined | null, byCat: Record<string, any[]> | undefined | null): any[] {
+  if (!byCat) return []
+  const cat = String(rawCat || '').toLowerCase().trim()
+  const aliases = (cat === 'supercars' || cat === 'supercar') ? ['supercars', 'exotic', 'supercar']
+                : cat === 'exotic' ? ['exotic', 'supercars', 'supercar']
+                : cat ? [cat, 'supercars', 'exotic', 'supercar']
+                : ['supercars', 'exotic', 'supercar']
+  for (const k of aliases) {
+    const v = byCat[k]
+    if (Array.isArray(v) && v.length > 0) return v
+  }
+  // Final fallback: first non-empty list from any category. Garantisce
+  // che cars con categoria custom (es. "porsche", "luxury") ricevano
+  // comunque i pacchetti se l'admin li ha configurati per UNA categoria.
+  for (const v of Object.values(byCat)) {
+    if (Array.isArray(v) && v.length > 0) return v
+  }
+  return []
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function pickDepositOptions(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1890,22 +1923,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         calculatedKmPackageCost = roundToTwoDecimals(aziendaliPrice * billingDaysCalc);
       }
     } else if (formData.kmPackages && Object.values(formData.kmPackages).some(q => (q || 0) > 0)) {
-      // 2026-05-16: Pacchetti KM cumulativi. Mappa pkgId → qty in
-      // formData.kmPackages. Si SOMMANO ai km inclusi standard.
-      // Lookup categoria con alias supercars<->exotic.
+      // 2026-05-17: Pacchetti KM cumulativi via helper centralizzato
+      // resolvePacchetti — risolve la categoria del veicolo con alias
+      // supercars/exotic/supercar e fallback universale (cosi' Porsche
+      // 911 & co. con categoria custom prendono comunque i pacchetti
+      // configurati per la categoria principale).
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
-      const aliases = (rawCat === 'supercars' || rawCat === 'supercar') ? ['supercars', 'exotic', 'supercar']
-                    : rawCat === 'exotic' ? ['exotic', 'supercars', 'supercar']
-                    : [rawCat]
-      const byCat = configOverlay?.pacchettiByCategory
-      let pkgs: any[] = []
-      if (byCat) {
-        for (const k of aliases) {
-          const v = byCat[k]
-          if (Array.isArray(v) && v.length > 0) { pkgs = v; break }
-        }
-      }
+      const pkgs = resolvePacchetti(rawCat, configOverlay?.pacchettiByCategory)
       let pkgKmTotal = 0
       let pkgCostTotal = 0
       for (const pkg of pkgs) {
@@ -3328,16 +3353,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           if (!formData.kmPackages || Object.keys(formData.kmPackages).length === 0) return []
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
-          const aliases = (rawCat === 'supercars' || rawCat === 'supercar') ? ['supercars', 'exotic', 'supercar']
-                        : rawCat === 'exotic' ? ['exotic', 'supercars', 'supercar']
-                        : (rawCat === 'supercar' ? ['supercar', 'supercars', 'exotic'] : [rawCat])
-          const byCat = configOverlay?.pacchettiByCategory
-          if (!byCat) return []
-          let pkgs: any[] = []
-          for (const k of aliases) {
-            const v = byCat[k]
-            if (Array.isArray(v) && v.length > 0) { pkgs = v; break }
-          }
+          const pkgs = resolvePacchetti(rawCat, configOverlay?.pacchettiByCategory)
           const out: Array<{ id: string; label: string; km: number; sconto_pct: number; price: number; quantity: number; total_km: number; total_price: number }> = []
           for (const pkg of pkgs) {
             const qty = formData.kmPackages?.[pkg.id] || 0
@@ -3368,22 +3384,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           if (ids.length !== 1) return null
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
-          const aliases = (rawCat === 'supercars' || rawCat === 'supercar') ? ['supercars', 'exotic', 'supercar']
-                        : rawCat === 'exotic' ? ['exotic', 'supercars', 'supercar']
-                        : (rawCat === 'supercar' ? ['supercar', 'supercars', 'exotic'] : [rawCat])
-          const byCat = configOverlay?.pacchettiByCategory
-          if (!byCat) return null
-          for (const k of aliases) {
-            const found = (byCat[k] || []).find(p => p.id === ids[0])
-            if (found) {
-              const qty = list[ids[0]]
-              return {
-                id: found.id, label: found.label, km: found.km, sconto_pct: found.sconto_pct,
-                price: found.price, quantity: qty, total_km: found.km * qty, total_price: Math.round(found.price * qty * 100) / 100,
-              }
-            }
+          const pkgs = resolvePacchetti(rawCat, configOverlay?.pacchettiByCategory)
+          const found = pkgs.find(p => p.id === ids[0])
+          if (!found) return null
+          const qty = list[ids[0]]
+          return {
+            id: found.id, label: found.label, km: found.km, sconto_pct: found.sconto_pct,
+            price: found.price, quantity: qty, total_km: found.km * qty, total_price: Math.round(found.price * qty * 100) / 100,
           }
-          return null
         })(),
         second_driver_daily: secondDriverFee / Math.max(duration.days, 1),
         second_driver_total: secondDriverFee,
@@ -5343,16 +5351,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {(() => {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
-                    const byCat = configOverlay?.pacchettiByCategory
-                    if (!rawCat || !byCat) return null
-                    const aliases = (rawCat === 'supercars' || rawCat === 'supercar') ? ['supercars', 'exotic', 'supercar']
-                                  : rawCat === 'exotic' ? ['exotic', 'supercars', 'supercar']
-                                  : (rawCat === 'supercar' ? ['supercar', 'supercars', 'exotic'] : [rawCat])
-                    let pkgs: Array<{ id: string; km: number; sconto_pct: number; price: number; label: string }> = []
-                    for (const k of aliases) {
-                      const v = byCat[k]
-                      if (Array.isArray(v) && v.length > 0) { pkgs = v; break }
-                    }
+                    const pkgs = resolvePacchetti(rawCat, configOverlay?.pacchettiByCategory)
                     if (pkgs.length === 0) return null
                     return pkgs.map((pkg: any) => {
                       // 2026-05-16: pacchetti CUMULATIVI con qty per ciascuno.
@@ -5486,16 +5485,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                   {(() => {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
-                    const byCat = configOverlay?.pacchettiByCategory
-                    if (!rawCat || !byCat) return null
-                    const aliases = (rawCat === 'supercars' || rawCat === 'supercar') ? ['supercars', 'exotic', 'supercar']
-                                  : rawCat === 'exotic' ? ['exotic', 'supercars', 'supercar']
-                                  : (rawCat === 'supercar' ? ['supercar', 'supercars', 'exotic'] : [rawCat])
-                    let pkgs: Array<{ id: string; km: number; sconto_pct: number; price: number; label: string }> = []
-                    for (const k of aliases) {
-                      const v = byCat[k]
-                      if (Array.isArray(v) && v.length > 0) { pkgs = v; break }
-                    }
+                    const pkgs = resolvePacchetti(rawCat, configOverlay?.pacchettiByCategory) as Array<{ id: string; km: number; sconto_pct: number; price: number; label: string }>
                     if (pkgs.length === 0) return null
                     return pkgs.map(pkg => {
                       const selKey = `pacchetto:${pkg.id}`
@@ -6119,17 +6109,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     return <div className="flex justify-between"><span className="text-gray-400">Km illimitati</span><span className="text-white">{formatPrice(kmPackageCost)}</span></div>
                   }
                   const rawCat = String((item as any).category ?? '').toLowerCase().trim()
-                  const aliases = (rawCat === 'supercars' || rawCat === 'supercar') ? ['supercars', 'exotic', 'supercar']
-                                : rawCat === 'exotic' ? ['exotic', 'supercars', 'supercar']
-                                : (rawCat === 'supercar' ? ['supercar', 'supercars', 'exotic'] : [rawCat])
-                  const byCat = configOverlay?.pacchettiByCategory
-                  let pkgsList: any[] = []
-                  if (byCat) {
-                    for (const k of aliases) {
-                      const v = byCat[k]
-                      if (Array.isArray(v) && v.length > 0) { pkgsList = v; break }
-                    }
-                  }
+                  const pkgsList = resolvePacchetti(rawCat, configOverlay?.pacchettiByCategory)
                   const selectedPkgs = pkgsList
                     .map(pkg => ({ pkg, qty: formData.kmPackages?.[pkg.id] || 0 }))
                     .filter(x => x.qty > 0)
@@ -6453,17 +6433,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     }
                     // Pacchetti cumulativi
                     const rawCat = String((item as any).category ?? '').toLowerCase().trim()
-                    const aliases = (rawCat === 'supercars' || rawCat === 'supercar') ? ['supercars', 'exotic', 'supercar']
-                                  : rawCat === 'exotic' ? ['exotic', 'supercars', 'supercar']
-                                  : (rawCat === 'supercar' ? ['supercar', 'supercars', 'exotic'] : [rawCat])
-                    const byCat = configOverlay?.pacchettiByCategory
-                    let pkgsList: any[] = []
-                    if (byCat) {
-                      for (const k of aliases) {
-                        const v = byCat[k]
-                        if (Array.isArray(v) && v.length > 0) { pkgsList = v; break }
-                      }
-                    }
+                    const pkgsList = resolvePacchetti(rawCat, configOverlay?.pacchettiByCategory)
                     const selectedPkgs = pkgsList
                       .map(pkg => ({ pkg, qty: formData.kmPackages?.[pkg.id] || 0 }))
                       .filter(x => x.qty > 0)
