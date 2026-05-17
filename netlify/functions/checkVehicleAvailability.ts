@@ -209,6 +209,17 @@ export const handler: Handler = async (event) => {
             }
         }
         console.log('[checkVehicleAvailability] after client-side filter:', bookings.length, 'matching bookings');
+        if (bookings.length > 0) {
+            console.log('[checkVehicleAvailability] BLOCKING bookings for', vehicleName, ':',
+                bookings.map((b: any) => ({
+                    customer: b.customer_name,
+                    status: b.status,
+                    service_type: b.service_type,
+                    pickup: b.pickup_date,
+                    dropoff: b.dropoff_date,
+                }))
+            );
+        }
 
         // Fetch reservations for ALL these vehicles
         const reservationsUrl = `${SUPABASE_URL}/rest/v1/reservations?select=start_at,end_at,vehicle_id&vehicle_id=in.(${vehicleIds.join(',')})&status=not.in.(cancelled,annullata,completed,completata,expired)&order=start_at.asc`;
