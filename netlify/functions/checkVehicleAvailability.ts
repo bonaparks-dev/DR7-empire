@@ -137,24 +137,23 @@ export const handler: Handler = async (event) => {
             .map((v: any) => v.plate)
             .filter(Boolean);
 
-        // 2026-05-17 BULLETPROOF REWRITE: una sola query AMPIA (date window
-        // ± 90 giorni intorno al requested), poi filtriamo client-side.
-        // Cosi' eliminiamo ogni rischio di PostgREST `in.()` o `ilike.*`
-        // che falliva silenziosamente quando:
-        //   - service_type valeva "rental" invece di "car_rental"
-        //   - vehicle_id era NULL su bookings creati da admin
-        //   - vehicle_plate aveva spazi/caratteri non-ASCII
-        //   - vehicle_name aveva caratteri da URL-encode
-        // Match client-side: vehicle_id IN ids OR vehicle_plate IN plates
-        // OR vehicle_name = name (case-insensitive trim).
-        // 2026-05-17: ridotto da ±90 a ±14 giorni perche' con 22 macchine
-        // in parallelo il fetch andava in AbortError (timeout 8s). Una
-        // booking rilevante per la finestra richiesta sara' sempre dentro
-        // a ±14 giorni dal pickup/dropoff (le rental DR7 sono al massimo
-        // poche settimane).
-        const windowStart = new Date(Math.min(requestedPickup.getTime(), requestedDropoff.getTime()) - 14 * 24 * 60 * 60 * 1000).toISOString();
-        const windowEnd = new Date(Math.max(requestedPickup.getTime(), requestedDropoff.getTime()) + 14 * 24 * 60 * 60 * 1000).toISOString();
-        const wideUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name,status,service_type&status=not.in.(cancelled,annullata,completed,completata,expired)&pickup_date=gte.${windowStart}&pickup_date=lte.${windowEnd}&order=pickup_date.asc`;
+        // 2026-05-17 OVERLAP QUERY: cerchiamo bookings che OVERLAPPANO la
+        // finestra richiesta. Due intervalli A=[a1,a2] e B=[b1,b2] si
+        // sovrappongono iff a1<b2 && a2>b1. Quindi una booking [pickup,
+        // dropoff] overlap con [reqPickup, reqDropoff] iff:
+        //   pickup_date < reqDropoff AND dropoff_date > reqPickup
+        // PostgREST equivalent: &pickup_date=lt.X&dropoff_date=gt.Y
+        // Cosi' catturiamo:
+        //   - bookings che iniziano dentro la finestra
+        //   - bookings che finiscono dentro la finestra
+        //   - bookings che spannano l'intera finestra (long rentals)
+        // Nessun rischio di missing booking, nessuna finestra arbitraria
+        // ±14gg, query velocissima (PostgREST usa indici su date columns).
+        // Aggiungiamo un buffer di +24h al reqPickup per coprire eventuali
+        // post-rental buffer della Centralina Pro (max 75 min ma sicuriamo).
+        const queryWindowEnd = new Date(requestedDropoff.getTime() + 24 * 60 * 60 * 1000).toISOString();
+        const queryWindowStart = new Date(requestedPickup.getTime() - 24 * 60 * 60 * 1000).toISOString();
+        const wideUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name,status,service_type&status=not.in.(cancelled,annullata,completed,completata,expired)&pickup_date=lt.${queryWindowEnd}&dropoff_date=gt.${queryWindowStart}&order=pickup_date.asc`;
         console.log('[checkVehicleAvailability] wideUrl:', wideUrl);
 
         const wideResp = await fetch(wideUrl, {
