@@ -181,6 +181,44 @@ export const handler: Handler = async (event) => {
             }
         }
 
+        // 2026-05-17 BIG BUG FIX: terza query per vehicle_name. Bookings creati
+        // da admin a volte hanno vehicle_id NULL o un id che non matcha le
+        // righe vehicles correnti (es. veicolo ricreato dopo che la booking
+        // era gia' stata fatta). La ricerca per plate aiuta solo se il plate
+        // matcha — ma se admin ha messo plate diverso, manca anche quella.
+        // Fallback finale: cerchiamo le bookings con vehicle_name ILIKE name
+        // e le mappiamo alla vehicle_id di prima riga del nostro pool.
+        try {
+            const targetVehicleIdForName = vehicleIds[0]
+            const nameBookingsUrl = `${SUPABASE_URL}/rest/v1/bookings?select=pickup_date,dropoff_date,vehicle_id,vehicle_plate,vehicle_name,customer_name&status=not.in.(cancelled,annullata,completed,completata,expired)&customer_name=neq.${encodeURIComponent('Lavaggio Rientro')}&vehicle_name=ilike.${encodeURIComponent(vehicleName.trim())}*&vehicle_plate=not.in.(TEST000,TEST002)&order=pickup_date.asc`;
+            const nameResp = await fetch(nameBookingsUrl, {
+                headers: {
+                    'apikey': SUPABASE_SERVICE_ROLE_KEY!,
+                    'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            const nameBookings = await nameResp.json();
+            if (Array.isArray(nameBookings) && nameBookings.length > 0) {
+                const seenKeys = new Set((bookings || []).map((b: any) => `${b.pickup_date}_${b.dropoff_date}_${b.vehicle_id || b.vehicle_plate || b.vehicle_name}`));
+                for (const nb of nameBookings) {
+                    const key = `${nb.pickup_date}_${nb.dropoff_date}_${nb.vehicle_id || nb.vehicle_plate || nb.vehicle_name}`;
+                    if (!seenKeys.has(key)) {
+                        // Forza la booking sul primo vehicle del pool cosi'
+                        // entra nel busyByVehicle map e blocca il booking.
+                        if (!nb.vehicle_id && targetVehicleIdForName) {
+                            nb.vehicle_id = targetVehicleIdForName;
+                        }
+                        bookings.push(nb);
+                        seenKeys.add(key);
+                    }
+                }
+                console.log('[checkVehicleAvailability] name-match fallback added', nameBookings.length, 'bookings');
+            }
+        } catch (e) {
+            console.warn('[checkVehicleAvailability] name fallback failed:', e);
+        }
+
         // Fetch reservations for ALL these vehicles
         const reservationsUrl = `${SUPABASE_URL}/rest/v1/reservations?select=start_at,end_at,vehicle_id&vehicle_id=in.(${vehicleIds.join(',')})&status=not.in.(cancelled,annullata,completed,completata,expired)&order=start_at.asc`;
 
