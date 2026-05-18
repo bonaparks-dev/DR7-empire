@@ -2018,9 +2018,15 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // surcharge) are EXCLUDED from the coefficient and the per-vehicle min/max
     // clamp. Location fees cover km/transport costs that don't scale with
     // demand — they pass through at list price, same rule as Experience.
+    // 2026-05-18: anche No Cauzione / deposit surcharge passa a listino —
+    // e' un supplemento fisso per la scelta della cauzione, non deve scalare
+    // col coefficiente dinamico ne' essere mangiato dal clamp max (prima
+    // aggiungeva solo pochi euro invece dei €49 × giorni attesi).
     const listSubtotal = calculatedSubtotal; // total before coefficients
     const locationFees = calculatedDeliveryFee + calculatedPickupFee + calculatedDropoffFee;
-    const subtotalNoExperience = calculatedSubtotal - calculatedExperienceCost - locationFees;
+    // 2026-05-18: Pacchetti KM passa a listino — sono km pre-pagati, non
+    // devono essere scontati / aumentati dal coefficiente dinamico.
+    const subtotalNoExperience = calculatedSubtotal - calculatedExperienceCost - locationFees - calculatedNoDepositSurcharge - calculatedKmPackageCost;
     // 2026-05-17: applica coefficienti dinamici quando l'engine e' enabled,
     // indipendentemente da mode. La mode 'suggestion' resta per la Preventivi
     // Admin (mostra il suggerimento senza forzarlo) ma sul sito coefficienti
@@ -2033,8 +2039,8 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const hasDynamicDiscount = hasDynamicCoeffs && Math.abs(combinedCoeff - 1) > 0.001;
 
     // Uncapped subtotal after coefficients (used for the "real price" display).
-    // Experience + location fees stay at LIST PRICE — no coefficient.
-    const uncappedSubtotal = roundToTwoDecimals(subtotalNoExperience * combinedCoeff + calculatedExperienceCost + locationFees);
+    // Experience + location fees + deposit surcharge + pacchetti KM stay at LIST PRICE — no coefficient.
+    const uncappedSubtotal = roundToTwoDecimals(subtotalNoExperience * combinedCoeff + calculatedExperienceCost + locationFees + calculatedNoDepositSurcharge + calculatedKmPackageCost);
     let clampHit: 'min' | 'max' | null = null;
     let clampLimitDaily: number | null = null;
 
@@ -2074,7 +2080,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       afterCoeffNoExp = hardFloorTotal;
       if (!clampHit) clampHit = 'min';
     }
-    calculatedSubtotal = roundToTwoDecimals(afterCoeffNoExp + calculatedExperienceCost + locationFees);
+    calculatedSubtotal = roundToTwoDecimals(afterCoeffNoExp + calculatedExperienceCost + locationFees + calculatedNoDepositSurcharge + calculatedKmPackageCost);
 
     const calculatedTaxes = 0;
     const calculatedTotal = calculatedSubtotal;
@@ -5679,7 +5685,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                               setFormData(prev => ({ ...prev, depositOption: 'no_deposit' }));
                               return;
                             }
-                            // Always open the request popup (Kasko requirement is stated inside).
+                            // Non-loyal: reflect the choice in the wizard immediately
+                            // (recap + price update) and open the approval popup.
+                            // Without this, the riepilogo still shows "Cauzione €2000"
+                            // because formData.depositOption stays on the previous pick.
+                            setFormData(prev => ({ ...prev, depositOption: 'no_deposit' }));
                             setShowNoCauzionePopup(true);
                             return;
                           }
