@@ -2099,21 +2099,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       clampHit = 'min';
       clampLimitDaily = minDaily;
     }
-    // 2026-05-18 HARD FLOOR: indipendentemente da Centralina min_price,
-    // i coefficienti dinamici (8 in totale) NON possono mai scontare piu\'
-    // del 15% complessivo sul subtotale (rental + insurance + km +
-    // lavaggio + cauzione/no-cauzione). Caso reale: Massimo Runchina
-    // 2026-05-18, A45S AMG 1 giorno, listSubtotal €370.10 → coeff
-    // combinato 0.657 → afterCoeff €243 → totale €263 invece di €315+.
-    // Senza min_price configurato in Centralina, gli sconti si
-    // sommavano moltiplicativamente fino al -34%. Con min_price
-    // settati per categoria questo floor diventa irrilevante.
-    const HARD_FLOOR_COEFF = 0.85;
-    const hardFloorTotal = subtotalNoExperience * HARD_FLOOR_COEFF;
-    if (afterCoeffNoExp < hardFloorTotal) {
-      afterCoeffNoExp = hardFloorTotal;
-      if (!clampHit) clampHit = 'min';
-    }
+    // 2026-05-18: HARD FLOOR rimosso. Era pensato come rete di
+    // sicurezza quando Centralina min_price era vuoto, ma scavalcava
+    // anche quando l'admin aveva configurato un min_daily corretto
+    // (caso A45S: min €389/g configurato → admin clampava a €389,
+    // sito clampava al floor €433.42, disallineamento). Il min_total
+    // del clamp Centralina (sopra) e\' l'unica protezione: se admin
+    // non lo configura, il sito puo\' scendere — e\' una scelta business.
     calculatedSubtotal = roundToTwoDecimals(afterCoeffNoExp + passThroughExtras);
 
     const calculatedTaxes = 0;
@@ -7435,15 +7427,28 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     </div>
                         </>
                       )}
-                      {isUrbanOrCorporate && (
-                        <div className="mt-2 pt-2 border-t border-gray-700">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-gray-400">Cauzione al ritiro</span>
-                            <span className="text-white font-medium">€{ACTIVE_UTILITARIA_DEPOSIT.toLocaleString()}</span>
+                      {/* Cauzione al ritiro: legata SOLO alla scelta deposito
+                          effettiva (getDeposit). Prima il blocco era condizionato
+                          a isUrbanOrCorporate (vehicleType UTILITARIA/FURGONE/
+                          V_CLASS) e mostrava sempre €ACTIVE_UTILITARIA_DEPOSIT
+                          anche quando il cliente aveva selezionato "Senza
+                          cauzione" — confusione su Mercedes A45 (category
+                          aziendali, label "Supercar"). Ora se la scelta da\'
+                          €0 nascondiamo il blocco; se > 0 mostriamo il valore
+                          reale della scelta. */}
+                      {(() => {
+                        const dep = getDeposit();
+                        if (formData.depositOption === 'no_deposit' || !dep || dep <= 0) return null;
+                        return (
+                          <div className="mt-2 pt-2 border-t border-gray-700">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-400">Cauzione al ritiro</span>
+                              <span className="text-white font-medium">€{dep.toLocaleString('it-IT')}</span>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">Restituita dopo la riconsegna</p>
                           </div>
-                          <p className="text-xs text-gray-500 mt-1">Restituita dopo la riconsegna</p>
-                        </div>
-                      )}
+                        );
+                      })()}
                       {/* DR7 Club subscription — separate, card-only */}
                       {formData.extras.some(e => e.startsWith('subscription_')) && (
                         <div className="mt-3 pt-3 border-t border-white/20 bg-white/5 rounded-lg p-3">
