@@ -82,6 +82,20 @@ export interface WebsiteConfigOverlay {
   sforoByCategory?: Record<string, number>
   /** Per-category km illimitati €/giorno per fascia. */
   unlimitedKmByCategory?: Record<string, { TIER_1: number; TIER_2: number }>
+  /** 2026-05-18: toggle Centralina Pro > Automazioni > Inclusione
+   *  coefficiente. Per ogni voce dice se entra nel calcolo del
+   *  coefficiente dinamico. Default mirror del PreventiviTab admin:
+   *  unlimited_km e km_packages false (a listino), tutti gli altri true. */
+  coefficientInclusion?: {
+    insurance: boolean
+    lavaggio: boolean
+    no_cauzione: boolean
+    second_driver: boolean
+    dr7_flex: boolean
+    cauzione_veicoli: boolean
+    unlimited_km: boolean
+    km_packages: boolean
+  }
 }
 
 // ── Pro snapshot types (match CentralinaProTab PersistedSnapshot) ──
@@ -216,6 +230,22 @@ export interface ProCentralinaSnapshot {
     dynamic?: Record<string, unknown>
   }
   preventivi?: Record<string, unknown>
+  // Centralina Pro > Automazioni > Inclusione coefficiente.
+  // Per ogni voce di costo decide se entra nel calcolo del coefficiente
+  // dinamico (true) o resta a listino (false). Default mirror del
+  // PreventiviTab admin: insurance/lavaggio/no_cauzione/second_driver/
+  // dr7_flex/cauzione_veicoli true; unlimited_km false.
+  automations?: {
+    coefficient_unlimited_km?: boolean
+    coefficient_insurance?: boolean
+    coefficient_lavaggio?: boolean
+    coefficient_no_cauzione?: boolean
+    coefficient_second_driver?: boolean
+    coefficient_dr7_flex?: boolean
+    coefficient_cauzione_veicoli?: boolean
+    coefficient_km_packages?: boolean
+    [k: string]: unknown
+  }
 }
 
 // ────────────────────────────────────────────────────────────────────
@@ -681,6 +711,20 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
     sforoByCategory,
     unlimitedKmByCategory,
     pacchettiByCategory,
+    // 2026-05-18: porta i toggle Centralina Pro > Automazioni nel
+    // overlay cosi\' il CarBookingWizard sa quali voci includere nel
+    // calcolo del coefficiente dinamico. Default mirror PreventiviTab
+    // admin: unlimited_km e km_packages a listino, gli altri scontabili.
+    coefficientInclusion: {
+      insurance:        snapshot.automations?.coefficient_insurance        !== false,
+      lavaggio:         snapshot.automations?.coefficient_lavaggio         !== false,
+      no_cauzione:      snapshot.automations?.coefficient_no_cauzione      !== false,
+      second_driver:    snapshot.automations?.coefficient_second_driver    !== false,
+      dr7_flex:         snapshot.automations?.coefficient_dr7_flex         !== false,
+      cauzione_veicoli: snapshot.automations?.coefficient_cauzione_veicoli !== false,
+      unlimited_km:     !!snapshot.automations?.coefficient_unlimited_km,
+      km_packages:      !!snapshot.automations?.coefficient_km_packages,
+    },
   }
 }
 

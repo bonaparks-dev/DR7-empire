@@ -59,6 +59,8 @@ export const handler: Handler = async (event) => {
         return Object.keys(obj as Record<string, unknown>)
     }
 
+    const pd = proDynamic as Record<string, unknown> | null
+
     return {
         statusCode: 200,
         headers,
@@ -66,12 +68,37 @@ export const handler: Handler = async (event) => {
             vehicle,
             vehicleCategory: vehicle?.category || null,
             categoriesConfigured: categoriesArr.map(c => ({ id: c.id, label: c.label })),
-            base_prices_keys: safeKeys((proDynamic as { base_prices?: unknown } | null)?.base_prices),
-            min_prices_keys: safeKeys((proDynamic as { min_prices?: unknown } | null)?.min_prices),
-            max_prices_keys: safeKeys((proDynamic as { max_prices?: unknown } | null)?.max_prices),
-            // Diagnostic: per ogni chiave min_prices, dice se l'attuale
-            // pickPrice del calculate-dynamic-price la troverebbe.
-            simulatedLookup: vehicle ? simulateLookup(vehicle, proDynamic) : null,
+            base_prices_keys: safeKeys((pd as { base_prices?: unknown } | null)?.base_prices),
+            min_prices_keys: safeKeys((pd as { min_prices?: unknown } | null)?.min_prices),
+            max_prices_keys: safeKeys((pd as { max_prices?: unknown } | null)?.max_prices),
+            // Bracket completi: con questi vediamo PERCHE\' un certo
+            // valore di coeff viene matchato per Massimo. Es. se
+            // advance_coefficients ha un bracket "medio anticipo"
+            // che copre 0-30 giorni con coeff 0.80, ecco perche\' 10gg
+            // di anticipo prende 0.80 invece di 1.00.
+            occupation_coefficients: pd?.occupation_coefficients ?? null,
+            advance_coefficients: pd?.advance_coefficients ?? null,
+            duration_coefficients: pd?.duration_coefficients ?? null,
+            calendar_gap_coefficients: pd?.calendar_gap_coefficients ?? null,
+            season_coefficients: pd?.season_coefficients ?? null,
+            season_by_month: pd?.season_by_month ?? null,
+            day_type_coefficients: pd?.day_type_coefficients ?? null,
+            vehicle_occupation_coefficients: pd?.vehicle_occupation_coefficients ?? null,
+            promo_push_coefficients: pd?.promo_push_coefficients ?? null,
+            active_promo_level: pd?.active_promo_level ?? null,
+            mode: pd?.mode ?? null,
+            enabled: pd?.enabled ?? null,
+            // Min/max price specifico per il veicolo (valore, non solo chiave)
+            min_price_for_vehicle: vehicle?.id
+                ? ((pd as { min_prices?: Record<string, unknown> } | null)?.min_prices?.[vehicle.id] ?? null)
+                : null,
+            max_price_for_vehicle: vehicle?.id
+                ? ((pd as { max_prices?: Record<string, unknown> } | null)?.max_prices?.[vehicle.id] ?? null)
+                : null,
+            base_price_for_vehicle: vehicle?.id
+                ? ((pd as { base_prices?: Record<string, unknown> } | null)?.base_prices?.[vehicle.id] ?? null)
+                : null,
+            simulatedLookup: vehicle ? simulateLookup(vehicle, pd) : null,
         }, null, 2),
     }
 }

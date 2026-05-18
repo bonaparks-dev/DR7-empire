@@ -2024,9 +2024,32 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // aggiungeva solo pochi euro invece dei €49 × giorni attesi).
     const listSubtotal = calculatedSubtotal; // total before coefficients
     const locationFees = calculatedDeliveryFee + calculatedPickupFee + calculatedDropoffFee;
-    // 2026-05-18: Pacchetti KM passa a listino — sono km pre-pagati, non
-    // devono essere scontati / aumentati dal coefficiente dinamico.
-    const subtotalNoExperience = calculatedSubtotal - calculatedExperienceCost - locationFees - calculatedNoDepositSurcharge - calculatedKmPackageCost;
+    // 2026-05-18: voci che PASSANO A LISTINO (escluse dal coefficiente).
+    // Lettura toggle da Centralina Pro > Automazioni > Inclusione
+    // coefficiente. Default mirror del PreventiviTab admin: km/km
+    // illimitati a listino (false), tutti gli altri sotto coefficiente.
+    // Experience e location fees restano SEMPRE a listino per design.
+    const ci = configOverlay?.coefficientInclusion;
+    const includeInsurance     = ci?.insurance        ?? true;
+    const includeLavaggio      = ci?.lavaggio         ?? true;
+    const includeNoCauzione    = ci?.no_cauzione      ?? false; // 2026-05-18 default false
+    const includeSecondDriver  = ci?.second_driver    ?? true;
+    const includeDr7Flex       = ci?.dr7_flex         ?? false; // 2026-05-18: DR7 Flex in experience, a listino
+    const includeKmPackages    = ci?.km_packages      ?? false; // 2026-05-18: km pre-pagati a listino
+    // Costruisce il "subtotale clamp-eligible" sommando SOLO le voci
+    // che il toggle dice di includere nel coefficiente. Le altre
+    // vengono aggiunte dopo, intatte.
+    let subtotalForCoeff = calculatedRentalCost; // rental SEMPRE sotto coefficiente
+    if (includeInsurance)    subtotalForCoeff += calculatedInsuranceCost;
+    if (includeLavaggio)     subtotalForCoeff += calculatedLavaggioFee;
+    if (includeNoCauzione)   subtotalForCoeff += calculatedNoDepositSurcharge;
+    if (includeSecondDriver) subtotalForCoeff += calculatedSecondDriverFee;
+    if (includeDr7Flex)      subtotalForCoeff += calculatedFlexCost;
+    if (includeKmPackages)   subtotalForCoeff += calculatedKmPackageCost;
+    subtotalForCoeff += calculatedExtrasCost; // extras generici inclusi
+    const passThroughExtras = calculatedSubtotal - subtotalForCoeff;
+    // Compatibilita\' con il resto del codice qui sotto (clamp + uncapped + hard floor)
+    const subtotalNoExperience = subtotalForCoeff;
     // 2026-05-17: applica coefficienti dinamici quando l'engine e' enabled,
     // indipendentemente da mode. La mode 'suggestion' resta per la Preventivi
     // Admin (mostra il suggerimento senza forzarlo) ma sul sito coefficienti
@@ -2039,8 +2062,9 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const hasDynamicDiscount = hasDynamicCoeffs && Math.abs(combinedCoeff - 1) > 0.001;
 
     // Uncapped subtotal after coefficients (used for the "real price" display).
-    // Experience + location fees + deposit surcharge + pacchetti KM stay at LIST PRICE — no coefficient.
-    const uncappedSubtotal = roundToTwoDecimals(subtotalNoExperience * combinedCoeff + calculatedExperienceCost + locationFees + calculatedNoDepositSurcharge + calculatedKmPackageCost);
+    // Pass-through extras (km/cauzione/dr7-flex disabilitati dal toggle,
+    // Experience, location fees) restano a listino.
+    const uncappedSubtotal = roundToTwoDecimals(subtotalNoExperience * combinedCoeff + passThroughExtras);
     let clampHit: 'min' | 'max' | null = null;
     let clampLimitDaily: number | null = null;
 
@@ -2080,7 +2104,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       afterCoeffNoExp = hardFloorTotal;
       if (!clampHit) clampHit = 'min';
     }
-    calculatedSubtotal = roundToTwoDecimals(afterCoeffNoExp + calculatedExperienceCost + locationFees + calculatedNoDepositSurcharge + calculatedKmPackageCost);
+    calculatedSubtotal = roundToTwoDecimals(afterCoeffNoExp + passThroughExtras);
 
     const calculatedTaxes = 0;
     const calculatedTotal = calculatedSubtotal;
