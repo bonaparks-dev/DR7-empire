@@ -176,21 +176,20 @@ export const handler: Handler = async (event) => {
         let bookings: any[] = [];
         if (Array.isArray(allBookingsInWindow)) {
             for (const b of allBookingsInWindow) {
-                // 2026-05-17 BUG FIX: skippa car_wash (45 min, non blocca
-                // rental), "Lavaggio Rientro" (marker interno per il buffer
-                // post-rental), e "admin dr7" / "admin *" (bookings di test
-                // create da direzione per riservare manualmente l'auto —
-                // non sono noleggi reali e non dovrebbero bloccare i
-                // clienti dal sito).
+                // Skippa SOLO i record che non sono noleggi veri:
+                //  - car_wash (45 min, finestra diversa, non blocca rental)
+                //  - Lavaggio Rientro (marker interno per il buffer post-rental,
+                //    coperto altrove)
+                //  - TEST plates (TEST000/TEST002 → bookings di sviluppo)
+                //
+                // 2026-05-18 BUG FIX: NON filtrare "admin dr7" / "admin *":
+                // sono prenotazioni che la direzione crea apposta per bloccare
+                // un veicolo (es. Urus dal 16 al 26). Il filtro precedente
+                // (introdotto 2026-05-17) le scartava e il sito permetteva di
+                // bookare nel mezzo del blocco.
                 if (b.service_type === 'car_wash') continue;
                 const custLower = String(b.customer_name || '').toLowerCase().trim();
                 if (custLower.includes('lavaggio rientro')) continue;
-                // 2026-05-17: filtra QUALSIASI customer_name che inizia con
-                // "admin" (admin dr7, admin.m7, admin.m7 *, admin manuale,
-                // admin test, ecc.). Sono tutte riservazioni interne fatte
-                // da direzione per bloccare l'auto manualmente in calendario
-                // — non sono noleggi reali e non devono bloccare i clienti.
-                if (/^admin\b/.test(custLower)) continue;
                 const plateNorm = String(b.vehicle_plate || '').trim().toUpperCase();
                 if (TEST_PLATES_SET.has(plateNorm)) continue;
                 const bookingIdNorm = String(b.vehicle_id || '').toLowerCase();
