@@ -399,11 +399,14 @@ exports.handler = async (event) => {
           }
         }
 
-        // Generate contract + signing links + invoice (car rental only)
+        // Generate contract + signing links (car rental ONLY — car wash/mechanical
+        // non hanno contratto). MA la fattura va generata per TUTTI i servizi
+        // pagati: bug 2026-05-18 — i lavaggi paid-by-card NON ricevevano fattura.
         const serviceType = booking.service_type || booking.booking_details?.type || '';
         const isWashOrMech = serviceType === 'car_wash' || serviceType === 'mechanical_service' || serviceType === 'mechanical';
+        const adminUrl = process.env.ADMIN_URL || 'https://admin.dr7empire.com';
+
         if (!isWashOrMech) {
-          const adminUrl = process.env.ADMIN_URL || 'https://admin.dr7empire.com';
           try {
             const contractRes = await fetch(`${adminUrl}/.netlify/functions/generate-contract`, {
               method: 'POST',
@@ -437,21 +440,22 @@ exports.handler = async (event) => {
           } catch (contractErr) {
             console.error('[nexi-callback] Contract generation error:', contractErr);
           }
+        }
 
-          try {
-            const invRes = await fetch(`${adminUrl}/.netlify/functions/generate-invoice-from-booking`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ bookingId: booking.id, includeIVA: true }),
-            });
-            if (invRes.ok) {
-              console.log('[nexi-callback] Invoice generated for existing booking');
-            } else {
-              console.error(`[nexi-callback] Invoice failed (${invRes.status}):`, await invRes.text().catch(() => ''));
-            }
-          } catch (invErr) {
-            console.error('[nexi-callback] Invoice generation failed:', invErr);
+        // Fattura per TUTTI i servizi (noleggio + lavaggio + meccanica).
+        try {
+          const invRes = await fetch(`${adminUrl}/.netlify/functions/generate-invoice-from-booking`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bookingId: booking.id, includeIVA: true }),
+          });
+          if (invRes.ok) {
+            console.log(`[nexi-callback] Invoice generated for existing booking (service: ${serviceType || 'rental'})`);
+          } else {
+            console.error(`[nexi-callback] Invoice failed (${invRes.status}):`, await invRes.text().catch(() => ''));
           }
+        } catch (invErr) {
+          console.error('[nexi-callback] Invoice generation failed:', invErr);
         }
       }
 
@@ -636,11 +640,12 @@ exports.handler = async (event) => {
           }
         }
 
-        // Generate contract + signing links (car rental only, not car wash/mechanical)
+        // Contract + signing solo per noleggio. Fattura per TUTTI i servizi.
         const serviceType = newBooking.service_type || newBooking.booking_details?.type || '';
         const isWashOrMech = serviceType === 'car_wash' || serviceType === 'mechanical_service' || serviceType === 'mechanical';
+        const adminUrl = process.env.ADMIN_URL || 'https://admin.dr7empire.com';
+
         if (!isWashOrMech) {
-          const adminUrl = process.env.ADMIN_URL || 'https://admin.dr7empire.com';
           try {
             const contractRes = await fetch(`${adminUrl}/.netlify/functions/generate-contract`, {
               method: 'POST',
@@ -678,37 +683,38 @@ exports.handler = async (event) => {
           } catch (contractErr) {
             console.error('[nexi-callback] Contract generation error:', contractErr);
           }
+        }
 
-          // Generate invoice/fattura
-          try {
-            const invRes = await fetch(`${adminUrl}/.netlify/functions/generate-invoice-from-booking`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ bookingId: newBooking.id, includeIVA: true }),
-            });
-            if (invRes.ok) {
-              const invData = await invRes.json();
-              console.log('[nexi-callback] Invoice generated:', invData.invoice?.numero_fattura || 'OK');
-            } else {
-              const errText = await invRes.text().catch(() => 'unknown');
-              console.error(`[nexi-callback] Invoice generation failed (${invRes.status}):`, errText);
-              // Retry once after 3 seconds
-              setTimeout(async () => {
-                try {
-                  const retryRes = await fetch(`${adminUrl}/.netlify/functions/generate-invoice-from-booking`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ bookingId: newBooking.id, includeIVA: true }),
-                  });
-                  console.log('[nexi-callback] Invoice retry:', retryRes.ok ? 'SUCCESS' : `FAILED (${retryRes.status})`);
-                } catch (retryErr) {
-                  console.error('[nexi-callback] Invoice retry failed:', retryErr);
-                }
-              }, 3000);
-            }
-          } catch (invErr) {
-            console.error('[nexi-callback] Invoice generation failed:', invErr);
+        // Generate invoice/fattura — TUTTI i servizi pagati ricevono fattura.
+        // Bug fix 2026-05-18: i lavaggi paid-by-card erano esclusi.
+        try {
+          const invRes = await fetch(`${adminUrl}/.netlify/functions/generate-invoice-from-booking`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bookingId: newBooking.id, includeIVA: true }),
+          });
+          if (invRes.ok) {
+            const invData = await invRes.json();
+            console.log(`[nexi-callback] Invoice generated (service: ${serviceType || 'rental'}):`, invData.invoice?.numero_fattura || 'OK');
+          } else {
+            const errText = await invRes.text().catch(() => 'unknown');
+            console.error(`[nexi-callback] Invoice generation failed (${invRes.status}):`, errText);
+            // Retry once after 3 seconds
+            setTimeout(async () => {
+              try {
+                const retryRes = await fetch(`${adminUrl}/.netlify/functions/generate-invoice-from-booking`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ bookingId: newBooking.id, includeIVA: true }),
+                });
+                console.log('[nexi-callback] Invoice retry:', retryRes.ok ? 'SUCCESS' : `FAILED (${retryRes.status})`);
+              } catch (retryErr) {
+                console.error('[nexi-callback] Invoice retry failed:', retryErr);
+              }
+            }, 3000);
           }
+        } catch (invErr) {
+          console.error('[nexi-callback] Invoice generation failed:', invErr);
         }
 
         // DR7 Club cashback — gated by active club + tier-based % from
