@@ -3339,7 +3339,25 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         insurance_label: insLabel,
         insurance_daily_price: insuranceCost / Math.max(duration.days, 1),
         insurance_total: insuranceCost,
-        km_limit: formData.kmLimit || includedKm || 0,
+        km_limit: (() => {
+          // When customer picked the "unlimited" option, store the canonical sentinel
+          // so admin summary and edit modal both agree.
+          if (formData.kmPackageType === 'unlimited') return 'Illimitati';
+          // Add purchased km packages on top of the included base. Without this,
+          // admin would see "100 km" when the customer actually paid for +300 km.
+          const baseLimit = Number(formData.kmLimit) || Number(includedKm) || 0;
+          const pkgsExtra = formData.kmPackages
+            ? Object.entries(formData.kmPackages).reduce((sum, [pkgId, qty]) => {
+                const q = Number(qty) || 0;
+                if (q <= 0) return sum;
+                const rawCat = String(((item as { category?: string }).category ?? '')).toLowerCase().trim();
+                const pkgs = resolvePacchetti(rawCat, configOverlay?.pacchettiByCategory);
+                const pkg = pkgs.find(p => p.id === pkgId);
+                return sum + (pkg ? pkg.km * q : 0);
+              }, 0)
+            : 0;
+          return baseLimit + pkgsExtra;
+        })(),
         unlimited_km: formData.kmPackageType === 'unlimited',
         km_overage_fee: ACTIVE_SFORO_PER_KM,
         unlimited_km_daily: formData.kmPackageType === 'unlimited' ? (kmPackageCost / Math.max(duration.days, 1)) : 0,
@@ -5403,17 +5421,17 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             {isSelected ? (
                               <div className="flex items-center gap-2">
                                 <button type="button" disabled={isUnlimitedActive} onClick={(e) => { e.stopPropagation(); setQty(qty - 1) }}
-                                  className="w-8 h-8 rounded-full bg-gray-700 text-white font-bold hover:bg-gray-600 disabled:opacity-50">−</button>
+                                  className="w-8 h-8 rounded-full bg-gray-700 text-white text-xl font-bold leading-none flex items-center justify-center hover:bg-gray-600 disabled:opacity-50">−</button>
                                 <span className="text-white font-bold min-w-[1.5rem] text-center">{qty}</span>
                                 <button type="button" disabled={isUnlimitedActive || qty >= maxQty} onClick={(e) => { e.stopPropagation(); setQty(qty + 1) }}
-                                  className="w-8 h-8 rounded-full bg-dr7-gold text-black font-bold hover:opacity-90 disabled:opacity-50">+</button>
+                                  className="w-8 h-8 rounded-full bg-white text-black text-xl font-bold leading-none flex items-center justify-center hover:bg-gray-200 disabled:opacity-50" title="Aggiungi pacchetto">+</button>
                                 <span className="font-bold text-dr7-gold ml-2">+{formatPrice(pkg.price * qty)}</span>
                               </div>
                             ) : (
                               <div className="flex items-center gap-2">
                                 <span className="font-bold text-dr7-gold">+{formatPrice(pkg.price)}</span>
                                 <button type="button" disabled={isUnlimitedActive} onClick={(e) => { e.stopPropagation(); setQty(1) }}
-                                  className="w-8 h-8 rounded-full bg-dr7-gold text-black font-bold hover:opacity-90 disabled:opacity-50" title="Aggiungi pacchetto">+</button>
+                                  className="w-8 h-8 rounded-full bg-white text-black text-xl font-bold leading-none flex items-center justify-center hover:bg-gray-200 disabled:opacity-50" title="Aggiungi pacchetto">+</button>
                               </div>
                             )}
                           </div>
