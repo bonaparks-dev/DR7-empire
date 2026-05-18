@@ -2059,6 +2059,21 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       clampHit = 'min';
       clampLimitDaily = minDaily;
     }
+    // 2026-05-18 HARD FLOOR: indipendentemente da Centralina min_price,
+    // i coefficienti dinamici (8 in totale) NON possono mai scontare piu\'
+    // del 15% complessivo sul subtotale (rental + insurance + km +
+    // lavaggio + cauzione/no-cauzione). Caso reale: Massimo Runchina
+    // 2026-05-18, A45S AMG 1 giorno, listSubtotal €370.10 → coeff
+    // combinato 0.657 → afterCoeff €243 → totale €263 invece di €315+.
+    // Senza min_price configurato in Centralina, gli sconti si
+    // sommavano moltiplicativamente fino al -34%. Con min_price
+    // settati per categoria questo floor diventa irrilevante.
+    const HARD_FLOOR_COEFF = 0.85;
+    const hardFloorTotal = subtotalNoExperience * HARD_FLOOR_COEFF;
+    if (afterCoeffNoExp < hardFloorTotal) {
+      afterCoeffNoExp = hardFloorTotal;
+      if (!clampHit) clampHit = 'min';
+    }
     calculatedSubtotal = roundToTwoDecimals(afterCoeffNoExp + calculatedExperienceCost + locationFees);
 
     const calculatedTaxes = 0;
