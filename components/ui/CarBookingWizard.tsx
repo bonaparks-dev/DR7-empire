@@ -2029,13 +2029,23 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // coefficiente. Default mirror del PreventiviTab admin: km/km
     // illimitati a listino (false), tutti gli altri sotto coefficiente.
     // Experience e location fees restano SEMPRE a listino per design.
+    // Match esatto col PreventiviTab admin:
+    //  - insurance, lavaggio, second_driver: toggle reale
+    //  - no_cauzione, cauzione_veicoli: HARDCODED a listino (admin
+    //    ignora il toggle, sono surcharge fissi che non scalano col
+    //    coefficiente ne\' devono essere mangiati dal clamp max)
+    //  - km_packages, unlimited_km: HARDCODED a listino (sono km
+    //    pre-pagati, non rental dinamico)
+    //  - dr7_flex: sul sito DR7 Flex e\' in experience_services
+    //    (sempre a listino), quindi calculatedFlexCost = 0 e
+    //    il toggle e\' un no-op qui
     const ci = configOverlay?.coefficientInclusion;
     const includeInsurance     = ci?.insurance        ?? true;
     const includeLavaggio      = ci?.lavaggio         ?? true;
-    const includeNoCauzione    = ci?.no_cauzione      ?? false; // 2026-05-18 default false
+    const includeNoCauzione    = false; // sempre a listino (admin hardcode)
     const includeSecondDriver  = ci?.second_driver    ?? true;
-    const includeDr7Flex       = ci?.dr7_flex         ?? false; // 2026-05-18: DR7 Flex in experience, a listino
-    const includeKmPackages    = ci?.km_packages      ?? false; // 2026-05-18: km pre-pagati a listino
+    const includeDr7Flex       = false; // a listino (DR7 Flex in experience)
+    const includeKmPackages    = false; // sempre a listino (admin hardcode)
     // Costruisce il "subtotale clamp-eligible" sommando SOLO le voci
     // che il toggle dice di includere nel coefficiente. Le altre
     // vengono aggiunte dopo, intatte.
