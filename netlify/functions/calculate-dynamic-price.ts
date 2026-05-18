@@ -604,26 +604,45 @@ export const handler: Handler = async (event) => {
     // Formula
     let rawDailyRate = selectedBaseRateEur * occCoeff * advCoeff * durCoeff * seasonCoeff * gapCoeff * dayTypeCoeff * vehOccCoeff * promoCoeff
 
-    // Min/Max clamp — leggiamo SOLO i prezzi visibili nell'UI Centralina Pro:
-    // (1) per-veicolo (UUID) e (2) category:<id> (formato Pro). NON cadiamo
-    // piu' sui bare key 'supercars'/'urban'/'aziendali' (legacy) — quelli
-    // erano dati stale invisibili nell'UI e clampavano i veicoli con MAX
-    // vuoto al loro insaputa. Empty string trattato come "non settato".
-    const cat = String(vehicleCategory || '').toLowerCase()
-    const aliases = cat === 'supercars' ? ['supercars', 'exotic']
-      : cat === 'exotic' ? ['exotic', 'supercars']
-      : cat ? [cat] : []
+    // Min/Max clamp — lookup tollerante: cerca la chiave con O senza
+    // prefisso "category:", con O senza alias supercars↔exotic, e in
+    // case-insensitive. 2026-05-18 BUG FIX: prima cercavamo SOLO
+    // `category:<alias>` prefissato — se l'admin configurava min_price
+    // per una categoria custom (UUID o nome non in alias list), la
+    // chiave restava "bare" e pickPrice non la trovava → minPrice=null
+    // → nessun clamp → coefficienti dinamici scendevano liberi (caso
+    // Massimo Runchina A45S: -34%).
+    const cat = String(vehicleCategory || '').toLowerCase().trim()
+    const baseAliases = cat === 'supercars' || cat === 'supercar'
+      ? ['supercars', 'supercar', 'exotic']
+      : cat === 'exotic'
+        ? ['exotic', 'supercars', 'supercar']
+        : cat
+          ? [cat]
+          : []
     const isValidPrice = (v: unknown): v is number => {
       if (v == null || v === '') return false
       const n = Number(v)
       return Number.isFinite(n) && n > 0
     }
     const pickPrice = (table: Record<string, number>): number | null => {
-      const v = table[vehicle.id]
-      if (isValidPrice(v)) return Number(v)
-      for (const a of aliases) {
-        const fromPrefixed = table[`category:${a}`]
-        if (isValidPrice(fromPrefixed)) return Number(fromPrefixed)
+      // 1) UUID veicolo (override per-vehicle)
+      const byId = table[vehicle.id]
+      if (isValidPrice(byId)) return Number(byId)
+      // 2) Lookup case-insensitive su tutte le chiavi della tabella
+      //    cercando un match con uno qualsiasi degli alias, prefissato
+      //    o no, con o senza spazi/case.
+      const tableKeys = Object.keys(table)
+      const aliasSet = new Set(baseAliases.map(a => a.toLowerCase()))
+      for (const k of tableKeys) {
+        const kLow = k.toLowerCase().trim()
+        // Forme accettate: "<alias>", "category:<alias>", "cat:<alias>"
+        const stripped = kLow.startsWith('category:') ? kLow.slice(9)
+                       : kLow.startsWith('cat:') ? kLow.slice(4)
+                       : kLow
+        if (aliasSet.has(stripped)) {
+          if (isValidPrice(table[k])) return Number(table[k])
+        }
       }
       return null
     }
