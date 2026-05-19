@@ -4945,8 +4945,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           <div className="space-y-8">
             {/* Document Upload — FIRST, for automatic data extraction */}
             <section>
-              <h3 className="text-lg font-bold text-white mb-4">A. CARICA DOCUMENTI</h3>
-              <p className="text-sm text-gray-400 mb-4">Carica i documenti per compilare automaticamente i dati del conducente.</p>
+              <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                A. CARICA DOCUMENTI
+                <span className="text-xs font-bold bg-red-600 text-white px-2 py-0.5 rounded">OBBLIGATORIO</span>
+              </h3>
+              <p className="text-sm text-gray-400 mb-4">
+                Per noleggiare un veicolo è <strong className="text-red-400">obbligatorio</strong> caricare patente di guida e documento d'identità (o passaporto). Senza questi documenti non è possibile proseguire con la prenotazione.
+              </p>
 
               {/* Check if documents are already on file */}
               {(hasStoredDocs.licensePath && hasStoredDocs.idPath) ? (
@@ -4970,14 +4975,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <p className="text-xs text-gray-500">Già in archivio</p>
                     </div>
                   ) : (
-                    <>
+                    <div>
                       <DocumentUploader
-                        title="1. PATENTE DI GUIDA"
-                        details={["Solo fronte/retro", "Foto chiara e leggibile", "Formati: JPG, PNG, PDF (max 5MB)"]}
+                        title="1. PATENTE DI GUIDA *"
+                        details={["Solo fronte/retro", "Foto chiara e leggibile", "Formati: JPG, PNG, PDF (max 5MB)", "Campo obbligatorio"]}
                         onFileChange={(file) => setFormData(prev => ({ ...prev, licenseImage: file }))}
                       />
-                      {errors.licenseImage && <p className="text-xs text-red-400 mt-1">{errors.licenseImage}</p>}
-                    </>
+                      {errors.licenseImage && <p className="text-xs text-red-400 mt-1 font-semibold">⚠ {errors.licenseImage}</p>}
+                    </div>
                   )}
 
                   {/* ID Uploader */}
@@ -4987,14 +4992,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       <p className="text-xs text-gray-500">Già in archivio</p>
                     </div>
                   ) : (
-                    <>
+                    <div>
                       <DocumentUploader
-                        title="2. CARTA D'IDENTITÀ / PASSAPORTO"
-                        details={["Documento valido", "Foto chiara e leggibile", "Formati: JPG, PNG, PDF (max 5MB)"]}
+                        title="2. CARTA D'IDENTITÀ / PASSAPORTO *"
+                        details={["Documento valido", "Foto chiara e leggibile", "Formati: JPG, PNG, PDF (max 5MB)", "Campo obbligatorio"]}
                         onFileChange={(file) => setFormData(prev => ({ ...prev, idImage: file }))}
                       />
-                      {errors.idImage && <p className="text-xs text-red-400 mt-1">{errors.idImage}</p>}
-                    </>
+                      {errors.idImage && <p className="text-xs text-red-400 mt-1 font-semibold">⚠ {errors.idImage}</p>}
+                    </div>
                   )}
 
                   {/* Compila button — auto-fill from uploaded documents */}
