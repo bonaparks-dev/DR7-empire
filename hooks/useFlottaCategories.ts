@@ -54,9 +54,17 @@ export function useFlottaCategories(): { categories: FlottaCategoryLink[]; loadi
         console.log('[useFlottaCategories] visibleIds (site_copy.flotta):', visibleIds);
 
         const valid = allCats.filter(c => typeof c?.id === 'string' && c.id);
+        // Selezione admin = source of truth.
+        // - lista vuota in site_copy.flotta.visible_category_ids => nessuna categoria sul sito
+        //   (l'admin deve esplicitamente spuntare cosa mostrare in Sito > Flotta).
+        // - selezione presente => mostra SOLO quelle, nell'ordine in cui l'admin le ha messe.
+        //   Niente piu' "default mostra tutte" — evita che Moto/Scooter/categorie nuove
+        //   compaiano sul sito senza essere state esplicitamente abilitate.
         const filtered = visibleIds.length === 0
-          ? valid
-          : valid.filter(c => visibleIds.includes(c.id as string));
+          ? []
+          : visibleIds
+              .map(id => valid.find(c => c.id === id))
+              .filter((c): c is { id: string; label: string } => !!c);
 
         const out: FlottaCategoryLink[] = filtered.map(c => ({
           id: c.id as string,
