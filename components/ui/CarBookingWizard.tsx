@@ -5123,18 +5123,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                 >
                 <div className="mt-4 p-4 bg-gray-800/30 rounded-lg border border-gray-700 space-y-4">
                   <p className="text-sm text-amber-300">Tutti i campi sono obbligatori per il secondo conducente.</p>
+                  {renderDriverForm('second')}
 
-                  {/* 2026-05-19: documenti BEFORE the form so Compila può
-                      auto-compilare i campi vuoti (stesso flow del conducente
-                      principale). Prima i documenti erano in fondo: l'utente
-                      doveva compilare a mano e poi caricare. Adesso scansiona
-                      i documenti e clicca Compila → campi pieni automaticamente. */}
-                  <div>
-                    <p className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+                  {/* Second Driver Document Upload */}
+                  <div className="mt-4">
+                    <p className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
                       Documenti secondo conducente
                       <span className="text-xs font-bold bg-red-600 text-white px-2 py-0.5 rounded">OBBLIGATORIO</span>
                     </p>
-                    <p className="text-xs text-gray-400 mb-3">Carica patente + documento d'identità — clicca <strong className="text-blue-300">Compila Dati</strong> per auto-riempire i campi sotto.</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <DocumentUploader
@@ -5195,12 +5191,6 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         />
                       </div>
                     )}
-                  </div>
-
-                  {/* Dati Secondo Conducente — dopo i documenti per compila auto-fill */}
-                  <div className="border-t border-gray-700 pt-4">
-                    <p className="text-sm font-semibold text-white mb-3">Dati secondo conducente</p>
-                    {renderDriverForm('second')}
                   </div>
                 </div>
                 </motion.div>
