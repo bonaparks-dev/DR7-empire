@@ -5147,6 +5147,42 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                         {errors['secondDriver.idImage'] && <p className="text-xs text-red-400 mt-1">{errors['secondDriver.idImage']}</p>}
                       </div>
                     </div>
+
+                    {/* Compila button — auto-fill second driver from uploaded documents */}
+                    {(formData.secondDriver.licenseImage instanceof File || formData.secondDriver.idImage instanceof File) && (
+                      <div className="mt-4">
+                        <CompilaButton
+                          documents={[
+                            { file: formData.secondDriver.licenseImage instanceof File ? formData.secondDriver.licenseImage : null, label: 'Patente Secondo Conducente' },
+                            { file: formData.secondDriver.idImage instanceof File ? formData.secondDriver.idImage : null, label: 'Documento Secondo Conducente' },
+                          ]}
+                          currentData={{
+                            nome: formData.secondDriver.firstName,
+                            cognome: formData.secondDriver.lastName,
+                            data_nascita: formData.secondDriver.birthDate,
+                            patente_numero: formData.secondDriver.licenseNumber,
+                            patente_rilascio: formData.secondDriver.licenseIssueDate,
+                            patente_scadenza: formData.secondDriver.licenseExpiryDate,
+                          }}
+                          onDataExtracted={(data) => {
+                            setFormData(prev => ({
+                              ...prev,
+                              secondDriver: {
+                                ...prev.secondDriver,
+                                ...(data.nome && !prev.secondDriver.firstName && { firstName: data.nome }),
+                                ...(data.cognome && !prev.secondDriver.lastName && { lastName: data.cognome }),
+                                ...(data.data_nascita && !prev.secondDriver.birthDate && { birthDate: data.data_nascita }),
+                                ...(data.patente_numero && !prev.secondDriver.licenseNumber && { licenseNumber: data.patente_numero }),
+                                ...(data.patente_rilascio && !prev.secondDriver.licenseIssueDate && { licenseIssueDate: data.patente_rilascio }),
+                                ...(data.patente_scadenza && !prev.secondDriver.licenseExpiryDate && { licenseExpiryDate: data.patente_scadenza }),
+                                ...(data.patente_ente && !prev.secondDriver.countryOfIssue && { countryOfIssue: data.patente_ente }),
+                              },
+                            }))
+                          }}
+                          onError={(err) => console.error('Compila second-driver error:', err)}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
                 </motion.div>
