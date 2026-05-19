@@ -54,14 +54,14 @@ export function useFlottaCategories(): { categories: FlottaCategoryLink[]; loadi
         console.log('[useFlottaCategories] visibleIds (site_copy.flotta):', visibleIds);
 
         const valid = allCats.filter(c => typeof c?.id === 'string' && c.id);
-        // Selezione admin = source of truth.
-        // - lista vuota in site_copy.flotta.visible_category_ids => nessuna categoria sul sito
-        //   (l'admin deve esplicitamente spuntare cosa mostrare in Sito > Flotta).
-        // - selezione presente => mostra SOLO quelle, nell'ordine in cui l'admin le ha messe.
-        //   Niente piu' "default mostra tutte" — evita che Moto/Scooter/categorie nuove
-        //   compaiano sul sito senza essere state esplicitamente abilitate.
+        // 2026-05-19 REVERT: visibleIds vuoto torna a significare "mostra tutte
+        // le categorie" (comportamento originale). La modifica precedente
+        // (vuoto => nessuna) lasciava la pagina Flotta completamente vuota
+        // sui siti dove site_copy.flotta non era stato configurato.
+        // Per nascondere categorie, l'admin DEVE configurare esplicitamente
+        // la lista in Sito > Flotta.
         const filtered = visibleIds.length === 0
-          ? []
+          ? valid
           : visibleIds
               .map(id => valid.find(c => c.id === id))
               .filter((c): c is { id: string; label: string } => !!c);
