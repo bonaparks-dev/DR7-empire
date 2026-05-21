@@ -40,6 +40,11 @@ export interface SearchDates {
   kmPackages?: Record<string, number>;
   preventivoId?: string;
   preventivoTotal?: number;
+  // 2026-05-21: when true, wizard is in EDIT mode (customer clicked
+  // "Modifica" on MyPreventivi). On save, the wizard sends the preventivoId
+  // to the backend which UPDATES the row instead of creating a new one.
+  // Also: wizard stays on step 1 instead of auto-jumping to step 4.
+  editMode?: boolean;
 }
 
 interface BookingContextType {

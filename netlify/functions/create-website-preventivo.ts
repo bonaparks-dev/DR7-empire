@@ -143,14 +143,61 @@ const handler: Handler = async (event) => {
       created_at: new Date().toISOString(),
     }
 
-    const { data, error } = await supabase
-      .from('preventivi')
-      .insert(preventivo)
-      .select()
-      .single()
+    // 2026-05-21: support edit mode. If body.replacePreventivoId is provided
+    // AND the row is owned by the current user (created_by) AND still in a
+    // mutable status (bozza/inviato), UPDATE it instead of inserting a new
+    // row. This is how MyPreventivi's "Modifica" button works: customer
+    // updates dates/extras and the same preventivo gets refreshed.
+    const replaceId: string | undefined = typeof body.replacePreventivoId === 'string'
+      ? body.replacePreventivoId
+      : undefined
+    let data: Record<string, unknown> | null = null
+    let error: { message: string } | null = null
+
+    if (replaceId) {
+      // Verify ownership + mutable status before update
+      const { data: existing } = await supabase
+        .from('preventivi')
+        .select('id, created_by, status, booking_id')
+        .eq('id', replaceId)
+        .maybeSingle()
+
+      if (!existing) {
+        return { statusCode: 404, headers, body: JSON.stringify({ error: 'Preventivo non trovato' }) }
+      }
+      if (existing.created_by && existing.created_by !== user.id) {
+        return { statusCode: 403, headers, body: JSON.stringify({ error: 'Non sei autorizzato a modificare questo preventivo' }) }
+      }
+      if (existing.booking_id) {
+        return { statusCode: 400, headers, body: JSON.stringify({ error: 'Preventivo gia\' convertito in prenotazione, non modificabile' }) }
+      }
+
+      // Reset to "bozza" on edit (customer may have changed dates/extras —
+      // admin needs to re-review). Drop created_at from update payload.
+      // Refresh expires_at: 7 days from now.
+      const updatePayload = { ...preventivo }
+      delete (updatePayload as Record<string, unknown>).created_at
+      const updateResult = await supabase
+        .from('preventivi')
+        .update({ ...updatePayload, status: 'bozza', updated_at: new Date().toISOString() })
+        .eq('id', replaceId)
+        .select()
+        .single()
+      data = updateResult.data as Record<string, unknown> | null
+      error = updateResult.error
+      console.log('[create-website-preventivo] Updated existing preventivo', replaceId, 'user', user.id)
+    } else {
+      const insertResult = await supabase
+        .from('preventivi')
+        .insert(preventivo)
+        .select()
+        .single()
+      data = insertResult.data as Record<string, unknown> | null
+      error = insertResult.error
+    }
 
     if (error) {
-      console.error('[create-website-preventivo] Insert error:', error)
+      console.error('[create-website-preventivo] DB error:', error)
       return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) }
     }
 

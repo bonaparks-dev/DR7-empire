@@ -242,7 +242,17 @@ const MyPreventivi: React.FC = () => {
                   </div>
 
                   {(isActive || (p.status === 'accettato' && !p.booking_id)) && !isExpired && (
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
+                      {/* 2026-05-21: "Modifica" opens the wizard in edit
+                          mode (stays on step 1, on save the preventivo is
+                          UPDATED instead of duplicated). Only when not yet
+                          converted to a booking. */}
+                      <a
+                        href={`/supercar-luxury?preventivo=${p.id}&edit=1`}
+                        className="px-5 py-2.5 bg-transparent border border-white/40 text-white text-sm font-bold rounded-full hover:bg-white/10 transition-colors"
+                      >
+                        Modifica
+                      </a>
                       <a
                         href={`/supercar-luxury?preventivo=${p.id}`}
                         className="px-5 py-2.5 bg-white text-black text-sm font-bold rounded-full hover:bg-gray-200 transition-colors"

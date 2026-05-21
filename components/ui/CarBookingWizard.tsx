@@ -517,8 +517,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         } catch { /* validation will happen when user reaches step 4 */ }
       }, 500);
     }
-    // If coming from a preventivo, skip directly to checkout (Step 4)
-    if (initialSearchDates.preventivoId) {
+    // If coming from a preventivo, skip directly to checkout (Step 4).
+    // 2026-05-21: when in EDIT mode (customer pressed "Modifica" on
+    // MyPreventivi), stay on step 1 so they can change dates/insurance/
+    // packages from the start. Otherwise default behavior (jump to step 4
+    // = "Prenota Ora" flow).
+    if (initialSearchDates.preventivoId && !initialSearchDates.editMode) {
       setTimeout(() => setStep(4), 100);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -3487,13 +3491,21 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         no_cauzione_request: noCauzioneRequested && formData.depositOption === 'no_deposit',
       };
 
+      // 2026-05-21: in edit mode, tell the backend to UPDATE the existing
+      // preventivo instead of creating a new one. replacePreventivoId is
+      // honored only if the row is owned by the current user AND not yet
+      // converted to a booking (server-side checks).
+      const payloadWithReplace = (initialSearchDates?.editMode && initialSearchDates?.preventivoId)
+        ? { ...payload, replacePreventivoId: initialSearchDates.preventivoId }
+        : payload;
+
       const res = await fetch('/.netlify/functions/create-website-preventivo', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payloadWithReplace),
       });
 
       if (!res.ok) {
