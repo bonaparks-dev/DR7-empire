@@ -112,6 +112,11 @@ const FlottaIndexPage: React.FC = () => {
                         // wizard centralizzato (Prenota Ora popup / pagina
                         // categoria) — niente CTA duplicato per ogni macchina.
                         hideBookButton
+                        // 2026-05-21: niente prezzi nella vista flotta —
+                        // la pagina mostra il listino veicoli, i prezzi reali
+                        // sono dinamici e li vede il cliente nel wizard dopo
+                        // aver scelto le date.
+                        hidePrice
                       />
                     ))}
                   </div>

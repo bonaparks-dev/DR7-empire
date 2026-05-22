@@ -517,8 +517,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         } catch { /* validation will happen when user reaches step 4 */ }
       }, 500);
     }
-    // If coming from a preventivo, skip directly to checkout (Step 4)
-    if (initialSearchDates.preventivoId) {
+    // If coming from a preventivo, skip directly to checkout (Step 4).
+    // 2026-05-21: when in EDIT mode (customer pressed "Modifica" on
+    // MyPreventivi), stay on step 1 so they can change dates/insurance/
+    // packages from the start. Otherwise default behavior (jump to step 4
+    // = "Prenota Ora" flow).
+    if (initialSearchDates.preventivoId && !initialSearchDates.editMode) {
       setTimeout(() => setStep(4), 100);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -3390,20 +3394,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
           // When customer picked the "unlimited" option, store the canonical sentinel
           // so admin summary and edit modal both agree.
           if (formData.kmPackageType === 'unlimited') return 'Illimitati';
-          // Add purchased km packages on top of the included base. Without this,
-          // admin would see "100 km" when the customer actually paid for +300 km.
-          const baseLimit = Number(formData.kmLimit) || Number(includedKm) || 0;
-          const pkgsExtra = formData.kmPackages
-            ? Object.entries(formData.kmPackages).reduce((sum, [pkgId, qty]) => {
-                const q = Number(qty) || 0;
-                if (q <= 0) return sum;
-                const rawCat = String(((item as { category?: string }).category ?? '')).toLowerCase().trim();
-                const pkgs = resolvePacchetti(rawCat, configOverlay?.pacchettiByCategory);
-                const pkg = pkgs.find(p => p.id === pkgId);
-                return sum + (pkg ? pkg.km * q : 0);
-              }, 0)
-            : 0;
-          return baseLimit + pkgsExtra;
+          // 2026-05-21 BUG FIX: includedKm gia' INCLUDE pkgKmTotal (cfr.
+          // pricing useMemo line ~1945: calculatedIncludedKm = base + pkgKmTotal).
+          // Prima qui sommavamo i pacchetti UN'ALTRA VOLTA → km_limit
+          // doppio-conteggiato (Massimo: includedKm=300=100+200 day 2, +200
+          // extra dei pacchetti = 500 salvato invece di 300 reale).
+          // Adesso usiamo direttamente includedKm che riflette gia' il
+          // recap "Totale KM" visibile al cliente.
+          return Number(formData.kmLimit) || Number(includedKm) || 0;
         })(),
         unlimited_km: formData.kmPackageType === 'unlimited',
         km_overage_fee: ACTIVE_SFORO_PER_KM,
@@ -3493,13 +3491,21 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         no_cauzione_request: noCauzioneRequested && formData.depositOption === 'no_deposit',
       };
 
+      // 2026-05-21: in edit mode, tell the backend to UPDATE the existing
+      // preventivo instead of creating a new one. replacePreventivoId is
+      // honored only if the row is owned by the current user AND not yet
+      // converted to a booking (server-side checks).
+      const payloadWithReplace = (initialSearchDates?.editMode && initialSearchDates?.preventivoId)
+        ? { ...payload, replacePreventivoId: initialSearchDates.preventivoId }
+        : payload;
+
       const res = await fetch('/.netlify/functions/create-website-preventivo', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payloadWithReplace),
       });
 
       if (!res.ok) {

@@ -813,6 +813,10 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
   // ── Auto-open wizard from preventivo link ──────────────────────────────
   const preventivoId = searchParams.get('preventivo');
   const preventivoCodeParam = searchParams.get('codice') || '';
+  // 2026-05-21: ?edit=1 from MyPreventivi "Modifica" button. Tells the
+  // wizard to stay on step 1 and update the existing preventivo on save
+  // (instead of creating a new one).
+  const editMode = searchParams.get('edit') === '1';
   const [preventivoHandled, setPreventivoHandled] = useState(false);
 
   useEffect(() => {
@@ -910,6 +914,7 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
           preventivoId: preventivo.id,
           preventivoTotal: preventivo.total_final,
           discountCode: preventivoCodeParam || undefined,
+          editMode,
         });
 
         // Open the wizard
