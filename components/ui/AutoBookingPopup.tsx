@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import BookingSearchBox from './BookingSearchBox';
+import { useAuth } from '../../hooks/useAuth';
 
 const SESSION_KEY = 'dr7_auto_booking_popup_dismissed';
 const DELAY_MS = 8000; // 8 seconds after page mount on the homepage.
@@ -23,10 +24,14 @@ const DELAY_MS = 8000; // 8 seconds after page mount on the homepage.
  */
 const AutoBookingPopup: React.FC = () => {
   const location = useLocation();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (location.pathname !== '/') return;
+    // Auth gate: il popup auto-pre-compila date ma il booking finale richiede
+    // login. Se non autenticato non serve a niente — niente nag.
+    if (!user) return;
 
     // Don't surface again if dismissed earlier this session.
     try {
@@ -64,7 +69,7 @@ const AutoBookingPopup: React.FC = () => {
       clearTimeout(t);
       window.removeEventListener('dr7:prenota-ora:manual-opened', handleManualOpen);
     };
-  }, [location.pathname]);
+  }, [location.pathname, user]);
 
   const close = () => {
     setOpen(false);

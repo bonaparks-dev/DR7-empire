@@ -37,6 +37,24 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void; copy: Hea
     };
   }, [isOpen]);
 
+  // Re-open booking popup after sign-in. Triggered when the URL contains
+  // `?openBooking=1` (set when an unauthenticated user clicked "Prenota Ora"
+  // and was redirected through /signin). Removes the query param so the
+  // popup doesn't reopen on subsequent navigations.
+  useEffect(() => {
+    if (!user) return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('openBooking') === '1') {
+        setShowBookingPopup(true);
+        try { window.dispatchEvent(new CustomEvent('dr7:prenota-ora:manual-opened')); } catch { /* ignore */ }
+        params.delete('openBooking');
+        const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '') + window.location.hash;
+        window.history.replaceState(null, '', newUrl);
+      }
+    } catch { /* ignore */ }
+  }, [user]);
+
   // Fetch credit balance when menu opens (with debounce to prevent rapid calls)
   useEffect(() => {
     if (!isOpen || !user?.id) return;
@@ -133,14 +151,16 @@ const NavigationMenu: React.FC<{ isOpen: boolean; onClose: () => void; copy: Hea
             )}
 
             <nav className="flex-grow flex flex-col space-y-5">
-              {/* PRENOTA ORA */}
+              {/* PRENOTA ORA — richiede autenticazione. Se non loggato
+                  reindirizza a /signin con returnTo che riapre il popup. */}
               <button
                 onClick={() => {
+                  if (!user) {
+                    onClose();
+                    nav('/signin?returnTo=' + encodeURIComponent(window.location.pathname + '?openBooking=1'));
+                    return;
+                  }
                   setShowBookingPopup(true);
-                  // Tell the AutoBookingPopup not to fire its 8s nag on top of
-                  // this manual popup. The listener also marks the session
-                  // dismissed so the auto-popup stays quiet for the rest of
-                  // the visit.
                   try { window.dispatchEvent(new CustomEvent('dr7:prenota-ora:manual-opened')); } catch { /* ignore */ }
                 }}
                 className="w-full py-3 border border-white text-white font-semibold text-sm tracking-wider rounded-full hover:bg-white hover:text-black active:scale-[0.98] transition-all duration-300"
