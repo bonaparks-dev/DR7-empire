@@ -1947,14 +1947,19 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
         pkgCostTotal += pkg.price * q
       }
       const kmTable = getKmIncludedForVehicle((item as any).category, vType);
-      calculatedIncludedKm = calculateIncludedKm(billingDaysCalc, kmTable) + pkgKmTotal;
+      // 2026-05-22: se kmTable === null la categoria ha km_included.unlimited=true
+      // → la base e' illimitata (9999), i pacchetti vengono solo aggiunti come pricing.
+      calculatedIncludedKm = kmTable === null ? 9999 : calculateIncludedKm(billingDaysCalc, kmTable) + pkgKmTotal;
       calculatedKmPackageCost = roundToTwoDecimals(pkgCostTotal);
     } else {
       // Default "km inclusi": legge da Centralina Pro per categoria raw
       // (Hypercar / Suv Luxury / nuove categorie incluse). Cade su
       // bucket legacy (Aziendali / Supercars) e poi _global.
       const kmTable = getKmIncludedForVehicle((item as any).category, vType);
-      calculatedIncludedKm = calculateIncludedKm(billingDaysCalc, kmTable);
+      // 2026-05-22: kmTable === null = categoria con km_included.unlimited=true
+      // (urban). includedKm deve restare 9999 anche con kmPackageType='none'
+      // altrimenti l'etichetta "Illimitati" sparisce al primo click.
+      calculatedIncludedKm = kmTable === null ? 9999 : calculateIncludedKm(billingDaysCalc, kmTable);
     }
 
     const calculatedRecommendedKm = recommendKmPackage(formData.expectedKm, item.name, billingDays);
@@ -5564,11 +5569,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       }
                     }
                     if (unlimitedPrice === null) return null
-                    // 2026-05-22: se i km inclusi standard sono gia' Illimitati
-                    // (urban con km_included.unlimited=true), nascondiamo il
-                    // duplicato: il cliente vedrebbe due card "Illimitati - Inclusi"
-                    // affiancate, che e' confondente.
-                    if (includedKm >= 9999) return null
+                    // 2026-05-22: se la categoria ha km_included.unlimited=true
+                    // (urban) la card standard mostra gia' "Illimitati - Inclusi".
+                    // Niente duplicato. Controllo sulla CONFIG (statica), non
+                    // su includedKm dinamico — altrimenti al click si vedeva
+                    // riapparire la card duplicata.
+                    if (getKmIncludedForVehicle((item as any).category, vehicleType) === null) return null
                     return (
                       <div
                         className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType === 'unlimited'
