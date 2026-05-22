@@ -101,18 +101,19 @@ function vTypeToDepositCategory(vType: 'UTILITARIA' | 'FURGONE' | 'V_CLASS' | 'S
 function resolvePacchetti(rawCat: string | undefined | null, byCat: Record<string, any[]> | undefined | null): any[] {
   if (!byCat) return []
   const cat = String(rawCat || '').toLowerCase().trim()
+  // 2026-05-22 FIX: STRICT — solo alias supercars<->exotic. Niente
+  // fallback a categorie diverse. Prima un Fiat Panda (urban) senza
+  // pacchetti km configurati cadeva sul primo array non vuoto
+  // (supercars) → mostrava i pacchetti supercar a €720/€1262/€42598
+  // sulla scheda Panda. Adesso: se la categoria del veicolo non ha
+  // pacchetti configurati in Centralina Pro, ritorna [] e l'UI
+  // semplicemente non mostra l'opzione pacchetti km.
   const aliases = (cat === 'supercars' || cat === 'supercar') ? ['supercars', 'exotic', 'supercar']
                 : cat === 'exotic' ? ['exotic', 'supercars', 'supercar']
-                : cat ? [cat, 'supercars', 'exotic', 'supercar']
-                : ['supercars', 'exotic', 'supercar']
+                : cat ? [cat]
+                : []
   for (const k of aliases) {
     const v = byCat[k]
-    if (Array.isArray(v) && v.length > 0) return v
-  }
-  // Final fallback: first non-empty list from any category. Garantisce
-  // che cars con categoria custom (es. "porsche", "luxury") ricevano
-  // comunque i pacchetti se l'admin li ha configurati per UNA categoria.
-  for (const v of Object.values(byCat)) {
     if (Array.isArray(v) && v.length > 0) return v
   }
   return []
@@ -5549,15 +5550,23 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     const byCat = configOverlay?.unlimitedKmByCategory
                     let unlimitedPrice = 0
                     if (rawCat && byCat) {
+                      // 2026-05-22 STRICT: solo alias supercars<->exotic.
+                      // Niente fallback a un'altra categoria. Se la cat
+                      // del veicolo non ha unlimitedKmPerDay configurato,
+                      // l'opzione NON si mostra.
                       const aliases = (rawCat === 'supercars' || rawCat === 'supercar') ? ['supercars', 'exotic', 'supercar']
                                     : rawCat === 'exotic' ? ['exotic', 'supercars', 'supercar']
-                                    : (rawCat === 'supercar' ? ['supercar', 'supercars', 'exotic'] : [rawCat])
+                                    : [rawCat]
                       for (const k of aliases) {
                         const v = byCat[k]?.[tier]
                         if (typeof v === 'number' && v > 0) { unlimitedPrice = v; break }
                       }
                     }
-                    if (!unlimitedPrice) unlimitedPrice = tierPricing.unlimitedKmPerDay || 0
+                    // 2026-05-22 RIMOSSO il fallback a tierPricing.unlimitedKmPerDay.
+                    // Il fallback faceva apparire i prezzi del default tier
+                    // (di solito supercar) sulle Panda/utilitarie senza
+                    // configurazione. Adesso: niente prezzo per categoria
+                    // → opzione nascosta.
                     if (unlimitedPrice <= 0) return null
                     return (
                       <div
