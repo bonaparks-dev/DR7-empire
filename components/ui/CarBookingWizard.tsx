@@ -5548,26 +5548,22 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
                     const byCat = configOverlay?.unlimitedKmByCategory
-                    let unlimitedPrice = 0
+                    // 2026-05-22: distingui "configurato a 0" da "non configurato".
+                    // Admin puo' attivare Km illimitati con prezzo 0 (gratis/incluso)
+                    // → l'opzione DEVE mostrarsi come "Incluso".
+                    // Se invece la categoria NON ha unlimitedKmByCategory[cat][tier]
+                    // (undefined), l'opzione resta nascosta.
+                    let unlimitedPrice: number | null = null
                     if (rawCat && byCat) {
-                      // 2026-05-22 STRICT: solo alias supercars<->exotic.
-                      // Niente fallback a un'altra categoria. Se la cat
-                      // del veicolo non ha unlimitedKmPerDay configurato,
-                      // l'opzione NON si mostra.
                       const aliases = (rawCat === 'supercars' || rawCat === 'supercar') ? ['supercars', 'exotic', 'supercar']
                                     : rawCat === 'exotic' ? ['exotic', 'supercars', 'supercar']
                                     : [rawCat]
                       for (const k of aliases) {
                         const v = byCat[k]?.[tier]
-                        if (typeof v === 'number' && v > 0) { unlimitedPrice = v; break }
+                        if (typeof v === 'number') { unlimitedPrice = v; break }
                       }
                     }
-                    // 2026-05-22 RIMOSSO il fallback a tierPricing.unlimitedKmPerDay.
-                    // Il fallback faceva apparire i prezzi del default tier
-                    // (di solito supercar) sulle Panda/utilitarie senza
-                    // configurazione. Adesso: niente prezzo per categoria
-                    // → opzione nascosta.
-                    if (unlimitedPrice <= 0) return null
+                    if (unlimitedPrice === null) return null
                     return (
                       <div
                         className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType === 'unlimited'
@@ -5580,7 +5576,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             <span className="font-bold text-white">Km illimitati</span>
                             <p className="text-sm text-gray-400">Senza limiti di percorrenza</p>
                           </div>
-                          <span className="font-bold text-white">+€{unlimitedPrice}/giorno</span>
+                          <span className="font-bold text-white">{unlimitedPrice > 0 ? `+€${unlimitedPrice}/giorno` : 'Incluso'}</span>
                         </div>
                       </div>
                     )
@@ -5645,26 +5641,20 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const rawCat = String(((item as any).category ?? '')).toLowerCase().trim()
                     const byCat = configOverlay?.unlimitedKmByCategory
-                    let perDay = 0;
+                    // 2026-05-22: legge la categoria del veicolo da Centralina Pro.
+                    // Entry assente = toggle OFF (opzione nascosta).
+                    // Entry presente con 0 = toggle ON gratis ("Incluso").
+                    let perDay: number | null = null
                     if (rawCat && byCat) {
                       const aliases = (rawCat === 'supercars' || rawCat === 'supercar') ? ['supercars', 'exotic', 'supercar']
                                     : rawCat === 'exotic' ? ['exotic', 'supercars', 'supercar']
-                                    : (rawCat === 'supercar' ? ['supercar', 'supercars', 'exotic'] : [rawCat])
+                                    : [rawCat]
                       for (const k of aliases) {
                         const v = byCat[k]?.[tier]
-                        if (typeof v === 'number' && v > 0) { perDay = v; break }
+                        if (typeof v === 'number') { perDay = v; break }
                       }
                     }
-                    if (perDay === 0) {
-                      if (vehicleType === 'FURGONE' || vehicleType === 'V_CLASS') {
-                        perDay = configOverlay?.kmPackagePrices?.unlimitedFurgonePerDay ?? 0;
-                      } else if (isUrbanVehicle(item.name)) {
-                        perDay = configOverlay?.kmPackagePrices?.unlimitedUrbanPerDay ?? 0;
-                      } else if (vehicleType === 'SUPERCAR') {
-                        perDay = configOverlay?.tierPricing?.[tier]?.unlimitedKmPerDay ?? 0;
-                      }
-                    }
-                    if (perDay <= 0) return null
+                    if (perDay === null) return null
                     return (
                       <div
                         className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType === 'unlimited'
@@ -5678,7 +5668,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                             <p className="text-sm text-gray-400">Senza limiti di percorrenza</p>
                           </div>
                           <span className="font-bold text-white">
-                            {formatPrice(perDay * days)}
+                            {perDay > 0 ? formatPrice(perDay * days) : 'Incluso'}
                           </span>
                         </div>
                       </div>

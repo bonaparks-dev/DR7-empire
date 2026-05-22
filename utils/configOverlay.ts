@@ -335,5 +335,37 @@ export function buildWebsiteConfigOverlay(config: RentalConfig | null): WebsiteC
     kmPackagePrices,
     sforoPerKm: sforoGlobal,
     sforoByCategory,
+    unlimitedKmByCategory: (() => {
+      // 2026-05-22: espone config.unlimited_km (scritto da Centralina Pro)
+      // come { cat: { TIER_1, TIER_2 } } per il wizard.
+      // Entry assente = toggle OFF (opzione nascosta).
+      // Entry presente con 0 = toggle ON gratis (mostra "Incluso").
+      const raw = (config.unlimited_km as Record<string, Record<string, { per_day?: number }>> | undefined)
+      if (!raw || typeof raw !== 'object') return undefined
+      const out: Record<string, { TIER_1: number; TIER_2: number }> = {}
+      for (const [cat, tiers] of Object.entries(raw)) {
+        if (!tiers || typeof tiers !== 'object') continue
+        const allTiers = tiers._all_tiers?.per_day
+        const t1 = tiers.TIER_1?.per_day
+        const t2 = tiers.TIER_2?.per_day
+        out[cat] = {
+          TIER_1: typeof t1 === 'number' ? t1 : (typeof allTiers === 'number' ? allTiers : 0),
+          TIER_2: typeof t2 === 'number' ? t2 : (typeof allTiers === 'number' ? allTiers : 0),
+        }
+      }
+      return Object.keys(out).length > 0 ? out : undefined
+    })(),
+    pacchettiByCategory: (() => {
+      // 2026-05-22: espone config.pacchetti_km (scritto da Centralina Pro)
+      // come { cat: [{id, km, sconto_pct, price, label, ...}] } per il wizard.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const raw = (config as any).pacchetti_km as Record<string, Array<{ id: string; km: number; sconto_pct: number; price: number; label: string; is_quantity_buyable?: boolean; max_quantity?: number }>> | undefined
+      if (!raw || typeof raw !== 'object') return undefined
+      const out: Record<string, Array<{ id: string; km: number; sconto_pct: number; price: number; label: string; is_quantity_buyable?: boolean; max_quantity?: number }>> = {}
+      for (const [cat, arr] of Object.entries(raw)) {
+        if (Array.isArray(arr) && arr.length > 0) out[cat] = arr
+      }
+      return Object.keys(out).length > 0 ? out : undefined
+    })(),
   }
 }
