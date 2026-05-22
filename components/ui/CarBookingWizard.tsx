@@ -5564,6 +5564,11 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                       }
                     }
                     if (unlimitedPrice === null) return null
+                    // 2026-05-22: se i km inclusi standard sono gia' Illimitati
+                    // (urban con km_included.unlimited=true), nascondiamo il
+                    // duplicato: il cliente vedrebbe due card "Illimitati - Inclusi"
+                    // affiancate, che e' confondente.
+                    if (includedKm >= 9999) return null
                     return (
                       <div
                         className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${formData.kmPackageType === 'unlimited'
