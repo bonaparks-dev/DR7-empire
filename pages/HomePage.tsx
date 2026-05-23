@@ -145,20 +145,23 @@ const HomePage: React.FC = () => {
   // (cars, urban-cars, corporate-fleet, yachts, jets). Risultato: nessun
   // fallback image trovato → cards rotte sulla homepage. Mapping esplicito
   // sotto. Admin in futuro puo' sovrascrivere via categoryOverrides.
+  // 2026-05-23: Mapping con immagini DIVERSE per categoria — usa file
+  // che esistono in /public e che rappresentano correttamente il tipo
+  // di veicolo (no piu' la stessa supercar per tutte le card).
   const CATEGORY_IMAGE_FALLBACK: Record<string, string> = {
-    hypercar: '/supercar.jpeg',
-    supercar: '/supercar.jpeg',
-    exotic: '/supercar.jpeg',
-    urban: '/urbancars.jpeg',
-    'urban-cars': '/urbancars.jpeg',
-    flotta_aziendale: '/placeholder.jpeg',
-    corporate: '/placeholder.jpeg',
-    'corporate-fleet': '/placeholder.jpeg',
+    hypercar: '/ferrari-portofino.jpeg',
+    supercar: '/porsche-911.jpeg',
+    exotic: '/ferrari-portofino.jpeg',
+    urban: '/panda1.jpeg',
+    'urban-cars': '/panda1.jpeg',
+    flotta_aziendale: '/utili.jpeg',
+    corporate: '/utili.jpeg',
+    'corporate-fleet': '/utili.jpeg',
     moto: '/moto.jpeg',
     scooter: '/moto.jpeg',
     yachts: '/yacht1.jpeg',
     jets: '/jet1.jpeg',
-    cars: '/supercar.jpeg',
+    cars: '/porsche-911.jpeg',
   };
   const homeCards: HomeCard[] = React.useMemo(() => {
     // Se Flotta non e' ancora caricato, ripieghiamo su RENTAL_CATEGORIES
