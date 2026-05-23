@@ -4,7 +4,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { RENTAL_CATEGORIES } from '../constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getHomeCopy, type HomeCopy, type HomeSlide } from '../utils/siteCopy';
-import { useFlottaCategories } from '../hooks/useFlottaCategories';
+// 2026-05-23: useFlottaCategories rimosso — ritorno al rendering hardcoded
 
 interface HeroSectionProps {
   slides: HomeSlide[];
@@ -129,73 +129,34 @@ const HomePage: React.FC = () => {
     return map;
   }, [copy]);
 
-  // Categorie da mostrare in homepage = selezionate in admin > Sito >
-  // Flotta. Per ciascuna, riusiamo metadata (immagine/label) se esiste
-  // una voce RENTAL_CATEGORIES con lo stesso id; altrimenti fallback su
-  // l'override admin (categoryOverrides) o placeholder.
-  const { categories: flottaCats } = useFlottaCategories();
+  // 2026-05-23 REVERT: ritorno al comportamento ORIGINALE pre-13/05.
+  // Le categorie homepage sono di nuovo le RENTAL_CATEGORIES hardcoded
+  // (cars, urban-cars, corporate-fleet, yachts, jets) con le immagini
+  // che funzionavano sempre. Niente piu' fetch dinamico da
+  // Centralina Pro per il rendering della homepage. L'admin puo' ancora
+  // sovrascrivere title/image per ogni card via Sito > Home > Categorie.
   type HomeCard = {
     id: string;
     label: string;
     image: string;
     path: string;
   };
-  // 2026-05-23 BUG FIX: le categorie da Centralina Pro (hypercar, supercar,
-  // urban, flotta_aziendale, moto, scooter) non matchano gli ID legacy
-  // (cars, urban-cars, corporate-fleet, yachts, jets). Risultato: nessun
-  // fallback image trovato → cards rotte sulla homepage. Mapping esplicito
-  // sotto. Admin in futuro puo' sovrascrivere via categoryOverrides.
-  // 2026-05-23: Mapping con immagini DIVERSE per categoria — usa file
-  // che esistono in /public e che rappresentano correttamente il tipo
-  // di veicolo (no piu' la stessa supercar per tutte le card).
-  const CATEGORY_IMAGE_FALLBACK: Record<string, string> = {
-    hypercar: '/ferrari-portofino.jpeg',
-    supercar: '/porsche-911.jpeg',
-    exotic: '/ferrari-portofino.jpeg',
-    urban: '/panda1.jpeg',
-    'urban-cars': '/panda1.jpeg',
-    flotta_aziendale: '/utili.jpeg',
-    corporate: '/utili.jpeg',
-    'corporate-fleet': '/utili.jpeg',
-    moto: '/moto.jpeg',
-    scooter: '/moto.jpeg',
-    yachts: '/yacht1.jpeg',
-    jets: '/jet1.jpeg',
-    cars: '/porsche-911.jpeg',
-  };
   const homeCards: HomeCard[] = React.useMemo(() => {
-    // Se Flotta non e' ancora caricato, ripieghiamo su RENTAL_CATEGORIES
-    // (comportamento legacy) per non mostrare una pagina vuota.
-    if (flottaCats.length === 0) {
-      return RENTAL_CATEGORIES.map(c => ({
-        id: c.id,
-        label: getTranslated(c.label),
-        image: categoryOverrides.get(c.id)?.image
-          || c.data?.[0]?.image
-          || CATEGORY_IMAGE_FALLBACK[c.id]
-          || '/placeholder.jpeg',
-        path: `/${c.id}`,
-      }));
-    }
-    return flottaCats.map(c => {
-      const legacy = RENTAL_CATEGORIES.find(r => r.id === c.id);
+    return RENTAL_CATEGORIES.map(c => {
       const override = categoryOverrides.get(c.id);
       return {
         id: c.id,
         label: override
           ? (lang === 'it' ? override.title_it : override.title_en)
-          : legacy
-            ? getTranslated(legacy.label)
-            : c.label,
+          : getTranslated(c.label),
         image: override?.image
-          || legacy?.data?.[0]?.image
-          || CATEGORY_IMAGE_FALLBACK[c.id]
+          || c.data?.[0]?.image
           || '/placeholder.jpeg',
-        path: c.path,
+        path: `/${c.id}`,
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flottaCats, categoryOverrides, lang, getTranslated]);
+  }, [categoryOverrides, lang, getTranslated]);
 
   const seoH1 = copy ? (lang === 'it' ? copy.seo_h1_it : copy.seo_h1_en) : 'DR7 Empire';
 
