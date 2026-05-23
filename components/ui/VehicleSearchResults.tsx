@@ -26,7 +26,7 @@ interface VehicleSearchResultsProps {
 // Map vehicle name to image (same logic as useVehicles.ts)
 const getVehicleImage = (name: string, metadata?: Record<string, any> | null): string => {
     if (metadata?.image) return metadata.image;
-    if (!name) return '/default-car.jpeg';
+    if (!name) return '/car.jpeg';
     const lowerName = name.toLowerCase();
 
     if (lowerName.includes('rs3')) return '/rs3.jpeg';
@@ -51,8 +51,12 @@ const getVehicleImage = (name: string, metadata?: Record<string, any> | null): s
     if (lowerName.includes('panda') && (lowerName.includes('bianca') || lowerName.includes('white'))) return '/panda2.jpeg';
     if (lowerName.includes('panda') && (lowerName.includes('aranci') || lowerName.includes('orange'))) return '/panda3.jpeg';
     if (lowerName.includes('panda')) return '/panda1.jpeg';
+    // 2026-05-23: placeholder vehicles per categoria.
+    if (lowerName === 'moto' || lowerName.startsWith('moto ')) return '/moto.jpeg';
+    if (lowerName === 'urban' || lowerName.startsWith('urban ')) return '/urbancars.jpeg';
+    if (lowerName === 'supercar' || lowerName.startsWith('supercar')) return '/supercar.jpeg';
 
-    return '/default-car.jpeg';
+    return '/car.jpeg';
 };
 
 const VehicleSearchResults: React.FC<VehicleSearchResultsProps> = ({ results, searchData, onBook, isUrban }) => {
