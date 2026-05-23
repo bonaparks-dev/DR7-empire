@@ -45,6 +45,10 @@ const FlottaIndexPage: React.FC = () => {
         const c = (v.category || '').toLowerCase();
         return aliasSet.has(c);
       });
+      // 2026-05-23: skip categorie vuote — l'admin non vuole headers tipo
+      // "Moto"/"Scooter" visibili sul sito se non ci sono ancora veicoli
+      // assegnati. Quando si aggiungono veicoli alla categoria, riappare.
+      if (list.length === 0) continue;
       out.push({ id: cat.id, label: cat.label, vehicles: list });
     }
     return out;
