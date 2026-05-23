@@ -1877,11 +1877,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const calculatedLicenseYears = calculateYearsSince(formData.licenseIssueDate);
 
     // --- SECOND DRIVER FEE (tier-conditional) ---
-    // 2026-05-23: TARIFFA FISSA una tantum, NON per giorno. Il valore da
-    // Centralina Pro (secondDriverPerDay nominalmente) e' applicato UNA
-    // sola volta a prescindere dalla durata del noleggio.
+    // 2026-05-23: modalita' admin-editabile da Centralina Pro > Servizi.
+    // 'flat' (default) = una tantum, 'per_day' = × giorni di noleggio.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sdMode = ((rentalConfig as any)?.servizi?.second_driver_billing as 'flat' | 'per_day' | undefined) || 'flat';
     const calculatedSecondDriverFee = formData.addSecondDriver
-      ? roundToTwoDecimals(tierPricingForCalc.secondDriverPerDay)
+      ? (sdMode === 'flat'
+          ? roundToTwoDecimals(tierPricingForCalc.secondDriverPerDay)
+          : roundToTwoDecimals(tierPricingForCalc.secondDriverPerDay * billingDaysCalc))
       : 0;
 
     // Young driver / recent license fees removed (handled by tier pricing)
