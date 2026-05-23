@@ -140,6 +140,26 @@ const HomePage: React.FC = () => {
     image: string;
     path: string;
   };
+  // 2026-05-23 BUG FIX: le categorie da Centralina Pro (hypercar, supercar,
+  // urban, flotta_aziendale, moto, scooter) non matchano gli ID legacy
+  // (cars, urban-cars, corporate-fleet, yachts, jets). Risultato: nessun
+  // fallback image trovato → cards rotte sulla homepage. Mapping esplicito
+  // sotto. Admin in futuro puo' sovrascrivere via categoryOverrides.
+  const CATEGORY_IMAGE_FALLBACK: Record<string, string> = {
+    hypercar: '/supercar.jpeg',
+    supercar: '/supercar.jpeg',
+    exotic: '/supercar.jpeg',
+    urban: '/urbancars.jpeg',
+    'urban-cars': '/urbancars.jpeg',
+    flotta_aziendale: '/placeholder.jpeg',
+    corporate: '/placeholder.jpeg',
+    'corporate-fleet': '/placeholder.jpeg',
+    moto: '/moto.jpeg',
+    scooter: '/moto.jpeg',
+    yachts: '/yacht1.jpeg',
+    jets: '/jet1.jpeg',
+    cars: '/supercar.jpeg',
+  };
   const homeCards: HomeCard[] = React.useMemo(() => {
     // Se Flotta non e' ancora caricato, ripieghiamo su RENTAL_CATEGORIES
     // (comportamento legacy) per non mostrare una pagina vuota.
@@ -149,6 +169,7 @@ const HomePage: React.FC = () => {
         label: getTranslated(c.label),
         image: categoryOverrides.get(c.id)?.image
           || c.data?.[0]?.image
+          || CATEGORY_IMAGE_FALLBACK[c.id]
           || '/placeholder.jpeg',
         path: `/${c.id}`,
       }));
@@ -165,10 +186,12 @@ const HomePage: React.FC = () => {
             : c.label,
         image: override?.image
           || legacy?.data?.[0]?.image
+          || CATEGORY_IMAGE_FALLBACK[c.id]
           || '/placeholder.jpeg',
         path: c.path,
       };
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flottaCats, categoryOverrides, lang, getTranslated]);
 
   const seoH1 = copy ? (lang === 'it' ? copy.seo_h1_it : copy.seo_h1_en) : 'DR7 Empire';
