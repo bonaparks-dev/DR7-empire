@@ -555,14 +555,35 @@ export const useVehicles = (category?: string) => {
 
         const transformedVehicles = (data || []).map((v: Vehicle) => transformVehicle(v, proConfig));
 
+        // Hide vehicles that aren't safe to show publicly:
+        //  - no daily price (final=0 perche' Centralina Pro non ha un prezzo
+        //    per la sua categoria, oppure il veicolo non ha categoria)
+        //  - record incompleti che il boss non ha ancora configurato
+        // Cosi' le auto "in setup" non finiscono in homepage con €0/g
+        // (es. BMW M3 Competition con cat=null, raw=undefined, final=0).
+        const dataArr = (data || []) as Vehicle[];
+        const visibleTransformed: TransformedVehicle[] = [];
+        const visibleOriginals: Vehicle[] = [];
+        for (let i = 0; i < transformedVehicles.length; i++) {
+          const v = transformedVehicles[i] as any;
+          const orig = dataArr[i];
+          const dailyEur = Number(v?.pricePerDay?.eur) || 0;
+          if (dailyEur > 0 && (orig?.category ?? null) !== null) {
+            visibleTransformed.push(v);
+            visibleOriginals.push(orig);
+          } else {
+            console.log(`[useVehicles] HIDDEN (incompleto): ${orig?.display_name} — cat=${orig?.category}, eur=${dailyEur}`);
+          }
+        }
+
         // Group vehicles by display_group if they have one, or display_name otherwise
         const vehicleGroups = new Map<string, {
           members: TransformedVehicle[];
           originals: any[];
         }>();
 
-        transformedVehicles.forEach((vehicle: any, index: number) => {
-          const originalVehicle = data?.[index];
+        visibleTransformed.forEach((vehicle: any, index: number) => {
+          const originalVehicle = visibleOriginals[index];
 
           // Helper to normalize strings for grouping
           const normalizeKey = (str: string) => (str || '').toLowerCase().replace(/\s+/g, ' ').trim();
