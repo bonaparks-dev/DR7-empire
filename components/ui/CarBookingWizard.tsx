@@ -1879,8 +1879,13 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // --- SECOND DRIVER FEE (tier-conditional) ---
     // 2026-05-23: modalita' admin-editabile da Centralina Pro > Servizi.
     // 'flat' (default) = una tantum, 'per_day' = × giorni di noleggio.
+    // Fix 2026-05-25: il nome reale dello snapshot Centralina Pro in
+    // questo componente e' `proSnapshot` (vedi useCentralinaProOverlay
+    // a riga ~563), non `rentalConfig`. La typo causava ReferenceError
+    // dentro la useMemo del riepilogo prezzo, bloccando l'apertura del
+    // wizard di prenotazione su tutto il sito.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sdMode = ((rentalConfig as any)?.servizi?.second_driver_billing as 'flat' | 'per_day' | undefined) || 'flat';
+    const sdMode = ((proSnapshot as any)?.servizi?.second_driver_billing as 'flat' | 'per_day' | undefined) || 'flat';
     const calculatedSecondDriverFee = formData.addSecondDriver
       ? (sdMode === 'flat'
           ? roundToTwoDecimals(tierPricingForCalc.secondDriverPerDay)
