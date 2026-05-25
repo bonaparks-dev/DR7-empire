@@ -2045,28 +2045,28 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     // aggiungeva solo pochi euro invece dei €49 × giorni attesi).
     const listSubtotal = calculatedSubtotal; // total before coefficients
     const locationFees = calculatedDeliveryFee + calculatedPickupFee + calculatedDropoffFee;
-    // 2026-05-18: voci che PASSANO A LISTINO (escluse dal coefficiente).
-    // Lettura toggle da Centralina Pro > Automazioni > Inclusione
-    // coefficiente. Default mirror del PreventiviTab admin: km/km
-    // illimitati a listino (false), tutti gli altri sotto coefficiente.
-    // Experience e location fees restano SEMPRE a listino per design.
-    // Match esatto col PreventiviTab admin:
-    //  - insurance, lavaggio, second_driver: toggle reale
-    //  - no_cauzione, cauzione_veicoli: HARDCODED a listino (admin
-    //    ignora il toggle, sono surcharge fissi che non scalano col
-    //    coefficiente ne\' devono essere mangiati dal clamp max)
-    //  - km_packages, unlimited_km: HARDCODED a listino (sono km
-    //    pre-pagati, non rental dinamico)
-    //  - dr7_flex: sul sito DR7 Flex e\' in experience_services
-    //    (sempre a listino), quindi calculatedFlexCost = 0 e
-    //    il toggle e\' un no-op qui
+    // 2026-05-25: TUTTI i toggle di Centralina Pro > Automazioni >
+    // Inclusione coefficiente ora rispettati. Prima 4 toggle su 7
+    // erano hardcoded a false e ignorati — l'admin si lamentava che
+    // "il toggle non fa niente". Adesso ogni toggle si comporta
+    // davvero: ON = voce dentro al subtotale clamp-eligible (×
+    // coefficiente), OFF = voce sommata a listino dopo.
+    // Note:
+    //  - dr7_flex: calculatedFlexCost = 0 sul sito (DR7 Flex e\' in
+    //    experience_services), quindi il toggle e\' un no-op tecnico
+    //    ma rispettato per coerenza
+    //  - cauzione_veicoli: nessuna fee separata sul sito (la
+    //    cauzione e\' un deposito, non un addebito), niente da
+    //    includere/escludere — toggle no-op ma rispettato
+    //  - unlimited_km copre anche i pacchetti km (admin non ha un
+    //    toggle separato per km_packages)
     const ci = configOverlay?.coefficientInclusion;
     const includeInsurance     = ci?.insurance        ?? true;
     const includeLavaggio      = ci?.lavaggio         ?? true;
-    const includeNoCauzione    = false; // sempre a listino (admin hardcode)
+    const includeNoCauzione    = ci?.no_cauzione      ?? true;
     const includeSecondDriver  = ci?.second_driver    ?? true;
-    const includeDr7Flex       = false; // a listino (DR7 Flex in experience)
-    const includeKmPackages    = false; // sempre a listino (admin hardcode)
+    const includeDr7Flex       = ci?.dr7_flex         ?? true;
+    const includeKmPackages    = ci?.unlimited_km     ?? false;
     // Costruisce il "subtotale clamp-eligible" sommando SOLO le voci
     // che il toggle dice di includere nel coefficiente. Le altre
     // vengono aggiunte dopo, intatte.
