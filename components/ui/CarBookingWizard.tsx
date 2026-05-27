@@ -2066,7 +2066,12 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     const includeNoCauzione    = ci?.no_cauzione      ?? true;
     const includeSecondDriver  = ci?.second_driver    ?? true;
     const includeDr7Flex       = ci?.dr7_flex         ?? true;
-    const includeKmPackages    = ci?.unlimited_km     ?? false;
+    // 2026-05-27: km_packages ora ha toggle proprio (prima condivideva unlimited_km).
+    const includeKmPackages    = ci?.km_packages      ?? false;
+    // 2026-05-27: nuovi toggle (default false = sempre a listino come storico).
+    const includeExperience    = ci?.experience       ?? false;
+    const includeDelivery      = ci?.delivery         ?? false;
+    const includePickup        = ci?.pickup           ?? false;
     // Costruisce il "subtotale clamp-eligible" sommando SOLO le voci
     // che il toggle dice di includere nel coefficiente. Le altre
     // vengono aggiunte dopo, intatte.
@@ -2077,6 +2082,10 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (includeSecondDriver) subtotalForCoeff += calculatedSecondDriverFee;
     if (includeDr7Flex)      subtotalForCoeff += calculatedFlexCost;
     if (includeKmPackages)   subtotalForCoeff += calculatedKmPackageCost;
+    // 2026-05-27: experience/consegna/ritiro ora toggle-driven.
+    if (includeExperience)   subtotalForCoeff += calculatedExperienceCost;
+    if (includeDelivery)     subtotalForCoeff += calculatedDeliveryFee;
+    if (includePickup)       subtotalForCoeff += (calculatedPickupFee + calculatedDropoffFee);
     subtotalForCoeff += calculatedExtrasCost; // extras generici inclusi
     const passThroughExtras = calculatedSubtotal - subtotalForCoeff;
     // Compatibilita\' con il resto del codice qui sotto (clamp + uncapped + hard floor)

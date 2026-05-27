@@ -95,6 +95,9 @@ export interface WebsiteConfigOverlay {
     cauzione_veicoli: boolean
     unlimited_km: boolean
     km_packages: boolean
+    experience?: boolean
+    delivery?: boolean
+    pickup?: boolean
   }
 }
 
@@ -244,6 +247,9 @@ export interface ProCentralinaSnapshot {
     coefficient_dr7_flex?: boolean
     coefficient_cauzione_veicoli?: boolean
     coefficient_km_packages?: boolean
+    coefficient_experience?: boolean
+    coefficient_delivery?: boolean
+    coefficient_pickup?: boolean
     [k: string]: unknown
   }
 }
@@ -724,6 +730,10 @@ export function buildWebsiteConfigOverlayFromPro(snapshot: ProCentralinaSnapshot
       cauzione_veicoli: snapshot.automations?.coefficient_cauzione_veicoli !== false,
       unlimited_km:     !!snapshot.automations?.coefficient_unlimited_km,
       km_packages:      !!snapshot.automations?.coefficient_km_packages,
+      // 2026-05-27: nuovi toggle per voci prima sempre-escluse.
+      experience:       !!snapshot.automations?.coefficient_experience,
+      delivery:         !!snapshot.automations?.coefficient_delivery,
+      pickup:           !!snapshot.automations?.coefficient_pickup,
     },
   }
 }
