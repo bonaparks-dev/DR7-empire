@@ -6737,20 +6737,23 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                               default-fallback del calcolo (vedi useMemo sopra). */}
                           {(() => {
                             const ci = configOverlay?.coefficientInclusion
-                            const kmIsUnlimited = formData.kmPackageType === 'unlimited'
-                            const kmLabel = kmIsUnlimited ? 'KM Illimitati' : 'Pacchetti KM'
-                            const kmOn = kmIsUnlimited ? (ci?.unlimited_km ?? false) : (ci?.km_packages ?? false)
-                            const items: { label: string; on: boolean; amount: number }[] = [
-                              { label: 'Assicurazione',        on: ci?.insurance        ?? true,  amount: insuranceCost },
-                              { label: 'Lavaggio',             on: ci?.lavaggio         ?? true,  amount: lavaggioFee },
-                              { label: 'No Cauzione',          on: ci?.no_cauzione      ?? true,  amount: noDepositSurcharge },
-                              { label: 'Secondo guidatore',    on: ci?.second_driver    ?? true,  amount: secondDriverFee },
-                              { label: 'DR7 FLEX',             on: ci?.dr7_flex         ?? true,  amount: flexCost },
-                              { label: kmLabel,                on: kmOn,                          amount: kmPackageCost },
-                              { label: 'Servizi Experience',   on: ci?.experience       ?? false, amount: experienceCost },
-                              { label: 'Consegna a domicilio', on: ci?.delivery         ?? false, amount: deliveryFee },
-                              { label: 'Ritiro a domicilio',   on: ci?.pickup           ?? false, amount: pickupFee + dropoffFee },
-                            ].filter(it => it.amount > 0)
+                            // 2026-05-27: mostra TUTTE le voci toggle-driven anche
+                            // se l'importo e' 0 (il cliente non ha aggiunto
+                            // quell'opzione). Cosi' direzione/cliente vede sempre
+                            // lo stato corrente di ogni toggle Centralina Pro.
+                            const items: { label: string; on: boolean }[] = [
+                              { label: 'Assicurazione',        on: ci?.insurance        ?? true  },
+                              { label: 'Lavaggio',             on: ci?.lavaggio         ?? true  },
+                              { label: 'No Cauzione',          on: ci?.no_cauzione      ?? true  },
+                              { label: 'Cauzione veicoli',     on: ci?.cauzione_veicoli ?? true  },
+                              { label: 'Secondo guidatore',    on: ci?.second_driver    ?? true  },
+                              { label: 'DR7 FLEX',             on: ci?.dr7_flex         ?? true  },
+                              { label: 'KM Illimitati',        on: ci?.unlimited_km     ?? false },
+                              { label: 'Pacchetti KM',         on: ci?.km_packages      ?? false },
+                              { label: 'Servizi Experience',   on: ci?.experience       ?? false },
+                              { label: 'Consegna a domicilio', on: ci?.delivery         ?? false },
+                              { label: 'Ritiro a domicilio',   on: ci?.pickup           ?? false },
+                            ]
                             const inList = items.filter(i => i.on).map(i => i.label)
                             const outList = items.filter(i => !i.on).map(i => i.label)
                             return (
