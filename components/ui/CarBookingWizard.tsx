@@ -2058,16 +2058,22 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     //  - cauzione_veicoli: nessuna fee separata sul sito (la
     //    cauzione e\' un deposito, non un addebito), niente da
     //    includere/escludere — toggle no-op ma rispettato
-    //  - unlimited_km copre anche i pacchetti km (admin non ha un
-    //    toggle separato per km_packages)
+    //  - unlimited_km: usato quando kmPackageType === 'unlimited'
+    //    (cliente sceglie KM Illimitati). I pacchetti acquistati a
+    //    pacchetto seguono coefficient_km_packages.
     const ci = configOverlay?.coefficientInclusion;
     const includeInsurance     = ci?.insurance        ?? true;
     const includeLavaggio      = ci?.lavaggio         ?? true;
     const includeNoCauzione    = ci?.no_cauzione      ?? true;
     const includeSecondDriver  = ci?.second_driver    ?? true;
     const includeDr7Flex       = ci?.dr7_flex         ?? true;
-    // 2026-05-27: km_packages ora ha toggle proprio (prima condivideva unlimited_km).
+    // 2026-05-27: km_packages e unlimited_km ora hanno toggle separati.
+    // calculatedKmPackageCost contiene il costo per ENTRAMBI i casi
+    // (unlimited oppure pacchetti) ma a runtime solo uno e' attivo,
+    // quindi scegliamo il flag in base a kmPackageType.
     const includeKmPackages    = ci?.km_packages      ?? false;
+    const includeUnlimitedKm   = ci?.unlimited_km     ?? false;
+    const includeKmAmount      = formData.kmPackageType === 'unlimited' ? includeUnlimitedKm : includeKmPackages;
     // 2026-05-27: nuovi toggle (default false = sempre a listino come storico).
     const includeExperience    = ci?.experience       ?? false;
     const includeDelivery      = ci?.delivery         ?? false;
@@ -2081,7 +2087,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     if (includeNoCauzione)   subtotalForCoeff += calculatedNoDepositSurcharge;
     if (includeSecondDriver) subtotalForCoeff += calculatedSecondDriverFee;
     if (includeDr7Flex)      subtotalForCoeff += calculatedFlexCost;
-    if (includeKmPackages)   subtotalForCoeff += calculatedKmPackageCost;
+    if (includeKmAmount)     subtotalForCoeff += calculatedKmPackageCost;
     // 2026-05-27: experience/consegna/ritiro ora toggle-driven.
     if (includeExperience)   subtotalForCoeff += calculatedExperienceCost;
     if (includeDelivery)     subtotalForCoeff += calculatedDeliveryFee;
@@ -6723,6 +6729,41 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
                               ×{(dynamicPricing.breakdown.reduce((acc, b) => acc * b.coeff, 1)).toFixed(3)}
                             </span>
                           </div>
+                          {/* 2026-05-27: mirror del riepilogo admin Preventivi.
+                              Mostra ESATTAMENTE quali voci sono entrate nel
+                              calcolo del coefficiente e quali sono rimaste a
+                              listino. I flag arrivano da Centralina Pro >
+                              Automazioni > Inclusione coefficiente. Stesso
+                              default-fallback del calcolo (vedi useMemo sopra). */}
+                          {(() => {
+                            const ci = configOverlay?.coefficientInclusion
+                            const kmIsUnlimited = formData.kmPackageType === 'unlimited'
+                            const kmLabel = kmIsUnlimited ? 'KM Illimitati' : 'Pacchetti KM'
+                            const kmOn = kmIsUnlimited ? (ci?.unlimited_km ?? false) : (ci?.km_packages ?? false)
+                            const items: { label: string; on: boolean; amount: number }[] = [
+                              { label: 'Assicurazione',        on: ci?.insurance        ?? true,  amount: insuranceCost },
+                              { label: 'Lavaggio',             on: ci?.lavaggio         ?? true,  amount: lavaggioFee },
+                              { label: 'No Cauzione',          on: ci?.no_cauzione      ?? true,  amount: noDepositSurcharge },
+                              { label: 'Secondo guidatore',    on: ci?.second_driver    ?? true,  amount: secondDriverFee },
+                              { label: 'DR7 FLEX',             on: ci?.dr7_flex         ?? true,  amount: flexCost },
+                              { label: kmLabel,                on: kmOn,                          amount: kmPackageCost },
+                              { label: 'Servizi Experience',   on: ci?.experience       ?? false, amount: experienceCost },
+                              { label: 'Consegna a domicilio', on: ci?.delivery         ?? false, amount: deliveryFee },
+                              { label: 'Ritiro a domicilio',   on: ci?.pickup           ?? false, amount: pickupFee + dropoffFee },
+                            ].filter(it => it.amount > 0)
+                            const inList = items.filter(i => i.on).map(i => i.label)
+                            const outList = items.filter(i => !i.on).map(i => i.label)
+                            return (
+                              <div className="pt-2 mt-1 border-t border-gray-700/50 space-y-0.5">
+                                <div className="text-[11px] text-gray-400">
+                                  <span className="text-emerald-400">Incluse nel coefficiente:</span> Noleggio{inList.length > 0 ? `, ${inList.join(', ')}` : ''}
+                                </div>
+                                <div className="text-[11px] text-gray-400">
+                                  <span className="text-rose-400">Escluse (a listino):</span> {outList.length > 0 ? outList.join(', ') : '—'}
+                                </div>
+                              </div>
+                            )
+                          })()}
                         </div>
                       )}
                     </div>
