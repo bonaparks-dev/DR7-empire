@@ -52,8 +52,8 @@ export const handler: Handler = async (event) => {
     // Sorgente di verita': centralina_pro_config (Pro snapshot, dove
     // l'admin salva tutto). convertProToLegacy produce delivery con
     // by_category + price_per_km. Alias supercars<->exotic preservato.
-    let pricePerKm: number | null = null
-    let usedFallback: 'category' | 'flat' | 'zero' = 'zero'
+    let pricePerKm = 0
+    let usedFallback: 'category' | 'zero' = 'zero'
     const supabaseUrl = process.env.VITE_SUPABASE_URL || ''
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
     if (!supabaseUrl || !supabaseKey) {
@@ -71,23 +71,19 @@ export const handler: Handler = async (event) => {
         .maybeSingle()
       if (error) throw error
       const legacy = data?.config ? convertProToLegacy(data.config) : null
-      const delivery = legacy?.delivery
-      if (delivery) {
+      const byCat = legacy?.delivery?.by_category
+      if (byCat) {
         const cat = typeof category === 'string' ? category.toLowerCase().trim() : ''
         const aliases = cat === 'supercars' ? ['supercars', 'exotic']
           : cat === 'exotic' ? ['exotic', 'supercars']
           : cat ? [cat] : []
         for (const c of aliases) {
-          const v = delivery.by_category?.[c]
+          const v = byCat[c]
           if (typeof v === 'number' && v > 0) {
             pricePerKm = v
             usedFallback = 'category'
             break
           }
-        }
-        if (pricePerKm == null && typeof delivery.price_per_km === 'number' && delivery.price_per_km > 0) {
-          pricePerKm = delivery.price_per_km
-          usedFallback = 'flat'
         }
       }
     } catch (e) {
@@ -97,14 +93,9 @@ export const handler: Handler = async (event) => {
         body: JSON.stringify({ error: 'Impossibile leggere la configurazione consegna. Riprova piu\' tardi.' }),
       }
     }
-    if (pricePerKm == null) {
-      // Nessuna tariffa configurata = consegna GRATIS. Il customer non
-      // viene bloccato; l'admin sara' il primo ad accorgersi che la
-      // categoria non ha un prezzo perche' vede deliveryFee=€0 nei nuovi
-      // booking. Decisione esplicita dell'utente (2026-05-29).
-      pricePerKm = 0
-      usedFallback = 'zero'
-    }
+    // Nessuna tariffa configurata per la categoria = consegna GRATIS
+    // (€0). Decisione esplicita dell'utente 2026-05-29: nessun fallback
+    // su flat o default. L'admin se ne accorge subito vedendo deliveryFee=€0.
 
     let destLat: number
     let destLon: number

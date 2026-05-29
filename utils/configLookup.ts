@@ -149,7 +149,11 @@ export function getDeliveryPricePerKm(config: RentalConfig): number {
 
 /**
  * Get delivery price per km for a specific vehicle category.
- * Returns `null` when no per-category value AND no flat fallback exists.
+ * Returns `null` when the category has no value in `by_category`.
+ *
+ * 2026-05-29: rimosso il flat fallback su `price_per_km` (l'input e'
+ * stato tolto dalla Centralina). Unica sorgente: `by_category`.
+ *
  * Honors the supercars↔exotic alias.
  */
 export function getDeliveryPricePerKmForCategory(
@@ -157,13 +161,9 @@ export function getDeliveryPricePerKmForCategory(
   category: string | null | undefined,
 ): number | null {
   const byCat = config.delivery?.by_category
-  if (category && byCat) {
-    const v = lookupByCategoryAlias(byCat, category)
-    if (typeof v === 'number' && v > 0) return v
-  }
-  const flat = config.delivery?.price_per_km
-  if (typeof flat === 'number' && flat > 0) return flat
-  return null
+  if (!category || !byCat) return null
+  const v = lookupByCategoryAlias(byCat, category)
+  return typeof v === 'number' && v > 0 ? v : null
 }
 
 /** Get DR7 Flex daily price */
