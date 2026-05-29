@@ -615,11 +615,19 @@ export const useVehicles = (category?: string) => {
             const firstAvailable = group.members.find(m => m.available) || group.members[0];
 
             // Create a merged vehicle representing the group
+            // 2026-05-29: rimosso `.filter(Boolean)` su `plates` — rompeva
+            // l'allineamento di indice tra `vehicleIds` e `plates`. Se anche
+            // un solo veicolo del gruppo aveva targa NULL in DB, tutte le
+            // targhe successive scivolavano di una posizione e il booking
+            // dal sito salvava la targa SBAGLIATA (oppure nessuna). Adesso
+            // teniamo l'array sincronizzato: plate vuota -> '' nello slot
+            // giusto, cosi' index sui due array porta sempre allo stesso
+            // veicolo.
             const mergedVehicle: TransformedVehicle = {
               ...firstAvailable, // Use the available one's ID and details (image, name, etc)
               vehicleIds: group.originals.map(v => v.id),
               displayNames: group.originals.map(v => v.display_name),
-              plates: group.originals.map(v => v.plate).filter(Boolean),
+              plates: group.originals.map(v => v.plate || ''),
               // A group is available if ANY member is available
               available: group.members.some(v => v.available)
             };
