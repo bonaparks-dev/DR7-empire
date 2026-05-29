@@ -1049,10 +1049,20 @@ const CarWashBookingPage: React.FC = () => {
       ? cartItems.reduce((total, item) => total + getCalendarDurationMinutes(item.serviceId) * item.quantity, 0)
       : getCalendarDurationMinutes(selectedService?.id || '');
 
+    // 2026-05-29: ESPONI auto e targa del CLIENTE come campi top-level
+    // sul booking row (e replica in booking_details.vehicleMakeModel /
+    // .vehiclePlate) cosi' l'admin (CarWashBookingsTab, CarWashCalendarTab,
+    // CalendarTab) li mostra senza dover scavare dentro booking_details.customerVehicle.
+    // Prima vehicle_name era hardcoded 'Car Wash Service' e vehicle_plate
+    // non veniva mai settato -> targa e auto del cliente sparivano in admin.
+    const customerVehicleMakeModel = customerVehicle
+      ? [customerVehicle.carMake, customerVehicle.carModel].filter(Boolean).join(' ').trim()
+      : '';
     const bookingData = {
       user_id: user?.id || null,
       vehicle_type: 'car',
-      vehicle_name: 'Car Wash Service',
+      vehicle_name: customerVehicleMakeModel || 'Car Wash Service',
+      vehicle_plate: customerVehicle?.plate || null,
       service_type: 'car_wash',
       service_name: getServiceNames(),
       service_id: getServiceIds(),
@@ -1078,7 +1088,13 @@ const CarWashBookingPage: React.FC = () => {
         },
         notes: formData.notes,
         ...(hasCartItems ? { cart_items: cartItems } : {}),
-        ...(customerVehicle ? { customerVehicle } : {}),
+        ...(customerVehicle ? {
+          customerVehicle,
+          // Field aliases che l'admin CarWash modal legge direttamente.
+          vehicleMakeModel: customerVehicleMakeModel || null,
+          vehiclePlate: customerVehicle.plate || null,
+          vehicleCategory: customerVehicle.category || null,
+        } : {}),
         ...(primeFlexSelected ? { prime_flex: true, prime_flex_price: PRIME_FLEX_PRICE } : {}),
         // Supercar / Icon Experience: chosen vehicle + window. Used by
         // the credit-wallet branch (createSupercarShadowRow runs client-
