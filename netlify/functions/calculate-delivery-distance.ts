@@ -19,6 +19,7 @@
 import { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
 import { getCorsOrigin } from './utils/cors'
+import { convertProToLegacy } from './utils/convertProConfig'
 
 const DR7_OFFICE_LAT = 39.2238
 const DR7_OFFICE_LON = 9.1217
@@ -47,6 +48,13 @@ export const handler: Handler = async (event) => {
     // fallback al flat delivery.price_per_km, fallback al DEFAULT_PRICE_PER_KM.
     // Alias supercars<->exotic per consistenza con il sito (vedi
     // category_alias_supercars_exotic memory).
+    //
+    // 2026-05-29 FIX SORGENTE: prima leggevamo `rental_extras_config`,
+    // tabella legacy stagnante. L'admin salva il Centralina Pro su
+    // `centralina_pro_config.config` (Pro schema) — passa attraverso
+    // convertProToLegacy per produrre la shape RentalConfig con
+    // `delivery.price_per_km` e `delivery.by_category` popolati. Senza
+    // questo fix il fn cadeva sempre sul DEFAULT_PRICE_PER_KM.
     let pricePerKm: number | null = null
     let usedFallback: 'category' | 'flat' | 'default' = 'default'
     try {
@@ -55,11 +63,12 @@ export const handler: Handler = async (event) => {
       if (supabaseUrl && supabaseKey) {
         const supabase = createClient(supabaseUrl, supabaseKey)
         const { data } = await supabase
-          .from('rental_extras_config')
+          .from('centralina_pro_config')
           .select('config')
-          .limit(1)
-          .single()
-        const delivery = data?.config?.delivery
+          .eq('id', 'main')
+          .maybeSingle()
+        const legacy = data?.config ? convertProToLegacy(data.config) : null
+        const delivery = legacy?.delivery
         if (delivery) {
           const cat = typeof category === 'string' ? category.toLowerCase().trim() : ''
           const aliases = cat === 'supercars' ? ['supercars', 'exotic']
