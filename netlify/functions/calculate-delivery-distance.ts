@@ -23,7 +23,12 @@ import { convertProToLegacy } from './utils/convertProConfig'
 
 const DR7_OFFICE_LAT = 39.2238
 const DR7_OFFICE_LON = 9.1217
-const DEFAULT_PRICE_PER_KM = 3
+// 2026-05-29: niente piu' DEFAULT_PRICE_PER_KM hardcoded. La sorgente di
+// verita' e' centralina_pro_config.servizi.delivery (by_category + flat
+// fallback). Se nessun valore e' configurato per la categoria del
+// veicolo, la consegna costa €0 — confermato dall'utente: la consegna
+// e' gratis finche' l'admin non imposta un prezzo. Nessun errore lato
+// client. DB irraggiungibile = 503 (non inventiamo un default).
 
 export const handler: Handler = async (event) => {
   const headers = {
@@ -44,56 +49,61 @@ export const handler: Handler = async (event) => {
   try {
     const { address, lat, lon, category } = JSON.parse(event.body || '{}')
 
-    // 2026-05-29: prezzo €/km per categoria (delivery.by_category),
-    // fallback al flat delivery.price_per_km, fallback al DEFAULT_PRICE_PER_KM.
-    // Alias supercars<->exotic per consistenza con il sito (vedi
-    // category_alias_supercars_exotic memory).
-    //
-    // 2026-05-29 FIX SORGENTE: prima leggevamo `rental_extras_config`,
-    // tabella legacy stagnante. L'admin salva il Centralina Pro su
-    // `centralina_pro_config.config` (Pro schema) — passa attraverso
-    // convertProToLegacy per produrre la shape RentalConfig con
-    // `delivery.price_per_km` e `delivery.by_category` popolati. Senza
-    // questo fix il fn cadeva sempre sul DEFAULT_PRICE_PER_KM.
+    // Sorgente di verita': centralina_pro_config (Pro snapshot, dove
+    // l'admin salva tutto). convertProToLegacy produce delivery con
+    // by_category + price_per_km. Alias supercars<->exotic preservato.
     let pricePerKm: number | null = null
-    let usedFallback: 'category' | 'flat' | 'default' = 'default'
+    let usedFallback: 'category' | 'flat' | 'zero' = 'zero'
+    const supabaseUrl = process.env.VITE_SUPABASE_URL || ''
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+    if (!supabaseUrl || !supabaseKey) {
+      return {
+        statusCode: 503, headers,
+        body: JSON.stringify({ error: 'Configurazione server mancante. Riprova piu\' tardi.' }),
+      }
+    }
     try {
-      const supabaseUrl = process.env.VITE_SUPABASE_URL || ''
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-      if (supabaseUrl && supabaseKey) {
-        const supabase = createClient(supabaseUrl, supabaseKey)
-        const { data } = await supabase
-          .from('centralina_pro_config')
-          .select('config')
-          .eq('id', 'main')
-          .maybeSingle()
-        const legacy = data?.config ? convertProToLegacy(data.config) : null
-        const delivery = legacy?.delivery
-        if (delivery) {
-          const cat = typeof category === 'string' ? category.toLowerCase().trim() : ''
-          const aliases = cat === 'supercars' ? ['supercars', 'exotic']
-            : cat === 'exotic' ? ['exotic', 'supercars']
-            : cat ? [cat] : []
-          for (const c of aliases) {
-            const v = delivery.by_category?.[c]
-            if (typeof v === 'number' && v > 0) {
-              pricePerKm = v
-              usedFallback = 'category'
-              break
-            }
-          }
-          if (pricePerKm == null && typeof delivery.price_per_km === 'number' && delivery.price_per_km > 0) {
-            pricePerKm = delivery.price_per_km
-            usedFallback = 'flat'
+      const supabase = createClient(supabaseUrl, supabaseKey)
+      const { data, error } = await supabase
+        .from('centralina_pro_config')
+        .select('config')
+        .eq('id', 'main')
+        .maybeSingle()
+      if (error) throw error
+      const legacy = data?.config ? convertProToLegacy(data.config) : null
+      const delivery = legacy?.delivery
+      if (delivery) {
+        const cat = typeof category === 'string' ? category.toLowerCase().trim() : ''
+        const aliases = cat === 'supercars' ? ['supercars', 'exotic']
+          : cat === 'exotic' ? ['exotic', 'supercars']
+          : cat ? [cat] : []
+        for (const c of aliases) {
+          const v = delivery.by_category?.[c]
+          if (typeof v === 'number' && v > 0) {
+            pricePerKm = v
+            usedFallback = 'category'
+            break
           }
         }
+        if (pricePerKm == null && typeof delivery.price_per_km === 'number' && delivery.price_per_km > 0) {
+          pricePerKm = delivery.price_per_km
+          usedFallback = 'flat'
+        }
       }
-    } catch {
-      // proceed with DEFAULT
+    } catch (e) {
+      console.error('[calculate-delivery-distance] DB read failed:', e)
+      return {
+        statusCode: 503, headers,
+        body: JSON.stringify({ error: 'Impossibile leggere la configurazione consegna. Riprova piu\' tardi.' }),
+      }
     }
     if (pricePerKm == null) {
-      pricePerKm = DEFAULT_PRICE_PER_KM
-      usedFallback = 'default'
+      // Nessuna tariffa configurata = consegna GRATIS. Il customer non
+      // viene bloccato; l'admin sara' il primo ad accorgersi che la
+      // categoria non ha un prezzo perche' vede deliveryFee=€0 nei nuovi
+      // booking. Decisione esplicita dell'utente (2026-05-29).
+      pricePerKm = 0
+      usedFallback = 'zero'
     }
 
     let destLat: number
