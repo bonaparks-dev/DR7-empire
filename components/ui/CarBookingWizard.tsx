@@ -1030,10 +1030,14 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
 
     const timeoutId = setTimeout(async () => {
       try {
+        // 2026-05-29: passa la category del veicolo cosi' la fn legge
+        // delivery.by_category[<category>] (prezzo €/km dedicato per
+        // questa categoria). Fallback al flat se non configurato.
+        const itemCategory = String((item as { category?: string }).category || '').toLowerCase().trim() || undefined
         const res = await fetchWithTimeout('/.netlify/functions/calculate-delivery-distance', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ address }),
+          body: JSON.stringify({ address, category: itemCategory }),
         }, 10000);
 
         if (res.ok) {

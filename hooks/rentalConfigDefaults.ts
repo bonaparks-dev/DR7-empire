@@ -120,7 +120,7 @@ export const DEFAULT_RENTAL_CONFIG: RentalConfig = {
 
   lavaggio: { fee: 9.90, mandatory: true },
 
-  delivery: { price_per_km: 3 },
+  delivery: { price_per_km: 3, by_category: {} },
 
   no_cauzione_surcharge: { per_day: 49, tier_restriction: 'TIER_2', requires_kasko: true },
 

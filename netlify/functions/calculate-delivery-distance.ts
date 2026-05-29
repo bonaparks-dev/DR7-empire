@@ -6,9 +6,14 @@
  * Free, no API key required.
  *
  * Reads price_per_km from Centralina (rental_extras_config in Supabase).
- * Fallback: €3/km if Centralina unavailable.
+ * 2026-05-29: il prezzo €/km e' per CATEGORIA del veicolo (delivery.by_category).
+ * Il body deve includere `category` (id categoria veicolo). Se manca la categoria
+ * o il prezzo per quella categoria non e' configurato, cade sul flat
+ * `delivery.price_per_km`; se anche quello manca, restituisce 400 con messaggio
+ * italiano "Prezzo consegna non configurato per la categoria".
  *
- * Accepts either { address } (string) or { lat, lon } (coordinates).
+ * Accepts either { address } (string) or { lat, lon } (coordinates), plus
+ * optional { category } (vehicle category id from the catalog).
  */
 
 import { Handler } from '@netlify/functions'
@@ -36,10 +41,14 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    const { address, lat, lon } = JSON.parse(event.body || '{}')
+    const { address, lat, lon, category } = JSON.parse(event.body || '{}')
 
-    // Read price_per_km from Centralina
-    let pricePerKm = DEFAULT_PRICE_PER_KM
+    // 2026-05-29: prezzo €/km per categoria (delivery.by_category),
+    // fallback al flat delivery.price_per_km, fallback al DEFAULT_PRICE_PER_KM.
+    // Alias supercars<->exotic per consistenza con il sito (vedi
+    // category_alias_supercars_exotic memory).
+    let pricePerKm: number | null = null
+    let usedFallback: 'category' | 'flat' | 'default' = 'default'
     try {
       const supabaseUrl = process.env.VITE_SUPABASE_URL || ''
       const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
@@ -50,12 +59,32 @@ export const handler: Handler = async (event) => {
           .select('config')
           .limit(1)
           .single()
-        if (data?.config?.delivery?.price_per_km != null) {
-          pricePerKm = data.config.delivery.price_per_km
+        const delivery = data?.config?.delivery
+        if (delivery) {
+          const cat = typeof category === 'string' ? category.toLowerCase().trim() : ''
+          const aliases = cat === 'supercars' ? ['supercars', 'exotic']
+            : cat === 'exotic' ? ['exotic', 'supercars']
+            : cat ? [cat] : []
+          for (const c of aliases) {
+            const v = delivery.by_category?.[c]
+            if (typeof v === 'number' && v > 0) {
+              pricePerKm = v
+              usedFallback = 'category'
+              break
+            }
+          }
+          if (pricePerKm == null && typeof delivery.price_per_km === 'number' && delivery.price_per_km > 0) {
+            pricePerKm = delivery.price_per_km
+            usedFallback = 'flat'
+          }
         }
       }
     } catch {
-      // Fallback to default
+      // proceed with DEFAULT
+    }
+    if (pricePerKm == null) {
+      pricePerKm = DEFAULT_PRICE_PER_KM
+      usedFallback = 'default'
     }
 
     let destLat: number
@@ -117,6 +146,7 @@ export const handler: Handler = async (event) => {
         deliveryFee,
         durationText,
         pricePerKm,
+        rateSource: usedFallback, // 'category' | 'flat' | 'default' — utile per UI/log
       }),
     }
   } catch (error: unknown) {

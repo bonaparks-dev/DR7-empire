@@ -147,7 +147,20 @@ export interface RentalConfig {
   }
 
   delivery: {
+    /**
+     * Tariffa di default €/km. Usata SOLO come fallback quando manca un
+     * valore in `by_category` per la categoria del veicolo. Source of
+     * truth per il calcolo e' `by_category`.
+     */
     price_per_km: number
+    /**
+     * Per-category override: `categoryId → €/km`. Aggiunta 2026-05-29:
+     * il prezzo consegna a domicilio cambia per categoria (urban,
+     * exotic, supercars, furgone, ecc.). Configurato in Centralina Pro
+     * (admin) > Servizi > Consegna a Domicilio. Quando manca, i caller
+     * decidono se fallback su price_per_km o bloccare con OTP.
+     */
+    by_category?: Record<string, number>
   }
 
   no_cauzione_surcharge: {

@@ -117,6 +117,10 @@ const BookingSearchBox: React.FC<BookingSearchBoxProps> = ({ variant = 'hero', o
           } else {
             body.address = loc.label;
           }
+          // 2026-05-29: niente `category` qui — questo e' il search box
+          // homepage, il cliente non ha ancora scelto un veicolo. La fn
+          // cade sul flat `delivery.price_per_km` come stima alta. La
+          // tariffa esatta per categoria viene applicata nel CarBookingWizard.
           const res = await fetch('/.netlify/functions/calculate-delivery-distance', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
