@@ -604,6 +604,22 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     };
   }, [configOverlay, ACTIVE_INSURANCE_BY_TIER, item]);
 
+  // Se l'assicurazione selezionata non e' valida per la categoria del veicolo
+  // (es. il default KASKO_BASE su Urban/Fiat Panda, che in Centralina Pro ha
+  // solo RCA/Base), ripiega sulla prima opzione VALIDA della categoria (RCA se
+  // presente). Tutto da Centralina Pro: niente "Kasko Base" forzato su Urban.
+  useEffect(() => {
+    const activeTier = (driverTier === 'TIER_1' || driverTier === 'TIER_2') ? driverTier : 'TIER_2';
+    const opts = getInsuranceForVehicle(vehicleType, activeTier);
+    if (!Array.isArray(opts) || opts.length === 0) return;
+    const valid = opts.some((o: { id?: string }) => o.id === formData.insuranceOption);
+    if (!valid) {
+      const fallback = opts.find((o: { id?: string }) => o.id === 'RCA')?.id || opts[0]?.id;
+      if (fallback) setFormData(prev => ({ ...prev, insuranceOption: fallback }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicleType, driverTier, configOverlay, formData.insuranceOption]);
+
   const ACTIVE_TIER_PRICING = useMemo(() => {
     return configOverlay?.tierPricing ?? {
       TIER_1: { unlimitedKmPerDay: 0, secondDriverPerDay: 0, lavaggio: 0 },
