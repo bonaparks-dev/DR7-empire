@@ -16,6 +16,7 @@
  */
 
 import { supabase } from '../supabaseClient';
+import { getHolidayForDate } from './italianHolidays';
 
 export type DayKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 
@@ -77,7 +78,11 @@ function minutesToTime(min: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
+// 2026-05-30: festività nazionali italiane chiuse come domenica.
+const HOLIDAY_CLOSED: DayHours = { is_open: false, windows: [] };
+
 export function getDayHours(date: Date): DayHours {
+  if (getHolidayForDate(date)) return HOLIDAY_CLOSED;
   const key = dayKeyFromDate(date);
   return CONFIG.hours[key] ?? DEFAULT_CONFIG.hours[key];
 }
