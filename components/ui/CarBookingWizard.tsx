@@ -630,7 +630,20 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
     }
     return configOverlay?.noDepositSurchargePerDay ?? 0;
   })();
-  const ACTIVE_DELIVERY_PRICE_PER_KM = configOverlay?.deliveryPricePerKm ?? 0;
+  // €/km consegna a domicilio: prezzo PER CATEGORIA dalla Centralina Pro
+  // (delivery.by_category), non più il flat. Alias supercars<->exotic.
+  // Fallback al flat solo se la categoria non è configurata.
+  const ACTIVE_DELIVERY_PRICE_PER_KM = (() => {
+    const cat = String((item as { category?: string }).category || '').toLowerCase().trim();
+    const byCat = configOverlay?.deliveryPriceByCategory || {};
+    const aliases = cat === 'supercars' ? ['supercars', 'exotic']
+      : cat === 'exotic' ? ['exotic', 'supercars']
+      : cat ? [cat] : [];
+    for (const k of aliases) {
+      if (typeof byCat[k] === 'number' && byCat[k] > 0) return byCat[k];
+    }
+    return configOverlay?.deliveryPricePerKm ?? 0;
+  })();
   // ACTIVE_DR7_FLEX rimosso — DR7 Flex ora è in EXPERIENCE_SERVICES.
   const ACTIVE_EXPERIENCE_SERVICES = configOverlay?.experienceServices ?? [];
   // Utilitaria/Aziendali deposit displayed in riepilogo — first real (non-zero)

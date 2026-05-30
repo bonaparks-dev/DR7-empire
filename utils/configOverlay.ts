@@ -49,6 +49,7 @@ export interface WebsiteConfigOverlay {
   }
   noDepositSurchargePerDay: number
   deliveryPricePerKm: number
+  deliveryPriceByCategory: Record<string, number>
   experienceServices: ExperienceService[]
   dr7Flex: { dailyPrice: number; refundPercent: number; tierRestriction: string }
   depositOptions: {
@@ -290,6 +291,18 @@ export function buildWebsiteConfigOverlay(config: RentalConfig | null): WebsiteC
     },
     noDepositSurchargePerDay: config.no_cauzione_surcharge?.per_day ?? 49,
     deliveryPricePerKm: config.delivery?.price_per_km ?? 3,
+    // Per-category €/km (source of truth per il calcolo consegna a domicilio).
+    // Centralina Pro > Servizi > Consegna a Domicilio. Fallback al flat sopra.
+    deliveryPriceByCategory: (() => {
+      const raw = config.delivery?.by_category
+      if (!raw || typeof raw !== 'object') return {} as Record<string, number>
+      const out: Record<string, number> = {}
+      for (const [cat, val] of Object.entries(raw)) {
+        const n = Number(val)
+        if (Number.isFinite(n) && n > 0) out[cat.toLowerCase().trim()] = n
+      }
+      return out
+    })(),
     experienceServices: (config.experience_services || [])
       .filter(s => s.is_active)
       .map(s => ({
