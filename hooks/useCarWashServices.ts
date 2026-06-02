@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '../supabaseClient';
 import type { WashService } from '../pages/CarWashServicesPage';
 
 /**
@@ -6,10 +7,14 @@ import type { WashService } from '../pages/CarWashServicesPage';
  * Fetches from `/.netlify/functions/get-car-wash-services` (which reads
  * `car_wash_services` in Supabase, managed by admin Catalogo Lavaggio).
  *
+ * 2026-06-02: subscription Supabase realtime su `car_wash_services` —
+ * quando l'admin modifica un servizio (prezzo, durata, descrizione)
+ * il sito ri-fetcha automaticamente senza dover ricaricare la pagina.
+ * Prima il client cachava lo stato del componente e non vedeva mai gli
+ * update finche' non si chiudeva il tab.
+ *
  * No persistent cache: admin updates to images, prices, descriptions etc
- * must be visible immediately. We only de-duplicate concurrent in-flight
- * requests via the `pending` Promise so multiple components mounting in
- * the same render don't hammer the function.
+ * must be visible immediately.
  */
 
 interface RawService extends WashService {
@@ -38,11 +43,28 @@ export function useCarWashServices(): RawService[] {
   const [services, setServices] = useState<RawService[]>([]);
   useEffect(() => {
     let cancelled = false;
-    fetchOnce().then((list) => {
-      if (!cancelled) setServices(list);
-    });
+    const load = () => {
+      fetchOnce().then((list) => {
+        if (!cancelled) setServices(list);
+      });
+    };
+    load();
+
+    // 2026-06-02: realtime — quando admin Catalogo Prime Wash modifica una
+    // riga di car_wash_services, ri-fetch immediato. Risultato: cambi di
+    // durata/prezzo/nome visibili sul wizard del cliente senza ricaricare.
+    const channel = supabase
+      .channel('car-wash-services-website-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'car_wash_services' },
+        () => load()
+      )
+      .subscribe();
+
     return () => {
       cancelled = true;
+      supabase.removeChannel(channel);
     };
   }, []);
   return services;
