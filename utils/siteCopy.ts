@@ -1214,6 +1214,8 @@ export interface FooterCopy {
   contact_company_name: string;
   contact_legal_address_it: string;
   contact_legal_address_en: string;
+  contact_operative_address_it: string;
+  contact_operative_address_en: string;
   contact_capitale_sociale_it: string;
   contact_capitale_sociale_en: string;
   contact_piva: string;
@@ -1403,7 +1405,9 @@ export async function getAboutCopy(): Promise<AboutCopy> {
 export async function getFooterCopy(): Promise<FooterCopy> {
   const snap = await loadOnce();
   if (snap.footer && Array.isArray(snap.footer.social_links) && Array.isArray(snap.footer.division_links)) {
-    return snap.footer;
+    // Merge over defaults so newly-added string fields (e.g. operative
+    // address) still render even if the stored override predates them.
+    return { ...DEFAULT_FOOTER, ...snap.footer };
   }
   return DEFAULT_FOOTER;
 }
@@ -2798,14 +2802,16 @@ const DEFAULT_FOOTER: FooterCopy = {
   contact_title: 'Contact',
   contact_whatsapp_number: '+39 345 790 5205',
   contact_whatsapp_url: 'https://wa.me/393457905205',
-  contact_company_name: 'Dubai Rent 7.0 S.p.A.',
+  contact_company_name: 'DR7 S.p.A.',
   contact_legal_address_it: 'Sede Legale: Via del Fangario 25, 09122 Cagliari (CA) – Italia',
   contact_legal_address_en: 'Registered Office: Via del Fangario 25, 09122 Cagliari (CA) – Italy',
-  contact_capitale_sociale_it: 'Capitale Sociale: € 50.000 i.v. (in aumento)',
-  contact_capitale_sociale_en: 'Share Capital: € 50,000 fully paid (increasing)',
+  contact_operative_address_it: 'Sede Operativa: Viale Marconi 229, 09131 Cagliari (CA) – Italia',
+  contact_operative_address_en: 'Operating Office: Viale Marconi 229, 09131 Cagliari (CA) – Italy',
+  contact_capitale_sociale_it: 'Capitale Sociale: € 1.000.000 i.v.',
+  contact_capitale_sociale_en: 'Share Capital: € 1,000,000 fully paid',
   contact_piva: 'P.IVA / C.F.: 04104640927',
-  contact_disclaimer_it: 'Società soggetta a direzione e coordinamento della\nDR7 Group S.p.A.',
-  contact_disclaimer_en: 'Company subject to the management and coordination of\nDR7 Group S.p.A.',
+  contact_disclaimer_it: 'Società appartenente al progetto di sviluppo\nDR7 HOLDING S.p.A.',
+  contact_disclaimer_en: 'Company belonging to the development project of\nDR7 HOLDING S.p.A.',
   division_links: [
     { id: 'div-1', label_it: 'Supercar & Luxury Division', label_en: 'Supercar & Luxury Division', to: '/supercar-luxury' },
     { id: 'div-2', label_it: 'Prime Wash',                  label_en: 'Prime Wash',                  to: '/prime-wash' },

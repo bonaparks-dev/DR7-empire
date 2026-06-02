@@ -124,6 +124,9 @@ const Footer: React.FC = () => {
           <div className="mt-8 text-sm text-gray-400 max-w-2xl mx-auto space-y-1 px-4">
             <p className="font-semibold text-white">{copy.contact_company_name}</p>
             <p className="break-words">{lang === 'it' ? copy.contact_legal_address_it : copy.contact_legal_address_en}</p>
+            {(lang === 'it' ? copy.contact_operative_address_it : copy.contact_operative_address_en) && (
+              <p className="break-words">{lang === 'it' ? copy.contact_operative_address_it : copy.contact_operative_address_en}</p>
+            )}
             <p className="break-words">{lang === 'it' ? copy.contact_capitale_sociale_it : copy.contact_capitale_sociale_en}</p>
             <p className="break-words">{copy.contact_piva}</p>
             <p className="text-xs mt-2 break-words whitespace-pre-line">
