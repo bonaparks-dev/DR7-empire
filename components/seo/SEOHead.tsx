@@ -32,7 +32,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:image" content={ogImage} />
-      <meta property="og:site_name" content="DR7 Empire" />
+      <meta property="og:site_name" content="DR7" />
       <meta property="og:locale" content="it_IT" />
 
       {/* Twitter */}

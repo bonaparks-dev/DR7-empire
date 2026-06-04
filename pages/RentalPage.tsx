@@ -1136,13 +1136,13 @@ const RentalPage: React.FC<RentalPageProps> = ({ categoryId }) => {
 
   const seoConfig: Record<string, { title: string; description: string; canonical: string; jsonLd?: Record<string, any> }> = {
     cars: {
-      title: 'Luxury Car Rental Sardinia | Ferrari, Lamborghini, Porsche | DR7 Empire',
-      description: 'Rent Ferrari, Lamborghini, Porsche, and premium supercars in Sardinia. Short-term & long-term luxury car rental with delivery. DR7 Empire Supercar Division.',
+      title: 'Luxury Car Rental Sardinia | Ferrari, Lamborghini, Porsche | DR7',
+      description: 'Rent Ferrari, Lamborghini, Porsche, and premium supercars in Sardinia. Short-term & long-term luxury car rental with delivery. DR7 Supercar Division.',
       canonical: '/supercar-luxury',
       jsonLd: { '@type': 'AutoRental', name: 'DR7 Supercar Division', url: 'https://dr7empire.com/supercar-luxury', areaServed: { '@type': 'State', name: 'Sardegna' } },
     },
     'urban-cars': {
-      title: 'Affordable Car Rental Sardinia | Urban Cars | DR7 Empire',
+      title: 'Affordable Car Rental Sardinia | Urban Cars | DR7',
       description: 'Affordable urban car rental in Sardinia. City cars, compact SUVs, and practical vehicles for daily commutes and weekend trips. DR7 Urban Division.',
       canonical: '/urban',
       jsonLd: { '@type': 'AutoRental', name: 'DR7 Urban Division', url: 'https://dr7empire.com/urban', areaServed: { '@type': 'State', name: 'Sardegna' } },

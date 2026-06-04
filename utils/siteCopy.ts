@@ -1884,8 +1884,8 @@ const DEFAULT_BOOKING_SEARCH_BOX: BookingSearchBoxCopy = {
 const DEFAULT_REGISTRAZIONE_CLIENTE: RegistrazioneClienteCopy = {
   intro_title_it: 'Registrazione Cliente',
   intro_title_en: 'Customer Registration',
-  intro_subtitle_it: 'Compila i tuoi dati per completare la registrazione DR7 Empire',
-  intro_subtitle_en: 'Fill in your details to complete your DR7 Empire registration',
+  intro_subtitle_it: 'Compila i tuoi dati per completare la registrazione DR7',
+  intro_subtitle_en: 'Fill in your details to complete your DR7 registration',
   tipo_persona_fisica_it: 'Persona Fisica', tipo_persona_fisica_en: 'Individual',
   tipo_azienda_it: 'Azienda', tipo_azienda_en: 'Company',
   tipo_pa_it: 'Pubblica Amm.', tipo_pa_en: 'Public Admin.',
@@ -1908,11 +1908,11 @@ const DEFAULT_REGISTRAZIONE_CLIENTE: RegistrazioneClienteCopy = {
   invalid_reason_fallback_it: 'Link non valido.', invalid_reason_fallback_en: 'Invalid link.',
   invalid_reason_incomplete_it: 'Link incompleto', invalid_reason_incomplete_en: 'Incomplete link',
   invalid_reason_validation_it: 'Errore validazione', invalid_reason_validation_en: 'Validation error',
-  invalid_help_it: 'Contatta DR7 Empire per un nuovo link di registrazione.',
-  invalid_help_en: 'Contact DR7 Empire for a new registration link.',
+  invalid_help_it: 'Contatta DR7 per un nuovo link di registrazione.',
+  invalid_help_en: 'Contact DR7 for a new registration link.',
   done_title_it: 'Registrazione completata', done_title_en: 'Registration complete',
-  done_body_it: 'Grazie. Il team DR7 Empire verificherà i documenti caricati al più presto.',
-  done_body_en: 'Thank you. The DR7 Empire team will verify the uploaded documents as soon as possible.',
+  done_body_it: 'Grazie. Il team DR7 verificherà i documenti caricati al più presto.',
+  done_body_en: 'Thank you. The DR7 team will verify the uploaded documents as soon as possible.',
   docs_intro_it: 'Carica i tuoi documenti. Saranno verificati dal team DR7 prima di confermare la registrazione. Formati: JPG, PNG, PDF (max 10 MB ciascuno).',
   docs_intro_en: 'Upload your documents. They will be verified by the DR7 team before confirming the registration. Formats: JPG, PNG, PDF (max 10 MB each).',
   docs_label_identity_it: "Carta d'identità o Passaporto",
@@ -1990,8 +1990,8 @@ const DEFAULT_REGISTRAZIONE_CLIENTE: RegistrazioneClienteCopy = {
 const DEFAULT_FIRMA: FirmaCopy = {
   header_pill_it: 'Firma Elettronica', header_pill_en: 'Electronic Signature',
   expired_title_it: 'Link Scaduto', expired_title_en: 'Link Expired',
-  expired_body_it: 'Il link di firma è scaduto. Contatta DR7 Empire per ricevere un nuovo link.',
-  expired_body_en: 'The signature link has expired. Contact DR7 Empire to receive a new link.',
+  expired_body_it: 'Il link di firma è scaduto. Contatta DR7 per ricevere un nuovo link.',
+  expired_body_en: 'The signature link has expired. Contact DR7 to receive a new link.',
   error_title_it: 'Errore', error_title_en: 'Error',
   pdf_section_title_it: 'Documento da firmare', pdf_section_title_en: 'Document to sign',
   pdf_pages_suffix_it: 'pagine', pdf_pages_suffix_en: 'pages',
@@ -2253,13 +2253,13 @@ const DEFAULT_PAYMENT: PaymentCopy = {
   error_check_card_en: 'Payment verification error. Please contact support.',
   error_payment_failed_it: 'Errore durante il pagamento. Riprova.',
   error_payment_failed_en: 'Payment error. Please retry.',
-  footer_secure_note_it: 'Pagamento sicuro tramite Nexi XPay · DR7 Empire',
-  footer_secure_note_en: 'Secure payment via Nexi XPay · DR7 Empire',
+  footer_secure_note_it: 'Pagamento sicuro tramite Nexi XPay · DR7',
+  footer_secure_note_en: 'Secure payment via Nexi XPay · DR7',
 };
 
 // ─── Default SignUp seed (registrazione cliente) ──────────────────────────
 const DEFAULT_SIGNUP: SignUpCopy = {
-  subtitle_it: 'Registrazione Cliente - DR7 Empire', subtitle_en: 'Client Registration - DR7 Empire',
+  subtitle_it: 'Registrazione Cliente - DR7', subtitle_en: 'Client Registration - DR7',
   client_type_label_it: 'Tipo Cliente', client_type_label_en: 'Client Type',
   client_type_default_it: 'Seleziona...', client_type_default_en: 'Select...',
   client_type_azienda_it: 'Azienda', client_type_azienda_en: 'Company',
@@ -2459,7 +2459,7 @@ const DEFAULT_AVIATION_QUOTE: AviationQuoteCopy = {
 
 // Hardcoded fallback template — used when system_messages is missing the row
 // or the row is empty/disabled. Mirrors the legacy inline template.
-const AVIATION_FALLBACK_TEMPLATE_IT = `Ciao DR7 Empire
+const AVIATION_FALLBACK_TEMPLATE_IT = `Ciao DR7
 Vorrei richiedere un preventivo per {service}.
 
 DATI CLIENTE
@@ -2653,8 +2653,8 @@ const DEFAULT_MECHANICAL: MechanicalCopy = {
 const DEFAULT_CAREERS: CareersCopy = {
   page_title_it: 'Careers',
   page_title_en: 'Careers',
-  intro_it: 'Unisciti a un team appassionato di lusso e dedicato a fornire esperienze senza pari. In DR7 Empire, siamo sempre alla ricerca di talenti eccezionali per aiutarci a superare i confini dell\'eccellenza.',
-  intro_en: 'Join a team passionate about luxury and dedicated to delivering unparalleled experiences. At DR7 Empire we are always looking for exceptional talent to help us push the boundaries of excellence.',
+  intro_it: 'Unisciti a un team appassionato di lusso e dedicato a fornire esperienze senza pari. In DR7, siamo sempre alla ricerca di talenti eccezionali per aiutarci a superare i confini dell\'eccellenza.',
+  intro_en: 'Join a team passionate about luxury and dedicated to delivering unparalleled experiences. At DR7 we are always looking for exceptional talent to help us push the boundaries of excellence.',
   jobs_heading_it: 'Posizioni Aperte',
   jobs_heading_en: 'Open Positions',
   jobs: [
@@ -2677,8 +2677,8 @@ const DEFAULT_CAREERS: CareersCopy = {
   ],
   apply_heading_it: 'Come Candidarsi',
   apply_heading_en: 'How to Apply',
-  apply_text_it: 'Se pensi di avere ciò che serve per far parte di DR7 Empire, invia il tuo curriculum vitae e una lettera di presentazione a [candidatura@dr7.app](mailto:candidatura@dr7.app).',
-  apply_text_en: 'If you think you have what it takes to join DR7 Empire, send your CV and cover letter to [candidatura@dr7.app](mailto:candidatura@dr7.app).',
+  apply_text_it: 'Se pensi di avere ciò che serve per far parte di DR7, invia il tuo curriculum vitae e una lettera di presentazione a [candidatura@dr7.app](mailto:candidatura@dr7.app).',
+  apply_text_en: 'If you think you have what it takes to join DR7, send your CV and cover letter to [candidatura@dr7.app](mailto:candidatura@dr7.app).',
   apply_email: 'candidatura@dr7.app',
 };
 
@@ -2686,8 +2686,8 @@ const DEFAULT_CAREERS: CareersCopy = {
 const DEFAULT_PRESS: PressCopy = {
   page_title_it: 'Press',
   page_title_en: 'Press',
-  subtitle_it: 'Scopri le ultime notizie, articoli e comunicati stampa su DR7 Empire',
-  subtitle_en: 'Discover the latest news, features, and press releases about DR7 Empire',
+  subtitle_it: 'Scopri le ultime notizie, articoli e comunicati stampa su DR7',
+  subtitle_en: 'Discover the latest news, features, and press releases about DR7',
   inquiries_heading_it: 'Richieste Stampa',
   inquiries_heading_en: 'Media Inquiries',
   inquiries_text_it: 'Per richieste stampa, interviste o altre questioni relative ai media, contatta il nostro team di relazioni con i media. Saremo lieti di fornire informazioni sulla nostra azienda, i servizi e la nostra visione del futuro del lusso.',
@@ -2783,7 +2783,7 @@ const DEFAULT_CONTACT: ContactCopy = {
   office_address_it: 'Viale Marconi, 229 – 09131 Cagliari (CA), Italia',
   office_address_en: 'Viale Marconi, 229 – 09131 Cagliari (CA), Italy',
   office_piva: 'P.IVA / C.F.: 04104640927',
-  map_title: 'DR7 Empire – Sede Operativa Cagliari',
+  map_title: 'DR7 – Sede Operativa Cagliari',
   map_iframe_url: 'https://www.openstreetmap.org/export/embed.html?bbox=9.1000%2C39.2200%2C9.1300%2C39.2300&layer=mapnik&marker=39.2253%2C9.1150',
 };
 
@@ -2841,8 +2841,8 @@ const DEFAULT_ABOUT: AboutCopy = {
       role_it: 'Co-fondatore',
       role_en: 'Co-founder',
       photo_src: '/Valerio.jpg',
-      alt_it: 'Valerio - Co-fondatore DR7 Empire',
-      alt_en: 'Valerio - Co-founder DR7 Empire',
+      alt_it: 'Valerio - Co-fondatore DR7',
+      alt_en: 'Valerio - Co-founder DR7',
     },
     {
       id: 'ilenia',
@@ -2850,20 +2850,20 @@ const DEFAULT_ABOUT: AboutCopy = {
       role_it: 'Co-fondatrice',
       role_en: 'Co-founder',
       photo_src: '/Ilenia.jpg',
-      alt_it: 'Ilenia - Co-fondatrice DR7 Empire',
-      alt_en: 'Ilenia - Co-founder DR7 Empire',
+      alt_it: 'Ilenia - Co-fondatrice DR7',
+      alt_en: 'Ilenia - Co-founder DR7',
     },
   ],
-  story_title_it: 'DR7 Empire non è un nome. È una misura.',
-  story_title_en: 'DR7 Empire is not a name. It’s a standard.',
+  story_title_it: 'DR7 non è un nome. È una misura.',
+  story_title_en: 'DR7 is not a name. It’s a standard.',
   story_paragraphs: [
     {
       text_it: 'Nasce da un’idea semplice: il lusso va organizzato, non esibito. Per questo l’abbiamo costruito come un impero del lusso: supercar pronte quando arrivate, ville che respirano ordine, yacht che aspettano la rotta giusta, elicotteri e jet privati che accorciano le distanze, una membership che apre porte con discrezione.',
       text_en: 'Born from a simple idea: luxury must be organized, not flaunted. That’s why we built it as an empire of luxury: supercars ready when you arrive, villas that breathe order, yachts waiting for the right course, helicopters and private jets that shorten distances, a membership that opens doors with discretion.',
     },
     {
-      text_it: 'Siamo Valerio e Ilenia, co-leader e creatori del brand. Camminiamo allo stesso passo: uniamo la calma delle cose fatte bene alla precisione dei tempi rispettati. La Sardegna ci ha insegnato l’essenziale: il mare all’alba, il vento che cambia, il valore del silenzio. DR7 Empire prende da qui la sua regola: meno rumore, più certezza.',
-      text_en: 'We are Valerio and Ilenia, co-leaders and creators of the brand. We walk in step: combining the calm of things done well with the precision of times respected. Sardinia taught us the essentials: the sea at dawn, the changing wind, the value of silence. DR7 Empire takes its rule from here: less noise, more certainty.',
+      text_it: 'Siamo Valerio e Ilenia, co-leader e creatori del brand. Camminiamo allo stesso passo: uniamo la calma delle cose fatte bene alla precisione dei tempi rispettati. La Sardegna ci ha insegnato l’essenziale: il mare all’alba, il vento che cambia, il valore del silenzio. DR7 prende da qui la sua regola: meno rumore, più certezza.',
+      text_en: 'We are Valerio and Ilenia, co-leaders and creators of the brand. We walk in step: combining the calm of things done well with the precision of times respected. Sardinia taught us the essentials: the sea at dawn, the changing wind, the value of silence. DR7 takes its rule from here: less noise, more certainty.',
     },
     {
       text_it: 'Non promettiamo scintille; promettiamo cura. Una chiave consegnata a mano, un itinerario che scorre senza attriti, un arrivo dove è già tutto pronto. Ogni esperienza porta la nostra firma: supercar, ville, yacht, elicotteri, jet, membership — diverse forme, lo stesso standard.',
@@ -2874,8 +2874,8 @@ const DEFAULT_ABOUT: AboutCopy = {
       text_en: 'Our promise is simple: time gained, beauty preserved, serenity guaranteed. If you’re looking for a special effect, you’ll find instead a rare consistency: that of things organized with intelligence and respect.',
     },
   ],
-  story_outro_main_it: 'Benvenuti in DR7 Empire',
-  story_outro_main_en: 'Welcome to DR7 Empire',
+  story_outro_main_it: 'Benvenuti in DR7',
+  story_outro_main_en: 'Welcome to DR7',
   story_outro_sub_it: 'L’impero del lusso che vi accompagna, con discrezione, ovunque scegliate di andare.',
   story_outro_sub_en: 'The empire of luxury that accompanies you, with discretion, wherever you choose to go.',
   story_signature: '— Valerio & Ilenia',
@@ -2885,8 +2885,8 @@ const DEFAULT_ABOUT: AboutCopy = {
 // Mirrors the legacy hardcoded HomePage values (HERO_SLIDES + DISPLAY_TITLE
 // + CATEGORY_IMAGE) so swapping to admin-managed copy is a no-op until edited.
 const DEFAULT_HOME: HomeCopy = {
-  seo_h1_it: 'DR7 Empire — Noleggio Auto di Lusso, Supercar e Servizi Premium in Sardegna',
-  seo_h1_en: 'DR7 Empire — Luxury Car Rental, Supercars & Premium Services in Sardinia',
+  seo_h1_it: 'DR7 — Noleggio Auto di Lusso, Supercar e Servizi Premium in Sardegna',
+  seo_h1_en: 'DR7 — Luxury Car Rental, Supercars & Premium Services in Sardinia',
   hero_autoplay_seconds: 8,
   hero_slides: [
     { id: 'slide-1', video_src: '/main.mp4' },
@@ -3226,11 +3226,11 @@ const DEFAULT_LEGAL: LegalCopy = {
         { id: 'introduzione', heading_it: '1. Introduzione e Titolare del Trattamento', heading_en: '1. Introduction and Data Controller',
           blocks: [
             { type: 'p',
-              text_it: 'Dubai Rent 7.0 S.p.A. – DR7 Empire ("noi", "nostro" o "ci") si impegna a proteggere la tua privacy. Questa Informativa sulla Privacy spiega come raccogliamo, utilizziamo, divulghiamo e proteggiamo i tuoi dati personali quando utilizzi i nostri servizi. Questa informativa è fornita in conformità con il Regolamento Generale sulla Protezione dei Dati (GDPR) dell\'UE.',
-              text_en: 'Dubai Rent 7.0 S.p.A. – DR7 Empire ("we", "our" or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your personal data when you use our services. This notice is provided in compliance with the EU General Data Protection Regulation (GDPR).' },
+              text_it: 'Dubai Rent 7.0 S.p.A. – DR7 ("noi", "nostro" o "ci") si impegna a proteggere la tua privacy. Questa Informativa sulla Privacy spiega come raccogliamo, utilizziamo, divulghiamo e proteggiamo i tuoi dati personali quando utilizzi i nostri servizi. Questa informativa è fornita in conformità con il Regolamento Generale sulla Protezione dei Dati (GDPR) dell\'UE.',
+              text_en: 'Dubai Rent 7.0 S.p.A. – DR7 ("we", "our" or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your personal data when you use our services. This notice is provided in compliance with the EU General Data Protection Regulation (GDPR).' },
             { type: 'p',
-              text_it: 'DR7 Empire è il Titolare del Trattamento dei dati personali raccolti attraverso la nostra piattaforma ed è responsabile dei tuoi dati personali.',
-              text_en: 'DR7 Empire is the Data Controller for personal data collected via our platform and is responsible for your personal data.' },
+              text_it: 'DR7 è il Titolare del Trattamento dei dati personali raccolti attraverso la nostra piattaforma ed è responsabile dei tuoi dati personali.',
+              text_en: 'DR7 is the Data Controller for personal data collected via our platform and is responsible for your personal data.' },
           ] },
         { id: 'dati-raccolti', heading_it: '2. Dati Personali che Raccogliamo', heading_en: '2. Personal Data We Collect',
           blocks: [
@@ -3410,8 +3410,8 @@ const DEFAULT_LEGAL: LegalCopy = {
       last_updated_label_en: '',
       intro_blocks: [
         { type: 'p-bold',
-          text_it: 'Avviso Importante: Questo documento fornisce una panoramica generale dei termini e delle condizioni tipici che disciplinano il noleggio di asset di lusso attraverso la piattaforma DR7 Empire. DR7 agisce come intermediario e non è parte del contratto di noleggio finale. L\'accordo legalmente vincolante ("Contratto di Noleggio") sarà tra te ("il Noleggiatore") e il proprietario di terze parti ("il Proprietario"), e i suoi termini specifici possono variare.',
-          text_en: '**Important Notice:** This document provides a general overview of the typical terms and conditions governing the rental of luxury assets through the DR7 Empire platform. DR7 acts as a broker and is not a party to the final rental contract. The legally binding agreement ("Rental Agreement") will be between you ("the Renter") and the third-party asset owner ("the Owner"), and its specific terms may vary.' },
+          text_it: 'Avviso Importante: Questo documento fornisce una panoramica generale dei termini e delle condizioni tipici che disciplinano il noleggio di asset di lusso attraverso la piattaforma DR7. DR7 agisce come intermediario e non è parte del contratto di noleggio finale. L\'accordo legalmente vincolante ("Contratto di Noleggio") sarà tra te ("il Noleggiatore") e il proprietario di terze parti ("il Proprietario"), e i suoi termini specifici possono variare.',
+          text_en: '**Important Notice:** This document provides a general overview of the typical terms and conditions governing the rental of luxury assets through the DR7 platform. DR7 acts as a broker and is not a party to the final rental contract. The legally binding agreement ("Rental Agreement") will be between you ("the Renter") and the third-party asset owner ("the Owner"), and its specific terms may vary.' },
       ],
       sections: [
         { id: 'brokerage', heading_it: '1. Il Ruolo di Intermediazione di DR7', heading_en: '1. The Brokerage Role of DR7',
@@ -3426,12 +3426,12 @@ const DEFAULT_LEGAL: LegalCopy = {
               items_it: [
                 '**Il Noleggiatore ("tu"):** Il cliente che prenota l\'asset.',
                 '**Il Proprietario:** La società o persona di terze parti che possiede e fornisce l\'asset in noleggio.',
-                '**DR7 Empire ("l\'Intermediario"):** L\'intermediario che facilita la transazione.',
+                '**DR7 ("l\'Intermediario"):** L\'intermediario che facilita la transazione.',
               ],
               items_en: [
                 '**The Renter ("you"):** The client booking the asset.',
                 '**The Owner:** The third-party company or individual who owns and provides the asset for rent.',
-                '**DR7 Empire ("the Broker"):** The intermediary facilitating the transaction.',
+                '**DR7 ("the Broker"):** The intermediary facilitating the transaction.',
               ] },
           ] },
         { id: 'obligations', heading_it: '3. Obblighi Generali del Noleggiatore', heading_en: '3. General Renter Obligations',
@@ -3501,14 +3501,14 @@ const DEFAULT_LEGAL: LegalCopy = {
       sections: [
         { id: 'accettazione', heading_it: 'Accettazione dei Termini', heading_en: 'Acceptance of Terms', blocks: [
           { type: 'p',
-            text_it: 'Benvenuto su DR7 Empire ("DR7", "noi", "nostro"). Le presenti Condizioni Generali del Servizio di Intermediazione ("Termini") disciplinano l\'utilizzo della nostra piattaforma e dei nostri servizi (collettivamente, i "Servizi").',
-            text_en: 'Welcome to DR7 Empire ("DR7", "we", "our"). These General Terms of the Brokerage Service ("Terms") govern the use of our platform and services (collectively, the "Services").' },
+            text_it: 'Benvenuto su DR7 ("DR7", "noi", "nostro"). Le presenti Condizioni Generali del Servizio di Intermediazione ("Termini") disciplinano l\'utilizzo della nostra piattaforma e dei nostri servizi (collettivamente, i "Servizi").',
+            text_en: 'Welcome to DR7 ("DR7", "we", "our"). These General Terms of the Brokerage Service ("Terms") govern the use of our platform and services (collectively, the "Services").' },
           { type: 'p',
             text_it: 'Accedendo o utilizzando i nostri Servizi, l\'utente accetta di essere vincolato dai presenti Termini e dalla nostra Informativa sulla Privacy. In caso di disaccordo, è vietato utilizzare i Servizi.',
             text_en: 'By accessing or using our Services, you agree to be bound by these Terms and by our Privacy Policy. If you do not agree, you must not use the Services.' },
           { type: 'p',
-            text_it: 'I presenti Termini costituiscono un accordo legalmente vincolante tra l\'utente ("Cliente", "tu") e DR7 Empire, relativo all\'accesso e all\'utilizzo della piattaforma DR7.',
-            text_en: 'These Terms constitute a legally binding agreement between you ("Customer", "you") and DR7 Empire regarding access to and use of the DR7 platform.' },
+            text_it: 'I presenti Termini costituiscono un accordo legalmente vincolante tra l\'utente ("Cliente", "tu") e DR7, relativo all\'accesso e all\'utilizzo della piattaforma DR7.',
+            text_en: 'These Terms constitute a legally binding agreement between you ("Customer", "you") and DR7 regarding access to and use of the DR7 platform.' },
         ]},
         { id: 'intermediario', heading_it: 'Il Nostro Ruolo di Intermediario', heading_en: 'Our Role as Broker', blocks: [
           { type: 'p',
@@ -3571,8 +3571,8 @@ const DEFAULT_LEGAL: LegalCopy = {
         ]},
         { id: 'responsabilita', heading_it: 'Limitazione di Responsabilità', heading_en: 'Limitation of Liability', blocks: [
           { type: 'p',
-            text_it: 'Nella misura massima consentita dalla legge italiana, la responsabilità di DR7 Empire è limitata al suo ruolo di servizio di intermediazione. Non saremo responsabili per danni diretti, indiretti, incidentali, speciali o consequenziali, derivanti da:',
-            text_en: 'To the maximum extent permitted by Italian law, DR7 Empire\'s liability is limited to its role as a brokerage service. We will not be liable for direct, indirect, incidental, special or consequential damages arising from:' },
+            text_it: 'Nella misura massima consentita dalla legge italiana, la responsabilità di DR7 è limitata al suo ruolo di servizio di intermediazione. Non saremo responsabili per danni diretti, indiretti, incidentali, speciali o consequenziali, derivanti da:',
+            text_en: 'To the maximum extent permitted by Italian law, DR7\'s liability is limited to its role as a brokerage service. We will not be liable for direct, indirect, incidental, special or consequential damages arising from:' },
           { type: 'ul',
             items_it: [
               'Le condizioni, le prestazioni o la legalità di qualsiasi Bene.',
@@ -3592,22 +3592,22 @@ const DEFAULT_LEGAL: LegalCopy = {
         ]},
         { id: 'assistente-ai', heading_it: 'Assistente Virtuale (AI)', heading_en: 'AI Virtual Assistant', blocks: [
           { type: 'p',
-            text_it: 'Il sito web di DR7 Empire mette a disposizione un assistente virtuale basato su intelligenza artificiale (di seguito "Assistente AI") a scopo puramente informativo e orientativo.',
-            text_en: 'The DR7 Empire website provides an AI-based virtual assistant ("AI Assistant") for purely informational and orientation purposes.' },
+            text_it: 'Il sito web di DR7 mette a disposizione un assistente virtuale basato su intelligenza artificiale (di seguito "Assistente AI") a scopo puramente informativo e orientativo.',
+            text_en: 'The DR7 website provides an AI-based virtual assistant ("AI Assistant") for purely informational and orientation purposes.' },
           { type: 'p-bold', text_it: 'L\'utente prende atto e accetta che:', text_en: 'You acknowledge and accept that:' },
           { type: 'ul',
             items_it: [
               'L\'Assistente AI è un sistema automatizzato che può generare risposte imprecise, incomplete o errate, inclusi prezzi, disponibilità e specifiche tecniche dei veicoli.',
               '**Le informazioni fornite dall\'Assistente AI, inclusi prezzi e preventivi, non sono in alcun modo vincolanti** e non costituiscono un\'offerta contrattuale ai sensi degli artt. 1326 e seguenti del Codice Civile italiano.',
               '**L\'unico prezzo vincolante è quello visualizzato e confermato nella pagina di prenotazione** al momento della finalizzazione dell\'ordine.',
-              'DR7 Empire declina ogni responsabilità per decisioni prese dall\'utente sulla base delle informazioni fornite dall\'Assistente AI.',
+              'DR7 declina ogni responsabilità per decisioni prese dall\'utente sulla base delle informazioni fornite dall\'Assistente AI.',
               'L\'utente è invitato a verificare sempre le informazioni attraverso la pagina di prenotazione ufficiale o contattando direttamente il servizio clienti.',
             ],
             items_en: [
               'The AI Assistant is an automated system that may generate imprecise, incomplete or incorrect answers, including prices, availability and vehicle specs.',
               '**Information provided by the AI Assistant, including prices and quotes, is in no way binding** and does not constitute a contractual offer under Articles 1326 et seq. of the Italian Civil Code.',
               '**The only binding price is the one displayed and confirmed on the booking page** at order finalization.',
-              'DR7 Empire disclaims all liability for decisions made based on information provided by the AI Assistant.',
+              'DR7 disclaims all liability for decisions made based on information provided by the AI Assistant.',
               'You are invited to always verify information through the official booking page or by contacting customer service directly.',
             ] },
         ]},

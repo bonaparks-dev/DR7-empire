@@ -1,5 +1,5 @@
 /**
- * KM Pricing Data for DR7 Empire Car Rentals
+ * KM Pricing Data for DR7 Car Rentals
  * Fuel penalties and kilometer package costs
  */
 

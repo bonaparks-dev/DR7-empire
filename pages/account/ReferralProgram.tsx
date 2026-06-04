@@ -73,9 +73,9 @@ const ReferralProgram: React.FC = () => {
     }
   };
 
-  const shareText = `Ciao! Ti invito su DR7 Empire — usa il mio link per registrarti: ${referralLink}\n\nSe ricarichi il wallet con almeno €100, io ricevo un bonus di €50 e tu entri nel mondo DR7.`;
+  const shareText = `Ciao! Ti invito su DR7 — usa il mio link per registrarti: ${referralLink}\n\nSe ricarichi il wallet con almeno €100, io ricevo un bonus di €50 e tu entri nel mondo DR7.`;
   const whatsappHref = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
-  const emailHref = `mailto:?subject=${encodeURIComponent('Entra in DR7 Empire')}&body=${encodeURIComponent(shareText)}`;
+  const emailHref = `mailto:?subject=${encodeURIComponent('Entra in DR7')}&body=${encodeURIComponent(shareText)}`;
 
   if (loading) {
     return (

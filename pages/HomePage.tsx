@@ -158,7 +158,7 @@ const HomePage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoryOverrides, lang, getTranslated]);
 
-  const seoH1 = copy ? (lang === 'it' ? copy.seo_h1_it : copy.seo_h1_en) : 'DR7 Empire';
+  const seoH1 = copy ? (lang === 'it' ? copy.seo_h1_it : copy.seo_h1_en) : 'DR7';
 
   return (
     <motion.div

@@ -25,21 +25,21 @@ const ContactPage: React.FC = () => {
       className="min-h-screen bg-black pt-28 pb-20"
     >
       <SEOHead
-        title="Contact DR7 Empire | Book Luxury Cars & Services in Sardinia"
-        description="Get in touch with DR7 Empire for luxury car rentals, supercar experiences, and premium car wash services in Sardinia. Call, WhatsApp, or visit us in Cagliari."
+        title="Contact DR7 | Book Luxury Cars & Services in Sardinia"
+        description="Get in touch with DR7 for luxury car rentals, supercar experiences, and premium car wash services in Sardinia. Call, WhatsApp, or visit us in Cagliari."
         canonical="/contact"
         jsonLd={[
           {
             '@type': 'ContactPage',
             '@id': 'https://dr7empire.com/contact#page',
-            name: 'Contact DR7 Empire',
+            name: 'Contact DR7',
             url: 'https://dr7empire.com/contact',
             mainEntity: { '@id': 'https://dr7empire.com/contact#localbusiness' },
           },
           {
             '@type': 'LocalBusiness',
             '@id': 'https://dr7empire.com/contact#localbusiness',
-            name: 'DR7 Empire',
+            name: 'DR7',
             legalName: 'Dubai Rent 7.0 S.p.A.',
             image: 'https://dr7empire.com/DR7logo1.png',
             telephone: '+39 345 790 5205',

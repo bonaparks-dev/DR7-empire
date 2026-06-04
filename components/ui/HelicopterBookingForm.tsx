@@ -118,7 +118,7 @@ const HelicopterBookingForm: React.FC = () => {
     if (!validate()) return;
 
     // Build comprehensive WhatsApp message
-    let msg = `Ciao DR7 Empire\nVorrei prenotare un volo in elicottero.\n\n`;
+    let msg = `Ciao DR7\nVorrei prenotare un volo in elicottero.\n\n`;
 
     msg += `DATI CLIENTE\n`;
     msg += `Nome: ${formData.firstName} ${formData.lastName}\n`;

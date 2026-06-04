@@ -26,8 +26,8 @@ const PrivacyPolicyPage: React.FC = () => {
         <LegalPageLayout title="Informativa sulla Privacy">
             <p><strong>Ultimo aggiornamento: {new Date().toLocaleDateString('it-IT')}</strong></p>
             <h2>1. Introduzione e Titolare del Trattamento</h2>
-            <p>Dubai Rent 7.0 S.p.A. – DR7 Empire ("noi", "nostro" o "ci") si impegna a proteggere la tua privacy. Questa Informativa sulla Privacy spiega come raccogliamo, utilizziamo, divulghiamo e proteggiamo i tuoi dati personali quando utilizzi i nostri servizi. Questa informativa è fornita in conformità con il Regolamento Generale sulla Protezione dei Dati (GDPR) dell'UE.</p>
-            <p>DR7 Empire è il Titolare del Trattamento dei dati personali raccolti attraverso la nostra piattaforma ed è responsabile dei tuoi dati personali.</p>
+            <p>Dubai Rent 7.0 S.p.A. – DR7 ("noi", "nostro" o "ci") si impegna a proteggere la tua privacy. Questa Informativa sulla Privacy spiega come raccogliamo, utilizziamo, divulghiamo e proteggiamo i tuoi dati personali quando utilizzi i nostri servizi. Questa informativa è fornita in conformità con il Regolamento Generale sulla Protezione dei Dati (GDPR) dell'UE.</p>
+            <p>DR7 è il Titolare del Trattamento dei dati personali raccolti attraverso la nostra piattaforma ed è responsabile dei tuoi dati personali.</p>
             <h2>2. Contattaci</h2>
             <p>Se hai domande su questa Informativa sulla Privacy, contatta il nostro Responsabile della Privacy dei Dati all'indirizzo: <a href="mailto:info@dr7.app">info@dr7.app</a>.</p>
         </LegalPageLayout>

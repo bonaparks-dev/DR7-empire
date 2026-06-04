@@ -21,7 +21,7 @@ const RentalAgreementPage: React.FC = () => {
 
     return (
         <LegalPageLayout title={t('Rental_Agreement')}>
-            <p><strong>Important Notice:</strong> This document provides a general overview of the typical terms and conditions governing the rental of luxury assets through the DR7 Empire platform. DR7 acts as a broker and is not a party to the final rental contract.</p>
+            <p><strong>Important Notice:</strong> This document provides a general overview of the typical terms and conditions governing the rental of luxury assets through the DR7 platform. DR7 acts as a broker and is not a party to the final rental contract.</p>
             <h2>1. The Brokerage Role of DR7</h2>
             <p>DR7 facilitates the connection between the Renter and the Owner. We are not the owner or operator of the assets listed.</p>
         </LegalPageLayout>

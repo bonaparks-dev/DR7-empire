@@ -90,7 +90,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #000; border-bottom: 2px solid #000; padding-bottom: 10px;">🚗 Prenotazione Autolavaggio Confermata!</h1>
         <p>Gentile ${customerName},</p>
-        <p>Grazie per aver prenotato il servizio di autolavaggio con DR7 Empire. Ecco il riepilogo del tuo appuntamento:</p>
+        <p>Grazie per aver prenotato il servizio di autolavaggio con DR7. Ecco il riepilogo del tuo appuntamento:</p>
 
         <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h2 style="margin-top: 0;">Riepilogo Appuntamento</h2>
@@ -109,7 +109,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
         </div>
 
         <p style="margin-top: 30px;">Ti aspettiamo al tuo appuntamento!</p>
-        <p><strong>DR7 Empire Team</strong></p>
+        <p><strong>DR7 Team</strong></p>
 
         <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
         <p style="font-size: 12px; color: #666;">
@@ -151,7 +151,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #000; border-bottom: 2px solid #000; padding-bottom: 10px;">Prenotazione Confermata!</h1>
         <p>Gentile ${customerName},</p>
-        <p>Grazie per aver prenotato con DR7 Empire. Ecco il riepilogo della tua prenotazione:</p>
+        <p>Grazie per aver prenotato con DR7. Ecco il riepilogo della tua prenotazione:</p>
 
         <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h2 style="margin-top: 0;">Riepilogo Prenotazione</h2>
@@ -181,7 +181,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
         ` : ''}
 
         <p style="margin-top: 30px;">Ti aspettiamo!</p>
-        <p><strong>DR7 Empire Team</strong></p>
+        <p><strong>DR7 Team</strong></p>
 
         <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
         <p style="font-size: 12px; color: #666;">
@@ -192,7 +192,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
   }
 
   const customerMailOptions = {
-    from: `"DR7 Empire" <info@dr7.app>`,
+    from: `"DR7" <info@dr7.app>`,
     to: customerEmail,
     subject: emailSubject,
     html: emailHtml,
@@ -200,7 +200,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
   // Admin notification email
   const adminMailOptions = {
-    from: `"DR7 Empire" <info@dr7.app>`,
+    from: `"DR7" <info@dr7.app>`,
     to: 'info@dr7.app',
     subject: `[NUOVA PRENOTAZIONE] ${emailSubject}`,
     html: emailHtml,

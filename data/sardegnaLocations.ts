@@ -1,4 +1,4 @@
-// Sardegna Locations Database for DR7 Empire
+// Sardegna Locations Database for DR7
 // All locations in Sardinia relevant for vehicle rental delivery/pickup
 
 export interface SardegnaLocation {

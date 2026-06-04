@@ -257,7 +257,7 @@ const handler: Handler = async (event) => {
           + `Il nostro team sta effettuando una verifica rapida per confermarne l'idoneità.\n\n`
           + `Riceverà a breve un aggiornamento con l'esito e, in caso di approvazione, il link di pagamento per completare la prenotazione.\n\n`
           + `Restiamo a disposizione.\n\n`
-          + `Cordiali Saluti,\nDR7 Empire`
+          + `Cordiali Saluti,\nDR7`
         await fetch(`${baseUrl}/.netlify/functions/send-whatsapp-notification`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

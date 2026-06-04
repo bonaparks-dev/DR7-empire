@@ -81,7 +81,7 @@ export const handler: Handler = async (event) => {
         const resend = new Resend(apiKey)
 
         const { error: emailError } = await resend.emails.send({
-            from: 'DR7 Empire <info@dr7.app>',
+            from: 'DR7 <info@dr7.app>',
             to: sigRequest.signer_email,
             subject: 'Codice di Verifica - Firma Contratto DR7',
             html: `

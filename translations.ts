@@ -25,7 +25,7 @@ export const translations: Translations = {
   Days: { en: "Days", it: "Giorni" },
 
   // Home Page
-  Welcome_to_DR7_Empire: { en: "Welcome to DR7 Empire", it: "Benvenuti nell'Impero DR7" },
+  Welcome_to_DR7_Empire: { en: "Welcome to DR7", it: "Benvenuti nell'Impero DR7" },
   Experience_Exclusivity: { en: "Experience Exclusivity", it: "Vivi l'Esclusività" },
   Redefined_Luxury: { en: "Redefined Luxury.", it: "Lusso Ridedefinito." },
   Explore_Our_Fleet: { en: "Explore Our Fleet", it: "Esplora la Nostra Flotta" },

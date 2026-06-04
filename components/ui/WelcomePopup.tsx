@@ -38,7 +38,7 @@ const WelcomePopup: React.FC = () => {
         >
           <div className="text-center">
             <h2 className="text-4xl font-bold text-white uppercase tracking-widest">
-              Welcome to DR7 Empire
+              Welcome to DR7
             </h2>
           </div>
         </motion.div>

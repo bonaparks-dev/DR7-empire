@@ -209,8 +209,8 @@ const CarWashBookingPage: React.FC = () => {
         guest_phone: carwashBooking.customer_phone || formData.phone,
         pickup_date: experienceWindow.start.toISOString(),
         dropoff_date: experienceWindow.end.toISOString(),
-        pickup_location: 'DR7 Empire - Supercar Experience',
-        dropoff_location: 'DR7 Empire - Supercar Experience',
+        pickup_location: 'DR7 - Supercar Experience',
+        dropoff_location: 'DR7 - Supercar Experience',
         // Price 0: cost lives on parent. Status 'confirmed' so isVehicleAvailable
         // includes it (the filter excludes cancelled/completed only).
         price_total: 0,

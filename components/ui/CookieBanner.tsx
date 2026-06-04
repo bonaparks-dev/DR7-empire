@@ -59,7 +59,7 @@ const CookieBanner: React.FC = () => {
               {/* Welcome message */}
               <div className="text-center mb-8">
                 <h1 className="text-2xl md:text-3xl font-bold text-white tracking-wide mb-2">
-                  WELCOME TO DR7 EMPIRE
+                  WELCOME TO DR7
                 </h1>
                 <div className="w-16 h-0.5 bg-white mx-auto" />
               </div>
@@ -70,7 +70,7 @@ const CookieBanner: React.FC = () => {
                   Privacy & Compliance Excellence
                 </h2>
                 <p className="text-sm text-white/80 leading-relaxed mb-4">
-                  DR7 Empire adotta tecnologie avanzate per garantire un'esperienza di navigazione impeccabile, personalizzata e conforme ai più alti standard internazionali.
+                  DR7 adotta tecnologie avanzate per garantire un'esperienza di navigazione impeccabile, personalizzata e conforme ai più alti standard internazionali.
                   Utilizziamo cookie per ottimizzare le performance del sito, migliorare i nostri servizi e analizzare il traffico in totale sicurezza.
                 </p>
                 <p className="text-sm text-white/80 leading-relaxed mb-4">
