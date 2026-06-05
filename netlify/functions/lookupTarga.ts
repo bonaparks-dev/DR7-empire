@@ -1,7 +1,25 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
+import { createClient } from '@supabase/supabase-js';
 import { getCorsOrigin } from './utils/cors';
 
 const OPENAPI_TOKEN = process.env.OPENAPI_AUTOMOTIVE_TOKEN || '';
+
+// 2026-06-05: rate-limit anti-costo. Ogni lookup chiama l'API a pagamento, quindi
+// un singolo visitatore che prova molte targhe DIVERSE genera costi alti. Limite
+// di targhe distinte per IP in una finestra (configurabile via env).
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const MAX_DISTINCT_PLATES = parseInt(process.env.TARGA_LOOKUP_MAX || '5', 10);   // targhe diverse consentite per IP
+const WINDOW_HOURS = parseInt(process.env.TARGA_LOOKUP_WINDOW_H || '24', 10);    // finestra in ore
+
+function clientIp(event: HandlerEvent): string {
+  return (
+    event.headers['x-nf-client-connection-ip'] ||
+    event.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+    event.headers['client-ip'] ||
+    'unknown'
+  );
+}
 
 export const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
     const headers = {
@@ -36,6 +54,41 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
             headers,
             body: JSON.stringify({ error: 'Servizio temporaneamente non disponibile.' }),
         };
+    }
+
+    // ── Rate limit: max MAX_DISTINCT_PLATES targhe DIVERSE per IP nella finestra ──
+    // Evita che un singolo visitatore generi costi alti provando molte targhe.
+    // Le ripetizioni della STESSA targa non contano (cap sulle targhe distinte).
+    // Fail-open: un errore qui non deve mai bloccare una ricerca legittima.
+    const ip = clientIp(event);
+    if (SUPABASE_URL && SUPABASE_SERVICE_KEY && ip !== 'unknown') {
+        try {
+            const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+            const sinceISO = new Date(Date.now() - WINDOW_HOURS * 3600 * 1000).toISOString();
+            const { data: recent } = await supabase
+                .from('targa_lookup_log')
+                .select('plate')
+                .eq('ip', ip)
+                .gte('created_at', sinceISO);
+            const distinct = new Set((recent || []).map((r: { plate: string }) => r.plate));
+            if (!distinct.has(plate) && distinct.size >= MAX_DISTINCT_PLATES) {
+                console.warn(`[lookupTarga] RATE LIMIT ip=${ip} distinct=${distinct.size} plate=${plate} — blocked`);
+                return {
+                    statusCode: 429,
+                    headers,
+                    body: JSON.stringify({
+                        error: 'Hai raggiunto il numero massimo di ricerche targa. Riprova più tardi o contattaci per assistenza.',
+                        rateLimited: true,
+                    }),
+                };
+            }
+            // Registra la nuova targa (le ripetizioni non gonfiano il log né il conteggio).
+            if (!distinct.has(plate)) {
+                await supabase.from('targa_lookup_log').insert({ ip, plate });
+            }
+        } catch (e: any) {
+            console.error('[lookupTarga] rate-limit check failed (fail-open):', e?.message);
+        }
     }
 
     try {
