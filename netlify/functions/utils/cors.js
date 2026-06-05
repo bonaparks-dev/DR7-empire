@@ -4,6 +4,12 @@
  */
 
 const ALLOWED_ORIGINS = [
+  // 2026-06-05: migrazione dominio. Nuovi domini aggiunti A FIANCO dei vecchi
+  // così entrambi funzionano durante la transizione (dr7empire.com -> dr7.app,
+  // admin -> platform.dr7.app). I vecchi verranno rimossi a bascula completata.
+  'https://dr7.app',
+  'https://www.dr7.app',
+  'https://platform.dr7.app',
   'https://dr7empire.com',
   'https://www.dr7empire.com',
 ];

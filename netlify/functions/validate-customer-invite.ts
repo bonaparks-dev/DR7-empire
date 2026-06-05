@@ -6,6 +6,10 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 const ALLOWED_ORIGINS = [
+    // 2026-06-05: migrazione dominio — nuovi domini a fianco dei vecchi.
+    'https://dr7.app',
+    'https://www.dr7.app',
+    'https://platform.dr7.app',
     'https://dr7empire.com',
     'https://www.dr7empire.com',
     'https://admin.dr7empire.com',
