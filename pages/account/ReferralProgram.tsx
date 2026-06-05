@@ -9,7 +9,7 @@ interface ReferralBonus {
   created_at: string;
 }
 
-const SITE_URL = (typeof window !== 'undefined' ? window.location.origin : 'https://dr7empire.com');
+const SITE_URL = (typeof window !== 'undefined' ? window.location.origin : 'https://dr7.app');
 
 const ReferralProgram: React.FC = () => {
   const { user } = useAuth();

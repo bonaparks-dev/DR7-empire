@@ -326,8 +326,8 @@ export default function ReviewsSection() {
       reviews={reviews}
       business={{
         name: "DR7",
-        url: "https://dr7empire.com",
-        image: "https://dr7empire.com/logo.png",
+        url: "https://dr7.app",
+        image: "https://dr7.app/logo.png",
         telephone: "+39 345 790 5205",
         address: {
           streetAddress: "Viale Marconi, 229",

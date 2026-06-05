@@ -87,7 +87,7 @@ export const handler: Handler = async (event) => {
             html: `
                 <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                     <div style="background: #000; border-radius: 12px; padding: 24px 16px; text-align: center; margin-bottom: 30px;">
-                        <img src="https://dr7empire.com/DR7logo1.png" alt="DR7" style="height: 60px; display: block; margin: 0 auto;" />
+                        <img src="https://dr7.app/DR7logo1.png" alt="DR7" style="height: 60px; display: block; margin: 0 auto;" />
                     </div>
                     <h2 style="color: #111; text-align: center;">Codice di Verifica</h2>
                     <p style="text-align: center;">Usa questo codice per confermare la tua firma:</p>
@@ -100,7 +100,7 @@ export const handler: Handler = async (event) => {
                     <p style="text-align: center; color: #666; font-size: 13px;">Se non hai richiesto questo codice, ignora questa email.</p>
                     <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
                     <p style="color: #999; font-size: 11px; text-align: center;">
-                        Dubai rent 7.0 S.p.A. - www.dr7empire.com
+                        Dubai rent 7.0 S.p.A. - www.dr7.app
                     </p>
                 </div>
             `

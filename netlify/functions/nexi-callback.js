@@ -348,7 +348,7 @@ exports.handler = async (event) => {
 
       // Send notifications if payment succeeded
       if (isSuccess) {
-        const siteUrl = process.env.URL || 'https://dr7empire.com';
+        const siteUrl = process.env.URL || 'https://dr7.app';
         try {
           await fetch(`${siteUrl}/.netlify/functions/send-booking-confirmation`, {
             method: 'POST',
@@ -572,7 +572,7 @@ exports.handler = async (event) => {
         }
 
         // Send notifications
-        const siteUrl = process.env.URL || 'https://dr7empire.com';
+        const siteUrl = process.env.URL || 'https://dr7.app';
         try {
           await fetch(`${siteUrl}/.netlify/functions/send-booking-confirmation`, {
             method: 'POST',
@@ -1039,7 +1039,7 @@ exports.handler = async (event) => {
 
         // Generate fattura for wallet purchase (card-paid recharge → IVA invoice required)
         try {
-          const siteUrl = process.env.URL || 'https://dr7empire.com';
+          const siteUrl = process.env.URL || 'https://dr7.app';
           const fatturaRes = await fetch(`${siteUrl}/.netlify/functions/generate-fattura`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1182,7 +1182,7 @@ exports.handler = async (event) => {
           `User ID: ${membership.user_id}`;
 
         try {
-          await fetch(`${process.env.URL || 'https://dr7empire.com'}/.netlify/functions/send-whatsapp-notification`, {
+          await fetch(`${process.env.URL || 'https://dr7.app'}/.netlify/functions/send-whatsapp-notification`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ customMessage: whatsappMsg }),
@@ -1196,12 +1196,12 @@ exports.handler = async (event) => {
         await sendIngressoDR7ClubToCustomer(
           supabase,
           membership.user_id,
-          process.env.URL || 'https://dr7empire.com'
+          process.env.URL || 'https://dr7.app'
         );
 
         // Generate fattura for membership purchase
         try {
-          const membershipSiteUrl = process.env.URL || 'https://dr7empire.com';
+          const membershipSiteUrl = process.env.URL || 'https://dr7.app';
           await fetch(`${membershipSiteUrl}/.netlify/functions/generate-fattura`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1317,7 +1317,7 @@ exports.handler = async (event) => {
 
         // WhatsApp admin notification
         try {
-          await fetch(`${process.env.URL || 'https://dr7empire.com'}/.netlify/functions/send-whatsapp-notification`, {
+          await fetch(`${process.env.URL || 'https://dr7.app'}/.netlify/functions/send-whatsapp-notification`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1333,7 +1333,7 @@ exports.handler = async (event) => {
         await sendIngressoDR7ClubToCustomer(
           supabase,
           clubSub.user_id,
-          process.env.URL || 'https://dr7empire.com'
+          process.env.URL || 'https://dr7.app'
         );
 
         console.log(`DR7 Club subscription ${clubSub.id} activated with contractId: ${contractId}`);

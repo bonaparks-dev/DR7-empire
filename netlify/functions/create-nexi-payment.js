@@ -82,7 +82,7 @@ exports.handler = async (event) => {
         : 'https://xpaysandbox.nexigroup.com/api/phoenix-0.0/psp/api/v1';
 
     // Get site URL for callbacks
-    const siteUrl = process.env.URL || 'https://dr7empire.com';
+    const siteUrl = process.env.URL || 'https://dr7.app';
 
     // Generate UUID v4 for Correlation-Id (compatible with older Node versions)
     const correlationId = crypto.randomBytes(16).toString('hex').replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');

@@ -18,7 +18,7 @@ exports.handler = async (event) => {
   const baseUrl = nexiEnvironment === 'production'
     ? 'https://xpay.nexigroup.com/api/phoenix-0.0/psp/api/v1'
     : 'https://xpaysandbox.nexigroup.com/api/phoenix-0.0/psp/api/v1';
-  const siteUrl = process.env.URL || 'https://dr7empire.com';
+  const siteUrl = process.env.URL || 'https://dr7.app';
 
   if (!nexiApiKey) {
     console.error('NEXI_API_KEY not configured');

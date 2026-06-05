@@ -107,7 +107,7 @@ exports.handler = async (event) => {
         console.log('SMTP_PASSWORD set:', !!process.env.SMTP_PASSWORD);
         console.log('SMTP_FROM:', process.env.SMTP_FROM || 'NOT SET (fallback: info@dr7.app)');
         try {
-            const siteUrl = process.env.SITE_URL || process.env.URL || 'https://dr7empire.com';
+            const siteUrl = process.env.SITE_URL || process.env.URL || 'https://dr7.app';
             console.log('Site URL for redirect:', siteUrl);
 
             const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
@@ -324,12 +324,12 @@ exports.handler = async (event) => {
                 + `Per darle il benvenuto, abbiamo appena accreditato *10€ di credito omaggio* sul Suo wallet *DR7*, già disponibili e utilizzabili per le Sue prossime prenotazioni.\n\n`
                 + `Inoltre, ogni acquisto Le permetterà di accumulare ulteriore credito: più utilizza i servizi *DR7*, più il Suo wallet crescerà nel tempo.\n\n`
                 + `La invitiamo ad approfittarne subito per prenotare il Suo servizio e vivere in prima persona lo standard *DR7*: rapido, elegante e senza compromessi.\n\n`
-                + `Può procedere immediatamente da qui:\nhttps://dr7empire.com/\n\n`
+                + `Può procedere immediatamente da qui:\nhttps://dr7.app/\n\n`
                 + `Restiamo a Sua completa disposizione.\n\n`
                 + `Cordiali saluti,\n*DR7*`;
 
             const custPhone = customerData?.telefono;
-            const siteUrl = process.env.URL || 'https://dr7empire.com';
+            const siteUrl = process.env.URL || 'https://dr7.app';
 
             if (custPhone) {
                 // Send via WhatsApp

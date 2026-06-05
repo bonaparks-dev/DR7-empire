@@ -14,4 +14,4 @@ Disallow: /booking-success
 Disallow: /car-booking-success
 Disallow: /confirmation-success
 
-Sitemap: https://dr7empire.com/sitemap.xml
+Sitemap: https://dr7.app/sitemap.xml

@@ -31,20 +31,20 @@ const ContactPage: React.FC = () => {
         jsonLd={[
           {
             '@type': 'ContactPage',
-            '@id': 'https://dr7empire.com/contact#page',
+            '@id': 'https://dr7.app/contact#page',
             name: 'Contact DR7',
-            url: 'https://dr7empire.com/contact',
-            mainEntity: { '@id': 'https://dr7empire.com/contact#localbusiness' },
+            url: 'https://dr7.app/contact',
+            mainEntity: { '@id': 'https://dr7.app/contact#localbusiness' },
           },
           {
             '@type': 'LocalBusiness',
-            '@id': 'https://dr7empire.com/contact#localbusiness',
+            '@id': 'https://dr7.app/contact#localbusiness',
             name: 'DR7',
             legalName: 'Dubai Rent 7.0 S.p.A.',
-            image: 'https://dr7empire.com/DR7logo1.png',
+            image: 'https://dr7.app/DR7logo1.png',
             telephone: '+39 345 790 5205',
             email: 'info@dr7.app',
-            url: 'https://dr7empire.com',
+            url: 'https://dr7.app',
             address: {
               '@type': 'PostalAddress',
               streetAddress: 'Viale Marconi, 229',

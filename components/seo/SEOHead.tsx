@@ -13,12 +13,12 @@ const SEOHead: React.FC<SEOHeadProps> = ({
   title,
   description,
   canonical,
-  ogImage = 'https://dr7empire.com/DR7logo1.png',
+  ogImage = 'https://dr7.app/DR7logo1.png',
   jsonLd,
 }) => {
   const fullCanonical = canonical.startsWith('http')
     ? canonical
-    : `https://dr7empire.com${canonical}`;
+    : `https://dr7.app${canonical}`;
 
   return (
     <Helmet>

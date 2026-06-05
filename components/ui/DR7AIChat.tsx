@@ -27,11 +27,13 @@ const parseMessageContent = (content: string, onLinkClick?: () => void) => {
 
     const linkText = match[1];
     const linkUrl = match[2];
-    const isInternal = linkUrl.startsWith('/') || linkUrl.includes('dr7empire.com');
+    const isInternal = linkUrl.startsWith('/') || linkUrl.includes('dr7.app') || linkUrl.includes('dr7empire.com');
 
     // Create link element
     if (isInternal) {
-      const path = linkUrl.replace('https://dr7empire.com', '').replace('http://dr7empire.com', '');
+      const path = linkUrl
+        .replace('https://dr7.app', '').replace('http://dr7.app', '')
+        .replace('https://dr7empire.com', '').replace('http://dr7empire.com', '');
       parts.push(
         <Link
           key={`link-${match.index}`}

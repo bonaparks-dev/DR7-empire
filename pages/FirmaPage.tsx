@@ -301,7 +301,7 @@ export default function FirmaPage() {
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
             <div className="bg-black text-white py-4 px-6 flex items-center justify-between">
-                <img src="https://dr7empire.com/DR7logo1.png" alt="DR7" className="h-10" />
+                <img src="https://dr7.app/DR7logo1.png" alt="DR7" className="h-10" />
                 <span className="text-sm text-gray-400">{f('header_pill_it', 'header_pill_en')}</span>
             </div>
 

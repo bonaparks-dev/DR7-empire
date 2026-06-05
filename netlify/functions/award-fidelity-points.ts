@@ -170,7 +170,7 @@ export const handler: Handler = async (event) => {
         valid_until: validUntil.toISOString(),
         message: "Buono Fidelity Card — solo Prime Wash",
         usage_conditions: `Buono di €${FIDELITY_VOUCHER_AMOUNT} guadagnato con la Fidelity Card. Utilizzabile solo per servizi di lavaggio. Valido ${FIDELITY_VOUCHER_VALID_DAYS} giorni.`,
-        qr_url: `https://dr7empire.com/promo/${voucherCode}`,
+        qr_url: `https://dr7.app/promo/${voucherCode}`,
       })
 
       if (voucherErr) {
@@ -178,7 +178,7 @@ export const handler: Handler = async (event) => {
         return { statusCode: 500, body: JSON.stringify({ error: "voucher insert failed", details: voucherErr.message }) }
       }
 
-      voucherUrl = `https://dr7empire.com/promo/${voucherCode}`
+      voucherUrl = `https://dr7.app/promo/${voucherCode}`
       // Reset to zero when threshold is reached — overflow does NOT roll
       // forward (e.g. 29 punti → voucher + 0/250, NOT 4/250).
       newLinePoints = 0
@@ -224,7 +224,7 @@ export const handler: Handler = async (event) => {
           process.env.PUBLIC_SITE_URL ||
           process.env.URL ||
           process.env.DEPLOY_PRIME_URL ||
-          "https://www.dr7empire.com"
+          "https://www.dr7.app"
         try {
           await fetch(`${siteUrl}/.netlify/functions/send-whatsapp-notification`, {
             method: "POST",

@@ -205,7 +205,7 @@ const handler: Handler = async (event) => {
     try {
       const pickupDate = new Date(body.pickup_date).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Rome' })
       const dropoffDate = new Date(body.dropoff_date).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Rome' })
-      const baseUrl = process.env.URL || 'https://dr7empire.com'
+      const baseUrl = process.env.URL || 'https://dr7.app'
 
       const title = isNoCauzione ? '*RICHIESTA NO CAUZIONE*' : '*NUOVO PREVENTIVO DAL SITO*'
       const cauzioneLine = isNoCauzione

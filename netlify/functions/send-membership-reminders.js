@@ -20,7 +20,7 @@ exports.handler = async (event) => {
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 
-  const siteUrl = process.env.URL || 'https://dr7empire.com';
+  const siteUrl = process.env.URL || 'https://dr7.app';
 
   // Find memberships expiring in the next 3 days
   const now = new Date();

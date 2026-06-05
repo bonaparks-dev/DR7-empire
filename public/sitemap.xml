@@ -3,7 +3,7 @@
 
   <!-- Homepage -->
   <url>
-    <loc>https://dr7empire.com/</loc>
+    <loc>https://dr7.app/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -12,21 +12,21 @@
 
   <!-- Supercar Division -->
   <url>
-    <loc>https://dr7empire.com/cars</loc>
+    <loc>https://dr7.app/cars</loc>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>
 
   <!-- Urban Division -->
   <url>
-    <loc>https://dr7empire.com/urban-cars</loc>
+    <loc>https://dr7.app/urban-cars</loc>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>
 
   <!-- Prime Car Wash -->
   <url>
-    <loc>https://dr7empire.com/car-wash-services</loc>
+    <loc>https://dr7.app/car-wash-services</loc>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>
@@ -34,43 +34,43 @@
   <!-- ===== OTHER PAGES ===== -->
 
   <url>
-    <loc>https://dr7empire.com/yachts</loc>
+    <loc>https://dr7.app/yachts</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
 
   <url>
-    <loc>https://dr7empire.com/jets</loc>
+    <loc>https://dr7.app/jets</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
 
   <url>
-    <loc>https://dr7empire.com/membership</loc>
+    <loc>https://dr7.app/membership</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
 
   <url>
-    <loc>https://dr7empire.com/franchising</loc>
+    <loc>https://dr7.app/franchising</loc>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
 
   <url>
-    <loc>https://dr7empire.com/investitori</loc>
+    <loc>https://dr7.app/investitori</loc>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
 
   <url>
-    <loc>https://dr7empire.com/about</loc>
+    <loc>https://dr7.app/about</loc>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
 
   <url>
-    <loc>https://dr7empire.com/faq</loc>
+    <loc>https://dr7.app/faq</loc>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
@@ -78,67 +78,67 @@
   <!-- ===== ADDITIONAL PAGES ===== -->
 
   <url>
-    <loc>https://dr7empire.com/corporate-fleet</loc>
+    <loc>https://dr7.app/corporate-fleet</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://dr7empire.com/credit-wallet</loc>
+    <loc>https://dr7.app/credit-wallet</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
 
   <url>
-    <loc>https://dr7empire.com/token</loc>
+    <loc>https://dr7.app/token</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
   <url>
-    <loc>https://dr7empire.com/mechanical-services</loc>
+    <loc>https://dr7.app/mechanical-services</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
 
   <url>
-    <loc>https://dr7empire.com/careers</loc>
+    <loc>https://dr7.app/careers</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
 
   <url>
-    <loc>https://dr7empire.com/press</loc>
+    <loc>https://dr7.app/press</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
 
   <url>
-    <loc>https://dr7empire.com/terms</loc>
+    <loc>https://dr7.app/terms</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
 
   <url>
-    <loc>https://dr7empire.com/privacy</loc>
+    <loc>https://dr7.app/privacy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
 
   <url>
-    <loc>https://dr7empire.com/cookie-policy</loc>
+    <loc>https://dr7.app/cookie-policy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
 
   <url>
-    <loc>https://dr7empire.com/cancellation-policy</loc>
+    <loc>https://dr7.app/cancellation-policy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
 
   <url>
-    <loc>https://dr7empire.com/rental-agreement</loc>
+    <loc>https://dr7.app/rental-agreement</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
