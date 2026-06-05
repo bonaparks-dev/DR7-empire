@@ -10,6 +10,8 @@ const ALLOWED_ORIGINS = [
   'https://dr7.app',
   'https://www.dr7.app',
   'https://platform.dr7.app',
+  'https://dr7ai.com',
+  'https://www.dr7ai.com',
   'https://dr7empire.com',
   'https://www.dr7empire.com',
 ];
