@@ -404,7 +404,7 @@ exports.handler = async (event) => {
         // pagati: bug 2026-05-18 — i lavaggi paid-by-card NON ricevevano fattura.
         const serviceType = booking.service_type || booking.booking_details?.type || '';
         const isWashOrMech = serviceType === 'car_wash' || serviceType === 'mechanical_service' || serviceType === 'mechanical';
-        const adminUrl = process.env.ADMIN_URL || 'https://admin.dr7empire.com';
+        const adminUrl = process.env.ADMIN_URL || 'https://dr7ai.com';
 
         if (!isWashOrMech) {
           try {
@@ -643,7 +643,7 @@ exports.handler = async (event) => {
         // Contract + signing solo per noleggio. Fattura per TUTTI i servizi.
         const serviceType = newBooking.service_type || newBooking.booking_details?.type || '';
         const isWashOrMech = serviceType === 'car_wash' || serviceType === 'mechanical_service' || serviceType === 'mechanical';
-        const adminUrl = process.env.ADMIN_URL || 'https://admin.dr7empire.com';
+        const adminUrl = process.env.ADMIN_URL || 'https://dr7ai.com';
 
         if (!isWashOrMech) {
           try {

@@ -3200,7 +3200,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
       }
 
       // Auto-generate contract + fattura via admin webhook (bypasses auth)
-      fetchWithTimeout('https://admin.dr7empire.com/.netlify/functions/post-booking-webhook', {
+      fetchWithTimeout('https://dr7ai.com/.netlify/functions/post-booking-webhook', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bookingId: data.id }),
@@ -3933,7 +3933,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
             }).catch(e => console.error('WhatsApp customer error', e));
           }
 
-          fetch('https://admin.dr7empire.com/.netlify/functions/post-booking-webhook', {
+          fetch('https://dr7ai.com/.netlify/functions/post-booking-webhook', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ bookingId: data.booking_id }),
@@ -3962,7 +3962,7 @@ const CarBookingWizard: React.FC<CarBookingWizardProps> = ({ item, categoryConte
               const { addCredits } = await import('../../utils/creditWallet');
               await addCredits(user.id, 10, 'DR7 Club — Bonus iscrizione €10', data.booking_id, 'club_signup_bonus');
               // Send Nexi payment link for the Club fee
-              await fetch('https://admin.dr7empire.com/.netlify/functions/nexi-pay-by-link', {
+              await fetch('https://dr7ai.com/.netlify/functions/nexi-pay-by-link', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

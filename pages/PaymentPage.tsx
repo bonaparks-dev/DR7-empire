@@ -5,7 +5,7 @@ import { getPaymentCopy, type PaymentCopy } from '../utils/siteCopy'
 
 type PayState = 'loading' | 'ready' | 'checking' | 'blocked' | 'confirming' | 'success' | 'error' | 'cancelled'
 
-const ADMIN_BASE = 'https://admin.dr7empire.com'
+const ADMIN_BASE = 'https://dr7ai.com'
 
 export default function PaymentPage() {
   const { lang } = useTranslation()
