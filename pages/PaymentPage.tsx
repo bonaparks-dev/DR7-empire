@@ -5,7 +5,9 @@ import { getPaymentCopy, type PaymentCopy } from '../utils/siteCopy'
 
 type PayState = 'loading' | 'ready' | 'checking' | 'blocked' | 'confirming' | 'success' | 'error' | 'cancelled'
 
-const ADMIN_BASE = 'https://dr7ai.com'
+// 2026-06-06: admin functions sono su platform.dr7ai.com (dr7ai.com e' la
+// landing CRM SPA che risponde 200 a tutto → silent fail sulle chiamate admin).
+const ADMIN_BASE = 'https://platform.dr7ai.com'
 
 export default function PaymentPage() {
   const { lang } = useTranslation()

@@ -23,7 +23,7 @@ import { getCorsOrigin } from './utils/cors'
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || ''
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-const ADMIN_URL = process.env.ADMIN_URL || 'https://dr7ai.com'
+const ADMIN_URL = process.env.ADMIN_URL || 'https://platform.dr7ai.com'
 
 export const handler: Handler = async (event) => {
   const origin = getCorsOrigin(event.headers.origin || event.headers.Origin)

@@ -1,7 +1,11 @@
 import { Handler } from '@netlify/functions';
 import { getCorsOrigin } from './utils/cors';
 
-const ADMIN_URL = process.env.ADMIN_URL || 'https://dr7ai.com';
+// 2026-06-06: admin functions live SOLO su platform.dr7ai.com. dr7ai.com e' la
+// landing CRM (SPA): risponde 200 a qualunque /.netlify/functions/* (catch-all
+// index.html) → un POST riceveva HTML con status 200 e generate-fattura lo
+// trattava come SUCCESSO mentre NESSUNA fattura veniva creata (silent fail).
+const ADMIN_URL = process.env.ADMIN_URL || 'https://platform.dr7ai.com';
 
 /**
  * Proxy function to call the admin's generate-invoice-from-booking function.

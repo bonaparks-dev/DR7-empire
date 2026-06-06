@@ -110,7 +110,7 @@ const handler: Handler = async (event) => {
         // Best-effort: kick off auto-verify on the admin domain. The website
         // doesn't host auto-verify-document — that's an admin-only function.
         try {
-            const adminUrl = process.env.ADMIN_FUNCTIONS_URL || 'https://dr7ai.com'
+            const adminUrl = process.env.ADMIN_FUNCTIONS_URL || 'https://platform.dr7ai.com'
             await fetch(`${adminUrl}/.netlify/functions/auto-verify-document`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
